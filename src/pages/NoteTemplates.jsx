@@ -87,8 +87,8 @@ export default function NoteTemplates() {
           enabled: section.enabled ?? true,
           conditional_logic: section.conditional_logic || {
             enabled: false,
-            condition_type: "note_type",
-            condition_value: ""
+            operator: "AND",
+            conditions: []
           }
         })) || []
       };

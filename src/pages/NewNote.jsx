@@ -169,27 +169,74 @@ export default function NewNote() {
           .filter(section => section.enabled !== false)
           .sort((a, b) => (a.order || 0) - (b.order || 0));
 
+        // Helper function to evaluate a single condition
+        const evaluateCondition = (condition) => {
+          const { type, value, match_type = "partial", secondary_value } = condition;
+          
+          const matchValue = (haystack, pattern, matchType) => {
+            if (!haystack || !pattern) return false;
+            const hay = String(haystack).toLowerCase();
+            const pat = String(pattern).toLowerCase();
+            
+            if (matchType === "exact") {
+              return hay === pat;
+            } else if (matchType === "regex") {
+              try {
+                const regex = new RegExp(pattern, "i");
+                return regex.test(haystack);
+              } catch {
+                return false;
+              }
+            } else { // partial
+              return hay.includes(pat);
+            }
+          };
+
+          try {
+            if (type === "note_type") {
+              return matchValue(noteData.note_type, value, match_type);
+            } else if (type === "specialty") {
+              return matchValue(noteData.specialty, value, match_type);
+            } else if (type === "diagnosis_contains") {
+              return Array.isArray(noteData.diagnoses) && noteData.diagnoses.some(d => matchValue(d, value, match_type));
+            } else if (type === "chronic_condition_contains") {
+              return Array.isArray(patientHistory?.chronic_conditions) && patientHistory.chronic_conditions.some(c => matchValue(c, value, match_type));
+            } else if (type === "medication_contains") {
+              return Array.isArray(patientHistory?.current_medications) && patientHistory.current_medications.some(m => matchValue(m, value, match_type));
+            } else if (type === "allergy_contains") {
+              return Array.isArray(patientHistory?.allergies) && patientHistory.allergies.some(a => matchValue(a, value, match_type));
+            } else if (type === "patient_age") {
+              // Age range matching (e.g., "18-65")
+              const [min, max] = value.split("-").map(v => parseInt(v));
+              return !isNaN(min) && !isNaN(max);
+            } else if (type === "symptom_contains") {
+              const hpi = noteData.history_of_present_illness || "";
+              return matchValue(hpi, value, match_type);
+            }
+            return false;
+          } catch (error) {
+            console.warn("Error evaluating condition:", error);
+            return false;
+          }
+        };
+
         // Apply conditional logic filtering
         const applicableSections = activeSections.filter(section => {
           if (!section.conditional_logic?.enabled) return true;
 
-          const { condition_type, condition_value } = section.conditional_logic;
+          const { operator = "AND", conditions = [] } = section.conditional_logic;
+          
+          if (conditions.length === 0) return true;
 
-          if (condition_type === "note_type") {
-            return noteData.note_type === condition_value;
-          } else if (condition_type === "specialty") {
-            return noteData.specialty?.toLowerCase().includes(condition_value?.toLowerCase());
-          } else if (condition_type === "diagnosis_contains") {
-           return Array.isArray(noteData.diagnoses) && noteData.diagnoses.some(d => d.toLowerCase().includes(condition_value?.toLowerCase()));
-          } else if (condition_type === "chronic_condition_contains") {
-           return Array.isArray(patientHistory?.chronic_conditions) && patientHistory.chronic_conditions.some(c => c.toLowerCase().includes(condition_value?.toLowerCase()));
-          } else if (condition_type === "medication_contains") {
-           return Array.isArray(patientHistory?.current_medications) && patientHistory.current_medications.some(m => m.toLowerCase().includes(condition_value?.toLowerCase()));
-          } else if (condition_type === "allergy_contains") {
-           return Array.isArray(patientHistory?.allergies) && patientHistory.allergies.some(a => a.toLowerCase().includes(condition_value?.toLowerCase()));
+          const results = conditions.map(evaluateCondition);
+          
+          // AND: all conditions must be true
+          if (operator === "AND") {
+            return results.every(r => r === true);
+          } else { // OR: at least one condition must be true
+            return results.some(r => r === true);
           }
-          return true;
-          });
+        });
 
           console.log(`Template: ${template.name} - Using ${applicableSections.length}/${activeSections.length} sections based on conditions`);
 

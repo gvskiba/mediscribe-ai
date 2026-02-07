@@ -113,8 +113,8 @@ export default function NoteTemplates() {
           enabled: section.enabled ?? true,
           conditional_logic: section.conditional_logic || {
             enabled: false,
-            condition_type: "note_type",
-            condition_value: ""
+            operator: "AND",
+            conditions: []
           }
         })) || []
       };
@@ -194,8 +194,8 @@ export default function NoteTemplates() {
       order: section.order ?? idx,
       conditional_logic: section.conditional_logic || {
         enabled: false,
-        condition_type: "note_type",
-        condition_value: ""
+        operator: "AND",
+        conditions: []
       }
     }));
     setFormData({
@@ -704,6 +704,8 @@ Return a JSON structure with:
               <SectionEditor
                 sections={formData.sections}
                 onChange={(sections) => setFormData({ ...formData, sections })}
+                noteType={formData.note_type}
+                specialty={formData.specialty}
               />
               <p className="text-xs text-slate-500 mt-2">Enable/disable sections with the eye icon, configure conditional logic, and use AI suggestions based on note type</p>
             </div>

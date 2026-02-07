@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { FileText, Plus, Edit, Trash2, Star, Check, Sparkles, Loader2, BarChart3, Share2, History, Filter, TrendingUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import SectionEditor from "../components/templates/SectionEditor";
+import SectionSuggestions from "../components/templates/SectionSuggestions";
 import TemplateAnalytics from "../components/templates/TemplateAnalytics";
 import TemplateSharing from "../components/templates/TemplateSharing";
 import TemplateVersionHistory from "../components/templates/TemplateVersionHistory";
@@ -42,6 +43,8 @@ export default function NoteTemplates() {
   const [noteTypeFilter, setNoteTypeFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [versionComparisonOpen, setVersionComparisonOpen] = useState(false);
+  const [sectionSuggestions, setSectionSuggestions] = useState([]);
+  const [loadingSectionSuggestions, setLoadingSectionSuggestions] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -257,6 +260,48 @@ export default function NoteTemplates() {
     );
   };
 
+  const generateSectionSuggestions = async () => {
+    setLoadingSectionSuggestions(true);
+    
+    try {
+      const noteTypeLabel = noteTypes.find(t => t.value === formData.note_type)?.label || "Clinical Note";
+      const specialtyContext = formData.specialty ? ` for ${formData.specialty}` : "";
+      
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a clinical documentation expert. Generate relevant sections for a ${noteTypeLabel}${specialtyContext}.
+
+Suggest 5-7 practical sections that should be included. For each section, provide:
+- A clear, concise name
+- A brief description of what should be documented
+- Specific AI extraction instructions to guide automated note structuring
+
+Consider standard medical documentation practices and the specific requirements of this note type and specialty.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            sections: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  description: { type: "string" },
+                  ai_instructions: { type: "string" }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      setSectionSuggestions(result.sections || []);
+    } catch (error) {
+      toast.error("Failed to generate section suggestions");
+    } finally {
+      setLoadingSectionSuggestions(false);
+    }
+  };
+
   const handleGenerateSuggestions = async () => {
     setGeneratingSuggestions(true);
     
@@ -301,6 +346,7 @@ Return a JSON structure with:
         sections: result.sections || [],
         ai_instructions: result.overall_ai_instructions || formData.ai_instructions
       });
+      setSectionSuggestions([]);
       toast.success("AI suggestions generated");
     } catch (error) {
       toast.error("Failed to generate suggestions");

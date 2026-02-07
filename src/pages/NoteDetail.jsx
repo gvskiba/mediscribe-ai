@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import { motion } from "framer-motion";
 import StructuredNotePreview from "../components/notes/StructuredNotePreview";
 import PatientSummary from "../components/notes/PatientSummary";
+import SmartGuidelinePanel from "../components/guidelines/SmartGuidelinePanel";
 
 const statusColors = {
   draft: "bg-amber-50 text-amber-700 border-amber-200",
@@ -151,9 +152,10 @@ Generated: ${new Date().toLocaleString()}
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Back Nav */}
-      <Link
+    <>
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Back Nav */}
+        <Link
         to={createPageUrl("NotesLibrary")}
         className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 transition-colors"
       >
@@ -238,6 +240,14 @@ Generated: ${new Date().toLocaleString()}
           {note.raw_note}
         </div>
       </motion.div>
-    </div>
+      </div>
+
+      {/* Smart Guideline Panel */}
+      <SmartGuidelinePanel
+        noteContent={note.raw_note}
+        diagnoses={note.diagnoses || []}
+        medications={note.medications || []}
+      />
+    </>
   );
 }

@@ -175,23 +175,34 @@ ${JSON.stringify(structuredNote, null, 2)}`,
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {!structuredNote ? (
-        <NoteTranscriptionInput 
-          onSubmit={handleSubmit} 
-          isProcessing={isProcessing}
-          templates={templates}
-        />
-      ) : (
-        <StructuredNotePreview
-          note={structuredNote}
-          onFinalize={handleFinalize}
-          onUpdate={handleUpdate}
-          onReanalyze={handleReanalyze}
-          guidelineRecommendations={guidelineRecommendations}
-          loadingGuidelines={loadingGuidelines}
+    <>
+      <div className="max-w-4xl mx-auto space-y-6">
+        {!structuredNote ? (
+          <NoteTranscriptionInput 
+            onSubmit={handleSubmit} 
+            isProcessing={isProcessing}
+            templates={templates}
+          />
+        ) : (
+          <StructuredNotePreview
+            note={structuredNote}
+            onFinalize={handleFinalize}
+            onUpdate={handleUpdate}
+            onReanalyze={handleReanalyze}
+            guidelineRecommendations={guidelineRecommendations}
+            loadingGuidelines={loadingGuidelines}
+          />
+        )}
+      </div>
+
+      {/* Smart Guideline Panel */}
+      {structuredNote && (
+        <SmartGuidelinePanel
+          noteContent={rawData?.raw_note || ""}
+          diagnoses={structuredNote.diagnoses || []}
+          medications={structuredNote.medications || []}
         />
       )}
-    </div>
+    </>
   );
 }

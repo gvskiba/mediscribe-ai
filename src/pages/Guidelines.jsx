@@ -1,22 +1,32 @@
 import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "../utils";
 import GuidelineSearchBar from "../components/guidelines/GuidelineSearchBar";
 import GuidelineAnswer from "../components/guidelines/GuidelineAnswer";
-import { BookOpen, Search, Loader2, Sparkles } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { AnimatePresence, motion } from "framer-motion";
+import RecentQueryCard from "../components/dashboard/RecentQueryCard";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { BookOpen, Search, Loader2, Sparkles, Filter } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 
 export default function Guidelines() {
   const [isLoading, setIsLoading] = useState(false);
   const [latestAnswer, setLatestAnswer] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [filterConfidence, setFilterConfidence] = useState("all");
+  const [filterDateRange, setFilterDateRange] = useState("all");
+  const [viewMode, setViewMode] = useState("search");
+  const [relatedGuidelines, setRelatedGuidelines] = useState([]);
   const queryClient = useQueryClient();
 
   const { data: pastQueries = [], isLoading: queriesLoading } = useQuery({
     queryKey: ["queries"],
-    queryFn: () => base44.entities.GuidelineQuery.list("-created_date", 20),
+    queryFn: () => base44.entities.GuidelineQuery.list("-created_date", 50),
   });
 
   const handleSubmit = async (question, attachedFiles = []) => {
@@ -24,7 +34,6 @@ export default function Guidelines() {
     setLatestAnswer(null);
     setSearchTerm("");
 
-    // Build enhanced prompt with context
     let contextSection = "";
     if (attachedFiles.length > 0) {
       contextSection = `\n\nPATIENT-SPECIFIC CONTEXT:\nThe clinician has provided the following files for personalized recommendations:\n${attachedFiles.map(f => f.name).join(", ")}\n\nPlease analyze these documents and provide guidelines tailored to this specific patient's data (labs, imaging, etc.).`;
@@ -96,7 +105,6 @@ ${attachedFiles.length > 0 ? "8. **Personalization**: Integrate patient-specific
       },
     });
 
-    // Generate related questions
     const relatedQuestionsResult = await base44.integrations.Core.InvokeLLM({
       prompt: `Based on this clinical question: "${question}"
 
@@ -122,9 +130,52 @@ Generate 3 related clinical questions that would be valuable follow-ups or relat
     };
 
     const created = await base44.entities.GuidelineQuery.create(queryData);
-    setLatestAnswer({ ...queryData, id: created.id });
+    const newQuery = { ...queryData, id: created.id };
+    setLatestAnswer(newQuery);
+    generateRelatedGuidelines(newQuery);
     queryClient.invalidateQueries({ queryKey: ["queries"] });
     setIsLoading(false);
+  };
+
+  const generateRelatedGuidelines = async (currentQuery) => {
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Based on this clinical guideline query and answer, suggest related guidelines that a clinician might find helpful.
+
+Current Query: "${currentQuery.question}"
+Category: ${currentQuery.category}
+Answer excerpt: ${currentQuery.answer.substring(0, 300)}...
+
+Suggest 4-6 related guideline topics that would be clinically relevant. Consider:
+- Related conditions or complications
+- Alternative treatment approaches
+- Monitoring or follow-up guidelines
+- Preventive measures
+- Drug interactions or contraindications
+- Comorbidity management
+
+Format each as a concise clinical question (similar to the original).`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            related_topics: { 
+              type: "array", 
+              items: { 
+                type: "object",
+                properties: {
+                  question: { type: "string" },
+                  reason: { type: "string" }
+                }
+              } 
+            },
+          },
+        },
+      });
+      
+      setRelatedGuidelines(result.related_topics || []);
+    } catch (error) {
+      console.error("Error generating related guidelines:", error);
+    }
   };
 
   const rateMutation = useMutation({
@@ -146,7 +197,7 @@ Generate 3 related clinical questions that would be valuable follow-ups or relat
     handleSubmit(question);
   };
 
-  // Enhanced semantic search with AI assistance
+  // Enhanced semantic search
   const [semanticSearching, setSemanticSearching] = useState(false);
   const [semanticResults, setSemanticResults] = useState(null);
 
@@ -158,7 +209,6 @@ Generate 3 related clinical questions that would be valuable follow-ups or relat
 
     setSemanticSearching(true);
     try {
-      // Use AI to understand search intent and match queries
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `You are a medical AI with deep understanding of clinical terminology and relationships. Analyze this search query and match it to relevant past queries.
 
@@ -215,7 +265,6 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
       setSemanticResults(relevantQueries);
     } catch (error) {
       console.error("Semantic search failed:", error);
-      // Fallback to basic search
       const searchLower = term.toLowerCase();
       const basicResults = pastQueries.filter(q => 
         q.question.toLowerCase().includes(searchLower) ||
@@ -228,7 +277,6 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
     setSemanticSearching(false);
   };
 
-  // Debounced semantic search
   React.useEffect(() => {
     if (!searchTerm.trim()) {
       setSemanticResults(null);
@@ -242,16 +290,56 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const filteredQueries = semanticResults !== null ? semanticResults : pastQueries;
+  // Apply filters
+  let filteredQueries = semanticResults !== null ? semanticResults : pastQueries;
+  
+  filteredQueries = filteredQueries.filter(query => {
+    if (filterCategory !== "all" && query.category !== filterCategory) return false;
+    if (filterConfidence !== "all" && query.confidence_level !== filterConfidence) return false;
+    
+    if (filterDateRange !== "all") {
+      const queryDate = new Date(query.created_date);
+      const now = new Date();
+      const daysAgo = (now - queryDate) / (1000 * 60 * 60 * 24);
+      
+      if (filterDateRange === "week" && daysAgo > 7) return false;
+      if (filterDateRange === "month" && daysAgo > 30) return false;
+      if (filterDateRange === "quarter" && daysAgo > 90) return false;
+      if (filterDateRange === "year" && daysAgo > 365) return false;
+    }
+    
+    return true;
+  });
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Clinical Guidelines</h1>
-        <p className="text-slate-500 mt-1">Evidence-based answers powered by AI.</p>
+    <div className="max-w-5xl mx-auto space-y-6">
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">Clinical Guidelines</h1>
+          <p className="text-slate-600">Evidence-based clinical guidelines with AI-powered search</p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant={viewMode === "search" ? "default" : "outline"}
+            onClick={() => setViewMode("search")}
+            className="rounded-xl"
+          >
+            Search
+          </Button>
+          <Button
+            variant={viewMode === "browse" ? "default" : "outline"}
+            onClick={() => setViewMode("browse")}
+            className="rounded-xl"
+          >
+            <BookOpen className="w-4 h-4 mr-2" />
+            Browse
+          </Button>
+        </div>
       </div>
 
-      <GuidelineSearchBar onSubmit={handleSubmit} isLoading={isLoading} />
+      {viewMode === "search" && (
+        <GuidelineSearchBar onSubmit={handleSubmit} isLoading={isLoading} />
+      )}
 
       {isLoading && (
         <div className="space-y-4">
@@ -263,30 +351,133 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
 
       <AnimatePresence>
         {latestAnswer && (
-          <GuidelineAnswer 
-            query={latestAnswer} 
-            onRate={handleRate}
-            onSelectRelatedQuestion={handleSelectRelatedQuestion}
-          />
+          <>
+            <GuidelineAnswer 
+              query={latestAnswer} 
+              onRate={handleRate}
+              onSelectRelatedQuestion={handleSelectRelatedQuestion}
+            />
+            
+            {relatedGuidelines.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-6"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="w-5 h-5 text-blue-600" />
+                  <h3 className="text-lg font-semibold text-slate-900">Related Guidelines</h3>
+                </div>
+                <p className="text-sm text-slate-600 mb-4">Based on your query, these related topics might be helpful:</p>
+                <div className="grid gap-3">
+                  {relatedGuidelines.map((related, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleSelectRelatedQuestion(related.question)}
+                      className="text-left bg-white rounded-xl p-4 border border-blue-100 hover:border-blue-300 hover:shadow-sm transition-all group"
+                    >
+                      <p className="text-sm font-medium text-slate-900 group-hover:text-blue-600 transition-colors">
+                        {related.question}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1">{related.reason}</p>
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </>
         )}
       </AnimatePresence>
 
-      {/* Past Queries */}
+      {/* Knowledge Base */}
       {pastQueries.length > 0 && !latestAnswer && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="space-y-4"
-        >
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-slate-400" />
-              Query History
+        <div className="bg-white rounded-2xl border border-slate-100 p-6">
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-slate-900 mb-1">
+              {viewMode === "browse" ? "Guidelines Knowledge Base" : "Query History"}
             </h2>
+            <p className="text-sm text-slate-500">
+              {viewMode === "browse" 
+                ? "Browse and filter all saved clinical guidelines" 
+                : "Search through past clinical guideline queries"}
+            </p>
           </div>
+          
+          {/* Filters */}
+          {viewMode === "browse" && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6 p-4 bg-slate-50 rounded-xl">
+              <div>
+                <label className="text-xs font-medium text-slate-600 mb-1.5 block">Specialty</label>
+                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                  <SelectTrigger className="rounded-lg bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Specialties</SelectItem>
+                    <SelectItem value="cardiology">Cardiology</SelectItem>
+                    <SelectItem value="pulmonology">Pulmonology</SelectItem>
+                    <SelectItem value="endocrinology">Endocrinology</SelectItem>
+                    <SelectItem value="infectious_disease">Infectious Disease</SelectItem>
+                    <SelectItem value="neurology">Neurology</SelectItem>
+                    <SelectItem value="oncology">Oncology</SelectItem>
+                    <SelectItem value="gastroenterology">Gastroenterology</SelectItem>
+                    <SelectItem value="nephrology">Nephrology</SelectItem>
+                    <SelectItem value="rheumatology">Rheumatology</SelectItem>
+                    <SelectItem value="general">General Medicine</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <label className="text-xs font-medium text-slate-600 mb-1.5 block">Confidence</label>
+                <Select value={filterConfidence} onValueChange={setFilterConfidence}>
+                  <SelectTrigger className="rounded-lg bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Levels</SelectItem>
+                    <SelectItem value="high">High Confidence</SelectItem>
+                    <SelectItem value="moderate">Moderate Confidence</SelectItem>
+                    <SelectItem value="low">Low Confidence</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <label className="text-xs font-medium text-slate-600 mb-1.5 block">Time Period</label>
+                <Select value={filterDateRange} onValueChange={setFilterDateRange}>
+                  <SelectTrigger className="rounded-lg bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="week">Past Week</SelectItem>
+                    <SelectItem value="month">Past Month</SelectItem>
+                    <SelectItem value="quarter">Past 3 Months</SelectItem>
+                    <SelectItem value="year">Past Year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex items-end">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setFilterCategory("all");
+                    setFilterConfidence("all");
+                    setFilterDateRange("all");
+                    setSearchTerm("");
+                  }}
+                  className="w-full rounded-lg"
+                >
+                  Clear Filters
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Semantic Search */}
-          <div className="relative">
+          <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             {semanticSearching && (
               <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-500 animate-spin" />
@@ -294,34 +485,60 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
             <Input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Intelligent search: try 'heart failure', 'diabetes management', 'anticoagulation'..."
-              className="pl-10 pr-10 rounded-xl border-slate-200 bg-white"
+              placeholder="AI-powered search: 'heart failure', 'diabetes', 'anticoagulation'..."
+              className="pl-10 pr-10 rounded-xl"
             />
           </div>
           {searchTerm && semanticResults !== null && (
-            <p className="text-xs text-purple-600 -mt-2">
+            <p className="text-xs text-purple-600 mb-4">
               <Sparkles className="w-3 h-3 inline mr-1" />
-              AI-powered semantic search • Found {filteredQueries.length} related {filteredQueries.length === 1 ? 'query' : 'queries'}
+              AI semantic search • Found {filteredQueries.length} related {filteredQueries.length === 1 ? 'query' : 'queries'}
             </p>
           )}
 
-          {filteredQueries.length === 0 ? (
-            <div className="text-center py-8 text-slate-400">
-              <p className="text-sm">No queries match your search</p>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-slate-500">
+              {filteredQueries.length} guideline{filteredQueries.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+
+          {queriesLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-24 rounded-xl" />
+              ))}
+            </div>
+          ) : filteredQueries.length === 0 ? (
+            <div className="text-center py-12">
+              <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+              <p className="text-sm text-slate-500">No guidelines found</p>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setFilterCategory("all");
+                  setFilterConfidence("all");
+                  setFilterDateRange("all");
+                  setSearchTerm("");
+                }}
+                className="mt-3 rounded-xl"
+              >
+                Clear Filters
+              </Button>
             </div>
           ) : (
-            <div className="space-y-4">
-              {filteredQueries.map((q) => (
-                <GuidelineAnswer 
-                  key={q.id} 
-                  query={q} 
-                  onRate={handleRate}
-                  onSelectRelatedQuestion={handleSelectRelatedQuestion}
-                />
+            <div className="space-y-3">
+              {filteredQueries.map((query) => (
+                <Link
+                  key={query.id}
+                  to={createPageUrl("GuidelineDetail") + `?id=${query.id}`}
+                  className="block"
+                >
+                  <RecentQueryCard query={query} />
+                </Link>
               ))}
             </div>
           )}
-        </motion.div>
+        </div>
       )}
     </div>
   );

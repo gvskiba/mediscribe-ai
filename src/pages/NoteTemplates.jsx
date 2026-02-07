@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { FileText, Plus, Edit, Trash2, Star, Check } from "lucide-react";
+import { FileText, Plus, Edit, Trash2, Star, Check, Sparkles, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import SectionEditor from "../components/templates/SectionEditor";
 
@@ -24,6 +24,7 @@ export default function NoteTemplates() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
+  const [generatingSuggestions, setGeneratingSuggestions] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -92,6 +93,57 @@ export default function NoteTemplates() {
       ai_instructions: template.ai_instructions || "",
     });
     setDialogOpen(true);
+  };
+
+  const handleGenerateSuggestions = async () => {
+    setGeneratingSuggestions(true);
+    
+    try {
+      const noteTypeLabel = noteTypes.find(t => t.value === formData.note_type)?.label || "Clinical Note";
+      const specialtyContext = formData.specialty ? ` for ${formData.specialty}` : "";
+      
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a clinical documentation expert. Generate a comprehensive template structure for a ${noteTypeLabel}${specialtyContext}.
+
+Based on best practices and standard medical documentation, suggest:
+1. Relevant sections with clear names
+2. A brief description for each section explaining what should be documented
+3. Specific AI extraction instructions for each section to guide automated note structuring
+
+Consider common clinical documentation standards like SOAP, HPI structure, ROS, physical exam organization, and assessment/plan formatting.
+
+Return a JSON structure with:
+- sections: array of {name, description, ai_instructions}
+- overall_ai_instructions: general guidance for the entire template`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            sections: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  description: { type: "string" },
+                  ai_instructions: { type: "string" }
+                }
+              }
+            },
+            overall_ai_instructions: { type: "string" }
+          }
+        }
+      });
+
+      setFormData({
+        ...formData,
+        sections: result.sections || [],
+        ai_instructions: result.overall_ai_instructions || formData.ai_instructions
+      });
+    } catch (error) {
+      alert("Failed to generate suggestions. Please try again.");
+    } finally {
+      setGeneratingSuggestions(false);
+    }
   };
 
   const handleSubmit = () => {
@@ -250,12 +302,28 @@ export default function NoteTemplates() {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Note Sections</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-sm font-medium text-slate-700">Note Sections</label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateSuggestions}
+                  disabled={generatingSuggestions}
+                  className="rounded-lg gap-2 text-xs"
+                >
+                  {generatingSuggestions ? (
+                    <><Loader2 className="w-3 h-3 animate-spin" /> Generating...</>
+                  ) : (
+                    <><Sparkles className="w-3 h-3" /> AI Suggest Sections</>
+                  )}
+                </Button>
+              </div>
               <SectionEditor
                 sections={formData.sections}
                 onChange={(sections) => setFormData({ ...formData, sections })}
               />
-              <p className="text-xs text-slate-500 mt-2">Define sections and subsections for AI to structure the note</p>
+              <p className="text-xs text-slate-500 mt-2">Define sections for AI to structure the note, or use AI suggestions based on note type</p>
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">AI Instructions</label>

@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import GuidelineSearchBar from "../components/guidelines/GuidelineSearchBar";
 import GuidelineAnswer from "../components/guidelines/GuidelineAnswer";
-import { BookOpen, Search } from "lucide-react";
+import { BookOpen, Search, Loader2, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatePresence, motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
@@ -19,28 +19,43 @@ export default function Guidelines() {
     queryFn: () => base44.entities.GuidelineQuery.list("-created_date", 20),
   });
 
-  const handleSubmit = async (question) => {
+  const handleSubmit = async (question, attachedFiles = []) => {
     setIsLoading(true);
     setLatestAnswer(null);
     setSearchTerm("");
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are a clinical evidence expert similar to OpenEvidence. Answer the following clinical question using the latest evidence-based guidelines and medical literature.
+    // Build enhanced prompt with context
+    let contextSection = "";
+    if (attachedFiles.length > 0) {
+      contextSection = `\n\nPATIENT-SPECIFIC CONTEXT:\nThe clinician has provided the following files for personalized recommendations:\n${attachedFiles.map(f => f.name).join(", ")}\n\nPlease analyze these documents and provide guidelines tailored to this specific patient's data (labs, imaging, etc.).`;
+    }
 
-Question: ${question}
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `You are a clinical evidence expert similar to OpenEvidence and UpToDate. Answer the following clinical question using the latest evidence-based guidelines and medical literature from authoritative sources.
+
+Question: ${question}${contextSection}
+
+SOURCES TO PRIORITIZE:
+- OpenEvidence database (cite as "OpenEvidence - [Topic]")
+- ACC/AHA, ESC, ADA, IDSA, ATS, CHEST, NICE, WHO guidelines
+- UpToDate clinical decisions support
+- Cochrane systematic reviews
+- Major journal publications (NEJM, JAMA, Lancet, BMJ)
 
 Provide:
 1. A comprehensive, evidence-based answer with specific guideline recommendations
-2. Mention specific guidelines (e.g., ACC/AHA, ESC, ADA, IDSA, NICE, etc.) when relevant
-3. Include drug names, dosages, and class of recommendation/level of evidence when applicable
-4. Format with markdown headers for organization
-5. Note any recent updates or controversies
+2. Mention specific guidelines with years (e.g., "2022 ACC/AHA HF Guidelines")
+3. Include drug names, dosages, and class of recommendation/level of evidence
+4. If patient data is attached, tailor recommendations to their specific values
+5. Format with markdown headers for organization
+6. Note any recent updates or controversies
 
 Also classify:
 - Category (cardiology, pulmonology, endocrinology, infectious_disease, neurology, oncology, gastroenterology, nephrology, rheumatology, general)
 - Confidence level (high, moderate, low) based on strength of evidence
-- Sources: List the specific guidelines and key studies referenced`,
+- Sources: List the specific guidelines and studies referenced with URLs when possible`,
       add_context_from_internet: true,
+      file_urls: attachedFiles.length > 0 ? attachedFiles.map(f => f.url) : undefined,
       response_json_schema: {
         type: "object",
         properties: {
@@ -102,18 +117,74 @@ Generate 3 related clinical questions that would be valuable follow-ups or relat
     handleSubmit(question);
   };
 
-  // Semantic search filtering
-  const filteredQueries = useMemo(() => {
-    if (!searchTerm.trim()) return pastQueries;
-    
-    const searchLower = searchTerm.toLowerCase();
-    return pastQueries.filter(q => 
-      q.question.toLowerCase().includes(searchLower) ||
-      q.answer.toLowerCase().includes(searchLower) ||
-      q.category?.toLowerCase().includes(searchLower) ||
-      q.sources?.some(s => s.toLowerCase().includes(searchLower))
-    );
-  }, [pastQueries, searchTerm]);
+  // Enhanced semantic search with AI assistance
+  const [semanticSearching, setSemanticSearching] = useState(false);
+  const [semanticResults, setSemanticResults] = useState(null);
+
+  const performSemanticSearch = async (term) => {
+    if (!term.trim()) {
+      setSemanticResults(null);
+      return;
+    }
+
+    setSemanticSearching(true);
+    try {
+      // Use AI to understand search intent and match queries
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Given this search query: "${term}"
+
+And these past clinical guideline queries:
+${pastQueries.map((q, i) => `${i}. Question: "${q.question}"\n   Category: ${q.category}\n   Brief answer excerpt: ${q.answer.substring(0, 200)}...`).join("\n\n")}
+
+Identify which queries are semantically related to the search term, even if they use different words. Consider:
+- Medical synonyms (e.g., "MI" = "myocardial infarction" = "heart attack")
+- Related conditions (e.g., "diabetes" relates to "hyperglycemia", "HbA1c")
+- Treatment contexts (e.g., "anticoagulation" relates to "atrial fibrillation", "DVT")
+
+Return the indices (0-based) of relevant queries, ordered by relevance.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            relevant_indices: { type: "array", items: { type: "number" } },
+          },
+        },
+      });
+
+      const relevantQueries = result.relevant_indices
+        .filter(idx => idx >= 0 && idx < pastQueries.length)
+        .map(idx => pastQueries[idx]);
+      
+      setSemanticResults(relevantQueries);
+    } catch (error) {
+      console.error("Semantic search failed:", error);
+      // Fallback to basic search
+      const searchLower = term.toLowerCase();
+      const basicResults = pastQueries.filter(q => 
+        q.question.toLowerCase().includes(searchLower) ||
+        q.answer.toLowerCase().includes(searchLower) ||
+        q.category?.toLowerCase().includes(searchLower) ||
+        q.sources?.some(s => s.toLowerCase().includes(searchLower))
+      );
+      setSemanticResults(basicResults);
+    }
+    setSemanticSearching(false);
+  };
+
+  // Debounced semantic search
+  React.useEffect(() => {
+    if (!searchTerm.trim()) {
+      setSemanticResults(null);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      performSemanticSearch(searchTerm);
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const filteredQueries = semanticResults !== null ? semanticResults : pastQueries;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -159,13 +230,22 @@ Generate 3 related clinical questions that would be valuable follow-ups or relat
           {/* Semantic Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            {semanticSearching && (
+              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-500 animate-spin" />
+            )}
             <Input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search past queries, answers, or topics..."
-              className="pl-10 rounded-xl border-slate-200 bg-white"
+              placeholder="Intelligent search: try 'heart failure', 'diabetes management', 'anticoagulation'..."
+              className="pl-10 pr-10 rounded-xl border-slate-200 bg-white"
             />
           </div>
+          {searchTerm && semanticResults !== null && (
+            <p className="text-xs text-purple-600 -mt-2">
+              <Sparkles className="w-3 h-3 inline mr-1" />
+              AI-powered semantic search • Found {filteredQueries.length} related {filteredQueries.length === 1 ? 'query' : 'queries'}
+            </p>
+          )}
 
           {filteredQueries.length === 0 ? (
             <div className="text-center py-8 text-slate-400">

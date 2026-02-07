@@ -110,10 +110,10 @@ export default function NewNote() {
       // Check if patient exists
       if (noteData.patient_id) {
         const existingPatients = await base44.entities.Patient.filter({ patient_id: noteData.patient_id });
-        
+
         if (existingPatients.length === 0) {
           // Patient doesn't exist, prompt to create
-          setPendingPatientData(noteData);
+          setPendingPatientData({ ...noteData, templateId });
           setNewPatientDialogOpen(true);
           setIsProcessing(false);
           return;

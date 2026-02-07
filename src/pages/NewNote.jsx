@@ -556,10 +556,19 @@ ${noteData.raw_note}`;
         const applicableSections = activeSections.filter(section => {
           if (!section.conditional_logic?.enabled) return true;
           const { condition_type, condition_value } = section.conditional_logic;
+          
           if (condition_type === "note_type") {
             return noteData.note_type === condition_value;
           } else if (condition_type === "specialty") {
             return noteData.specialty?.toLowerCase().includes(condition_value?.toLowerCase());
+          } else if (condition_type === "diagnosis_contains") {
+            return noteData.diagnoses?.some(d => d.toLowerCase().includes(condition_value?.toLowerCase()));
+          } else if (condition_type === "chronic_condition_contains") {
+            return patientHistory?.chronic_conditions?.some(c => c.toLowerCase().includes(condition_value?.toLowerCase()));
+          } else if (condition_type === "medication_contains") {
+            return patientHistory?.current_medications?.some(m => m.toLowerCase().includes(condition_value?.toLowerCase()));
+          } else if (condition_type === "allergy_contains") {
+            return patientHistory?.allergies?.some(a => a.toLowerCase().includes(condition_value?.toLowerCase()));
           }
           return true;
         });

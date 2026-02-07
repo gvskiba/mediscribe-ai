@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -55,7 +55,15 @@ export default function NoteDetail() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["note", noteId] }),
   });
 
+  // Auto-generate summary for finalized notes
+  React.useEffect(() => {
+    if (note && note.status === "finalized" && !patientSummary && !generatingSummary) {
+      generateSummary();
+    }
+  }, [note?.status]);
+
   const generateSummary = async () => {
+    if (!note) return;
     setGeneratingSummary(true);
     
     const result = await base44.integrations.Core.InvokeLLM({
@@ -190,7 +198,7 @@ Generated: ${new Date().toLocaleString()}
             </div>
           </div>
           <div className="flex gap-2">
-            {note.status === "finalized" && (
+            {note.status === "finalized" && patientSummary && (
               <Button
                 variant="outline"
                 onClick={generateSummary}
@@ -198,9 +206,9 @@ Generated: ${new Date().toLocaleString()}
                 className="rounded-xl gap-2"
               >
                 {generatingSummary ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Regenerating...</>
                 ) : (
-                  <><Sparkles className="w-4 h-4" /> Generate Summary</>
+                  <><Sparkles className="w-4 h-4" /> Regenerate Summary</>
                 )}
               </Button>
             )}
@@ -217,6 +225,18 @@ Generated: ${new Date().toLocaleString()}
       </motion.div>
 
       {/* Patient Summary */}
+      {generatingSummary && !patientSummary && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl border border-slate-100 p-6"
+        >
+          <div className="flex items-center gap-3 text-slate-500">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <span className="text-sm">Generating AI summary...</span>
+          </div>
+        </motion.div>
+      )}
       {patientSummary && (
         <PatientSummary 
           summary={patientSummary} 

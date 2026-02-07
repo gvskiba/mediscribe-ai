@@ -186,21 +186,31 @@ If information is not found, return null for that field. Be conservative - only 
 
         {/* Template Selection */}
         {templates.length > 0 && (
-          <div className="space-y-2">
-            <Label className="text-slate-700 font-medium">Template (Optional)</Label>
-            <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-              <SelectTrigger className="rounded-xl border-slate-200">
-                <SelectValue placeholder="Use default structure" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={null}>Default Structure</SelectItem>
-                {templates.map(template => (
-                  <SelectItem key={template.id} value={template.id}>
-                    {template.name} {template.is_default && "⭐"}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label className="text-slate-700 font-medium">Template (Optional)</Label>
+              <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                <SelectTrigger className="rounded-xl border-slate-200">
+                  <SelectValue placeholder="Use default structure" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={null}>Default Structure</SelectItem>
+                  {templates.map(template => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.name} {template.is_default && "⭐"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {selectedTemplate && (
+              <TemplatePreview
+                template={templates.find(t => t.id === selectedTemplate)}
+                noteType={noteType}
+                specialty={specialty}
+              />
+            )}
           </div>
         )}
 

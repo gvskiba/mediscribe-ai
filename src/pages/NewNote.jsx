@@ -103,12 +103,13 @@ export default function NewNote() {
     setIsProcessing(true);
     setRawData(noteData);
     
-    // Load patient history in parallel
-    if (noteData.patient_id || noteData.patient_name) {
-      loadPatientHistory(noteData.patient_id, noteData.patient_name, historyFocus);
-    }
+    try {
+      // Load patient history in parallel
+      if (noteData.patient_id || noteData.patient_name) {
+        loadPatientHistory(noteData.patient_id, noteData.patient_name, historyFocus);
+      }
 
-    const template = templates.find(t => t.id === templateId);
+      const template = templates.find(t => t.id === templateId);
     
     let prompt = `You are a medical scribe AI. Given the following clinical note, extract and structure the information accurately.
 
@@ -271,13 +272,18 @@ Extract ALL information from the raw note and populate the following sections. B
       response_json_schema: schema,
     });
 
-    console.log("AI Extraction Result:", result);
-    setStructuredNote({ ...noteData, ...result });
-    setIsProcessing(false);
+      console.log("AI Extraction Result:", result);
+      setStructuredNote({ ...noteData, ...result });
 
-    // Automatically fetch guideline recommendations and ICD-10 codes in parallel
-    fetchGuidelineRecommendations(result);
-    generateICD10Suggestions(result);
+      // Automatically fetch guideline recommendations and ICD-10 codes in parallel
+      fetchGuidelineRecommendations(result);
+      generateICD10Suggestions(result);
+    } catch (error) {
+      console.error("Error processing note:", error);
+      alert("Failed to process note. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const fetchGuidelineRecommendations = async (noteData) => {

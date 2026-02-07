@@ -533,16 +533,16 @@ PAST PROCEDURES: ${history.past_procedures?.join(", ") || "None"}`;
       
       // Continue processing the note
       setIsProcessing(true);
-      processNoteData(pendingPatientData);
+      processNoteData(pendingPatientData, pendingPatientData.templateId);
     } catch (error) {
       console.error("Failed to create patient:", error);
       alert("Failed to create patient. Please try again.");
     }
   };
 
-  const processNoteData = async (noteData) => {
+  const processNoteData = async (noteData, templateId) => {
     try {
-      const template = templates.find(t => t.id === noteData.templateId);
+      const template = templates.find(t => t.id === templateId);
       
       let prompt = `You are a medical scribe AI. Given the following clinical note, extract and structure the information accurately.
 
@@ -662,8 +662,8 @@ TRENDS: ${patientHistory.trends || "N/A"}`;
 
       setStructuredNote(mergedNote);
 
-      if (noteData.templateId) {
-        await base44.entities.NoteTemplate.update(noteData.templateId, {
+      if (templateId) {
+        await base44.entities.NoteTemplate.update(templateId, {
           usage_count: (template?.usage_count || 0) + 1,
           last_used: new Date().toISOString()
         });

@@ -74,17 +74,36 @@ export default function GuidelineAnswer({ query, onRate, onSelectRelatedQuestion
         <div className="px-6 pb-4 pt-2 border-t border-slate-100">
           <div className="flex items-center gap-2 mb-3">
             <BookOpen className="w-4 h-4 text-slate-400" />
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">References</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Evidence Sources</p>
           </div>
           <div className="space-y-2">
-            {query.sources.map((source, i) => (
-              <div key={i} className="flex items-start gap-2 text-sm text-slate-600">
-                <span className="text-xs font-semibold text-slate-400 bg-slate-100 rounded w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  {i + 1}
-                </span>
-                <span className="text-sm leading-relaxed">{source}</span>
-              </div>
-            ))}
+            {query.sources.map((source, i) => {
+              // Extract URL if present in source text
+              const urlMatch = source.match(/(https?:\/\/[^\s)]+)/);
+              const url = urlMatch ? urlMatch[1] : null;
+              const textWithoutUrl = url ? source.replace(url, '').trim() : source;
+              
+              return (
+                <div key={i} className="flex items-start gap-2 text-sm text-slate-600">
+                  <span className="text-xs font-semibold text-slate-400 bg-slate-100 rounded w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    {i + 1}
+                  </span>
+                  <div className="flex-1">
+                    <span className="text-sm leading-relaxed">{textWithoutUrl}</span>
+                    {url && (
+                      <a 
+                        href={url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="ml-2 text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-1 text-xs"
+                      >
+                        View Source →
+                      </a>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

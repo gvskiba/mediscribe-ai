@@ -358,12 +358,12 @@ TRENDS: ${patientHistory.trends || "N/A"}`;
       }
 
       // Automatically fetch guideline recommendations and ICD-10 codes in parallel
-      try {
-        fetchGuidelineRecommendations(result);
-        generateICD10Suggestions(result);
-      } catch (error) {
+      Promise.all([
+        fetchGuidelineRecommendations(result),
+        generateICD10Suggestions(result)
+      ]).catch(error => {
         console.error("Failed to fetch additional data:", error);
-      }
+      });
     } catch (error) {
       console.error("Error processing note:", error);
       alert("Failed to process note. Please try again.");
@@ -523,24 +523,29 @@ PAST PROCEDURES: ${history.past_procedures?.join(", ") || "None"}`;
         email: patientData.email || null,
       });
 
+      setNewPatientDialogOpen(false);
+
       // Continue with note processing
       const noteDataWithoutTemplate = { ...pendingPatientData };
       const templateIdToUse = noteDataWithoutTemplate.templateId;
       delete noteDataWithoutTemplate.templateId;
 
       setRawData(noteDataWithoutTemplate);
+      setIsProcessing(true);
+
+      // Load patient history
       loadPatientHistory(
-       noteDataWithoutTemplate.patient_id, 
-       noteDataWithoutTemplate.patient_name, 
-       historyFocus
+        noteDataWithoutTemplate.patient_id, 
+        noteDataWithoutTemplate.patient_name, 
+        historyFocus
       );
 
-      // Continue processing the note
-      setIsProcessing(true);
-      processNoteData(noteDataWithoutTemplate, templateIdToUse);
+      // Process note data
+      await processNoteData(noteDataWithoutTemplate, templateIdToUse);
     } catch (error) {
       console.error("Failed to create patient:", error);
       alert("Failed to create patient. Please try again.");
+      setIsProcessing(false);
     }
   };
 
@@ -673,12 +678,12 @@ TRENDS: ${patientHistory.trends || "N/A"}`;
         });
       }
 
-      try {
-        fetchGuidelineRecommendations(result);
-        generateICD10Suggestions(result);
-      } catch (error) {
+      Promise.all([
+        fetchGuidelineRecommendations(result),
+        generateICD10Suggestions(result)
+      ]).catch(error => {
         console.error("Failed to fetch additional data:", error);
-      }
+      });
     } catch (error) {
       console.error("Error processing note:", error);
       alert("Failed to process note. Please try again.");

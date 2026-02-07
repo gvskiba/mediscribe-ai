@@ -10,6 +10,7 @@ import PatientHistoryPanel from "../components/notes/PatientHistoryPanel";
 import HistoryFocusSelector from "../components/notes/HistoryFocusSelector";
 import ICD10Suggestions from "../components/notes/ICD10Suggestions";
 import PatientEducationMaterials from "../components/notes/PatientEducationMaterials";
+import NewPatientDialog from "../components/notes/NewPatientDialog";
 
 export default function NewNote() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -23,6 +24,8 @@ export default function NewNote() {
   const [icd10Suggestions, setIcd10Suggestions] = useState([]);
   const [loadingIcd10, setLoadingIcd10] = useState(false);
   const [educationMaterialsOpen, setEducationMaterialsOpen] = useState(false);
+  const [newPatientDialogOpen, setNewPatientDialogOpen] = useState(false);
+  const [pendingPatientData, setPendingPatientData] = useState(null);
   const navigate = useNavigate();
 
   const { data: templates = [] } = useQuery({
@@ -104,6 +107,19 @@ export default function NewNote() {
     setRawData(noteData);
     
     try {
+      // Check if patient exists
+      if (noteData.patient_id) {
+        const existingPatients = await base44.entities.Patient.filter({ patient_id: noteData.patient_id });
+        
+        if (existingPatients.length === 0) {
+          // Patient doesn't exist, prompt to create
+          setPendingPatientData(noteData);
+          setNewPatientDialogOpen(true);
+          setIsProcessing(false);
+          return;
+        }
+      }
+
       // Load patient history proactively
       if (noteData.patient_id || noteData.patient_name) {
         loadPatientHistory(noteData.patient_id, noteData.patient_name, historyFocus);
@@ -476,6 +492,153 @@ PAST PROCEDURES: ${history.past_procedures?.join(", ") || "None"}`;
     setStructuredNote(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleCreatePatient = async (patientData) => {
+    try {
+      await base44.entities.Patient.create({
+        patient_name: patientData.patient_name,
+        patient_id: patientData.patient_id,
+        date_of_birth: patientData.date_of_birth || null,
+        gender: patientData.gender || null,
+        contact_number: patientData.contact_number || null,
+        email: patientData.email || null,
+      });
+
+      // Continue with note processing
+      setRawData(pendingPatientData);
+      loadPatientHistory(
+        pendingPatientData.patient_id, 
+        pendingPatientData.patient_name, 
+        historyFocus
+      );
+      
+      // Continue processing the note
+      setIsProcessing(true);
+      processNoteData(pendingPatientData);
+    } catch (error) {
+      console.error("Failed to create patient:", error);
+      alert("Failed to create patient. Please try again.");
+    }
+  };
+
+  const processNoteData = async (noteData) => {
+    try {
+      const template = templates.find(t => t.id === noteData.templateId);
+      
+      let prompt = `You are a medical scribe AI. Given the following clinical note, extract and structure the information accurately.
+
+Patient: ${noteData.patient_name}
+Note Type: ${noteData.note_type}
+Specialty: ${noteData.specialty || "General"}
+Raw Note:
+${noteData.raw_note}`;
+
+      let schema = {
+        type: "object",
+        properties: {
+          chief_complaint: { type: "string" },
+          history_of_present_illness: { type: "string" },
+          medical_history: { type: "string" },
+          review_of_systems: { type: "string" },
+          physical_exam: { type: "string" },
+          assessment: { type: "string" },
+          plan: { type: "string" },
+          clinical_impression: { type: "string" },
+          diagnoses: { type: "array", items: { type: "string" } },
+          medications: { type: "array", items: { type: "string" } },
+        },
+      };
+
+      if (template && template.sections) {
+        const activeSections = template.sections
+          .filter(section => section.enabled !== false)
+          .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+        const applicableSections = activeSections.filter(section => {
+          if (!section.conditional_logic?.enabled) return true;
+          const { condition_type, condition_value } = section.conditional_logic;
+          if (condition_type === "note_type") {
+            return noteData.note_type === condition_value;
+          } else if (condition_type === "specialty") {
+            return noteData.specialty?.toLowerCase().includes(condition_value?.toLowerCase());
+          }
+          return true;
+        });
+
+        prompt += `\n\n=== FOLLOW THIS TEMPLATE STRUCTURE ===`;
+        prompt += `\nTemplate: ${template.name}`;
+        if (template.ai_instructions) {
+          prompt += `\n\nGlobal Instructions: ${template.ai_instructions}`;
+        }
+        prompt += `\n\n=== REQUIRED SECTIONS ===`;
+        prompt += `\nExtract information from the raw note above and populate each section below.`;
+        prompt += `\nFOLLOW THE SPECIFIC INSTRUCTIONS FOR EACH SECTION CAREFULLY:\n`;
+
+        applicableSections.forEach((section, idx) => {
+          prompt += `\n\n${idx + 1}. ${section.name}`;
+          if (section.description) {
+            prompt += `\n   Purpose: ${section.description}`;
+          }
+          if (section.ai_instructions) {
+            prompt += `\n   ⚡ SPECIFIC INSTRUCTIONS: ${section.ai_instructions}`;
+            prompt += `\n   → CRITICAL: Follow these instructions precisely when extracting data for this section.`;
+          } else {
+            prompt += `\n   → Extract all relevant content from the raw note for this section.`;
+          }
+        });
+
+        prompt += `\n\n=== IMPORTANT ===`;
+        prompt += `\nUse ONLY the information from the raw note provided above. Do not add external information.`;
+        prompt += `\nIf a section cannot be populated from the raw note, provide a brief note like "Not documented in this encounter."`;
+
+        const properties = {};
+        applicableSections.forEach(section => {
+          const sectionKey = section.name.toLowerCase().replace(/\s+/g, '_');
+          properties[sectionKey] = { type: "string" };
+        });
+        schema = { type: "object", properties };
+      }
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        response_json_schema: schema,
+      });
+
+      if (!result || Object.keys(result).length === 0) {
+        throw new Error("LLM returned empty result");
+      }
+
+      const mergedNote = { ...noteData, ...result };
+      if (patientHistory && (!result.medical_history || result.medical_history === "Not extracted")) {
+        mergedNote.medical_history = `CHRONIC CONDITIONS: ${patientHistory.chronic_conditions?.join(", ") || "None"}
+ALLERGIES: ${patientHistory.allergies?.join(", ") || "None"}  
+CURRENT MEDICATIONS: ${patientHistory.current_medications?.join(", ") || "None"}
+PAST PROCEDURES: ${patientHistory.past_procedures?.join(", ") || "None"}
+TRENDS: ${patientHistory.trends || "N/A"}`;
+      }
+
+      setStructuredNote(mergedNote);
+
+      if (noteData.templateId) {
+        await base44.entities.NoteTemplate.update(noteData.templateId, {
+          usage_count: (template?.usage_count || 0) + 1,
+          last_used: new Date().toISOString()
+        });
+      }
+
+      try {
+        fetchGuidelineRecommendations(result);
+        generateICD10Suggestions(result);
+      } catch (error) {
+        console.error("Failed to fetch additional data:", error);
+      }
+    } catch (error) {
+      console.error("Error processing note:", error);
+      alert("Failed to process note. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleReanalyze = async (field) => {
     const fieldPrompts = {
       chief_complaint: "Extract the chief complaint (main reason for visit) in 1-2 sentences",
@@ -591,6 +754,17 @@ ${JSON.stringify(structuredNote, null, 2)}`,
         medications={structuredNote?.medications || []}
         open={educationMaterialsOpen}
         onClose={() => setEducationMaterialsOpen(false)}
+      />
+
+      {/* New Patient Creation Dialog */}
+      <NewPatientDialog
+        open={newPatientDialogOpen}
+        onClose={() => {
+          setNewPatientDialogOpen(false);
+          setPendingPatientData(null);
+        }}
+        patientData={pendingPatientData}
+        onCreatePatient={handleCreatePatient}
       />
     </>
   );

@@ -2,12 +2,15 @@ import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Code, Check, X, Loader2 } from "lucide-react";
+import { Code, Check, X, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { motion } from "framer-motion";
 
-export default function ICD10Suggestions({ suggestions, loading, onAccept, onReject }) {
+export default function ICD10Suggestions({ suggestions, loading, onAccept, onReject, onApplyToNote }) {
   const [acceptedCodes, setAcceptedCodes] = useState([]);
   const [rejectedCodes, setRejectedCodes] = useState([]);
+  const [selectableMode, setSelectableMode] = useState(false);
+  const [selectedForApply, setSelectedForApply] = useState([]);
+  const [showApplyPanel, setShowApplyPanel] = useState(false);
 
   const handleAccept = (code) => {
     setAcceptedCodes([...acceptedCodes, code.code]);
@@ -17,6 +20,23 @@ export default function ICD10Suggestions({ suggestions, loading, onAccept, onRej
   const handleReject = (code) => {
     setRejectedCodes([...rejectedCodes, code.code]);
     if (onReject) onReject(code);
+  };
+
+  const toggleCodeSelection = (code) => {
+    if (selectedForApply.includes(code)) {
+      setSelectedForApply(selectedForApply.filter(c => c !== code));
+    } else {
+      setSelectedForApply([...selectedForApply, code]);
+    }
+  };
+
+  const handleApplySelected = () => {
+    if (onApplyToNote && selectedForApply.length > 0) {
+      const codesWithDetails = suggestions.filter(s => selectedForApply.includes(s.code));
+      onApplyToNote(codesWithDetails);
+      setSelectedForApply([]);
+      setShowApplyPanel(false);
+    }
   };
 
   const isAccepted = (code) => acceptedCodes.includes(code);

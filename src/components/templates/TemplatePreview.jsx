@@ -35,6 +35,7 @@ export default function TemplatePreview({ template, noteType, specialty }) {
           <Sparkles className="w-4 h-4 text-blue-600" />
           Template Preview
         </CardTitle>
+        <div className="sr-only">Preview of template {template.name} with {applicableSections.length} applicable sections</div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>

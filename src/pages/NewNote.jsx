@@ -377,7 +377,7 @@ TRENDS: ${patientHistory.trends || "N/A"}`;
     try {
       // Extract conditions from diagnoses
       const conditions = [];
-      if (noteData.diagnoses && noteData.diagnoses.length > 0) {
+      if (Array.isArray(noteData.diagnoses) && noteData.diagnoses.length > 0) {
         conditions.push(...noteData.diagnoses.slice(0, 3));
       }
 
@@ -446,7 +446,7 @@ Keep it actionable and concise (4-6 bullet points).`,
   const generateICD10Suggestions = async (noteData) => {
     setLoadingIcd10(true);
     try {
-      const diagnosesList = noteData.diagnoses?.join(", ") || "";
+      const diagnosesList = Array.isArray(noteData.diagnoses) ? noteData.diagnoses.join(", ") : "";
       const assessment = noteData.assessment || "";
 
       if (!diagnosesList && !assessment) {

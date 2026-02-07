@@ -31,29 +31,52 @@ export default function Guidelines() {
     }
 
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are a clinical evidence expert similar to OpenEvidence and UpToDate. Answer the following clinical question using the latest evidence-based guidelines and medical literature from authoritative sources.
+      prompt: `You are an advanced clinical evidence expert with real-time access to medical databases. Answer this clinical question using the most current, evidence-based guidelines and medical literature.
 
 Question: ${question}${contextSection}
 
-SOURCES TO PRIORITIZE:
-- OpenEvidence database (cite as "OpenEvidence - [Topic]")
-- ACC/AHA, ESC, ADA, IDSA, ATS, CHEST, NICE, WHO guidelines
-- UpToDate clinical decisions support
-- Cochrane systematic reviews
-- Major journal publications (NEJM, JAMA, Lancet, BMJ)
+CRITICAL INSTRUCTIONS FOR SEARCHING EXTERNAL DATABASES:
+1. **FIRST**, search OpenEvidence.com directly for this clinical question - it's a comprehensive medical evidence database with up-to-date guidelines
+2. Search PubMed/MEDLINE for recent meta-analyses and systematic reviews
+3. Access current practice guidelines from major medical societies
+4. Check UpToDate and DynaMed for clinical decision support
 
-Provide:
-1. A comprehensive, evidence-based answer with specific guideline recommendations
-2. Mention specific guidelines with years (e.g., "2022 ACC/AHA HF Guidelines")
-3. Include drug names, dosages, and class of recommendation/level of evidence
-4. If patient data is attached, tailor recommendations to their specific values
-5. Format with markdown headers for organization
-6. Note any recent updates or controversies
+REQUIRED SOURCE DATABASES (search ALL that are relevant):
+- OpenEvidence (https://www.openevidence.com) - PRIMARY SOURCE for evidence synthesis
+- PubMed Central / MEDLINE
+- Cochrane Library (systematic reviews)
+- Professional Society Guidelines:
+  * ACC/AHA (cardiology) - https://www.acc.org/guidelines
+  * ADA (diabetes) - https://diabetesjournals.org/care/issue
+  * IDSA (infectious disease) - https://www.idsociety.org/practice-guideline
+  * ATS/CHEST (pulmonary)
+  * ESC (European cardiology)
+  * NICE (UK guidelines) - https://www.nice.org.uk
+- UpToDate clinical topics
 
-Also classify:
-- Category (cardiology, pulmonology, endocrinology, infectious_disease, neurology, oncology, gastroenterology, nephrology, rheumatology, general)
-- Confidence level (high, moderate, low) based on strength of evidence
-- Sources: List the specific guidelines and studies referenced with URLs when possible`,
+OUTPUT REQUIREMENTS:
+1. **Answer**: Comprehensive, evidence-based response with specific recommendations
+2. **Drug/Treatment Details**: Include names, dosages, class of recommendation (I/IIa/IIb/III), level of evidence (A/B/C)
+3. **Recent Updates**: Note any 2024-2026 guideline updates or controversies
+4. **Format**: Use markdown headers for clear organization
+
+5. **Sources**: For EACH source, provide:
+   - Full citation with year
+   - Direct URL/DOI when available (especially OpenEvidence links)
+   - Specific section/page referenced
+   
+Example source format:
+"2024 ACC/AHA Heart Failure Guidelines (Class I, Level A) - https://www.acc.org/guidelines/hf-2024"
+"OpenEvidence: Management of Atrial Fibrillation - https://www.openevidence.com/topics/atrial-fibrillation"
+
+6. **Confidence Assessment**:
+   - High: Multiple concordant high-quality RCTs, current guidelines, strong evidence
+   - Moderate: Some RCT evidence, guidelines exist but evolving, moderate-quality evidence
+   - Low: Limited evidence, case series, expert opinion, conflicting studies
+
+7. **Category**: Assign appropriate medical specialty
+
+${attachedFiles.length > 0 ? "8. **Personalization**: Integrate patient-specific data from attached files into recommendations" : ""}`,
       add_context_from_internet: true,
       file_urls: attachedFiles.length > 0 ? attachedFiles.map(f => f.url) : undefined,
       response_json_schema: {
@@ -62,7 +85,13 @@ Also classify:
           answer: { type: "string" },
           category: { type: "string" },
           confidence_level: { type: "string" },
-          sources: { type: "array", items: { type: "string" } },
+          sources: { 
+            type: "array", 
+            items: { 
+              type: "string",
+              description: "Full citation with URL/DOI when available"
+            } 
+          },
         },
       },
     });
@@ -131,17 +160,46 @@ Generate 3 related clinical questions that would be valuable follow-ups or relat
     try {
       // Use AI to understand search intent and match queries
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Given this search query: "${term}"
+        prompt: `You are a medical AI with deep understanding of clinical terminology and relationships. Analyze this search query and match it to relevant past queries.
 
-And these past clinical guideline queries:
-${pastQueries.map((q, i) => `${i}. Question: "${q.question}"\n   Category: ${q.category}\n   Brief answer excerpt: ${q.answer.substring(0, 200)}...`).join("\n\n")}
+Search Query: "${term}"
 
-Identify which queries are semantically related to the search term, even if they use different words. Consider:
-- Medical synonyms (e.g., "MI" = "myocardial infarction" = "heart attack")
-- Related conditions (e.g., "diabetes" relates to "hyperglycemia", "HbA1c")
-- Treatment contexts (e.g., "anticoagulation" relates to "atrial fibrillation", "DVT")
+Past Clinical Guideline Queries:
+${pastQueries.map((q, i) => `${i}. "${q.question}"\n   Specialty: ${q.category}\n   Key concepts: ${q.answer.substring(0, 150)}...`).join("\n\n")}
 
-Return the indices (0-based) of relevant queries, ordered by relevance.`,
+ADVANCED SEMANTIC MATCHING - Consider ALL of these relationships:
+
+1. **Medical Synonyms & Abbreviations**:
+   - MI = myocardial infarction = heart attack = AMI
+   - DM = diabetes mellitus = diabetes = hyperglycemia
+   - HTN = hypertension = high blood pressure
+   - AF/AFib = atrial fibrillation
+   - CHF = congestive heart failure = heart failure
+   - COPD = chronic obstructive pulmonary disease = emphysema/chronic bronchitis
+   - CKD = chronic kidney disease = renal insufficiency
+   - PE = pulmonary embolism
+   - DVT = deep vein thrombosis
+
+2. **Related Clinical Conditions**:
+   - Diabetes ↔ HbA1c, insulin, metformin, glucose control
+   - Hypertension ↔ blood pressure, ACE inhibitors, antihypertensives
+   - Heart failure ↔ ejection fraction, diuretics, GDMT
+   - Atrial fibrillation ↔ anticoagulation, stroke prevention, rhythm control
+
+3. **Drug Classes & Specific Medications**:
+   - Anticoagulation ↔ warfarin, DOACs, rivaroxaban, apixaban
+   - Beta blockers ↔ metoprolol, carvedilol, atenolol
+   - Statins ↔ atorvastatin, rosuvastatin, cholesterol
+
+4. **Treatment Contexts**:
+   - Prevention, management, acute treatment, chronic management
+   - First-line, second-line therapy
+   - Risk stratification, screening
+
+5. **Anatomical/System Relationships**:
+   - Cardiac, cardiovascular, pulmonary, renal, endocrine
+
+Return indices of ALL semantically related queries, ranked by relevance (most relevant first).`,
         response_json_schema: {
           type: "object",
           properties: {

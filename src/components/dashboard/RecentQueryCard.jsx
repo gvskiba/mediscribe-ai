@@ -1,4 +1,6 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "../../utils";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, ArrowUpRight } from "lucide-react";
 
@@ -22,8 +24,16 @@ const categoryLabels = {
 };
 
 export default function RecentQueryCard({ query }) {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    navigate(createPageUrl(`GuidelineDetail?id=${query.id}`));
+  };
+
   return (
-    <div className="group flex items-start gap-4 p-4 rounded-xl hover:bg-slate-50 transition-colors duration-200 cursor-pointer">
+    <div 
+      onClick={handleClick}
+      className="group flex items-start gap-4 p-4 rounded-xl hover:bg-slate-50 transition-colors duration-200 cursor-pointer">
       <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0">
         <BookOpen className="w-4 h-4 text-purple-500" />
       </div>

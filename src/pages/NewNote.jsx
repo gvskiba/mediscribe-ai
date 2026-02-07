@@ -772,6 +772,13 @@ ${JSON.stringify(structuredNote, null, 2)}`,
                   diagnoses: [...(prev.diagnoses || []), newDiagnosis]
                 }));
               }}
+              onApplyToNote={(codes) => {
+                const newDiagnoses = codes.map(code => `${code.diagnosis} (${code.code})`);
+                setStructuredNote(prev => ({
+                  ...prev,
+                  diagnoses: [...(prev.diagnoses || []), ...newDiagnoses]
+                }));
+              }}
             />
 
             {/* Structured Note Preview */}

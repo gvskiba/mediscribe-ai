@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,8 @@ export default function NoteTemplates() {
   const [aiSuggestionsOpen, setAiSuggestionsOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [noteTypeFilter, setNoteTypeFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [versionComparisonOpen, setVersionComparisonOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -322,9 +324,19 @@ Return a JSON structure with:
     }
   };
 
-  const filteredTemplates = categoryFilter === "all" 
-    ? templates 
-    : templates.filter(t => t.category === categoryFilter);
+  const filteredTemplates = useMemo(() => {
+    return templates.filter(t => {
+      const matchesSearch = searchQuery.trim() === "" ||
+        t.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.specialty?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesCategory = categoryFilter === "all" || t.category === categoryFilter;
+      const matchesNoteType = noteTypeFilter === "all" || t.note_type === noteTypeFilter;
+      
+      return matchesSearch && matchesCategory && matchesNoteType;
+    });
+  }, [templates, searchQuery, categoryFilter, noteTypeFilter]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -347,9 +359,10 @@ Return a JSON structure with:
       {/* Enhanced Search and Filter */}
       <div className="mb-6">
         <TemplateSearch 
-          templates={templates}
           category={categoryFilter}
           onCategoryChange={setCategoryFilter}
+          onSearchChange={setSearchQuery}
+          onNoteTypeChange={setNoteTypeFilter}
         />
       </div>
 

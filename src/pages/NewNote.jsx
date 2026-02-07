@@ -330,13 +330,24 @@ Extract ALL information from the raw note and populate the following sections. B
       });
 
       console.log("AI Extraction Result:", result);
-      
+
       if (!result || Object.keys(result).length === 0) {
         throw new Error("LLM returned empty result - check browser console for prompt and schema");
       }
-      
-      // Merge patient history automatically when available
-      const mergedNote = { ...noteData, ...result };
+
+      // When using templates, ensure we always have standard fields
+      let mergedNote = { ...noteData, ...result };
+
+      // Ensure standard fields exist even if using template
+      if (!mergedNote.chief_complaint && template) {
+        mergedNote.chief_complaint = result.chief_complaint || (result[Object.keys(result)[0]] || "");
+      }
+      if (!mergedNote.diagnoses) {
+        mergedNote.diagnoses = Array.isArray(result.diagnoses) ? result.diagnoses : [];
+      }
+      if (!mergedNote.medications) {
+        mergedNote.medications = Array.isArray(result.medications) ? result.medications : [];
+      }
       
       // If patient history was loaded and medical_history is empty, auto-apply it
       if (patientHistory && (!result.medical_history || result.medical_history === "Not extracted")) {
@@ -660,7 +671,19 @@ ${noteData.raw_note}`;
         throw new Error("LLM returned empty result");
       }
 
-      const mergedNote = { ...noteData, ...result };
+      // When using templates, ensure we always have standard fields
+      let mergedNote = { ...noteData, ...result };
+
+      // Ensure standard fields exist even if using template
+      if (!mergedNote.chief_complaint && template) {
+        mergedNote.chief_complaint = result.chief_complaint || (result[Object.keys(result)[0]] || "");
+      }
+      if (!mergedNote.diagnoses) {
+        mergedNote.diagnoses = Array.isArray(result.diagnoses) ? result.diagnoses : [];
+      }
+      if (!mergedNote.medications) {
+        mergedNote.medications = Array.isArray(result.medications) ? result.medications : [];
+      }
       if (patientHistory && (!result.medical_history || result.medical_history === "Not extracted")) {
         mergedNote.medical_history = `CHRONIC CONDITIONS: ${patientHistory.chronic_conditions?.join(", ") || "None"}
 ALLERGIES: ${patientHistory.allergies?.join(", ") || "None"}  

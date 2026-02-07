@@ -5,10 +5,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Filter } from "lucide-react";
 
 export default function TemplateSearch({ 
-  templates = [], 
-  onTemplateSelect, 
   category = "all",
-  onCategoryChange 
+  onCategoryChange,
+  onSearchChange,
+  onNoteTypeChange
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [noteTypeFilter, setNoteTypeFilter] = useState("all");
@@ -27,29 +27,24 @@ export default function TemplateSearch({
     { value: "procedure_note", label: "Procedure Note" },
   ];
 
-  const filteredTemplates = useMemo(() => {
-    return templates.filter(t => {
-      const matchesSearch = searchQuery.trim() === "" ||
-        t.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.specialty?.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesCategory = category === "all" || t.category === category;
-      const matchesNoteType = noteTypeFilter === "all" || t.note_type === noteTypeFilter;
-      
-      return matchesSearch && matchesCategory && matchesNoteType;
-    });
-  }, [templates, searchQuery, category, noteTypeFilter]);
+  const handleSearchChange = (query) => {
+    setSearchQuery(query);
+    onSearchChange?.(query);
+  };
+
+  const handleNoteTypeChange = (type) => {
+    setNoteTypeFilter(type);
+    onNoteTypeChange?.(type);
+  };
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-col sm:flex-row">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
           <Input
             placeholder="Search templates by name, specialty..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-9 rounded-lg"
           />
         </div>
@@ -74,7 +69,7 @@ export default function TemplateSearch({
           </SelectContent>
         </Select>
 
-        <Select value={noteTypeFilter} onValueChange={setNoteTypeFilter}>
+        <Select value={noteTypeFilter} onValueChange={handleNoteTypeChange}>
           <SelectTrigger className="w-40">
             <SelectValue />
           </SelectTrigger>
@@ -86,42 +81,6 @@ export default function TemplateSearch({
             ))}
           </SelectContent>
         </Select>
-      </div>
-
-      {filteredTemplates.length === 0 && (
-        <div className="text-center py-8">
-          <p className="text-sm text-slate-500">No templates match your search</p>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 gap-2">
-        {filteredTemplates.map(template => (
-          <div
-            key={template.id}
-            onClick={() => onTemplateSelect?.(template)}
-            className="p-3 border border-slate-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-all"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="font-medium text-sm text-slate-900">{template.name}</p>
-                <p className="text-xs text-slate-500">{template.description}</p>
-              </div>
-              <Badge variant="outline" className="text-xs flex-shrink-0">
-                v{template.version}
-              </Badge>
-            </div>
-            <div className="flex gap-2 mt-2 flex-wrap">
-              {template.specialty && (
-                <Badge variant="outline" className="text-xs">{template.specialty}</Badge>
-              )}
-              {template.usage_count > 0 && (
-                <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700">
-                  {template.usage_count} uses
-                </Badge>
-              )}
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   );

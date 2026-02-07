@@ -6,6 +6,9 @@ import { createPageUrl } from "../utils";
 import NoteTranscriptionInput from "../components/notes/NoteTranscriptionInput";
 import StructuredNotePreview from "../components/notes/StructuredNotePreview";
 import SmartGuidelinePanel from "../components/guidelines/SmartGuidelinePanel";
+import PatientHistoryPanel from "../components/notes/PatientHistoryPanel";
+import ICD10Suggestions from "../components/notes/ICD10Suggestions";
+import PatientEducationMaterials from "../components/notes/PatientEducationMaterials";
 
 export default function NewNote() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -13,6 +16,11 @@ export default function NewNote() {
   const [rawData, setRawData] = useState(null);
   const [guidelineRecommendations, setGuidelineRecommendations] = useState([]);
   const [loadingGuidelines, setLoadingGuidelines] = useState(false);
+  const [patientHistory, setPatientHistory] = useState(null);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [icd10Suggestions, setIcd10Suggestions] = useState([]);
+  const [loadingIcd10, setLoadingIcd10] = useState(false);
+  const [educationMaterialsOpen, setEducationMaterialsOpen] = useState(false);
   const navigate = useNavigate();
 
   const { data: templates = [] } = useQuery({
@@ -20,9 +28,68 @@ export default function NewNote() {
     queryFn: () => base44.entities.NoteTemplate.list(),
   });
 
+  const loadPatientHistory = async (patientId, patientName) => {
+    if (!patientId && !patientName) return;
+    
+    setLoadingHistory(true);
+    try {
+      const allNotes = await base44.entities.ClinicalNote.list();
+      const patientNotes = allNotes.filter(note => 
+        (patientId && note.patient_id === patientId) || 
+        (patientName && note.patient_name?.toLowerCase() === patientName.toLowerCase())
+      ).sort((a, b) => new Date(b.date_of_visit) - new Date(a.date_of_visit));
+
+      if (patientNotes.length === 0) {
+        setLoadingHistory(false);
+        return;
+      }
+
+      const historyPrompt = `Analyze these previous clinical notes for patient ${patientName} and extract a comprehensive medical history summary.
+
+Previous Notes:
+${patientNotes.slice(0, 5).map(note => `
+Date: ${note.date_of_visit}
+Diagnoses: ${note.diagnoses?.join(", ") || "N/A"}
+Medications: ${note.medications?.join(", ") || "N/A"}
+Assessment: ${note.assessment || "N/A"}
+Plan: ${note.plan || "N/A"}
+`).join("\n---\n")}
+
+Extract and consolidate:
+1. chronic_conditions - Ongoing/chronic conditions (no acute/resolved conditions)
+2. allergies - Drug or other allergies mentioned
+3. current_medications - Active medications the patient is taking
+4. past_procedures - Surgical procedures or major interventions`;
+
+      const history = await base44.integrations.Core.InvokeLLM({
+        prompt: historyPrompt,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            chronic_conditions: { type: "array", items: { type: "string" } },
+            allergies: { type: "array", items: { type: "string" } },
+            current_medications: { type: "array", items: { type: "string" } },
+            past_procedures: { type: "array", items: { type: "string" } }
+          }
+        }
+      });
+
+      setPatientHistory({ ...history, notes_reviewed: patientNotes.length });
+    } catch (error) {
+      console.error("Failed to load patient history:", error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   const handleSubmit = async (noteData, templateId) => {
     setIsProcessing(true);
     setRawData(noteData);
+    
+    // Load patient history in parallel
+    if (noteData.patient_id || noteData.patient_name) {
+      loadPatientHistory(noteData.patient_id, noteData.patient_name);
+    }
 
     const template = templates.find(t => t.id === templateId);
     
@@ -104,8 +171,9 @@ ${noteData.raw_note}`;
     setStructuredNote({ ...noteData, ...result });
     setIsProcessing(false);
 
-    // Automatically fetch guideline recommendations
+    // Automatically fetch guideline recommendations and ICD-10 codes in parallel
     fetchGuidelineRecommendations(result);
+    generateICD10Suggestions(result);
   };
 
   const fetchGuidelineRecommendations = async (noteData) => {
@@ -144,6 +212,62 @@ ${noteData.raw_note}`;
     } finally {
       setLoadingGuidelines(false);
     }
+  };
+
+  const generateICD10Suggestions = async (noteData) => {
+    setLoadingIcd10(true);
+    try {
+      const diagnosesList = noteData.diagnoses?.join(", ") || "";
+      const assessment = noteData.assessment || "";
+
+      if (!diagnosesList && !assessment) {
+        setLoadingIcd10(false);
+        return;
+      }
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Suggest appropriate ICD-10 codes for the following clinical information:
+
+Diagnoses: ${diagnosesList}
+Assessment: ${assessment}
+
+For each diagnosis, provide the most specific ICD-10 code with its description. Return 3-6 relevant codes.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            suggestions: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  code: { type: "string" },
+                  description: { type: "string" },
+                  diagnosis: { type: "string" }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      setIcd10Suggestions(result.suggestions || []);
+    } catch (error) {
+      console.error("Failed to generate ICD-10 suggestions:", error);
+    } finally {
+      setLoadingIcd10(false);
+    }
+  };
+
+  const handleApplyHistory = (history) => {
+    const historyText = `CHRONIC CONDITIONS: ${history.chronic_conditions?.join(", ") || "None"}
+ALLERGIES: ${history.allergies?.join(", ") || "None"}  
+CURRENT MEDICATIONS: ${history.current_medications?.join(", ") || "None"}
+PAST PROCEDURES: ${history.past_procedures?.join(", ") || "None"}`;
+
+    setStructuredNote(prev => ({
+      ...prev,
+      medical_history: historyText
+    }));
   };
 
   const handleFinalize = async () => {
@@ -206,14 +330,38 @@ ${JSON.stringify(structuredNote, null, 2)}`,
             templates={templates}
           />
         ) : (
-          <StructuredNotePreview
-            note={structuredNote}
-            onFinalize={handleFinalize}
-            onUpdate={handleUpdate}
-            onReanalyze={handleReanalyze}
-            guidelineRecommendations={guidelineRecommendations}
-            loadingGuidelines={loadingGuidelines}
-          />
+          <>
+            {/* Patient History Panel */}
+            <PatientHistoryPanel 
+              history={patientHistory}
+              loading={loadingHistory}
+              onApplyToNote={handleApplyHistory}
+            />
+
+            {/* ICD-10 Code Suggestions */}
+            <ICD10Suggestions
+              suggestions={icd10Suggestions}
+              loading={loadingIcd10}
+              onAccept={(code) => {
+                const newDiagnosis = `${code.diagnosis} (${code.code})`;
+                setStructuredNote(prev => ({
+                  ...prev,
+                  diagnoses: [...(prev.diagnoses || []), newDiagnosis]
+                }));
+              }}
+            />
+
+            {/* Structured Note Preview */}
+            <StructuredNotePreview
+              note={structuredNote}
+              onFinalize={handleFinalize}
+              onUpdate={handleUpdate}
+              onReanalyze={handleReanalyze}
+              guidelineRecommendations={guidelineRecommendations}
+              loadingGuidelines={loadingGuidelines}
+              onGenerateEducationMaterials={() => setEducationMaterialsOpen(true)}
+            />
+          </>
         )}
       </div>
 
@@ -225,6 +373,15 @@ ${JSON.stringify(structuredNote, null, 2)}`,
           medications={structuredNote.medications || []}
         />
       )}
+
+      {/* Patient Education Materials */}
+      <PatientEducationMaterials
+        diagnoses={structuredNote?.diagnoses || []}
+        plan={structuredNote?.plan || ""}
+        medications={structuredNote?.medications || []}
+        open={educationMaterialsOpen}
+        onClose={() => setEducationMaterialsOpen(false)}
+      />
     </>
   );
 }

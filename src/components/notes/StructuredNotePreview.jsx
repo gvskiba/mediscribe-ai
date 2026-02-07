@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, Pill, Stethoscope, ClipboardList, Target, Lightbulb, X, Loader2, ChevronDown, ChevronUp, FileText, Activity } from "lucide-react";
+import { Check, Pill, Stethoscope, ClipboardList, Target, Lightbulb, X, Loader2, ChevronDown, ChevronUp, FileText, Activity, BookOpen } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import EditableSection from "./EditableSection";
 
-export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpdate, onReanalyze, guidelineRecommendations = [], loadingGuidelines = false }) {
+export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpdate, onReanalyze, guidelineRecommendations = [], loadingGuidelines = false, onGenerateEducationMaterials }) {
   const [showGuidelines, setShowGuidelines] = useState(true);
   const [expandedGuideline, setExpandedGuideline] = useState(null);
   return (
@@ -20,6 +20,15 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpda
           <p className="text-sm text-slate-500 mt-1">Review and finalize the structured note.</p>
         </div>
         <div className="flex gap-2">
+          {onGenerateEducationMaterials && (
+            <Button 
+              variant="outline"
+              onClick={onGenerateEducationMaterials} 
+              className="rounded-xl gap-2 text-emerald-600 border-emerald-300 hover:bg-emerald-50"
+            >
+              <BookOpen className="w-4 h-4" /> Patient Education
+            </Button>
+          )}
           {onFinalize && (
             <Button onClick={onFinalize} className="bg-emerald-600 hover:bg-emerald-700 rounded-xl gap-2">
               <Check className="w-4 h-4" /> Finalize

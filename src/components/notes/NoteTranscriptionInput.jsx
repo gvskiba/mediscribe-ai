@@ -21,6 +21,8 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
   const [patientName, setPatientName] = useState("");
   const [patientId, setPatientId] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
+  const [dateOfVisit, setDateOfVisit] = useState(new Date().toISOString().split("T")[0]);
+  const [timeOfVisit, setTimeOfVisit] = useState("");
   const [noteType, setNoteType] = useState("progress_note");
   const [specialty, setSpecialty] = useState("");
   const [rawNote, setRawNote] = useState("");
@@ -108,7 +110,8 @@ If information is not found, return null for that field. Be conservative - only 
       note_type: noteType,
       specialty,
       raw_note: rawNote,
-      date_of_visit: new Date().toISOString().split("T")[0],
+      date_of_visit: dateOfVisit,
+      time_of_visit: timeOfVisit,
     }, selectedTemplate);
   };
 
@@ -148,13 +151,35 @@ If information is not found, return null for that field. Be conservative - only 
           </div>
         </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label className="text-slate-700 font-medium">Date of Birth</Label>
+            <Input
+              type="date"
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
+              placeholder="Optional"
+              className="rounded-xl border-slate-200 focus:border-blue-400 focus:ring-blue-400/20"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-slate-700 font-medium">Visit Time</Label>
+            <Input
+              type="time"
+              value={timeOfVisit}
+              onChange={(e) => setTimeOfVisit(e.target.value)}
+              placeholder="Optional"
+              className="rounded-xl border-slate-200 focus:border-blue-400 focus:ring-blue-400/20"
+            />
+          </div>
+        </div>
+
         <div className="space-y-2">
-          <Label className="text-slate-700 font-medium">Date of Birth</Label>
+          <Label className="text-slate-700 font-medium">Visit Date</Label>
           <Input
             type="date"
-            value={dateOfBirth}
-            onChange={(e) => setDateOfBirth(e.target.value)}
-            placeholder="Optional"
+            value={dateOfVisit}
+            onChange={(e) => setDateOfVisit(e.target.value)}
             className="rounded-xl border-slate-200 focus:border-blue-400 focus:ring-blue-400/20"
           />
         </div>

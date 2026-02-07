@@ -1,8 +1,11 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Shield, Tag } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { BookOpen, Shield, Tag, Sparkles, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { base44 } from "@/api/base44Client";
 import RatingComponent from "./RatingComponent";
 import RelatedQuestions from "./RelatedQuestions";
 
@@ -26,6 +29,38 @@ const categoryLabels = {
 };
 
 export default function GuidelineAnswer({ query, onRate, onSelectRelatedQuestion }) {
+  const [sourceSummary, setSourceSummary] = useState(null);
+  const [loadingSummary, setLoadingSummary] = useState(false);
+  const [expandedSummary, setExpandedSummary] = useState(false);
+
+  const generateSourceSummary = async () => {
+    if (!query.sources?.length) return;
+    
+    setLoadingSummary(true);
+    try {
+      const sourcesText = query.sources.join("\n");
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Provide a concise, clinically relevant summary of these evidence sources. Highlight:
+1. Key findings that directly support the guideline
+2. Level of evidence (if available)
+3. Important limitations or considerations
+4. Clinical implications
+
+Sources:
+${sourcesText}
+
+Keep the summary to 2-3 sentences maximum.`,
+      });
+
+      setSourceSummary(result);
+      setExpandedSummary(true);
+    } catch (error) {
+      console.error("Error generating summary:", error);
+    } finally {
+      setLoadingSummary(false);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -71,14 +106,50 @@ export default function GuidelineAnswer({ query, onRate, onSelectRelatedQuestion
 
       {/* Sources */}
       {query.sources?.length > 0 && (
-        <div className="px-6 pb-4 pt-2 border-t border-slate-100">
-          <div className="flex items-center gap-2 mb-3">
-            <BookOpen className="w-4 h-4 text-slate-400" />
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Evidence Sources</p>
+        <div className="px-6 pb-4 pt-2 border-t border-slate-100 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-slate-400" />
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Evidence Sources</p>
+              <Badge variant="outline" className="text-xs">{query.sources.length}</Badge>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={generateSourceSummary}
+              disabled={loadingSummary || sourceSummary}
+              className="gap-1 text-xs h-8"
+            >
+              {loadingSummary ? (
+                <><Loader2 className="w-3 h-3 animate-spin" /> Summarizing...</>
+              ) : sourceSummary ? (
+                <>{expandedSummary ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />} Summary</>
+              ) : (
+                <><Sparkles className="w-3 h-3" /> AI Summary</>
+              )}
+            </Button>
           </div>
+
+          {/* AI Summary */}
+          {sourceSummary && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className={`bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200 p-3 space-y-2 ${
+                !expandedSummary ? "hidden" : ""
+              }`}
+            >
+              <div className="flex items-start gap-2">
+                <Sparkles className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-slate-700 leading-relaxed">{sourceSummary}</p>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Sources List */}
           <div className="space-y-2">
             {query.sources.map((source, i) => {
-              // Extract URL if present in source text
               const urlMatch = source.match(/(https?:\/\/[^\s)]+)/);
               const url = urlMatch ? urlMatch[1] : null;
               const textWithoutUrl = url ? source.replace(url, '').trim() : source;

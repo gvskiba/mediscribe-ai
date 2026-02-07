@@ -57,11 +57,58 @@ export default function ICD10Suggestions({ suggestions, loading, onAccept, onRej
 
   return (
     <Card className="p-4 border-purple-200 bg-purple-50/50">
-      <div className="flex items-center gap-2 mb-3">
-        <Code className="w-5 h-5 text-purple-600" />
-        <h3 className="font-semibold text-slate-900">Suggested ICD-10 Codes</h3>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Code className="w-5 h-5 text-purple-600" />
+          <h3 className="font-semibold text-slate-900">Suggested ICD-10 Codes</h3>
+        </div>
+        {suggestions.length > 0 && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowApplyPanel(!showApplyPanel)}
+            className="text-xs gap-1"
+          >
+            {showApplyPanel ? (
+              <><ChevronUp className="w-3 h-3" /> Hide</>
+            ) : (
+              <><ChevronDown className="w-3 h-3" /> Bulk Apply</>
+            )}
+          </Button>
+        )}
       </div>
       <p className="text-xs text-slate-500 mb-4">AI-generated code suggestions based on diagnoses and assessment</p>
+
+      {showApplyPanel && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4"
+        >
+          <div className="text-sm font-medium text-blue-900 mb-2">Select codes to add to diagnoses:</div>
+          <div className="space-y-2 mb-3">
+            {suggestions.map((suggestion) => (
+              <label key={suggestion.code} className="flex items-center gap-2 cursor-pointer hover:bg-blue-100 p-2 rounded">
+                <input
+                  type="checkbox"
+                  checked={selectedForApply.includes(suggestion.code)}
+                  onChange={() => toggleCodeSelection(suggestion.code)}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm text-slate-700">{suggestion.code} - {suggestion.description}</span>
+              </label>
+            ))}
+          </div>
+          <Button
+            size="sm"
+            onClick={handleApplySelected}
+            disabled={selectedForApply.length === 0}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            Apply {selectedForApply.length > 0 && `(${selectedForApply.length})`} Selected Codes
+          </Button>
+        </motion.div>
+      )}
 
       <div className="space-y-2">
         {suggestions.map((suggestion, idx) => {

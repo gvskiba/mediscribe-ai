@@ -425,6 +425,9 @@ Extract ALL information from the raw note and populate the following sections. B
 
       // When using templates, ensure we always have standard fields
       let mergedNote = { ...noteData, ...result };
+      
+      // Store confidence scores
+      mergedNote.confidence_scores = confidenceScores;
 
       // Ensure standard fields exist even if using template
       if (!mergedNote.chief_complaint && template) {

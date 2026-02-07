@@ -3,6 +3,8 @@ import ReactMarkdown from "react-markdown";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, Shield, Tag } from "lucide-react";
 import { motion } from "framer-motion";
+import RatingComponent from "./RatingComponent";
+import RelatedQuestions from "./RelatedQuestions";
 
 const confidenceColors = {
   high: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -23,7 +25,7 @@ const categoryLabels = {
   general: "General Medicine",
 };
 
-export default function GuidelineAnswer({ query }) {
+export default function GuidelineAnswer({ query, onRate, onSelectRelatedQuestion }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -69,7 +71,7 @@ export default function GuidelineAnswer({ query }) {
 
       {/* Sources */}
       {query.sources?.length > 0 && (
-        <div className="px-6 pb-6 pt-2 border-t border-slate-100">
+        <div className="px-6 pb-4 pt-2 border-t border-slate-100">
           <div className="flex items-center gap-2 mb-3">
             <BookOpen className="w-4 h-4 text-slate-400" />
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">References</p>
@@ -84,6 +86,27 @@ export default function GuidelineAnswer({ query }) {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Rating */}
+      {onRate && (
+        <div className="px-6 pb-4 border-t border-slate-100 pt-4">
+          <RatingComponent 
+            queryId={query.id} 
+            initialRating={query.rating} 
+            onRate={onRate}
+          />
+        </div>
+      )}
+
+      {/* Related Questions */}
+      {query.related_questions && query.related_questions.length > 0 && onSelectRelatedQuestion && (
+        <div className="px-6 pb-4">
+          <RelatedQuestions 
+            questions={query.related_questions}
+            onSelectQuestion={onSelectRelatedQuestion}
+          />
         </div>
       )}
     </motion.div>

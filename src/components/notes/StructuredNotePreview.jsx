@@ -1,14 +1,83 @@
 import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, Pill, Stethoscope, ClipboardList, Target, Lightbulb, X, Loader2, ChevronDown, ChevronUp, FileText, Activity, BookOpen, Sparkles, Link, CheckCircle2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Check, Pill, Stethoscope, ClipboardList, Target, Lightbulb, X, Loader2, ChevronDown, ChevronUp, FileText, Activity, BookOpen, Sparkles, Link, CheckCircle2, Copy, Eye } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import EditableSection from "./EditableSection";
 
 export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpdate, onReanalyze, guidelineRecommendations = [], loadingGuidelines = false, onGenerateEducationMaterials }) {
   const [showGuidelines, setShowGuidelines] = useState(true);
   const [expandedGuideline, setExpandedGuideline] = useState(null);
   const [linkedGuidelines, setLinkedGuidelines] = useState(note.linked_guidelines || []);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  const generateFormattedNote = () => {
+    let formatted = `CLINICAL NOTE\n${"=".repeat(60)}\n\n`;
+    
+    if (note.patient_name) formatted += `Patient: ${note.patient_name}\n`;
+    if (note.patient_id) formatted += `MRN: ${note.patient_id}\n`;
+    if (note.date_of_visit) formatted += `Date of Visit: ${note.date_of_visit}\n`;
+    if (note.note_type) formatted += `Note Type: ${note.note_type.replace(/_/g, " ").toUpperCase()}\n`;
+    formatted += `\n${"=".repeat(60)}\n\n`;
+    
+    if (note.chief_complaint) {
+      formatted += `CHIEF COMPLAINT:\n${note.chief_complaint}\n\n`;
+    }
+    
+    if (note.clinical_impression) {
+      formatted += `CLINICAL IMPRESSION:\n${note.clinical_impression}\n\n`;
+    }
+    
+    if (note.history_of_present_illness) {
+      formatted += `HISTORY OF PRESENT ILLNESS:\n${note.history_of_present_illness}\n\n`;
+    }
+    
+    if (note.medical_history) {
+      formatted += `MEDICAL HISTORY:\n${note.medical_history}\n\n`;
+    }
+    
+    if (note.review_of_systems) {
+      formatted += `REVIEW OF SYSTEMS:\n${note.review_of_systems}\n\n`;
+    }
+    
+    if (note.physical_exam) {
+      formatted += `PHYSICAL EXAMINATION:\n${note.physical_exam}\n\n`;
+    }
+    
+    if (note.assessment) {
+      formatted += `ASSESSMENT:\n${note.assessment}\n\n`;
+    }
+    
+    if (note.diagnoses && note.diagnoses.length > 0) {
+      formatted += `DIAGNOSES:\n`;
+      note.diagnoses.forEach((dx, i) => {
+        formatted += `${i + 1}. ${dx}\n`;
+      });
+      formatted += `\n`;
+    }
+    
+    if (note.plan) {
+      formatted += `PLAN:\n${note.plan}\n\n`;
+    }
+    
+    if (note.medications && note.medications.length > 0) {
+      formatted += `MEDICATIONS:\n`;
+      note.medications.forEach((med, i) => {
+        formatted += `${i + 1}. ${med}\n`;
+      });
+      formatted += `\n`;
+    }
+    
+    return formatted;
+  };
+
+  const handleCopyNote = () => {
+    const formatted = generateFormattedNote();
+    navigator.clipboard.writeText(formatted);
+    toast.success("Note copied to clipboard");
+  };
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -21,6 +90,13 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpda
           <p className="text-sm text-slate-500 mt-1">Review and finalize the structured note.</p>
         </div>
         <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={() => setPreviewOpen(true)}
+            className="rounded-xl gap-2"
+          >
+            <Eye className="w-4 h-4" /> Preview & Copy
+          </Button>
           {onGenerateEducationMaterials && (
             <Button 
               variant="outline"
@@ -316,6 +392,28 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpda
           onReanalyze={onReanalyze}
         />
       </div>
+
+      {/* Preview & Copy Dialog */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-blue-600" />
+                Note Preview
+              </span>
+              <Button onClick={handleCopyNote} className="gap-2">
+                <Copy className="w-4 h-4" /> Copy to Clipboard
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto">
+            <pre className="text-sm bg-slate-50 p-6 rounded-lg border border-slate-200 font-mono whitespace-pre-wrap leading-relaxed">
+              {generateFormattedNote()}
+            </pre>
+          </div>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

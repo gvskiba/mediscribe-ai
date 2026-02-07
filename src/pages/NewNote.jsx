@@ -296,10 +296,22 @@ Extract ALL information from the raw note and populate the following sections. B
       console.log("AI Extraction Result:", result);
       
       if (!result || Object.keys(result).length === 0) {
-        throw new Error("LLM returned empty result");
+        throw new Error("LLM returned empty result - check browser console for prompt and schema");
       }
       
-      setStructuredNote({ ...noteData, ...result });
+      // Merge patient history automatically when available
+      const mergedNote = { ...noteData, ...result };
+      
+      // If patient history was loaded and medical_history is empty, auto-apply it
+      if (patientHistory && (!result.medical_history || result.medical_history === "Not extracted")) {
+        mergedNote.medical_history = `CHRONIC CONDITIONS: ${patientHistory.chronic_conditions?.join(", ") || "None"}
+ALLERGIES: ${patientHistory.allergies?.join(", ") || "None"}  
+CURRENT MEDICATIONS: ${patientHistory.current_medications?.join(", ") || "None"}
+PAST PROCEDURES: ${patientHistory.past_procedures?.join(", ") || "None"}
+TRENDS: ${patientHistory.trends || "N/A"}`;
+      }
+      
+      setStructuredNote(mergedNote);
 
       // Update template usage count and last_used
       if (templateId) {

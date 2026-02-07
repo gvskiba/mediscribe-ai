@@ -20,6 +20,7 @@ import { motion } from "framer-motion";
 import StructuredNotePreview from "../components/notes/StructuredNotePreview";
 import PatientSummary from "../components/notes/PatientSummary";
 import SmartGuidelinePanel from "../components/guidelines/SmartGuidelinePanel";
+import CreateTemplateFromNote from "../components/templates/CreateTemplateFromNote";
 
 const statusColors = {
   draft: "bg-amber-50 text-amber-700 border-amber-200",
@@ -41,6 +42,7 @@ export default function NoteDetail() {
   const queryClient = useQueryClient();
   const [patientSummary, setPatientSummary] = useState(null);
   const [generatingSummary, setGeneratingSummary] = useState(false);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
 
   const { data: note, isLoading } = useQuery({
     queryKey: ["note", noteId],
@@ -198,6 +200,13 @@ Generated: ${new Date().toLocaleString()}
             </div>
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setTemplateDialogOpen(true)}
+              className="rounded-xl gap-2"
+            >
+              <Sparkles className="w-4 h-4" /> Save as Template
+            </Button>
             {note.status === "finalized" && patientSummary && (
               <Button
                 variant="outline"
@@ -267,6 +276,14 @@ Generated: ${new Date().toLocaleString()}
         noteContent={note.raw_note}
         diagnoses={note.diagnoses || []}
         medications={note.medications || []}
+      />
+
+      {/* Create Template Dialog */}
+      <CreateTemplateFromNote
+        open={templateDialogOpen}
+        onClose={() => setTemplateDialogOpen(false)}
+        note={note}
+        onSuccess={() => setTemplateDialogOpen(false)}
       />
     </>
   );

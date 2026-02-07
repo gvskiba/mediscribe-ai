@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -10,18 +10,15 @@ import {
   ArrowLeft,
   FileText,
   Calendar,
-  User,
   Hash,
-  Target,
-  Stethoscope,
-  ClipboardList,
-  Pill,
-  Check,
-  Pencil
+  Sparkles,
+  Loader2,
+  Check
 } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import StructuredNotePreview from "../components/notes/StructuredNotePreview";
+import PatientSummary from "../components/notes/PatientSummary";
 
 const statusColors = {
   draft: "bg-amber-50 text-amber-700 border-amber-200",
@@ -41,6 +38,8 @@ export default function NoteDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const noteId = urlParams.get("id");
   const queryClient = useQueryClient();
+  const [patientSummary, setPatientSummary] = useState(null);
+  const [generatingSummary, setGeneratingSummary] = useState(false);
 
   const { data: note, isLoading } = useQuery({
     queryKey: ["note", noteId],
@@ -54,6 +53,80 @@ export default function NoteDetail() {
     mutationFn: () => base44.entities.ClinicalNote.update(noteId, { status: "finalized" }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["note", noteId] }),
   });
+
+  const generateSummary = async () => {
+    setGeneratingSummary(true);
+    
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Generate a concise patient summary from this clinical note. Focus on actionable information for continuity of care.
+
+Patient: ${note.patient_name}
+Date: ${note.date_of_visit}
+
+Chief Complaint: ${note.chief_complaint || "N/A"}
+Assessment: ${note.assessment || "N/A"}
+Plan: ${note.plan || "N/A"}
+Diagnoses: ${note.diagnoses?.join(", ") || "N/A"}
+Medications: ${note.medications?.join(", ") || "N/A"}
+
+Provide:
+1. Overview - 2-3 sentence summary of visit
+2. Key Diagnoses - List of primary diagnoses
+3. Current Medications - All medications with dosages
+4. Follow-up Plans - Next steps, appointments, tests ordered
+5. Critical Alerts - Any urgent items requiring attention (empty array if none)`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          overview: { type: "string" },
+          key_diagnoses: { type: "array", items: { type: "string" } },
+          current_medications: { type: "array", items: { type: "string" } },
+          follow_up_plans: { type: "array", items: { type: "string" } },
+          critical_alerts: { type: "array", items: { type: "string" } },
+        },
+      },
+    });
+
+    setPatientSummary(result);
+    setGeneratingSummary(false);
+  };
+
+  const downloadSummary = () => {
+    if (!patientSummary) return;
+
+    const content = `
+PATIENT SUMMARY
+Patient: ${note.patient_name}
+Date: ${note.date_of_visit ? format(new Date(note.date_of_visit), "MMMM d, yyyy") : "N/A"}
+${note.patient_id ? `MRN: ${note.patient_id}` : ""}
+
+OVERVIEW
+${patientSummary.overview}
+
+KEY DIAGNOSES
+${patientSummary.key_diagnoses?.map(d => `• ${d}`).join("\n") || "None"}
+
+CURRENT MEDICATIONS
+${patientSummary.current_medications?.map(m => `• ${m}`).join("\n") || "None"}
+
+FOLLOW-UP PLANS
+${patientSummary.follow_up_plans?.map(p => `• ${p}`).join("\n") || "None"}
+
+${patientSummary.critical_alerts && patientSummary.critical_alerts.length > 0 ? `CRITICAL ALERTS\n${patientSummary.critical_alerts.map(a => `⚠️ ${a}`).join("\n")}` : ""}
+
+Generated: ${new Date().toLocaleString()}
+    `.trim();
+
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${note.patient_name}_Summary_${new Date().toISOString().split("T")[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(url);
+    a.remove();
+  };
 
   if (isLoading) {
     return (
@@ -110,20 +183,45 @@ export default function NoteDetail() {
                 <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> {format(new Date(note.date_of_visit), "MMMM d, yyyy")}</span>
               )}
               {note.specialty && (
-                <span className="flex items-center gap-1.5"><Stethoscope className="w-3.5 h-3.5" /> {note.specialty}</span>
+                <span className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> {note.specialty}</span>
               )}
             </div>
           </div>
-          {note.status === "draft" && (
-            <Button
-              onClick={() => finalizeMutation.mutate()}
-              className="bg-emerald-600 hover:bg-emerald-700 rounded-xl gap-2"
-            >
-              <Check className="w-4 h-4" /> Finalize
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {note.status === "finalized" && (
+              <Button
+                variant="outline"
+                onClick={generateSummary}
+                disabled={generatingSummary}
+                className="rounded-xl gap-2"
+              >
+                {generatingSummary ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
+                ) : (
+                  <><Sparkles className="w-4 h-4" /> Generate Summary</>
+                )}
+              </Button>
+            )}
+            {note.status === "draft" && (
+              <Button
+                onClick={() => finalizeMutation.mutate()}
+                className="bg-emerald-600 hover:bg-emerald-700 rounded-xl gap-2"
+              >
+                <Check className="w-4 h-4" /> Finalize
+              </Button>
+            )}
+          </div>
         </div>
       </motion.div>
+
+      {/* Patient Summary */}
+      {patientSummary && (
+        <PatientSummary 
+          summary={patientSummary} 
+          patientName={note.patient_name}
+          onDownload={downloadSummary}
+        />
+      )}
 
       {/* Structured Note */}
       <StructuredNotePreview note={note} />

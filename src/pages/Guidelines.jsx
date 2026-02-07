@@ -6,12 +6,14 @@ import { createPageUrl } from "../utils";
 import GuidelineSearchBar from "../components/guidelines/GuidelineSearchBar";
 import GuidelineAnswer from "../components/guidelines/GuidelineAnswer";
 import RecentQueryCard from "../components/dashboard/RecentQueryCard";
+import CompareGuidelines from "../components/guidelines/CompareGuidelines";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BookOpen, Search, Loader2, Sparkles, Filter } from "lucide-react";
+import { BookOpen, Search, Loader2, Sparkles, Filter, ArrowLeftRight } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Guidelines() {
   const [isLoading, setIsLoading] = useState(false);
@@ -22,6 +24,10 @@ export default function Guidelines() {
   const [filterDateRange, setFilterDateRange] = useState("all");
   const [viewMode, setViewMode] = useState("search");
   const [relatedGuidelines, setRelatedGuidelines] = useState([]);
+  const [selectedForCompare, setSelectedForCompare] = useState([]);
+  const [showCompare, setShowCompare] = useState(false);
+  const [comparison, setComparison] = useState(null);
+  const [comparing, setComparing] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: pastQueries = [], isLoading: queriesLoading } = useQuery({
@@ -197,6 +203,91 @@ Format each as a concise clinical question (similar to the original).`,
     handleSubmit(question);
   };
 
+  const toggleSelectForCompare = (query) => {
+    setSelectedForCompare(prev => {
+      const exists = prev.find(q => q.id === query.id);
+      if (exists) {
+        return prev.filter(q => q.id !== query.id);
+      } else {
+        return [...prev, query];
+      }
+    });
+  };
+
+  const handleCompareGuidelines = async () => {
+    if (selectedForCompare.length < 2) return;
+    
+    setComparing(true);
+    setShowCompare(true);
+    setComparison(null);
+
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a clinical evidence expert. Compare these clinical guidelines and provide a comprehensive analysis.
+
+GUIDELINES TO COMPARE:
+${selectedForCompare.map((g, i) => `
+GUIDELINE ${i + 1}:
+Question: ${g.question}
+Category: ${g.category}
+Confidence Level: ${g.confidence_level}
+Answer: ${g.answer}
+Sources: ${g.sources?.join('; ') || 'None'}
+`).join('\n---\n')}
+
+COMPREHENSIVE COMPARISON REQUIREMENTS:
+
+1. **Executive Summary**
+   - Brief overview of what each guideline addresses
+   - Key commonalities and differences at a glance
+
+2. **Recommendations Comparison**
+   - Create a detailed table or structured comparison of specific clinical recommendations
+   - Highlight where guidelines agree vs. disagree
+   - Note any conflicting advice and explain why differences may exist
+
+3. **Evidence Quality & Confidence Levels**
+   - Compare the strength of evidence cited by each guideline
+   - Discuss confidence levels and what they mean clinically
+   - Note recency of guidelines and any updates
+
+4. **Target Populations**
+   - Compare patient populations each guideline applies to
+   - Note any specific inclusion/exclusion criteria
+   - Highlight population differences that affect applicability
+
+5. **Drug/Treatment Specifics**
+   - Compare recommended medications, dosages, and treatment protocols
+   - Note class of recommendations (I/IIa/IIb) if available
+   - Highlight first-line vs. alternative therapies
+
+6. **Practical Clinical Implications**
+   - Which guideline to use in specific clinical scenarios
+   - How to reconcile conflicting recommendations
+   - Key decision points for clinicians
+
+7. **Sources & Credibility**
+   - Compare the authoritative bodies behind each guideline
+   - Note publication dates and whether guidelines are current
+   - Discuss evidence base quality
+
+8. **Clinical Decision Framework**
+   - Provide a decision tree or framework for choosing between guidelines
+   - Consider patient factors, comorbidities, and clinical context
+
+Use markdown formatting with clear headers, tables where appropriate, and bullet points for readability. Be specific and clinically actionable.`,
+        add_context_from_internet: false,
+      });
+
+      setComparison(result);
+    } catch (error) {
+      console.error("Comparison failed:", error);
+      setComparison("Error generating comparison. Please try again.");
+    }
+    
+    setComparing(false);
+  };
+
   // Enhanced semantic search
   const [semanticSearching, setSemanticSearching] = useState(false);
   const [semanticResults, setSemanticResults] = useState(null);
@@ -336,6 +427,48 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
           </Button>
         </div>
       </div>
+
+      {/* Compare Guidelines Bar */}
+      {selectedForCompare.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-purple-50 border border-purple-200 rounded-2xl p-4 flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+              <ArrowLeftRight className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-purple-900">
+                {selectedForCompare.length} guideline{selectedForCompare.length !== 1 ? 's' : ''} selected for comparison
+              </p>
+              <p className="text-xs text-purple-600">
+                {selectedForCompare.length < 2 
+                  ? "Select at least 2 guidelines to compare" 
+                  : "Ready to compare"}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setSelectedForCompare([])}
+              className="rounded-xl"
+            >
+              Clear
+            </Button>
+            <Button
+              onClick={handleCompareGuidelines}
+              disabled={selectedForCompare.length < 2}
+              className="bg-purple-600 hover:bg-purple-700 rounded-xl"
+            >
+              <ArrowLeftRight className="w-4 h-4 mr-2" />
+              Compare Guidelines
+            </Button>
+          </div>
+        </motion.div>
+      )}
 
       {viewMode === "search" && (
         <GuidelineSearchBar onSubmit={handleSubmit} isLoading={isLoading} />
@@ -528,17 +661,38 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
           ) : (
             <div className="space-y-3">
               {filteredQueries.map((query) => (
-                <Link
-                  key={query.id}
-                  to={createPageUrl("GuidelineDetail") + `?id=${query.id}`}
-                  className="block"
-                >
-                  <RecentQueryCard query={query} />
-                </Link>
+                <div key={query.id} className="flex items-start gap-3 group">
+                  <div className="pt-6">
+                    <Checkbox
+                      checked={selectedForCompare.some(q => q.id === query.id)}
+                      onCheckedChange={() => toggleSelectForCompare(query)}
+                      className="rounded-md"
+                    />
+                  </div>
+                  <Link
+                    to={createPageUrl("GuidelineDetail") + `?id=${query.id}`}
+                    className="block flex-1"
+                  >
+                    <RecentQueryCard query={query} />
+                  </Link>
+                </div>
               ))}
             </div>
           )}
         </div>
+      )}
+
+      {/* Compare Dialog */}
+      {showCompare && (
+        <CompareGuidelines
+          selectedGuidelines={selectedForCompare}
+          onClose={() => {
+            setShowCompare(false);
+            setComparison(null);
+          }}
+          comparison={comparison}
+          isLoading={comparing}
+        />
       )}
     </div>
   );

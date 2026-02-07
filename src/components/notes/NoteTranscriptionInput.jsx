@@ -15,13 +15,14 @@ const NOTE_TYPES = [
   { value: "procedure_note", label: "Procedure Note" },
 ];
 
-export default function NoteTranscriptionInput({ onSubmit, isProcessing }) {
+export default function NoteTranscriptionInput({ onSubmit, isProcessing, templates = [] }) {
   const [patientName, setPatientName] = useState("");
   const [patientId, setPatientId] = useState("");
   const [noteType, setNoteType] = useState("progress_note");
   const [specialty, setSpecialty] = useState("");
   const [rawNote, setRawNote] = useState("");
   const [isRecording, setIsRecording] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(templates.find(t => t.is_default)?.id || "");
   const recognitionRef = useRef(null);
 
   const toggleRecording = () => {
@@ -69,7 +70,7 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing }) {
       specialty,
       raw_note: rawNote,
       date_of_visit: new Date().toISOString().split("T")[0],
-    });
+    }, selectedTemplate);
   };
 
   return (
@@ -132,6 +133,26 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing }) {
             />
           </div>
         </div>
+
+        {/* Template Selection */}
+        {templates.length > 0 && (
+          <div className="space-y-2">
+            <Label className="text-slate-700 font-medium">Template (Optional)</Label>
+            <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+              <SelectTrigger className="rounded-xl border-slate-200">
+                <SelectValue placeholder="Use default structure" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={null}>Default Structure</SelectItem>
+                {templates.map(template => (
+                  <SelectItem key={template.id} value={template.id}>
+                    {template.name} {template.is_default && "⭐"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {/* Note Input */}
         <div className="space-y-2">

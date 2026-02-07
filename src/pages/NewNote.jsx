@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import NoteTranscriptionInput from "../components/notes/NoteTranscriptionInput";
@@ -13,35 +14,59 @@ export default function NewNote() {
   const [loadingGuidelines, setLoadingGuidelines] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = async (noteData) => {
+  const { data: templates = [] } = useQuery({
+    queryKey: ["noteTemplates"],
+    queryFn: () => base44.entities.NoteTemplate.list(),
+  });
+
+  const handleSubmit = async (noteData, templateId) => {
     setIsProcessing(true);
     setRawData(noteData);
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are a medical scribe AI. Given the following clinical note, extract and structure the following fields. Be thorough and accurate.
+    const template = templates.find(t => t.id === templateId);
+    
+    let prompt = `You are a medical scribe AI. Given the following clinical note, extract and structure the information accurately.
 
 Patient: ${noteData.patient_name}
 Note Type: ${noteData.note_type}
 Specialty: ${noteData.specialty || "General"}
 Raw Note:
-${noteData.raw_note}
+${noteData.raw_note}`;
 
-Extract:
-1. Chief Complaint - the main reason for the visit (brief, 1-2 sentences)
-2. Assessment - clinical assessment including relevant findings, differential diagnoses
-3. Plan - treatment plan, follow-ups, orders
-4. Diagnoses - list of diagnoses/conditions mentioned (include ICD-10 codes if inferable)
-5. Medications - list of all medications mentioned (include dosages if present)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          chief_complaint: { type: "string" },
-          assessment: { type: "string" },
-          plan: { type: "string" },
-          diagnoses: { type: "array", items: { type: "string" } },
-          medications: { type: "array", items: { type: "string" } },
-        },
+    let schema = {
+      type: "object",
+      properties: {
+        chief_complaint: { type: "string" },
+        assessment: { type: "string" },
+        plan: { type: "string" },
+        diagnoses: { type: "array", items: { type: "string" } },
+        medications: { type: "array", items: { type: "string" } },
       },
+    };
+
+    if (template) {
+      prompt += `\n\nUSE THIS CUSTOM TEMPLATE: ${template.name}`;
+      if (template.ai_instructions) {
+        prompt += `\n\nTemplate Instructions: ${template.ai_instructions}`;
+      }
+      prompt += `\n\nExtract data according to this structure:\n${JSON.stringify(template.structure, null, 2)}`;
+      
+      schema = {
+        type: "object",
+        properties: template.structure,
+      };
+    } else {
+      prompt += `\n\nExtract:
+1. Chief Complaint - main reason for visit (1-2 sentences)
+2. Assessment - clinical assessment including findings, differentials
+3. Plan - treatment plan, follow-ups, orders
+4. Diagnoses - list of diagnoses/conditions (include ICD-10 if inferable)
+5. Medications - list of medications (include dosages if present)`;
+    }
+
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt,
+      response_json_schema: schema,
     });
 
     setStructuredNote({ ...noteData, ...result });
@@ -136,7 +161,11 @@ ${JSON.stringify(structuredNote, null, 2)}`,
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {!structuredNote ? (
-        <NoteTranscriptionInput onSubmit={handleSubmit} isProcessing={isProcessing} />
+        <NoteTranscriptionInput 
+          onSubmit={handleSubmit} 
+          isProcessing={isProcessing}
+          templates={templates}
+        />
       ) : (
         <StructuredNotePreview
           note={structuredNote}

@@ -229,7 +229,7 @@ If information is not found, return null for that field. Be conservative - only 
           <div className="space-y-3">
             <div className="space-y-2">
               <Label className="text-slate-700 font-medium">Template (Optional)</Label>
-              <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+              <Select value={selectedTemplate || ""} onValueChange={(value) => setSelectedTemplate(value || "")}>
                 <SelectTrigger className="rounded-xl border-slate-200">
                   <SelectValue placeholder="Use default structure" />
                 </SelectTrigger>

@@ -296,7 +296,7 @@ Extract ALL information from the raw note and populate the following sections. B
   const fetchGuidelineRecommendations = async (noteData) => {
     setLoadingGuidelines(true);
     try {
-      // Extract top conditions from diagnoses and assessment
+      // Extract conditions from diagnoses
       const conditions = [];
       if (noteData.diagnoses && noteData.diagnoses.length > 0) {
         conditions.push(...noteData.diagnoses.slice(0, 3));
@@ -304,22 +304,55 @@ Extract ALL information from the raw note and populate the following sections. B
 
       if (conditions.length === 0) return;
 
-      // Query guidelines for each condition
+      // Build context including patient history for more relevant guidelines
+      const historyContext = patientHistory ? `
+Patient History Context:
+- Chronic Conditions: ${patientHistory.chronic_conditions?.join(", ") || "None"}
+- Current Medications: ${patientHistory.current_medications?.join(", ") || "None"}
+- Allergies: ${patientHistory.allergies?.join(", ") || "None"}
+- Recent Trends: ${patientHistory.trends || "N/A"}
+` : "";
+
+      // Query guidelines for each condition with patient context
       const recommendations = await Promise.all(
         conditions.slice(0, 2).map(async (condition) => {
           const cleanCondition = condition.replace(/\(.*?\)/g, "").trim();
           const result = await base44.integrations.Core.InvokeLLM({
-            prompt: `Provide brief, actionable clinical guideline recommendations for: ${cleanCondition}. Include key management points, first-line treatments, and any critical monitoring. Keep it concise (3-5 bullet points).`,
+            prompt: `Provide evidence-based clinical guideline recommendations for: ${cleanCondition}
+${historyContext}
+Focus on:
+1. First-line treatment recommendations
+2. Key monitoring parameters
+3. Patient-specific considerations (given the history above)
+4. Red flags or contraindications
+5. Follow-up recommendations
+
+Keep it actionable and concise (4-6 bullet points).`,
             add_context_from_internet: true,
             response_json_schema: {
               type: "object",
               properties: {
                 summary: { type: "string" },
                 key_points: { type: "array", items: { type: "string" } },
+                sources: { type: "array", items: { type: "string" } },
               },
             },
           });
-          return { condition: cleanCondition, ...result };
+
+          // Save to GuidelineQuery entity for tracking
+          const savedGuideline = await base44.entities.GuidelineQuery.create({
+            question: `Guidelines for ${cleanCondition}`,
+            answer: result.summary,
+            sources: result.sources || [],
+            category: "general",
+            confidence_level: "high"
+          });
+
+          return { 
+            condition: cleanCondition, 
+            guideline_id: savedGuideline.id,
+            ...result 
+          };
         })
       );
 

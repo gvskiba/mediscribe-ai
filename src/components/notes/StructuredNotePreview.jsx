@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, Pill, Stethoscope, ClipboardList, Target, Lightbulb, X, Loader2, ChevronDown, ChevronUp, FileText, Activity, BookOpen, Sparkles } from "lucide-react";
+import { Check, Pill, Stethoscope, ClipboardList, Target, Lightbulb, X, Loader2, ChevronDown, ChevronUp, FileText, Activity, BookOpen, Sparkles, Link, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import EditableSection from "./EditableSection";
 
 export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpdate, onReanalyze, guidelineRecommendations = [], loadingGuidelines = false, onGenerateEducationMaterials }) {
   const [showGuidelines, setShowGuidelines] = useState(true);
   const [expandedGuideline, setExpandedGuideline] = useState(null);
+  const [linkedGuidelines, setLinkedGuidelines] = useState(note.linked_guidelines || []);
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -71,51 +72,106 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpda
                   Fetching evidence-based guidelines...
                 </div>
               ) : (
-                guidelineRecommendations.map((rec, idx) => (
-                  <div key={idx} className="bg-white rounded-lg border border-purple-100 overflow-hidden">
-                    <button
-                      onClick={() => setExpandedGuideline(expandedGuideline === idx ? null : idx)}
-                      className="w-full flex items-center justify-between p-3 hover:bg-purple-50/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-md bg-purple-100 flex items-center justify-center">
-                          <Target className="w-3.5 h-3.5 text-purple-600" />
-                        </div>
-                        <span className="text-sm font-semibold text-slate-900">{rec.condition}</span>
-                      </div>
-                      {expandedGuideline === idx ? (
-                        <ChevronUp className="w-4 h-4 text-slate-400" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 text-slate-400" />
-                      )}
-                    </button>
+                guidelineRecommendations.map((rec, idx) => {
+                  const isLinked = linkedGuidelines.some(g => g.condition === rec.condition);
 
-                    <AnimatePresence>
-                      {expandedGuideline === idx && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="border-t border-purple-100"
-                        >
-                          <div className="p-3 space-y-2">
-                            {rec.summary && (
-                              <p className="text-xs text-slate-600 leading-relaxed">{rec.summary}</p>
-                            )}
-                            {rec.key_points && rec.key_points.length > 0 && (
-                              <ul className="text-xs text-slate-600 space-y-1 ml-4 list-disc">
-                                {rec.key_points.map((point, i) => (
-                                  <li key={i}>{point}</li>
-                                ))}
-                              </ul>
-                            )}
+                  return (
+                    <div key={idx} className="bg-white rounded-lg border border-purple-100 overflow-hidden">
+                      <button
+                        onClick={() => setExpandedGuideline(expandedGuideline === idx ? null : idx)}
+                        className="w-full flex items-center justify-between p-3 hover:bg-purple-50/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-md bg-purple-100 flex items-center justify-center">
+                            <Target className="w-3.5 h-3.5 text-purple-600" />
                           </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                ))
+                          <span className="text-sm font-semibold text-slate-900">{rec.condition}</span>
+                          {isLinked && (
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                          )}
+                        </div>
+                        {expandedGuideline === idx ? (
+                          <ChevronUp className="w-4 h-4 text-slate-400" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-slate-400" />
+                        )}
+                      </button>
+
+                      <AnimatePresence>
+                        {expandedGuideline === idx && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="border-t border-purple-100"
+                          >
+                            <div className="p-3 space-y-3">
+                              {rec.summary && (
+                                <p className="text-xs text-slate-600 leading-relaxed">{rec.summary}</p>
+                              )}
+                              {rec.key_points && rec.key_points.length > 0 && (
+                                <ul className="text-xs text-slate-600 space-y-1 ml-4 list-disc">
+                                  {rec.key_points.map((point, i) => (
+                                    <li key={i}>{point}</li>
+                                  ))}
+                                </ul>
+                              )}
+
+                              {/* Link/Incorporate Actions */}
+                              <div className="flex gap-2 pt-2 border-t border-purple-100">
+                                {!isLinked ? (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        const newLinked = [...linkedGuidelines, {
+                                          guideline_query_id: rec.guideline_id,
+                                          condition: rec.condition,
+                                          incorporated: false,
+                                          adherence_notes: ""
+                                        }];
+                                        setLinkedGuidelines(newLinked);
+                                        onUpdate("linked_guidelines", newLinked);
+                                      }}
+                                      className="text-xs h-7 gap-1"
+                                    >
+                                      <Link className="w-3 h-3" /> Link to Note
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => {
+                                        const guidelineText = `\n\n[Guideline - ${rec.condition}]\n${rec.summary}\nKey Points:\n${rec.key_points?.map(p => `- ${p}`).join('\n')}`;
+                                        onUpdate("plan", (note.plan || "") + guidelineText);
+
+                                        const newLinked = [...linkedGuidelines, {
+                                          guideline_query_id: rec.guideline_id,
+                                          condition: rec.condition,
+                                          incorporated: true,
+                                          adherence_notes: "Guideline incorporated into plan"
+                                        }];
+                                        setLinkedGuidelines(newLinked);
+                                        onUpdate("linked_guidelines", newLinked);
+                                      }}
+                                      className="text-xs h-7 gap-1 bg-purple-600 hover:bg-purple-700"
+                                    >
+                                      <CheckCircle2 className="w-3 h-3" /> Incorporate into Plan
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <Badge className="bg-green-100 text-green-700">
+                                    <CheckCircle2 className="w-3 h-3 mr-1" /> Linked
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })
               )}
             </div>
           </motion.div>

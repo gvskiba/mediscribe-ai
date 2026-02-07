@@ -8,7 +8,8 @@ import {
   LayoutDashboard,
   Menu,
   X,
-  LogOut
+  LogOut,
+  Activity
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
@@ -18,6 +19,7 @@ const navItems = [
   { name: "Notes", icon: FileText, page: "NotesLibrary" },
   { name: "Templates", icon: FileText, page: "NoteTemplates" },
   { name: "Guidelines", icon: BookOpen, page: "Guidelines" },
+  { name: "Adherence", icon: Activity, page: "GuidelineAdherence" },
 ];
 
 export default function Layout({ children, currentPageName }) {

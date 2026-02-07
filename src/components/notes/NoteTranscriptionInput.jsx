@@ -219,13 +219,13 @@ If information is not found, return null for that field. Be conservative - only 
                   <SelectValue placeholder="Use default structure" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={null}>Default Structure</SelectItem>
-                  {templates.map(template => (
-                    <SelectItem key={template.id} value={template.id}>
-                      {template.name} {template.is_default && "⭐"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+                   <SelectItem value={null}>Default Structure</SelectItem>
+                   {templates.map(template => (
+                     <SelectItem key={template.id} value={template.id}>
+                       {template.name} {template.is_default && "⭐"}
+                     </SelectItem>
+                   ))}
+                 </SelectContent>
               </Select>
             </div>
             

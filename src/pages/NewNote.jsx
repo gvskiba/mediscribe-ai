@@ -105,7 +105,7 @@ export default function NewNote() {
   const handleSubmit = async (noteData, templateId) => {
     setIsProcessing(true);
     setRawData(noteData);
-    
+
     try {
       // Check if patient exists
       if (noteData.patient_id) {
@@ -113,7 +113,7 @@ export default function NewNote() {
 
         if (existingPatients.length === 0) {
           // Patient doesn't exist, prompt to create
-          setPendingPatientData({ ...noteData, templateId });
+          setPendingPatientData({ ...noteData, templateId: templateId || null });
           setNewPatientDialogOpen(true);
           setIsProcessing(false);
           return;
@@ -125,7 +125,7 @@ export default function NewNote() {
         loadPatientHistory(noteData.patient_id, noteData.patient_name, historyFocus);
       }
 
-      const template = templates.find(t => t.id === templateId);
+      const template = templateId ? templates.find(t => t.id === templateId) : null;
       
       let prompt = `You are a medical scribe AI. Given the following clinical note, extract and structure the information accurately.
 
@@ -524,16 +524,20 @@ PAST PROCEDURES: ${history.past_procedures?.join(", ") || "None"}`;
       });
 
       // Continue with note processing
-      setRawData(pendingPatientData);
+      const noteDataWithoutTemplate = { ...pendingPatientData };
+      const templateIdToUse = noteDataWithoutTemplate.templateId;
+      delete noteDataWithoutTemplate.templateId;
+
+      setRawData(noteDataWithoutTemplate);
       loadPatientHistory(
-        pendingPatientData.patient_id, 
-        pendingPatientData.patient_name, 
-        historyFocus
+       noteDataWithoutTemplate.patient_id, 
+       noteDataWithoutTemplate.patient_name, 
+       historyFocus
       );
-      
+
       // Continue processing the note
       setIsProcessing(true);
-      processNoteData(pendingPatientData, pendingPatientData.templateId);
+      processNoteData(noteDataWithoutTemplate, templateIdToUse);
     } catch (error) {
       console.error("Failed to create patient:", error);
       alert("Failed to create patient. Please try again.");

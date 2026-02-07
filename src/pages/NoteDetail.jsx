@@ -13,7 +13,8 @@ import {
   Hash,
   Sparkles,
   Loader2,
-  Check
+  Check,
+  Plus
 } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
@@ -200,6 +201,13 @@ Generated: ${new Date().toLocaleString()}
             </div>
           </div>
           <div className="flex gap-2">
+            <Link to={createPageUrl("NewNote")}>
+              <Button
+                className="rounded-xl gap-2 bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="w-4 h-4" /> New Note
+              </Button>
+            </Link>
             <Button
               variant="outline"
               onClick={() => setTemplateDialogOpen(true)}

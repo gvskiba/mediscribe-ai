@@ -47,19 +47,29 @@ ${noteData.raw_note}`;
     };
 
     if (template && template.sections) {
-      prompt += `\n\nUSE THIS CUSTOM TEMPLATE: ${template.name}`;
+      prompt += `\n\n=== FOLLOW THIS TEMPLATE STRUCTURE ===`;
+      prompt += `\nTemplate: ${template.name}`;
       if (template.ai_instructions) {
-        prompt += `\n\nOverall Template Instructions: ${template.ai_instructions}`;
+        prompt += `\n\nGlobal Instructions: ${template.ai_instructions}`;
       }
       
-      prompt += `\n\nStructure the note into these sections:\n`;
-      template.sections.forEach(section => {
-        prompt += `\n\n${section.name}`;
-        if (section.description) prompt += ` - ${section.description}`;
-        if (section.ai_instructions) {
-          prompt += `\n  AI Instructions: ${section.ai_instructions}`;
+      prompt += `\n\n=== REQUIRED SECTIONS ===`;
+      prompt += `\nExtract information from the raw note above and populate each section below:\n`;
+      
+      template.sections.forEach((section, idx) => {
+        prompt += `\n\n${idx + 1}. ${section.name}`;
+        if (section.description) {
+          prompt += `\n   Purpose: ${section.description}`;
         }
+        if (section.ai_instructions) {
+          prompt += `\n   Instructions: ${section.ai_instructions}`;
+        }
+        prompt += `\n   → Extract relevant content from the raw note to populate this section.`;
       });
+      
+      prompt += `\n\n=== IMPORTANT ===`;
+      prompt += `\nUse ONLY the information from the raw note provided above. Do not add external information.`;
+      prompt += `\nIf a section cannot be populated from the raw note, provide a brief note like "Not documented in this encounter."`;
       
       // Build schema from sections
       const properties = {};

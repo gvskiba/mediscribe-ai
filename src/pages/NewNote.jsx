@@ -47,18 +47,15 @@ ${noteData.raw_note}`;
     if (template && template.sections) {
       prompt += `\n\nUSE THIS CUSTOM TEMPLATE: ${template.name}`;
       if (template.ai_instructions) {
-        prompt += `\n\nTemplate Instructions: ${template.ai_instructions}`;
+        prompt += `\n\nOverall Template Instructions: ${template.ai_instructions}`;
       }
       
       prompt += `\n\nStructure the note into these sections:\n`;
       template.sections.forEach(section => {
-        prompt += `\n${section.name}`;
+        prompt += `\n\n${section.name}`;
         if (section.description) prompt += ` - ${section.description}`;
-        if (section.subsections && section.subsections.length > 0) {
-          prompt += `\n  Subsections:`;
-          section.subsections.forEach(sub => {
-            prompt += `\n  - ${sub.name} (${sub.field_type})`;
-          });
+        if (section.ai_instructions) {
+          prompt += `\n  AI Instructions: ${section.ai_instructions}`;
         }
       });
       
@@ -66,20 +63,7 @@ ${noteData.raw_note}`;
       const properties = {};
       template.sections.forEach(section => {
         const sectionKey = section.name.toLowerCase().replace(/\s+/g, '_');
-        if (section.subsections && section.subsections.length > 0) {
-          const subProperties = {};
-          section.subsections.forEach(sub => {
-            const subKey = sub.name.toLowerCase().replace(/\s+/g, '_');
-            if (sub.field_type === 'array') {
-              subProperties[subKey] = { type: "array", items: { type: "string" } };
-            } else {
-              subProperties[subKey] = { type: "string" };
-            }
-          });
-          properties[sectionKey] = { type: "object", properties: subProperties };
-        } else {
-          properties[sectionKey] = { type: "string" };
-        }
+        properties[sectionKey] = { type: "string" };
       });
       
       schema = {

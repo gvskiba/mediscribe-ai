@@ -24,30 +24,6 @@ export default function SectionEditor({ sections, onChange }) {
     onChange(updated);
   };
 
-  const addSubsection = (sectionIndex) => {
-    const updated = [...sections];
-    updated[sectionIndex].subsections = [
-      ...(updated[sectionIndex].subsections || []),
-      { name: "", field_type: "text" }
-    ];
-    onChange(updated);
-  };
-
-  const removeSubsection = (sectionIndex, subsectionIndex) => {
-    const updated = [...sections];
-    updated[sectionIndex].subsections = updated[sectionIndex].subsections.filter((_, i) => i !== subsectionIndex);
-    onChange(updated);
-  };
-
-  const updateSubsection = (sectionIndex, subsectionIndex, field, value) => {
-    const updated = [...sections];
-    updated[sectionIndex].subsections[subsectionIndex] = {
-      ...updated[sectionIndex].subsections[subsectionIndex],
-      [field]: value
-    };
-    onChange(updated);
-  };
-
   const toggleSection = (index) => {
     const newExpanded = new Set(expandedSections);
     if (newExpanded.has(index)) {
@@ -91,54 +67,12 @@ export default function SectionEditor({ sections, onChange }) {
                         placeholder="Section description (optional)"
                         className="rounded-lg text-sm"
                       />
-                      
-                      {/* Subsections */}
-                      <div className="ml-4 space-y-2 mt-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-slate-600">Subsections</span>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => addSubsection(sIdx)}
-                            className="h-7 text-xs gap-1"
-                          >
-                            <Plus className="w-3 h-3" /> Add Field
-                          </Button>
-                        </div>
-                        {section.subsections?.map((subsection, ssIdx) => (
-                          <div key={ssIdx} className="flex items-center gap-2 bg-slate-50 p-2 rounded-lg">
-                            <Input
-                              value={subsection.name}
-                              onChange={(e) => updateSubsection(sIdx, ssIdx, "name", e.target.value)}
-                              placeholder="Field name"
-                              className="flex-1 h-8 text-sm bg-white"
-                            />
-                            <Select
-                              value={subsection.field_type}
-                              onValueChange={(v) => updateSubsection(sIdx, ssIdx, "field_type", v)}
-                            >
-                              <SelectTrigger className="w-32 h-8 text-xs bg-white">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="text">Text</SelectItem>
-                                <SelectItem value="textarea">Long Text</SelectItem>
-                                <SelectItem value="array">List</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeSubsection(sIdx, ssIdx)}
-                              className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
+                      <Textarea
+                        value={section.ai_instructions || ""}
+                        onChange={(e) => updateSection(sIdx, "ai_instructions", e.target.value)}
+                        placeholder="AI instructions for this section (e.g., 'Focus on current symptoms and duration', 'Include vital signs and physical exam findings')"
+                        className="rounded-lg text-sm min-h-[80px]"
+                      />
                     </>
                   )}
                 </div>

@@ -282,6 +282,14 @@ Extract ALL information from the raw note and populate the following sections. B
       console.log("AI Extraction Result:", result);
       setStructuredNote({ ...noteData, ...result });
 
+      // Update template usage count and last_used
+      if (templateId) {
+        await base44.entities.NoteTemplate.update(templateId, {
+          usage_count: (template?.usage_count || 0) + 1,
+          last_used: new Date().toISOString()
+        });
+      }
+
       // Automatically fetch guideline recommendations and ICD-10 codes in parallel
       fetchGuidelineRecommendations(result);
       generateICD10Suggestions(result);

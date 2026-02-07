@@ -39,7 +39,17 @@ export default function NoteTemplates() {
 
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ["noteTemplates"],
-    queryFn: () => base44.entities.NoteTemplate.list(),
+    queryFn: async () => {
+      const allTemplates = await base44.entities.NoteTemplate.list();
+      const user = await base44.auth.me();
+      
+      // Filter templates: owned by user, shared with user, or public
+      return allTemplates.filter(t => 
+        t.created_by === user.email || 
+        t.is_public || 
+        t.shared_with?.includes(user.email)
+      );
+    },
   });
 
   const createMutation = useMutation({

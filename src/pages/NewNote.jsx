@@ -122,11 +122,13 @@ ${noteData.raw_note}`;
       type: "object",
       properties: {
         chief_complaint: { type: "string" },
+        history_of_present_illness: { type: "string" },
         medical_history: { type: "string" },
         review_of_systems: { type: "string" },
         physical_exam: { type: "string" },
         assessment: { type: "string" },
         plan: { type: "string" },
+        clinical_impression: { type: "string" },
         diagnoses: { type: "array", items: { type: "string" } },
         medications: { type: "array", items: { type: "string" } },
       },
@@ -193,11 +195,23 @@ ${noteData.raw_note}`;
 
 Extract ALL information from the raw note and populate the following sections. Be thorough and comprehensive:
 
-1. chief_complaint - Extract the main reason for visit. Look in HPI, chief complaint, or opening statements.
+1. chief_complaint - Extract the main reason for visit in 1-2 sentences. Look in HPI, chief complaint, or opening statements.
 
-2. medical_history - Extract past medical history, chronic conditions, surgical history, family history, social history. Consolidate all relevant historical information.
+2. history_of_present_illness - Detailed narrative of the present illness using OLDCARTS framework:
+   - Onset: When did symptoms start?
+   - Location: Where is the problem?
+   - Duration: How long has it lasted?
+   - Character: What does it feel like? (sharp, dull, burning, etc.)
+   - Alleviating factors: What makes it better?
+   - Aggravating factors: What makes it worse?
+   - Radiation: Does it spread anywhere?
+   - Temporal patterns: Constant vs intermittent, time of day patterns
+   - Severity: How bad is it? (1-10 scale if mentioned, or descriptive)
+   Synthesize this into a coherent narrative that tells the story of the patient's illness.
 
-3. review_of_systems - Extract all symptoms mentioned by body system:
+3. medical_history - Extract past medical history, chronic conditions, surgical history, family history, social history. Consolidate all relevant historical information.
+
+4. review_of_systems - Extract all symptoms mentioned by body system:
    - Constitutional (fever, fatigue, weight changes)
    - HEENT (headache, vision, hearing, sore throat)
    - Cardiovascular (chest pain, palpitations, edema)
@@ -210,19 +224,19 @@ Extract ALL information from the raw note and populate the following sections. B
    - Skin (rashes, lesions)
    If symptoms are implied or related to the chief complaint, include them. If truly no ROS documented, write "No systematic review documented."
 
-4. physical_exam - Extract ALL objective findings:
+5. physical_exam - Extract ALL objective findings:
    - Vitals (BP, HR, RR, Temp, O2 sat)
    - General appearance
    - System-specific exams (CV, Resp, Abd, Extremities, Neuro, etc.)
    If exam findings are implied by the assessment or treatment, infer reasonable findings. If truly no exam documented, write "Physical examination not documented."
 
-5. assessment - Extract or infer clinical assessment. This includes:
+6. assessment - Extract or infer clinical assessment. This includes:
    - Interpretation of symptoms and findings
    - Differential diagnoses considered
    - Clinical impression
    Use information from throughout the note to build a comprehensive assessment.
 
-6. plan - Extract comprehensive treatment plan:
+7. plan - Extract comprehensive treatment plan:
    - Medications prescribed (with dosing)
    - Diagnostic tests ordered
    - Procedures planned
@@ -231,15 +245,24 @@ Extract ALL information from the raw note and populate the following sections. B
    - Referrals
    Consolidate all treatment-related information.
 
-7. diagnoses - Extract ALL diagnoses, conditions, or problems mentioned. Include ICD-10 codes if stated. Return as an array of strings.
+8. clinical_impression - SYNTHESIZE a coherent clinical summary (2-4 sentences) that:
+   - Identifies the PRIMARY issue(s) driving this encounter
+   - Highlights KEY findings from HPI, exam, and assessment
+   - Provides clinical context (e.g., "65yo with CAD presenting with...")
+   - Notes any concerning findings or important follow-up needs
+   This should read like an attending physician's synthesis, not a list. Make it clinically relevant and actionable.
 
-8. medications - Extract ALL medications mentioned (current, prescribed, discontinued). Include dosages if provided. Return as an array of strings.
+9. diagnoses - Extract ALL diagnoses, conditions, or problems mentioned. Include ICD-10 codes if stated. Return as an array of strings.
+
+10. medications - Extract ALL medications mentioned (current, prescribed, discontinued). Include dosages if provided. Return as an array of strings.
 
 === CRITICAL RULES ===
 - Extract information from ANYWHERE in the note (HPI, exam, plan, prescriptions, etc.)
 - Make reasonable clinical inferences when information is implied
-- Synthesize information scattered throughout the note
-- ALWAYS populate ALL 8 fields - never return null or undefined
+- Synthesize information scattered throughout the note into coherent narratives
+- For HPI: Tell the patient's story with clinical detail (OLDCARTS elements)
+- For Clinical Impression: Synthesize across all sections to identify the PRIMARY clinical issues
+- ALWAYS populate ALL 10 fields - never return null or undefined
 - Only use "Not documented" if there's absolutely no relevant information anywhere in the note`;
     }
 
@@ -367,22 +390,26 @@ PAST PROCEDURES: ${history.past_procedures?.join(", ") || "None"}`;
   const handleReanalyze = async (field) => {
     const fieldPrompts = {
       chief_complaint: "Extract the chief complaint (main reason for visit) in 1-2 sentences",
+      history_of_present_illness: "Extract a detailed HPI using OLDCARTS: Onset, Location, Duration, Character, Alleviating/Aggravating factors, Radiation, Temporal patterns, Severity. Create a coherent narrative.",
       medical_history: "Extract relevant past medical history, chronic conditions, and surgical history in 2-3 sentences",
       review_of_systems: "Extract the systematic review of symptoms organized by body system",
       physical_exam: "Extract objective physical examination findings",
       assessment: "Provide a detailed clinical assessment including relevant findings and differential diagnoses",
       plan: "Provide a comprehensive treatment plan including medications, follow-ups, and orders",
+      clinical_impression: "Synthesize a 2-4 sentence clinical impression identifying the PRIMARY issues, key findings, and clinical context from the entire note",
       diagnoses: "List all diagnoses with ICD-10 codes if possible",
       medications: "List all medications mentioned with dosages",
     };
 
     const responseSchemas = {
       chief_complaint: { type: "object", properties: { result: { type: "string" } } },
+      history_of_present_illness: { type: "object", properties: { result: { type: "string" } } },
       medical_history: { type: "object", properties: { result: { type: "string" } } },
       review_of_systems: { type: "object", properties: { result: { type: "string" } } },
       physical_exam: { type: "object", properties: { result: { type: "string" } } },
       assessment: { type: "object", properties: { result: { type: "string" } } },
       plan: { type: "object", properties: { result: { type: "string" } } },
+      clinical_impression: { type: "object", properties: { result: { type: "string" } } },
       diagnoses: { type: "object", properties: { result: { type: "array", items: { type: "string" } } } },
       medications: { type: "object", properties: { result: { type: "array", items: { type: "string" } } } },
     };

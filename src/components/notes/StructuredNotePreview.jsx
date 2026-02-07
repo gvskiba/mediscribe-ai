@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, Pill, Stethoscope, ClipboardList, Target, Lightbulb, X, Loader2, ChevronDown, ChevronUp, FileText, Activity, BookOpen } from "lucide-react";
+import { Check, Pill, Stethoscope, ClipboardList, Target, Lightbulb, X, Loader2, ChevronDown, ChevronUp, FileText, Activity, BookOpen, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import EditableSection from "./EditableSection";
 
@@ -121,6 +121,17 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpda
           </motion.div>
         )}
 
+        {/* Clinical Impression */}
+        {note.clinical_impression && (
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-200 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="w-5 h-5 text-purple-600" />
+              <h3 className="font-semibold text-slate-900">Clinical Impression</h3>
+            </div>
+            <p className="text-sm text-slate-700 leading-relaxed">{note.clinical_impression}</p>
+          </div>
+        )}
+
         {/* Chief Complaint */}
         <EditableSection
           icon={Target}
@@ -132,6 +143,20 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpda
           onUpdate={onUpdate}
           onReanalyze={onReanalyze}
         />
+
+        {/* History of Present Illness */}
+        {note.history_of_present_illness && (
+          <EditableSection
+            icon={FileText}
+            title="History of Present Illness"
+            color="indigo"
+            value={note.history_of_present_illness}
+            field="history_of_present_illness"
+            type="textarea"
+            onUpdate={onUpdate}
+            onReanalyze={onReanalyze}
+          />
+        )}
 
         {/* Medical History */}
         <EditableSection

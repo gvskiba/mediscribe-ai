@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,6 +30,20 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
   const [selectedTemplate, setSelectedTemplate] = useState(templates.find(t => t.is_default)?.id || "");
   const [extracting, setExtracting] = useState(false);
   const recognitionRef = useRef(null);
+
+  // Auto-select matching template when note type or specialty changes
+  useEffect(() => {
+    if (!templates.length) return;
+    
+    const matchingTemplate = templates.find(t => 
+      t.note_type === noteType && 
+      (!specialty || !t.specialty || t.specialty.toLowerCase() === specialty.toLowerCase())
+    );
+    
+    if (matchingTemplate) {
+      setSelectedTemplate(matchingTemplate.id);
+    }
+  }, [noteType, specialty, templates]);
 
   const toggleRecording = () => {
     if (isRecording) {

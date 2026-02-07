@@ -152,15 +152,18 @@ ${noteData.raw_note}`;
         properties,
       };
     } else {
-      prompt += `\n\nExtract:
-1. Chief Complaint - main reason for visit (1-2 sentences)
-2. Medical History - relevant past medical history, chronic conditions, surgical history (2-3 sentences)
-3. Review of Systems - systematic review of symptoms by body system
-4. Physical Exam - objective physical examination findings
-5. Assessment - clinical assessment including findings, differentials
-6. Plan - treatment plan, follow-ups, orders
-7. Diagnoses - list of diagnoses/conditions (include ICD-10 if inferable)
-8. Medications - list of medications (include dosages if present)`;
+      prompt += `\n\nExtract and populate ALL of the following sections. If information is not available in the note, write "Not documented in this encounter." for that section:
+
+1. chief_complaint - Main reason for visit (1-2 sentences)
+2. medical_history - Relevant past medical history, chronic conditions, surgical history
+3. review_of_systems - Systematic review of symptoms by body system (Constitutional, HEENT, Cardiovascular, Respiratory, GI, GU, MSK, Neuro, Psych, Skin, etc.)
+4. physical_exam - Objective physical examination findings (Vitals, General appearance, HEENT, CV, Respiratory, Abdomen, Extremities, Neuro, etc.)
+5. assessment - Clinical assessment including findings and differential diagnoses
+6. plan - Comprehensive treatment plan including medications, follow-ups, orders, and patient instructions
+7. diagnoses - Array of diagnoses/conditions (include ICD-10 codes if mentioned or inferable)
+8. medications - Array of medications with dosages if present
+
+CRITICAL: You MUST return ALL 8 fields in your response, even if some sections say "Not documented in this encounter."`;
     }
 
     const result = await base44.integrations.Core.InvokeLLM({

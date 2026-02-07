@@ -50,11 +50,11 @@
 import Dashboard from './pages/Dashboard';
 import GuidelineDetail from './pages/GuidelineDetail';
 import Guidelines from './pages/Guidelines';
+import Home from './pages/Home';
 import NewNote from './pages/NewNote';
 import NoteDetail from './pages/NoteDetail';
 import NoteTemplates from './pages/NoteTemplates';
 import NotesLibrary from './pages/NotesLibrary';
-import Home from './pages/Home';
 import __Layout from './Layout.jsx';
 
 
@@ -62,11 +62,11 @@ export const PAGES = {
     "Dashboard": Dashboard,
     "GuidelineDetail": GuidelineDetail,
     "Guidelines": Guidelines,
+    "Home": Home,
     "NewNote": NewNote,
     "NoteDetail": NoteDetail,
     "NoteTemplates": NoteTemplates,
     "NotesLibrary": NotesLibrary,
-    "Home": Home,
 }
 
 export const pagesConfig = {

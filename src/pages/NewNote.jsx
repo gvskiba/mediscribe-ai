@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import NoteTranscriptionInput from "../components/notes/NoteTranscriptionInput";
 import StructuredNotePreview from "../components/notes/StructuredNotePreview";
+import SmartGuidelinePanel from "../components/guidelines/SmartGuidelinePanel";
 
 export default function NewNote() {
   const [isProcessing, setIsProcessing] = useState(false);

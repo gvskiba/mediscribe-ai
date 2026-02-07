@@ -19,57 +19,87 @@ const CONDITION_TYPES = [
   { value: "symptom_contains", label: "Symptom Present", description: "Show section if symptom is documented" },
 ];
 
+const MATCH_TYPES = [
+  { value: "exact", label: "Exact Match", description: "Must match exactly" },
+  { value: "partial", label: "Partial (Contains)", description: "Value must contain the text" },
+  { value: "regex", label: "Regex Pattern", description: "Match using regular expression" },
+];
+
 function ConditionRow({ condition, onUpdate, onRemove, index }) {
   const selectedType = CONDITION_TYPES.find(c => c.value === condition.type);
+  const matchType = condition.match_type || "partial";
 
   return (
-    <div className="flex gap-2 items-end p-3 bg-white border border-slate-200 rounded-lg">
-      <div className="flex-1 min-w-0 space-y-1">
-        <label className="text-xs font-medium text-slate-600">Condition Type</label>
-        <Select value={condition.type} onValueChange={(type) => onUpdate({ ...condition, type })}>
-          <SelectTrigger className="h-8 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {CONDITION_TYPES.map(ct => (
-              <SelectItem key={ct.value} value={ct.value}>{ct.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="flex-1 min-w-0 space-y-1">
-        <label className="text-xs font-medium text-slate-600">
-          {condition.type === "patient_age" ? "Age Range" : "Value"}
-        </label>
-        <Input
-          value={condition.value}
-          onChange={(e) => onUpdate({ ...condition, value: e.target.value })}
-          placeholder={condition.type === "patient_age" ? "e.g., 18-65" : "e.g., hypertension"}
-          className="h-8 text-sm"
-        />
-      </div>
-
-      {condition.type === "patient_age" && (
+    <div className="flex flex-col gap-2 p-3 bg-white border border-slate-200 rounded-lg">
+      <div className="flex gap-2 items-end">
         <div className="flex-1 min-w-0 space-y-1">
-          <label className="text-xs font-medium text-slate-600">Or Range 2</label>
+          <label className="text-xs font-medium text-slate-600">Condition Type</label>
+          <Select value={condition.type} onValueChange={(type) => onUpdate({ ...condition, type })}>
+            <SelectTrigger className="h-8 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CONDITION_TYPES.map(ct => (
+                <SelectItem key={ct.value} value={ct.value}>{ct.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex-1 min-w-0 space-y-1">
+          <label className="text-xs font-medium text-slate-600">Match Type</label>
+          <Select value={matchType} onValueChange={(type) => onUpdate({ ...condition, match_type: type })}>
+            <SelectTrigger className="h-8 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MATCH_TYPES.map(mt => (
+                <SelectItem key={mt.value} value={mt.value}>{mt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onRemove(index)}
+          className="h-8 w-8 hover:bg-red-50 hover:text-red-600"
+        >
+          <X className="w-4 h-4" />
+        </Button>
+      </div>
+
+      <div className="flex gap-2 items-end">
+        <div className="flex-1 min-w-0 space-y-1">
+          <label className="text-xs font-medium text-slate-600">
+            {condition.type === "patient_age" ? "Age Range" : "Value"}
+            {matchType === "regex" && " (regex pattern)"}
+          </label>
           <Input
-            value={condition.secondary_value || ""}
-            onChange={(e) => onUpdate({ ...condition, secondary_value: e.target.value })}
-            placeholder="Optional"
+            value={condition.value}
+            onChange={(e) => onUpdate({ ...condition, value: e.target.value })}
+            placeholder={
+              condition.type === "patient_age" ? "e.g., 18-65" :
+              matchType === "regex" ? "e.g., (hypertension|HTN)" :
+              "e.g., hypertension"
+            }
             className="h-8 text-sm"
           />
         </div>
-      )}
 
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => onRemove(index)}
-        className="h-8 w-8 hover:bg-red-50 hover:text-red-600"
-      >
-        <X className="w-4 h-4" />
-      </Button>
+        {condition.type === "patient_age" && (
+          <div className="flex-1 min-w-0 space-y-1">
+            <label className="text-xs font-medium text-slate-600">Or Range 2</label>
+            <Input
+              value={condition.secondary_value || ""}
+              onChange={(e) => onUpdate({ ...condition, secondary_value: e.target.value })}
+              placeholder="Optional"
+              className="h-8 text-sm"
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -89,6 +119,7 @@ export default function AdvancedConditionalLogicEditor({ value, onChange, noteTy
         id: c.id || generateId(),
         type: c.type,
         value: c.value,
+        match_type: c.match_type || "partial",
         secondary_value: c.secondary_value,
       })),
     });
@@ -101,7 +132,7 @@ export default function AdvancedConditionalLogicEditor({ value, onChange, noteTy
   const addCondition = () => {
     setConditions([
       ...conditions,
-      { id: generateId(), type: "diagnosis_contains", value: "" }
+      { id: generateId(), type: "diagnosis_contains", value: "", match_type: "partial" }
     ]);
   };
 

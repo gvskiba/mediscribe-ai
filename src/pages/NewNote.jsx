@@ -9,6 +9,8 @@ export default function NewNote() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [structuredNote, setStructuredNote] = useState(null);
   const [rawData, setRawData] = useState(null);
+  const [guidelineRecommendations, setGuidelineRecommendations] = useState([]);
+  const [loadingGuidelines, setLoadingGuidelines] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (noteData) => {
@@ -44,6 +46,47 @@ Extract:
 
     setStructuredNote({ ...noteData, ...result });
     setIsProcessing(false);
+
+    // Automatically fetch guideline recommendations
+    fetchGuidelineRecommendations(result);
+  };
+
+  const fetchGuidelineRecommendations = async (noteData) => {
+    setLoadingGuidelines(true);
+    try {
+      // Extract top conditions from diagnoses and assessment
+      const conditions = [];
+      if (noteData.diagnoses && noteData.diagnoses.length > 0) {
+        conditions.push(...noteData.diagnoses.slice(0, 3));
+      }
+
+      if (conditions.length === 0) return;
+
+      // Query guidelines for each condition
+      const recommendations = await Promise.all(
+        conditions.slice(0, 2).map(async (condition) => {
+          const cleanCondition = condition.replace(/\(.*?\)/g, "").trim();
+          const result = await base44.integrations.Core.InvokeLLM({
+            prompt: `Provide brief, actionable clinical guideline recommendations for: ${cleanCondition}. Include key management points, first-line treatments, and any critical monitoring. Keep it concise (3-5 bullet points).`,
+            add_context_from_internet: true,
+            response_json_schema: {
+              type: "object",
+              properties: {
+                summary: { type: "string" },
+                key_points: { type: "array", items: { type: "string" } },
+              },
+            },
+          });
+          return { condition: cleanCondition, ...result };
+        })
+      );
+
+      setGuidelineRecommendations(recommendations);
+    } catch (error) {
+      console.error("Failed to fetch guidelines:", error);
+    } finally {
+      setLoadingGuidelines(false);
+    }
   };
 
   const handleFinalize = async () => {
@@ -68,6 +111,8 @@ Extract:
           note={structuredNote}
           onFinalize={handleFinalize}
           onEdit={handleEdit}
+          guidelineRecommendations={guidelineRecommendations}
+          loadingGuidelines={loadingGuidelines}
         />
       )}
     </div>

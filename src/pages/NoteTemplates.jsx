@@ -43,7 +43,24 @@ export default function NoteTemplates() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.NoteTemplate.create(data),
+    mutationFn: (data) => {
+      // Ensure sections have IDs and order
+      const processedData = {
+        ...data,
+        sections: data.sections?.map((section, idx) => ({
+          ...section,
+          id: section.id || `section_${Date.now()}_${idx}`,
+          order: section.order ?? idx,
+          enabled: section.enabled ?? true,
+          conditional_logic: section.conditional_logic || {
+            enabled: false,
+            condition_type: "note_type",
+            condition_value: ""
+          }
+        })) || []
+      };
+      return base44.entities.NoteTemplate.create(processedData);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["noteTemplates"] });
       resetForm();
@@ -51,7 +68,24 @@ export default function NoteTemplates() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.NoteTemplate.update(id, data),
+    mutationFn: ({ id, data }) => {
+      // Ensure sections have IDs and order
+      const processedData = {
+        ...data,
+        sections: data.sections?.map((section, idx) => ({
+          ...section,
+          id: section.id || `section_${Date.now()}_${idx}`,
+          order: section.order ?? idx,
+          enabled: section.enabled ?? true,
+          conditional_logic: section.conditional_logic || {
+            enabled: false,
+            condition_type: "note_type",
+            condition_value: ""
+          }
+        })) || []
+      };
+      return base44.entities.NoteTemplate.update(id, processedData);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["noteTemplates"] });
       resetForm();
@@ -87,12 +121,26 @@ export default function NoteTemplates() {
 
   const handleEdit = (template) => {
     setEditingTemplate(template);
+    // Ensure sections have all required fields
+    const processedSections = (template.sections || []).map((section, idx) => ({
+      id: section.id || `section_${Date.now()}_${idx}`,
+      name: section.name || "",
+      description: section.description || "",
+      ai_instructions: section.ai_instructions || "",
+      enabled: section.enabled ?? true,
+      order: section.order ?? idx,
+      conditional_logic: section.conditional_logic || {
+        enabled: false,
+        condition_type: "note_type",
+        condition_value: ""
+      }
+    }));
     setFormData({
       name: template.name,
       description: template.description || "",
       note_type: template.note_type || "progress_note",
       specialty: template.specialty || "",
-      sections: template.sections || [],
+      sections: processedSections,
       ai_instructions: template.ai_instructions || "",
     });
     setDialogOpen(true);
@@ -219,7 +267,17 @@ Return a JSON structure with:
                   </div>
                   <div className="flex flex-wrap gap-2 mb-4">
                     <Badge variant="outline">{noteTypes.find(t => t.value === template.note_type)?.label}</Badge>
-                    {template.specialty && <Badge variant="outline">{template.specialty}</Badge>}
+                    {template.specialty && <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">{template.specialty}</Badge>}
+                    {template.sections?.length > 0 && (
+                      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                        {template.sections.filter(s => s.enabled !== false).length}/{template.sections.length} active
+                      </Badge>
+                    )}
+                    {template.sections?.filter(s => s.conditional_logic?.enabled).length > 0 && (
+                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                        {template.sections.filter(s => s.conditional_logic?.enabled).length} conditional
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button

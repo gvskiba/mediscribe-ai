@@ -15,6 +15,8 @@ import TemplateAnalytics from "../components/templates/TemplateAnalytics";
 import TemplateSharing from "../components/templates/TemplateSharing";
 import TemplateVersionHistory from "../components/templates/TemplateVersionHistory";
 import AITemplateSuggestions from "../components/templates/AITemplateSuggestions";
+import TemplateVersionComparison from "../components/templates/TemplateVersionComparison";
+import TemplateSearch from "../components/templates/TemplateSearch";
 import { toast } from "sonner";
 
 const noteTypes = [
@@ -37,6 +39,7 @@ export default function NoteTemplates() {
   const [aiSuggestionsOpen, setAiSuggestionsOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [versionComparisonOpen, setVersionComparisonOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -325,41 +328,29 @@ Return a JSON structure with:
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Note Templates</h1>
           <p className="text-slate-500 mt-1">AI-powered templates with versioning, sharing, and smart suggestions</p>
         </div>
-        <div className="flex gap-2">
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-40">
-              <Filter className="w-4 h-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              <SelectItem value="general">General</SelectItem>
-              <SelectItem value="cardiology">Cardiology</SelectItem>
-              <SelectItem value="pulmonology">Pulmonology</SelectItem>
-              <SelectItem value="endocrinology">Endocrinology</SelectItem>
-              <SelectItem value="neurology">Neurology</SelectItem>
-              <SelectItem value="oncology">Oncology</SelectItem>
-              <SelectItem value="pediatrics">Pediatrics</SelectItem>
-              <SelectItem value="emergency">Emergency</SelectItem>
-              <SelectItem value="surgery">Surgery</SelectItem>
-              <SelectItem value="psychiatry">Psychiatry</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            onClick={() => {
-              resetForm();
-              setDialogOpen(true);
-            }}
-            className="bg-blue-600 hover:bg-blue-700 rounded-xl gap-2"
-          >
-            <Plus className="w-4 h-4" /> New Template
-          </Button>
-        </div>
+        <Button
+          onClick={() => {
+            resetForm();
+            setDialogOpen(true);
+          }}
+          className="bg-blue-600 hover:bg-blue-700 rounded-xl gap-2"
+        >
+          <Plus className="w-4 h-4" /> New Template
+        </Button>
+      </div>
+
+      {/* Enhanced Search and Filter */}
+      <div className="mb-6">
+        <TemplateSearch 
+          templates={templates}
+          category={categoryFilter}
+          onCategoryChange={setCategoryFilter}
+        />
       </div>
 
       {isLoading ? (
@@ -442,7 +433,10 @@ Return a JSON structure with:
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleVersionHistory(template)}
+                      onClick={() => {
+                        setSelectedTemplate(template);
+                        setVersionComparisonOpen(true);
+                      }}
                       className="rounded-lg"
                       title="Version History"
                     >
@@ -635,6 +629,12 @@ Return a JSON structure with:
         open={aiSuggestionsOpen}
         onClose={() => setAiSuggestionsOpen(false)}
         onApplySuggestion={handleApplySuggestion}
+      />
+
+      <TemplateVersionComparison
+        versions={selectedTemplate ? getTemplateVersions(selectedTemplate) : []}
+        open={versionComparisonOpen}
+        onClose={() => setVersionComparisonOpen(false)}
       />
     </div>
   );

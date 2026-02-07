@@ -29,7 +29,7 @@ export default function TemplateSearch({
 
   const filteredTemplates = useMemo(() => {
     return templates.filter(t => {
-      const matchesSearch = 
+      const matchesSearch = searchQuery.trim() === "" ||
         t.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         t.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         t.specialty?.toLowerCase().includes(searchQuery.toLowerCase());

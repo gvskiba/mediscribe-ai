@@ -211,6 +211,7 @@ Extract ALL information from the raw note and populate the following sections. B
       response_json_schema: schema,
     });
 
+    console.log("AI Extraction Result:", result);
     setStructuredNote({ ...noteData, ...result });
     setIsProcessing(false);
 

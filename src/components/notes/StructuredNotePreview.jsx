@@ -122,116 +122,100 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpda
         )}
 
         {/* Chief Complaint */}
-        {note.chief_complaint && (
-          <EditableSection
-            icon={Target}
-            title="Chief Complaint"
-            color="blue"
-            value={note.chief_complaint}
-            field="chief_complaint"
-            type="text"
-            onUpdate={onUpdate}
-            onReanalyze={onReanalyze}
-          />
-        )}
+        <EditableSection
+          icon={Target}
+          title="Chief Complaint"
+          color="blue"
+          value={note.chief_complaint || "Not extracted"}
+          field="chief_complaint"
+          type="text"
+          onUpdate={onUpdate}
+          onReanalyze={onReanalyze}
+        />
 
         {/* Medical History */}
-        {note.medical_history && (
-          <EditableSection
-            icon={FileText}
-            title="Medical History"
-            color="slate"
-            value={note.medical_history}
-            field="medical_history"
-            type="textarea"
-            onUpdate={onUpdate}
-            onReanalyze={onReanalyze}
-          />
-        )}
+        <EditableSection
+          icon={FileText}
+          title="Medical History"
+          color="slate"
+          value={note.medical_history || "Not extracted"}
+          field="medical_history"
+          type="textarea"
+          onUpdate={onUpdate}
+          onReanalyze={onReanalyze}
+        />
 
         {/* Review of Systems */}
-        {note.review_of_systems && (
-          <EditableSection
-            icon={ClipboardList}
-            title="Review of Systems"
-            color="indigo"
-            value={note.review_of_systems}
-            field="review_of_systems"
-            type="textarea"
-            onUpdate={onUpdate}
-            onReanalyze={onReanalyze}
-          />
-        )}
+        <EditableSection
+          icon={ClipboardList}
+          title="Review of Systems"
+          color="indigo"
+          value={note.review_of_systems || "Not extracted"}
+          field="review_of_systems"
+          type="textarea"
+          onUpdate={onUpdate}
+          onReanalyze={onReanalyze}
+        />
 
         {/* Physical Exam */}
-        {note.physical_exam && (
-          <EditableSection
-            icon={Activity}
-            title="Physical Exam"
-            color="teal"
-            value={note.physical_exam}
-            field="physical_exam"
-            type="textarea"
-            onUpdate={onUpdate}
-            onReanalyze={onReanalyze}
-          />
-        )}
+        <EditableSection
+          icon={Activity}
+          title="Physical Exam"
+          color="teal"
+          value={note.physical_exam || "Not extracted"}
+          field="physical_exam"
+          type="textarea"
+          onUpdate={onUpdate}
+          onReanalyze={onReanalyze}
+        />
 
         {/* Assessment */}
-        {note.assessment && (
-          <EditableSection
-            icon={Stethoscope}
-            title="Assessment"
-            color="purple"
-            value={note.assessment}
-            field="assessment"
-            type="textarea"
-            onUpdate={onUpdate}
-            onReanalyze={onReanalyze}
-          />
-        )}
+        <EditableSection
+          icon={Stethoscope}
+          title="Assessment"
+          color="purple"
+          value={note.assessment || "Not extracted"}
+          field="assessment"
+          type="textarea"
+          onUpdate={onUpdate}
+          onReanalyze={onReanalyze}
+        />
 
         {/* Plan */}
-        {note.plan && (
-          <EditableSection
-            icon={ClipboardList}
-            title="Plan"
-            color="emerald"
-            value={note.plan}
-            field="plan"
-            type="textarea"
-            onUpdate={onUpdate}
-            onReanalyze={onReanalyze}
-          />
-        )}
+        <EditableSection
+          icon={ClipboardList}
+          title="Plan"
+          color="emerald"
+          value={note.plan || "Not extracted"}
+          field="plan"
+          type="textarea"
+          onUpdate={onUpdate}
+          onReanalyze={onReanalyze}
+        />
 
         {/* Diagnoses */}
-        {note.diagnoses?.length > 0 && (
-          <EditableSection
-            icon={Target}
-            title="Diagnoses"
-            color="amber"
-            value={note.diagnoses}
-            field="diagnoses"
-            type="array"
-            onUpdate={onUpdate}
-            onReanalyze={onReanalyze}
-          />
-        )}
+        <EditableSection
+          icon={Target}
+          title="Diagnoses"
+          color="amber"
+          value={note.diagnoses && note.diagnoses.length > 0 ? note.diagnoses : ["Not extracted"]}
+          field="diagnoses"
+          type="array"
+          onUpdate={onUpdate}
+          onReanalyze={onReanalyze}
+        />
 
         {/* Medications */}
-        {note.medications?.length > 0 && (
-          <EditableSection
-            icon={Pill}
-            title="Medications"
-            color="rose"
-            value={note.medications}
-            field="medications"
-            type="array"
-            onUpdate={onUpdate}
-            onReanalyze={onReanalyze}
-          />
-        )}
+        <EditableSection
+          icon={Pill}
+          title="Medications"
+          color="rose"
+          value={note.medications && note.medications.length > 0 ? note.medications : ["Not extracted"]}
+          field="medications"
+          type="array"
+          onUpdate={onUpdate}
+          onReanalyze={onReanalyze}
+        />
       </div>
     </motion.div>
   );

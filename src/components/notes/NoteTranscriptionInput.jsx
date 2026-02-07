@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mic, MicOff, Loader2, Sparkles } from "lucide-react";
+import { Mic, MicOff, Loader2, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { motion } from "framer-motion";
 import TemplatePreview from "../templates/TemplatePreview";
 
@@ -29,6 +29,7 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
   const [isRecording, setIsRecording] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(templates.find(t => t.is_default)?.id || "");
   const [extracting, setExtracting] = useState(false);
+  const [templatePreviewExpanded, setTemplatePreviewExpanded] = useState(true);
   const recognitionRef = useRef(null);
 
   // Auto-select matching template when note type or specialty changes
@@ -244,11 +245,33 @@ If information is not found, return null for that field. Be conservative - only 
             </div>
             
             {selectedTemplate && (
-              <TemplatePreview
-                template={templates.find(t => t.id === selectedTemplate)}
-                noteType={noteType}
-                specialty={specialty}
-              />
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="bg-slate-50 rounded-xl border border-slate-200 p-4">
+                  <button
+                    onClick={() => setTemplatePreviewExpanded(!templatePreviewExpanded)}
+                    className="w-full flex items-center justify-between mb-3 hover:opacity-70 transition-opacity"
+                  >
+                    <h3 className="text-sm font-semibold text-slate-700">Template Preview</h3>
+                    {templatePreviewExpanded ? (
+                      <ChevronUp className="w-4 h-4 text-slate-500" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-slate-500" />
+                    )}
+                  </button>
+                  {templatePreviewExpanded && (
+                    <TemplatePreview
+                      template={templates.find(t => t.id === selectedTemplate)}
+                      noteType={noteType}
+                      specialty={specialty}
+                    />
+                  )}
+                </div>
+              </motion.div>
             )}
           </div>
         )}

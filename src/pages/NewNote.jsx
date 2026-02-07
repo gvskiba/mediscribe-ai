@@ -7,6 +7,7 @@ import NoteTranscriptionInput from "../components/notes/NoteTranscriptionInput";
 import StructuredNotePreview from "../components/notes/StructuredNotePreview";
 import SmartGuidelinePanel from "../components/guidelines/SmartGuidelinePanel";
 import PatientHistoryPanel from "../components/notes/PatientHistoryPanel";
+import HistoryFocusSelector from "../components/notes/HistoryFocusSelector";
 import ICD10Suggestions from "../components/notes/ICD10Suggestions";
 import PatientEducationMaterials from "../components/notes/PatientEducationMaterials";
 
@@ -18,6 +19,7 @@ export default function NewNote() {
   const [loadingGuidelines, setLoadingGuidelines] = useState(false);
   const [patientHistory, setPatientHistory] = useState(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historyFocus, setHistoryFocus] = useState("comprehensive");
   const [icd10Suggestions, setIcd10Suggestions] = useState([]);
   const [loadingIcd10, setLoadingIcd10] = useState(false);
   const [educationMaterialsOpen, setEducationMaterialsOpen] = useState(false);
@@ -28,9 +30,9 @@ export default function NewNote() {
     queryFn: () => base44.entities.NoteTemplate.list(),
   });
 
-  const loadPatientHistory = async (patientId, patientName) => {
+  const loadPatientHistory = async (patientId, patientName, focusArea = "comprehensive") => {
     if (!patientId && !patientName) return;
-    
+
     setLoadingHistory(true);
     try {
       const allNotes = await base44.entities.ClinicalNote.list();
@@ -44,22 +46,36 @@ export default function NewNote() {
         return;
       }
 
-      const historyPrompt = `Analyze these previous clinical notes for patient ${patientName} and extract a comprehensive medical history summary.
+      const focusInstructions = {
+        comprehensive: "Extract all relevant medical history comprehensively.",
+        cardiac: "Focus on cardiac/cardiovascular history: heart conditions, cardiac medications, cardiac procedures, and risk factors (HTN, diabetes, cholesterol).",
+        respiratory: "Focus on respiratory history: lung conditions, breathing issues, inhalers, oxygen use, smoking history.",
+        endocrine: "Focus on endocrine history: diabetes, thyroid disorders, metabolic conditions, and related medications.",
+        neurological: "Focus on neurological history: seizures, stroke, neurodegenerative conditions, headaches, and neurological medications.",
+        gastrointestinal: "Focus on GI history: digestive issues, liver disease, GI procedures, and related medications.",
+        renal: "Focus on renal history: kidney disease, dialysis, urinary issues, and nephrotoxic medications.",
+        oncology: "Focus on oncology history: cancer diagnoses, treatments, surgeries, and ongoing surveillance."
+      };
 
-Previous Notes:
-${patientNotes.slice(0, 5).map(note => `
-Date: ${note.date_of_visit}
-Diagnoses: ${note.diagnoses?.join(", ") || "N/A"}
-Medications: ${note.medications?.join(", ") || "N/A"}
-Assessment: ${note.assessment || "N/A"}
-Plan: ${note.plan || "N/A"}
-`).join("\n---\n")}
+      const historyPrompt = `Analyze these previous clinical notes for patient ${patientName} and extract medical history.
 
-Extract and consolidate:
-1. chronic_conditions - Ongoing/chronic conditions (no acute/resolved conditions)
-2. allergies - Drug or other allergies mentioned
-3. current_medications - Active medications the patient is taking
-4. past_procedures - Surgical procedures or major interventions`;
+  FOCUS: ${focusInstructions[focusArea] || focusInstructions.comprehensive}
+
+  Previous Notes (${patientNotes.length} total, showing 5 most recent):
+  ${patientNotes.slice(0, 5).map(note => `
+  Date: ${note.date_of_visit}
+  Diagnoses: ${note.diagnoses?.join(", ") || "N/A"}
+  Medications: ${note.medications?.join(", ") || "N/A"}
+  Assessment: ${note.assessment || "N/A"}
+  Plan: ${note.plan || "N/A"}
+  `).join("\n---\n")}
+
+  Extract and consolidate:
+  1. chronic_conditions - Ongoing/chronic conditions (prioritize ${focusArea} conditions)
+  2. allergies - Drug or other allergies mentioned
+  3. current_medications - Active medications (prioritize ${focusArea}-related)
+  4. past_procedures - Surgical procedures or major interventions (prioritize ${focusArea}-related)
+  5. trends - Analyze changes over time: Are conditions worsening/improving? Medication changes? New developments? (2-3 sentences highlighting key trends)`;
 
       const history = await base44.integrations.Core.InvokeLLM({
         prompt: historyPrompt,
@@ -69,7 +85,8 @@ Extract and consolidate:
             chronic_conditions: { type: "array", items: { type: "string" } },
             allergies: { type: "array", items: { type: "string" } },
             current_medications: { type: "array", items: { type: "string" } },
-            past_procedures: { type: "array", items: { type: "string" } }
+            past_procedures: { type: "array", items: { type: "string" } },
+            trends: { type: "string" }
           }
         }
       });
@@ -88,7 +105,7 @@ Extract and consolidate:
     
     // Load patient history in parallel
     if (noteData.patient_id || noteData.patient_name) {
-      loadPatientHistory(noteData.patient_id, noteData.patient_name);
+      loadPatientHistory(noteData.patient_id, noteData.patient_name, historyFocus);
     }
 
     const template = templates.find(t => t.id === templateId);
@@ -395,6 +412,19 @@ ${JSON.stringify(structuredNote, null, 2)}`,
           />
         ) : (
           <>
+            {/* History Focus Selector */}
+            {rawData && (rawData.patient_id || rawData.patient_name) && (
+              <HistoryFocusSelector
+                value={historyFocus}
+                onChange={(value) => {
+                  setHistoryFocus(value);
+                  loadPatientHistory(rawData.patient_id, rawData.patient_name, value);
+                }}
+                onRefresh={() => loadPatientHistory(rawData.patient_id, rawData.patient_name, historyFocus)}
+                disabled={loadingHistory}
+              />
+            )}
+
             {/* Patient History Panel */}
             <PatientHistoryPanel 
               history={patientHistory}

@@ -206,16 +206,16 @@ export default function SectionEditor({ sections, onChange }) {
                               </Label>
                             </div>
                             <Textarea
-                              placeholder="Tell the AI how to extract and structure information for this section..."
+                              placeholder="e.g., 'Extract only cardiac-related findings', 'Use OLDCARTS framework', 'Focus on respiratory symptoms only', 'List with bullet points'"
                               value={section.ai_instructions || ""}
                               onChange={(e) =>
                                 updateSection(index, "ai_instructions", e.target.value)
                               }
-                              className="h-24 text-sm resize-none font-mono"
+                              className="h-24 text-sm resize-none"
                               disabled={!section.enabled}
                             />
                             <p className="text-xs text-slate-500 mt-1">
-                              Be specific: "Extract all symptoms by body system", "List medications with dosages", etc.
+                              💡 Be specific - the AI will follow these instructions precisely when extracting data for this section
                             </p>
                           </div>
 
@@ -236,6 +236,11 @@ export default function SectionEditor({ sections, onChange }) {
                                 disabled={!section.enabled}
                               />
                             </div>
+                            <p className="text-xs text-slate-500 mb-2">
+                              Show this section only when specific conditions are met (e.g., only for H&P notes or cardiology specialty)
+                            </p>
+                            <div>
+                            </div>
 
                             {section.conditional_logic?.enabled && (
                               <div className="space-y-2 pl-5">
@@ -255,10 +260,9 @@ export default function SectionEditor({ sections, onChange }) {
                                         <SelectValue />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        <SelectItem value="note_type">Note Type</SelectItem>
-                                        <SelectItem value="specialty">Specialty</SelectItem>
-                                        <SelectItem value="diagnosis_contains">Diagnosis Contains</SelectItem>
-                                        <SelectItem value="custom">Custom Logic</SelectItem>
+                                        <SelectItem value="note_type">Note Type (exact match)</SelectItem>
+                                        <SelectItem value="specialty">Specialty (contains text)</SelectItem>
+                                        <SelectItem value="diagnosis_contains">Diagnosis Contains (future)</SelectItem>
                                       </SelectContent>
                                     </Select>
                                   </div>

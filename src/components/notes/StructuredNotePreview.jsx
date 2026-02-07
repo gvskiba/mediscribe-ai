@@ -42,136 +42,154 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpda
         {/* AI-Powered Guideline Recommendations */}
         {(loadingGuidelines || (guidelineRecommendations.length > 0 && showGuidelines)) && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border border-purple-100 overflow-hidden"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-white rounded-xl border border-purple-200 shadow-sm overflow-hidden"
           >
-            <div className="p-4 flex items-start justify-between border-b border-purple-100 bg-white/50">
-              <div className="flex items-center gap-2">
-                <Lightbulb className="w-5 h-5 text-purple-600" />
+            <div className="p-5 flex items-start justify-between border-b border-slate-100 bg-gradient-to-r from-purple-50/50 to-blue-50/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+                  <Lightbulb className="w-5 h-5 text-purple-600" />
+                </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900">AI Guideline Recommendations</h3>
-                  <p className="text-xs text-slate-500">Evidence-based suggestions for diagnosed conditions</p>
+                  <h3 className="text-base font-semibold text-slate-900">Clinical Guidelines</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Evidence-based recommendations</p>
                 </div>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowGuidelines(false)}
-                className="h-7 w-7 -mt-1 -mr-1"
+                className="h-8 w-8 rounded-lg hover:bg-slate-100"
               >
                 <X className="w-4 h-4 text-slate-400" />
               </Button>
             </div>
 
-            <div className="p-4 space-y-3">
+            <div className="p-5">
               {loadingGuidelines ? (
-                <div className="flex items-center gap-2 text-sm text-purple-600 py-4">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Fetching evidence-based guidelines...
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-purple-600 mb-3" />
+                  <p className="text-sm font-medium text-slate-900">Analyzing guidelines</p>
+                  <p className="text-xs text-slate-500 mt-1">Fetching evidence-based recommendations...</p>
                 </div>
               ) : (
-                guidelineRecommendations.map((rec, idx) => {
-                  const isLinked = linkedGuidelines.some(g => g.condition === rec.condition);
+                <div className="space-y-3">
+                  {guidelineRecommendations.map((rec, idx) => {
+                    const isLinked = linkedGuidelines.some(g => g.condition === rec.condition);
+                    const isExpanded = expandedGuideline === idx;
 
-                  return (
-                    <div key={idx} className="bg-white rounded-lg border border-purple-100 overflow-hidden">
-                      <button
-                        onClick={() => setExpandedGuideline(expandedGuideline === idx ? null : idx)}
-                        className="w-full flex items-center justify-between p-3 hover:bg-purple-50/50 transition-colors"
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-md bg-purple-100 flex items-center justify-center">
-                            <Target className="w-3.5 h-3.5 text-purple-600" />
-                          </div>
-                          <span className="text-sm font-semibold text-slate-900">{rec.condition}</span>
-                          {isLinked && (
-                            <CheckCircle2 className="w-4 h-4 text-green-600" />
-                          )}
-                        </div>
-                        {expandedGuideline === idx ? (
-                          <ChevronUp className="w-4 h-4 text-slate-400" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4 text-slate-400" />
-                        )}
-                      </button>
-
-                      <AnimatePresence>
-                        {expandedGuideline === idx && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="border-t border-purple-100"
-                          >
-                            <div className="p-3 space-y-3">
-                              {rec.summary && (
-                                <p className="text-xs text-slate-600 leading-relaxed">{rec.summary}</p>
+                    return (
+                      <div key={idx} className="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden hover:border-purple-300 transition-colors">
+                        <button
+                          onClick={() => setExpandedGuideline(isExpanded ? null : idx)}
+                          className="w-full flex items-center justify-between p-4 hover:bg-slate-100/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isLinked ? 'bg-green-100' : 'bg-purple-100'}`}>
+                              {isLinked ? (
+                                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                              ) : (
+                                <Target className="w-4 h-4 text-purple-600" />
                               )}
-                              {rec.key_points && rec.key_points.length > 0 && (
-                                <ul className="text-xs text-slate-600 space-y-1 ml-4 list-disc">
-                                  {rec.key_points.map((point, i) => (
-                                    <li key={i}>{point}</li>
-                                  ))}
-                                </ul>
-                              )}
-
-                              {/* Link/Incorporate Actions */}
-                              <div className="flex gap-2 pt-2 border-t border-purple-100">
-                                {!isLinked ? (
-                                  <>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => {
-                                        const newLinked = [...linkedGuidelines, {
-                                          guideline_query_id: rec.guideline_id,
-                                          condition: rec.condition,
-                                          incorporated: false,
-                                          adherence_notes: ""
-                                        }];
-                                        setLinkedGuidelines(newLinked);
-                                        onUpdate("linked_guidelines", newLinked);
-                                      }}
-                                      className="text-xs h-7 gap-1"
-                                    >
-                                      <Link className="w-3 h-3" /> Link to Note
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      onClick={() => {
-                                        const guidelineText = `\n\n[Guideline - ${rec.condition}]\n${rec.summary}\nKey Points:\n${rec.key_points?.map(p => `- ${p}`).join('\n')}`;
-                                        onUpdate("plan", (note.plan || "") + guidelineText);
-
-                                        const newLinked = [...linkedGuidelines, {
-                                          guideline_query_id: rec.guideline_id,
-                                          condition: rec.condition,
-                                          incorporated: true,
-                                          adherence_notes: "Guideline incorporated into plan"
-                                        }];
-                                        setLinkedGuidelines(newLinked);
-                                        onUpdate("linked_guidelines", newLinked);
-                                      }}
-                                      className="text-xs h-7 gap-1 bg-purple-600 hover:bg-purple-700"
-                                    >
-                                      <CheckCircle2 className="w-3 h-3" /> Incorporate into Plan
-                                    </Button>
-                                  </>
-                                ) : (
-                                  <Badge className="bg-green-100 text-green-700">
-                                    <CheckCircle2 className="w-3 h-3 mr-1" /> Linked
-                                  </Badge>
-                                )}
-                              </div>
                             </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  );
-                })
+                            <div className="text-left">
+                              <p className="text-sm font-semibold text-slate-900">{rec.condition}</p>
+                              {isLinked && (
+                                <p className="text-xs text-green-600 mt-0.5">Linked to note</p>
+                              )}
+                            </div>
+                          </div>
+                          <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        <AnimatePresence>
+                          {isExpanded && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="border-t border-slate-200 bg-white"
+                            >
+                              <div className="p-4 space-y-4">
+                                {rec.summary && (
+                                  <div>
+                                    <h4 className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2">Summary</h4>
+                                    <p className="text-sm text-slate-600 leading-relaxed">{rec.summary}</p>
+                                  </div>
+                                )}
+                                
+                                {rec.key_points && rec.key_points.length > 0 && (
+                                  <div>
+                                    <h4 className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2">Key Points</h4>
+                                    <ul className="space-y-2">
+                                      {rec.key_points.map((point, i) => (
+                                        <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
+                                          <div className="w-1.5 h-1.5 rounded-full bg-purple-400 mt-1.5 flex-shrink-0" />
+                                          <span>{point}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+
+                                <div className="flex gap-2 pt-3 border-t border-slate-100">
+                                  {!isLinked ? (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          const newLinked = [...linkedGuidelines, {
+                                            guideline_query_id: rec.guideline_id,
+                                            condition: rec.condition,
+                                            incorporated: false,
+                                            adherence_notes: ""
+                                          }];
+                                          setLinkedGuidelines(newLinked);
+                                          onUpdate("linked_guidelines", newLinked);
+                                        }}
+                                        className="flex-1 gap-1.5 rounded-lg"
+                                      >
+                                        <Link className="w-3.5 h-3.5" /> Link to Note
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        onClick={() => {
+                                          const guidelineText = `\n\n[Guideline - ${rec.condition}]\n${rec.summary}\nKey Points:\n${rec.key_points?.map(p => `- ${p}`).join('\n')}`;
+                                          onUpdate("plan", (note.plan || "") + guidelineText);
+
+                                          const newLinked = [...linkedGuidelines, {
+                                            guideline_query_id: rec.guideline_id,
+                                            condition: rec.condition,
+                                            incorporated: true,
+                                            adherence_notes: "Guideline incorporated into plan"
+                                          }];
+                                          setLinkedGuidelines(newLinked);
+                                          onUpdate("linked_guidelines", newLinked);
+                                        }}
+                                        className="flex-1 gap-1.5 bg-purple-600 hover:bg-purple-700 rounded-lg"
+                                      >
+                                        <CheckCircle2 className="w-3.5 h-3.5" /> Add to Plan
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-lg text-green-700 text-sm font-medium">
+                                      <CheckCircle2 className="w-4 h-4" />
+                                      <span>Successfully linked</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </motion.div>

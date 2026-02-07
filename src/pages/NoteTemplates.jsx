@@ -8,10 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { FileText, Plus, Edit, Trash2, Star, Check, Sparkles, Loader2, BarChart3 } from "lucide-react";
+import { FileText, Plus, Edit, Trash2, Star, Check, Sparkles, Loader2, BarChart3, Share2, History, Filter, TrendingUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import SectionEditor from "../components/templates/SectionEditor";
 import TemplateAnalytics from "../components/templates/TemplateAnalytics";
+import TemplateSharing from "../components/templates/TemplateSharing";
+import TemplateVersionHistory from "../components/templates/TemplateVersionHistory";
+import AITemplateSuggestions from "../components/templates/AITemplateSuggestions";
+import { toast } from "sonner";
 
 const noteTypes = [
   { value: "progress_note", label: "Progress Note" },
@@ -28,11 +32,17 @@ export default function NoteTemplates() {
   const [generatingSuggestions, setGeneratingSuggestions] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [selectedTemplateForAnalytics, setSelectedTemplateForAnalytics] = useState(null);
+  const [sharingDialogOpen, setSharingDialogOpen] = useState(false);
+  const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
+  const [aiSuggestionsOpen, setAiSuggestionsOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     note_type: "progress_note",
     specialty: "",
+    category: "general",
     sections: [],
     ai_instructions: "",
   });
@@ -57,6 +67,8 @@ export default function NoteTemplates() {
       // Ensure sections have IDs and order
       const processedData = {
         ...data,
+        version: 1,
+        usage_count: 0,
         sections: data.sections?.map((section, idx) => ({
           ...section,
           id: section.id || `section_${Date.now()}_${idx}`,
@@ -74,6 +86,7 @@ export default function NoteTemplates() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["noteTemplates"] });
       resetForm();
+      toast.success("Template created successfully");
     },
   });
 
@@ -99,12 +112,37 @@ export default function NoteTemplates() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["noteTemplates"] });
       resetForm();
+      toast.success("Template updated successfully");
+    },
+  });
+
+  const createVersionMutation = useMutation({
+    mutationFn: async ({ templateId, versionNotes }) => {
+      const original = templates.find(t => t.id === templateId);
+      const newVersion = {
+        ...original,
+        version: (original.version || 1) + 1,
+        parent_template_id: original.parent_template_id || original.id,
+        version_notes: versionNotes,
+        usage_count: 0
+      };
+      delete newVersion.id;
+      delete newVersion.created_date;
+      delete newVersion.updated_date;
+      return base44.entities.NoteTemplate.create(newVersion);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["noteTemplates"] });
+      toast.success("New version created");
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.NoteTemplate.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["noteTemplates"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["noteTemplates"] });
+      toast.success("Template deleted");
+    },
   });
 
   const setDefaultMutation = useMutation({
@@ -113,7 +151,10 @@ export default function NoteTemplates() {
         templates.map(t => base44.entities.NoteTemplate.update(t.id, { is_default: t.id === id }))
       );
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["noteTemplates"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["noteTemplates"] });
+      toast.success("Default template updated");
+    },
   });
 
   const resetForm = () => {
@@ -122,6 +163,7 @@ export default function NoteTemplates() {
       description: "",
       note_type: "progress_note",
       specialty: "",
+      category: "general",
       sections: [],
       ai_instructions: "",
     });
@@ -150,10 +192,64 @@ export default function NoteTemplates() {
       description: template.description || "",
       note_type: template.note_type || "progress_note",
       specialty: template.specialty || "",
+      category: template.category || "general",
       sections: processedSections,
       ai_instructions: template.ai_instructions || "",
     });
     setDialogOpen(true);
+  };
+
+  const handleShare = (template) => {
+    setSelectedTemplate(template);
+    setSharingDialogOpen(true);
+  };
+
+  const handleVersionHistory = (template) => {
+    setSelectedTemplate(template);
+    setVersionHistoryOpen(true);
+  };
+
+  const handleAISuggestions = (template) => {
+    setSelectedTemplate(template);
+    setAiSuggestionsOpen(true);
+  };
+
+  const handleRestoreVersion = async (version) => {
+    const versionNotes = prompt("Enter notes for this new version:");
+    if (versionNotes) {
+      await createVersionMutation.mutateAsync({
+        templateId: version.id,
+        versionNotes
+      });
+      setVersionHistoryOpen(false);
+    }
+  };
+
+  const handleApplySuggestion = async (suggestion) => {
+    if (suggestion.type === "add_section" && suggestion.implementation) {
+      const newSection = {
+        id: Date.now().toString(),
+        name: suggestion.implementation.section_name,
+        description: suggestion.implementation.section_description,
+        ai_instructions: suggestion.implementation.ai_instructions,
+        enabled: true,
+        order: selectedTemplate.sections?.length || 0
+      };
+
+      await updateMutation.mutateAsync({
+        id: selectedTemplate.id,
+        data: {
+          sections: [...(selectedTemplate.sections || []), newSection]
+        }
+      });
+    }
+  };
+
+  const getTemplateVersions = (template) => {
+    const parentId = template.parent_template_id || template.id;
+    return templates.filter(t => 
+      t.id === parentId || t.parent_template_id === parentId
+    );
   };
 
   const handleGenerateSuggestions = async () => {
@@ -200,8 +296,9 @@ Return a JSON structure with:
         sections: result.sections || [],
         ai_instructions: result.overall_ai_instructions || formData.ai_instructions
       });
+      toast.success("AI suggestions generated");
     } catch (error) {
-      alert("Failed to generate suggestions. Please try again.");
+      toast.error("Failed to generate suggestions");
     } finally {
       setGeneratingSuggestions(false);
     }
@@ -209,7 +306,7 @@ Return a JSON structure with:
 
   const handleSubmit = () => {
     if (!formData.name || formData.sections.length === 0) {
-      alert("Please provide a template name and at least one section");
+      toast.error("Please provide a template name and at least one section");
       return;
     }
 
@@ -222,22 +319,47 @@ Return a JSON structure with:
     }
   };
 
+  const filteredTemplates = categoryFilter === "all" 
+    ? templates 
+    : templates.filter(t => t.category === categoryFilter);
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Note Templates</h1>
-          <p className="text-slate-500 mt-1">Create custom templates with AI-driven sections. Define specific extraction instructions and set conditional logic based on note type or specialty.</p>
+          <p className="text-slate-500 mt-1">AI-powered templates with versioning, sharing, and smart suggestions</p>
         </div>
-        <Button
-          onClick={() => {
-            resetForm();
-            setDialogOpen(true);
-          }}
-          className="bg-blue-600 hover:bg-blue-700 rounded-xl gap-2"
-        >
-          <Plus className="w-4 h-4" /> New Template
-        </Button>
+        <div className="flex gap-2">
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-40">
+              <Filter className="w-4 h-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem value="general">General</SelectItem>
+              <SelectItem value="cardiology">Cardiology</SelectItem>
+              <SelectItem value="pulmonology">Pulmonology</SelectItem>
+              <SelectItem value="endocrinology">Endocrinology</SelectItem>
+              <SelectItem value="neurology">Neurology</SelectItem>
+              <SelectItem value="oncology">Oncology</SelectItem>
+              <SelectItem value="pediatrics">Pediatrics</SelectItem>
+              <SelectItem value="emergency">Emergency</SelectItem>
+              <SelectItem value="surgery">Surgery</SelectItem>
+              <SelectItem value="psychiatry">Psychiatry</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            onClick={() => {
+              resetForm();
+              setDialogOpen(true);
+            }}
+            className="bg-blue-600 hover:bg-blue-700 rounded-xl gap-2"
+          >
+            <Plus className="w-4 h-4" /> New Template
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -246,11 +368,11 @@ Return a JSON structure with:
             <div key={i} className="h-48 bg-slate-100 rounded-2xl animate-pulse" />
           ))}
         </div>
-      ) : templates.length === 0 ? (
+      ) : filteredTemplates.length === 0 ? (
         <Card className="p-12 text-center">
           <FileText className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">No templates yet</h3>
-          <p className="text-slate-500 mb-4">Create your first note template to customize AI transcription</p>
+          <h3 className="text-lg font-semibold text-slate-900 mb-2">No templates found</h3>
+          <p className="text-slate-500 mb-4">Create your first note template with AI-powered sections</p>
           <Button onClick={() => setDialogOpen(true)} className="rounded-xl gap-2">
             <Plus className="w-4 h-4" /> Create Template
           </Button>
@@ -258,7 +380,7 @@ Return a JSON structure with:
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <AnimatePresence>
-            {templates.map(template => (
+            {filteredTemplates.map(template => (
               <motion.div
                 key={template.id}
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -272,45 +394,34 @@ Return a JSON structure with:
                     </Badge>
                   )}
                   <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-slate-900 mb-1">{template.name}</h3>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-lg font-semibold text-slate-900">{template.name}</h3>
+                      {template.is_public && (
+                        <Badge variant="outline" className="text-xs">Public</Badge>
+                      )}
+                      {template.version > 1 && (
+                        <Badge variant="outline" className="text-xs">v{template.version}</Badge>
+                      )}
+                    </div>
                     <p className="text-sm text-slate-500">{template.description}</p>
                   </div>
                   <div className="flex flex-wrap gap-2 mb-4">
                     <Badge variant="outline">{noteTypes.find(t => t.value === template.note_type)?.label}</Badge>
+                    <Badge className="bg-purple-100 text-purple-700">{template.category}</Badge>
                     {template.specialty && <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">{template.specialty}</Badge>}
                     {template.sections?.length > 0 && (
                       <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
                         {template.sections.filter(s => s.enabled !== false).length}/{template.sections.length} active
                       </Badge>
                     )}
-                    {template.sections?.filter(s => s.conditional_logic?.enabled).length > 0 && (
-                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                        {template.sections.filter(s => s.conditional_logic?.enabled).length} conditional
+                    {template.usage_count > 0 && (
+                      <Badge variant="outline" className="text-xs">
+                        <TrendingUp className="w-3 h-3 mr-1" />
+                        {template.usage_count} uses
                       </Badge>
                     )}
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedTemplateForAnalytics(template);
-                        setAnalyticsOpen(true);
-                      }}
-                      className="rounded-lg gap-1 text-blue-600 hover:text-blue-700"
-                    >
-                      <BarChart3 className="w-3 h-3" /> Analytics
-                    </Button>
-                    {!template.is_default && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setDefaultMutation.mutate(template.id)}
-                        className="rounded-lg gap-1"
-                      >
-                        <Star className="w-3 h-3" /> Set Default
-                      </Button>
-                    )}
+                  <div className="flex flex-wrap gap-1">
                     <Button
                       variant="outline"
                       size="sm"
@@ -322,10 +433,47 @@ Return a JSON structure with:
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => deleteMutation.mutate(template.id)}
-                      className="rounded-lg gap-1 text-red-600 hover:text-red-700"
+                      onClick={() => handleShare(template)}
+                      className="rounded-lg"
+                      title="Share"
                     >
-                      <Trash2 className="w-3 h-3" /> Delete
+                      <Share2 className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleVersionHistory(template)}
+                      className="rounded-lg"
+                      title="Version History"
+                    >
+                      <History className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleAISuggestions(template)}
+                      className="rounded-lg"
+                      title="AI Suggestions"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                    </Button>
+                    {!template.is_default && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDefaultMutation.mutate(template.id)}
+                        className="rounded-lg"
+                      >
+                        <Star className="w-3 h-3" />
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => deleteMutation.mutate(template.id)}
+                      className="rounded-lg text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="w-3 h-3" />
                     </Button>
                   </div>
                 </Card>
@@ -384,6 +532,27 @@ Return a JSON structure with:
               </div>
             </div>
             <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Category</label>
+              <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
+                <SelectTrigger className="rounded-lg">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="general">General</SelectItem>
+                  <SelectItem value="cardiology">Cardiology</SelectItem>
+                  <SelectItem value="pulmonology">Pulmonology</SelectItem>
+                  <SelectItem value="endocrinology">Endocrinology</SelectItem>
+                  <SelectItem value="neurology">Neurology</SelectItem>
+                  <SelectItem value="oncology">Oncology</SelectItem>
+                  <SelectItem value="pediatrics">Pediatrics</SelectItem>
+                  <SelectItem value="emergency">Emergency</SelectItem>
+                  <SelectItem value="surgery">Surgery</SelectItem>
+                  <SelectItem value="psychiatry">Psychiatry</SelectItem>
+                  <SelectItem value="custom">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-sm font-medium text-slate-700">Note Sections</label>
                 <Button
@@ -412,7 +581,7 @@ Return a JSON structure with:
               <Textarea
                 value={formData.ai_instructions}
                 onChange={(e) => setFormData({ ...formData, ai_instructions: e.target.value })}
-                placeholder="e.g., 'Be concise and use bullet points', 'Focus on patient safety concerns', 'Use medical terminology appropriate for specialist audience'"
+                placeholder="e.g., 'Be concise and use bullet points', 'Focus on patient safety concerns'"
                 className="min-h-[100px] rounded-lg"
               />
               <p className="text-xs text-slate-500 mt-1.5">
@@ -443,6 +612,29 @@ Return a JSON structure with:
           setAnalyticsOpen(false);
           setSelectedTemplateForAnalytics(null);
         }}
+      />
+
+      <TemplateSharing
+        template={selectedTemplate}
+        open={sharingDialogOpen}
+        onClose={() => setSharingDialogOpen(false)}
+        onUpdate={(id, data) => updateMutation.mutateAsync({ id, data })}
+      />
+
+      <TemplateVersionHistory
+        template={selectedTemplate}
+        versions={selectedTemplate ? getTemplateVersions(selectedTemplate) : []}
+        open={versionHistoryOpen}
+        onClose={() => setVersionHistoryOpen(false)}
+        onRestore={handleRestoreVersion}
+      />
+
+      <AITemplateSuggestions
+        template={selectedTemplate}
+        usageData={{ templates }}
+        open={aiSuggestionsOpen}
+        onClose={() => setAiSuggestionsOpen(false)}
+        onApplySuggestion={handleApplySuggestion}
       />
     </div>
   );

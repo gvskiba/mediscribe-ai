@@ -55,6 +55,15 @@ export default function Layout({ children, currentPageName }) {
             </div>
           </div>
         </div>
+        <div className="px-4 py-3 border-b border-white/10">
+          <Link
+            to={createPageUrl("NewNote")}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2.5 font-medium text-sm transition-colors flex items-center justify-center gap-2"
+          >
+            <FileText className="w-4 h-4" />
+            New Note
+          </Link>
+        </div>
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => (
             <Link
@@ -83,14 +92,20 @@ export default function Layout({ children, currentPageName }) {
       </aside>
 
       {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-[#0f172a] text-white flex items-center justify-between px-4 z-40">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-[#0f172a] text-white flex items-center justify-between px-4 z-40 gap-3">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
             <Stethoscope className="w-4 h-4 text-blue-400" />
           </div>
-          <span className="font-semibold">MedScribe</span>
+          <span className="font-semibold truncate">MedScribe</span>
         </div>
-        <button onClick={() => setMobileOpen(!mobileOpen)}>
+        <Link
+          to={createPageUrl("NewNote")}
+          className="bg-blue-600 hover:bg-blue-700 rounded-lg p-2 transition-colors flex-shrink-0"
+        >
+          <FileText className="w-5 h-5" />
+        </Link>
+        <button onClick={() => setMobileOpen(!mobileOpen)} className="flex-shrink-0">
           {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </div>

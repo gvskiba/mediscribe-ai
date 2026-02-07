@@ -144,17 +144,21 @@ ${noteData.raw_note}`;
       // Apply conditional logic filtering
       const applicableSections = activeSections.filter(section => {
         if (!section.conditional_logic?.enabled) return true;
-        
+
         const { condition_type, condition_value } = section.conditional_logic;
-        
+
         if (condition_type === "note_type") {
           return noteData.note_type === condition_value;
         } else if (condition_type === "specialty") {
-          return noteData.specialty === condition_value;
+          return noteData.specialty?.toLowerCase().includes(condition_value?.toLowerCase());
+        } else if (condition_type === "diagnosis_contains") {
+          // Will be evaluated after initial extraction if needed
+          return true;
         }
-        // For other condition types, include the section (can be enhanced later)
         return true;
       });
+
+      console.log(`Template: ${template.name} - Using ${applicableSections.length}/${activeSections.length} sections based on conditions`);
 
       prompt += `\n\n=== FOLLOW THIS TEMPLATE STRUCTURE ===`;
       prompt += `\nTemplate: ${template.name}`;
@@ -163,17 +167,20 @@ ${noteData.raw_note}`;
       }
       
       prompt += `\n\n=== REQUIRED SECTIONS ===`;
-      prompt += `\nExtract information from the raw note above and populate each section below:\n`;
-      
+      prompt += `\nExtract information from the raw note above and populate each section below.`;
+      prompt += `\nFOLLOW THE SPECIFIC INSTRUCTIONS FOR EACH SECTION CAREFULLY:\n`;
+
       applicableSections.forEach((section, idx) => {
         prompt += `\n\n${idx + 1}. ${section.name}`;
         if (section.description) {
           prompt += `\n   Purpose: ${section.description}`;
         }
         if (section.ai_instructions) {
-          prompt += `\n   Instructions: ${section.ai_instructions}`;
+          prompt += `\n   ⚡ SPECIFIC INSTRUCTIONS: ${section.ai_instructions}`;
+          prompt += `\n   → CRITICAL: Follow these instructions precisely when extracting data for this section.`;
+        } else {
+          prompt += `\n   → Extract all relevant content from the raw note for this section.`;
         }
-        prompt += `\n   → Extract relevant content from the raw note to populate this section.`;
       });
       
       prompt += `\n\n=== IMPORTANT ===`;

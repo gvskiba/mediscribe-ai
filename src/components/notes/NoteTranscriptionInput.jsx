@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Mic, MicOff, Loader2, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
+import TemplatePreview from "../templates/TemplatePreview";
 
 const NOTE_TYPES = [
   { value: "progress_note", label: "Progress Note" },

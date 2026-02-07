@@ -110,8 +110,8 @@ export default function NewNote() {
       }
 
       const template = templates.find(t => t.id === templateId);
-    
-    let prompt = `You are a medical scribe AI. Given the following clinical note, extract and structure the information accurately.
+      
+      let prompt = `You are a medical scribe AI. Given the following clinical note, extract and structure the information accurately.
 
 Patient: ${noteData.patient_name}
 Note Type: ${noteData.note_type}
@@ -119,87 +119,87 @@ Specialty: ${noteData.specialty || "General"}
 Raw Note:
 ${noteData.raw_note}`;
 
-    let schema = {
-      type: "object",
-      properties: {
-        chief_complaint: { type: "string" },
-        history_of_present_illness: { type: "string" },
-        medical_history: { type: "string" },
-        review_of_systems: { type: "string" },
-        physical_exam: { type: "string" },
-        assessment: { type: "string" },
-        plan: { type: "string" },
-        clinical_impression: { type: "string" },
-        diagnoses: { type: "array", items: { type: "string" } },
-        medications: { type: "array", items: { type: "string" } },
-      },
-    };
-
-    if (template && template.sections) {
-      // Filter only enabled sections and sort by order
-      const activeSections = template.sections
-        .filter(section => section.enabled !== false)
-        .sort((a, b) => (a.order || 0) - (b.order || 0));
-
-      // Apply conditional logic filtering
-      const applicableSections = activeSections.filter(section => {
-        if (!section.conditional_logic?.enabled) return true;
-
-        const { condition_type, condition_value } = section.conditional_logic;
-
-        if (condition_type === "note_type") {
-          return noteData.note_type === condition_value;
-        } else if (condition_type === "specialty") {
-          return noteData.specialty?.toLowerCase().includes(condition_value?.toLowerCase());
-        } else if (condition_type === "diagnosis_contains") {
-          // Will be evaluated after initial extraction if needed
-          return true;
-        }
-        return true;
-      });
-
-      console.log(`Template: ${template.name} - Using ${applicableSections.length}/${activeSections.length} sections based on conditions`);
-
-      prompt += `\n\n=== FOLLOW THIS TEMPLATE STRUCTURE ===`;
-      prompt += `\nTemplate: ${template.name}`;
-      if (template.ai_instructions) {
-        prompt += `\n\nGlobal Instructions: ${template.ai_instructions}`;
-      }
-      
-      prompt += `\n\n=== REQUIRED SECTIONS ===`;
-      prompt += `\nExtract information from the raw note above and populate each section below.`;
-      prompt += `\nFOLLOW THE SPECIFIC INSTRUCTIONS FOR EACH SECTION CAREFULLY:\n`;
-
-      applicableSections.forEach((section, idx) => {
-        prompt += `\n\n${idx + 1}. ${section.name}`;
-        if (section.description) {
-          prompt += `\n   Purpose: ${section.description}`;
-        }
-        if (section.ai_instructions) {
-          prompt += `\n   ⚡ SPECIFIC INSTRUCTIONS: ${section.ai_instructions}`;
-          prompt += `\n   → CRITICAL: Follow these instructions precisely when extracting data for this section.`;
-        } else {
-          prompt += `\n   → Extract all relevant content from the raw note for this section.`;
-        }
-      });
-      
-      prompt += `\n\n=== IMPORTANT ===`;
-      prompt += `\nUse ONLY the information from the raw note provided above. Do not add external information.`;
-      prompt += `\nIf a section cannot be populated from the raw note, provide a brief note like "Not documented in this encounter."`;
-      
-      // Build schema from applicable sections
-      const properties = {};
-      applicableSections.forEach(section => {
-        const sectionKey = section.name.toLowerCase().replace(/\s+/g, '_');
-        properties[sectionKey] = { type: "string" };
-      });
-      
-      schema = {
+      let schema = {
         type: "object",
-        properties,
+        properties: {
+          chief_complaint: { type: "string" },
+          history_of_present_illness: { type: "string" },
+          medical_history: { type: "string" },
+          review_of_systems: { type: "string" },
+          physical_exam: { type: "string" },
+          assessment: { type: "string" },
+          plan: { type: "string" },
+          clinical_impression: { type: "string" },
+          diagnoses: { type: "array", items: { type: "string" } },
+          medications: { type: "array", items: { type: "string" } },
+        },
       };
-    } else {
-      prompt += `\n\n=== EXTRACTION INSTRUCTIONS ===
+
+      if (template && template.sections) {
+        // Filter only enabled sections and sort by order
+        const activeSections = template.sections
+          .filter(section => section.enabled !== false)
+          .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+        // Apply conditional logic filtering
+        const applicableSections = activeSections.filter(section => {
+          if (!section.conditional_logic?.enabled) return true;
+
+          const { condition_type, condition_value } = section.conditional_logic;
+
+          if (condition_type === "note_type") {
+            return noteData.note_type === condition_value;
+          } else if (condition_type === "specialty") {
+            return noteData.specialty?.toLowerCase().includes(condition_value?.toLowerCase());
+          } else if (condition_type === "diagnosis_contains") {
+            // Will be evaluated after initial extraction if needed
+            return true;
+          }
+          return true;
+        });
+
+        console.log(`Template: ${template.name} - Using ${applicableSections.length}/${activeSections.length} sections based on conditions`);
+
+        prompt += `\n\n=== FOLLOW THIS TEMPLATE STRUCTURE ===`;
+        prompt += `\nTemplate: ${template.name}`;
+        if (template.ai_instructions) {
+          prompt += `\n\nGlobal Instructions: ${template.ai_instructions}`;
+        }
+        
+        prompt += `\n\n=== REQUIRED SECTIONS ===`;
+        prompt += `\nExtract information from the raw note above and populate each section below.`;
+        prompt += `\nFOLLOW THE SPECIFIC INSTRUCTIONS FOR EACH SECTION CAREFULLY:\n`;
+
+        applicableSections.forEach((section, idx) => {
+          prompt += `\n\n${idx + 1}. ${section.name}`;
+          if (section.description) {
+            prompt += `\n   Purpose: ${section.description}`;
+          }
+          if (section.ai_instructions) {
+            prompt += `\n   ⚡ SPECIFIC INSTRUCTIONS: ${section.ai_instructions}`;
+            prompt += `\n   → CRITICAL: Follow these instructions precisely when extracting data for this section.`;
+          } else {
+            prompt += `\n   → Extract all relevant content from the raw note for this section.`;
+          }
+        });
+        
+        prompt += `\n\n=== IMPORTANT ===`;
+        prompt += `\nUse ONLY the information from the raw note provided above. Do not add external information.`;
+        prompt += `\nIf a section cannot be populated from the raw note, provide a brief note like "Not documented in this encounter."`;
+        
+        // Build schema from applicable sections
+        const properties = {};
+        applicableSections.forEach(section => {
+          const sectionKey = section.name.toLowerCase().replace(/\s+/g, '_');
+          properties[sectionKey] = { type: "string" };
+        });
+        
+        schema = {
+          type: "object",
+          properties,
+        };
+      } else {
+        prompt += `\n\n=== EXTRACTION INSTRUCTIONS ===
 
 Extract ALL information from the raw note and populate the following sections. Be thorough and comprehensive:
 
@@ -272,12 +272,12 @@ Extract ALL information from the raw note and populate the following sections. B
 - For Clinical Impression: Synthesize across all sections to identify the PRIMARY clinical issues
 - ALWAYS populate ALL 10 fields - never return null or undefined
 - Only use "Not documented" if there's absolutely no relevant information anywhere in the note`;
-    }
+      }
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt,
-      response_json_schema: schema,
-    });
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        response_json_schema: schema,
+      });
 
       console.log("AI Extraction Result:", result);
       setStructuredNote({ ...noteData, ...result });

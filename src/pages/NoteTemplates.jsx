@@ -217,7 +217,7 @@ Return a JSON structure with:
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Note Templates</h1>
-          <p className="text-slate-500 mt-1">Customize how AI structures your clinical notes</p>
+          <p className="text-slate-500 mt-1">Create custom templates with AI-driven sections. Define specific extraction instructions and set conditional logic based on note type or specialty.</p>
         </div>
         <Button
           onClick={() => {
@@ -398,13 +398,16 @@ Return a JSON structure with:
               <p className="text-xs text-slate-500 mt-2">Define sections for AI to structure the note, or use AI suggestions based on note type</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block">AI Instructions</label>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Global AI Instructions (Optional)</label>
               <Textarea
                 value={formData.ai_instructions}
                 onChange={(e) => setFormData({ ...formData, ai_instructions: e.target.value })}
-                placeholder="Specific instructions for AI on how to structure this type of note..."
+                placeholder="e.g., 'Be concise and use bullet points', 'Focus on patient safety concerns', 'Use medical terminology appropriate for specialist audience'"
                 className="min-h-[100px] rounded-lg"
               />
+              <p className="text-xs text-slate-500 mt-1.5">
+                These instructions apply to the entire template. For section-specific instructions, configure them in the sections above.
+              </p>
             </div>
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={resetForm} className="rounded-lg">

@@ -271,6 +271,10 @@ export default function NewNote() {
             });
           }
           
+          if (section.fallback_from_hpi) {
+            prompt += `\n   ℹ️  FALLBACK: If this section cannot be populated from the raw note, infer reasonable content from the History of Present Illness (HPI).`;
+          }
+          
           if (section.ai_instructions || section.ai_instructions_detailed?.global_instructions) {
             prompt += `\n   → CRITICAL: Follow these instructions precisely when extracting data for this section.`;
           } else {

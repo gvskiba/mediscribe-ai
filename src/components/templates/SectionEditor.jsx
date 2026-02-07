@@ -18,10 +18,10 @@ import {
   EyeOff
 } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import ConditionalLogicEditor from "./ConditionalLogicEditor";
+import AdvancedConditionalLogicEditor from "./AdvancedConditionalLogicEditor";
 import SectionAIInstructions from "./SectionAIInstructions";
 
-export default function SectionEditor({ sections, onChange }) {
+export default function SectionEditor({ sections, onChange, noteType, specialty = "" }) {
   const [expandedSections, setExpandedSections] = useState(new Set([0]));
 
   const toggleSection = (index) => {
@@ -35,25 +35,25 @@ export default function SectionEditor({ sections, onChange }) {
   };
 
   const addSection = () => {
-   const newSection = {
-     id: `section_${Date.now()}`,
-     name: "",
-     description: "",
-     ai_instructions: "",
-     ai_instructions_detailed: {
-       global_instructions: "",
-       field_instructions: []
-     },
-     enabled: true,
-     order: sections.length,
-     conditional_logic: {
-       enabled: false,
-       condition_type: "note_type",
-       condition_value: ""
-     }
-   };
-   onChange([...sections, newSection]);
-   setExpandedSections(new Set([...expandedSections, sections.length]));
+  const newSection = {
+    id: `section_${Date.now()}`,
+    name: "",
+    description: "",
+    ai_instructions: "",
+    ai_instructions_detailed: {
+      global_instructions: "",
+      field_instructions: []
+    },
+    enabled: true,
+    order: sections.length,
+    conditional_logic: {
+      enabled: false,
+      operator: "AND",
+      conditions: []
+    }
+  };
+  onChange([...sections, newSection]);
+  setExpandedSections(new Set([...expandedSections, sections.length]));
   };
 
   const removeSection = (index) => {
@@ -233,11 +233,13 @@ export default function SectionEditor({ sections, onChange }) {
                             <p className="text-xs text-slate-500 mb-3">
                               Show this section only when conditions match patient data or note properties
                             </p>
-                            <ConditionalLogicEditor
+                            <AdvancedConditionalLogicEditor
                               value={section.conditional_logic}
                               onChange={(value) =>
                                 updateSection(index, "conditional_logic", value)
                               }
+                              noteType={noteType}
+                              specialty={specialty}
                             />
                           </div>
                         </div>

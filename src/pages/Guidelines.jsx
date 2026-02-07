@@ -28,6 +28,7 @@ export default function Guidelines() {
   const [showCompare, setShowCompare] = useState(false);
   const [comparison, setComparison] = useState(null);
   const [comparing, setComparing] = useState(false);
+  const [selectedQuery, setSelectedQuery] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: pastQueries = [], isLoading: queriesLoading } = useQuery({
@@ -201,6 +202,12 @@ Format each as a concise clinical question (similar to the original).`,
 
   const handleSelectRelatedQuestion = (question) => {
     handleSubmit(question);
+  };
+
+  const handleSelectQuery = (query) => {
+    setSelectedQuery(query);
+    setLatestAnswer(null);
+    generateRelatedGuidelines(query);
   };
 
   const toggleSelectForCompare = (query) => {
@@ -483,10 +490,10 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
       )}
 
       <AnimatePresence>
-        {latestAnswer && (
+        {(latestAnswer || selectedQuery) && (
           <>
             <GuidelineAnswer 
-              query={latestAnswer} 
+              query={latestAnswer || selectedQuery} 
               onRate={handleRate}
               onSelectRelatedQuestion={handleSelectRelatedQuestion}
             />
@@ -523,7 +530,7 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
       </AnimatePresence>
 
       {/* Knowledge Base */}
-      {pastQueries.length > 0 && !latestAnswer && (
+      {pastQueries.length > 0 && !latestAnswer && !selectedQuery && (
         <div className="bg-white rounded-2xl border border-slate-100 p-6">
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-slate-900 mb-1">
@@ -669,12 +676,12 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                       className="rounded-md"
                     />
                   </div>
-                  <Link
-                    to={createPageUrl("GuidelineDetail") + `?id=${query.id}`}
-                    className="block flex-1"
+                  <div
+                    onClick={() => handleSelectQuery(query)}
+                    className="block flex-1 cursor-pointer"
                   >
                     <RecentQueryCard query={query} />
-                  </Link>
+                  </div>
                 </div>
               ))}
             </div>

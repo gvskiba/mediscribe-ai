@@ -50,7 +50,7 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpda
       formatted += `ASSESSMENT:\n${note.assessment}\n\n`;
     }
     
-    if (note.diagnoses && note.diagnoses.length > 0) {
+    if (Array.isArray(note.diagnoses) && note.diagnoses.length > 0) {
       formatted += `DIAGNOSES:\n`;
       note.diagnoses.forEach((dx, i) => {
         formatted += `${i + 1}. ${dx}\n`;
@@ -62,7 +62,7 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpda
       formatted += `PLAN:\n${note.plan}\n\n`;
     }
     
-    if (note.medications && note.medications.length > 0) {
+    if (Array.isArray(note.medications) && note.medications.length > 0) {
       formatted += `MEDICATIONS:\n`;
       note.medications.forEach((med, i) => {
         formatted += `${i + 1}. ${med}\n`;

@@ -291,8 +291,12 @@ Extract ALL information from the raw note and populate the following sections. B
       }
 
       // Automatically fetch guideline recommendations and ICD-10 codes in parallel
-      fetchGuidelineRecommendations(result);
-      generateICD10Suggestions(result);
+      try {
+        fetchGuidelineRecommendations(result);
+        generateICD10Suggestions(result);
+      } catch (error) {
+        console.error("Failed to fetch additional data:", error);
+      }
     } catch (error) {
       console.error("Error processing note:", error);
       alert("Failed to process note. Please try again.");

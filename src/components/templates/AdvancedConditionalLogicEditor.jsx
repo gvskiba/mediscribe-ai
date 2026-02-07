@@ -5,7 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, X, Wand2, AlertCircle, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { v4 as uuidv4 } from "crypto";
+
+const generateId = () => `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
 const CONDITION_TYPES = [
   { value: "note_type", label: "Note Type", description: "Show section for specific note types" },
@@ -85,7 +86,7 @@ export default function AdvancedConditionalLogicEditor({ value, onChange, noteTy
       enabled,
       operator,
       conditions: conditions.map(c => ({
-        id: c.id || uuidv4(),
+        id: c.id || generateId(),
         type: c.type,
         value: c.value,
         secondary_value: c.secondary_value,
@@ -100,7 +101,7 @@ export default function AdvancedConditionalLogicEditor({ value, onChange, noteTy
   const addCondition = () => {
     setConditions([
       ...conditions,
-      { id: uuidv4(), type: "diagnosis_contains", value: "" }
+      { id: generateId(), type: "diagnosis_contains", value: "" }
     ]);
   };
 
@@ -148,7 +149,7 @@ Return suggestions as a JSON array of condition suggestions.`,
       if (suggestions.suggestions) {
         setConditions(
           suggestions.suggestions.map(s => ({
-            id: uuidv4(),
+            id: generateId(),
             type: s.condition_type,
             value: s.value,
           }))

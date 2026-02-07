@@ -685,7 +685,9 @@ ${JSON.stringify(structuredNote, null, 2)}`,
       <div className="max-w-4xl mx-auto space-y-6">
         {!structuredNote ? (
           <NoteTranscriptionInput 
-            onSubmit={handleSubmit} 
+            onSubmit={(noteData, templateId) => {
+              handleSubmit(noteData, templateId);
+            }}
             isProcessing={isProcessing}
             templates={templates}
           />

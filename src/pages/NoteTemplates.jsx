@@ -541,6 +541,7 @@ Return a JSON structure with:
           <DialogHeader>
             <DialogTitle>{editingTemplate ? "Edit Template" : "Create Template"}</DialogTitle>
           </DialogHeader>
+          <div className="sr-only">Create or edit a note template with sections and AI instructions</div>
           <div className="space-y-4 mt-4">
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">Template Name</label>

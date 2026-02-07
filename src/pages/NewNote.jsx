@@ -180,8 +180,13 @@ export default function NewNote() {
           } else if (condition_type === "specialty") {
             return noteData.specialty?.toLowerCase().includes(condition_value?.toLowerCase());
           } else if (condition_type === "diagnosis_contains") {
-            // Will be evaluated after initial extraction if needed
-            return true;
+            return noteData.diagnoses?.some(d => d.toLowerCase().includes(condition_value?.toLowerCase()));
+          } else if (condition_type === "chronic_condition_contains") {
+            return patientHistory?.chronic_conditions?.some(c => c.toLowerCase().includes(condition_value?.toLowerCase()));
+          } else if (condition_type === "medication_contains") {
+            return patientHistory?.current_medications?.some(m => m.toLowerCase().includes(condition_value?.toLowerCase()));
+          } else if (condition_type === "allergy_contains") {
+            return patientHistory?.allergies?.some(a => a.toLowerCase().includes(condition_value?.toLowerCase()));
           }
           return true;
         });
@@ -203,8 +208,23 @@ export default function NewNote() {
           if (section.description) {
             prompt += `\n   Purpose: ${section.description}`;
           }
-          if (section.ai_instructions) {
+          
+          // Include detailed AI instructions if available
+          if (section.ai_instructions_detailed?.global_instructions) {
+            prompt += `\n   ⚡ SECTION GUIDELINES: ${section.ai_instructions_detailed.global_instructions}`;
+          } else if (section.ai_instructions) {
             prompt += `\n   ⚡ SPECIFIC INSTRUCTIONS: ${section.ai_instructions}`;
+          }
+          
+          // Include field-specific instructions
+          if (section.ai_instructions_detailed?.field_instructions && section.ai_instructions_detailed.field_instructions.length > 0) {
+            prompt += `\n   FIELD-SPECIFIC EXTRACTION:\n`;
+            section.ai_instructions_detailed.field_instructions.forEach(field => {
+              prompt += `     • ${field.field_name}: ${field.instructions}\n`;
+            });
+          }
+          
+          if (section.ai_instructions || section.ai_instructions_detailed?.global_instructions) {
             prompt += `\n   → CRITICAL: Follow these instructions precisely when extracting data for this section.`;
           } else {
             prompt += `\n   → Extract all relevant content from the raw note for this section.`;
@@ -587,8 +607,23 @@ ${noteData.raw_note}`;
           if (section.description) {
             prompt += `\n   Purpose: ${section.description}`;
           }
-          if (section.ai_instructions) {
+
+          // Include detailed AI instructions if available
+          if (section.ai_instructions_detailed?.global_instructions) {
+            prompt += `\n   ⚡ SECTION GUIDELINES: ${section.ai_instructions_detailed.global_instructions}`;
+          } else if (section.ai_instructions) {
             prompt += `\n   ⚡ SPECIFIC INSTRUCTIONS: ${section.ai_instructions}`;
+          }
+
+          // Include field-specific instructions
+          if (section.ai_instructions_detailed?.field_instructions && section.ai_instructions_detailed.field_instructions.length > 0) {
+            prompt += `\n   FIELD-SPECIFIC EXTRACTION:\n`;
+            section.ai_instructions_detailed.field_instructions.forEach(field => {
+              prompt += `     • ${field.field_name}: ${field.instructions}\n`;
+            });
+          }
+
+          if (section.ai_instructions || section.ai_instructions_detailed?.global_instructions) {
             prompt += `\n   → CRITICAL: Follow these instructions precisely when extracting data for this section.`;
           } else {
             prompt += `\n   → Extract all relevant content from the raw note for this section.`;

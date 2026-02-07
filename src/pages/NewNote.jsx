@@ -104,7 +104,7 @@ export default function NewNote() {
     setRawData(noteData);
     
     try {
-      // Load patient history in parallel
+      // Load patient history proactively
       if (noteData.patient_id || noteData.patient_name) {
         loadPatientHistory(noteData.patient_id, noteData.patient_name, historyFocus);
       }
@@ -113,11 +113,23 @@ export default function NewNote() {
       
       let prompt = `You are a medical scribe AI. Given the following clinical note, extract and structure the information accurately.
 
-Patient: ${noteData.patient_name}
-Note Type: ${noteData.note_type}
-Specialty: ${noteData.specialty || "General"}
-Raw Note:
-${noteData.raw_note}`;
+      Patient: ${noteData.patient_name}
+      Note Type: ${noteData.note_type}
+      Specialty: ${noteData.specialty || "General"}
+      Raw Note:
+      ${noteData.raw_note}`;
+
+      // Enhance prompt with patient context when available
+      if (patientHistory) {
+       prompt += `\n\n=== PATIENT HISTORY CONTEXT ===
+      Known Chronic Conditions: ${patientHistory.chronic_conditions?.join(", ") || "None"}
+      Current Medications: ${patientHistory.current_medications?.join(", ") || "None"}
+      Known Allergies: ${patientHistory.allergies?.join(", ") || "None"}
+      Past Procedures: ${patientHistory.past_procedures?.join(", ") || "None"}
+      Recent Trends: ${patientHistory.trends || "N/A"}
+
+      Use this history to inform your extraction and identify relevant continuities or changes from previous encounters.`;
+      }
 
       let schema = {
         type: "object",

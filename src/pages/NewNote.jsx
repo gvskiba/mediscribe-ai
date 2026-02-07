@@ -274,12 +274,19 @@ Extract ALL information from the raw note and populate the following sections. B
 - Only use "Not documented" if there's absolutely no relevant information anywhere in the note`;
       }
 
+      console.log("Sending prompt to LLM with schema:", schema);
+      
       const result = await base44.integrations.Core.InvokeLLM({
         prompt,
         response_json_schema: schema,
       });
 
       console.log("AI Extraction Result:", result);
+      
+      if (!result || Object.keys(result).length === 0) {
+        throw new Error("LLM returned empty result");
+      }
+      
       setStructuredNote({ ...noteData, ...result });
 
       // Update template usage count and last_used

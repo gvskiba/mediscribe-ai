@@ -116,6 +116,26 @@ ${noteData.raw_note}`;
     };
 
     if (template && template.sections) {
+      // Filter only enabled sections and sort by order
+      const activeSections = template.sections
+        .filter(section => section.enabled !== false)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+      // Apply conditional logic filtering
+      const applicableSections = activeSections.filter(section => {
+        if (!section.conditional_logic?.enabled) return true;
+        
+        const { condition_type, condition_value } = section.conditional_logic;
+        
+        if (condition_type === "note_type") {
+          return noteData.note_type === condition_value;
+        } else if (condition_type === "specialty") {
+          return noteData.specialty === condition_value;
+        }
+        // For other condition types, include the section (can be enhanced later)
+        return true;
+      });
+
       prompt += `\n\n=== FOLLOW THIS TEMPLATE STRUCTURE ===`;
       prompt += `\nTemplate: ${template.name}`;
       if (template.ai_instructions) {
@@ -125,7 +145,7 @@ ${noteData.raw_note}`;
       prompt += `\n\n=== REQUIRED SECTIONS ===`;
       prompt += `\nExtract information from the raw note above and populate each section below:\n`;
       
-      template.sections.forEach((section, idx) => {
+      applicableSections.forEach((section, idx) => {
         prompt += `\n\n${idx + 1}. ${section.name}`;
         if (section.description) {
           prompt += `\n   Purpose: ${section.description}`;
@@ -140,9 +160,9 @@ ${noteData.raw_note}`;
       prompt += `\nUse ONLY the information from the raw note provided above. Do not add external information.`;
       prompt += `\nIf a section cannot be populated from the raw note, provide a brief note like "Not documented in this encounter."`;
       
-      // Build schema from sections
+      // Build schema from applicable sections
       const properties = {};
-      template.sections.forEach(section => {
+      applicableSections.forEach(section => {
         const sectionKey = section.name.toLowerCase().replace(/\s+/g, '_');
         properties[sectionKey] = { type: "string" };
       });

@@ -8,9 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { FileText, Plus, Edit, Trash2, Star, Check, Sparkles, Loader2 } from "lucide-react";
+import { FileText, Plus, Edit, Trash2, Star, Check, Sparkles, Loader2, BarChart3 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import SectionEditor from "../components/templates/SectionEditor";
+import TemplateAnalytics from "../components/templates/TemplateAnalytics";
 
 const noteTypes = [
   { value: "progress_note", label: "Progress Note" },
@@ -25,6 +26,8 @@ export default function NoteTemplates() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [generatingSuggestions, setGeneratingSuggestions] = useState(false);
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
+  const [selectedTemplateForAnalytics, setSelectedTemplateForAnalytics] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -218,7 +221,18 @@ Return a JSON structure with:
                     <Badge variant="outline">{noteTypes.find(t => t.value === template.note_type)?.label}</Badge>
                     {template.specialty && <Badge variant="outline">{template.specialty}</Badge>}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedTemplateForAnalytics(template);
+                        setAnalyticsOpen(true);
+                      }}
+                      className="rounded-lg gap-1 text-blue-600 hover:text-blue-700"
+                    >
+                      <BarChart3 className="w-3 h-3" /> Analytics
+                    </Button>
                     {!template.is_default && (
                       <Button
                         variant="outline"
@@ -350,6 +364,15 @@ Return a JSON structure with:
           </div>
         </DialogContent>
       </Dialog>
+
+      <TemplateAnalytics
+        template={selectedTemplateForAnalytics}
+        open={analyticsOpen}
+        onClose={() => {
+          setAnalyticsOpen(false);
+          setSelectedTemplateForAnalytics(null);
+        }}
+      />
     </div>
   );
 }

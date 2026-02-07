@@ -99,9 +99,9 @@ If information is not found, return null for that field. Be conservative - only 
   };
 
   const handleSubmit = () => {
-    if (!patientName.trim() || !rawNote.trim()) return;
+    if (!rawNote.trim()) return;
     onSubmit({
-      patient_name: patientName,
+      patient_name: patientName || "Unknown Patient",
       patient_id: patientId,
       date_of_birth: dateOfBirth,
       note_type: noteType,
@@ -128,11 +128,11 @@ If information is not found, return null for that field. Be conservative - only 
         {/* Patient Info */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label className="text-slate-700 font-medium">Patient Name *</Label>
+            <Label className="text-slate-700 font-medium">Patient Name</Label>
             <Input
               value={patientName}
               onChange={(e) => setPatientName(e.target.value)}
-              placeholder="John Doe"
+              placeholder="Optional"
               className="rounded-xl border-slate-200 focus:border-blue-400 focus:ring-blue-400/20"
             />
           </div>
@@ -208,7 +208,7 @@ If information is not found, return null for that field. Be conservative - only 
           <div className="flex items-center justify-between">
             <Label className="text-slate-700 font-medium">Clinical Note *</Label>
             <div className="flex gap-2">
-              {rawNote && !patientName && (
+              {rawNote && (
                 <Button
                   type="button"
                   variant="outline"
@@ -254,7 +254,7 @@ If information is not found, return null for that field. Be conservative - only 
         <div className="flex justify-end">
           <Button
             onClick={handleSubmit}
-            disabled={isProcessing || !patientName.trim() || !rawNote.trim()}
+            disabled={isProcessing || !rawNote.trim()}
             className="bg-blue-600 hover:bg-blue-700 rounded-xl gap-2 px-6 shadow-lg shadow-blue-600/20"
           >
             {isProcessing ? (

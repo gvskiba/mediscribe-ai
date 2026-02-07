@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { FileText, Plus, Edit, Trash2, Star, Check, Sparkles, Loader2, BarChart3, Share2, History, Filter, TrendingUp } from "lucide-react";
+import { FileText, Plus, Edit, Trash2, Star, Check, Sparkles, Loader2, BarChart3, Share2, History, Filter, TrendingUp, Wand2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import SectionEditor from "../components/templates/SectionEditor";
 import SectionSuggestions from "../components/templates/SectionSuggestions";
@@ -18,6 +18,7 @@ import TemplateVersionHistory from "../components/templates/TemplateVersionHisto
 import AITemplateSuggestions from "../components/templates/AITemplateSuggestions";
 import TemplateVersionComparison from "../components/templates/TemplateVersionComparison";
 import TemplateSearch from "../components/templates/TemplateSearch";
+import AITemplateCreator from "../components/templates/AITemplateCreator";
 import { toast } from "sonner";
 
 const noteTypes = [
@@ -45,6 +46,8 @@ export default function NoteTemplates() {
   const [versionComparisonOpen, setVersionComparisonOpen] = useState(false);
   const [sectionSuggestions, setSectionSuggestions] = useState([]);
   const [loadingSectionSuggestions, setLoadingSectionSuggestions] = useState(false);
+  const [aiCreatorOpen, setAiCreatorOpen] = useState(false);
+  const [tagFilter, setTagFilter] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -379,10 +382,19 @@ Return a JSON structure with:
       
       const matchesCategory = categoryFilter === "all" || t.category === categoryFilter;
       const matchesNoteType = noteTypeFilter === "all" || t.note_type === noteTypeFilter;
+      const matchesTags = !tagFilter || t.tags?.includes(tagFilter);
       
-      return matchesSearch && matchesCategory && matchesNoteType;
+      return matchesSearch && matchesCategory && matchesNoteType && matchesTags;
     });
-  }, [templates, searchQuery, categoryFilter, noteTypeFilter]);
+  }, [templates, searchQuery, categoryFilter, noteTypeFilter, tagFilter]);
+
+  const allTags = useMemo(() => {
+    const tags = new Set();
+    templates.forEach(t => {
+      t.tags?.forEach(tag => tags.add(tag));
+    });
+    return Array.from(tags).sort();
+  }, [templates]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -391,25 +403,55 @@ Return a JSON structure with:
           <h1 className="text-3xl font-bold text-slate-900">Note Templates</h1>
           <p className="text-slate-500 mt-1">AI-powered templates with versioning, sharing, and smart suggestions</p>
         </div>
-        <Button
-          onClick={() => {
-            resetForm();
-            setDialogOpen(true);
-          }}
-          className="bg-blue-600 hover:bg-blue-700 rounded-xl gap-2"
-        >
-          <Plus className="w-4 h-4" /> New Template
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => setAiCreatorOpen(true)}
+            variant="outline"
+            className="rounded-xl gap-2"
+          >
+            <Wand2 className="w-4 h-4" /> AI Create
+          </Button>
+          <Button
+            onClick={() => {
+              resetForm();
+              setDialogOpen(true);
+            }}
+            className="bg-blue-600 hover:bg-blue-700 rounded-xl gap-2"
+          >
+            <Plus className="w-4 h-4" /> New Template
+          </Button>
+        </div>
       </div>
 
       {/* Enhanced Search and Filter */}
-      <div className="mb-6">
+      <div className="mb-6 space-y-3">
         <TemplateSearch 
           category={categoryFilter}
           onCategoryChange={setCategoryFilter}
           onSearchChange={setSearchQuery}
           onNoteTypeChange={setNoteTypeFilter}
         />
+        {allTags.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            <Badge 
+              variant={tagFilter === "" ? "default" : "outline"}
+              className="cursor-pointer"
+              onClick={() => setTagFilter("")}
+            >
+              All Tags
+            </Badge>
+            {allTags.map(tag => (
+              <Badge 
+                key={tag}
+                variant={tagFilter === tag ? "default" : "outline"}
+                className="cursor-pointer"
+                onClick={() => setTagFilter(tag)}
+              >
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        )}
       </div>
 
       {isLoading ? (
@@ -459,6 +501,9 @@ Return a JSON structure with:
                     <Badge variant="outline">{noteTypes.find(t => t.value === template.note_type)?.label}</Badge>
                     <Badge className="bg-purple-100 text-purple-700">{template.category}</Badge>
                     {template.specialty && <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">{template.specialty}</Badge>}
+                    {template.tags?.map(tag => (
+                      <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                    ))}
                     {template.sections?.length > 0 && (
                       <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
                         {template.sections.filter(s => s.enabled !== false).length}/{template.sections.length} active
@@ -727,6 +772,15 @@ Return a JSON structure with:
         versions={selectedTemplate ? getTemplateVersions(selectedTemplate) : []}
         open={versionComparisonOpen}
         onClose={() => setVersionComparisonOpen(false)}
+      />
+
+      <AITemplateCreator
+        open={aiCreatorOpen}
+        onClose={() => setAiCreatorOpen(false)}
+        onTemplateCreated={() => {
+          queryClient.invalidateQueries({ queryKey: ["noteTemplates"] });
+          setAiCreatorOpen(false);
+        }}
       />
     </div>
   );

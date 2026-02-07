@@ -98,8 +98,39 @@ Extract:
     navigate(createPageUrl(`NoteDetail?id=${created.id}`));
   };
 
-  const handleEdit = () => {
-    setStructuredNote(null);
+  const handleUpdate = (field, value) => {
+    setStructuredNote(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleReanalyze = async (field) => {
+    const fieldPrompts = {
+      chief_complaint: "Extract the chief complaint (main reason for visit) in 1-2 sentences",
+      assessment: "Provide a detailed clinical assessment including relevant findings and differential diagnoses",
+      plan: "Provide a comprehensive treatment plan including medications, follow-ups, and orders",
+      diagnoses: "List all diagnoses with ICD-10 codes if possible",
+      medications: "List all medications mentioned with dosages",
+    };
+
+    const responseSchemas = {
+      chief_complaint: { type: "object", properties: { result: { type: "string" } } },
+      assessment: { type: "object", properties: { result: { type: "string" } } },
+      plan: { type: "object", properties: { result: { type: "string" } } },
+      diagnoses: { type: "object", properties: { result: { type: "array", items: { type: "string" } } } },
+      medications: { type: "object", properties: { result: { type: "array", items: { type: "string" } } } },
+    };
+
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Based on the following clinical note, ${fieldPrompts[field]}:
+
+Raw Note:
+${rawData.raw_note}
+
+Current structured data:
+${JSON.stringify(structuredNote, null, 2)}`,
+      response_json_schema: responseSchemas[field],
+    });
+
+    return result.result;
   };
 
   return (
@@ -110,7 +141,8 @@ Extract:
         <StructuredNotePreview
           note={structuredNote}
           onFinalize={handleFinalize}
-          onEdit={handleEdit}
+          onUpdate={handleUpdate}
+          onReanalyze={handleReanalyze}
           guidelineRecommendations={guidelineRecommendations}
           loadingGuidelines={loadingGuidelines}
         />

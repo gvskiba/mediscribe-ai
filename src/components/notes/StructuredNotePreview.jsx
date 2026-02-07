@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, Pencil, Pill, Stethoscope, ClipboardList, Target, Lightbulb, X, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Check, Pill, Stethoscope, ClipboardList, Target, Lightbulb, X, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import EditableSection from "./EditableSection";
 
-export default function StructuredNotePreview({ note, onFinalize, onEdit, guidelineRecommendations = [], loadingGuidelines = false }) {
+export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpdate, onReanalyze, guidelineRecommendations = [], loadingGuidelines = false }) {
   const [showGuidelines, setShowGuidelines] = useState(true);
   const [expandedGuideline, setExpandedGuideline] = useState(null);
   return (
@@ -19,11 +20,6 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, guidel
           <p className="text-sm text-slate-500 mt-1">Review and finalize the structured note.</p>
         </div>
         <div className="flex gap-2">
-          {onEdit && (
-            <Button variant="outline" onClick={onEdit} className="rounded-xl gap-2">
-              <Pencil className="w-4 h-4" /> Edit
-            </Button>
-          )}
           {onFinalize && (
             <Button onClick={onFinalize} className="bg-emerald-600 hover:bg-emerald-700 rounded-xl gap-2">
               <Check className="w-4 h-4" /> Finalize
@@ -118,73 +114,74 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, guidel
 
         {/* Chief Complaint */}
         {note.chief_complaint && (
-          <Section icon={Target} title="Chief Complaint" color="blue">
-            <p className="text-slate-700 text-sm leading-relaxed">{note.chief_complaint}</p>
-          </Section>
+          <EditableSection
+            icon={Target}
+            title="Chief Complaint"
+            color="blue"
+            value={note.chief_complaint}
+            field="chief_complaint"
+            type="text"
+            onUpdate={onUpdate}
+            onReanalyze={onReanalyze}
+          />
         )}
 
         {/* Assessment */}
         {note.assessment && (
-          <Section icon={Stethoscope} title="Assessment" color="purple">
-            <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">{note.assessment}</p>
-          </Section>
+          <EditableSection
+            icon={Stethoscope}
+            title="Assessment"
+            color="purple"
+            value={note.assessment}
+            field="assessment"
+            type="textarea"
+            onUpdate={onUpdate}
+            onReanalyze={onReanalyze}
+          />
         )}
 
         {/* Plan */}
         {note.plan && (
-          <Section icon={ClipboardList} title="Plan" color="emerald">
-            <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">{note.plan}</p>
-          </Section>
+          <EditableSection
+            icon={ClipboardList}
+            title="Plan"
+            color="emerald"
+            value={note.plan}
+            field="plan"
+            type="textarea"
+            onUpdate={onUpdate}
+            onReanalyze={onReanalyze}
+          />
         )}
 
         {/* Diagnoses */}
         {note.diagnoses?.length > 0 && (
-          <Section icon={Target} title="Diagnoses" color="amber">
-            <div className="flex flex-wrap gap-2">
-              {note.diagnoses.map((d, i) => (
-                <Badge key={i} variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 px-3 py-1">
-                  {d}
-                </Badge>
-              ))}
-            </div>
-          </Section>
+          <EditableSection
+            icon={Target}
+            title="Diagnoses"
+            color="amber"
+            value={note.diagnoses}
+            field="diagnoses"
+            type="array"
+            onUpdate={onUpdate}
+            onReanalyze={onReanalyze}
+          />
         )}
 
         {/* Medications */}
         {note.medications?.length > 0 && (
-          <Section icon={Pill} title="Medications" color="rose">
-            <div className="flex flex-wrap gap-2">
-              {note.medications.map((m, i) => (
-                <Badge key={i} variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 px-3 py-1">
-                  {m}
-                </Badge>
-              ))}
-            </div>
-          </Section>
+          <EditableSection
+            icon={Pill}
+            title="Medications"
+            color="rose"
+            value={note.medications}
+            field="medications"
+            type="array"
+            onUpdate={onUpdate}
+            onReanalyze={onReanalyze}
+          />
         )}
       </div>
     </motion.div>
-  );
-}
-
-function Section({ icon: Icon, title, color, children }) {
-  const colorMap = {
-    blue: "bg-blue-50 text-blue-600",
-    purple: "bg-purple-50 text-purple-600",
-    emerald: "bg-emerald-50 text-emerald-600",
-    amber: "bg-amber-50 text-amber-600",
-    rose: "bg-rose-50 text-rose-600",
-  };
-
-  return (
-    <div className="flex gap-4">
-      <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${colorMap[color]}`}>
-        <Icon className="w-4 h-4" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-semibold text-slate-900 mb-2">{title}</h3>
-        {children}
-      </div>
-    </div>
   );
 }

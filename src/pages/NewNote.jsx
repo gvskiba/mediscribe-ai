@@ -763,12 +763,22 @@ ${noteData.raw_note}`;
         prompt += `\nUse ONLY the information from the raw note provided above. Do not add external information.`;
         prompt += `\nIf a section cannot be populated from the raw note, provide a brief note like "Not documented in this encounter."`;
 
-        const properties = {};
-        applicableSections.forEach(section => {
-          const sectionKey = section.name.toLowerCase().replace(/\s+/g, '_');
-          properties[sectionKey] = { type: "string" };
-        });
-        schema = { type: "object", properties };
+        // Always keep standard fields in schema
+        schema = {
+          type: "object",
+          properties: {
+            chief_complaint: { type: "string" },
+            history_of_present_illness: { type: "string" },
+            medical_history: { type: "string" },
+            review_of_systems: { type: "string" },
+            physical_exam: { type: "string" },
+            assessment: { type: "string" },
+            plan: { type: "string" },
+            clinical_impression: { type: "string" },
+            diagnoses: { type: "array", items: { type: "string" } },
+            medications: { type: "array", items: { type: "string" } },
+          }
+        };
       }
 
       const result = await base44.integrations.Core.InvokeLLM({

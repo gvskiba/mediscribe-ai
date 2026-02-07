@@ -608,26 +608,58 @@ Return a JSON structure with:
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-sm font-medium text-slate-700">Note Sections</label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleGenerateSuggestions}
-                  disabled={generatingSuggestions}
-                  className="rounded-lg gap-2 text-xs"
-                >
-                  {generatingSuggestions ? (
-                    <><Loader2 className="w-3 h-3 animate-spin" /> Generating...</>
-                  ) : (
-                    <><Sparkles className="w-3 h-3" /> AI Suggest Sections</>
-                  )}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={generateSectionSuggestions}
+                    disabled={loadingSectionSuggestions || sectionSuggestions.length > 0}
+                    className="rounded-lg gap-2 text-xs"
+                  >
+                    {loadingSectionSuggestions ? (
+                      <><Loader2 className="w-3 h-3 animate-spin" /> Loading...</>
+                    ) : sectionSuggestions.length > 0 ? (
+                      <><Sparkles className="w-3 h-3" /> Suggestions Below</>
+                    ) : (
+                      <><Sparkles className="w-3 h-3" /> Suggest Sections</>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGenerateSuggestions}
+                    disabled={generatingSuggestions}
+                    className="rounded-lg gap-2 text-xs"
+                  >
+                    {generatingSuggestions ? (
+                      <><Loader2 className="w-3 h-3 animate-spin" /> Generating...</>
+                    ) : (
+                      <><Sparkles className="w-3 h-3" /> Full Template</>
+                    )}
+                  </Button>
+                </div>
               </div>
+
+              {/* Section Suggestions */}
+              {sectionSuggestions.length > 0 && (
+                <div className="mb-4">
+                  <SectionSuggestions
+                    suggestions={sectionSuggestions}
+                    onApply={(sections) => {
+                      setFormData({ ...formData, sections: [...formData.sections, ...sections] });
+                      setSectionSuggestions([]);
+                    }}
+                  />
+                </div>
+              )}
+
               <SectionEditor
                 sections={formData.sections}
                 onChange={(sections) => setFormData({ ...formData, sections })}
               />
-              <p className="text-xs text-slate-500 mt-2">Define sections for AI to structure the note, or use AI suggestions based on note type</p>
+              <p className="text-xs text-slate-500 mt-2">Enable/disable sections with the eye icon, configure conditional logic, and use AI suggestions based on note type</p>
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">Global AI Instructions (Optional)</label>

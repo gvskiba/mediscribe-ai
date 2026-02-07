@@ -48,17 +48,19 @@ export default function EditableSection({
   };
 
   const handleArrayItemAdd = () => {
-    const newArray = [...(editValue || []), ""];
+    const newArray = [...(Array.isArray(editValue) ? editValue : []), ""];
     setEditValue(newArray);
   };
 
   const handleArrayItemChange = (index, newValue) => {
+    if (!Array.isArray(editValue)) return;
     const newArray = [...editValue];
     newArray[index] = newValue;
     setEditValue(newArray);
   };
 
   const handleArrayItemRemove = (index) => {
+    if (!Array.isArray(editValue)) return;
     const newArray = editValue.filter((_, i) => i !== index);
     setEditValue(newArray);
   };
@@ -129,7 +131,7 @@ export default function EditableSection({
               />
             ) : type === "array" ? (
               <div className="space-y-2">
-                {(editValue || []).map((item, index) => (
+                {(Array.isArray(editValue) ? editValue : []).map((item, index) => (
                   <div key={index} className="flex gap-2">
                     <Input
                       value={item}
@@ -167,7 +169,7 @@ export default function EditableSection({
           <div>
             {type === "array" ? (
               <div className="flex flex-wrap gap-2">
-                {(value || []).map((item, i) => (
+                {(Array.isArray(value) ? value : []).map((item, i) => (
                   <Badge key={i} variant="outline" className={`${colorMap[color].replace('text-', 'border-').replace('bg-', 'bg-')} px-3 py-1`}>
                     {item}
                   </Badge>

@@ -299,7 +299,7 @@ If information is not found, return null for that field. Be conservative - only 
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4" /> Structure with AI
+                <Sparkles className="w-4 h-4" /> Create Note
               </>
             )}
           </Button>

@@ -286,12 +286,19 @@ export default function NewNote() {
         prompt += `\nUse ONLY the information from the raw note provided above. Do not add external information.`;
         prompt += `\nIf a section cannot be populated from the raw note, provide a brief note like "Not documented in this encounter."`;
         
-        // Build schema from applicable sections
-        const properties = {};
-        applicableSections.forEach(section => {
-          const sectionKey = section.name.toLowerCase().replace(/\s+/g, '_');
-          properties[sectionKey] = { type: "string" };
-        });
+        // Build schema from applicable sections but always include standard fields
+        const properties = {
+          chief_complaint: { type: "string" },
+          history_of_present_illness: { type: "string" },
+          medical_history: { type: "string" },
+          review_of_systems: { type: "string" },
+          physical_exam: { type: "string" },
+          assessment: { type: "string" },
+          plan: { type: "string" },
+          clinical_impression: { type: "string" },
+          diagnoses: { type: "array", items: { type: "string" } },
+          medications: { type: "array", items: { type: "string" } },
+        };
         
         schema = {
           type: "object",

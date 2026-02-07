@@ -16,6 +16,7 @@ const navItems = [
   { name: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
   { name: "New Note", icon: FileText, page: "NewNote" },
   { name: "Notes", icon: FileText, page: "NotesLibrary" },
+  { name: "Templates", icon: FileText, page: "NoteTemplates" },
   { name: "Guidelines", icon: BookOpen, page: "Guidelines" },
 ];
 

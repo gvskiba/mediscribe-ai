@@ -52,6 +52,7 @@ import NewNote from './pages/NewNote';
 import NoteDetail from './pages/NoteDetail';
 import NotesLibrary from './pages/NotesLibrary';
 import Guidelines from './pages/Guidelines';
+import NoteTemplates from './pages/NoteTemplates';
 import __Layout from './Layout.jsx';
 
 
@@ -61,6 +62,7 @@ export const PAGES = {
     "NoteDetail": NoteDetail,
     "NotesLibrary": NotesLibrary,
     "Guidelines": Guidelines,
+    "NoteTemplates": NoteTemplates,
 }
 
 export const pagesConfig = {

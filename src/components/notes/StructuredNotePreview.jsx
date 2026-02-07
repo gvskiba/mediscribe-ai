@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, Pill, Stethoscope, ClipboardList, Target, Lightbulb, X, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Check, Pill, Stethoscope, ClipboardList, Target, Lightbulb, X, Loader2, ChevronDown, ChevronUp, FileText, Activity } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import EditableSection from "./EditableSection";
 
@@ -121,6 +121,48 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpda
             value={note.chief_complaint}
             field="chief_complaint"
             type="text"
+            onUpdate={onUpdate}
+            onReanalyze={onReanalyze}
+          />
+        )}
+
+        {/* Medical History */}
+        {note.medical_history && (
+          <EditableSection
+            icon={FileText}
+            title="Medical History"
+            color="slate"
+            value={note.medical_history}
+            field="medical_history"
+            type="textarea"
+            onUpdate={onUpdate}
+            onReanalyze={onReanalyze}
+          />
+        )}
+
+        {/* Review of Systems */}
+        {note.review_of_systems && (
+          <EditableSection
+            icon={ClipboardList}
+            title="Review of Systems"
+            color="indigo"
+            value={note.review_of_systems}
+            field="review_of_systems"
+            type="textarea"
+            onUpdate={onUpdate}
+            onReanalyze={onReanalyze}
+          />
+        )}
+
+        {/* Physical Exam */}
+        {note.physical_exam && (
+          <EditableSection
+            icon={Activity}
+            title="Physical Exam"
+            color="teal"
+            value={note.physical_exam}
+            field="physical_exam"
+            type="textarea"
             onUpdate={onUpdate}
             onReanalyze={onReanalyze}
           />

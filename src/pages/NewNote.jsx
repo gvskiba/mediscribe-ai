@@ -39,6 +39,8 @@ ${noteData.raw_note}`;
       properties: {
         chief_complaint: { type: "string" },
         medical_history: { type: "string" },
+        review_of_systems: { type: "string" },
+        physical_exam: { type: "string" },
         assessment: { type: "string" },
         plan: { type: "string" },
         diagnoses: { type: "array", items: { type: "string" } },
@@ -86,10 +88,12 @@ ${noteData.raw_note}`;
       prompt += `\n\nExtract:
 1. Chief Complaint - main reason for visit (1-2 sentences)
 2. Medical History - relevant past medical history, chronic conditions, surgical history (2-3 sentences)
-3. Assessment - clinical assessment including findings, differentials
-4. Plan - treatment plan, follow-ups, orders
-5. Diagnoses - list of diagnoses/conditions (include ICD-10 if inferable)
-6. Medications - list of medications (include dosages if present)`;
+3. Review of Systems - systematic review of symptoms by body system
+4. Physical Exam - objective physical examination findings
+5. Assessment - clinical assessment including findings, differentials
+6. Plan - treatment plan, follow-ups, orders
+7. Diagnoses - list of diagnoses/conditions (include ICD-10 if inferable)
+8. Medications - list of medications (include dosages if present)`;
     }
 
     const result = await base44.integrations.Core.InvokeLLM({
@@ -159,6 +163,8 @@ ${noteData.raw_note}`;
     const fieldPrompts = {
       chief_complaint: "Extract the chief complaint (main reason for visit) in 1-2 sentences",
       medical_history: "Extract relevant past medical history, chronic conditions, and surgical history in 2-3 sentences",
+      review_of_systems: "Extract the systematic review of symptoms organized by body system",
+      physical_exam: "Extract objective physical examination findings",
       assessment: "Provide a detailed clinical assessment including relevant findings and differential diagnoses",
       plan: "Provide a comprehensive treatment plan including medications, follow-ups, and orders",
       diagnoses: "List all diagnoses with ICD-10 codes if possible",
@@ -168,6 +174,8 @@ ${noteData.raw_note}`;
     const responseSchemas = {
       chief_complaint: { type: "object", properties: { result: { type: "string" } } },
       medical_history: { type: "object", properties: { result: { type: "string" } } },
+      review_of_systems: { type: "object", properties: { result: { type: "string" } } },
+      physical_exam: { type: "object", properties: { result: { type: "string" } } },
       assessment: { type: "object", properties: { result: { type: "string" } } },
       plan: { type: "object", properties: { result: { type: "string" } } },
       diagnoses: { type: "object", properties: { result: { type: "array", items: { type: "string" } } } },

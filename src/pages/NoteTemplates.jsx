@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FileText, Plus, Edit, Trash2, Star, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import SectionEditor from "../components/templates/SectionEditor";
 
 const noteTypes = [
   { value: "progress_note", label: "Progress Note" },
@@ -28,7 +29,7 @@ export default function NoteTemplates() {
     description: "",
     note_type: "progress_note",
     specialty: "",
-    structure: "{\n  \"chief_complaint\": \"\",\n  \"assessment\": \"\",\n  \"plan\": \"\",\n  \"diagnoses\": [],\n  \"medications\": []\n}",
+    sections: [],
     ai_instructions: "",
   });
 
@@ -73,7 +74,7 @@ export default function NoteTemplates() {
       description: "",
       note_type: "progress_note",
       specialty: "",
-      structure: "{\n  \"chief_complaint\": \"\",\n  \"assessment\": \"\",\n  \"plan\": \"\",\n  \"diagnoses\": [],\n  \"medications\": []\n}",
+      sections: [],
       ai_instructions: "",
     });
     setEditingTemplate(null);
@@ -87,29 +88,24 @@ export default function NoteTemplates() {
       description: template.description || "",
       note_type: template.note_type || "progress_note",
       specialty: template.specialty || "",
-      structure: typeof template.structure === "string" 
-        ? template.structure 
-        : JSON.stringify(template.structure, null, 2),
+      sections: template.sections || [],
       ai_instructions: template.ai_instructions || "",
     });
     setDialogOpen(true);
   };
 
   const handleSubmit = () => {
-    try {
-      const structureObj = JSON.parse(formData.structure);
-      const data = {
-        ...formData,
-        structure: structureObj,
-      };
+    if (!formData.name || formData.sections.length === 0) {
+      alert("Please provide a template name and at least one section");
+      return;
+    }
 
-      if (editingTemplate) {
-        updateMutation.mutate({ id: editingTemplate.id, data });
-      } else {
-        createMutation.mutate(data);
-      }
-    } catch (error) {
-      alert("Invalid JSON in structure field");
+    const data = { ...formData };
+
+    if (editingTemplate) {
+      updateMutation.mutate({ id: editingTemplate.id, data });
+    } else {
+      createMutation.mutate(data);
     }
   };
 
@@ -254,14 +250,12 @@ export default function NoteTemplates() {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Structure (JSON)</label>
-              <Textarea
-                value={formData.structure}
-                onChange={(e) => setFormData({ ...formData, structure: e.target.value })}
-                placeholder='{"field_name": "description", ...}'
-                className="font-mono text-xs min-h-[150px] rounded-lg"
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Note Sections</label>
+              <SectionEditor
+                sections={formData.sections}
+                onChange={(sections) => setFormData({ ...formData, sections })}
               />
-              <p className="text-xs text-slate-500 mt-1">Define the fields you want AI to extract</p>
+              <p className="text-xs text-slate-500 mt-2">Define sections and subsections for AI to structure the note</p>
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">AI Instructions</label>
@@ -279,7 +273,7 @@ export default function NoteTemplates() {
               <Button
                 onClick={handleSubmit}
                 className="bg-blue-600 hover:bg-blue-700 rounded-lg gap-2"
-                disabled={!formData.name || !formData.structure}
+                disabled={!formData.name || formData.sections.length === 0}
               >
                 <Check className="w-4 h-4" />
                 {editingTemplate ? "Update" : "Create"} Template

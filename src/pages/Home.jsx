@@ -14,10 +14,15 @@ export default function Home() {
   }, []);
 
   const checkAuth = async () => {
-    const isAuth = await base44.auth.isAuthenticated();
-    if (isAuth) {
-      navigate(createPageUrl("Dashboard"));
-    } else {
+    try {
+      const isAuth = await base44.auth.isAuthenticated();
+      if (isAuth) {
+        navigate(createPageUrl("Dashboard"));
+      } else {
+        setChecking(false);
+      }
+    } catch (error) {
+      // User not authenticated, show login screen
       setChecking(false);
     }
   };

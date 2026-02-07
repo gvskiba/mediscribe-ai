@@ -18,6 +18,8 @@ import {
   EyeOff
 } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import ConditionalLogicEditor from "./ConditionalLogicEditor";
+import SectionAIInstructions from "./SectionAIInstructions";
 
 export default function SectionEditor({ sections, onChange }) {
   const [expandedSections, setExpandedSections] = useState(new Set([0]));
@@ -33,21 +35,25 @@ export default function SectionEditor({ sections, onChange }) {
   };
 
   const addSection = () => {
-    const newSection = {
-      id: `section_${Date.now()}`,
-      name: "",
-      description: "",
-      ai_instructions: "",
-      enabled: true,
-      order: sections.length,
-      conditional_logic: {
-        enabled: false,
-        condition_type: "note_type",
-        condition_value: ""
-      }
-    };
-    onChange([...sections, newSection]);
-    setExpandedSections(new Set([...expandedSections, sections.length]));
+   const newSection = {
+     id: `section_${Date.now()}`,
+     name: "",
+     description: "",
+     ai_instructions: "",
+     ai_instructions_detailed: {
+       global_instructions: "",
+       field_instructions: []
+     },
+     enabled: true,
+     order: sections.length,
+     conditional_logic: {
+       enabled: false,
+       condition_type: "note_type",
+       condition_value: ""
+     }
+   };
+   onChange([...sections, newSection]);
+   setExpandedSections(new Set([...expandedSections, sections.length]));
   };
 
   const removeSection = (index) => {
@@ -198,95 +204,41 @@ export default function SectionEditor({ sections, onChange }) {
                             />
                           </div>
 
-                          <div>
-                            <div className="flex items-center gap-2 mb-1.5">
+                          <div className="border-t border-slate-100 pt-3">
+                            <div className="flex items-center gap-2 mb-2">
                               <Sparkles className="w-3.5 h-3.5 text-purple-500" />
                               <Label className="text-xs text-slate-600">
-                                AI Extraction Instructions
+                                AI Instructions & Guidance
                               </Label>
                             </div>
-                            <Textarea
-                              placeholder="e.g., 'Extract only cardiac-related findings', 'Use OLDCARTS framework', 'Focus on respiratory symptoms only', 'List with bullet points'"
-                              value={section.ai_instructions || ""}
-                              onChange={(e) =>
-                                updateSection(index, "ai_instructions", e.target.value)
-                              }
-                              className="h-24 text-sm resize-none"
-                              disabled={!section.enabled}
-                            />
-                            <p className="text-xs text-slate-500 mt-1">
-                              💡 Be specific - the AI will follow these instructions precisely when extracting data for this section
-                            </p>
+                            <div className="space-y-3">
+                              <SectionAIInstructions 
+                                value={section.ai_instructions_detailed || { global_instructions: section.ai_instructions || "", field_instructions: [] }}
+                                onChange={(value) => {
+                                  updateSection(index, "ai_instructions_detailed", value);
+                                  updateSection(index, "ai_instructions", value.global_instructions);
+                                }}
+                              />
+                            </div>
                           </div>
 
                           {/* Conditional Logic */}
                           <div className="border-t border-slate-100 pt-3">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <Settings2 className="w-3.5 h-3.5 text-slate-400" />
-                                <Label className="text-xs text-slate-600">
-                                  Conditional Display
-                                </Label>
-                              </div>
-                              <Switch
-                                checked={section.conditional_logic?.enabled || false}
-                                onCheckedChange={(checked) =>
-                                  updateSection(index, "conditional_logic.enabled", checked)
-                                }
-                                disabled={!section.enabled}
-                              />
+                            <div className="flex items-center gap-2 mb-2">
+                              <Settings2 className="w-3.5 h-3.5 text-slate-400" />
+                              <Label className="text-xs text-slate-600">
+                                Conditional Display Rules
+                              </Label>
                             </div>
-                            <p className="text-xs text-slate-500 mb-2">
-                              Show this section only when specific conditions are met (e.g., only for H&P notes or cardiology specialty)
+                            <p className="text-xs text-slate-500 mb-3">
+                              Show this section only when conditions match patient data or note properties
                             </p>
-                            <div>
-                            </div>
-
-                            {section.conditional_logic?.enabled && (
-                              <div className="space-y-2 pl-5">
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div>
-                                    <Label className="text-xs text-slate-600 mb-1">
-                                      Condition Type
-                                    </Label>
-                                    <Select
-                                      value={section.conditional_logic.condition_type || "note_type"}
-                                      onValueChange={(value) =>
-                                        updateSection(index, "conditional_logic.condition_type", value)
-                                      }
-                                      disabled={!section.enabled}
-                                    >
-                                      <SelectTrigger className="h-8 text-xs">
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="note_type">Note Type (exact match)</SelectItem>
-                                        <SelectItem value="specialty">Specialty (contains text)</SelectItem>
-                                        <SelectItem value="diagnosis_contains">Diagnosis Contains (future)</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-
-                                  <div>
-                                    <Label className="text-xs text-slate-600 mb-1">
-                                      Condition Value
-                                    </Label>
-                                    <Input
-                                      placeholder="e.g., h_and_p"
-                                      value={section.conditional_logic.condition_value || ""}
-                                      onChange={(e) =>
-                                        updateSection(index, "conditional_logic.condition_value", e.target.value)
-                                      }
-                                      className="h-8 text-xs"
-                                      disabled={!section.enabled}
-                                    />
-                                  </div>
-                                </div>
-                                <p className="text-xs text-slate-500">
-                                  This section will only appear when the condition matches
-                                </p>
-                              </div>
-                            )}
+                            <ConditionalLogicEditor
+                              value={section.conditional_logic}
+                              onChange={(value) =>
+                                updateSection(index, "conditional_logic", value)
+                              }
+                            />
                           </div>
                         </div>
                       )}

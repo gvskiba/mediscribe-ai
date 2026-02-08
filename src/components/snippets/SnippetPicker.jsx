@@ -12,10 +12,25 @@ export default function SnippetPicker({ open, onClose, onInsert, category = null
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(category || "all");
+  const [editingSnippet, setEditingSnippet] = useState(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editFormData, setEditFormData] = useState({ name: "", content: "", category: "", tags: [] });
+  const [showCategoryInput, setShowCategoryInput] = useState(false);
+  const [newCategory, setNewCategory] = useState("");
 
   const { data: snippets = [] } = useQuery({
     queryKey: ["snippets"],
-    queryFn: () => base44.entities.Snippet.list("-usage_count", 100),
+    queryFn: () => base44.entities.Snippet.list("-last_used", 100),
+  });
+
+  const updateSnippetMutation = useMutation({
+    mutationFn: ({ id, data }) => 
+      base44.entities.Snippet.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["snippets"] });
+      setShowEditDialog(false);
+      setEditingSnippet(null);
+    },
   });
 
   const updateUsageMutation = useMutation({

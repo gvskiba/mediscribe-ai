@@ -48,6 +48,8 @@ export default function NoteDetail() {
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [icd10Suggestions, setIcd10Suggestions] = useState([]);
   const [loadingIcd10, setLoadingIcd10] = useState(false);
+  const [guidelineRecommendations, setGuidelineRecommendations] = useState([]);
+  const [loadingGuidelines, setLoadingGuidelines] = useState(false);
 
   const { data: note, isLoading } = useQuery({
     queryKey: ["note", noteId],
@@ -62,7 +64,7 @@ export default function NoteDetail() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["note", noteId] }),
   });
 
-  // Auto-generate summary and ICD-10 suggestions for finalized notes
+  // Auto-generate summary, guidelines, and ICD-10 suggestions for finalized notes
   useEffect(() => {
     if (note && note.status === "finalized") {
       if (!patientSummary && !generatingSummary) {
@@ -71,8 +73,11 @@ export default function NoteDetail() {
       if (!icd10Suggestions.length && !loadingIcd10) {
         generateICD10Suggestions();
       }
+      if (!guidelineRecommendations.length && !loadingGuidelines) {
+        fetchGuidelineRecommendations();
+      }
     }
-  }, [note?.status, patientSummary, generatingSummary, icd10Suggestions, loadingIcd10]);
+  }, [note?.status, patientSummary, generatingSummary, icd10Suggestions, loadingIcd10, guidelineRecommendations, loadingGuidelines]);
 
   const generateSummary = async () => {
     if (!note) return;
@@ -114,6 +119,61 @@ Provide:
       console.error("Failed to generate summary:", error);
     } finally {
       setGeneratingSummary(false);
+    }
+  };
+
+  const fetchGuidelineRecommendations = async () => {
+    if (!note) return;
+    setLoadingGuidelines(true);
+    try {
+      const conditions = [];
+      if (Array.isArray(note.diagnoses) && note.diagnoses.length > 0) {
+        conditions.push(...note.diagnoses.slice(0, 3));
+      }
+
+      if (conditions.length === 0) {
+        setLoadingGuidelines(false);
+        return;
+      }
+
+      const recommendations = await Promise.all(
+        conditions.slice(0, 2).map(async (condition) => {
+          const cleanCondition = condition.replace(/\(.*?\)/g, "").trim();
+          const result = await base44.integrations.Core.InvokeLLM({
+            prompt: `Provide evidence-based clinical guideline recommendations for: ${cleanCondition}
+
+Focus on:
+1. First-line treatment recommendations
+2. Key monitoring parameters
+3. Patient-specific considerations
+4. Red flags or contraindications
+5. Follow-up recommendations
+
+Keep it actionable and concise (4-6 bullet points).`,
+            add_context_from_internet: true,
+            response_json_schema: {
+              type: "object",
+              properties: {
+                summary: { type: "string" },
+                key_points: { type: "array", items: { type: "string" } },
+                sources: { type: "array", items: { type: "string" } },
+              },
+            },
+          });
+
+          return { 
+            condition: cleanCondition, 
+            guideline_id: `guideline_${Date.now()}`,
+            ...result 
+          };
+        })
+      );
+
+      setGuidelineRecommendations(recommendations);
+    } catch (error) {
+      console.error("Failed to fetch guidelines:", error);
+    } finally {
+      setLoadingGuidelines(false);
     }
   };
 
@@ -337,6 +397,90 @@ Generated: ${new Date().toLocaleString()}
           patientName={note.patient_name}
           onDownload={downloadSummary}
         />
+      )}
+
+      {/* Clinical Guidelines */}
+      {note.diagnoses && note.diagnoses.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-600" />
+                Clinical Guidelines
+              </h2>
+              <p className="text-sm text-slate-500 mt-1">Evidence-based recommendations for identified diagnoses</p>
+            </div>
+          </div>
+
+          {loadingGuidelines ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Loader2 className="w-8 h-8 animate-spin text-purple-600 mb-3" />
+              <p className="text-sm font-medium text-slate-900">Fetching guidelines</p>
+              <p className="text-xs text-slate-500 mt-1">Analyzing your diagnoses for relevant recommendations...</p>
+            </div>
+          ) : guidelineRecommendations.length > 0 ? (
+            <div className="space-y-3">
+              {guidelineRecommendations.map((rec, idx) => (
+                <div key={idx} className="bg-slate-50 rounded-lg border border-slate-200 p-4 hover:border-purple-300 transition-colors">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <h3 className="font-semibold text-slate-900 text-sm">{rec.condition}</h3>
+                      <p className="text-xs text-slate-600 mt-1">{rec.summary}</p>
+                    </div>
+                  </div>
+                  
+                  {rec.key_points && rec.key_points.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-slate-200">
+                      <p className="text-xs font-semibold text-slate-700 mb-2">Key Recommendations:</p>
+                      <ul className="space-y-1">
+                        {rec.key_points.map((point, i) => (
+                          <li key={i} className="text-xs text-slate-600 flex items-start gap-2">
+                            <span className="text-purple-600 mt-0.5">•</span>
+                            <span>{point.replace(/[•\-\*→▸►]/g, '').trim()}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {rec.sources && rec.sources.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-slate-200">
+                      <p className="text-xs font-semibold text-slate-700 mb-1">References:</p>
+                      <div className="space-y-1">
+                        {rec.sources.map((source, i) => (
+                          <p key={i} className="text-xs text-slate-600">{i + 1}. {source}</p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-3 pt-3 border-t border-slate-200 flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        const guidelineText = `\n\n[Guideline - ${rec.condition}]\n${rec.summary}\n\nKey Points:\n${rec.key_points?.map(p => `- ${p}`).join('\n')}`;
+                        queryClient.setQueryData(["note", noteId], (old) => ({
+                          ...old,
+                          plan: (old?.plan || "") + guidelineText
+                        }));
+                      }}
+                      className="flex-1 gap-1.5 bg-purple-600 hover:bg-purple-700 rounded-lg text-white"
+                    >
+                      <Check className="w-3.5 h-3.5" /> Add to Plan
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500 text-center py-8">No guideline recommendations available</p>
+          )}
+        </motion.div>
       )}
 
       {/* ICD-10 Code Suggestions */}

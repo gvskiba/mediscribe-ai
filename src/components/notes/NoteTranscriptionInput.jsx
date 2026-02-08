@@ -26,6 +26,7 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
   const [timeOfVisit, setTimeOfVisit] = useState("");
   const [noteType, setNoteType] = useState("progress_note");
   const [specialty, setSpecialty] = useState("");
+  const [chiefComplaint, setChiefComplaint] = useState("");
   const [rawNote, setRawNote] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(templates.find(t => t.is_default)?.id || "");
@@ -127,6 +128,7 @@ If information is not found, return null for that field. Be conservative - only 
       date_of_birth: dateOfBirth,
       note_type: noteType,
       specialty,
+      chief_complaint: chiefComplaint,
       raw_note: rawNote,
       date_of_visit: dateOfVisit,
       time_of_visit: timeOfVisit,

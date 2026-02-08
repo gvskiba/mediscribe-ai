@@ -142,6 +142,7 @@ export default function NewNote() {
       Patient: ${noteData.patient_name}
       Note Type: ${noteData.note_type}
       Specialty: ${noteData.specialty || "General"}
+      ${noteData.chief_complaint ? `Chief Complaint: ${noteData.chief_complaint}` : ''}
       Raw Note:
       ${noteData.raw_note}`;
 
@@ -721,11 +722,12 @@ For each diagnosis, provide the most specific ICD-10 code with its description. 
       
       let prompt = `You are a medical scribe AI. Given the following clinical note, extract and structure the information accurately.
 
-Patient: ${noteData.patient_name}
-Note Type: ${noteData.note_type}
-Specialty: ${noteData.specialty || "General"}
-Raw Note:
-${noteData.raw_note}`;
+      Patient: ${noteData.patient_name}
+      Note Type: ${noteData.note_type}
+      Specialty: ${noteData.specialty || "General"}
+      ${noteData.chief_complaint ? `Chief Complaint: ${noteData.chief_complaint}` : ''}
+      Raw Note:
+      ${noteData.raw_note}`;
 
       let schema = {
         type: "object",
@@ -889,6 +891,11 @@ ${noteData.raw_note}`;
 
       // When using templates, ensure we always have standard fields
       let mergedNote = { ...noteData, ...result };
+
+      // If chief complaint was provided upfront, use it (unless AI extracted a better one)
+      if (noteData.chief_complaint && !result.chief_complaint) {
+        mergedNote.chief_complaint = noteData.chief_complaint;
+      }
 
       // Ensure standard fields exist even if using template
       if (!mergedNote.chief_complaint && template) {

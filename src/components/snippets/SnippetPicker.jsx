@@ -275,8 +275,8 @@ export default function SnippetPicker({ open, onClose, onInsert, category = null
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit Snippet</DialogTitle>
-            <DialogDescription>Make changes to your snippet</DialogDescription>
           </DialogHeader>
+          <DialogDescription>Make changes to your snippet</DialogDescription>
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">Name</label>

@@ -105,6 +105,11 @@ export default function SnippetPicker({ open, onClose, onInsert, category = null
     }
   };
 
+  const handleCreateSnippet = () => {
+    if (!createFormData.name || !createFormData.content) return;
+    createSnippetMutation.mutate(createFormData);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">

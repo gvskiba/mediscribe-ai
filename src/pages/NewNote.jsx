@@ -10,8 +10,10 @@ import PatientHistoryPanel from "../components/notes/PatientHistoryPanel";
 import HistoryFocusSelector from "../components/notes/HistoryFocusSelector";
 import ICD10Suggestions from "../components/notes/ICD10Suggestions";
 import PatientEducationMaterials from "../components/notes/PatientEducationMaterials";
+import { Clock } from "lucide-react";
 import NewPatientDialog from "../components/notes/NewPatientDialog";
 import ManualHistoryInput from "../components/notes/ManualHistoryInput";
+import PreviousEncountersSummary from "../components/notes/PreviousEncountersSummary";
 
 export default function NewNote() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -29,6 +31,7 @@ export default function NewNote() {
   const [pendingPatientData, setPendingPatientData] = useState(null);
   const [medicationRecommendations, setMedicationRecommendations] = useState([]);
   const [loadingMedications, setLoadingMedications] = useState(false);
+  const [encountersSummaryOpen, setEncountersSummaryOpen] = useState(false);
   const navigate = useNavigate();
 
   const { data: templates = [] } = useQuery({
@@ -1172,6 +1175,22 @@ ${JSON.stringify(structuredNote, null, 2)}`,
               onHistoryExtracted={handleManualHistoryExtracted}
             />
 
+            {/* Previous Encounters Summary */}
+            {rawData && (rawData.patient_id || rawData.patient_name) && (
+              <div className="bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden">
+                <div className="p-4">
+                  <Button 
+                    onClick={() => setEncountersSummaryOpen(true)}
+                    variant="outline"
+                    className="w-full gap-2 text-blue-600 border-blue-300 hover:bg-blue-50"
+                  >
+                    <Clock className="w-4 h-4" />
+                    View Previous Encounters Summary
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Patient History Panel */}
             <PatientHistoryPanel 
               history={patientHistory}
@@ -1243,6 +1262,20 @@ ${JSON.stringify(structuredNote, null, 2)}`,
         }}
         patientData={pendingPatientData}
         onCreatePatient={handleCreatePatient}
+      />
+
+      {/* Previous Encounters Summary Dialog */}
+      <PreviousEncountersSummary
+        patientId={rawData?.patient_id}
+        patientName={rawData?.patient_name}
+        open={encountersSummaryOpen}
+        onClose={() => setEncountersSummaryOpen(false)}
+        onApplyToNote={(summaryText) => {
+          setStructuredNote(prev => ({
+            ...prev,
+            medical_history: summaryText
+          }));
+        }}
       />
     </>
   );

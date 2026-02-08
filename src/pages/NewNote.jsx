@@ -446,12 +446,13 @@ Extract ALL information from the raw note and populate the following sections. B
       }
       
       // If patient history was loaded and medical_history is empty, auto-apply it
-      if (patientHistory && (!result.medical_history || result.medical_history === "Not extracted")) {
+      if (patientHistory && (!result.medical_history || result.medical_history === "Not extracted" || result.medical_history === "Not documented in this encounter.")) {
         mergedNote.medical_history = `CHRONIC CONDITIONS: ${patientHistory.chronic_conditions?.join(", ") || "None"}
-ALLERGIES: ${patientHistory.allergies?.join(", ") || "None"}  
-CURRENT MEDICATIONS: ${patientHistory.current_medications?.join(", ") || "None"}
-PAST PROCEDURES: ${patientHistory.past_procedures?.join(", ") || "None"}
-TRENDS: ${patientHistory.trends || "N/A"}`;
+      ALLERGIES: ${patientHistory.allergies?.join(", ") || "None"}  
+      CURRENT MEDICATIONS: ${patientHistory.current_medications?.join(", ") || "None"}
+      PAST PROCEDURES: ${patientHistory.past_procedures?.join(", ") || "None"}
+      FAMILY HISTORY: ${patientHistory.family_history?.join(", ") || "None"}
+      TRENDS: ${patientHistory.trends || "N/A"}`;
       }
       
       setStructuredNote(mergedNote);

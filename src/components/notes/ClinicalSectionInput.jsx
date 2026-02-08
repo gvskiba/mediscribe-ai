@@ -19,7 +19,7 @@ const noteTypes = [
 export default function ClinicalSectionInput({
   onSubmit,
   isProcessing,
-  templates,
+  templates = [],
   clinicalData,
   onClinicalDataChange
 }) {
@@ -29,7 +29,7 @@ export default function ClinicalSectionInput({
     chief_complaint: "",
     note_type: "h_and_p",
     specialty: "",
-    templateId: templates.length > 0 ? templates[0].id : ""
+    templateId: ""
   });
 
   const [snippetPickerOpen, setSnippetPickerOpen] = useState(false);

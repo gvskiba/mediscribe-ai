@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import NoteTranscriptionInput from "../components/notes/NoteTranscriptionInput";
+import ClinicalSectionInput from "../components/notes/ClinicalSectionInput";
 import StructuredNotePreview from "../components/notes/StructuredNotePreview";
 import SmartGuidelinePanel from "../components/guidelines/SmartGuidelinePanel";
 import PatientHistoryPanel from "../components/notes/PatientHistoryPanel";
@@ -32,6 +33,12 @@ export default function NewNote() {
   const [medicationRecommendations, setMedicationRecommendations] = useState([]);
   const [loadingMedications, setLoadingMedications] = useState(false);
   const [encountersSummaryOpen, setEncountersSummaryOpen] = useState(false);
+  const [useDetailedInput, setUseDetailedInput] = useState(false);
+  const [clinicalData, setClinicalData] = useState({
+    history_and_physical: "",
+    review_of_systems: "",
+    physical_exam: ""
+  });
   const navigate = useNavigate();
 
   const { data: templates = [] } = useQuery({
@@ -934,17 +941,56 @@ ${JSON.stringify(structuredNote, null, 2)}`,
     return result.result;
   };
 
+  const handleDetailedInputSubmit = async (data) => {
+    const combinedNote = {
+      ...data,
+      raw_note: `HISTORY AND PHYSICAL:\n${clinicalData.history_and_physical}\n\nREVIEW OF SYSTEMS:\n${clinicalData.review_of_systems}\n\nPHYSICAL EXAMINATION:\n${clinicalData.physical_exam}`
+    };
+    handleSubmit(combinedNote);
+  };
+
   return (
     <>
       <div className="max-w-4xl mx-auto space-y-6">
         {!structuredNote ? (
-          <NoteTranscriptionInput 
-            onSubmit={(noteData, templateId) => {
-              handleSubmit(noteData, templateId);
-            }}
-            isProcessing={isProcessing}
-            templates={templates}
-          />
+          <>
+            {!useDetailedInput ? (
+              <div className="space-y-4">
+                <NoteTranscriptionInput 
+                  onSubmit={(noteData, templateId) => {
+                    handleSubmit(noteData, templateId);
+                  }}
+                  isProcessing={isProcessing}
+                  templates={templates}
+                />
+                <div className="text-center">
+                  <button
+                    onClick={() => setUseDetailedInput(true)}
+                    className="text-sm text-blue-600 hover:text-blue-700 underline"
+                  >
+                    Or use detailed clinical input
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <button
+                  onClick={() => setUseDetailedInput(false)}
+                  className="text-sm text-blue-600 hover:text-blue-700 underline mb-4"
+                >
+                  ← Back to transcription
+                </button>
+                <ClinicalSectionInput 
+                  onSubmit={handleDetailedInputSubmit}
+                  isProcessing={isProcessing}
+                  templates={templates}
+                  clinicalData={clinicalData}
+                  onClinicalDataChange={setClinicalData}
+                />
+              </div>
+            )}
+          </>
+        ) : (
         ) : (
           <>
             {/* History Focus Selector */}

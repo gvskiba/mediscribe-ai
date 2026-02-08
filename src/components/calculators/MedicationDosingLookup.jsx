@@ -36,14 +36,17 @@ Patient Information:
 - Age: ${age || "Not specified"}
 - Indication: ${indication || "General use"}
 
+${weight ? `IMPORTANT: Calculate the exact single dose in mg for this ${weight} kg patient based on standard mg/kg dosing guidelines. Show the calculation.` : ""}
+
 Provide the following in a structured format:
 1. Standard pediatric dosing with mg per kg guidelines
-2. Maximum single dose
-3. Dosing interval and frequency
-4. Maximum daily dose
-5. Recommended duration of therapy in days
-6. Important safety considerations
-7. Age-specific considerations if applicable
+${weight ? `2. CALCULATED SINGLE DOSE for this ${weight} kg patient (in mg, rounded appropriately)` : "2. Single dose range"}
+3. Maximum single dose
+4. Dosing interval and frequency
+5. Maximum daily dose
+6. Recommended duration of therapy in days
+7. Important safety considerations
+8. Age-specific considerations if applicable
 
 Focus on current clinical practice guidelines and evidence-based recommendations.`
         : `Provide evidence-based dosing guidelines for ${medication} in adult patients.
@@ -71,6 +74,7 @@ Focus on current clinical practice guidelines and evidence-based recommendations
           type: "object",
           properties: {
             standard_dose: { type: "string" },
+            calculated_single_dose: { type: "string" },
             max_single_dose: { type: "string" },
             frequency: { type: "string" },
             max_daily_dose: { type: "string" },
@@ -201,6 +205,13 @@ Focus on current clinical practice guidelines and evidence-based recommendations
           </div>
 
           <div className="space-y-3">
+            {result.calculated_single_dose && isPediatric && (
+              <div className="p-4 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg text-white">
+                <p className="text-xs font-semibold mb-1">Calculated Single Dose</p>
+                <p className="text-2xl font-bold">{result.calculated_single_dose}</p>
+              </div>
+            )}
+
             <div className="p-3 bg-blue-50 rounded-lg">
               <p className="text-xs font-semibold text-blue-900 mb-1">Standard Dose</p>
               <p className="text-sm text-blue-800">{result.standard_dose}</p>

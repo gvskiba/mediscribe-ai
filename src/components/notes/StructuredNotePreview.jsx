@@ -21,6 +21,7 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpda
   const [differentialDiagnoses, setDifferentialDiagnoses] = useState([]);
   const [showDifferentials, setShowDifferentials] = useState(false);
   const [aiSuggestionFeedback, setAiSuggestionFeedback] = useState({});
+  const [knowledgeSearchOpen, setKnowledgeSearchOpen] = useState(false);
 
   const generateFormattedNote = () => {
     let formatted = `CLINICAL NOTE\n${"=".repeat(60)}\n\n`;
@@ -1063,6 +1064,18 @@ Generate:
       </div>
 
       {/* Preview & Copy Dialog */}
+      <MedicalKnowledgeSearch
+        open={knowledgeSearchOpen}
+        onClose={() => setKnowledgeSearchOpen(false)}
+        noteContext={{
+          chief_complaint: note.chief_complaint,
+          diagnoses: note.diagnoses,
+          medications: note.medications,
+          assessment: note.assessment,
+          plan: note.plan
+        }}
+      />
+
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>

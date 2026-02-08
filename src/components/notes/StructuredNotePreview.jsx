@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import EditableSection from "./EditableSection";
 
-export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpdate, onReanalyze, guidelineRecommendations = [], loadingGuidelines = false, onGenerateEducationMaterials, onRateField, confidenceScores = {} }) {
+export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpdate, onReanalyze, guidelineRecommendations = [], loadingGuidelines = false, onGenerateEducationMaterials }) {
   const [showGuidelines, setShowGuidelines] = useState(true);
   const [expandedGuideline, setExpandedGuideline] = useState(null);
   const [linkedGuidelines, setLinkedGuidelines] = useState(note.linked_guidelines || []);
@@ -321,52 +321,28 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpda
         />
 
         {/* Review of Systems */}
-        <div>
-          <EditableSection
-            icon={ClipboardList}
-            title="Review of Systems"
-            color="indigo"
-            value={note.review_of_systems || "Not extracted"}
-            field="review_of_systems"
-            type="textarea"
-            onUpdate={onUpdate}
-            onReanalyze={onReanalyze}
-          />
-          {onRateField && confidenceScores.review_of_systems && (
-            <div className="mt-2 flex justify-end">
-              <button
-                onClick={() => onRateField("review_of_systems", note.review_of_systems, confidenceScores.review_of_systems)}
-                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-              >
-                Rate accuracy
-              </button>
-            </div>
-          )}
-        </div>
+        <EditableSection
+          icon={ClipboardList}
+          title="Review of Systems"
+          color="indigo"
+          value={note.review_of_systems || "Not extracted"}
+          field="review_of_systems"
+          type="textarea"
+          onUpdate={onUpdate}
+          onReanalyze={onReanalyze}
+        />
 
         {/* Physical Exam */}
-        <div>
-          <EditableSection
-            icon={Activity}
-            title="Physical Exam"
-            color="teal"
-            value={note.physical_exam || "Not extracted"}
-            field="physical_exam"
-            type="textarea"
-            onUpdate={onUpdate}
-            onReanalyze={onReanalyze}
-          />
-          {onRateField && confidenceScores.physical_exam && (
-            <div className="mt-2 flex justify-end">
-              <button
-                onClick={() => onRateField("physical_exam", note.physical_exam, confidenceScores.physical_exam)}
-                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-              >
-                Rate accuracy
-              </button>
-            </div>
-          )}
-        </div>
+        <EditableSection
+          icon={Activity}
+          title="Physical Exam"
+          color="teal"
+          value={note.physical_exam || "Not extracted"}
+          field="physical_exam"
+          type="textarea"
+          onUpdate={onUpdate}
+          onReanalyze={onReanalyze}
+        />
 
         {/* Assessment */}
         <EditableSection

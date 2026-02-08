@@ -63,18 +63,17 @@ export default function NoteTemplates() {
     ai_instructions: "",
   });
 
-  const { data: templates = [], isLoading } = useQuery({
+  const { data: templates = [], isLoading, data: templatesData } = useQuery({
     queryKey: ["noteTemplates"],
     queryFn: async () => {
       const allTemplates = await base44.entities.NoteTemplate.list();
       const user = await base44.auth.me();
       
-      // Filter templates: owned by user, shared with user, or public
-      return allTemplates.filter(t => 
-        t.created_by === user.email || 
-        t.is_public || 
-        t.shared_with?.includes(user.email)
-      );
+      // Return all templates with user info for ownership badges
+      return allTemplates.map(t => ({
+        ...t,
+        isOwner: t.created_by === user.email
+      }));
     },
   });
 
@@ -605,6 +604,9 @@ Return a JSON structure with:
                   <div className="mb-4">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-lg font-semibold text-slate-900">{template.name}</h3>
+                      {template.isOwner && (
+                        <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">My Template</Badge>
+                      )}
                       {template.is_public && (
                         <Badge variant="outline" className="text-xs">Public</Badge>
                       )}

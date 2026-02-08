@@ -13,6 +13,7 @@ import PatientEducationMaterials from "../components/notes/PatientEducationMater
 import NewPatientDialog from "../components/notes/NewPatientDialog";
 import ExtractionQualityPanel from "../components/notes/ExtractionQualityPanel";
 import FieldFeedbackCard from "../components/notes/FieldFeedbackCard";
+import ManualHistoryInput from "../components/notes/ManualHistoryInput";
 
 export default function NewNote() {
   const [isProcessing, setIsProcessing] = useState(false);

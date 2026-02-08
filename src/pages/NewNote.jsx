@@ -1177,12 +1177,12 @@ ${JSON.stringify(structuredNote, null, 2)}`,
 
             {/* Previous Encounters Summary */}
             {rawData && (rawData.patient_id || rawData.patient_name) && (
-              <div className="bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden">
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-4">
                   <Button 
                     onClick={() => setEncountersSummaryOpen(true)}
                     variant="outline"
-                    className="w-full gap-2 text-blue-600 border-blue-300 hover:bg-blue-50"
+                    className="w-full gap-2 text-slate-700 border-slate-300 hover:bg-slate-50"
                   >
                     <Clock className="w-4 h-4" />
                     View Previous Encounters Summary

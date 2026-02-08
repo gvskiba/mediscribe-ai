@@ -6,6 +6,7 @@ import { Check, Pill, Stethoscope, ClipboardList, Target, Lightbulb, X, Loader2,
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import EditableSection from "./EditableSection";
+import InteractivePlanSection from "./InteractivePlanSection";
 
 export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpdate, onReanalyze, guidelineRecommendations = [], loadingGuidelines = false, medicationRecommendations = [], loadingMedications = false, onGenerateEducationMaterials }) {
   const [showGuidelines, setShowGuidelines] = useState(true);
@@ -359,13 +360,8 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpda
         />
 
         {/* Plan */}
-        <EditableSection
-          icon={ClipboardList}
-          title="Plan"
-          color="emerald"
+        <InteractivePlanSection
           value={note.plan || "Not extracted"}
-          field="plan"
-          type="textarea"
           onUpdate={onUpdate}
           onReanalyze={onReanalyze}
         />

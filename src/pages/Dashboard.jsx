@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import StatCard from "../components/dashboard/StatCard";
 import RecentNoteCard from "../components/dashboard/RecentNoteCard";
 import RecentQueryCard from "../components/dashboard/RecentQueryCard";
+import MedicalNewsSection from "../components/dashboard/MedicalNewsSection";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
@@ -149,6 +150,9 @@ export default function Dashboard() {
           </div>
         </motion.div>
       </div>
+
+      {/* Medical News Section */}
+      <MedicalNewsSection />
     </div>
   );
 }

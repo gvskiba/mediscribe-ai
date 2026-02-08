@@ -29,6 +29,10 @@ export default function EditableSection({
     emerald: "bg-emerald-50 text-emerald-600",
     amber: "bg-amber-50 text-amber-600",
     rose: "bg-rose-50 text-rose-600",
+    indigo: "bg-indigo-50 text-indigo-600",
+    teal: "bg-teal-50 text-teal-600",
+    slate: "bg-slate-50 text-slate-600",
+    cyan: "bg-cyan-50 text-cyan-600",
   };
 
   const handleSave = () => {

@@ -28,7 +28,7 @@ export default function GuidelineDetail() {
     if (guideline) {
       generateRelatedGuidelines();
     }
-  }, [guideline]);
+  }, [guideline, generateRelatedGuidelines]);
 
   const generateRelatedGuidelines = async () => {
     if (!guideline) return;

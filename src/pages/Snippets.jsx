@@ -37,8 +37,22 @@ export default function Snippets() {
 
   const { data: snippets = [], isLoading } = useQuery({
     queryKey: ["snippets"],
-    queryFn: () => base44.entities.Snippet.list("-usage_count", 200),
+    queryFn: () => base44.entities.Snippet.list("-last_used", 200),
   });
+
+  const getUniqueCategories = () => {
+    const cats = new Set(snippets.map(s => s.category).filter(Boolean));
+    return Array.from(cats).sort();
+  };
+
+  const getCategories = () => {
+    const custom = getUniqueCategories();
+    const all = [...defaultCategories.map(c => c.value), ...custom.filter(c => !defaultCategories.find(d => d.value === c))];
+    return all.map(val => {
+      const defaults = defaultCategories.find(c => c.value === val);
+      return { value: val, label: defaults?.label || val };
+    });
+  };
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Snippet.create(data),

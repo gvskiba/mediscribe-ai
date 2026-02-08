@@ -63,7 +63,7 @@ export default function NoteTemplates() {
     ai_instructions: "",
   });
 
-  const { data: templates = [], isLoading, data: templatesData } = useQuery({
+  const { data: templates = [], isLoading } = useQuery({
     queryKey: ["noteTemplates"],
     queryFn: async () => {
       const allTemplates = await base44.entities.NoteTemplate.list();

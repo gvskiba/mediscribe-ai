@@ -77,7 +77,7 @@ export default function NoteDetail() {
         fetchGuidelineRecommendations();
       }
     }
-  }, [note?.status, patientSummary, generatingSummary, icd10Suggestions, loadingIcd10, guidelineRecommendations, loadingGuidelines]);
+  }, [note?.id, note?.status]);
 
   const generateSummary = async () => {
     if (!note) return;
@@ -163,7 +163,7 @@ Keep it actionable and concise (4-6 bullet points).`,
 
           return { 
             condition: cleanCondition, 
-            guideline_id: `guideline_${Date.now()}`,
+            guideline_id: `guideline_${Date.now()}_${Math.random()}`,
             ...result 
           };
         })
@@ -462,12 +462,11 @@ Generated: ${new Date().toLocaleString()}
                   <div className="mt-3 pt-3 border-t border-slate-200 flex gap-2">
                     <Button
                       size="sm"
-                      onClick={() => {
+                      onClick={async () => {
                         const guidelineText = `\n\n[Guideline - ${rec.condition}]\n${rec.summary}\n\nKey Points:\n${rec.key_points?.map(p => `- ${p}`).join('\n')}`;
-                        queryClient.setQueryData(["note", noteId], (old) => ({
-                          ...old,
-                          plan: (old?.plan || "") + guidelineText
-                        }));
+                        const updatedPlan = (note.plan || "") + guidelineText;
+                        await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
+                        queryClient.invalidateQueries({ queryKey: ["note", noteId] });
                       }}
                       className="flex-1 gap-1.5 bg-purple-600 hover:bg-purple-700 rounded-lg text-white"
                     >

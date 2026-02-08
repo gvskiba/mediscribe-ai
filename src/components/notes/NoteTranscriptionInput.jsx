@@ -19,7 +19,7 @@ const NOTE_TYPES = [
 ];
 
 const SPECIALTIES = [
-  { value: "", label: "General Medicine" },
+  { value: "general", label: "General Medicine" },
   { value: "cardiology", label: "Cardiology" },
   { value: "pulmonology", label: "Pulmonology" },
   { value: "endocrinology", label: "Endocrinology" },
@@ -38,7 +38,7 @@ const SPECIALTIES = [
 
 export default function NoteTranscriptionInput({ onSubmit, isProcessing, templates = [] }) {
   const [noteType, setNoteType] = useState("progress_note");
-  const [specialty, setSpecialty] = useState("");
+  const [specialty, setSpecialty] = useState("general");
   const [chiefComplaint, setChiefComplaint] = useState("");
   const [rawNote, setRawNote] = useState("");
   const [isRecording, setIsRecording] = useState(false);

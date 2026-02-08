@@ -596,14 +596,45 @@ For each diagnosis, provide the most specific ICD-10 code with its description. 
 
   const handleApplyHistory = (history) => {
     const historyText = `CHRONIC CONDITIONS: ${history.chronic_conditions?.join(", ") || "None"}
-ALLERGIES: ${history.allergies?.join(", ") || "None"}  
-CURRENT MEDICATIONS: ${history.current_medications?.join(", ") || "None"}
-PAST PROCEDURES: ${history.past_procedures?.join(", ") || "None"}`;
+  ALLERGIES: ${history.allergies?.join(", ") || "None"}  
+  CURRENT MEDICATIONS: ${history.current_medications?.join(", ") || "None"}
+  PAST PROCEDURES: ${history.past_procedures?.join(", ") || "None"}
+  FAMILY HISTORY: ${history.family_history?.join(", ") || "None"}`;
 
     setStructuredNote(prev => ({
       ...prev,
       medical_history: historyText
     }));
+  };
+
+  const handleManualHistoryExtracted = (extractedHistory) => {
+    // Merge extracted history with existing patient history
+    const mergedHistory = {
+      chronic_conditions: [
+        ...(patientHistory?.chronic_conditions || []),
+        ...(extractedHistory.chronic_conditions || [])
+      ],
+      allergies: [
+        ...(patientHistory?.allergies || []),
+        ...(extractedHistory.allergies || [])
+      ],
+      current_medications: [
+        ...(patientHistory?.current_medications || []),
+        ...(extractedHistory.current_medications || [])
+      ],
+      past_procedures: [
+        ...(patientHistory?.past_procedures || []),
+        ...(extractedHistory.past_procedures || [])
+      ],
+      family_history: [
+        ...(patientHistory?.family_history || []),
+        ...(extractedHistory.family_history || [])
+      ],
+      trends: patientHistory?.trends || "",
+      notes_reviewed: patientHistory?.notes_reviewed || 0
+    };
+
+    setPatientHistory(mergedHistory);
   };
 
   const handleFinalize = async () => {

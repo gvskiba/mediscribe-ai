@@ -15,6 +15,9 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpda
   const [previewOpen, setPreviewOpen] = useState(false);
   const [showMedications, setShowMedications] = useState(true);
   const [expandedMedication, setExpandedMedication] = useState(null);
+  const [customSections, setCustomSections] = useState(note.custom_sections || []);
+  const [analyzingHP, setAnalyzingHP] = useState(false);
+  const [generatingAssessmentPlan, setGeneratingAssessmentPlan] = useState(false);
 
   const generateFormattedNote = () => {
     let formatted = `CLINICAL NOTE\n${"=".repeat(60)}\n\n`;
@@ -81,39 +84,185 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpda
     navigator.clipboard.writeText(formatted);
     toast.success("Note copied to clipboard");
   };
+
+  const handleAddSection = () => {
+    const newSection = {
+      id: Date.now().toString(),
+      title: "New Section",
+      content: ""
+    };
+    const updatedSections = [...customSections, newSection];
+    setCustomSections(updatedSections);
+    onUpdate("custom_sections", updatedSections);
+  };
+
+  const handleDeleteSection = (sectionId) => {
+    const updatedSections = customSections.filter(s => s.id !== sectionId);
+    setCustomSections(updatedSections);
+    onUpdate("custom_sections", updatedSections);
+  };
+
+  const handleUpdateCustomSection = (sectionId, field, value) => {
+    const updatedSections = customSections.map(s => 
+      s.id === sectionId ? { ...s, [field]: value } : s
+    );
+    setCustomSections(updatedSections);
+    onUpdate("custom_sections", updatedSections);
+  };
+
+  const handleAnalyzeHP = async () => {
+    setAnalyzingHP(true);
+    try {
+      const { base44 } = await import("@/api/base44Client");
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Analyze the following History and Physical examination and provide a concise clinical summary:
+
+History of Present Illness:
+${note.history_of_present_illness || "Not documented"}
+
+Physical Exam:
+${note.physical_exam || "Not documented"}
+
+Medical History:
+${note.medical_history || "Not documented"}
+
+Review of Systems:
+${note.review_of_systems || "Not documented"}
+
+Provide:
+1. A 2-3 sentence clinical summary highlighting the most significant findings
+2. Key clinical patterns or red flags identified
+3. Pertinent positive and negative findings`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            summary: { type: "string" },
+            key_patterns: { type: "array", items: { type: "string" } },
+            pertinent_findings: { type: "string" }
+          }
+        }
+      });
+
+      toast.success("H&P Analysis Complete");
+      
+      // Update clinical impression with analysis
+      const analysisText = `${result.summary}\n\nKey Patterns: ${result.key_patterns.join(", ")}\n\nPertinent Findings: ${result.pertinent_findings}`;
+      onUpdate("clinical_impression", analysisText);
+    } catch (error) {
+      console.error("Failed to analyze H&P:", error);
+      toast.error("Failed to analyze H&P");
+    } finally {
+      setAnalyzingHP(false);
+    }
+  };
+
+  const handleGenerateAssessmentPlan = async () => {
+    setGeneratingAssessmentPlan(true);
+    try {
+      const { base44 } = await import("@/api/base44Client");
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Based on the following clinical information, generate a comprehensive assessment and treatment plan:
+
+Chief Complaint: ${note.chief_complaint || "Not documented"}
+History of Present Illness: ${note.history_of_present_illness || "Not documented"}
+Physical Exam: ${note.physical_exam || "Not documented"}
+Medical History: ${note.medical_history || "Not documented"}
+Review of Systems: ${note.review_of_systems || "Not documented"}
+Current Assessment: ${note.assessment || "Not documented"}
+Current Diagnoses: ${note.diagnoses?.join(", ") || "None"}
+
+Generate:
+1. A detailed clinical assessment synthesizing all findings
+2. A comprehensive treatment plan with specific interventions, medications, follow-up, and patient education`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            assessment: { type: "string" },
+            plan: { type: "string" }
+          }
+        }
+      });
+
+      toast.success("Assessment & Plan Generated");
+      onUpdate("assessment", result.assessment);
+      onUpdate("plan", result.plan);
+    } catch (error) {
+      console.error("Failed to generate assessment/plan:", error);
+      toast.error("Failed to generate assessment/plan");
+    } finally {
+      setGeneratingAssessmentPlan(false);
+    }
+  };
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
     >
-      <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900">AI-Structured Note</h2>
-          <p className="text-sm text-slate-500 mt-1">Review and finalize the structured note.</p>
+      <div className="p-6 border-b border-slate-100">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900">AI-Structured Note</h2>
+            <p className="text-sm text-slate-500 mt-1">Review and finalize the structured note.</p>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => setPreviewOpen(true)}
+              className="rounded-xl gap-2"
+            >
+              <Eye className="w-4 h-4" /> Preview & Copy
+            </Button>
+            {onGenerateEducationMaterials && (
+              <Button 
+                variant="outline"
+                onClick={onGenerateEducationMaterials} 
+                className="rounded-xl gap-2 text-emerald-600 border-emerald-300 hover:bg-emerald-50"
+              >
+                <BookOpen className="w-4 h-4" /> Patient Education
+              </Button>
+            )}
+            {onFinalize && (
+              <Button onClick={onFinalize} className="bg-emerald-600 hover:bg-emerald-700 rounded-xl gap-2">
+                <Check className="w-4 h-4" /> Finalize
+              </Button>
+            )}
+          </div>
         </div>
         <div className="flex gap-2">
           <Button 
             variant="outline"
-            onClick={() => setPreviewOpen(true)}
-            className="rounded-xl gap-2"
+            onClick={handleAnalyzeHP}
+            disabled={analyzingHP}
+            className="rounded-xl gap-2 text-blue-600 border-blue-300 hover:bg-blue-50"
           >
-            <Eye className="w-4 h-4" /> Preview & Copy
+            {analyzingHP ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Stethoscope className="w-4 h-4" />
+            )}
+            Analyze H&P
           </Button>
-          {onGenerateEducationMaterials && (
-            <Button 
-              variant="outline"
-              onClick={onGenerateEducationMaterials} 
-              className="rounded-xl gap-2 text-emerald-600 border-emerald-300 hover:bg-emerald-50"
-            >
-              <BookOpen className="w-4 h-4" /> Patient Education
-            </Button>
-          )}
-          {onFinalize && (
-            <Button onClick={onFinalize} className="bg-emerald-600 hover:bg-emerald-700 rounded-xl gap-2">
-              <Check className="w-4 h-4" /> Finalize
-            </Button>
-          )}
+          <Button 
+            variant="outline"
+            onClick={handleGenerateAssessmentPlan}
+            disabled={generatingAssessmentPlan}
+            className="rounded-xl gap-2 text-purple-600 border-purple-300 hover:bg-purple-50"
+          >
+            {generatingAssessmentPlan ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4" />
+            )}
+            Generate Assessment & Plan
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={handleAddSection}
+            className="rounded-xl gap-2 text-slate-600 border-slate-300 hover:bg-slate-50"
+          >
+            <ClipboardList className="w-4 h-4" /> Add Section
+          </Button>
         </div>
       </div>
 
@@ -305,112 +454,229 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpda
           </motion.div>
         )}
 
-        {/* Clinical Impression */}
-        {note.clinical_impression && (
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-200 p-4">
-            <div className="flex items-center gap-2 mb-2">
+        {/* Clinical Impression Box */}
+        <div className="bg-white rounded-xl border-2 border-purple-300 shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 px-4 py-3 border-b border-purple-200">
+            <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-purple-600" />
               <h3 className="font-semibold text-slate-900">Clinical Impression</h3>
             </div>
-            <p className="text-sm text-slate-700 leading-relaxed">{note.clinical_impression}</p>
           </div>
-        )}
+          <div className="p-4">
+            <EditableSection
+              icon={Sparkles}
+              title=""
+              color="purple"
+              value={note.clinical_impression || "Not extracted"}
+              field="clinical_impression"
+              type="textarea"
+              onUpdate={onUpdate}
+              onReanalyze={onReanalyze}
+              hideBorder={true}
+            />
+          </div>
+        </div>
 
-        {/* Chief Complaint */}
-        <EditableSection
-          icon={Target}
-          title="Chief Complaint"
-          color="blue"
-          value={note.chief_complaint || "Not extracted"}
-          field="chief_complaint"
-          type="text"
-          onUpdate={onUpdate}
-          onReanalyze={onReanalyze}
-        />
+        {/* Chief Complaint Box */}
+        <div className="bg-white rounded-xl border-2 border-blue-300 shadow-sm overflow-hidden">
+          <div className="bg-blue-50 px-4 py-3 border-b border-blue-200 flex items-center gap-2">
+            <Target className="w-5 h-5 text-blue-600" />
+            <h3 className="font-semibold text-slate-900">Chief Complaint</h3>
+          </div>
+          <div className="p-4">
+            <EditableSection
+              icon={Target}
+              title=""
+              color="blue"
+              value={note.chief_complaint || "Not extracted"}
+              field="chief_complaint"
+              type="text"
+              onUpdate={onUpdate}
+              onReanalyze={onReanalyze}
+              hideBorder={true}
+            />
+          </div>
+        </div>
 
-        {/* History of Present Illness */}
-        {note.history_of_present_illness && (
-          <EditableSection
-            icon={FileText}
-            title="History of Present Illness"
-            color="indigo"
-            value={note.history_of_present_illness}
-            field="history_of_present_illness"
-            type="textarea"
-            onUpdate={onUpdate}
-            onReanalyze={onReanalyze}
-          />
-        )}
+        {/* History of Present Illness Box */}
+        <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-sm overflow-hidden">
+          <div className="bg-indigo-50 px-4 py-3 border-b border-indigo-200 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-indigo-600" />
+            <h3 className="font-semibold text-slate-900">History of Present Illness</h3>
+          </div>
+          <div className="p-4">
+            <EditableSection
+              icon={FileText}
+              title=""
+              color="indigo"
+              value={note.history_of_present_illness || "Not extracted"}
+              field="history_of_present_illness"
+              type="textarea"
+              onUpdate={onUpdate}
+              onReanalyze={onReanalyze}
+              hideBorder={true}
+            />
+          </div>
+        </div>
 
-        {/* Medical History */}
-        <EditableSection
-          icon={FileText}
-          title="Medical History"
-          color="slate"
-          value={note.medical_history || "Not extracted"}
-          field="medical_history"
-          type="textarea"
-          onUpdate={onUpdate}
-          onReanalyze={onReanalyze}
-        />
+        {/* Medical History Box */}
+        <div className="bg-white rounded-xl border-2 border-slate-300 shadow-sm overflow-hidden">
+          <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-slate-600" />
+            <h3 className="font-semibold text-slate-900">Medical History</h3>
+          </div>
+          <div className="p-4">
+            <EditableSection
+              icon={FileText}
+              title=""
+              color="slate"
+              value={note.medical_history || "Not extracted"}
+              field="medical_history"
+              type="textarea"
+              onUpdate={onUpdate}
+              onReanalyze={onReanalyze}
+              hideBorder={true}
+            />
+          </div>
+        </div>
 
-        {/* Review of Systems */}
-        <EditableSection
-          icon={ClipboardList}
-          title="Review of Systems"
-          color="indigo"
-          value={note.review_of_systems || "Not extracted"}
-          field="review_of_systems"
-          type="textarea"
-          onUpdate={onUpdate}
-          onReanalyze={onReanalyze}
-        />
+        {/* Review of Systems Box */}
+        <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-sm overflow-hidden">
+          <div className="bg-indigo-50 px-4 py-3 border-b border-indigo-200 flex items-center gap-2">
+            <ClipboardList className="w-5 h-5 text-indigo-600" />
+            <h3 className="font-semibold text-slate-900">Review of Systems</h3>
+          </div>
+          <div className="p-4">
+            <EditableSection
+              icon={ClipboardList}
+              title=""
+              color="indigo"
+              value={note.review_of_systems || "Not extracted"}
+              field="review_of_systems"
+              type="textarea"
+              onUpdate={onUpdate}
+              onReanalyze={onReanalyze}
+              hideBorder={true}
+            />
+          </div>
+        </div>
 
-        {/* Physical Exam */}
-        <EditableSection
-          icon={Activity}
-          title="Physical Exam"
-          color="teal"
-          value={note.physical_exam || "Not extracted"}
-          field="physical_exam"
-          type="textarea"
-          onUpdate={onUpdate}
-          onReanalyze={onReanalyze}
-        />
+        {/* Physical Exam Box */}
+        <div className="bg-white rounded-xl border-2 border-teal-300 shadow-sm overflow-hidden">
+          <div className="bg-teal-50 px-4 py-3 border-b border-teal-200 flex items-center gap-2">
+            <Activity className="w-5 h-5 text-teal-600" />
+            <h3 className="font-semibold text-slate-900">Physical Exam</h3>
+          </div>
+          <div className="p-4">
+            <EditableSection
+              icon={Activity}
+              title=""
+              color="teal"
+              value={note.physical_exam || "Not extracted"}
+              field="physical_exam"
+              type="textarea"
+              onUpdate={onUpdate}
+              onReanalyze={onReanalyze}
+              hideBorder={true}
+            />
+          </div>
+        </div>
 
-        {/* Assessment */}
-        <EditableSection
-          icon={Stethoscope}
-          title="Assessment"
-          color="purple"
-          value={note.assessment || "Not extracted"}
-          field="assessment"
-          type="textarea"
-          onUpdate={onUpdate}
-          onReanalyze={onReanalyze}
-        />
+        {/* Assessment Box */}
+        <div className="bg-white rounded-xl border-2 border-purple-300 shadow-sm overflow-hidden">
+          <div className="bg-purple-50 px-4 py-3 border-b border-purple-200 flex items-center gap-2">
+            <Stethoscope className="w-5 h-5 text-purple-600" />
+            <h3 className="font-semibold text-slate-900">Assessment</h3>
+          </div>
+          <div className="p-4">
+            <EditableSection
+              icon={Stethoscope}
+              title=""
+              color="purple"
+              value={note.assessment || "Not extracted"}
+              field="assessment"
+              type="textarea"
+              onUpdate={onUpdate}
+              onReanalyze={onReanalyze}
+              hideBorder={true}
+            />
+          </div>
+        </div>
 
-        {/* Plan */}
-        <InteractivePlanSection
-          value={note.plan || "Not extracted"}
-          onUpdate={onUpdate}
-          onReanalyze={onReanalyze}
-        />
+        {/* Plan Box */}
+        <div className="bg-white rounded-xl border-2 border-green-300 shadow-sm overflow-hidden">
+          <div className="bg-green-50 px-4 py-3 border-b border-green-200 flex items-center gap-2">
+            <ClipboardList className="w-5 h-5 text-green-600" />
+            <h3 className="font-semibold text-slate-900">Plan</h3>
+          </div>
+          <div className="p-4">
+            <InteractivePlanSection
+              value={note.plan || "Not extracted"}
+              onUpdate={onUpdate}
+              onReanalyze={onReanalyze}
+            />
+          </div>
+        </div>
 
-        {/* Diagnoses */}
-        <EditableSection
-          icon={Target}
-          title="Diagnoses"
-          color="amber"
-          value={note.diagnoses && note.diagnoses.length > 0 ? note.diagnoses : ["Not extracted"]}
-          field="diagnoses"
-          type="array"
-          onUpdate={onUpdate}
-          onReanalyze={onReanalyze}
-        />
+        {/* Diagnoses Box */}
+        <div className="bg-white rounded-xl border-2 border-amber-300 shadow-sm overflow-hidden">
+          <div className="bg-amber-50 px-4 py-3 border-b border-amber-200 flex items-center gap-2">
+            <Target className="w-5 h-5 text-amber-600" />
+            <h3 className="font-semibold text-slate-900">Diagnoses</h3>
+          </div>
+          <div className="p-4">
+            <EditableSection
+              icon={Target}
+              title=""
+              color="amber"
+              value={note.diagnoses && note.diagnoses.length > 0 ? note.diagnoses : ["Not extracted"]}
+              field="diagnoses"
+              type="array"
+              onUpdate={onUpdate}
+              onReanalyze={onReanalyze}
+              hideBorder={true}
+            />
+          </div>
+        </div>
 
-        {/* Medications */}
-        <div className="space-y-4">
+        {/* Custom Sections */}
+        {customSections.map((section) => (
+          <div key={section.id} className="bg-white rounded-xl border-2 border-cyan-300 shadow-sm overflow-hidden">
+            <div className="bg-cyan-50 px-4 py-3 border-b border-cyan-200 flex items-center justify-between">
+              <input
+                type="text"
+                value={section.title}
+                onChange={(e) => handleUpdateCustomSection(section.id, 'title', e.target.value)}
+                className="font-semibold text-slate-900 bg-transparent border-none outline-none focus:ring-0"
+                placeholder="Section Title"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDeleteSection(section.id)}
+                className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="p-4">
+              <textarea
+                value={section.content}
+                onChange={(e) => handleUpdateCustomSection(section.id, 'content', e.target.value)}
+                className="w-full min-h-[120px] p-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+                placeholder="Enter section content..."
+              />
+            </div>
+          </div>
+        ))}
+
+        {/* Medications Box */}
+        <div className="bg-white rounded-xl border-2 border-rose-300 shadow-sm overflow-hidden">
+          <div className="bg-rose-50 px-4 py-3 border-b border-rose-200 flex items-center gap-2">
+            <Pill className="w-5 h-5 text-rose-600" />
+            <h3 className="font-semibold text-slate-900">Medications</h3>
+          </div>
+          <div className="p-4 space-y-4">
           {/* Medication Recommendations */}
           {(loadingMedications || (medicationRecommendations.length > 0 && showMedications)) && (
             <motion.div
@@ -564,16 +830,18 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpda
             </motion.div>
           )}
 
-          <EditableSection
-            icon={Pill}
-            title="Medications"
-            color="rose"
-            value={note.medications && note.medications.length > 0 ? note.medications : ["Not extracted"]}
-            field="medications"
-            type="array"
-            onUpdate={onUpdate}
-            onReanalyze={onReanalyze}
-          />
+            <EditableSection
+              icon={Pill}
+              title=""
+              color="rose"
+              value={note.medications && note.medications.length > 0 ? note.medications : ["Not extracted"]}
+              field="medications"
+              type="array"
+              onUpdate={onUpdate}
+              onReanalyze={onReanalyze}
+              hideBorder={true}
+            />
+          </div>
         </div>
       </div>
 

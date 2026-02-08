@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -24,13 +24,7 @@ export default function GuidelineDetail() {
     enabled: !!guidelineId,
   });
 
-  useEffect(() => {
-    if (guideline) {
-      generateRelatedGuidelines();
-    }
-  }, [guideline, generateRelatedGuidelines]);
-
-  const generateRelatedGuidelines = async () => {
+  const generateRelatedGuidelines = useCallback(async () => {
     if (!guideline) return;
     
     setLoadingRelated(true);
@@ -74,7 +68,13 @@ Format each as a concise, actionable clinical question.`,
       console.error("Error generating related guidelines:", error);
     }
     setLoadingRelated(false);
-  };
+  }, [guideline]);
+
+  useEffect(() => {
+    if (guideline) {
+      generateRelatedGuidelines();
+    }
+  }, [guideline, generateRelatedGuidelines]);
 
   const handleRate = async (queryId, rating) => {
     await base44.entities.GuidelineQuery.update(queryId, { rating });

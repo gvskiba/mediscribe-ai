@@ -19,11 +19,6 @@ const NOTE_TYPES = [
 ];
 
 export default function NoteTranscriptionInput({ onSubmit, isProcessing, templates = [] }) {
-  const [patientName, setPatientName] = useState("");
-  const [patientId, setPatientId] = useState("");
-  const [dateOfBirth, setDateOfBirth] = useState("");
-  const [dateOfVisit, setDateOfVisit] = useState(new Date().toISOString().split("T")[0]);
-  const [timeOfVisit, setTimeOfVisit] = useState("");
   const [noteType, setNoteType] = useState("progress_note");
   const [specialty, setSpecialty] = useState("");
   const [chiefComplaint, setChiefComplaint] = useState("");
@@ -86,52 +81,15 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
     setIsRecording(true);
   };
 
-  const handleExtractDemographics = async () => {
-    if (!rawNote.trim()) return;
-    
-    setExtracting(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Extract patient demographics from this clinical note. Look for:
-- Patient name (full name)
-- Medical Record Number (MRN) or Patient ID
-- Date of Birth (DOB)
 
-Clinical Note:
-${rawNote}
-
-If information is not found, return null for that field. Be conservative - only extract if clearly stated.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            patient_name: { type: "string" },
-            patient_id: { type: "string" },
-            date_of_birth: { type: "string" }
-          }
-        }
-      });
-
-      if (result.patient_name) setPatientName(result.patient_name);
-      if (result.patient_id) setPatientId(result.patient_id);
-      if (result.date_of_birth) setDateOfBirth(result.date_of_birth);
-    } catch (error) {
-      console.error("Failed to extract demographics:", error);
-    }
-    setExtracting(false);
-  };
 
   const handleSubmit = () => {
     if (!rawNote.trim()) return;
     onSubmit({
-      patient_name: patientName || "Unknown Patient",
-      patient_id: patientId,
-      date_of_birth: dateOfBirth,
       note_type: noteType,
       specialty,
       chief_complaint: chiefComplaint,
       raw_note: rawNote,
-      date_of_visit: dateOfVisit,
-      time_of_visit: timeOfVisit,
     }, selectedTemplate);
   };
 
@@ -167,61 +125,6 @@ If information is not found, return null for that field. Be conservative - only 
       </div>
 
       <div className="p-6 space-y-6">
-        {/* Patient Info */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label className="text-slate-700 font-medium">Patient Name</Label>
-            <Input
-              value={patientName}
-              onChange={(e) => setPatientName(e.target.value)}
-              placeholder="Optional"
-              className="rounded-xl border-slate-200 focus:border-blue-400 focus:ring-blue-400/20"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-slate-700 font-medium">MRN / Patient ID</Label>
-            <Input
-              value={patientId}
-              onChange={(e) => setPatientId(e.target.value)}
-              placeholder="Optional"
-              className="rounded-xl border-slate-200 focus:border-blue-400 focus:ring-blue-400/20"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label className="text-slate-700 font-medium">Date of Birth</Label>
-            <Input
-              type="date"
-              value={dateOfBirth}
-              onChange={(e) => setDateOfBirth(e.target.value)}
-              placeholder="Optional"
-              className="rounded-xl border-slate-200 focus:border-blue-400 focus:ring-blue-400/20"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-slate-700 font-medium">Visit Time</Label>
-            <Input
-              type="time"
-              value={timeOfVisit}
-              onChange={(e) => setTimeOfVisit(e.target.value)}
-              placeholder="Optional"
-              className="rounded-xl border-slate-200 focus:border-blue-400 focus:ring-blue-400/20"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label className="text-slate-700 font-medium">Visit Date</Label>
-          <Input
-            type="date"
-            value={dateOfVisit}
-            onChange={(e) => setDateOfVisit(e.target.value)}
-            className="rounded-xl border-slate-200 focus:border-blue-400 focus:ring-blue-400/20"
-          />
-        </div>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label className="text-slate-700 font-medium">Note Type</Label>
@@ -313,22 +216,6 @@ If information is not found, return null for that field. Be conservative - only 
               >
                 <FileText className="w-3.5 h-3.5" /> Insert Snippet
               </Button>
-              {rawNote && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExtractDemographics}
-                  disabled={extracting}
-                  className="rounded-xl gap-2"
-                >
-                  {extracting ? (
-                    <><Loader2 className="w-3 h-3 animate-spin" /> Extracting...</>
-                  ) : (
-                    <><Sparkles className="w-3 h-3" /> Extract Info</>
-                  )}
-                </Button>
-              )}
               <Button
                 type="button"
                 variant={isRecording ? "destructive" : "outline"}

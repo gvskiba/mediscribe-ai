@@ -249,7 +249,7 @@ export default function ClinicalSectionInput({
             <p className="text-sm text-slate-500 mt-1">Document symptoms by system. Include positive and negative findings relevant to the chief complaint.</p>
           </div>
           <Textarea
-            ref={textareaRefs.review_of_systems}
+            ref={rosRef}
             value={clinicalData.review_of_systems}
             onChange={(e) => handleClinicalDataChange("review_of_systems", e.target.value)}
             placeholder="Constitutional: fever, chills, weight changes

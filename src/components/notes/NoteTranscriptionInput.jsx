@@ -43,7 +43,6 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
   const [rawNote, setRawNote] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(templates.find(t => t.is_default)?.id || "");
-  const [extracting, setExtracting] = useState(false);
   const [snippetPickerOpen, setSnippetPickerOpen] = useState(false);
   const recognitionRef = useRef(null);
   const textareaRef = useRef(null);

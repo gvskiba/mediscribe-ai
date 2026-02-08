@@ -28,7 +28,7 @@ export default function ClinicalSectionInput({
     chief_complaint: "",
     note_type: "h_and_p",
     specialty: "",
-    templateId: ""
+    templateId: templates.length > 0 ? templates[0].id : ""
   });
 
   const handleInputChange = (field, value) => {

@@ -1030,6 +1030,7 @@ ${JSON.stringify(structuredNote, null, 2)}`,
           noteContent={rawData?.raw_note || ""}
           diagnoses={structuredNote.diagnoses || []}
           medications={structuredNote.medications || []}
+          patientHistory={patientHistory}
         />
       )}
 

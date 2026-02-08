@@ -132,10 +132,10 @@ export default function ClinicalSectionInput({
           {templates.length > 0 && (
             <div className="md:col-span-2">
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">Template (Optional)</label>
-              <Select value={formData.templateId} onValueChange={(v) => handleInputChange("templateId", v)}>
-                <SelectTrigger className="rounded-lg">
-                  <SelectValue placeholder="Select template" />
-                </SelectTrigger>
+              <Select value={formData.templateId || ""} onValueChange={(v) => handleInputChange("templateId", v)}>
+                    <SelectTrigger className="rounded-lg">
+                      <SelectValue placeholder="Select template" />
+                    </SelectTrigger>
                 <SelectContent>
                   {templates.map(template => (
                     <SelectItem key={template.id} value={template.id}>{template.name}</SelectItem>

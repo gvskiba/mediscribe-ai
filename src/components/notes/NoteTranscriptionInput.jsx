@@ -175,7 +175,7 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
               variant="ghost"
               size="sm"
               onClick={saveAsDefaults}
-              className="gap-1.5 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+              className="gap-1.5 text-xs text-amber-700 hover:text-amber-800 hover:bg-amber-50"
             >
               <Star className="w-3.5 h-3.5" /> Save as Defaults
             </Button>
@@ -237,7 +237,7 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
                   value={chiefComplaint}
                   onChange={(e) => setChiefComplaint(e.target.value)}
                   placeholder="e.g., Chest pain, Shortness of breath"
-                  className="rounded-xl border-slate-200 focus:border-blue-400 focus:ring-blue-400/20"
+                  className="rounded-xl border-slate-200 focus:border-blue-400 focus:ring-blue-400/20 text-slate-900 placeholder:text-slate-500"
                   />
                   </div>
 
@@ -251,7 +251,7 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
                 variant="outline"
                 size="sm"
                 onClick={() => setSnippetPickerOpen(true)}
-                className="rounded-xl gap-2"
+                className="rounded-xl gap-2 text-slate-700"
               >
                 <FileText className="w-3.5 h-3.5" /> Insert Snippet
               </Button>
@@ -260,7 +260,7 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
                 variant={isRecording ? "destructive" : "outline"}
                 size="sm"
                 onClick={toggleRecording}
-                className={`rounded-xl gap-2 ${isRecording ? "animate-pulse" : ""}`}
+                className={`rounded-xl gap-2 text-slate-700 ${isRecording ? "animate-pulse" : ""}`}
               >
                 {isRecording ? (
                   <>
@@ -275,20 +275,20 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
             </div>
           </div>
           <Textarea
-            ref={textareaRef}
-            value={rawNote}
-            onChange={(e) => setRawNote(e.target.value)}
-            placeholder="Type or dictate your clinical note here... Include patient history, exam findings, assessment and plan."
-            className="min-h-[240px] rounded-xl border-slate-200 focus:border-blue-400 focus:ring-blue-400/20 resize-none text-sm leading-relaxed"
-          />
+             ref={textareaRef}
+             value={rawNote}
+             onChange={(e) => setRawNote(e.target.value)}
+             placeholder="Type or dictate your clinical note here... Include patient history, exam findings, assessment and plan."
+             className="min-h-[240px] rounded-xl border-slate-200 focus:border-blue-400 focus:ring-blue-400/20 resize-none text-sm leading-relaxed text-slate-900 placeholder:text-slate-500"
+           />
         </div>
 
         <div className="flex justify-end">
           <Button
-            onClick={handleSubmit}
-            disabled={isProcessing || !rawNote.trim()}
-            className="bg-blue-600 hover:bg-blue-700 rounded-xl gap-2 px-6 shadow-lg shadow-blue-600/20"
-          >
+             onClick={handleSubmit}
+             disabled={isProcessing || !rawNote.trim()}
+             className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl gap-2 px-6 shadow-lg shadow-blue-600/20"
+           >
             {isProcessing ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" /> Processing with AI...

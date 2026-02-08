@@ -72,7 +72,7 @@ export default function ClinicalSectionInput({
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
       const newText = currentText.substring(0, start) + snippetText + currentText.substring(end);
-      onClinicalDataChange(activeSection, newText);
+      handleClinicalDataChange(activeSection, newText);
 
       setTimeout(() => {
         textarea.focus();
@@ -80,7 +80,7 @@ export default function ClinicalSectionInput({
       }, 0);
     } else {
       const newText = currentText ? currentText + "\n\n" + snippetText : snippetText;
-      onClinicalDataChange(activeSection, newText);
+      handleClinicalDataChange(activeSection, newText);
     }
 
     setSnippetPickerOpen(false);

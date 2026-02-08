@@ -113,14 +113,24 @@ export default function SnippetPicker({ open, onClose, onInsert, category = null
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-           <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="flex items-center justify-between">
+           <div className="flex items-center gap-2">
              <FileText className="w-5 h-5 text-blue-600" />
-             Insert Snippet
-           </DialogTitle>
-           <DialogDescription>
-             Select or edit a snippet to insert into your note
-           </DialogDescription>
+             <div>
+               <DialogTitle>Insert Snippet</DialogTitle>
+               <DialogDescription>
+                 Select or edit a snippet to insert into your note
+               </DialogDescription>
+             </div>
+           </div>
+           <Button 
+             size="sm"
+             onClick={() => setShowCreateDialog(true)}
+             className="bg-blue-600 hover:bg-blue-700 rounded-lg text-xs h-8"
+           >
+             <Plus className="w-3 h-3 mr-1" />
+             New
+           </Button>
          </DialogHeader>
 
         <div className="space-y-3">

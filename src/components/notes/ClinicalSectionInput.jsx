@@ -306,6 +306,12 @@ Other exam findings..."
           )}
         </Button>
       </div>
+
+      <SnippetPicker
+        open={snippetPickerOpen}
+        onClose={() => setSnippetPickerOpen(false)}
+        onInsert={handleInsertSnippet}
+      />
     </div>
   );
 }

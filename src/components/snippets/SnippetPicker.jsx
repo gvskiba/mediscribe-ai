@@ -55,11 +55,14 @@ export default function SnippetPicker({ open, onClose, onInsert, category = null
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-blue-600" />
-            Insert Snippet
-          </DialogTitle>
-        </DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-blue-600" />
+              Insert Snippet
+            </DialogTitle>
+            <DialogDescription>
+              Select a snippet to insert into your note
+            </DialogDescription>
+          </DialogHeader>
 
         <div className="space-y-3">
           <div className="relative">

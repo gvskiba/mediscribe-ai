@@ -667,29 +667,46 @@ Keep it actionable and concise (4-6 bullet points).`,
       }
 
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Suggest appropriate ICD-10 codes for the following clinical information:
+            prompt: `You are an expert medical coder. Analyze the following clinical information and suggest the most appropriate ICD-10 codes. Rank codes by specificity and clinical relevance.
 
-Diagnoses: ${diagnosesList}
-Assessment: ${assessment}
+      PATIENT CONTEXT:
+      Chief Complaint: ${noteData.chief_complaint || "N/A"}
+      Assessment: ${assessment}
+      History of Present Illness: ${noteData.history_of_present_illness || "N/A"}
 
-For each diagnosis, provide the most specific ICD-10 code with its description. Return 3-6 relevant codes.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            suggestions: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  code: { type: "string" },
-                  description: { type: "string" },
-                  diagnosis: { type: "string" }
+      DIAGNOSES TO CODE:
+      ${diagnosesList}
+
+      CODING STANDARDS:
+      - Use the most specific 5-7 character ICD-10 codes available
+      - Include laterality (left/right) when relevant
+      - Include severity or stage when documented
+      - Consider combination codes that capture the complete clinical picture
+      - Return 5-8 ranked codes with highest confidence first
+
+      For each code, provide:
+      1. The specific ICD-10 code (e.g., I10, E11.9231)
+      2. The complete description
+      3. Which diagnosis this code addresses
+      4. Your confidence level (high, moderate, low) based on documentation completeness`,
+            response_json_schema: {
+              type: "object",
+              properties: {
+                suggestions: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      code: { type: "string" },
+                      description: { type: "string" },
+                      diagnosis: { type: "string" },
+                      confidence: { type: "string", enum: ["high", "moderate", "low"] }
+                    }
+                  }
                 }
               }
             }
-          }
-        }
-      });
+          });
 
       setIcd10Suggestions(result.suggestions || []);
     } catch (error) {

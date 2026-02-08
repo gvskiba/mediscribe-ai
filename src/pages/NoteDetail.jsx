@@ -14,7 +14,8 @@ import {
   Sparkles,
   Loader2,
   Check,
-  Plus
+  Plus,
+  Code
 } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
@@ -22,6 +23,7 @@ import StructuredNotePreview from "../components/notes/StructuredNotePreview";
 import PatientSummary from "../components/notes/PatientSummary";
 import SmartGuidelinePanel from "../components/guidelines/SmartGuidelinePanel";
 import CreateTemplateFromNote from "../components/templates/CreateTemplateFromNote";
+import ICD10Suggestions from "../components/notes/ICD10Suggestions";
 
 const statusColors = {
   draft: "bg-amber-50 text-amber-700 border-amber-200",
@@ -44,6 +46,8 @@ export default function NoteDetail() {
   const [patientSummary, setPatientSummary] = useState(null);
   const [generatingSummary, setGeneratingSummary] = useState(false);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [icd10Suggestions, setIcd10Suggestions] = useState([]);
+  const [loadingIcd10, setLoadingIcd10] = useState(false);
 
   const { data: note, isLoading } = useQuery({
     queryKey: ["note", noteId],
@@ -58,12 +62,17 @@ export default function NoteDetail() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["note", noteId] }),
   });
 
-  // Auto-generate summary for finalized notes
+  // Auto-generate summary and ICD-10 suggestions for finalized notes
   useEffect(() => {
-    if (note && note.status === "finalized" && !patientSummary && !generatingSummary) {
-      generateSummary();
+    if (note && note.status === "finalized") {
+      if (!patientSummary && !generatingSummary) {
+        generateSummary();
+      }
+      if (!icd10Suggestions.length && !loadingIcd10) {
+        generateICD10Suggestions();
+      }
     }
-  }, [note?.status, patientSummary, generatingSummary]);
+  }, [note?.status, patientSummary, generatingSummary, icd10Suggestions, loadingIcd10]);
 
   const generateSummary = async () => {
     if (!note) return;
@@ -105,6 +114,69 @@ Provide:
       console.error("Failed to generate summary:", error);
     } finally {
       setGeneratingSummary(false);
+    }
+  };
+
+  const generateICD10Suggestions = async () => {
+    if (!note) return;
+    setLoadingIcd10(true);
+    
+    try {
+      const diagnosesList = note.diagnoses?.join(", ") || "";
+      const assessment = note.assessment || "";
+
+      if (!diagnosesList && !assessment) {
+        setLoadingIcd10(false);
+        return;
+      }
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are an expert medical coder. Analyze the following clinical information and suggest the most appropriate ICD-10 codes. Rank codes by specificity and clinical relevance.
+
+PATIENT CONTEXT:
+Chief Complaint: ${note.chief_complaint || "N/A"}
+Assessment: ${assessment}
+History of Present Illness: ${note.history_of_present_illness || "N/A"}
+
+DIAGNOSES TO CODE:
+${diagnosesList}
+
+CODING STANDARDS:
+- Use the most specific 5-7 character ICD-10 codes available
+- Include laterality (left/right) when relevant
+- Include severity or stage when documented
+- Consider combination codes that capture the complete clinical picture
+- Return 5-8 ranked codes with highest confidence first
+
+For each code, provide:
+1. The specific ICD-10 code (e.g., I10, E11.9231)
+2. The complete description
+3. Which diagnosis this code addresses
+4. Your confidence level (high, moderate, low) based on documentation completeness`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            suggestions: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  code: { type: "string" },
+                  description: { type: "string" },
+                  diagnosis: { type: "string" },
+                  confidence: { type: "string", enum: ["high", "moderate", "low"] }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      setIcd10Suggestions(result.suggestions || []);
+    } catch (error) {
+      console.error("Failed to generate ICD-10 suggestions:", error);
+    } finally {
+      setLoadingIcd10(false);
     }
   };
 
@@ -264,6 +336,15 @@ Generated: ${new Date().toLocaleString()}
           summary={patientSummary} 
           patientName={note.patient_name}
           onDownload={downloadSummary}
+        />
+      )}
+
+      {/* ICD-10 Code Suggestions */}
+      {note.diagnoses && note.diagnoses.length > 0 && (
+        <ICD10Suggestions
+          suggestions={icd10Suggestions}
+          loading={loadingIcd10}
+          readOnly={true}
         />
       )}
 

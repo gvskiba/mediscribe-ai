@@ -18,6 +18,24 @@ const NOTE_TYPES = [
   { value: "procedure_note", label: "Procedure Note" },
 ];
 
+const SPECIALTIES = [
+  { value: "", label: "General Medicine" },
+  { value: "cardiology", label: "Cardiology" },
+  { value: "pulmonology", label: "Pulmonology" },
+  { value: "endocrinology", label: "Endocrinology" },
+  { value: "neurology", label: "Neurology" },
+  { value: "oncology", label: "Oncology" },
+  { value: "gastroenterology", label: "Gastroenterology" },
+  { value: "nephrology", label: "Nephrology" },
+  { value: "rheumatology", label: "Rheumatology" },
+  { value: "infectious_disease", label: "Infectious Disease" },
+  { value: "psychiatry", label: "Psychiatry" },
+  { value: "pediatrics", label: "Pediatrics" },
+  { value: "emergency_medicine", label: "Emergency Medicine" },
+  { value: "family_medicine", label: "Family Medicine" },
+  { value: "internal_medicine", label: "Internal Medicine" },
+];
+
 export default function NoteTranscriptionInput({ onSubmit, isProcessing, templates = [] }) {
   const [noteType, setNoteType] = useState("progress_note");
   const [specialty, setSpecialty] = useState("");
@@ -141,12 +159,16 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
           </div>
           <div className="space-y-2">
             <Label className="text-slate-700 font-medium">Specialty</Label>
-            <Input
-              value={specialty}
-              onChange={(e) => setSpecialty(e.target.value)}
-              placeholder="e.g., Internal Medicine"
-              className="rounded-xl border-slate-200 focus:border-blue-400 focus:ring-blue-400/20"
-            />
+            <Select value={specialty} onValueChange={setSpecialty}>
+              <SelectTrigger className="rounded-xl border-slate-200">
+                <SelectValue placeholder="Select specialty" />
+              </SelectTrigger>
+              <SelectContent>
+                {SPECIALTIES.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

@@ -525,20 +525,21 @@ Keep it actionable and concise (4-6 bullet points).`,
       ).join("\n\n");
 
       const enhancedPlan = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a medical AI assistant. Review the following clinical note and evidence-based guidelines, then construct a comprehensive, guideline-informed treatment plan.
+        prompt: `You are a medical AI assistant${noteData.specialty ? ` specializing in ${noteData.specialty}` : ''}. Review the following clinical note and evidence-based guidelines, then construct a comprehensive, guideline-informed treatment plan.
 
-Current Clinical Note:
-Chief Complaint: ${noteData.chief_complaint || "N/A"}
-HPI: ${noteData.history_of_present_illness || "N/A"}
-Assessment: ${noteData.assessment || "N/A"}
-Current Plan: ${noteData.plan || "N/A"}
-Diagnoses: ${noteData.diagnoses?.join(", ") || "N/A"}
-${historyContext}
+        Current Clinical Note:
+        Chief Complaint: ${noteData.chief_complaint || "N/A"}
+        HPI: ${noteData.history_of_present_illness || "N/A"}
+        Assessment: ${noteData.assessment || "N/A"}
+        Current Plan: ${noteData.plan || "N/A"}
+        Diagnoses: ${noteData.diagnoses?.join(", ") || "N/A"}
+        Specialty: ${noteData.specialty || "General Medicine"}
+        ${historyContext}
 
-Evidence-Based Guidelines:
-${guidelinesSummary}
+        Evidence-Based Guidelines:
+        ${guidelinesSummary}
 
-TASK: Construct a comprehensive treatment plan that:
+        TASK: Construct a comprehensive treatment plan that is appropriate for ${noteData.specialty || "general medicine"} practice and:
 1. Incorporates guideline-recommended treatments
 2. Addresses each diagnosis appropriately
 3. Considers patient-specific factors (history, allergies, current medications)
@@ -709,15 +710,17 @@ Patient History Context:
           const result = await base44.integrations.Core.InvokeLLM({
             prompt: `Provide evidence-based medication recommendations for: ${cleanCondition}
 ${historyContext}
+Specialty Context: ${noteData.specialty || "General Medicine"}
 
 Focus on:
-1. First-line medications with specific dosing
+1. First-line medications with specific dosing (tailored to ${noteData.specialty || "general medicine"} practice)
 2. Alternative options if first-line is contraindicated
 3. Monitoring requirements for each medication
 4. Drug interactions with current medications
 5. Contraindications based on patient allergies and conditions
+6. Specialty-specific considerations for ${noteData.specialty || "general medicine"}
 
-Return specific, actionable medication recommendations based on current clinical guidelines.`,
+Return specific, actionable medication recommendations based on current clinical guidelines appropriate for ${noteData.specialty || "general medicine"}.`,
             add_context_from_internet: true,
             response_json_schema: {
               type: "object",

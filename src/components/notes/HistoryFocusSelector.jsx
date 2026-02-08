@@ -20,18 +20,18 @@ export default function HistoryFocusSelector({ value, onChange, onRefresh, disab
   const Icon = selectedOption.icon;
 
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 p-4">
+    <div className="bg-white rounded-xl border border-slate-200 p-4">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
-          <Label className="text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-2">
-            <Filter className="w-3.5 h-3.5 text-blue-500" />
-            History Focus Area
-          </Label>
-          <Select value={value} onValueChange={onChange} disabled={disabled}>
-            <SelectTrigger className="rounded-lg bg-white border-blue-200">
-              <SelectValue>
-                <div className="flex items-center gap-2">
-                  <Icon className="w-4 h-4 text-blue-600" />
+          <Label className="text-xs font-semibold text-slate-900 mb-1.5 flex items-center gap-2">
+            <Filter className="w-3.5 h-3.5 text-slate-700" />
+             History Focus Area
+           </Label>
+           <Select value={value} onValueChange={onChange} disabled={disabled}>
+             <SelectTrigger className="rounded-lg bg-white border-slate-200">
+               <SelectValue>
+                 <div className="flex items-center gap-2">
+                   <Icon className="w-4 h-4 text-slate-700" />
                   <span>{selectedOption.label}</span>
                 </div>
               </SelectValue>
@@ -53,17 +53,17 @@ export default function HistoryFocusSelector({ value, onChange, onRefresh, disab
               })}
             </SelectContent>
           </Select>
-          <p className="text-xs text-slate-500 mt-1.5">
+          <p className="text-xs text-slate-700 mt-1.5">
             AI will prioritize {selectedOption.label.toLowerCase()} conditions and medications
           </p>
-        </div>
-        {onRefresh && (
+          </div>
+          {onRefresh && (
           <Button
             variant="outline"
             size="sm"
             onClick={onRefresh}
             disabled={disabled}
-            className="rounded-lg gap-2 bg-white border-blue-200 hover:bg-blue-50"
+            className="rounded-lg gap-2 bg-white border-slate-200 hover:bg-slate-50"
           >
             <RotateCcw className="w-3.5 h-3.5" /> Refresh
           </Button>

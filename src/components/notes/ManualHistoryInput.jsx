@@ -50,28 +50,28 @@ If a category has no information, return an empty array.`,
   };
 
   return (
-    <Card className="p-4 border-purple-200 bg-purple-50/50">
+    <Card className="p-4 border-slate-200 bg-white">
       <div className="space-y-3">
         <div>
-          <h3 className="text-sm font-semibold text-slate-900 mb-1">
-            Extract History from Text
-          </h3>
-          <p className="text-xs text-slate-600">
-            Paste unstructured patient history text, and AI will automatically extract and organize it.
-          </p>
-        </div>
-        <Textarea
-          value={unstructuredText}
-          onChange={(e) => setUnstructuredText(e.target.value)}
-          placeholder="e.g., Patient has hypertension, diabetes type 2, takes metformin 1000mg BID and lisinopril 10mg daily. Allergic to penicillin. Father had MI at age 55. Past appendectomy 2015..."
-          className="min-h-[100px] text-sm resize-none border-purple-200 focus:border-purple-400"
-        />
-        <Button
-          onClick={handleExtract}
-          disabled={extracting || !unstructuredText.trim()}
-          className="w-full bg-purple-600 hover:bg-purple-700 gap-2"
-          size="sm"
-        >
+           <h3 className="text-sm font-semibold text-slate-900 mb-1">
+             Extract History from Text
+           </h3>
+           <p className="text-xs text-slate-700">
+             Paste unstructured patient history text, and AI will automatically extract and organize it.
+           </p>
+         </div>
+         <Textarea
+           value={unstructuredText}
+           onChange={(e) => setUnstructuredText(e.target.value)}
+           placeholder="e.g., Patient has hypertension, diabetes type 2, takes metformin 1000mg BID and lisinopril 10mg daily. Allergic to penicillin. Father had MI at age 55. Past appendectomy 2015..."
+           className="min-h-[100px] text-sm resize-none border-slate-200 focus:border-slate-400"
+         />
+         <Button
+           onClick={handleExtract}
+           disabled={extracting || !unstructuredText.trim()}
+           className="w-full bg-slate-700 hover:bg-slate-800 gap-2"
+           size="sm"
+         >
           {extracting ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" /> Extracting...

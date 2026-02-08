@@ -44,8 +44,8 @@ export default function ICD10Suggestions({ suggestions, loading, onAccept, onRej
 
   if (loading) {
     return (
-      <Card className="p-4 bg-purple-50 border-purple-100">
-        <div className="flex items-center gap-2 text-purple-600">
+      <Card className="p-4 bg-white border-slate-200">
+        <div className="flex items-center gap-2 text-slate-700">
           <Loader2 className="w-4 h-4 animate-spin" />
           <span className="text-sm">Generating ICD-10 code suggestions...</span>
         </div>
@@ -56,10 +56,10 @@ export default function ICD10Suggestions({ suggestions, loading, onAccept, onRej
   if (!suggestions || suggestions.length === 0) return null;
 
   return (
-    <Card className="p-4 border-purple-200 bg-purple-50/50">
+    <Card className="p-4 border-slate-200 bg-white">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Code className="w-5 h-5 text-purple-600" />
+          <Code className="w-5 h-5 text-slate-700" />
           <h3 className="font-semibold text-slate-900">Suggested ICD-10 Codes</h3>
         </div>
         {suggestions.length > 0 && (
@@ -77,25 +77,25 @@ export default function ICD10Suggestions({ suggestions, loading, onAccept, onRej
           </Button>
         )}
       </div>
-      <p className="text-xs text-slate-500 mb-4">AI-generated code suggestions based on diagnoses and assessment</p>
+      <p className="text-xs text-slate-700 mb-4">AI-generated code suggestions based on diagnoses and assessment</p>
 
       {showApplyPanel && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4"
-        >
-          <div className="text-sm font-medium text-blue-900 mb-2">Select codes to add to diagnoses:</div>
+       <motion.div
+         initial={{ opacity: 0, y: -10 }}
+         animate={{ opacity: 1, y: 0 }}
+         className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-4"
+       >
+         <div className="text-sm font-medium text-slate-900 mb-2">Select codes to add to diagnoses:</div>
           <div className="space-y-2 mb-3">
             {suggestions.map((suggestion) => (
-              <label key={suggestion.code} className="flex items-center gap-2 cursor-pointer hover:bg-blue-100 p-2 rounded">
+              <label key={suggestion.code} className="flex items-center gap-2 cursor-pointer hover:bg-slate-100 p-2 rounded">
                 <input
                   type="checkbox"
                   checked={selectedForApply.includes(suggestion.code)}
                   onChange={() => toggleCodeSelection(suggestion.code)}
                   className="w-4 h-4"
                 />
-                <span className="text-sm text-slate-700">{suggestion.code} - {suggestion.description}</span>
+                <span className="text-sm text-slate-900">{suggestion.code} - {suggestion.description}</span>
               </label>
             ))}
           </div>
@@ -103,7 +103,7 @@ export default function ICD10Suggestions({ suggestions, loading, onAccept, onRej
             size="sm"
             onClick={handleApplySelected}
             disabled={selectedForApply.length === 0}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            className="w-full bg-slate-700 hover:bg-slate-800 text-white"
           >
             Apply {selectedForApply.length > 0 && `(${selectedForApply.length})`} Selected Codes
           </Button>
@@ -130,7 +130,7 @@ export default function ICD10Suggestions({ suggestions, loading, onAccept, onRej
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-200 font-mono">
+                    <Badge variant="outline" className="bg-slate-100 text-slate-900 border-slate-200 font-mono">
                       {suggestion.code}
                     </Badge>
                     {accepted && (

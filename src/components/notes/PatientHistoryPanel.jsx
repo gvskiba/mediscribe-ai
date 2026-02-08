@@ -57,8 +57,8 @@ export default function PatientHistoryPanel({ history, loading, onApplyToNote })
 
   if (loading) {
     return (
-      <Card className="p-4 bg-blue-50 border-blue-100">
-        <div className="flex items-center gap-2 text-blue-600">
+      <Card className="p-4 bg-white border-slate-200">
+        <div className="flex items-center gap-2 text-slate-700">
           <Loader2 className="w-4 h-4 animate-spin" />
           <span className="text-sm">Loading patient history...</span>
         </div>
@@ -71,16 +71,16 @@ export default function PatientHistoryPanel({ history, loading, onApplyToNote })
   const displayHistory = editing ? editedHistory : history;
 
   return (
-    <Card className="border-blue-200 bg-blue-50/50 overflow-hidden">
+    <Card className="border-slate-200 bg-white overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between p-4 hover:bg-blue-50 transition-colors"
+        className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <FileText className="w-5 h-5 text-blue-600" />
-          <div className="text-left">
-            <h3 className="font-semibold text-slate-900">Patient History Summary</h3>
-            <p className="text-xs text-slate-500">From {history.notes_reviewed} previous note(s)</p>
+          <FileText className="w-5 h-5 text-slate-700" />
+           <div className="text-left">
+             <h3 className="font-semibold text-slate-900">Patient History Summary</h3>
+             <p className="text-xs text-slate-700">From {history.notes_reviewed} previous note(s)</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -130,7 +130,7 @@ export default function PatientHistoryPanel({ history, loading, onApplyToNote })
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="border-t border-blue-100"
+            className="border-t border-slate-200"
           >
             <div className="p-4 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -227,10 +227,10 @@ export default function PatientHistoryPanel({ history, loading, onApplyToNote })
 
               {/* Trends & Changes */}
               {displayHistory.trends && (
-                <div className="pt-4 border-t border-blue-100">
+                <div className="pt-4 border-t border-slate-200">
                   <div className="flex items-center gap-2 mb-2">
-                    <TrendingUp className="w-4 h-4 text-emerald-500" />
-                    <h4 className="text-sm font-semibold text-slate-700">Key Trends & Changes</h4>
+                    <TrendingUp className="w-4 h-4 text-slate-700" />
+                    <h4 className="text-sm font-semibold text-slate-900">Key Trends & Changes</h4>
                   </div>
                   <p className="text-sm text-slate-600 leading-relaxed bg-white rounded-lg p-3 border border-slate-200">
                     {displayHistory.trends}

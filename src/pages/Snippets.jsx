@@ -169,7 +169,7 @@ export default function Snippets() {
           >
             All
           </Badge>
-          {categories.map(cat => (
+          {getCategories().map(cat => (
             <Badge
               key={cat.value}
               variant={categoryFilter === cat.value ? "default" : "outline"}

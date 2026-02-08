@@ -54,23 +54,26 @@ export default function ClinicalSectionInput({
   const handleInsertSnippet = (snippetText) => {
     if (!activeSection) return;
 
-    const textarea = textareaRefs[activeSection].current;
     const currentText = clinicalData[activeSection] || "";
+    const textarea = textareaRefs[activeSection]?.current;
 
-    if (!textarea) {
-      onClinicalDataChange(activeSection, currentText + "\n\n" + snippetText);
-      return;
+    if (textarea && document.activeElement === textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const newText = currentText.substring(0, start) + snippetText + currentText.substring(end);
+      onClinicalDataChange(activeSection, newText);
+
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + snippetText.length, start + snippetText.length);
+      }, 0);
+    } else {
+      // Fallback if textarea isn't focused
+      const newText = currentText ? currentText + "\n\n" + snippetText : snippetText;
+      onClinicalDataChange(activeSection, newText);
     }
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const newText = currentText.substring(0, start) + snippetText + currentText.substring(end);
-    onClinicalDataChange(activeSection, newText);
-
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + snippetText.length, start + snippetText.length);
-    }, 0);
+    setSnippetPickerOpen(false);
   };
 
   const handleSubmit = () => {

@@ -20,6 +20,7 @@ const navItems = [
   { name: "Templates", icon: FileText, page: "NoteTemplates" },
   { name: "Guidelines", icon: BookOpen, page: "Guidelines" },
   { name: "Adherence", icon: Activity, page: "GuidelineAdherence" },
+  { name: "Calculators", icon: Activity, page: "Calculators" },
 ];
 
 export default function Layout({ children, currentPageName }) {

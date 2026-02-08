@@ -32,6 +32,14 @@ export default function ClinicalSectionInput({
     templateId: templates.length > 0 ? templates[0].id : ""
   });
 
+  const [snippetPickerOpen, setSnippetPickerOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState(null);
+  const textareaRefs = {
+    history_and_physical: useRef(null),
+    review_of_systems: useRef(null),
+    physical_exam: useRef(null)
+  };
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };

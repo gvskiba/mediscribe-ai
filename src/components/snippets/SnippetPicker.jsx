@@ -244,6 +244,50 @@ export default function SnippetPicker({ open, onClose, onInsert, category = null
           )}
         </div>
       </DialogContent>
+
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Snippet</DialogTitle>
+            <DialogDescription>Make changes to your snippet</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Name</label>
+              <Input
+                value={editFormData.name}
+                onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                className="rounded-lg"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Category</label>
+              <Input
+                value={editFormData.category}
+                onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
+                className="rounded-lg"
+                placeholder="e.g., exam, ros, custom..."
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Content</label>
+              <Textarea
+                value={editFormData.content}
+                onChange={(e) => setEditFormData({ ...editFormData, content: e.target.value })}
+                className="min-h-[120px] rounded-lg"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowEditDialog(false)} className="rounded-lg">
+                Cancel
+              </Button>
+              <Button onClick={handleSaveEdit} className="bg-blue-600 hover:bg-blue-700 rounded-lg">
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

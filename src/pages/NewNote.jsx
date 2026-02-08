@@ -402,8 +402,10 @@ Extract ALL information from the raw note and populate the following sections. B
       // When using templates, ensure we always have standard fields
       let mergedNote = { ...noteData, ...result };
       
-      // Store confidence scores
-      mergedNote.confidence_scores = confidenceScores;
+      // If chief complaint was provided upfront, use it (unless AI extracted a better one)
+      if (noteData.chief_complaint && !result.chief_complaint) {
+        mergedNote.chief_complaint = noteData.chief_complaint;
+      }
 
       // Ensure standard fields exist even if using template
       if (!mergedNote.chief_complaint && template) {

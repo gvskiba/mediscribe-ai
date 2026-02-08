@@ -18,6 +18,8 @@ export default function SnippetPicker({ open, onClose, onInsert, category = null
   const [editFormData, setEditFormData] = useState({ name: "", content: "", category: "", tags: [] });
   const [showCategoryInput, setShowCategoryInput] = useState(false);
   const [newCategory, setNewCategory] = useState("");
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [createFormData, setCreateFormData] = useState({ name: "", content: "", category: "general" });
 
   const { data: snippets = [] } = useQuery({
     queryKey: ["snippets"],

@@ -278,6 +278,7 @@ function HistorySection({
     orange: { icon: "text-orange-600", bullet: "text-orange-400", bg: "bg-orange-50", border: "border-orange-200", text: "text-orange-700" },
     blue: { icon: "text-blue-600", bullet: "text-blue-400", bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-700" },
     purple: { icon: "text-purple-600", bullet: "text-purple-400", bg: "bg-purple-50", border: "border-purple-200", text: "text-purple-700" },
+    teal: { icon: "text-teal-600", bullet: "text-teal-400", bg: "bg-teal-50", border: "border-teal-200", text: "text-teal-700" },
   };
 
   const colors = colorClasses[iconColor] || colorClasses.blue;

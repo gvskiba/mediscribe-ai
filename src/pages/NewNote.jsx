@@ -11,8 +11,6 @@ import HistoryFocusSelector from "../components/notes/HistoryFocusSelector";
 import ICD10Suggestions from "../components/notes/ICD10Suggestions";
 import PatientEducationMaterials from "../components/notes/PatientEducationMaterials";
 import NewPatientDialog from "../components/notes/NewPatientDialog";
-import ExtractionQualityPanel from "../components/notes/ExtractionQualityPanel";
-import FieldFeedbackCard from "../components/notes/FieldFeedbackCard";
 import ManualHistoryInput from "../components/notes/ManualHistoryInput";
 
 export default function NewNote() {
@@ -29,9 +27,6 @@ export default function NewNote() {
   const [educationMaterialsOpen, setEducationMaterialsOpen] = useState(false);
   const [newPatientDialogOpen, setNewPatientDialogOpen] = useState(false);
   const [pendingPatientData, setPendingPatientData] = useState(null);
-  const [fieldFeedback, setFieldFeedback] = useState(null);
-  const [submittingFeedback, setSubmittingFeedback] = useState(false);
-  const [extractionFeedback, setExtractionFeedback] = useState([]);
   const navigate = useNavigate();
 
   const { data: templates = [] } = useQuery({
@@ -393,37 +388,12 @@ Extract ALL information from the raw note and populate the following sections. B
 
       console.log("Sending prompt to LLM with schema:", schema);
 
-      // Add confidence scoring to prompt
-      const confidencePrompt = prompt + `
-
-      === CONFIDENCE SCORING ===
-      After extraction, provide a confidence_scores object with a score (0-1) for each field indicating your confidence in the extraction accuracy.
-      Base this on:
-      - Clarity of the source text
-      - Completeness of information
-      - Potential for ambiguity or misinterpretation
-      - Whether the information was explicitly stated vs. inferred`;
-
-      const resultWithConfidence = await base44.integrations.Core.InvokeLLM({
-        prompt: confidencePrompt,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            ...schema.properties,
-            confidence_scores: {
-              type: "object",
-              additionalProperties: { type: "number", minimum: 0, maximum: 1 },
-              description: "Confidence score for each extracted field"
-            }
-          }
-        }
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        response_json_schema: schema
       });
 
-      // Extract confidence scores
-      const confidenceScores = resultWithConfidence.confidence_scores || {};
-      const result = resultWithConfidence;
-
-      console.log("AI Extraction Result with Confidence:", result);
+      console.log("AI Extraction Result:", result);
 
       if (!result || Object.keys(result).length === 0) {
         throw new Error("LLM returned empty result - check browser console for prompt and schema");
@@ -650,33 +620,6 @@ For each diagnosis, provide the most specific ICD-10 code with its description. 
 
   const handleUpdate = (field, value) => {
     setStructuredNote(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubmitFieldFeedback = async (feedbackData) => {
-    setSubmittingFeedback(true);
-    try {
-      const feedback = await base44.entities.ExtractionFeedback.create({
-        clinical_note_id: null, // Will be set when note is finalized
-        field_name: feedbackData.fieldName,
-        accuracy_rating: feedbackData.accuracyRating,
-        confidence_score: feedbackData.confidenceScore,
-        original_extraction: feedbackData.originalExtraction,
-        corrected_extraction: feedbackData.correctedExtraction,
-        feedback_comment: feedbackData.feedbackComment,
-        extraction_method: rawData?.templateId ? "template" : "default",
-        template_name: rawData?.templateName || null,
-        note_type: rawData?.note_type,
-        specialty: rawData?.specialty
-      });
-
-      setExtractionFeedback([...extractionFeedback, feedback]);
-      setFieldFeedback(null);
-    } catch (error) {
-      console.error("Failed to submit feedback:", error);
-      alert("Failed to submit feedback. Please try again.");
-    } finally {
-      setSubmittingFeedback(false);
-    }
   };
 
   const handleCreatePatient = async (patientData) => {
@@ -1038,24 +981,6 @@ ${JSON.stringify(structuredNote, null, 2)}`,
               }}
             />
 
-            {/* Extraction Quality Panel */}
-            <ExtractionQualityPanel 
-              noteId={null}
-              feedback={extractionFeedback}
-            />
-
-            {/* Field Feedback Form */}
-            {fieldFeedback && (
-              <FieldFeedbackCard
-                fieldName={fieldFeedback.fieldName}
-                extractedText={fieldFeedback.text}
-                confidence={fieldFeedback.confidence}
-                onSubmitFeedback={handleSubmitFieldFeedback}
-                onClose={() => setFieldFeedback(null)}
-                isSubmitting={submittingFeedback}
-              />
-            )}
-
             {/* Structured Note Preview */}
             <StructuredNotePreview
               note={structuredNote}
@@ -1065,11 +990,7 @@ ${JSON.stringify(structuredNote, null, 2)}`,
               guidelineRecommendations={guidelineRecommendations}
               loadingGuidelines={loadingGuidelines}
               onGenerateEducationMaterials={() => setEducationMaterialsOpen(true)}
-              onRateField={(fieldName, text, confidence) => {
-                setFieldFeedback({ fieldName, text, confidence });
-              }}
-              confidenceScores={structuredNote?.confidence_scores || {}}
-            />
+              />
           </>
         )}
       </div>

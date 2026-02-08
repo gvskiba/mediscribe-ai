@@ -36,10 +36,10 @@ export default function ClinicalSectionInput({
   };
 
   const handleClinicalDataChange = (section, value) => {
-    onClinicalDataChange(prev => ({
-      ...prev,
+    onClinicalDataChange({
+      ...clinicalData,
       [section]: value
-    }));
+    });
   };
 
   const handleSubmit = () => {

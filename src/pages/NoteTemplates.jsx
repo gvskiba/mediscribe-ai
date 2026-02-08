@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { FileText, Plus, Edit, Trash2, Star, Check, Sparkles, Loader2, BarChart3, Share2, History, Filter, TrendingUp, Wand2 } from "lucide-react";
+import { FileText, Plus, Edit, Trash2, Star, Check, Sparkles, Loader2, BarChart3, Share2, History, Filter, TrendingUp, Wand2, Eye, Search, ArrowUpDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { format } from "date-fns";
 import SectionEditor from "../components/templates/SectionEditor";
 import SectionSuggestions from "../components/templates/SectionSuggestions";
 import TemplateAnalytics from "../components/templates/TemplateAnalytics";
@@ -48,6 +49,10 @@ export default function NoteTemplates() {
   const [loadingSectionSuggestions, setLoadingSectionSuggestions] = useState(false);
   const [aiCreatorOpen, setAiCreatorOpen] = useState(false);
   const [tagFilter, setTagFilter] = useState("");
+  const [sortBy, setSortBy] = useState("name_asc");
+  const [favorites, setFavorites] = useState([]);
+  const [previewTemplate, setPreviewTemplate] = useState(null);
+  const [quickSearch, setQuickSearch] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -72,6 +77,27 @@ export default function NoteTemplates() {
       );
     },
   });
+
+  // Load favorites from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("favoriteTemplates");
+    if (saved) {
+      try {
+        setFavorites(JSON.parse(saved));
+      } catch (e) {
+        setFavorites([]);
+      }
+    }
+  }, []);
+
+  const toggleFavorite = (templateId) => {
+    const newFavorites = favorites.includes(templateId)
+      ? favorites.filter(id => id !== templateId)
+      : [...favorites, templateId];
+    setFavorites(newFavorites);
+    localStorage.setItem("favoriteTemplates", JSON.stringify(newFavorites));
+    toast.success(favorites.includes(templateId) ? "Removed from favorites" : "Added to favorites");
+  };
 
   const createMutation = useMutation({
     mutationFn: (data) => {
@@ -391,20 +417,54 @@ Return a JSON structure with:
     }
   };
 
-  const filteredTemplates = useMemo(() => {
-    return templates.filter(t => {
+  const filteredAndSortedTemplates = useMemo(() => {
+    let filtered = templates.filter(t => {
       const matchesSearch = searchQuery.trim() === "" ||
         t.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         t.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         t.specialty?.toLowerCase().includes(searchQuery.toLowerCase());
       
+      const matchesQuickSearch = quickSearch.trim() === "" ||
+        t.name?.toLowerCase().includes(quickSearch.toLowerCase()) ||
+        t.description?.toLowerCase().includes(quickSearch.toLowerCase());
+      
       const matchesCategory = categoryFilter === "all" || t.category === categoryFilter;
       const matchesNoteType = noteTypeFilter === "all" || t.note_type === noteTypeFilter;
       const matchesTags = !tagFilter || t.tags?.includes(tagFilter);
       
-      return matchesSearch && matchesCategory && matchesNoteType && matchesTags;
+      return matchesSearch && matchesQuickSearch && matchesCategory && matchesNoteType && matchesTags;
     });
-  }, [templates, searchQuery, categoryFilter, noteTypeFilter, tagFilter]);
+
+    // Sort templates
+    const sorted = [...filtered].sort((a, b) => {
+      // Favorites always come first
+      const aFav = favorites.includes(a.id);
+      const bFav = favorites.includes(b.id);
+      if (aFav && !bFav) return -1;
+      if (!aFav && bFav) return 1;
+
+      switch (sortBy) {
+        case "name_asc":
+          return (a.name || "").localeCompare(b.name || "");
+        case "name_desc":
+          return (b.name || "").localeCompare(a.name || "");
+        case "usage_most":
+          return (b.usage_count || 0) - (a.usage_count || 0);
+        case "usage_least":
+          return (a.usage_count || 0) - (b.usage_count || 0);
+        case "date_newest":
+          return new Date(b.created_date || 0) - new Date(a.created_date || 0);
+        case "date_oldest":
+          return new Date(a.created_date || 0) - new Date(b.created_date || 0);
+        case "last_used":
+          return new Date(b.last_used || 0) - new Date(a.last_used || 0);
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  }, [templates, searchQuery, quickSearch, categoryFilter, noteTypeFilter, tagFilter, sortBy, favorites]);
 
   const allTags = useMemo(() => {
     const tags = new Set();
@@ -416,7 +476,7 @@ Return a JSON structure with:
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Note Templates</h1>
           <p className="text-slate-500 mt-1">AI-powered templates with versioning, sharing, and smart suggestions</p>
@@ -425,7 +485,7 @@ Return a JSON structure with:
           <Button
             onClick={() => setAiCreatorOpen(true)}
             variant="outline"
-            className="rounded-xl gap-2"
+            className="rounded-xl gap-2 bg-white"
           >
             <Wand2 className="w-4 h-4" /> AI Create
           </Button>
@@ -434,7 +494,7 @@ Return a JSON structure with:
               resetForm();
               setDialogOpen(true);
             }}
-            className="bg-blue-600 hover:bg-blue-700 rounded-xl gap-2"
+            className="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white rounded-xl gap-2 shadow-lg shadow-cyan-500/30"
           >
             <Plus className="w-4 h-4" /> New Template
           </Button>
@@ -442,35 +502,67 @@ Return a JSON structure with:
       </div>
 
       {/* Enhanced Search and Filter */}
-      <div className="mb-6 space-y-3">
-        <TemplateSearch 
-          category={categoryFilter}
-          onCategoryChange={setCategoryFilter}
-          onSearchChange={setSearchQuery}
-          onNoteTypeChange={setNoteTypeFilter}
-        />
-        {allTags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            <Badge 
-              variant={tagFilter === "" ? "default" : "outline"}
-              className="cursor-pointer"
-              onClick={() => setTagFilter("")}
-            >
-              All Tags
-            </Badge>
-            {allTags.map(tag => (
-              <Badge 
-                key={tag}
-                variant={tagFilter === tag ? "default" : "outline"}
-                className="cursor-pointer"
-                onClick={() => setTagFilter(tag)}
-              >
-                {tag}
-              </Badge>
-            ))}
+      <Card className="p-4 mb-6 bg-white shadow-sm border-slate-200">
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                placeholder="Quick search templates..."
+                value={quickSearch}
+                onChange={(e) => setQuickSearch(e.target.value)}
+                className="pl-10 rounded-xl border-slate-200 bg-slate-50 focus:bg-white"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-[180px] rounded-xl border-slate-200">
+                  <ArrowUpDown className="w-4 h-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name_asc">Name (A-Z)</SelectItem>
+                  <SelectItem value="name_desc">Name (Z-A)</SelectItem>
+                  <SelectItem value="usage_most">Most Used</SelectItem>
+                  <SelectItem value="usage_least">Least Used</SelectItem>
+                  <SelectItem value="date_newest">Newest First</SelectItem>
+                  <SelectItem value="date_oldest">Oldest First</SelectItem>
+                  <SelectItem value="last_used">Recently Used</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        )}
-      </div>
+          
+          <TemplateSearch 
+            category={categoryFilter}
+            onCategoryChange={setCategoryFilter}
+            onSearchChange={setSearchQuery}
+            onNoteTypeChange={setNoteTypeFilter}
+          />
+          
+          {allTags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              <Badge 
+                variant={tagFilter === "" ? "default" : "outline"}
+                className="cursor-pointer bg-gradient-to-r from-cyan-500 to-cyan-600 text-white hover:from-cyan-600 hover:to-cyan-700"
+                onClick={() => setTagFilter("")}
+              >
+                All Tags
+              </Badge>
+              {allTags.map(tag => (
+                <Badge 
+                  key={tag}
+                  variant={tagFilter === tag ? "default" : "outline"}
+                  className={`cursor-pointer ${tagFilter === tag ? "bg-gradient-to-r from-cyan-500 to-cyan-600 text-white" : ""}`}
+                  onClick={() => setTagFilter(tag)}
+                >
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+      </Card>
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -478,7 +570,7 @@ Return a JSON structure with:
             <div key={i} className="h-48 bg-slate-100 rounded-2xl animate-pulse" />
           ))}
         </div>
-      ) : filteredTemplates.length === 0 ? (
+      ) : filteredAndSortedTemplates.length === 0 ? (
         <Card className="p-12 text-center">
           <FileText className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-slate-900 mb-2">No templates found</h3>
@@ -490,19 +582,26 @@ Return a JSON structure with:
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <AnimatePresence>
-            {filteredTemplates.map(template => (
+            {filteredAndSortedTemplates.map(template => (
               <motion.div
                 key={template.id}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
               >
-                <Card className="p-6 hover:shadow-lg transition-shadow relative">
-                  {template.is_default && (
-                    <Badge className="absolute top-4 right-4 bg-amber-100 text-amber-700">
-                      <Star className="w-3 h-3 mr-1" /> Default
-                    </Badge>
-                  )}
+                <Card className="p-6 hover:shadow-lg transition-all relative bg-white border-slate-200">
+                  <div className="absolute top-4 right-4 flex gap-2">
+                    {favorites.includes(template.id) && (
+                      <Badge className="bg-amber-100 text-amber-700 border-amber-200">
+                        <Star className="w-3 h-3 mr-1 fill-current" /> Favorite
+                      </Badge>
+                    )}
+                    {template.is_default && (
+                      <Badge className="bg-cyan-100 text-cyan-700 border-cyan-200">
+                        <Check className="w-3 h-3 mr-1" /> Default
+                      </Badge>
+                    )}
+                  </div>
                   <div className="mb-4">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-lg font-semibold text-slate-900">{template.name}</h3>
@@ -516,19 +615,19 @@ Return a JSON structure with:
                     <p className="text-sm text-slate-500">{template.description}</p>
                   </div>
                   <div className="flex flex-wrap gap-2 mb-4">
-                    <Badge variant="outline">{noteTypes.find(t => t.value === template.note_type)?.label}</Badge>
-                    <Badge className="bg-purple-100 text-purple-700">{template.category}</Badge>
+                    <Badge variant="outline" className="bg-cyan-50 text-cyan-700 border-cyan-200">{noteTypes.find(t => t.value === template.note_type)?.label}</Badge>
+                    <Badge className="bg-gradient-to-r from-indigo-100 to-indigo-200 text-indigo-700 border-0">{template.category}</Badge>
                     {template.specialty && <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">{template.specialty}</Badge>}
                     {template.tags?.map(tag => (
-                      <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                      <Badge key={tag} variant="secondary" className="text-xs bg-slate-100">{tag}</Badge>
                     ))}
                     {template.sections?.length > 0 && (
                       <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
-                        {template.sections.filter(s => s.enabled !== false).length}/{template.sections.length} active
+                        {template.sections.filter(s => s.enabled !== false).length}/{template.sections.length} sections
                       </Badge>
                     )}
                     {template.usage_count > 0 && (
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
                         <TrendingUp className="w-3 h-3 mr-1" />
                         {template.usage_count} uses
                       </Badge>
@@ -538,10 +637,28 @@ Return a JSON structure with:
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => toggleFavorite(template.id)}
+                      className={`rounded-lg ${favorites.includes(template.id) ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" : ""}`}
+                      title="Favorite"
+                    >
+                      <Star className={`w-3 h-3 ${favorites.includes(template.id) ? "fill-current" : ""}`} />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPreviewTemplate(template)}
+                      className="rounded-lg gap-1"
+                      title="Preview"
+                    >
+                      <Eye className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleEdit(template)}
                       className="rounded-lg gap-1"
                     >
-                      <Edit className="w-3 h-3" /> Edit
+                      <Edit className="w-3 h-3" />
                     </Button>
                     <Button
                       variant="outline"
@@ -579,15 +696,16 @@ Return a JSON structure with:
                         size="sm"
                         onClick={() => setDefaultMutation.mutate(template.id)}
                         className="rounded-lg"
+                        title="Set as default"
                       >
-                        <Star className="w-3 h-3" />
+                        <Check className="w-3 h-3" />
                       </Button>
                     )}
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => deleteMutation.mutate(template.id)}
-                      className="rounded-lg text-red-600 hover:text-red-700"
+                      className="rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50"
                     >
                       <Trash2 className="w-3 h-3" />
                     </Button>
@@ -802,6 +920,105 @@ Return a JSON structure with:
           setAiCreatorOpen(false);
         }}
       />
+
+      {/* Template Preview Dialog */}
+      <Dialog open={!!previewTemplate} onOpenChange={() => setPreviewTemplate(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <FileText className="w-5 h-5 text-cyan-600" />
+              {previewTemplate?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            {previewTemplate?.description && (
+              <div>
+                <p className="text-sm text-slate-600">{previewTemplate.description}</p>
+              </div>
+            )}
+            
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="bg-cyan-50 text-cyan-700 border-cyan-200">
+                {noteTypes.find(t => t.value === previewTemplate?.note_type)?.label}
+              </Badge>
+              <Badge className="bg-gradient-to-r from-indigo-100 to-indigo-200 text-indigo-700 border-0">
+                {previewTemplate?.category}
+              </Badge>
+              {previewTemplate?.specialty && (
+                <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                  {previewTemplate.specialty}
+                </Badge>
+              )}
+              {previewTemplate?.version && (
+                <Badge variant="outline">Version {previewTemplate.version}</Badge>
+              )}
+            </div>
+
+            {previewTemplate?.ai_instructions && (
+              <div className="bg-gradient-to-br from-indigo-50 to-cyan-50 rounded-xl p-4 border border-indigo-100">
+                <h4 className="text-sm font-semibold text-slate-900 mb-2 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-indigo-600" />
+                  Global AI Instructions
+                </h4>
+                <p className="text-sm text-slate-700 leading-relaxed">{previewTemplate.ai_instructions}</p>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-slate-900">Template Sections ({previewTemplate?.sections?.length || 0})</h4>
+              {previewTemplate?.sections?.map((section, idx) => (
+                <Card key={idx} className={`p-4 border ${section.enabled === false ? "bg-slate-50 border-slate-200 opacity-60" : "bg-white border-slate-200"}`}>
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <h5 className="font-semibold text-slate-900">{section.name}</h5>
+                      {section.enabled === false && (
+                        <Badge variant="outline" className="text-xs">Disabled</Badge>
+                      )}
+                    </div>
+                    <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
+                      Order: {section.order ?? idx}
+                    </Badge>
+                  </div>
+                  {section.description && (
+                    <p className="text-sm text-slate-600 mb-2">{section.description}</p>
+                  )}
+                  {section.ai_instructions && (
+                    <div className="bg-cyan-50 rounded-lg p-3 mt-2 border border-cyan-100">
+                      <p className="text-xs font-medium text-cyan-900 mb-1">AI Instructions:</p>
+                      <p className="text-xs text-cyan-700 leading-relaxed">{section.ai_instructions}</p>
+                    </div>
+                  )}
+                  {section.conditional_logic?.enabled && (
+                    <Badge variant="outline" className="mt-2 text-xs bg-amber-50 text-amber-700 border-amber-200">
+                      Conditional Logic Enabled
+                    </Badge>
+                  )}
+                </Card>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t">
+              <div className="text-xs text-slate-500">
+                {previewTemplate?.created_date && (
+                  <span>Created {format(new Date(previewTemplate.created_date), "MMM d, yyyy")}</span>
+                )}
+                {previewTemplate?.usage_count > 0 && (
+                  <span className="ml-3">• Used {previewTemplate.usage_count} times</span>
+                )}
+              </div>
+              <Button
+                onClick={() => {
+                  handleEdit(previewTemplate);
+                  setPreviewTemplate(null);
+                }}
+                className="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white rounded-xl gap-2"
+              >
+                <Edit className="w-4 h-4" /> Edit Template
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

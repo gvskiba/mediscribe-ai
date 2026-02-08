@@ -105,7 +105,7 @@ export default function EditableSection({
         {title && (
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
-          <div className="flex gap-1">
+            <div className="flex gap-1">
             {isEditing && type !== "text" && (
               <Button
                 variant="ghost"
@@ -160,6 +160,7 @@ export default function EditableSection({
                 </Button>
               </>
             )}
+            </div>
           </div>
         )}
         {!title && (

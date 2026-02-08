@@ -5,10 +5,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mic, MicOff, Loader2, Sparkles, ChevronDown, ChevronUp, FileText, Star } from "lucide-react";
+import { Mic, MicOff, Loader2, Sparkles, FileText, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import TemplatePreview from "../templates/TemplatePreview";
 import SnippetPicker from "../snippets/SnippetPicker";
 
 const NOTE_TYPES = [
@@ -45,7 +44,6 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
   const [isRecording, setIsRecording] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(templates.find(t => t.is_default)?.id || "");
   const [extracting, setExtracting] = useState(false);
-  const [templatePreviewExpanded, setTemplatePreviewExpanded] = useState(true);
   const [snippetPickerOpen, setSnippetPickerOpen] = useState(false);
   const recognitionRef = useRef(null);
   const textareaRef = useRef(null);
@@ -215,55 +213,23 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
 
         {/* Template Selection */}
         {templates.length > 0 && (
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label className="text-slate-700 font-medium">Template (Optional)</Label>
-              <Select value={selectedTemplate || ""} onValueChange={(value) => setSelectedTemplate(value || "")}>
-                <SelectTrigger className="rounded-xl border-slate-200">
-                  <SelectValue placeholder="Use default structure" />
-                </SelectTrigger>
-                <SelectContent>
-                   <SelectItem value={null}>Default Structure</SelectItem>
-                   {templates.map(template => (
-                     <SelectItem key={template.id} value={template.id}>
-                       {template.name} {template.is_default && "⭐"}
-                     </SelectItem>
-                   ))}
-                 </SelectContent>
-              </Select>
-            </div>
-            
-            {selectedTemplate && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="bg-slate-50 rounded-xl border border-slate-200 p-4">
-                  <button
-                    onClick={() => setTemplatePreviewExpanded(!templatePreviewExpanded)}
-                    className="w-full flex items-center justify-between mb-3 hover:opacity-70 transition-opacity"
-                  >
-                    <h3 className="text-sm font-semibold text-slate-700">Template Preview</h3>
-                    {templatePreviewExpanded ? (
-                      <ChevronUp className="w-4 h-4 text-slate-500" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 text-slate-500" />
-                    )}
-                  </button>
-                  {templatePreviewExpanded && (
-                    <TemplatePreview
-                      template={templates.find(t => t.id === selectedTemplate)}
-                      noteType={noteType}
-                      specialty={specialty}
-                    />
-                  )}
-                  </div>
-                  </motion.div>
-                  )}
-                  </div>
-                  )}
+          <div className="space-y-2">
+            <Label className="text-slate-700 font-medium">Template (Optional)</Label>
+            <Select value={selectedTemplate || ""} onValueChange={(value) => setSelectedTemplate(value || "")}>
+              <SelectTrigger className="rounded-xl border-slate-200">
+                <SelectValue placeholder="Use default structure" />
+              </SelectTrigger>
+              <SelectContent>
+                 <SelectItem value={null}>Default Structure</SelectItem>
+                 {templates.map(template => (
+                   <SelectItem key={template.id} value={template.id}>
+                     {template.name} {template.is_default && "⭐"}
+                   </SelectItem>
+                 ))}
+               </SelectContent>
+            </Select>
+          </div>
+        )}
 
                   <div className="space-y-2">
                   <Label className="text-slate-700 font-medium">Chief Complaint</Label>

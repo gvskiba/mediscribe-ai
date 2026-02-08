@@ -672,7 +672,10 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                   <div className="pt-6">
                     <Checkbox
                       checked={selectedForCompare.some(q => q.id === query.id)}
-                      onCheckedChange={() => toggleSelectForCompare(query)}
+                      onCheckedChange={(e) => {
+                        e.stopPropagation?.();
+                        toggleSelectForCompare(query);
+                      }}
                       className="rounded-md"
                     />
                   </div>

@@ -44,6 +44,16 @@ export default function SnippetPicker({ open, onClose, onInsert, category = null
     },
   });
 
+  const createSnippetMutation = useMutation({
+    mutationFn: (data) => 
+      base44.entities.Snippet.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["snippets"] });
+      setShowCreateDialog(false);
+      setCreateFormData({ name: "", content: "", category: "general" });
+    },
+  });
+
   const getUniqueCategories = () => {
     const cats = new Set(snippets.map(s => s.category).filter(Boolean));
     return Array.from(cats).sort();

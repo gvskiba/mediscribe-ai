@@ -49,11 +49,24 @@ export default function ClinicalSectionInput({
     });
   };
 
+  const getTextareaRef = (section) => {
+    switch(section) {
+      case "history_and_physical":
+        return historyRef;
+      case "review_of_systems":
+        return rosRef;
+      case "physical_exam":
+        return examRef;
+      default:
+        return null;
+    }
+  };
+
   const handleInsertSnippet = (snippetText) => {
     if (!activeSection) return;
 
     const currentText = clinicalData[activeSection] || "";
-    const textarea = textareaRefs[activeSection]?.current;
+    const textarea = getTextareaRef(activeSection)?.current;
 
     if (textarea && document.activeElement === textarea) {
       const start = textarea.selectionStart;
@@ -66,7 +79,6 @@ export default function ClinicalSectionInput({
         textarea.setSelectionRange(start + snippetText.length, start + snippetText.length);
       }, 0);
     } else {
-      // Fallback if textarea isn't focused
       const newText = currentText ? currentText + "\n\n" + snippetText : snippetText;
       onClinicalDataChange(activeSection, newText);
     }

@@ -806,6 +806,19 @@ For each diagnosis, provide the most specific ICD-10 code with its description. 
         prompt += `\n\n=== IMPORTANT ===`;
         prompt += `\nUse ONLY the information from the raw note provided above. Do not add external information.`;
         prompt += `\nIf a section cannot be populated from the raw note, provide a brief note like "Not documented in this encounter."`;
+        prompt += `\n\n=== RESPONSE FORMAT (CRITICAL) ===`;
+        prompt += `\nYou MUST return a JSON object with EXACTLY these property names (use these exact names, not the section names above):`;
+        prompt += `\n- chief_complaint (string)`;
+        prompt += `\n- history_of_present_illness (string)`;
+        prompt += `\n- medical_history (string)`;
+        prompt += `\n- review_of_systems (string)`;
+        prompt += `\n- physical_exam (string)`;
+        prompt += `\n- assessment (string)`;
+        prompt += `\n- plan (string)`;
+        prompt += `\n- clinical_impression (string)`;
+        prompt += `\n- diagnoses (array of strings)`;
+        prompt += `\n- medications (array of strings)`;
+        prompt += `\nMap the template sections to these standard fields based on content and purpose.`;
 
         // Always keep standard fields in schema
         schema = {

@@ -20,7 +20,6 @@ const navItems = [
   { name: "Templates", icon: FileText, page: "NoteTemplates" },
   { name: "Snippets", icon: FileText, page: "Snippets" },
   { name: "Guidelines", icon: BookOpen, page: "Guidelines" },
-  { name: "Adherence", icon: Activity, page: "GuidelineAdherence" },
   { name: "Calculators", icon: Activity, page: "Calculators" },
 ];
 

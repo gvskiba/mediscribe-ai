@@ -49,7 +49,6 @@
  */
 import Calculators from './pages/Calculators';
 import Dashboard from './pages/Dashboard';
-import GuidelineAdherence from './pages/GuidelineAdherence';
 import GuidelineDetail from './pages/GuidelineDetail';
 import Guidelines from './pages/Guidelines';
 import Home from './pages/Home';
@@ -64,7 +63,6 @@ import __Layout from './Layout.jsx';
 export const PAGES = {
     "Calculators": Calculators,
     "Dashboard": Dashboard,
-    "GuidelineAdherence": GuidelineAdherence,
     "GuidelineDetail": GuidelineDetail,
     "Guidelines": Guidelines,
     "Home": Home,

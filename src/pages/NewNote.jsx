@@ -941,12 +941,8 @@ ${JSON.stringify(structuredNote, null, 2)}`,
     return result.result;
   };
 
-  const handleDetailedInputSubmit = async (data) => {
-    const combinedNote = {
-      ...data,
-      raw_note: `HISTORY AND PHYSICAL:\n${clinicalData.history_and_physical}\n\nREVIEW OF SYSTEMS:\n${clinicalData.review_of_systems}\n\nPHYSICAL EXAMINATION:\n${clinicalData.physical_exam}`
-    };
-    handleSubmit(combinedNote);
+  const handleDetailedInputSubmit = async (data, templateId) => {
+    handleSubmit(data, templateId);
   };
 
   return (

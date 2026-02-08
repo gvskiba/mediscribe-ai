@@ -18,6 +18,9 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpda
   const [customSections, setCustomSections] = useState(note.custom_sections || []);
   const [analyzingHP, setAnalyzingHP] = useState(false);
   const [generatingAssessmentPlan, setGeneratingAssessmentPlan] = useState(false);
+  const [differentialDiagnoses, setDifferentialDiagnoses] = useState([]);
+  const [showDifferentials, setShowDifferentials] = useState(false);
+  const [aiSuggestionFeedback, setAiSuggestionFeedback] = useState({});
 
   const generateFormattedNote = () => {
     let formatted = `CLINICAL NOTE\n${"=".repeat(60)}\n\n`;
@@ -160,20 +163,86 @@ Provide:
     setGeneratingAssessmentPlan(true);
     try {
       const { base44 } = await import("@/api/base44Client");
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Based on the following clinical information, generate a comprehensive assessment and treatment plan:
+      
+      // First, generate differential diagnoses with clinical reasoning
+      const differentialResult = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a clinical reasoning expert. Analyze the following patient presentation and generate a comprehensive differential diagnosis with clinical reasoning:
 
 Chief Complaint: ${note.chief_complaint || "Not documented"}
 History of Present Illness: ${note.history_of_present_illness || "Not documented"}
 Physical Exam: ${note.physical_exam || "Not documented"}
 Medical History: ${note.medical_history || "Not documented"}
 Review of Systems: ${note.review_of_systems || "Not documented"}
-Current Assessment: ${note.assessment || "Not documented"}
-Current Diagnoses: ${note.diagnoses?.join(", ") || "None"}
+Vital Signs: Extract from physical exam if available
+
+Using clinical reasoning, provide:
+1. A ranked list of differential diagnoses (most likely to least likely)
+2. For each diagnosis, explain the supporting and refuting evidence
+3. Identify key features that distinguish between diagnoses
+4. Suggest additional tests or findings needed to narrow the differential
+
+Be thorough and evidence-based in your clinical reasoning.`,
+        add_context_from_internet: true,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            differentials: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  diagnosis: { type: "string" },
+                  probability: { type: "string" },
+                  supporting_evidence: { type: "array", items: { type: "string" } },
+                  refuting_evidence: { type: "array", items: { type: "string" } },
+                  distinguishing_features: { type: "string" },
+                  recommended_workup: { type: "array", items: { type: "string" } }
+                }
+              }
+            },
+            clinical_reasoning_summary: { type: "string" }
+          }
+        }
+      });
+
+      setDifferentialDiagnoses(differentialResult.differentials || []);
+      setShowDifferentials(true);
+
+      // Now generate assessment and plan incorporating the differential
+      const assessmentResult = await base44.integrations.Core.InvokeLLM({
+        prompt: `Based on the clinical information and differential diagnosis analysis, generate a comprehensive assessment and evidence-based treatment plan:
+
+Chief Complaint: ${note.chief_complaint || "Not documented"}
+History of Present Illness: ${note.history_of_present_illness || "Not documented"}
+Physical Exam: ${note.physical_exam || "Not documented"}
+Medical History: ${note.medical_history || "Not documented"}
+Review of Systems: ${note.review_of_systems || "Not documented"}
+
+Differential Diagnosis Analysis:
+${differentialResult.clinical_reasoning_summary}
+
+Top Differentials:
+${differentialResult.differentials?.slice(0, 3).map((d, i) => 
+  `${i + 1}. ${d.diagnosis} (${d.probability})
+     Supporting: ${d.supporting_evidence.join(", ")}
+     Refuting: ${d.refuting_evidence.join(", ")}`
+).join("\n\n")}
 
 Generate:
-1. A detailed clinical assessment synthesizing all findings
-2. A comprehensive treatment plan with specific interventions, medications, follow-up, and patient education`,
+1. A detailed clinical assessment that:
+   - Synthesizes all findings with clinical reasoning
+   - Discusses the most likely diagnosis with supporting evidence
+   - Addresses key differentials and why they are more or less likely
+   - Identifies diagnostic uncertainty and next steps
+
+2. A comprehensive evidence-based treatment plan that:
+   - Addresses the most likely diagnosis
+   - Includes diagnostic workup to confirm or rule out differentials
+   - Provides specific interventions with rationale
+   - Includes medications with dosing and clinical reasoning
+   - Specifies follow-up timing and red flags
+   - Incorporates patient education and safety netting`,
+        add_context_from_internet: true,
         response_json_schema: {
           type: "object",
           properties: {
@@ -183,15 +252,27 @@ Generate:
         }
       });
 
-      toast.success("Assessment & Plan Generated");
-      onUpdate("assessment", result.assessment);
-      onUpdate("plan", result.plan);
+      toast.success("Assessment & Plan Generated with Clinical Reasoning");
+      onUpdate("assessment", assessmentResult.assessment);
+      onUpdate("plan", assessmentResult.plan);
     } catch (error) {
       console.error("Failed to generate assessment/plan:", error);
       toast.error("Failed to generate assessment/plan");
     } finally {
       setGeneratingAssessmentPlan(false);
     }
+  };
+
+  const handleFeedback = (suggestionId, feedbackType, comments = "") => {
+    setAiSuggestionFeedback(prev => ({
+      ...prev,
+      [suggestionId]: { type: feedbackType, comments, timestamp: new Date().toISOString() }
+    }));
+    
+    const feedbackMessage = feedbackType === "helpful" ? "Thank you for your feedback!" : 
+                           feedbackType === "not_helpful" ? "Feedback noted. We'll improve." : 
+                           "Feedback saved";
+    toast.success(feedbackMessage);
   };
   return (
     <motion.div
@@ -450,6 +531,142 @@ Generate:
                   })}
                 </div>
               )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Differential Diagnosis Panel */}
+        {showDifferentials && differentialDiagnoses.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-xl border-2 border-indigo-300 shadow-lg overflow-hidden"
+          >
+            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 px-5 py-4 border-b border-indigo-200 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+                  <Stethoscope className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-slate-900">Differential Diagnosis</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">AI-powered clinical reasoning analysis</p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowDifferentials(false)}
+                className="h-8 w-8 rounded-lg hover:bg-slate-100"
+              >
+                <X className="w-4 h-4 text-slate-400" />
+              </Button>
+            </div>
+
+            <div className="p-5 space-y-3">
+              {differentialDiagnoses.map((diff, idx) => {
+                const probabilityColors = {
+                  "Very High": "bg-red-100 border-red-300 text-red-800",
+                  "High": "bg-orange-100 border-orange-300 text-orange-800",
+                  "Moderate": "bg-yellow-100 border-yellow-300 text-yellow-800",
+                  "Low": "bg-blue-100 border-blue-300 text-blue-800"
+                };
+                const colorClass = probabilityColors[diff.probability] || "bg-slate-100 border-slate-300 text-slate-800";
+                const feedbackId = `differential_${idx}`;
+                const feedback = aiSuggestionFeedback[feedbackId];
+
+                return (
+                  <div key={idx} className="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
+                    <div className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-start gap-3 flex-1">
+                          <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0 text-white text-sm font-bold">
+                            {idx + 1}
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="text-base font-semibold text-slate-900">{diff.diagnosis}</h4>
+                            <Badge className={`mt-2 ${colorClass} border`}>
+                              Probability: {diff.probability}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3 mt-4">
+                        {diff.supporting_evidence && diff.supporting_evidence.length > 0 && (
+                          <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                            <h5 className="text-xs font-semibold text-green-900 mb-2">Supporting Evidence</h5>
+                            <ul className="space-y-1">
+                              {diff.supporting_evidence.map((evidence, i) => (
+                                <li key={i} className="text-xs text-green-800 flex items-start gap-2">
+                                  <span className="text-green-600 mt-0.5">+</span>
+                                  <span>{evidence}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {diff.refuting_evidence && diff.refuting_evidence.length > 0 && (
+                          <div className="bg-red-50 rounded-lg p-3 border border-red-200">
+                            <h5 className="text-xs font-semibold text-red-900 mb-2">Refuting Evidence</h5>
+                            <ul className="space-y-1">
+                              {diff.refuting_evidence.map((evidence, i) => (
+                                <li key={i} className="text-xs text-red-800 flex items-start gap-2">
+                                  <span className="text-red-600 mt-0.5">-</span>
+                                  <span>{evidence}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {diff.distinguishing_features && (
+                          <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                            <h5 className="text-xs font-semibold text-blue-900 mb-1">Key Distinguishing Features</h5>
+                            <p className="text-xs text-blue-800">{diff.distinguishing_features}</p>
+                          </div>
+                        )}
+
+                        {diff.recommended_workup && diff.recommended_workup.length > 0 && (
+                          <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
+                            <h5 className="text-xs font-semibold text-purple-900 mb-2">Recommended Workup</h5>
+                            <ul className="space-y-1">
+                              {diff.recommended_workup.map((test, i) => (
+                                <li key={i} className="text-xs text-purple-800 flex items-start gap-2">
+                                  <span className="text-purple-600 mt-0.5">•</span>
+                                  <span>{test}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between">
+                        <span className="text-xs text-slate-500">Was this suggestion helpful?</span>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant={feedback?.type === "helpful" ? "default" : "outline"}
+                            onClick={() => handleFeedback(feedbackId, "helpful")}
+                            className="h-7 text-xs gap-1"
+                          >
+                            <Check className="w-3 h-3" /> Helpful
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={feedback?.type === "not_helpful" ? "default" : "outline"}
+                            onClick={() => handleFeedback(feedbackId, "not_helpful")}
+                            className="h-7 text-xs gap-1"
+                          >
+                            <X className="w-3 h-3" /> Not Helpful
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </motion.div>
         )}

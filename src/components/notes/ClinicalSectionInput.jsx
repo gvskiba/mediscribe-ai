@@ -183,13 +183,28 @@ export default function ClinicalSectionInput({
         {/* History and Physical */}
         <Card className="p-6 border-blue-200">
           <div className="mb-4">
-            <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-              <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold">1</span>
-              History and Physical
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold">1</span>
+                History and Physical
+              </h3>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setActiveSection("history_and_physical");
+                  setSnippetPickerOpen(true);
+                }}
+                className="rounded-lg gap-1.5 text-xs text-slate-600 border-slate-300 hover:bg-slate-50"
+              >
+                <FileText className="w-3 h-3" /> Insert Snippet
+              </Button>
+            </div>
             <p className="text-sm text-slate-500 mt-1">Include medical history, past medical history, surgical history, medications, allergies, and any relevant clinical context.</p>
           </div>
           <Textarea
+            ref={textareaRefs.history_and_physical}
             value={clinicalData.history_and_physical}
             onChange={(e) => handleClinicalDataChange("history_and_physical", e.target.value)}
             placeholder="Patient's relevant medical history, current medications, allergies, past surgeries, family history, social history, etc."

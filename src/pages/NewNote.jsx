@@ -997,6 +997,11 @@ ${JSON.stringify(structuredNote, null, 2)}`,
               />
             )}
 
+            {/* Manual History Input */}
+            <ManualHistoryInput 
+              onHistoryExtracted={handleManualHistoryExtracted}
+            />
+
             {/* Patient History Panel */}
             <PatientHistoryPanel 
               history={patientHistory}

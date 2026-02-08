@@ -7,11 +7,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import EditableSection from "./EditableSection";
 
-export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpdate, onReanalyze, guidelineRecommendations = [], loadingGuidelines = false, onGenerateEducationMaterials }) {
+export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpdate, onReanalyze, guidelineRecommendations = [], loadingGuidelines = false, medicationRecommendations = [], loadingMedications = false, onGenerateEducationMaterials }) {
   const [showGuidelines, setShowGuidelines] = useState(true);
   const [expandedGuideline, setExpandedGuideline] = useState(null);
   const [linkedGuidelines, setLinkedGuidelines] = useState(note.linked_guidelines || []);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [showMedications, setShowMedications] = useState(true);
+  const [expandedMedication, setExpandedMedication] = useState(null);
 
   const generateFormattedNote = () => {
     let formatted = `CLINICAL NOTE\n${"=".repeat(60)}\n\n`;
@@ -381,16 +383,171 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpda
         />
 
         {/* Medications */}
-        <EditableSection
-          icon={Pill}
-          title="Medications"
-          color="rose"
-          value={note.medications && note.medications.length > 0 ? note.medications : ["Not extracted"]}
-          field="medications"
-          type="array"
-          onUpdate={onUpdate}
-          onReanalyze={onReanalyze}
-        />
+        <div className="space-y-4">
+          {/* Medication Recommendations */}
+          {(loadingMedications || (medicationRecommendations.length > 0 && showMedications)) && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="bg-white rounded-xl border border-rose-200 shadow-sm overflow-hidden"
+            >
+              <div className="p-5 flex items-start justify-between border-b border-slate-100 bg-gradient-to-r from-rose-50/50 to-pink-50/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center">
+                    <Pill className="w-5 h-5 text-rose-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-slate-900">Medication Recommendations</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">Evidence-based prescribing guidance</p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowMedications(false)}
+                  className="h-8 w-8 rounded-lg hover:bg-slate-100"
+                >
+                  <X className="w-4 h-4 text-slate-400" />
+                </Button>
+              </div>
+
+              <div className="p-5">
+                {loadingMedications ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-rose-600 mb-3" />
+                    <p className="text-sm font-medium text-slate-900">Analyzing medication guidelines</p>
+                    <p className="text-xs text-slate-500 mt-1">Fetching evidence-based prescribing recommendations...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {medicationRecommendations.map((rec, idx) => {
+                      const isExpanded = expandedMedication === idx;
+
+                      return (
+                        <div key={idx} className="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden hover:border-rose-300 transition-colors">
+                          <button
+                            onClick={() => setExpandedMedication(isExpanded ? null : idx)}
+                            className="w-full flex items-center justify-between p-4 hover:bg-slate-100/50 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-rose-100">
+                                <Pill className="w-4 h-4 text-rose-600" />
+                              </div>
+                              <div className="text-left">
+                                <p className="text-sm font-semibold text-slate-900">{rec.condition}</p>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                  {rec.first_line?.length || 0} first-line options
+                                </p>
+                              </div>
+                            </div>
+                            <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                          </button>
+
+                          <AnimatePresence>
+                            {isExpanded && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="border-t border-slate-200 bg-white"
+                              >
+                                <div className="p-4 space-y-4">
+                                  {rec.first_line && rec.first_line.length > 0 && (
+                                    <div>
+                                      <h4 className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">First-Line Medications</h4>
+                                      <div className="space-y-3">
+                                        {rec.first_line.map((med, i) => (
+                                          <div key={i} className="bg-green-50 rounded-lg p-3 border border-green-200">
+                                            <div className="flex items-start justify-between mb-2">
+                                              <p className="text-sm font-semibold text-slate-900">{med.medication}</p>
+                                              <Button
+                                                size="sm"
+                                                onClick={() => {
+                                                  const medicationText = `${med.medication} - ${med.dosing}`;
+                                                  onUpdate("medications", [...(note.medications || []), medicationText]);
+                                                  toast.success("Medication added");
+                                                }}
+                                                className="h-7 text-xs gap-1 bg-rose-600 hover:bg-rose-700"
+                                              >
+                                                <CheckCircle2 className="w-3 h-3" /> Add
+                                              </Button>
+                                            </div>
+                                            <p className="text-xs text-slate-600 mb-1"><strong>Dosing:</strong> {med.dosing}</p>
+                                            <p className="text-xs text-slate-600"><strong>Rationale:</strong> {med.rationale}</p>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {rec.alternatives && rec.alternatives.length > 0 && (
+                                    <div>
+                                      <h4 className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">Alternative Options</h4>
+                                      <div className="space-y-2">
+                                        {rec.alternatives.map((alt, i) => (
+                                          <div key={i} className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                                            <div className="flex items-start justify-between mb-2">
+                                              <p className="text-sm font-medium text-slate-900">{alt.medication}</p>
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => {
+                                                  const medicationText = `${alt.medication} - ${alt.dosing}`;
+                                                  onUpdate("medications", [...(note.medications || []), medicationText]);
+                                                  toast.success("Medication added");
+                                                }}
+                                                className="h-7 text-xs gap-1"
+                                              >
+                                                <CheckCircle2 className="w-3 h-3" /> Add
+                                              </Button>
+                                            </div>
+                                            <p className="text-xs text-slate-600 mb-1"><strong>Dosing:</strong> {alt.dosing}</p>
+                                            <p className="text-xs text-slate-600"><strong>When to use:</strong> {alt.when_to_use}</p>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {rec.monitoring && (
+                                    <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
+                                      <h4 className="text-xs font-semibold text-amber-900 mb-1">Monitoring Requirements</h4>
+                                      <p className="text-xs text-slate-700">{rec.monitoring}</p>
+                                    </div>
+                                  )}
+
+                                  {rec.contraindications && (
+                                    <div className="bg-red-50 rounded-lg p-3 border border-red-200">
+                                      <h4 className="text-xs font-semibold text-red-900 mb-1">Contraindications</h4>
+                                      <p className="text-xs text-slate-700">{rec.contraindications}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          <EditableSection
+            icon={Pill}
+            title="Medications"
+            color="rose"
+            value={note.medications && note.medications.length > 0 ? note.medications : ["Not extracted"]}
+            field="medications"
+            type="array"
+            onUpdate={onUpdate}
+            onReanalyze={onReanalyze}
+          />
+        </div>
       </div>
 
       {/* Preview & Copy Dialog */}

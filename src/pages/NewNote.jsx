@@ -27,6 +27,8 @@ export default function NewNote() {
   const [educationMaterialsOpen, setEducationMaterialsOpen] = useState(false);
   const [newPatientDialogOpen, setNewPatientDialogOpen] = useState(false);
   const [pendingPatientData, setPendingPatientData] = useState(null);
+  const [medicationRecommendations, setMedicationRecommendations] = useState([]);
+  const [loadingMedications, setLoadingMedications] = useState(false);
   const navigate = useNavigate();
 
   const { data: templates = [] } = useQuery({
@@ -453,10 +455,11 @@ Extract ALL information from the raw note and populate the following sections. B
       const enhancedNote = await enhancePlanWithGuidelines(mergedNote);
       setStructuredNote(enhancedNote);
 
-      // Automatically fetch guideline recommendations and ICD-10 codes in parallel
+      // Automatically fetch guideline recommendations, ICD-10 codes, and medication recommendations in parallel
       Promise.all([
         fetchGuidelineRecommendations(enhancedNote),
-        generateICD10Suggestions(enhancedNote)
+        generateICD10Suggestions(enhancedNote),
+        fetchMedicationRecommendations(enhancedNote)
       ]).catch(error => {
         console.error("Failed to fetch additional data:", error);
       });
@@ -676,6 +679,86 @@ For each diagnosis, provide the most specific ICD-10 code with its description. 
       console.error("Failed to generate ICD-10 suggestions:", error);
     } finally {
       setLoadingIcd10(false);
+    }
+  };
+
+  const fetchMedicationRecommendations = async (noteData) => {
+    setLoadingMedications(true);
+    try {
+      const conditions = [];
+      if (Array.isArray(noteData.diagnoses) && noteData.diagnoses.length > 0) {
+        conditions.push(...noteData.diagnoses.slice(0, 3));
+      }
+
+      if (conditions.length === 0) {
+        setLoadingMedications(false);
+        return;
+      }
+
+      const historyContext = patientHistory ? `
+Patient History Context:
+- Chronic Conditions: ${patientHistory.chronic_conditions?.join(", ") || "None"}
+- Current Medications: ${patientHistory.current_medications?.join(", ") || "None"}
+- Allergies: ${patientHistory.allergies?.join(", ") || "None"}
+- Recent Trends: ${patientHistory.trends || "N/A"}
+` : "";
+
+      const recommendations = await Promise.all(
+        conditions.slice(0, 2).map(async (condition) => {
+          const cleanCondition = condition.replace(/\(.*?\)/g, "").trim();
+          const result = await base44.integrations.Core.InvokeLLM({
+            prompt: `Provide evidence-based medication recommendations for: ${cleanCondition}
+${historyContext}
+
+Focus on:
+1. First-line medications with specific dosing
+2. Alternative options if first-line is contraindicated
+3. Monitoring requirements for each medication
+4. Drug interactions with current medications
+5. Contraindications based on patient allergies and conditions
+
+Return specific, actionable medication recommendations based on current clinical guidelines.`,
+            add_context_from_internet: true,
+            response_json_schema: {
+              type: "object",
+              properties: {
+                first_line: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      medication: { type: "string" },
+                      dosing: { type: "string" },
+                      rationale: { type: "string" }
+                    }
+                  }
+                },
+                alternatives: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      medication: { type: "string" },
+                      dosing: { type: "string" },
+                      when_to_use: { type: "string" }
+                    }
+                  }
+                },
+                monitoring: { type: "string" },
+                contraindications: { type: "string" }
+              }
+            }
+          });
+
+          return { condition: cleanCondition, ...result };
+        })
+      );
+
+      setMedicationRecommendations(recommendations);
+    } catch (error) {
+      console.error("Failed to fetch medication recommendations:", error);
+    } finally {
+      setLoadingMedications(false);
     }
   };
 
@@ -998,7 +1081,8 @@ TRENDS: ${patientHistory.trends || "N/A"}`;
 
       Promise.all([
         fetchGuidelineRecommendations(enhancedNote),
-        generateICD10Suggestions(enhancedNote)
+        generateICD10Suggestions(enhancedNote),
+        fetchMedicationRecommendations(enhancedNote)
       ]).catch(error => {
         console.error("Failed to fetch additional data:", error);
       });
@@ -1117,6 +1201,8 @@ ${JSON.stringify(structuredNote, null, 2)}`,
               onReanalyze={handleReanalyze}
               guidelineRecommendations={guidelineRecommendations}
               loadingGuidelines={loadingGuidelines}
+              medicationRecommendations={medicationRecommendations}
+              loadingMedications={loadingMedications}
               onGenerateEducationMaterials={() => setEducationMaterialsOpen(true)}
               />
           </>

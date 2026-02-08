@@ -314,6 +314,52 @@ export default function SnippetPicker({ open, onClose, onInsert, category = null
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Create New Snippet</DialogTitle>
+            <DialogDescription>Add a new snippet to your library</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Name</label>
+              <Input
+                value={createFormData.name}
+                onChange={(e) => setCreateFormData({ ...createFormData, name: e.target.value })}
+                className="rounded-lg"
+                placeholder="e.g., Normal Physical Exam..."
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Category</label>
+              <Input
+                value={createFormData.category}
+                onChange={(e) => setCreateFormData({ ...createFormData, category: e.target.value })}
+                className="rounded-lg"
+                placeholder="e.g., exam, ros, assessment..."
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Content</label>
+              <Textarea
+                value={createFormData.content}
+                onChange={(e) => setCreateFormData({ ...createFormData, content: e.target.value })}
+                className="min-h-[120px] rounded-lg"
+                placeholder="Snippet text content..."
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowCreateDialog(false)} className="rounded-lg">
+                Cancel
+              </Button>
+              <Button onClick={handleCreateSnippet} className="bg-green-600 hover:bg-green-700 rounded-lg">
+                Create Snippet
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

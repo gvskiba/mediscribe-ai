@@ -237,6 +237,18 @@ function GuidelineSuggestionCard({ suggestion, index }) {
     low: "bg-blue-100 text-blue-700 border-blue-200",
   };
 
+  const typeColors = {
+    guideline: "bg-blue-100 text-blue-700",
+    diagnostic: "bg-purple-100 text-purple-700",
+    treatment: "bg-green-100 text-green-700",
+  };
+
+  const typeIcons = {
+    guideline: "📋",
+    diagnostic: "🔍",
+    treatment: "💊",
+  };
+
   const handleViewGuideline = () => {
     const url = `/app/Guidelines?question=${encodeURIComponent(suggestion.question)}`;
     window.open(url, '_blank');
@@ -254,10 +266,18 @@ function GuidelineSuggestionCard({ suggestion, index }) {
         className="w-full p-3 text-left flex items-start justify-between gap-2"
       >
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            {suggestion.type && (
+              <Badge variant="outline" className={`text-xs ${typeColors[suggestion.type] || typeColors.guideline}`}>
+                {typeIcons[suggestion.type]} {suggestion.type}
+              </Badge>
+            )}
             <Badge variant="outline" className={`text-xs ${priorityColors[suggestion.priority] || priorityColors.medium}`}>
               {suggestion.priority || 'medium'} priority
             </Badge>
+            {suggestion.category && (
+              <span className="text-xs text-slate-500">{suggestion.category}</span>
+            )}
           </div>
           <p className="text-sm font-medium text-slate-900 leading-snug">
             {suggestion.question}
@@ -279,6 +299,21 @@ function GuidelineSuggestionCard({ suggestion, index }) {
                 <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Why this matters</p>
                 <p className="text-sm text-slate-700 leading-relaxed">{suggestion.rationale}</p>
               </div>
+              
+              {suggestion.action_items && suggestion.action_items.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-slate-500 uppercase mb-2">Action Items</p>
+                  <ul className="space-y-1.5">
+                    {suggestion.action_items.map((item, idx) => (
+                      <li key={idx} className="text-xs text-slate-700 flex items-start gap-2">
+                        <span className="text-blue-600 mt-0.5">•</span>
+                        <span className="flex-1">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
               <Button
                 onClick={handleViewGuideline}
                 size="sm"

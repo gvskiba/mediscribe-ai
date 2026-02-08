@@ -205,6 +205,24 @@ export default function PatientHistoryPanel({ history, loading, onApplyToNote })
                   setNewItemText={setNewItemText}
                   setAddingItem={setAddingItem}
                 />
+
+                {/* Family History */}
+                <HistorySection
+                  icon={Activity}
+                  iconColor="teal"
+                  title="Family History"
+                  items={displayHistory.family_history || []}
+                  category="family_history"
+                  editing={editing}
+                  addingItem={addingItem}
+                  newItemText={newItemText}
+                  onAddClick={() => setAddingItem("family_history")}
+                  onAddItem={handleAddItem}
+                  onRemoveItem={handleRemoveItem}
+                  onEditItem={handleEditItem}
+                  setNewItemText={setNewItemText}
+                  setAddingItem={setAddingItem}
+                />
               </div>
 
               {/* Trends & Changes */}

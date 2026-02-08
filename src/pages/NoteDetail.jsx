@@ -59,17 +59,18 @@ export default function NoteDetail() {
   });
 
   // Auto-generate summary for finalized notes
-  React.useEffect(() => {
+  useEffect(() => {
     if (note && note.status === "finalized" && !patientSummary && !generatingSummary) {
       generateSummary();
     }
-  }, [note?.status]);
+  }, [note?.status, patientSummary, generatingSummary]);
 
   const generateSummary = async () => {
     if (!note) return;
     setGeneratingSummary(true);
     
-    const result = await base44.integrations.Core.InvokeLLM({
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
       prompt: `Generate a concise patient summary from this clinical note. Focus on actionable information for continuity of care.
 
 Patient: ${note.patient_name}
@@ -97,10 +98,14 @@ Provide:
           critical_alerts: { type: "array", items: { type: "string" } },
         },
       },
-    });
+      });
 
-    setPatientSummary(result);
-    setGeneratingSummary(false);
+      setPatientSummary(result);
+    } catch (error) {
+      console.error("Failed to generate summary:", error);
+    } finally {
+      setGeneratingSummary(false);
+    }
   };
 
   const downloadSummary = () => {
@@ -263,7 +268,15 @@ Generated: ${new Date().toLocaleString()}
       )}
 
       {/* Structured Note */}
-      <StructuredNotePreview note={note} />
+      <StructuredNotePreview 
+        note={note} 
+        onUpdate={(field, value) => {
+          queryClient.setQueryData(["note", noteId], (old) => ({
+            ...old,
+            [field]: value
+          }));
+        }}
+      />
 
       {/* Raw Note */}
       <motion.div

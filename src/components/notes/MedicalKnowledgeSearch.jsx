@@ -19,10 +19,11 @@ export default function MedicalKnowledgeSearch({
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   useEffect(() => {
-    if (open && noteContext) {
+    if (open && noteContext && Object.keys(noteContext).length > 0) {
       generateSuggestedQueries();
     }
-  }, [open, noteContext]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const generateSuggestedQueries = async () => {
     setLoadingSuggestions(true);

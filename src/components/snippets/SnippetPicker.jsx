@@ -94,16 +94,16 @@ export default function SnippetPicker({ open, onClose, onInsert, category = null
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-blue-600" />
-              Insert Snippet
-            </DialogTitle>
-            <DialogDescription>
-              Select a snippet to insert into your note
-            </DialogDescription>
-          </DialogHeader>
+           <DialogTitle className="flex items-center gap-2">
+             <FileText className="w-5 h-5 text-blue-600" />
+             Insert Snippet
+           </DialogTitle>
+           <DialogDescription>
+             Select or edit a snippet to insert into your note
+           </DialogDescription>
+         </DialogHeader>
 
         <div className="space-y-3">
           <div className="relative">
@@ -116,17 +116,46 @@ export default function SnippetPicker({ open, onClose, onInsert, category = null
             />
           </div>
 
-          <div className="flex gap-2 flex-wrap">
-            {categories.map(cat => (
+          <div className="flex gap-2 flex-wrap items-center">
+            <Badge
+              variant={selectedCategory === "all" ? "default" : "outline"}
+              className="cursor-pointer"
+              onClick={() => setSelectedCategory("all")}
+            >
+              All
+            </Badge>
+            {getUniqueCategories().map(cat => (
               <Badge
-                key={cat.value}
-                variant={selectedCategory === cat.value ? "default" : "outline"}
+                key={cat}
+                variant={selectedCategory === cat ? "default" : "outline"}
                 className="cursor-pointer"
-                onClick={() => setSelectedCategory(cat.value)}
+                onClick={() => setSelectedCategory(cat)}
               >
-                {cat.label}
+                {cat}
               </Badge>
             ))}
+            {!showCategoryInput && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="rounded-lg text-xs h-6"
+                onClick={() => setShowCategoryInput(true)}
+              >
+                + Category
+              </Button>
+            )}
+            {showCategoryInput && (
+              <div className="flex gap-1">
+                <Input
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  placeholder="New category..."
+                  className="h-6 text-xs rounded-lg"
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
+                />
+                <Button size="sm" onClick={handleAddCategory} className="h-6 text-xs rounded-lg">Add</Button>
+              </div>
+            )}
           </div>
         </div>
 

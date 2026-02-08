@@ -23,25 +23,25 @@ export default function RecentNoteCard({ note }) {
   return (
     <Link
       to={createPageUrl(`NoteDetail?id=${note.id}`)}
-      className="group flex items-center gap-4 p-4 rounded-xl hover:bg-slate-50 transition-colors duration-200"
+      className="group flex items-center gap-4 p-4 rounded-xl hover:bg-[#242938] transition-colors duration-200"
     >
-      <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-50 transition-colors">
-        <FileText className="w-4 h-4 text-slate-400 group-hover:text-blue-500 transition-colors" />
+      <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-purple-500/20 transition-colors">
+        <FileText className="w-4 h-4 text-purple-400 group-hover:text-purple-300 transition-colors" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-900 truncate">{note.patient_name}</p>
+        <p className="text-sm font-semibold text-white truncate">{note.patient_name}</p>
         <div className="flex items-center gap-2 mt-1">
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-slate-300">
             {note.date_of_visit ? format(new Date(note.date_of_visit), "MMM d, yyyy") : "No date"}
           </span>
-          <span className="text-xs text-slate-300">•</span>
-          <span className="text-xs text-slate-500">{typeLabels[note.note_type] || "Note"}</span>
+          <span className="text-xs text-slate-500">•</span>
+          <span className="text-xs text-slate-300">{typeLabels[note.note_type] || "Note"}</span>
         </div>
       </div>
-      <Badge variant="outline" className={`text-xs ${statusColors[note.status] || statusColors.draft}`}>
+      <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-300 border-emerald-500/20">
         {note.status || "draft"}
       </Badge>
-      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors" />
+      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-purple-300 transition-colors" />
     </Link>
   );
 }

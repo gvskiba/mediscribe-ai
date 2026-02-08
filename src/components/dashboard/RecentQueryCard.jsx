@@ -33,24 +33,24 @@ export default function RecentQueryCard({ query }) {
   return (
     <div 
       onClick={handleClick}
-      className="group flex items-start gap-4 p-4 rounded-xl hover:bg-slate-50 transition-colors duration-200 cursor-pointer">
-      <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0">
-        <BookOpen className="w-4 h-4 text-purple-500" />
+      className="group flex items-start gap-4 p-4 rounded-xl hover:bg-[#242938] transition-colors duration-200 cursor-pointer">
+      <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+        <BookOpen className="w-4 h-4 text-purple-400" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-900 line-clamp-2">{query.question}</p>
+        <p className="text-sm font-semibold text-white line-clamp-2">{query.question}</p>
         <div className="flex items-center gap-2 mt-2">
-          <Badge variant="outline" className="text-xs bg-slate-50 text-slate-600">
+          <Badge variant="outline" className="text-xs bg-purple-500/10 text-purple-300 border-purple-500/20">
             {categoryLabels[query.category] || "General"}
           </Badge>
           {query.confidence_level && (
-            <Badge variant="outline" className={`text-xs ${confidenceColors[query.confidence_level]}`}>
+            <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-300 border-emerald-500/20">
               {query.confidence_level} confidence
             </Badge>
           )}
         </div>
       </div>
-      <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors flex-shrink-0 mt-1" />
+      <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-purple-300 transition-colors flex-shrink-0 mt-1" />
     </div>
   );
 }

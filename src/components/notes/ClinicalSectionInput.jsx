@@ -53,10 +53,16 @@ export default function ClinicalSectionInput({
       return;
     }
 
-    onSubmit({
-      ...formData,
-      templateId: formData.templateId || undefined
-    });
+    const submissionData = {
+      patient_name: formData.patient_name,
+      patient_id: formData.patient_id,
+      chief_complaint: formData.chief_complaint,
+      note_type: formData.note_type,
+      specialty: formData.specialty,
+      raw_note: `HISTORY AND PHYSICAL:\n${clinicalData.history_and_physical}\n\nREVIEW OF SYSTEMS:\n${clinicalData.review_of_systems}\n\nPHYSICAL EXAMINATION:\n${clinicalData.physical_exam}`
+    };
+    
+    onSubmit(submissionData, formData.templateId || undefined);
   };
 
   return (

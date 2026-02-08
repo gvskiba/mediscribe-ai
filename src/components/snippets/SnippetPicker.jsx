@@ -35,21 +35,20 @@ export default function SnippetPicker({ open, onClose, onInsert, category = null
 
   const updateUsageMutation = useMutation({
     mutationFn: ({ id, count }) => 
-      base44.entities.Snippet.update(id, { usage_count: count + 1 }),
+      base44.entities.Snippet.update(id, { usage_count: count + 1, last_used: new Date().toISOString() }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["snippets"] });
     },
   });
 
-  const categories = [
-    { value: "all", label: "All" },
-    { value: "exam", label: "Physical Exam" },
-    { value: "ros", label: "Review of Systems" },
-    { value: "hpi", label: "HPI" },
-    { value: "assessment", label: "Assessment" },
-    { value: "plan", label: "Plan" },
-    { value: "custom", label: "Custom" },
-  ];
+  const getUniqueCategories = () => {
+    const cats = new Set(snippets.map(s => s.category).filter(Boolean));
+    return Array.from(cats).sort();
+  };
+
+  const recentlyUsed = snippets.filter(s => s.last_used).sort((a, b) => 
+    new Date(b.last_used) - new Date(a.last_used)
+  ).slice(0, 5);
 
   const filtered = snippets.filter(s => {
     const matchSearch = !search || 
@@ -64,6 +63,33 @@ export default function SnippetPicker({ open, onClose, onInsert, category = null
     onInsert(snippet.content);
     updateUsageMutation.mutate({ id: snippet.id, count: snippet.usage_count || 0 });
     onClose();
+  };
+
+  const handleEditSnippet = (snippet) => {
+    setEditingSnippet(snippet);
+    setEditFormData({ 
+      name: snippet.name, 
+      content: snippet.content, 
+      category: snippet.category || "custom",
+      tags: snippet.tags || []
+    });
+    setShowEditDialog(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editFormData.name || !editFormData.content) return;
+    updateSnippetMutation.mutate({ 
+      id: editingSnippet.id, 
+      data: editFormData 
+    });
+  };
+
+  const handleAddCategory = () => {
+    if (newCategory.trim()) {
+      setSelectedCategory(newCategory.trim());
+      setNewCategory("");
+      setShowCategoryInput(false);
+    }
   };
 
   return (

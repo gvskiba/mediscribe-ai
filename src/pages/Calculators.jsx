@@ -101,7 +101,7 @@ function PediatricDosingCalculator() {
           </Select>
         </div>
 
-        <Button onClick={calculateDose} className="w-full">
+        <Button onClick={calculateDose} className="w-full bg-gradient-to-r from-pink-600 to-pink-700 hover:from-pink-700 hover:to-pink-800 text-white shadow-lg shadow-pink-500/30 h-12 text-base font-semibold">
           Calculate Dose
         </Button>
       </div>
@@ -302,7 +302,7 @@ function BMICalculator() {
           />
         </div>
 
-        <Button onClick={calculateBMI} className="w-full">
+        <Button onClick={calculateBMI} className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-lg shadow-green-500/30 h-12 text-base font-semibold">
           Calculate BMI
         </Button>
       </div>
@@ -419,7 +419,7 @@ function CreatinineClearanceCalculator() {
           </Select>
         </div>
 
-        <Button onClick={calculateCrCl} className="w-full">
+        <Button onClick={calculateCrCl} className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white shadow-lg shadow-purple-500/30 h-12 text-base font-semibold">
           Calculate CrCl
         </Button>
       </div>

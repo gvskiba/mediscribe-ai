@@ -175,7 +175,11 @@ Focus on current clinical practice guidelines and evidence-based recommendations
 
         <Button 
           onClick={lookupDosing} 
-          className="w-full"
+          className={`w-full h-12 text-base font-semibold shadow-lg ${
+            isPediatric 
+              ? "bg-gradient-to-r from-pink-600 to-pink-700 hover:from-pink-700 hover:to-pink-800 shadow-pink-500/30" 
+              : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-blue-500/30"
+          } text-white`}
           disabled={loading || !medication}
         >
           {loading ? (

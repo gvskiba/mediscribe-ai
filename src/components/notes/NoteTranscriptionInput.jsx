@@ -172,16 +172,6 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label className="text-slate-700 font-medium">Chief Complaint</Label>
-          <Input
-            value={chiefComplaint}
-            onChange={(e) => setChiefComplaint(e.target.value)}
-            placeholder="e.g., Chest pain, Shortness of breath"
-            className="rounded-xl border-slate-200 focus:border-blue-400 focus:ring-blue-400/20"
-          />
-        </div>
-
         {/* Template Selection */}
         {templates.length > 0 && (
           <div className="space-y-3">
@@ -228,13 +218,23 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
                       specialty={specialty}
                     />
                   )}
-                </div>
-              </motion.div>
-            )}
-          </div>
-        )}
+                  </div>
+                  </motion.div>
+                  )}
+                  </div>
+                  )}
 
-        {/* Note Input */}
+                  <div className="space-y-2">
+                  <Label className="text-slate-700 font-medium">Chief Complaint</Label>
+                  <Input
+                  value={chiefComplaint}
+                  onChange={(e) => setChiefComplaint(e.target.value)}
+                  placeholder="e.g., Chest pain, Shortness of breath"
+                  className="rounded-xl border-slate-200 focus:border-blue-400 focus:ring-blue-400/20"
+                  />
+                  </div>
+
+                  {/* Note Input */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label className="text-slate-700 font-medium">Clinical Note *</Label>

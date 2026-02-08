@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Check, Pill, Stethoscope, ClipboardList, Target, Lightbulb, X, Loader2, ChevronDown, ChevronUp, FileText, Activity, BookOpen, Sparkles, Link, CheckCircle2, Copy, Eye } from "lucide-react";
+import { Check, Pill, Stethoscope, ClipboardList, Target, Lightbulb, X, Loader2, ChevronDown, ChevronUp, FileText, Activity, BookOpen, Sparkles, Link, CheckCircle2, Copy, Eye, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import EditableSection from "./EditableSection";
+import MedicalKnowledgeSearch from "./MedicalKnowledgeSearch";
 import InteractivePlanSection from "./InteractivePlanSection";
 
 export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpdate, onReanalyze, guidelineRecommendations = [], loadingGuidelines = false, medicationRecommendations = [], loadingMedications = false, onGenerateEducationMaterials }) {
@@ -288,6 +289,13 @@ Generate:
             <p className="text-sm text-slate-500 mt-1">Review and finalize the structured note.</p>
           </div>
           <div className="flex gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => setKnowledgeSearchOpen(true)}
+              className="rounded-xl gap-2 text-blue-600 border-blue-300 hover:bg-blue-50"
+            >
+              <Search className="w-4 h-4" /> Search Knowledge
+            </Button>
             <Button 
               variant="outline"
               onClick={() => setPreviewOpen(true)}

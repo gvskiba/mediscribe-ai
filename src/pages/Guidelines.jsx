@@ -440,17 +440,17 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-purple-50 border border-purple-200 rounded-2xl p-4 flex items-center justify-between"
+          className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center justify-between"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
-              <ArrowLeftRight className="w-5 h-5 text-purple-600" />
+            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+              <ArrowLeftRight className="w-5 h-5 text-slate-700" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-purple-900">
+              <p className="text-sm font-semibold text-slate-900">
                 {selectedForCompare.length} guideline{selectedForCompare.length !== 1 ? 's' : ''} selected for comparison
               </p>
-              <p className="text-xs text-purple-600">
+              <p className="text-xs text-slate-700">
                 {selectedForCompare.length < 2 
                   ? "Select at least 2 guidelines to compare" 
                   : "Ready to compare"}
@@ -468,7 +468,7 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
             <Button
               onClick={handleCompareGuidelines}
               disabled={selectedForCompare.length < 2}
-              className="bg-purple-600 hover:bg-purple-700 rounded-xl"
+              className="bg-slate-700 hover:bg-slate-800 rounded-xl"
             >
               <ArrowLeftRight className="w-4 h-4 mr-2" />
               Compare Guidelines
@@ -502,24 +502,24 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-6"
+                className="bg-white rounded-2xl border border-slate-200 p-6"
               >
                 <div className="flex items-center gap-2 mb-4">
-                  <Sparkles className="w-5 h-5 text-blue-600" />
+                  <Sparkles className="w-5 h-5 text-slate-700" />
                   <h3 className="text-lg font-semibold text-slate-900">Related Guidelines</h3>
                 </div>
-                <p className="text-sm text-slate-600 mb-4">Based on your query, these related topics might be helpful:</p>
+                <p className="text-sm text-slate-700 mb-4">Based on your query, these related topics might be helpful:</p>
                 <div className="grid gap-3">
                   {relatedGuidelines.map((related, idx) => (
                     <button
                       key={idx}
                       onClick={() => handleSelectRelatedQuestion(related.question)}
-                      className="text-left bg-white rounded-xl p-4 border border-blue-100 hover:border-blue-300 hover:shadow-sm transition-all group"
+                      className="text-left bg-slate-50 rounded-xl p-4 border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all group"
                     >
-                      <p className="text-sm font-medium text-slate-900 group-hover:text-blue-600 transition-colors">
+                      <p className="text-sm font-medium text-slate-900 group-hover:text-slate-700 transition-colors">
                         {related.question}
                       </p>
-                      <p className="text-xs text-slate-500 mt-1">{related.reason}</p>
+                      <p className="text-xs text-slate-700 mt-1">{related.reason}</p>
                     </button>
                   ))}
                 </div>
@@ -630,7 +630,7 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
             />
           </div>
           {searchTerm && semanticResults !== null && (
-            <p className="text-xs text-purple-600 mb-4">
+            <p className="text-xs text-slate-700 mb-4">
               <Sparkles className="w-3 h-3 inline mr-1" />
               AI semantic search • Found {filteredQueries.length} related {filteredQueries.length === 1 ? 'query' : 'queries'}
             </p>

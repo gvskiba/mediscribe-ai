@@ -262,10 +262,11 @@ export default function Snippets() {
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editingSnippet ? "Edit Snippet" : "Create Snippet"}</DialogTitle>
-          </DialogHeader>
+         <DialogContent className="max-w-2xl">
+           <DialogHeader>
+             <DialogTitle>{editingSnippet ? "Edit Snippet" : "Create Snippet"}</DialogTitle>
+             <DialogDescription>{editingSnippet ? "Update your snippet details" : "Create a new reusable snippet"}</DialogDescription>
+           </DialogHeader>
           <div className="space-y-4 mt-4">
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">Snippet Name</label>

@@ -474,6 +474,23 @@ Extract ALL information from the raw note and populate the following sections. B
     }
   };
 
+  const cleanPlanText = (text) => {
+    if (!text) return text;
+    
+    // Replace special characters with spaces, then clean up
+    let cleaned = text
+      .replace(/[•\-\*→▸►✓✗]/g, '') // Remove bullet points and arrows
+      .replace(/[\u2022\u2023]/g, '') // Remove other bullet variants
+      .replace(/^[\s]*[-•*]\s+/gm, '') // Remove bullets at line start
+      .replace(/(\r\n|\n)+/g, '\n') // Normalize line breaks
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .join('\n');
+    
+    return cleaned;
+  };
+
   const enhancePlanWithGuidelines = async (noteData) => {
     try {
       // Extract conditions from diagnoses
@@ -524,46 +541,39 @@ Keep it actionable and concise (4-6 bullet points).`,
 
       // Generate enhanced plan based on guidelines
       const guidelinesSummary = guidelines.map(g => 
-        `${g.condition}:\n${g.key_points.join("\n")}`
-      ).join("\n\n");
+        `${g.condition}: ${g.key_points.join(" ")}`
+      ).join(" ");
 
       const enhancedPlan = await base44.integrations.Core.InvokeLLM({
         prompt: `You are a medical AI assistant${noteData.specialty ? ` specializing in ${noteData.specialty}` : ''}. Review the following clinical note and evidence-based guidelines, then construct a comprehensive, guideline-informed treatment plan.
 
-        Current Clinical Note:
-        Chief Complaint: ${noteData.chief_complaint || "N/A"}
-        HPI: ${noteData.history_of_present_illness || "N/A"}
-        Assessment: ${noteData.assessment || "N/A"}
-        Current Plan: ${noteData.plan || "N/A"}
-        Diagnoses: ${noteData.diagnoses?.join(", ") || "N/A"}
-        Specialty: ${noteData.specialty || "General Medicine"}
-        ${historyContext}
+Current Clinical Note:
+Chief Complaint: ${noteData.chief_complaint || "N/A"}
+HPI: ${noteData.history_of_present_illness || "N/A"}
+Assessment: ${noteData.assessment || "N/A"}
+Current Plan: ${noteData.plan || "N/A"}
+Diagnoses: ${noteData.diagnoses?.join(", ") || "N/A"}
+Specialty: ${noteData.specialty || "General Medicine"}
+${historyContext}
 
-        Evidence-Based Guidelines:
-        ${guidelinesSummary}
+Evidence-Based Guidelines:
+${guidelinesSummary}
 
-        TASK: Create a professional treatment plan summary that:
-1. Synthesizes guideline-recommended treatments into clear narrative paragraphs
-2. Addresses each diagnosis with evidence-based management
-3. Considers patient-specific factors from history and current medications
-4. Includes medications with dosing in natural language
-5. Describes monitoring and follow-up in complete sentences
-6. Uses professional medical language without bullet points or special characters
-7. Organizes information into flowing paragraphs by category
+TASK: Create a professional treatment plan with these sections combined into flowing paragraphs:
 
-FORMATTING RULES:
-- Use ONLY standard alphanumeric characters and basic punctuation (periods, commas)
-- NO bullet points, dashes, asterisks, or special symbols
-- Write in complete paragraphs separated by line breaks
-- Start each major section with a heading followed by a colon
-- Use natural flowing prose, not lists
+Medications: List specific medications with dosages and rationale, combined into flowing prose.
+Diagnostic Testing: Describe all needed labs and studies in complete sentences.
+Monitoring: Specify follow-up timing, parameters to monitor, and re-evaluation points.
+Patient Education: Include education topics and safety instructions.
+Referrals: Mention any specialist referrals needed.
 
-Example format:
-Medications: Start lisinopril 10 mg once daily for blood pressure control. Initiate metformin 500 mg twice daily with meals for glucose management. Continue current aspirin 81 mg daily.
-
-Diagnostic Testing: Order lipid panel and hemoglobin A1c to assess cardiovascular risk and glycemic control. Schedule baseline renal function tests prior to medication adjustments.
-
-Follow-up: Return to clinic in 2 weeks for blood pressure recheck and medication titration. Plan for 3-month follow-up to review lab results and assess treatment response.
+FORMATTING RULES (CRITICAL):
+- NO bullet points, dashes, asterisks, arrows, or special symbols
+- NO line breaks within sections - use flowing paragraphs only
+- Combine related information into complete sentences
+- Use periods and commas ONLY for punctuation
+- Write in clear, professional medical language
+- Each section heading followed by a colon then the content on the same line or next line as one paragraph
 
 Be comprehensive, evidence-based, and clinically appropriate for ${noteData.specialty || "general medicine"} practice.`,
         response_json_schema: {
@@ -576,7 +586,7 @@ Be comprehensive, evidence-based, and clinically appropriate for ${noteData.spec
 
       return {
         ...noteData,
-        plan: enhancedPlan.enhanced_plan
+        plan: cleanPlanText(enhancedPlan.enhanced_plan)
       };
     } catch (error) {
       console.error("Failed to enhance plan with guidelines:", error);

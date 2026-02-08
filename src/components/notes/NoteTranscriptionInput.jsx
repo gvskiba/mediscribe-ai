@@ -5,8 +5,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mic, MicOff, Loader2, Sparkles, ChevronDown, ChevronUp, FileText } from "lucide-react";
+import { Mic, MicOff, Loader2, Sparkles, ChevronDown, ChevronUp, FileText, Star } from "lucide-react";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import TemplatePreview from "../templates/TemplatePreview";
 import SnippetPicker from "../snippets/SnippetPicker";
 
@@ -48,6 +49,31 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
   const [snippetPickerOpen, setSnippetPickerOpen] = useState(false);
   const recognitionRef = useRef(null);
   const textareaRef = useRef(null);
+
+  // Load default preferences on mount
+  useEffect(() => {
+    const savedDefaults = localStorage.getItem("noteDefaults");
+    if (savedDefaults) {
+      try {
+        const defaults = JSON.parse(savedDefaults);
+        if (defaults.noteType) setNoteType(defaults.noteType);
+        if (defaults.specialty) setSpecialty(defaults.specialty);
+        if (defaults.templateId) setSelectedTemplate(defaults.templateId);
+      } catch (error) {
+        console.error("Failed to load defaults:", error);
+      }
+    }
+  }, []);
+
+  const saveAsDefaults = () => {
+    const defaults = {
+      noteType,
+      specialty,
+      templateId: selectedTemplate
+    };
+    localStorage.setItem("noteDefaults", JSON.stringify(defaults));
+    toast.success("Saved as default selections");
+  };
 
   // Auto-select matching template when note type or specialty changes
   useEffect(() => {
@@ -143,32 +169,47 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
       </div>
 
       <div className="p-6 space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label className="text-slate-700 font-medium">Note Type</Label>
-            <Select value={noteType} onValueChange={setNoteType}>
-              <SelectTrigger className="rounded-xl border-slate-200">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {NOTE_TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-700">Note Settings</h3>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={saveAsDefaults}
+              className="gap-1.5 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+            >
+              <Star className="w-3.5 h-3.5" /> Save as Defaults
+            </Button>
           </div>
-          <div className="space-y-2">
-            <Label className="text-slate-700 font-medium">Specialty</Label>
-            <Select value={specialty} onValueChange={setSpecialty}>
-              <SelectTrigger className="rounded-xl border-slate-200">
-                <SelectValue placeholder="Select specialty" />
-              </SelectTrigger>
-              <SelectContent>
-                {SPECIALTIES.map((s) => (
-                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-slate-700 font-medium">Note Type</Label>
+              <Select value={noteType} onValueChange={setNoteType}>
+                <SelectTrigger className="rounded-xl border-slate-200">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {NOTE_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-slate-700 font-medium">Specialty</Label>
+              <Select value={specialty} onValueChange={setSpecialty}>
+                <SelectTrigger className="rounded-xl border-slate-200">
+                  <SelectValue placeholder="Select specialty" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SPECIALTIES.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 

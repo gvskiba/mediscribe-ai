@@ -34,28 +34,61 @@ export default function SmartGuidelinePanel({ noteContent, diagnoses = [], medic
     setLastAnalyzed(content);
 
     try {
+      // Build comprehensive clinical context
+      let contextPrompt = `You are a clinical decision support AI providing proactive, evidence-based recommendations for patient care.
+
+CURRENT ENCOUNTER:
+${content}`;
+
+      if (patientHistory) {
+        contextPrompt += `
+
+PATIENT HISTORY:
+- Chronic Conditions: ${patientHistory.chronic_conditions?.join(", ") || "None"}
+- Current Medications: ${patientHistory.current_medications?.join(", ") || "None"}
+- Known Allergies: ${patientHistory.allergies?.join(", ") || "None"}
+- Past Procedures: ${patientHistory.past_procedures?.join(", ") || "None"}
+- Recent Trends: ${patientHistory.trends || "N/A"}`;
+      }
+
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a clinical decision support AI analyzing a patient encounter note in real-time.
+        prompt: `${contextPrompt}
 
-CLINICAL CONTEXT:
-${content}
+TASK: Provide comprehensive clinical decision support by identifying:
 
-TASK: Identify the TOP 3 most clinically relevant guideline topics that would help the clinician managing this patient RIGHT NOW.
+1. **CLINICAL GUIDELINES** (Top 2-3 most relevant)
+   - Evidence-based management guidelines for identified conditions
+   - Medication prescribing guidelines and interactions
+   - Chronic disease management protocols
+   
+2. **DIAGNOSTIC CONSIDERATIONS** (2-3 items)
+   - Differential diagnoses to consider based on presentation
+   - Additional workup or testing that may be indicated
+   - Red flags or concerning features requiring urgent evaluation
+   
+3. **TREATMENT PATHWAYS** (2-3 recommendations)
+   - First-line treatment options for identified conditions
+   - Medication adjustments or alternatives to consider
+   - Non-pharmacologic interventions
+   - Preventive care opportunities
 
-Consider:
-1. Active diagnoses or suspected conditions
-2. Medications mentioned (drug interactions, contraindications, dosing)
-3. Risk factors or comorbidities
-4. Acute management needs vs. chronic disease management
-5. Preventive care or screening opportunities
+For each suggestion, provide:
+- **type**: "guideline", "diagnostic", or "treatment"
+- **question**: Clear, actionable clinical question or recommendation
+- **rationale**: Why this is relevant for THIS patient NOW (2-3 sentences)
+- **priority**: high/medium/low
+- **category**: Relevant specialty/system (e.g., cardiology, neurology)
+- **action_items**: 2-4 specific, actionable steps the clinician can take
 
-For each guideline suggestion, provide:
-- A clear, actionable guideline topic (as a clinical question)
-- Brief rationale (why this is relevant NOW)
-- Priority level (high/medium/low)
+Consider patient-specific factors:
+- Active symptoms and severity
+- Comorbidities and medication interactions
+- Risk factors and contraindications
+- Continuity with prior care
+- Age-appropriate screening and prevention
 
-Focus on ACTIONABLE guidelines that would impact clinical decision-making for THIS patient.`,
-        add_context_from_internet: false,
+Prioritize recommendations that will DIRECTLY impact this patient's care plan.`,
+        add_context_from_internet: true,
         response_json_schema: {
           type: "object",
           properties: {
@@ -64,10 +97,21 @@ Focus on ACTIONABLE guidelines that would impact clinical decision-making for TH
               items: {
                 type: "object",
                 properties: {
+                  type: { 
+                    type: "string",
+                    enum: ["guideline", "diagnostic", "treatment"]
+                  },
                   question: { type: "string" },
                   rationale: { type: "string" },
-                  priority: { type: "string" },
-                  category: { type: "string" }
+                  priority: { 
+                    type: "string",
+                    enum: ["high", "medium", "low"]
+                  },
+                  category: { type: "string" },
+                  action_items: {
+                    type: "array",
+                    items: { type: "string" }
+                  }
                 }
               }
             }

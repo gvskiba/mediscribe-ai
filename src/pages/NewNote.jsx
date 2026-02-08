@@ -441,8 +441,6 @@ Extract ALL information from the raw note and populate the following sections. B
       TRENDS: ${patientHistory.trends || "N/A"}`;
       }
       
-      setStructuredNote(mergedNote);
-
       // Update template usage count and last_used
       if (templateId) {
         await base44.entities.NoteTemplate.update(templateId, {
@@ -451,10 +449,14 @@ Extract ALL information from the raw note and populate the following sections. B
         });
       }
 
+      // Fetch guidelines and construct evidence-based plan
+      const enhancedNote = await enhancePlanWithGuidelines(mergedNote);
+      setStructuredNote(enhancedNote);
+
       // Automatically fetch guideline recommendations and ICD-10 codes in parallel
       Promise.all([
-        fetchGuidelineRecommendations(result),
-        generateICD10Suggestions(result)
+        fetchGuidelineRecommendations(enhancedNote),
+        generateICD10Suggestions(enhancedNote)
       ]).catch(error => {
         console.error("Failed to fetch additional data:", error);
       });
@@ -463,6 +465,102 @@ Extract ALL information from the raw note and populate the following sections. B
       alert("Failed to process note. Please try again.");
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const enhancePlanWithGuidelines = async (noteData) => {
+    try {
+      // Extract conditions from diagnoses
+      const conditions = [];
+      if (Array.isArray(noteData.diagnoses) && noteData.diagnoses.length > 0) {
+        conditions.push(...noteData.diagnoses.slice(0, 3));
+      }
+
+      if (conditions.length === 0) return noteData;
+
+      // Build context including patient history
+      const historyContext = patientHistory ? `
+Patient History Context:
+- Chronic Conditions: ${patientHistory.chronic_conditions?.join(", ") || "None"}
+- Current Medications: ${patientHistory.current_medications?.join(", ") || "None"}
+- Allergies: ${patientHistory.allergies?.join(", ") || "None"}
+- Recent Trends: ${patientHistory.trends || "N/A"}
+` : "";
+
+      // Fetch guidelines for the conditions
+      const guidelines = await Promise.all(
+        conditions.slice(0, 2).map(async (condition) => {
+          const cleanCondition = condition.replace(/\(.*?\)/g, "").trim();
+          const result = await base44.integrations.Core.InvokeLLM({
+            prompt: `Provide evidence-based clinical guideline recommendations for: ${cleanCondition}
+${historyContext}
+Focus on:
+1. First-line treatment recommendations
+2. Key monitoring parameters
+3. Patient-specific considerations
+4. Red flags or contraindications
+5. Follow-up recommendations
+
+Keep it actionable and concise (4-6 bullet points).`,
+            add_context_from_internet: true,
+            response_json_schema: {
+              type: "object",
+              properties: {
+                summary: { type: "string" },
+                key_points: { type: "array", items: { type: "string" } },
+                sources: { type: "array", items: { type: "string" } },
+              },
+            },
+          });
+          return { condition: cleanCondition, ...result };
+        })
+      );
+
+      // Generate enhanced plan based on guidelines
+      const guidelinesSummary = guidelines.map(g => 
+        `${g.condition}:\n${g.key_points.join("\n")}`
+      ).join("\n\n");
+
+      const enhancedPlan = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a medical AI assistant. Review the following clinical note and evidence-based guidelines, then construct a comprehensive, guideline-informed treatment plan.
+
+Current Clinical Note:
+Chief Complaint: ${noteData.chief_complaint || "N/A"}
+HPI: ${noteData.history_of_present_illness || "N/A"}
+Assessment: ${noteData.assessment || "N/A"}
+Current Plan: ${noteData.plan || "N/A"}
+Diagnoses: ${noteData.diagnoses?.join(", ") || "N/A"}
+${historyContext}
+
+Evidence-Based Guidelines:
+${guidelinesSummary}
+
+TASK: Construct a comprehensive treatment plan that:
+1. Incorporates guideline-recommended treatments
+2. Addresses each diagnosis appropriately
+3. Considers patient-specific factors (history, allergies, current medications)
+4. Includes specific medications with dosing when appropriate
+5. Specifies monitoring parameters
+6. Includes follow-up recommendations
+7. Notes any patient education needed
+
+Format the plan clearly with sections for medications, tests/monitoring, follow-up, and patient education.
+Be specific and actionable. If the original plan is already comprehensive, enhance it with guideline-based recommendations.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            enhanced_plan: { type: "string" }
+          }
+        }
+      });
+
+      return {
+        ...noteData,
+        plan: enhancedPlan.enhanced_plan
+      };
+    } catch (error) {
+      console.error("Failed to enhance plan with guidelines:", error);
+      return noteData;
     }
   };
 
@@ -887,7 +985,9 @@ FAMILY HISTORY: ${patientHistory.family_history?.join(", ") || "None"}
 TRENDS: ${patientHistory.trends || "N/A"}`;
       }
 
-      setStructuredNote(mergedNote);
+      // Enhance plan with guidelines
+      const enhancedNote = await enhancePlanWithGuidelines(mergedNote);
+      setStructuredNote(enhancedNote);
 
       if (templateId) {
         await base44.entities.NoteTemplate.update(templateId, {
@@ -897,8 +997,8 @@ TRENDS: ${patientHistory.trends || "N/A"}`;
       }
 
       Promise.all([
-        fetchGuidelineRecommendations(result),
-        generateICD10Suggestions(result)
+        fetchGuidelineRecommendations(enhancedNote),
+        generateICD10Suggestions(enhancedNote)
       ]).catch(error => {
         console.error("Failed to fetch additional data:", error);
       });

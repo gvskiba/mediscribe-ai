@@ -852,18 +852,8 @@ Return specific, actionable medication recommendations based on current clinical
       const templateIdToUse = noteDataWithoutTemplate.templateId;
       delete noteDataWithoutTemplate.templateId;
 
-      setRawData(noteDataWithoutTemplate);
-      setIsProcessing(true);
-
-      // Load patient history
-      loadPatientHistory(
-        noteDataWithoutTemplate.patient_id, 
-        noteDataWithoutTemplate.patient_name, 
-        historyFocus
-      );
-
-      // Process note data
-      await processNoteData(noteDataWithoutTemplate, templateIdToUse);
+      // Now process with existing handleSubmit logic
+      handleSubmit(noteDataWithoutTemplate, templateIdToUse);
     } catch (error) {
       console.error("Failed to create patient:", error);
       alert("Failed to create patient. Please try again.");

@@ -27,122 +27,136 @@ export default function Layout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex">
+    <div className="min-h-screen bg-[#0f1419] flex">
       <style>{`
         :root {
-          --primary: #0891b2;
-          --primary-dark: #0e7490;
-          --primary-light: #06b6d4;
-          --accent: #6366f1;
-          --bg-main: #fafbfc;
-          --sidebar-bg: linear-gradient(180deg, #0c4a6e 0%, #075985 100%);
+          --primary: #8b5cf6;
+          --primary-dark: #7c3aed;
+          --primary-light: #a78bfa;
+          --accent: #06b6d4;
+          --bg-main: #0f1419;
+          --bg-secondary: #1a1f2e;
+          --sidebar-bg: linear-gradient(165deg, #1a1f2e 0%, #0f1419 100%);
+          --card-bg: #1a1f2e;
+          --border-subtle: rgba(139, 92, 246, 0.1);
         }
         body { 
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
           background: var(--bg-main);
+          color: #e2e8f0;
         }
         .nav-link { 
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           position: relative;
+          overflow: hidden;
         }
-        .nav-link:hover { 
-          background: rgba(255,255,255,0.1);
-          transform: translateX(2px);
-        }
-        .nav-link.active { 
-          background: rgba(99,102,241,0.15);
-          color: #e0e7ff;
-          border-left: 3px solid #6366f1;
-        }
-        .nav-link.active::before {
+        .nav-link::before {
           content: '';
           position: absolute;
           left: 0;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 3px;
-          height: 70%;
-          background: #6366f1;
-          border-radius: 0 2px 2px 0;
+          top: 0;
+          bottom: 0;
+          width: 0;
+          background: linear-gradient(90deg, rgba(139, 92, 246, 0.15) 0%, transparent 100%);
+          transition: width 0.3s ease;
+        }
+        .nav-link:hover::before {
+          width: 100%;
+        }
+        .nav-link:hover { 
+          background: rgba(139, 92, 246, 0.08);
+          transform: translateX(4px);
+          color: #c4b5fd;
+        }
+        .nav-link.active { 
+          background: linear-gradient(90deg, rgba(139, 92, 246, 0.2) 0%, rgba(139, 92, 246, 0.05) 100%);
+          color: #c4b5fd;
+          border-left: 3px solid #8b5cf6;
+          font-weight: 600;
         }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .glass-effect {
+          background: rgba(26, 31, 46, 0.8);
+          backdrop-filter: blur(12px);
+          border: 1px solid rgba(139, 92, 246, 0.1);
+        }
       `}</style>
 
       {/* Sidebar - Desktop */}
-      <aside className="hidden lg:flex flex-col w-64 fixed h-full z-30" style={{ background: 'linear-gradient(180deg, #0c4a6e 0%, #075985 100%)' }}>
-        <div className="p-6 border-b border-white/10">
+      <aside className="hidden lg:flex flex-col w-64 fixed h-full z-30 glass-effect border-r border-[rgba(139,92,246,0.1)]" style={{ background: 'linear-gradient(165deg, #1a1f2e 0%, #0f1419 100%)' }}>
+        <div className="p-6 border-b border-purple-500/10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-indigo-400 flex items-center justify-center shadow-lg">
-              <Stethoscope className="w-5 h-5 text-white" />
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-purple-500 via-violet-500 to-indigo-500 flex items-center justify-center shadow-xl shadow-purple-500/20 ring-2 ring-purple-500/20">
+              <Stethoscope className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold tracking-tight text-white">MedScribe</h1>
-              <p className="text-xs text-cyan-200">Clinical AI Assistant</p>
+              <h1 className="text-lg font-bold tracking-tight text-white">MedScribe</h1>
+              <p className="text-xs text-purple-300/80">Clinical AI Assistant</p>
             </div>
           </div>
         </div>
-        <div className="px-4 py-3 border-b border-white/10">
+        <div className="px-4 py-4 border-b border-purple-500/10">
           <Link
             to={createPageUrl("NewNote")}
-            className="w-full bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-lg px-4 py-2.5 font-medium text-sm transition-all shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 hover:from-purple-500 hover:via-violet-500 hover:to-indigo-500 text-white rounded-2xl px-4 py-3 font-semibold text-sm transition-all duration-300 shadow-xl shadow-purple-500/30 hover:shadow-2xl hover:shadow-purple-500/40 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
           >
             <FileText className="w-4 h-4" />
             New Note
           </Link>
         </div>
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-1.5">
           {navItems.map((item) => (
             <Link
               key={item.page}
               to={createPageUrl(item.page)}
               className={`nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium ${
                 currentPageName === item.page
-                  ? "active text-white"
-                  : "text-cyan-100 hover:text-white"
+                  ? "active text-purple-200"
+                  : "text-slate-300 hover:text-purple-200"
               }`}
             >
               <item.icon className="w-[18px] h-[18px]" />
               {item.name}
-            </Link>
-          ))}
-        </nav>
-        <div className="p-4 border-t border-white/10">
-          <button
-            onClick={() => base44.auth.logout()}
-            className="nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-cyan-200 hover:text-white w-full"
-          >
-            <LogOut className="w-[18px] h-[18px]" />
-            Sign Out
-          </button>
-        </div>
+              </Link>
+              ))}
+              </nav>
+              <div className="p-4 border-t border-purple-500/10">
+              <button
+              onClick={() => base44.auth.logout()}
+              className="nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-purple-300 hover:text-purple-200 w-full"
+              >
+              <LogOut className="w-[18px] h-[18px]" />
+              Sign Out
+              </button>
+              </div>
       </aside>
 
       {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 text-white flex items-center justify-between px-4 z-40 gap-3" style={{ background: 'linear-gradient(90deg, #0c4a6e 0%, #075985 100%)' }}>
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 text-white flex items-center justify-between px-4 z-40 gap-3 glass-effect border-b border-purple-500/10" style={{ background: 'linear-gradient(135deg, #1a1f2e 0%, #0f1419 100%)' }}>
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-indigo-400 flex items-center justify-center flex-shrink-0 shadow-lg">
-            <Stethoscope className="w-4 h-4 text-white" />
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 via-violet-500 to-indigo-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-purple-500/20">
+            <Stethoscope className="w-5 h-5 text-white" />
           </div>
-          <span className="font-semibold truncate">MedScribe</span>
+          <span className="font-bold truncate">MedScribe</span>
         </div>
         <Link
           to={createPageUrl("NewNote")}
-          className="bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 rounded-lg p-2 transition-all shadow-lg flex-shrink-0"
+          className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 rounded-xl p-2.5 transition-all shadow-lg shadow-purple-500/30 flex-shrink-0"
         >
           <FileText className="w-5 h-5" />
         </Link>
-        <button onClick={() => setMobileOpen(!mobileOpen)} className="flex-shrink-0">
+        <button onClick={() => setMobileOpen(!mobileOpen)} className="flex-shrink-0 hover:bg-white/10 rounded-lg p-1 transition-colors">
           {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </div>
 
       {/* Mobile Nav Overlay */}
       {mobileOpen && (
-        <div className="lg:hidden fixed inset-0 z-30 bg-black/50" onClick={() => setMobileOpen(false)}>
+        <div className="lg:hidden fixed inset-0 z-30 bg-black/70 backdrop-blur-sm" onClick={() => setMobileOpen(false)}>
           <div
-            className="absolute left-0 top-16 bottom-0 w-64 text-white p-4 space-y-1"
-            style={{ background: 'linear-gradient(180deg, #0c4a6e 0%, #075985 100%)' }}
+            className="absolute left-0 top-16 bottom-0 w-64 text-white p-4 space-y-1.5 glass-effect border-r border-purple-500/10"
+            style={{ background: 'linear-gradient(165deg, #1a1f2e 0%, #0f1419 100%)' }}
             onClick={(e) => e.stopPropagation()}
           >
             {navItems.map((item) => (
@@ -165,7 +179,7 @@ export default function Layout({ children, currentPageName }) {
       )}
 
       {/* Main Content */}
-      <main className="flex-1 lg:ml-64 pt-16 lg:pt-0 min-h-screen" style={{ background: 'linear-gradient(135deg, #fafbfc 0%, #f0f4f8 100%)' }}>
+      <main className="flex-1 lg:ml-64 pt-16 lg:pt-0 min-h-screen" style={{ background: 'linear-gradient(135deg, #0f1419 0%, #1a1f2e 50%, #0f1419 100%)' }}>
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
           {children}
         </div>

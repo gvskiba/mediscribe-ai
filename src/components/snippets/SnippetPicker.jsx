@@ -159,7 +159,44 @@ export default function SnippetPicker({ open, onClose, onInsert, category = null
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto mt-4 space-y-2">
+        <div className="flex-1 overflow-y-auto mt-4 space-y-3">
+          {recentlyUsed.length > 0 && selectedCategory === "all" && !search && (
+            <div>
+              <h4 className="text-xs font-semibold text-slate-500 uppercase px-2 mb-2">Recently Used</h4>
+              <div className="space-y-2">
+                {recentlyUsed.map((snippet, i) => (
+                  <motion.div
+                    key={`recent-${snippet.id}`}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.02 }}
+                    className="p-3 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors group"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleInsert(snippet)}>
+                        <h5 className="text-sm font-semibold text-slate-900">{snippet.name}</h5>
+                        <p className="text-xs text-slate-600 line-clamp-1">{snippet.content}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditSnippet(snippet);
+                        }}
+                      >
+                        <Edit className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+              <div className="h-px bg-slate-200 my-3" />
+            </div>
+          )}
+
+          <h4 className="text-xs font-semibold text-slate-500 uppercase px-2 mb-2">All Snippets</h4>
           {filtered.length === 0 ? (
             <div className="text-center py-12">
               <FileText className="w-10 h-10 text-slate-300 mx-auto mb-3" />
@@ -172,29 +209,34 @@ export default function SnippetPicker({ open, onClose, onInsert, category = null
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.02 }}
-                onClick={() => handleInsert(snippet)}
-                className="p-4 bg-slate-50 hover:bg-slate-100 rounded-xl cursor-pointer border border-slate-200 hover:border-blue-300 transition-colors"
+                className="p-3 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors group"
               >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-semibold text-slate-900">{snippet.name}</h4>
-                    {snippet.is_favorite && <Star className="w-3 h-3 text-amber-500 fill-amber-500" />}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleInsert(snippet)}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-semibold text-slate-900 text-sm">{snippet.name}</h4>
+                      {snippet.is_favorite && <Star className="w-3 h-3 text-amber-500 fill-amber-500" />}
+                    </div>
+                    <p className="text-xs text-slate-600 line-clamp-1">{snippet.content}</p>
+                    <div className="flex gap-1 mt-1 flex-wrap">
+                      <Badge variant="outline" className="text-xs">{snippet.category}</Badge>
+                      {snippet.usage_count > 0 && (
+                        <Badge variant="outline" className="text-xs">{snippet.usage_count}x</Badge>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex gap-1">
-                    <Badge variant="outline" className="text-xs">{snippet.category}</Badge>
-                    {snippet.usage_count > 0 && (
-                      <Badge variant="outline" className="text-xs">{snippet.usage_count} uses</Badge>
-                    )}
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditSnippet(snippet);
+                    }}
+                  >
+                    <Edit className="w-3 h-3" />
+                  </Button>
                 </div>
-                <p className="text-sm text-slate-600 line-clamp-2">{snippet.content}</p>
-                {snippet.tags?.length > 0 && (
-                  <div className="flex gap-1 mt-2 flex-wrap">
-                    {snippet.tags.map(tag => (
-                      <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
-                    ))}
-                  </div>
-                )}
               </motion.div>
             ))
           )}

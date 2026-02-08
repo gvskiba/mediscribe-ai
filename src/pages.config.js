@@ -47,6 +47,7 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
+import Calculators from './pages/Calculators';
 import Dashboard from './pages/Dashboard';
 import GuidelineAdherence from './pages/GuidelineAdherence';
 import GuidelineDetail from './pages/GuidelineDetail';
@@ -56,11 +57,12 @@ import NewNote from './pages/NewNote';
 import NoteDetail from './pages/NoteDetail';
 import NoteTemplates from './pages/NoteTemplates';
 import NotesLibrary from './pages/NotesLibrary';
-import Calculators from './pages/Calculators';
+import Snippets from './pages/Snippets';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "Calculators": Calculators,
     "Dashboard": Dashboard,
     "GuidelineAdherence": GuidelineAdherence,
     "GuidelineDetail": GuidelineDetail,
@@ -70,7 +72,7 @@ export const PAGES = {
     "NoteDetail": NoteDetail,
     "NoteTemplates": NoteTemplates,
     "NotesLibrary": NotesLibrary,
-    "Calculators": Calculators,
+    "Snippets": Snippets,
 }
 
 export const pagesConfig = {

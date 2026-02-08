@@ -5,9 +5,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mic, MicOff, Loader2, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
+import { Mic, MicOff, Loader2, Sparkles, ChevronDown, ChevronUp, FileText } from "lucide-react";
 import { motion } from "framer-motion";
 import TemplatePreview from "../templates/TemplatePreview";
+import SnippetPicker from "../snippets/SnippetPicker";
 
 const NOTE_TYPES = [
   { value: "progress_note", label: "Progress Note" },
@@ -30,7 +31,9 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
   const [selectedTemplate, setSelectedTemplate] = useState(templates.find(t => t.is_default)?.id || "");
   const [extracting, setExtracting] = useState(false);
   const [templatePreviewExpanded, setTemplatePreviewExpanded] = useState(true);
+  const [snippetPickerOpen, setSnippetPickerOpen] = useState(false);
   const recognitionRef = useRef(null);
+  const textareaRef = useRef(null);
 
   // Auto-select matching template when note type or specialty changes
   useEffect(() => {
@@ -128,6 +131,24 @@ If information is not found, return null for that field. Be conservative - only 
       date_of_visit: dateOfVisit,
       time_of_visit: timeOfVisit,
     }, selectedTemplate);
+  };
+
+  const handleInsertSnippet = (snippetText) => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setRawNote(rawNote + "\n\n" + snippetText);
+      return;
+    }
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const newText = rawNote.substring(0, start) + snippetText + rawNote.substring(end);
+    setRawNote(newText);
+    
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + snippetText.length, start + snippetText.length);
+    }, 0);
   };
 
   return (
@@ -281,6 +302,15 @@ If information is not found, return null for that field. Be conservative - only 
           <div className="flex items-center justify-between">
             <Label className="text-slate-700 font-medium">Clinical Note *</Label>
             <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSnippetPickerOpen(true)}
+                className="rounded-xl gap-2"
+              >
+                <FileText className="w-3.5 h-3.5" /> Insert Snippet
+              </Button>
               {rawNote && (
                 <Button
                   type="button"
@@ -317,6 +347,7 @@ If information is not found, return null for that field. Be conservative - only 
             </div>
           </div>
           <Textarea
+            ref={textareaRef}
             value={rawNote}
             onChange={(e) => setRawNote(e.target.value)}
             placeholder="Type or dictate your clinical note here... Include patient history, exam findings, assessment and plan."
@@ -341,7 +372,13 @@ If information is not found, return null for that field. Be conservative - only 
             )}
           </Button>
         </div>
-      </div>
-    </motion.div>
-  );
-}
+        </div>
+
+        <SnippetPicker
+        open={snippetPickerOpen}
+        onClose={() => setSnippetPickerOpen(false)}
+        onInsert={handleInsertSnippet}
+        />
+        </motion.div>
+        );
+        }

@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Check, X, Sparkles, Loader2, Plus, Trash2 } from "lucide-react";
+import { Pencil, Check, X, Sparkles, Loader2, Plus, Trash2, FileText } from "lucide-react";
+import SnippetPicker from "../snippets/SnippetPicker";
 
 export default function EditableSection({ 
   icon: Icon, 
@@ -18,6 +19,8 @@ export default function EditableSection({
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
   const [isReanalyzing, setIsReanalyzing] = useState(false);
+  const [snippetPickerOpen, setSnippetPickerOpen] = useState(false);
+  const textareaRef = useRef(null);
 
   const colorMap = {
     blue: "bg-blue-50 text-blue-600",
@@ -65,6 +68,31 @@ export default function EditableSection({
     setEditValue(newArray);
   };
 
+  const handleInsertSnippet = (snippetText) => {
+    if (type === "array") {
+      const newArray = [...(Array.isArray(editValue) ? editValue : []), snippetText];
+      setEditValue(newArray);
+      return;
+    }
+
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setEditValue((editValue || "") + "\n\n" + snippetText);
+      return;
+    }
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const currentValue = editValue || "";
+    const newText = currentValue.substring(0, start) + snippetText + currentValue.substring(end);
+    setEditValue(newText);
+    
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + snippetText.length, start + snippetText.length);
+    }, 0);
+  };
+
   return (
     <div className="flex gap-4">
       <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${colorMap[color]}`}>
@@ -74,6 +102,16 @@ export default function EditableSection({
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
           <div className="flex gap-1">
+            {isEditing && type !== "text" && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => setSnippetPickerOpen(true)}
+              >
+                <FileText className="w-3.5 h-3.5 text-blue-500" />
+              </Button>
+            )}
             {!isEditing && onReanalyze && (
               <Button
                 variant="ghost"
@@ -125,6 +163,7 @@ export default function EditableSection({
           <div className="space-y-2">
             {type === "textarea" ? (
               <Textarea
+                ref={textareaRef}
                 value={editValue || ""}
                 onChange={(e) => setEditValue(e.target.value)}
                 className="min-h-[100px] rounded-xl border-slate-200 focus:border-blue-400 text-sm"
@@ -180,6 +219,13 @@ export default function EditableSection({
             )}
           </div>
         )}
+
+        <SnippetPicker
+          open={snippetPickerOpen}
+          onClose={() => setSnippetPickerOpen(false)}
+          onInsert={handleInsertSnippet}
+          category={field === "physical_exam" ? "exam" : field === "review_of_systems" ? "ros" : null}
+        />
       </div>
     </div>
   );

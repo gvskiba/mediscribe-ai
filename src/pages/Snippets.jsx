@@ -12,7 +12,7 @@ import { FileText, Plus, Edit, Trash2, Star, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
-const categories = [
+const defaultCategories = [
   { value: "exam", label: "Physical Exam" },
   { value: "ros", label: "Review of Systems" },
   { value: "hpi", label: "HPI" },

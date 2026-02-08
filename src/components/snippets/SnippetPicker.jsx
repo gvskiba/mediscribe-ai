@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Search, FileText, Star, Plus, Edit } from "lucide-react";
-// Note: Edit is used in the component
 import { motion } from "framer-motion";
 
 export default function SnippetPicker({ open, onClose, onInsert, category = null }) {

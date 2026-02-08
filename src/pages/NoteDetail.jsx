@@ -77,7 +77,7 @@ export default function NoteDetail() {
         fetchGuidelineRecommendations();
       }
     }
-  }, [note?.id, note?.status]);
+  }, [note?.id, note?.status, patientSummary, generatingSummary, icd10Suggestions.length, loadingIcd10, guidelineRecommendations.length, loadingGuidelines]);
 
   const generateSummary = async () => {
     if (!note) return;
@@ -267,13 +267,13 @@ Generated: ${new Date().toLocaleString()}
     `.trim();
 
     const blob = new Blob([content], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
+    const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = `${note.patient_name}_Summary_${new Date().toISOString().split("T")[0]}.txt`;
     document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    window.URL.revokeObjectURL(url);
     a.remove();
   };
 

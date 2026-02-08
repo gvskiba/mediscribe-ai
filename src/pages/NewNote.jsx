@@ -991,7 +991,6 @@ ${JSON.stringify(structuredNote, null, 2)}`,
             )}
           </>
         ) : (
-        ) : (
           <>
             {/* History Focus Selector */}
             {rawData && (rawData.patient_id || rawData.patient_name) && (

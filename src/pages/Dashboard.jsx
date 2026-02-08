@@ -38,17 +38,17 @@ export default function Dashboard() {
         className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4"
       >
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
-          <p className="text-slate-500 mt-1">Your clinical workspace at a glance.</p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Dashboard</h1>
+          <p className="text-slate-300 mt-1">Your clinical workspace at a glance.</p>
         </div>
         <div className="flex gap-3">
           <Link to={createPageUrl("NewNote")}>
-            <Button className="bg-blue-600 hover:bg-blue-700 rounded-xl gap-2 shadow-lg shadow-blue-600/20">
+            <Button className="bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 hover:from-purple-500 hover:via-violet-500 hover:to-indigo-500 text-white rounded-xl gap-2 shadow-lg shadow-purple-500/30 font-semibold">
               <Plus className="w-4 h-4" /> New Note
             </Button>
           </Link>
           <Link to={createPageUrl("Guidelines")}>
-            <Button variant="outline" className="rounded-xl gap-2">
+            <Button variant="outline" className="rounded-xl gap-2 bg-[#1a1f2e] text-slate-100 border-purple-500/20 hover:border-purple-500/40 hover:bg-[#242938]">
               <BookOpen className="w-4 h-4" /> Ask Guidelines
             </Button>
           </Link>
@@ -83,29 +83,29 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white rounded-2xl border border-slate-100 overflow-hidden"
+          className="bg-[#1a1f2e] rounded-2xl border border-purple-500/10 overflow-hidden shadow-xl"
         >
           <div className="flex items-center justify-between p-6 pb-2">
-            <h2 className="text-lg font-semibold text-slate-900">Recent Notes</h2>
-            <Link to={createPageUrl("NotesLibrary")} className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 font-medium">
+            <h2 className="text-lg font-semibold text-white">Recent Notes</h2>
+            <Link to={createPageUrl("NotesLibrary")} className="text-sm text-purple-300 hover:text-purple-200 flex items-center gap-1 font-medium">
               View all <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
           <div className="px-2 pb-2">
             {isLoading ? (
               <div className="space-y-2 p-4">
-                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}
+                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 rounded-xl bg-[#242938]" />)}
               </div>
             ) : recentNotes.length === 0 ? (
               <div className="text-center py-12 text-slate-400">
                 <FileText className="w-10 h-10 mx-auto mb-3 opacity-40" />
-                <p className="text-sm">No clinical notes yet</p>
-                <Link to={createPageUrl("NewNote")} className="text-sm text-blue-600 hover:underline mt-1 inline-block">
+                <p className="text-sm text-slate-300">No clinical notes yet</p>
+                <Link to={createPageUrl("NewNote")} className="text-sm text-purple-300 hover:underline mt-1 inline-block">
                   Create your first note
                 </Link>
               </div>
             ) : (
-              <div className="divide-y divide-slate-50">
+              <div className="divide-y divide-purple-500/10">
                 {recentNotes.map((note) => (
                   <RecentNoteCard key={note.id} note={note} />
                 ))}
@@ -119,29 +119,29 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-white rounded-2xl border border-slate-100 overflow-hidden"
+          className="bg-[#1a1f2e] rounded-2xl border border-purple-500/10 overflow-hidden shadow-xl"
         >
           <div className="flex items-center justify-between p-6 pb-2">
-            <h2 className="text-lg font-semibold text-slate-900">Recent Queries</h2>
-            <Link to={createPageUrl("Guidelines")} className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 font-medium">
+            <h2 className="text-lg font-semibold text-white">Recent Queries</h2>
+            <Link to={createPageUrl("Guidelines")} className="text-sm text-purple-300 hover:text-purple-200 flex items-center gap-1 font-medium">
               Ask a question <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
           <div className="px-2 pb-2">
             {isLoading ? (
               <div className="space-y-2 p-4">
-                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}
+                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 rounded-xl bg-[#242938]" />)}
               </div>
             ) : recentQueries.length === 0 ? (
               <div className="text-center py-12 text-slate-400">
                 <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-40" />
-                <p className="text-sm">No guideline queries yet</p>
-                <Link to={createPageUrl("Guidelines")} className="text-sm text-blue-600 hover:underline mt-1 inline-block">
+                <p className="text-sm text-slate-300">No guideline queries yet</p>
+                <Link to={createPageUrl("Guidelines")} className="text-sm text-purple-300 hover:underline mt-1 inline-block">
                   Ask your first question
                 </Link>
               </div>
             ) : (
-              <div className="divide-y divide-slate-50">
+              <div className="divide-y divide-purple-500/10">
                 {recentQueries.map((query) => (
                   <RecentQueryCard key={query.id} query={query} />
                 ))}

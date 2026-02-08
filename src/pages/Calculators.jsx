@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calculator, Pill, Baby, User, Activity } from "lucide-react";
+import MedicationDosingLookup from "../components/calculators/MedicationDosingLookup";
 
 export default function Calculators() {
   return (
@@ -21,7 +22,9 @@ export default function Calculators() {
 
       <div className="grid md:grid-cols-2 gap-6">
         <PediatricDosingCalculator />
+        <MedicationDosingLookup type="pediatric" />
         <AdultDosingCalculator />
+        <MedicationDosingLookup type="adult" />
         <BMICalculator />
         <CreatinineClearanceCalculator />
       </div>

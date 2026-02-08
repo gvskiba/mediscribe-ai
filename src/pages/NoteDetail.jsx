@@ -500,6 +500,11 @@ Generated: ${new Date().toLocaleString()}
             [field]: value
           }));
         }}
+        onReanalyze={() => {}}
+        guidelineRecommendations={guidelineRecommendations}
+        loadingGuidelines={loadingGuidelines}
+        medicationRecommendations={[]}
+        loadingMedications={false}
       />
 
       {/* Raw Note */}

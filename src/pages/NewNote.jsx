@@ -67,23 +67,26 @@ export default function NewNote() {
 
       const historyPrompt = `Analyze these previous clinical notes for patient ${patientName} and extract medical history.
 
-  FOCUS: ${focusInstructions[focusArea] || focusInstructions.comprehensive}
+      FOCUS: ${focusInstructions[focusArea] || focusInstructions.comprehensive}
 
-  Previous Notes (${patientNotes.length} total, showing 5 most recent):
-  ${patientNotes.slice(0, 5).map(note => `
-  Date: ${note.date_of_visit}
-  Diagnoses: ${note.diagnoses?.join(", ") || "N/A"}
-  Medications: ${note.medications?.join(", ") || "N/A"}
-  Assessment: ${note.assessment || "N/A"}
-  Plan: ${note.plan || "N/A"}
-  `).join("\n---\n")}
+      Previous Notes (${patientNotes.length} total, showing 5 most recent):
+      ${patientNotes.slice(0, 5).map(note => `
+      Date: ${note.date_of_visit}
+      Raw Note: ${note.raw_note || "N/A"}
+      Diagnoses: ${note.diagnoses?.join(", ") || "N/A"}
+      Medications: ${note.medications?.join(", ") || "N/A"}
+      Medical History: ${note.medical_history || "N/A"}
+      Assessment: ${note.assessment || "N/A"}
+      Plan: ${note.plan || "N/A"}
+      `).join("\n---\n")}
 
-  Extract and consolidate:
-  1. chronic_conditions - Ongoing/chronic conditions (prioritize ${focusArea} conditions)
-  2. allergies - Drug or other allergies mentioned
-  3. current_medications - Active medications (prioritize ${focusArea}-related)
-  4. past_procedures - Surgical procedures or major interventions (prioritize ${focusArea}-related)
-  5. trends - Analyze changes over time: Are conditions worsening/improving? Medication changes? New developments? (2-3 sentences highlighting key trends)`;
+      Extract and consolidate:
+      1. chronic_conditions - Ongoing/chronic conditions (prioritize ${focusArea} conditions)
+      2. allergies - Drug or other allergies mentioned
+      3. current_medications - Active medications with dosages when available (prioritize ${focusArea}-related)
+      4. past_procedures - Surgical procedures or major interventions (prioritize ${focusArea}-related)
+      5. family_history - Family medical history mentioned (cancers, cardiac disease, diabetes, etc.)
+      6. trends - Analyze changes over time: Are conditions worsening/improving? Medication changes? New developments? (2-3 sentences highlighting key trends)`;
 
       const history = await base44.integrations.Core.InvokeLLM({
         prompt: historyPrompt,
@@ -94,6 +97,7 @@ export default function NewNote() {
             allergies: { type: "array", items: { type: "string" } },
             current_medications: { type: "array", items: { type: "string" } },
             past_procedures: { type: "array", items: { type: "string" } },
+            family_history: { type: "array", items: { type: "string" } },
             trends: { type: "string" }
           }
         }

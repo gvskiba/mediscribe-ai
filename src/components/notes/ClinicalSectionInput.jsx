@@ -51,6 +51,28 @@ export default function ClinicalSectionInput({
     });
   };
 
+  const handleInsertSnippet = (snippetText) => {
+    if (!activeSection) return;
+
+    const textarea = textareaRefs[activeSection].current;
+    const currentText = clinicalData[activeSection] || "";
+
+    if (!textarea) {
+      onClinicalDataChange(activeSection, currentText + "\n\n" + snippetText);
+      return;
+    }
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const newText = currentText.substring(0, start) + snippetText + currentText.substring(end);
+    onClinicalDataChange(activeSection, newText);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + snippetText.length, start + snippetText.length);
+    }, 0);
+  };
+
   const handleSubmit = () => {
     if (!formData.patient_name || !formData.chief_complaint) {
       toast.error("Please provide patient name and chief complaint");

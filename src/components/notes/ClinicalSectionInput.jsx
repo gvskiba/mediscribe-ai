@@ -215,13 +215,28 @@ export default function ClinicalSectionInput({
         {/* Review of Systems */}
         <Card className="p-6 border-purple-200">
           <div className="mb-4">
-            <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-              <span className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-sm font-bold">2</span>
-              Review of Systems
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                <span className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-sm font-bold">2</span>
+                Review of Systems
+              </h3>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setActiveSection("review_of_systems");
+                  setSnippetPickerOpen(true);
+                }}
+                className="rounded-lg gap-1.5 text-xs text-slate-600 border-slate-300 hover:bg-slate-50"
+              >
+                <FileText className="w-3 h-3" /> Insert Snippet
+              </Button>
+            </div>
             <p className="text-sm text-slate-500 mt-1">Document symptoms by system. Include positive and negative findings relevant to the chief complaint.</p>
           </div>
           <Textarea
+            ref={textareaRefs.review_of_systems}
             value={clinicalData.review_of_systems}
             onChange={(e) => handleClinicalDataChange("review_of_systems", e.target.value)}
             placeholder="Constitutional: fever, chills, weight changes

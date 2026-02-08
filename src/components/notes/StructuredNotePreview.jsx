@@ -440,49 +440,49 @@ Generate:
                                 )}
                                 
                                 {rec.key_points && rec.key_points.length > 0 && (
-                                  <div>
-                                    <h4 className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">Key Recommendations</h4>
-                                    <div className="space-y-2">
-                                      {rec.key_points.map((point, i) => {
-                                        const lineLabels = ['First line', 'Second line', 'Third line', 'Fourth line', 'Fifth line', 'Sixth line'];
-                                        const colors = ['bg-blue-500', 'bg-purple-500', 'bg-indigo-500', 'bg-violet-500', 'bg-cyan-500', 'bg-emerald-500'];
-                                        const bgColors = ['bg-blue-50', 'bg-purple-50', 'bg-indigo-50', 'bg-violet-50', 'bg-cyan-50', 'bg-emerald-50'];
-                                        const borderColors = ['border-blue-200', 'border-purple-200', 'border-indigo-200', 'border-violet-200', 'border-cyan-200', 'border-emerald-200'];
-                                        const textColors = ['text-blue-900', 'text-purple-900', 'text-indigo-900', 'text-violet-900', 'text-cyan-900', 'text-emerald-900'];
-                                        
-                                        const colorIndex = i % colors.length;
-                                        const label = i < lineLabels.length ? lineLabels[i] : `Line ${i + 1}`;
-                                        
-                                        return (
-                                          <div 
-                                            key={i} 
-                                            className={`flex items-start gap-3 p-3 rounded-lg border ${bgColors[colorIndex]} ${borderColors[colorIndex]}`}
-                                          >
-                                            <div className={`px-3 py-1 rounded-full ${colors[colorIndex]} flex items-center justify-center flex-shrink-0 text-white text-xs font-bold`}>
-                                              {label}
-                                            </div>
-                                            <span className={`text-sm leading-relaxed ${textColors[colorIndex]} flex-1`}>
-                                              {point.replace(/[•\-\*→▸►]/g, '').trim()}
-                                            </span>
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                    
-                                    {rec.sources && rec.sources.length > 0 && (
-                                      <div className="mt-4 pt-4 border-t border-slate-200">
-                                        <h4 className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2">References</h4>
-                                        <div className="space-y-1">
-                                          {rec.sources.map((source, i) => (
-                                            <p key={i} className="text-xs text-slate-600 leading-relaxed">
-                                              {i + 1}. {source}
-                                            </p>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
+                                   <div>
+                                     <h4 className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">Key Recommendations</h4>
+                                     <div className="space-y-2">
+                                       {rec.key_points.map((point, i) => {
+                                         const lineLabels = ['First line', 'Second line', 'Third line', 'Fourth line', 'Fifth line', 'Sixth line'];
+                                         const colors = ['bg-blue-500', 'bg-purple-500', 'bg-indigo-500', 'bg-violet-500', 'bg-cyan-500', 'bg-emerald-500'];
+                                         const bgColors = ['bg-blue-50', 'bg-purple-50', 'bg-indigo-50', 'bg-violet-50', 'bg-cyan-50', 'bg-emerald-50'];
+                                         const borderColors = ['border-blue-200', 'border-purple-200', 'border-indigo-200', 'border-violet-200', 'border-cyan-200', 'border-emerald-200'];
+                                         const textColors = ['text-blue-900', 'text-purple-900', 'text-indigo-900', 'text-violet-900', 'text-cyan-900', 'text-emerald-900'];
+
+                                         const colorIndex = i % colors.length;
+                                         const label = i < lineLabels.length ? lineLabels[i] : `Line ${i + 1}`;
+
+                                         return (
+                                           <div 
+                                             key={i} 
+                                             className={`flex items-start gap-3 p-3 rounded-lg border ${bgColors[colorIndex]} ${borderColors[colorIndex]}`}
+                                           >
+                                             <div className={`px-3 py-1 rounded-full ${colors[colorIndex]} flex items-center justify-center flex-shrink-0 text-white text-xs font-bold`}>
+                                               {label}
+                                             </div>
+                                             <span className={`text-sm leading-relaxed ${textColors[colorIndex]} flex-1`}>
+                                               • {point.replace(/[•\-\*→▸►]/g, '').trim()}
+                                             </span>
+                                           </div>
+                                         );
+                                       })}
+                                     </div>
+                                   </div>
+                                 )}
+
+                                 {rec.sources && rec.sources.length > 0 && (
+                                   <div className="mt-4 pt-4 border-t border-slate-200">
+                                     <h4 className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2">References</h4>
+                                     <div className="space-y-1">
+                                       {rec.sources.map((source, i) => (
+                                         <p key={i} className="text-xs text-slate-600 leading-relaxed">
+                                           {i + 1}. {source}
+                                         </p>
+                                       ))}
+                                     </div>
+                                   </div>
+                                 )}
 
                                 <div className="flex gap-2 pt-3 border-t border-slate-100">
                                   {!isLinked ? (

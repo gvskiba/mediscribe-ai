@@ -285,7 +285,7 @@ Other systems as relevant..."
             <p className="text-sm text-slate-500 mt-1">Document objective findings including vital signs, general appearance, and system-specific exams.</p>
           </div>
           <Textarea
-            ref={textareaRefs.physical_exam}
+            ref={examRef}
             value={clinicalData.physical_exam}
             onChange={(e) => handleClinicalDataChange("physical_exam", e.target.value)}
             placeholder="Vital Signs: BP, HR, RR, Temp, O2 sat

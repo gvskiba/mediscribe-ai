@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Lightbulb, ChevronRight, ExternalLink, RefreshCw, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function SmartGuidelinePanel({ noteContent, diagnoses = [], medications = [] }) {
+export default function SmartGuidelinePanel({ noteContent, diagnoses = [], medications = [], patientHistory = null }) {
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(true);

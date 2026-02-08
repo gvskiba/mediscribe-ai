@@ -34,11 +34,9 @@ export default function ClinicalSectionInput({
 
   const [snippetPickerOpen, setSnippetPickerOpen] = useState(false);
   const [activeSection, setActiveSection] = useState(null);
-  const textareaRefs = useMemo(() => ({
-    history_and_physical: useRef(null),
-    review_of_systems: useRef(null),
-    physical_exam: useRef(null)
-  }), []);
+  const historyRef = useRef(null);
+  const rosRef = useRef(null);
+  const examRef = useRef(null);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));

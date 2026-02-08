@@ -202,15 +202,31 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpda
                                 
                                 {rec.key_points && rec.key_points.length > 0 && (
                                   <div>
-                                    <h4 className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2">Key Points</h4>
-                                    <ul className="space-y-2">
-                                      {rec.key_points.map((point, i) => (
-                                        <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
-                                          <div className="w-1.5 h-1.5 rounded-full bg-purple-400 mt-1.5 flex-shrink-0" />
-                                          <span>{point}</span>
-                                        </li>
-                                      ))}
-                                    </ul>
+                                    <h4 className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">Key Recommendations</h4>
+                                    <div className="space-y-2">
+                                      {rec.key_points.map((point, i) => {
+                                        const colors = ['bg-blue-500', 'bg-purple-500', 'bg-indigo-500', 'bg-violet-500', 'bg-cyan-500'];
+                                        const bgColors = ['bg-blue-50', 'bg-purple-50', 'bg-indigo-50', 'bg-violet-50', 'bg-cyan-50'];
+                                        const borderColors = ['border-blue-200', 'border-purple-200', 'border-indigo-200', 'border-violet-200', 'border-cyan-200'];
+                                        const textColors = ['text-blue-900', 'text-purple-900', 'text-indigo-900', 'text-violet-900', 'text-cyan-900'];
+                                        
+                                        const colorIndex = i % colors.length;
+                                        
+                                        return (
+                                          <div 
+                                            key={i} 
+                                            className={`flex items-start gap-3 p-3 rounded-lg border ${bgColors[colorIndex]} ${borderColors[colorIndex]}`}
+                                          >
+                                            <div className={`w-6 h-6 rounded-full ${colors[colorIndex]} flex items-center justify-center flex-shrink-0 text-white text-xs font-bold`}>
+                                              {i + 1}
+                                            </div>
+                                            <span className={`text-sm leading-relaxed ${textColors[colorIndex]}`}>
+                                              {point.replace(/[•\-\*→▸►]/g, '').trim()}
+                                            </span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
                                   </div>
                                 )}
 

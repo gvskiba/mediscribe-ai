@@ -217,7 +217,7 @@ export default function ClinicalSectionInput({
             <p className="text-sm text-slate-500 mt-1">Include medical history, past medical history, surgical history, medications, allergies, and any relevant clinical context.</p>
           </div>
           <Textarea
-            ref={textareaRefs.history_and_physical}
+            ref={historyRef}
             value={clinicalData.history_and_physical}
             onChange={(e) => handleClinicalDataChange("history_and_physical", e.target.value)}
             placeholder="Patient's relevant medical history, current medications, allergies, past surgeries, family history, social history, etc."

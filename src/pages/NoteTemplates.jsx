@@ -244,12 +244,18 @@ export default function NoteTemplates() {
         description: suggestion.implementation.section_description,
         ai_instructions: suggestion.implementation.ai_instructions,
         enabled: true,
-        order: selectedTemplate.sections?.length || 0
+        order: selectedTemplate.sections?.length || 0,
+        conditional_logic: {
+          enabled: false,
+          operator: "AND",
+          conditions: []
+        }
       };
 
       await updateMutation.mutateAsync({
         id: selectedTemplate.id,
         data: {
+          ...selectedTemplate,
           sections: [...(selectedTemplate.sections || []), newSection]
         }
       });
@@ -344,9 +350,21 @@ Return a JSON structure with:
         }
       });
 
+      const sectionsWithMetadata = (result.sections || []).map((section, idx) => ({
+        ...section,
+        id: `section_${Date.now()}_${idx}`,
+        enabled: true,
+        order: idx,
+        conditional_logic: {
+          enabled: false,
+          operator: "AND",
+          conditions: []
+        }
+      }));
+      
       setFormData({
         ...formData,
-        sections: result.sections || [],
+        sections: sectionsWithMetadata,
         ai_instructions: result.overall_ai_instructions || formData.ai_instructions
       });
       setSectionSuggestions([]);

@@ -88,6 +88,61 @@ export default function ClinicalSectionInput({
     setSnippetPickerOpen(false);
   };
 
+  const handleAIDraft = async (section) => {
+    if (!formData.chief_complaint) {
+      toast.error("Please enter chief complaint first");
+      return;
+    }
+
+    setAiGenerating(section);
+    try {
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt: `Draft a detailed ${section.replace(/_/g, " ")} section for a clinical note with the following:
+- Chief Complaint: ${formData.chief_complaint}
+- Patient Name: ${formData.patient_name}
+- Specialty: ${formData.specialty || "General"}
+- Note Type: ${formData.note_type}
+
+Write a comprehensive and clinically appropriate ${section.replace(/_/g, " ")} section with proper medical terminology and formatting. Keep it detailed but concise.`,
+        add_context_from_internet: false
+      });
+      
+      handleClinicalDataChange(section, response);
+      toast.success("Section drafted");
+    } catch (error) {
+      toast.error("Failed to generate section");
+    } finally {
+      setAiGenerating(null);
+    }
+  };
+
+  const handleAIExpand = async (section) => {
+    const currentText = clinicalData[section];
+    if (!currentText || currentText.trim().length === 0) {
+      toast.error("Please enter some text first");
+      return;
+    }
+
+    setAiGenerating(section);
+    try {
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt: `Expand the following clinical ${section.replace(/_/g, " ")} text into full, detailed paragraphs with proper medical formatting and terminology. Maintain clinical accuracy and professional tone:
+
+${currentText}
+
+Provide an expanded, clinically detailed version.`,
+        add_context_from_internet: false
+      });
+      
+      handleClinicalDataChange(section, response);
+      toast.success("Section expanded");
+    } catch (error) {
+      toast.error("Failed to expand section");
+    } finally {
+      setAiGenerating(null);
+    }
+  };
+
   const handleSubmit = () => {
     if (!formData.patient_name || !formData.chief_complaint) {
       toast.error("Please provide patient name and chief complaint");

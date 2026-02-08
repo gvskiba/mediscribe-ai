@@ -539,17 +539,30 @@ Keep it actionable and concise (4-6 bullet points).`,
         Evidence-Based Guidelines:
         ${guidelinesSummary}
 
-        TASK: Construct a comprehensive treatment plan that is appropriate for ${noteData.specialty || "general medicine"} practice and:
-1. Incorporates guideline-recommended treatments
-2. Addresses each diagnosis appropriately
-3. Considers patient-specific factors (history, allergies, current medications)
-4. Includes specific medications with dosing when appropriate
-5. Specifies monitoring parameters
-6. Includes follow-up recommendations
-7. Notes any patient education needed
+        TASK: Create a professional treatment plan summary that:
+1. Synthesizes guideline-recommended treatments into clear narrative paragraphs
+2. Addresses each diagnosis with evidence-based management
+3. Considers patient-specific factors from history and current medications
+4. Includes medications with dosing in natural language
+5. Describes monitoring and follow-up in complete sentences
+6. Uses professional medical language without bullet points or special characters
+7. Organizes information into flowing paragraphs by category
 
-Format the plan clearly with sections for medications, tests/monitoring, follow-up, and patient education.
-Be specific and actionable. If the original plan is already comprehensive, enhance it with guideline-based recommendations.`,
+FORMATTING RULES:
+- Use ONLY standard alphanumeric characters and basic punctuation (periods, commas)
+- NO bullet points, dashes, asterisks, or special symbols
+- Write in complete paragraphs separated by line breaks
+- Start each major section with a heading followed by a colon
+- Use natural flowing prose, not lists
+
+Example format:
+Medications: Start lisinopril 10 mg once daily for blood pressure control. Initiate metformin 500 mg twice daily with meals for glucose management. Continue current aspirin 81 mg daily.
+
+Diagnostic Testing: Order lipid panel and hemoglobin A1c to assess cardiovascular risk and glycemic control. Schedule baseline renal function tests prior to medication adjustments.
+
+Follow-up: Return to clinic in 2 weeks for blood pressure recheck and medication titration. Plan for 3-month follow-up to review lab results and assess treatment response.
+
+Be comprehensive, evidence-based, and clinically appropriate for ${noteData.specialty || "general medicine"} practice.`,
         response_json_schema: {
           type: "object",
           properties: {

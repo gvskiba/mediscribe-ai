@@ -133,9 +133,9 @@ export default function Layout({ children, currentPageName }) {
       </aside>
 
       {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 text-white flex items-center justify-between px-4 z-40 gap-3 glass-effect border-b border-purple-500/10" style={{ background: 'linear-gradient(135deg, #1a1f2e 0%, #0f1419 100%)' }}>
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 text-slate-900 flex items-center justify-between px-4 z-40 gap-3 glass-effect border-b border-slate-200" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)' }}>
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 via-violet-500 to-indigo-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-purple-500/20">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-200">
             <Stethoscope className="w-5 h-5 text-white" />
           </div>
           <span className="font-bold truncate">MedScribe</span>

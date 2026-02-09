@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Loader2, Plus, X, FileText } from "lucide-react";
 import SnippetPicker from "../snippets/SnippetPicker";
+import SectionAISuggestions from "./SectionAISuggestions";
 
 export default function EditableSection({ 
   icon: Icon, 
@@ -15,11 +16,13 @@ export default function EditableSection({
   type = "text",
   onUpdate,
   onReanalyze,
-  hideBorder = false
+  hideBorder = false,
+  noteContext = {}
 }) {
   const [editValue, setEditValue] = useState(value);
   const [isReanalyzing, setIsReanalyzing] = useState(false);
   const [snippetPickerOpen, setSnippetPickerOpen] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const textareaRef = useRef(null);
 
   useEffect(() => {

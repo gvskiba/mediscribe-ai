@@ -31,7 +31,7 @@ export default function RecentNoteCard({ note }) {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-white truncate">{note.patient_name}</p>
         <div className="flex items-center gap-2 mt-1">
-          <span className="text-xs text-slate-300">
+          <span className="text-xs text-black">
             {note.date_of_visit ? format(new Date(note.date_of_visit), "MMM d, yyyy") : "No date"}
           </span>
           <span className="text-xs text-slate-500">•</span>

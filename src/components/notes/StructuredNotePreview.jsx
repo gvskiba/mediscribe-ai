@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import EditableSection from "./EditableSection";
 import MedicalKnowledgeSearch from "./MedicalKnowledgeSearch";
 import InteractivePlanSection from "./InteractivePlanSection";
+import TreatmentPlanSelector from "./TreatmentPlanSelector";
 
 export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpdate, onReanalyze, guidelineRecommendations = [], loadingGuidelines = false, medicationRecommendations = [], loadingMedications = false, onGenerateEducationMaterials }) {
   const [showGuidelines, setShowGuidelines] = useState(true);

@@ -898,25 +898,7 @@ Generated: ${new Date().toLocaleString()}
          </Tabs>
        </motion.div>
 
-       {/* ICD-10 Code Suggestions */}
-       {note.diagnoses && note.diagnoses.length > 0 && (
-         <motion.div
-           initial={{ opacity: 0, y: 12 }}
-           animate={{ opacity: 1, y: 0 }}
-           transition={{ delay: 0.1 }}
-           className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm"
-         >
-           <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-             <BookOpen className="w-5 h-5 text-blue-600" />
-             ICD-10 Code Suggestions
-           </h2>
-           <ICD10Suggestions
-             suggestions={icd10Suggestions}
-             loading={loadingIcd10}
-             readOnly={true}
-           />
-         </motion.div>
-       )}
+
        </div>
 
        {/* Smart Guideline Panel */}

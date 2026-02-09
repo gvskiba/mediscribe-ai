@@ -188,7 +188,7 @@ export default function EditableSection({
               value={editValue || ""}
               onChange={(e) => handleChange(e.target.value)}
               onBlur={(e) => handleChange(e.target.value)}
-              className="min-h-[100px] rounded-xl border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm transition-all hover:border-slate-300"
+              className="min-h-[100px] rounded-xl border-slate-300 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm text-slate-900 transition-all hover:border-slate-400"
               placeholder="Click to edit..."
             />
           ) : type === "array" ? (
@@ -199,7 +199,7 @@ export default function EditableSection({
                     value={item}
                     onChange={(e) => handleArrayItemChange(index, e.target.value)}
                     onBlur={(e) => handleArrayItemChange(index, e.target.value)}
-                    className="rounded-xl border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm transition-all hover:border-slate-300"
+                    className="rounded-xl border-slate-300 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm text-slate-900 transition-all hover:border-slate-400"
                     placeholder={`Item ${index + 1}`}
                   />
                   <Button
@@ -216,7 +216,7 @@ export default function EditableSection({
                 variant="outline"
                 size="sm"
                 onClick={handleArrayItemAdd}
-                className="gap-2 rounded-xl hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300"
+                className="gap-2 rounded-xl hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 bg-white"
               >
                 <Plus className="w-3.5 h-3.5" /> Add Item
               </Button>
@@ -226,7 +226,7 @@ export default function EditableSection({
               value={editValue || ""}
               onChange={(e) => handleChange(e.target.value)}
               onBlur={(e) => handleChange(e.target.value)}
-              className="rounded-xl border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm transition-all hover:border-slate-300"
+              className="rounded-xl border-slate-300 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm text-slate-900 transition-all hover:border-slate-400"
               placeholder="Click to edit..."
             />
           )}

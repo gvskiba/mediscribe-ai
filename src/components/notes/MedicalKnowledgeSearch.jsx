@@ -366,37 +366,14 @@ Keep summary ultra-concise and focus on actionable clinical information.`;
               {searchResults.guidelines_referenced && searchResults.guidelines_referenced.length > 0 && (
                 <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
                   <h3 className="text-sm font-semibold text-purple-900 mb-3 flex items-center gap-2">
-                    <ExternalLink className="w-4 h-4" />
-                    Guidelines & Sources Referenced
+                    <BookOpen className="w-4 h-4" />
+                    Guidelines Referenced
                   </h3>
                   <ul className="space-y-1">
                     {searchResults.guidelines_referenced.map((guideline, idx) => (
                       <li key={idx} className="text-sm text-purple-800">• {guideline}</li>
                     ))}
                   </ul>
-                </div>
-              )}
-
-              {/* Source Links */}
-              {searchResults.source_links && searchResults.source_links.length > 0 && (
-                <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
-                  <h3 className="text-sm font-semibold text-indigo-900 mb-3 flex items-center gap-2">
-                    <ExternalLink className="w-4 h-4" />
-                    Reputable Sources & References
-                  </h3>
-                  <div className="space-y-2">
-                    {searchResults.source_links.map((link, idx) => (
-                      <a
-                        key={idx}
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block text-sm text-indigo-700 hover:text-indigo-900 hover:underline break-all"
-                      >
-                        <span className="font-medium">{link.source}:</span> {link.title}
-                      </a>
-                    ))}
-                  </div>
                 </div>
               )}
 

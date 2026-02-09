@@ -1,9 +1,9 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Check, X, Sparkles, Loader2, Plus, Trash2, FileText } from "lucide-react";
+import { Sparkles, Loader2, Plus, X, FileText } from "lucide-react";
 import SnippetPicker from "../snippets/SnippetPicker";
 
 export default function EditableSection({ 
@@ -17,11 +17,14 @@ export default function EditableSection({
   onReanalyze,
   hideBorder = false
 }) {
-  const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
   const [isReanalyzing, setIsReanalyzing] = useState(false);
   const [snippetPickerOpen, setSnippetPickerOpen] = useState(false);
   const textareaRef = useRef(null);
+
+  useEffect(() => {
+    setEditValue(value);
+  }, [value]);
 
   const colorMap = {
     blue: "bg-blue-50 text-blue-600",

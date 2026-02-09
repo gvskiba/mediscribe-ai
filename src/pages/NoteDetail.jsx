@@ -70,9 +70,33 @@ export default function NoteDetail() {
   });
 
   const finalizeMutation = useMutation({
-    mutationFn: () => base44.entities.ClinicalNote.update(noteId, { status: "finalized" }),
+    mutationFn: async () => {
+      await base44.entities.ClinicalNote.update(noteId, { status: "finalized" });
+      // Auto-link guidelines after finalization
+      setTimeout(() => linkGuidelinesToNote(), 500);
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["note", noteId] }),
   });
+
+  const linkGuidelinesToNote = async () => {
+    if (!note?.diagnoses || note.diagnoses.length === 0) return;
+    setLinkingGuidelines(true);
+    
+    try {
+      const response = await base44.functions.invoke('autoLinkGuidelines', {
+        noteId: noteId
+      });
+
+      if (response.data.linked_guidelines?.length > 0) {
+        setShowGuidelinePrompt(true);
+        queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+      }
+    } catch (error) {
+      console.error("Failed to link guidelines:", error);
+    } finally {
+      setLinkingGuidelines(false);
+    }
+  };
 
   // Auto-generate summary, guidelines, and ICD-10 suggestions for finalized notes
   useEffect(() => {

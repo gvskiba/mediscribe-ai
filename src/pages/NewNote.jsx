@@ -902,13 +902,22 @@ Return specific, actionable medication recommendations based on current clinical
   };
 
   const handleFinalize = async () => {
-    const created = await base44.entities.ClinicalNote.create({
-      ...rawData,
-      ...structuredNote,
-      status: "finalized",
-    });
-    navigate(createPageUrl(`NoteDetail?id=${created.id}`));
-  };
+     const created = await base44.entities.ClinicalNote.create({
+       ...rawData,
+       ...structuredNote,
+       status: "finalized",
+     });
+
+     // Automatically link guidelines to the finalized note
+     try {
+       await base44.functions.invoke('autoLinkGuidelines', { noteId: created.id });
+     } catch (error) {
+       console.error("Failed to auto-link guidelines:", error);
+       // Continue anyway - linking failure shouldn't block note finalization
+     }
+
+     navigate(createPageUrl(`NoteDetail?id=${created.id}`));
+   };
 
   const handleUpdate = (field, value) => {
     setStructuredNote(prev => ({ ...prev, [field]: value }));

@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import AISnippetGenerator from "@/components/snippets/AISnippetGenerator";
 import RichTextEditor from "@/components/snippets/RichTextEditor";
+import SnippetVersionHistory from "@/components/snippets/SnippetVersionHistory";
 
 const defaultCategories = [
   { value: "exam", label: "Physical Exam" },

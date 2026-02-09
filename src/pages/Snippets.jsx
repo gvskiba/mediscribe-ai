@@ -108,6 +108,32 @@ export default function Snippets() {
     },
   });
 
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async () => {
+      await Promise.all(Array.from(selectedSnippets).map(id => base44.entities.Snippet.delete(id)));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["snippets"] });
+      setSelectedSnippets(new Set());
+      setBulkSelectMode(false);
+      toast.success("Snippets deleted");
+    },
+  });
+
+  const bulkMoveMutation = useMutation({
+    mutationFn: async (folderId) => {
+      await Promise.all(Array.from(selectedSnippets).map(id => 
+        base44.entities.Snippet.update(id, { folder_id: folderId })
+      ));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["snippets"] });
+      setSelectedSnippets(new Set());
+      setBulkSelectMode(false);
+      toast.success("Snippets moved");
+    },
+  });
+
   const toggleFavoriteMutation = useMutation({
     mutationFn: ({ id, isFavorite }) => 
       base44.entities.Snippet.update(id, { is_favorite: !isFavorite }),

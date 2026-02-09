@@ -265,27 +265,9 @@ Provide a clearer, more concise version.`,
 
       {/* Patient & Note Information */}
       <Card className="p-6 space-y-4">
-        <h3 className="text-lg font-semibold text-slate-900">Patient & Note Information</h3>
-        
+        <h3 className="text-lg font-semibold text-slate-900">Note Information</h3>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Patient Name</label>
-            <Input
-              value={formData.patient_name}
-              onChange={(e) => handleInputChange("patient_name", e.target.value)}
-              placeholder="John Doe"
-              className="rounded-lg"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Patient ID / MRN</label>
-            <Input
-              value={formData.patient_id}
-              onChange={(e) => handleInputChange("patient_id", e.target.value)}
-              placeholder="MRN123456"
-              className="rounded-lg"
-            />
-          </div>
           <div className="md:col-span-2">
             <label className="text-sm font-medium text-slate-700 mb-1.5 block">Chief Complaint</label>
             <Input

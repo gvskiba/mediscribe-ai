@@ -375,13 +375,43 @@ Provide a clearer, more concise version.`,
             </div>
             <p className="text-sm text-slate-500 mt-1">Include medical history, past medical history, surgical history, medications, allergies, and any relevant clinical context.</p>
           </div>
-          <Textarea
-            ref={historyRef}
-            value={clinicalData.history_and_physical}
-            onChange={(e) => handleClinicalDataChange("history_and_physical", e.target.value)}
-            placeholder="Patient's relevant medical history, current medications, allergies, past surgeries, family history, social history, etc."
-            className="min-h-[150px] rounded-lg border-blue-200 focus:border-blue-400"
-          />
+          <div className="relative">
+            <Textarea
+              ref={historyRef}
+              value={clinicalData.history_and_physical}
+              onChange={(e) => handleClinicalDataChange("history_and_physical", e.target.value)}
+              onMouseUp={() => handleTextSelection("history_and_physical")}
+              onKeyUp={() => handleTextSelection("history_and_physical")}
+              placeholder="Patient's relevant medical history, current medications, allergies, past surgeries, family history, social history, etc."
+              className="min-h-[150px] rounded-lg border-blue-200 focus:border-blue-400"
+            />
+            {showRefineMenu && activeSection === "history_and_physical" && (
+              <div className="absolute top-2 right-2 flex gap-1 z-10">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleAddDetail}
+                  disabled={aiGenerating === "history_and_physical"}
+                  className="text-xs shadow-lg"
+                >
+                  {aiGenerating === "history_and_physical" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                  Add Detail
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleRephrase}
+                  disabled={aiGenerating === "history_and_physical"}
+                  className="text-xs shadow-lg"
+                >
+                  {aiGenerating === "history_and_physical" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Edit3 className="w-3 h-3" />}
+                  Rephrase
+                </Button>
+              </div>
+            )}
+          </div>
         </Card>
 
         {/* Review of Systems */}

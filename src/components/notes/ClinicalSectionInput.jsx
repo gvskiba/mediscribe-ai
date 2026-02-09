@@ -382,11 +382,11 @@ Provide a clearer, more concise version.`,
       >
         <label className="text-xs font-bold text-red-600 uppercase tracking-wide mb-3 block">Chief Complaint</label>
         <Input
-          value={formData.chief_complaint}
-          onChange={(e) => handleInputChange("chief_complaint", e.target.value)}
-          placeholder="e.g., Chest pain, persistent cough"
-          className="rounded-lg border-red-300 bg-white focus:border-red-400 focus:ring-red-400/20 text-slate-900 placeholder:text-slate-400"
-        />
+           value={formData.chief_complaint}
+           onChange={(e) => handleInputChange("chief_complaint", e.target.value)}
+           placeholder="e.g., Chest pain, persistent cough"
+           className="rounded-lg border border-red-300 bg-white focus:border-red-400 focus:ring-red-400/20 text-slate-900 placeholder:text-slate-400"
+         />
       </motion.div>
 
       {/* Clinical Sections */}

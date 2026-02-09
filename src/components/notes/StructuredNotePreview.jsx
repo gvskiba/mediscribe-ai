@@ -740,9 +740,12 @@ FORMATTING RULES (CRITICAL):
                   </div>
                 );
               })}
-            </div>
-          </motion.div>
-        )}
+              </div>
+              </motion.div>
+              )}
+              </AnimatePresence>
+              </motion.div>
+              )}
 
         {/* Clinical Impression Box */}
         <div className="bg-white rounded-xl border-2 border-purple-300 shadow-sm overflow-hidden">

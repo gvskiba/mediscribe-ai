@@ -47,8 +47,11 @@ export default function EditableSection({
     setIsReanalyzing(true);
     const newValue = await onReanalyze(field);
     if (newValue) {
-      setEditValue(newValue);
-      onUpdate(field, newValue);
+      const cleanedValue = typeof newValue === 'string' 
+        ? newValue.replace(/\*\*/g, '').replace(/\*/g, '') 
+        : newValue;
+      setEditValue(cleanedValue);
+      onUpdate(field, cleanedValue);
     }
     setIsReanalyzing(false);
   };

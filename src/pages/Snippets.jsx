@@ -229,11 +229,10 @@ export default function Snippets() {
                         placeholder="Snippet name"
                         className="rounded-lg font-semibold"
                       />
-                      <Textarea
+                      <RichTextEditor
                         value={formData.content}
-                        onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                        onChange={(content) => setFormData({ ...formData, content })}
                         placeholder="Snippet content"
-                        className="min-h-[100px] rounded-lg text-sm"
                       />
                       <div className="flex gap-2">
                         <Button

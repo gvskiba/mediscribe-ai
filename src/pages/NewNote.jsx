@@ -1015,8 +1015,8 @@ ${JSON.stringify(structuredNote, null, 2)}`,
                     <label className="text-sm font-semibold text-white mb-3 block">Medical Specialty</label>
                     <select
                   value={specialty}
-                  onChange={(e) => setSpecialty(e.target.value)}
-                  className="w-full bg-slate-800 text-white border border-slate-600 rounded-lg px-4 py-2.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                  onChange={(e) => setSpecialty(e.target.value)} className="bg-slate-50 text-slate-950 px-4 py-2.5 rounded-lg w-full border border-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+
 
                       <option value="">Select a specialty...</option>
                       <option value="General Medicine">General Medicine</option>

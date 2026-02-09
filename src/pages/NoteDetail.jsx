@@ -26,6 +26,7 @@ import { format } from "date-fns";
 import { motion } from "framer-motion";
 import StructuredNotePreview from "../components/notes/StructuredNotePreview";
 import PatientSummary from "../components/notes/PatientSummary";
+import EditableSummaryGenerator from "../components/notes/EditableSummaryGenerator";
 import SmartGuidelinePanel from "../components/guidelines/SmartGuidelinePanel";
 import CreateTemplateFromNote from "../components/templates/CreateTemplateFromNote";
 import ICD10Suggestions from "../components/notes/ICD10Suggestions";

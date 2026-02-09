@@ -112,8 +112,8 @@ export default function Layout({ children, currentPageName }) {
               to={createPageUrl(item.page)}
               className={`nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium ${
                 currentPageName === item.page
-                  ? "active text-purple-200"
-                  : "text-slate-300 hover:text-purple-200"
+                  ? "active text-blue-600 bg-blue-50"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               }`}
             >
               <item.icon className="w-[18px] h-[18px]" />
@@ -121,10 +121,10 @@ export default function Layout({ children, currentPageName }) {
               </Link>
               ))}
               </nav>
-              <div className="p-4 border-t border-purple-500/10">
+              <div className="p-4 border-t border-slate-200">
               <button
               onClick={() => base44.auth.logout()}
-              className="nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-purple-300 hover:text-purple-200 w-full"
+              className="nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 w-full"
               >
               <LogOut className="w-[18px] h-[18px]" />
               Sign Out

@@ -49,6 +49,18 @@ export default function NewNote() {
   });
   const navigate = useNavigate();
 
+  // Auto-save draft notes (only when creating, not when structuredNote exists)
+  useAutoSave({
+    data: structuredNote,
+    entityName: "ClinicalNote",
+    entityId: null,
+    onSave: async (data) => {
+      // Draft auto-save happens at note detail level, not here
+    },
+    interval: 30000,
+    enabled: false, // Disabled at creation - notes are saved as drafts when finalized
+  });
+
   const { data: templates = [] } = useQuery({
     queryKey: ["noteTemplates"],
     queryFn: () => base44.entities.NoteTemplate.list()

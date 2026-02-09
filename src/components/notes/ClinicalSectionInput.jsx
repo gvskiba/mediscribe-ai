@@ -228,9 +228,9 @@ Provide a clearer, more concise version.`,
     
     console.log("Form submit triggered", { formData, clinicalData });
     
-    if (!formData.patient_name || !formData.chief_complaint) {
-      console.log("Validation failed: missing patient name or chief complaint");
-      toast.error("Please provide patient name and chief complaint");
+    if (!formData.chief_complaint) {
+      console.log("Validation failed: missing chief complaint");
+      toast.error("Please provide chief complaint");
       return;
     }
 

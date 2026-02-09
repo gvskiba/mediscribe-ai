@@ -480,9 +480,10 @@ export default function Snippets() {
                 </Card>
               </motion.div>
             ))}
-          </AnimatePresence>
-        </div>
-      )}
+            </AnimatePresence>
+            </div>
+            </>
+            )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
          <DialogContent className="max-w-2xl">

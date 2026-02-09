@@ -1007,7 +1007,7 @@ ${JSON.stringify(structuredNote, null, 2)}`,
                 <div className="max-w-3xl w-full space-y-8">
                   <div className="text-center space-y-3">
                     <h1 className="text-4xl font-bold text-white">Create New Clinical Note</h1>
-                    <p className="text-lg text-slate-300">Choose your preferred input method</p>
+                    <p className="text-lg text-slate-800">Choose your preferred input method</p>
                   </div>
                   
                   <div className="grid md:grid-cols-2 gap-6">

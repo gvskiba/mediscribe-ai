@@ -334,36 +334,48 @@ For each code, provide:
     
     try {
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Extract key medical information from this clinical note. Be thorough and accurate.
+        prompt: `Extract key medical information from this clinical note. Be thorough and accurate. Return ALL diagnoses found in the note, even if partial or inferred.
 
 CLINICAL NOTE:
 ${note.raw_note}
 
 Extract and provide:
-1. Diagnoses - List all diagnoses mentioned (with ICD codes if available)
+1. Diagnoses - List ALL diagnoses mentioned or implied in the note (with ICD codes if available). Include suspected conditions.
 2. Medications - All medications mentioned with dosages and frequency
 3. Allergies - All drug and environmental allergies
 4. Chief Complaint - The primary reason for visit
 5. Medical History - Significant past medical history items
 6. Review of Systems - Key ROS findings
-7. Physical Exam - Important physical exam findings`,
+7. Physical Exam - Important physical exam findings
+
+IMPORTANT: Always return diagnoses as an array with at least one entry describing the main condition(s) being addressed in the note.`,
         response_json_schema: {
           type: "object",
           properties: {
-            diagnoses: { type: "array", items: { type: "string" } },
+            diagnoses: { 
+              type: "array", 
+              items: { type: "string" },
+              description: "List of all diagnoses found in the note" 
+            },
             medications: { type: "array", items: { type: "string" } },
             allergies: { type: "array", items: { type: "string" } },
             chief_complaint: { type: "string" },
             medical_history: { type: "string" },
             review_of_systems: { type: "string" },
             physical_exam: { type: "string" }
-          }
+          },
+          required: ["diagnoses"]
         }
       });
 
+      console.log("Extracted data:", result);
+
       // Update note with extracted data
       const updateData = {};
-      if (result.diagnoses?.length > 0) updateData.diagnoses = result.diagnoses;
+      if (result.diagnoses?.length > 0) {
+        updateData.diagnoses = result.diagnoses;
+        console.log("Setting diagnoses:", result.diagnoses);
+      }
       if (result.medications?.length > 0) updateData.medications = result.medications;
       if (result.allergies?.length > 0) updateData.allergies = result.allergies;
       if (result.chief_complaint) updateData.chief_complaint = result.chief_complaint;
@@ -372,6 +384,7 @@ Extract and provide:
       if (result.physical_exam) updateData.physical_exam = result.physical_exam;
 
       if (Object.keys(updateData).length > 0) {
+        console.log("Updating note with:", updateData);
         await base44.entities.ClinicalNote.update(noteId, updateData);
         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
       }

@@ -69,7 +69,23 @@ export default function Snippets() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Snippet.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      // Save current version to history before updating
+      const existing = snippets.find(s => s.id === id);
+      if (existing) {
+        const versions = await base44.entities.SnippetVersion.filter({ snippet_id: id });
+        const newVersion = Math.max(...versions.map(v => v.version_number || 0), 0) + 1;
+        await base44.entities.SnippetVersion.create({
+          snippet_id: id,
+          version_number: newVersion,
+          content: existing.content,
+          name: existing.name,
+          category: existing.category,
+          tags: existing.tags
+        });
+      }
+      return base44.entities.Snippet.update(id, data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["snippets"] });
       resetForm();

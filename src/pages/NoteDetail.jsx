@@ -140,25 +140,73 @@ Provide:
         conditions.slice(0, 2).map(async (condition) => {
           const cleanCondition = condition.replace(/\(.*?\)/g, "").trim();
           const result = await base44.integrations.Core.InvokeLLM({
-            prompt: `Provide evidence-based clinical guideline recommendations for: ${cleanCondition}
+            prompt: `Provide comprehensive evidence-based guideline treatment plan for: ${cleanCondition}
 
-Focus on:
-1. First-line treatment recommendations
-2. Key monitoring parameters
-3. Patient-specific considerations
-4. Red flags or contraindications
-5. Follow-up recommendations
+Include detailed, actionable recommendations with:
 
-Keep it actionable and concise (4-6 bullet points).`,
+1. DIAGNOSTIC WORKUP
+   - Initial laboratory tests (with normal ranges and clinical significance)
+   - Imaging studies (with indications)
+   - Specialist referrals if needed
+
+2. MEDICATIONS
+   - First-line medications with specific dosing (dose, frequency, route)
+   - Alternative medications with dosing
+   - Duration of therapy
+   - Monitoring requirements for each medication
+
+3. NON-PHARMACOLOGIC INTERVENTIONS
+   - Lifestyle modifications
+   - Physical therapy or rehabilitation
+   - Patient education topics
+
+4. MONITORING & FOLLOW-UP
+   - Follow-up timing
+   - What to monitor and when
+   - Red flags requiring urgent evaluation
+
+Keep recommendations specific, actionable, and evidence-based.`,
             add_context_from_internet: true,
             response_json_schema: {
               type: "object",
               properties: {
                 summary: { type: "string" },
-                key_points: { type: "array", items: { type: "string" } },
-                sources: { type: "array", items: { type: "string" } },
-              },
-            },
+                diagnostic_workup: { 
+                  type: "array", 
+                  items: { 
+                    type: "object",
+                    properties: {
+                      test: { type: "string" },
+                      indication: { type: "string" },
+                      timing: { type: "string" }
+                    }
+                  }
+                },
+                medications: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      name: { type: "string" },
+                      dosing: { type: "string" },
+                      indication: { type: "string" },
+                      duration: { type: "string" },
+                      monitoring: { type: "string" }
+                    }
+                  }
+                },
+                nonpharmacologic: { type: "array", items: { type: "string" } },
+                followup: {
+                  type: "object",
+                  properties: {
+                    timing: { type: "string" },
+                    parameters: { type: "array", items: { type: "string" } },
+                    red_flags: { type: "array", items: { type: "string" } }
+                  }
+                },
+                sources: { type: "array", items: { type: "string" } }
+              }
+            }
           });
 
           return { 

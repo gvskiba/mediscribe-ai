@@ -228,6 +228,17 @@ export default function Snippets() {
           </div>
         </div>
 
+      <Tabs defaultValue="browse" className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="browse">Browse by Section</TabsTrigger>
+          <TabsTrigger value="manage">Manage Snippets</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="browse" className="mt-6">
+          <SectionSnippetOrganizer />
+        </TabsContent>
+
+        <TabsContent value="manage" className="mt-6 space-y-6">
       <div className="bg-white rounded-2xl border border-slate-100 p-4 space-y-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />

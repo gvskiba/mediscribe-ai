@@ -56,6 +56,7 @@ export default function EditableSection({
   const handleArrayItemAdd = () => {
     const newArray = [...(Array.isArray(editValue) ? editValue : []), ""];
     setEditValue(newArray);
+    onUpdate(field, newArray);
   };
 
   const handleArrayItemChange = (index, newValue) => {
@@ -63,12 +64,14 @@ export default function EditableSection({
     const newArray = [...editValue];
     newArray[index] = newValue;
     setEditValue(newArray);
+    onUpdate(field, newArray);
   };
 
   const handleArrayItemRemove = (index) => {
     if (!Array.isArray(editValue)) return;
     const newArray = editValue.filter((_, i) => i !== index);
     setEditValue(newArray);
+    onUpdate(field, newArray);
   };
 
   const handleInsertSnippet = (snippetText) => {

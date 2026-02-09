@@ -174,28 +174,49 @@ Format with direct reference links when available.`;
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Search Bar */}
-          <div className="flex gap-2">
-            <Input
-              placeholder="Search medical literature, guidelines, drug information..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleSearch(searchQuery)}
-              className="flex-1"
-            />
-            <Button 
-              onClick={() => handleSearch(searchQuery)}
-              disabled={searching || !searchQuery.trim()}
-              className="gap-2"
-            >
-              {searching ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Search className="w-4 h-4" />
-              )}
-              Search
-            </Button>
-          </div>
+           {/* Search Type Selector */}
+           <div className="flex gap-2 flex-wrap">
+             {[
+               { id: "general", label: "General", icon: BookOpen },
+               { id: "condition", label: "Condition", icon: Stethoscope },
+               { id: "medication", label: "Medication", icon: Pill },
+               { id: "procedure", label: "Procedure", icon: Activity }
+             ].map(type => (
+               <Button
+                 key={type.id}
+                 variant={searchType === type.id ? "default" : "outline"}
+                 size="sm"
+                 onClick={() => setSearchType(type.id)}
+                 className="gap-1.5"
+               >
+                 <type.icon className="w-4 h-4" />
+                 {type.label}
+               </Button>
+             ))}
+           </div>
+
+           {/* Search Bar */}
+           <div className="flex gap-2">
+             <Input
+               placeholder={`Search for ${searchType === "medication" ? "drugs, interactions, side effects..." : searchType === "condition" ? "diagnoses, symptoms, diseases..." : searchType === "procedure" ? "procedures, techniques, interventions..." : "medical topics, guidelines..."}`}
+               value={searchQuery}
+               onChange={(e) => setSearchQuery(e.target.value)}
+               onKeyPress={(e) => e.key === "Enter" && handleSearch(searchQuery, searchType)}
+               className="flex-1"
+             />
+             <Button 
+               onClick={() => handleSearch(searchQuery, searchType)}
+               disabled={searching || !searchQuery.trim()}
+               className="gap-2"
+             >
+               {searching ? (
+                 <Loader2 className="w-4 h-4 animate-spin" />
+               ) : (
+                 <Search className="w-4 h-4" />
+               )}
+               Search
+             </Button>
+           </div>
 
           {/* Suggested Queries */}
           {suggestedQueries.length > 0 && (

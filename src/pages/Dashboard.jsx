@@ -83,7 +83,7 @@ export default function Dashboard() {
            initial={{ opacity: 0, y: 12 }}
            animate={{ opacity: 1, y: 0 }}
            transition={{ delay: 0.1 }}
-           className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm"
+           className="bg-blue-50 rounded-2xl border border-blue-200 overflow-hidden shadow-sm"
          >
            <div className="flex items-center justify-between p-6 pb-2">
              <h2 className="text-lg font-semibold text-slate-900">Recent Notes</h2>

@@ -31,14 +31,14 @@ export default function RecentNoteCard({ note }) {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-white truncate">{note.patient_name}</p>
         <div className="flex items-center gap-2 mt-1">
-          <span className="text-xs text-black">
+          <span className="text-xs text-slate-300">
             {note.date_of_visit ? format(new Date(note.date_of_visit), "MMM d, yyyy") : "No date"}
           </span>
           <span className="text-xs text-slate-500">•</span>
           <span className="text-xs text-slate-300">{typeLabels[note.note_type] || "Note"}</span>
         </div>
       </div>
-      <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-300 border-emerald-500/20">
+      <Badge variant="outline" className="bg-emerald-500/10 text-slate-950 px-2.5 py-0.5 text-xs font-semibold rounded-md inline-flex items-center border transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-emerald-500/20">
         {note.status || "draft"}
       </Badge>
       <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-purple-300 transition-colors" />

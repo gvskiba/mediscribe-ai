@@ -29,7 +29,7 @@ export default function PatientIntakeForm({ onIntakeComplete, defaultPatientId =
     {
       title: "Patient Information",
       description: "Basic patient details",
-      fields: ["patient_name", "patient_id"]
+      fields: ["patient_age", "gender", "patient_id"]
     },
     {
       title: "Chief Complaint & Symptoms",

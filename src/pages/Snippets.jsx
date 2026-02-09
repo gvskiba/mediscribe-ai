@@ -431,6 +431,14 @@ export default function Snippets() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => setBulkSelectMode(!bulkSelectMode)}
+                          className="rounded-lg gap-1"
+                        >
+                          {bulkSelectMode ? "Cancel" : "Select"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => {
                             setEditingSnippet(snippet);
                             setFormData({

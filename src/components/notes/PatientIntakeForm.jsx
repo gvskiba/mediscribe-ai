@@ -91,11 +91,15 @@ export default function PatientIntakeForm({ onIntakeComplete, defaultPatientId =
       if (field === "symptom_severity") {
         return value && parseInt(value) >= 1 && parseInt(value) <= 10;
       }
+      // patient_id is optional
+      if (field === "patient_id") {
+        return true;
+      }
       return value?.trim();
     });
     
     if (!allFilled) {
-      toast.error("Please fill in all fields before proceeding");
+      toast.error("Please fill in all required fields before proceeding");
       return;
     }
     

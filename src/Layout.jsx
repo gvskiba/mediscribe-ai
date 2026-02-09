@@ -18,6 +18,7 @@ const navItems = [
 { name: "New Note", icon: FileText, page: "NewNote" },
 { name: "Notes", icon: FileText, page: "NotesLibrary" },
 { name: "Templates", icon: FileText, page: "NoteTemplates" },
+{ name: "Section Library", icon: FileText, page: "TemplateSections" },
 { name: "Snippets", icon: FileText, page: "Snippets" },
 { name: "Guidelines", icon: BookOpen, page: "Guidelines" },
 { name: "Calculators", icon: Activity, page: "Calculators" }];

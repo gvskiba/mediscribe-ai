@@ -182,10 +182,12 @@ export default function Snippets() {
   const filtered = snippets.filter(s => {
     const matchSearch = !search || 
       s.name?.toLowerCase().includes(search.toLowerCase()) ||
-      s.content?.toLowerCase().includes(search.toLowerCase());
+      s.content?.toLowerCase().includes(search.toLowerCase()) ||
+      (s.tags || []).some(tag => tag.toLowerCase().includes(search.toLowerCase()));
     const matchCategory = categoryFilter === "all" || s.category === categoryFilter;
     const matchTags = selectedTags.length === 0 || selectedTags.some(tag => (s.tags || []).includes(tag));
-    return matchSearch && matchCategory && matchTags;
+    const matchFolder = !selectedFolder || s.folder_id === selectedFolder.id;
+    return matchSearch && matchCategory && matchTags && matchFolder;
   });
 
   const allTags = Array.from(new Set(snippets.flatMap(s => s.tags || []))).sort();

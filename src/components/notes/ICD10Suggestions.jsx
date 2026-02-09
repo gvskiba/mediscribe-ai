@@ -194,11 +194,17 @@ export default function ICD10Suggestions({ suggestions, loading, onAccept, onRej
                     <div className="flex gap-1">
                       <Button
                         size="sm"
-                        variant="outline"
-                        onClick={() => handleAccept(suggestion)}
-                        className="h-8 px-2 text-green-600 border-green-300 hover:bg-green-50"
+                        onClick={() => {
+                          if (onApplyToNote) {
+                            onApplyToNote([suggestion]);
+                          }
+                          handleAccept(suggestion);
+                        }}
+                        className="h-8 px-2 gap-1 bg-blue-600 hover:bg-blue-700 text-white"
+                        title="Add this code to the clinical note"
                       >
                         <Check className="w-4 h-4" />
+                        Add
                       </Button>
                       <Button
                         size="sm"

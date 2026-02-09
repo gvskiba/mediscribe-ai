@@ -68,19 +68,19 @@ export default function InteractivePlanSection({ value, onUpdate, onReanalyze })
   };
 
   const addNewItem = () => {
-    if (!newItem.text.trim()) return;
-    const item = {
-      id: Date.now(),
-      text: newItem.text.trim(),
-      category: newItem.category,
-      selected: true
-    };
-    const updated = [...planItems, item];
-    setPlanItems(updated);
-    updatePlanText(updated);
-    setNewItem({ text: "", category: "medications" });
-    setShowAddForm(false);
-    toast.success("Item added to plan");
+   if (!newItem.text.trim()) return;
+   const item = {
+     id: Date.now(),
+     text: newItem.text.trim(),
+     category: newItem.category,
+     selected: true
+   };
+   const updated = [...planItems, item];
+   setPlanItems(updated);
+   updatePlanText(updated);
+   setNewItem({ text: "", category: "diagnostics" });
+   setShowAddForm(false);
+   toast.success("Item added to plan");
   };
 
   const deleteItem = (id) => {

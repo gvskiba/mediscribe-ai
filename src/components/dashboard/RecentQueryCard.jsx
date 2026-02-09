@@ -38,7 +38,7 @@ export default function RecentQueryCard({ query }) {
         <BookOpen className="w-4 h-4 text-purple-300" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-100 line-clamp-2">{query.question}</p>
+        <p className="text-sm font-semibold text-black line-clamp-2">{query.question}</p>
         <div className="flex items-center gap-2 mt-2">
           <Badge variant="outline" className="text-xs bg-purple-500/20 text-purple-200 border-purple-500/30">
             {categoryLabels[query.category] || "General"}

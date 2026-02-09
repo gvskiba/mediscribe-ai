@@ -635,81 +635,88 @@ Return a JSON structure with:
                       </Badge>
                     )}
                   </div>
-                  <div className="flex flex-wrap gap-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleFavorite(template.id)}
-                      className={`rounded-lg ${favorites.includes(template.id) ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" : ""}`}
-                      title="Favorite"
-                    >
-                      <Star className={`w-3 h-3 ${favorites.includes(template.id) ? "fill-current" : ""}`} />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPreviewTemplate(template)}
-                      className="rounded-lg gap-1"
-                      title="Preview"
-                    >
-                      <Eye className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(template)}
-                      className="rounded-lg gap-1"
-                    >
-                      <Edit className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleShare(template)}
-                      className="rounded-lg"
-                      title="Share"
-                    >
-                      <Share2 className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedTemplate(template);
-                        setVersionComparisonOpen(true);
-                      }}
-                      className="rounded-lg"
-                      title="Version History"
-                    >
-                      <History className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleAISuggestions(template)}
-                      className="rounded-lg"
-                      title="AI Suggestions"
-                    >
-                      <Sparkles className="w-3 h-3" />
-                    </Button>
+                  <div className="space-y-3 border-t border-slate-200 pt-4">
+                    {/* Primary Actions */}
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => setPreviewTemplate(template)}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 rounded-lg gap-1"
+                      >
+                        <Eye className="w-3 h-3" /> Preview
+                      </Button>
+                      <Button
+                        onClick={() => handleEdit(template)}
+                        size="sm"
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 rounded-lg gap-1"
+                      >
+                        <Edit className="w-3 h-3" /> Edit
+                      </Button>
+                    </div>
+
+                    {/* Collaboration & Admin */}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleFavorite(template.id)}
+                        className={`flex-1 rounded-lg gap-1 ${favorites.includes(template.id) ? "bg-amber-50 text-amber-700 border-amber-200" : ""}`}
+                      >
+                        <Star className={`w-3 h-3 ${favorites.includes(template.id) ? "fill-current" : ""}`} />
+                        {favorites.includes(template.id) ? "Favorited" : "Favorite"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleShare(template)}
+                        className="flex-1 rounded-lg gap-1"
+                      >
+                        <Share2 className="w-3 h-3" /> Share
+                      </Button>
+                    </div>
+
+                    {/* History & Suggestions */}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedTemplate(template);
+                          setVersionComparisonOpen(true);
+                        }}
+                        className="flex-1 rounded-lg gap-1"
+                      >
+                        <History className="w-3 h-3" /> History
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAISuggestions(template)}
+                        className="flex-1 rounded-lg gap-1"
+                      >
+                        <Sparkles className="w-3 h-3" /> AI
+                      </Button>
+                    </div>
+
+                    {/* Admin Actions */}
                     {!template.is_default && (
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setDefaultMutation.mutate(template.id)}
-                        className="rounded-lg"
-                        title="Set as default"
+                        className="w-full rounded-lg gap-1 text-blue-600"
                       >
-                        <Check className="w-3 h-3" />
+                        <Check className="w-3 h-3" /> Set as Default
                       </Button>
                     )}
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => deleteMutation.mutate(template.id)}
-                      className="rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="w-full rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50 gap-1"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="w-3 h-3" /> Delete
                     </Button>
                   </div>
                 </Card>

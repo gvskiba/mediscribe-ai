@@ -456,6 +456,17 @@ export default function Snippets() {
               />
             </div>
             <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Folder (Optional)</label>
+              <Button
+                variant="outline"
+                onClick={() => setFolderManagerOpen(true)}
+                className="w-full rounded-xl justify-start text-left gap-2"
+              >
+                <Folder className="w-4 h-4" />
+                {selectedFolder ? selectedFolder.name : "Select folder"}
+              </Button>
+            </div>
+            <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">Tags (Optional)</label>
               <Input
                 value={formData.tags.join(", ")}

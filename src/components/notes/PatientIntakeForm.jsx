@@ -115,6 +115,8 @@ export default function PatientIntakeForm({ onIntakeComplete, defaultPatientId =
     try {
       // Construct a narrative from intake form data
       const intakeNarrative = `Patient Presentation:
+Age: ${formData.patient_age}
+Gender: ${formData.gender}
 Chief Complaint: ${formData.chief_complaint}
 
 History of Present Illness:

@@ -332,6 +332,33 @@ Generated: ${new Date().toLocaleString()}
     a.remove();
   };
 
+  const exportNote = async (exportFormat) => {
+    setExportingFormat(exportFormat);
+    try {
+      const response = await base44.functions.invoke('exportClinicalNote', {
+        noteId: note.id,
+        format: exportFormat
+      });
+
+      const blob = new Blob([response.data], { 
+        type: exportFormat === 'pdf' ? 'application/pdf' : 'text/plain'
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${note.patient_name}_${note.date_of_visit || 'Note'}.${exportFormat === 'pdf' ? 'pdf' : 'txt'}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (error) {
+      console.error(`Failed to export as ${exportFormat}:`, error);
+      alert(`Failed to export note as ${exportFormat}`);
+    } finally {
+      setExportingFormat(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-4xl mx-auto space-y-6">

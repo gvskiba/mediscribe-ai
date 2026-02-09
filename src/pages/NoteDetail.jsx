@@ -28,6 +28,7 @@ import PatientSummary from "../components/notes/PatientSummary";
 import SmartGuidelinePanel from "../components/guidelines/SmartGuidelinePanel";
 import CreateTemplateFromNote from "../components/templates/CreateTemplateFromNote";
 import ICD10Suggestions from "../components/notes/ICD10Suggestions";
+import ICD10CodeSearch from "../components/notes/ICD10CodeSearch";
 
 const statusColors = {
   draft: "bg-amber-50 text-amber-700 border-amber-200",

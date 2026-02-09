@@ -810,11 +810,23 @@ Generated: ${new Date().toLocaleString()}
                    </h3>
                    {icd10Suggestions && icd10Suggestions.length > 0 ? (
                      <>
-                       <ICD10Suggestions
-                         suggestions={icd10Suggestions}
-                         loading={loadingIcd10}
-                         readOnly={true}
-                       />
+                     <ICD10Suggestions
+                       suggestions={icd10Suggestions}
+                       loading={loadingIcd10}
+                       readOnly={false}
+                       onApplyToNote={async (codes) => {
+                         try {
+                           const newDiagnoses = codes.map(c => `${c.code} - ${c.description}`);
+                           const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
+                           await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                           toast.success(`Added ${newDiagnoses.length} diagnosis code(s)`);
+                         } catch (error) {
+                           console.error("Failed to add diagnoses:", error);
+                           toast.error("Failed to add diagnoses. Please try again.");
+                         }
+                       }}
+                     />
                        <div className="mt-4">
                          <ICD10CodeSearch
                            suggestions={icd10Suggestions}

@@ -164,7 +164,8 @@ Return ONLY the extracted information in a structured format.`,
 
       // Pass structured data to parent
       const intakeOutput = {
-        patient_name: formData.patient_name,
+        patient_age: formData.patient_age,
+        gender: formData.gender,
         patient_id: formData.patient_id,
         raw_note: intakeNarrative,
         chief_complaint: structuredData.chief_complaint,

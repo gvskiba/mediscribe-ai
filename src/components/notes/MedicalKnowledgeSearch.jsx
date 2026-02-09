@@ -78,13 +78,13 @@ Return specific, actionable queries that a clinician would search for.`,
 Focus on ${type === "medication" ? "pharmacology, dosing, side effects, drug interactions, and clinical use" : type === "condition" ? "pathophysiology, diagnosis, and treatment" : type === "procedure" ? "indications, technique, complications, and outcomes" : "clinical information and evidence-based recommendations"}
 
 Provide:
-1. Concise summary and key facts
-2. Evidence level and source quality
+1. Executive summary (2-3 sentences max)
+2. Key facts and evidence level
 3. Practical clinical guidance
 4. Important contraindications, warnings, or adverse effects
-5. Relevant links to reputable sources (UpToDate, PubMed, specialty society guidelines)
+5. Provide relevant source URLs from reputable sources (UpToDate, PubMed, specialty society guidelines)
 
-Format with direct reference links when available.`;
+Keep summary ultra-concise and focus on actionable clinical information.`;
 
     return basePrompt;
   };

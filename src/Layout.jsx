@@ -57,21 +57,21 @@ export default function Layout({ children, currentPageName }) {
           top: 0;
           bottom: 0;
           width: 0;
-          background: linear-gradient(90deg, rgba(139, 92, 246, 0.15) 0%, transparent 100%);
+          background: linear-gradient(90deg, rgba(59, 130, 246, 0.15) 0%, transparent 100%);
           transition: width 0.3s ease;
         }
         .nav-link:hover::before {
           width: 100%;
         }
         .nav-link:hover { 
-          background: rgba(139, 92, 246, 0.08);
+          background: rgba(59, 130, 246, 0.08);
           transform: translateX(4px);
-          color: #c4b5fd;
+          color: #2563eb;
         }
         .nav-link.active { 
-          background: linear-gradient(90deg, rgba(139, 92, 246, 0.2) 0%, rgba(139, 92, 246, 0.05) 100%);
-          color: #c4b5fd;
-          border-left: 3px solid #8b5cf6;
+          background: rgba(59, 130, 246, 0.1);
+          color: #2563eb;
+          border-left: 3px solid #2563eb;
           font-weight: 600;
         }
         .scrollbar-hide::-webkit-scrollbar { display: none; }

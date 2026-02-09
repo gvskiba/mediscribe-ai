@@ -1005,7 +1005,28 @@ ${JSON.stringify(structuredNote, null, 2)}`,
       <div className="max-w-4xl mx-auto space-y-6">
         {!structuredNote ?
         <>
-            {useDetailedInput === null ?
+            {useIntakeForm ? (
+          <div className="space-y-4">
+            <button
+              onClick={() => setUseIntakeForm(false)}
+              className="text-sm text-emerald-300 hover:text-emerald-200 underline"
+            >
+              ← Back to input selection
+            </button>
+            <PatientIntakeForm
+              onIntakeComplete={(intakeData) => {
+                // Convert intake data to raw note and submit
+                handleSubmit({ 
+                  ...intakeData, 
+                  specialty: specialty || intakeData.specialty,
+                  note_type: "progress_note"
+                }, null);
+                // Reset to form selection after processing
+                setUseIntakeForm(false);
+              }}
+            />
+          </div>
+        ) : useDetailedInput === null ?
           <div className="min-h-[60vh] flex items-center justify-center">
                 <div className="max-w-3xl w-full space-y-8">
                   <div className="text-center space-y-3">

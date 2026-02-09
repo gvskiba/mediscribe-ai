@@ -273,40 +273,50 @@ export default function Snippets() {
                         <Badge variant="outline" className="text-xs">{snippet.category}</Badge>
                         {snippet.specialty && <Badge variant="outline" className="text-xs">{snippet.specialty}</Badge>}
                         {snippet.usage_count > 0 &&
-                  <Badge variant="outline" className="text-xs">{snippet.usage_count} uses</Badge>
-                  }
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setEditingSnippet(snippet);
-                      setFormData({
-                        name: snippet.name,
-                        category: snippet.category || "custom",
-                        content: snippet.content,
-                        specialty: snippet.specialty || "",
-                        tags: snippet.tags || []
-                      });
-                      setInlineEditingId(snippet.id);
-                    }}
-                    className="rounded-lg gap-1 flex-1">
-
-                          <Edit className="w-3 h-3" /> Edit
-                        </Button>
-                        <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (confirm("Delete this snippet?")) {
-                        deleteMutation.mutate(snippet.id);
+                      <Badge variant="outline" className="text-xs">{snippet.usage_count} uses</Badge>
                       }
-                    }}
-                    className="rounded-lg text-red-600 hover:text-red-700">
+                      </div>
+                      <div className="space-y-2 border-t border-slate-200 pt-3">
+                        <div className="flex gap-2">
+                          <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditingSnippet(snippet);
+                        setFormData({
+                          name: snippet.name,
+                          category: snippet.category || "custom",
+                          content: snippet.content,
+                          specialty: snippet.specialty || "",
+                          tags: snippet.tags || []
+                        });
+                        setInlineEditingId(snippet.id);
+                      }}
+                      className="rounded-lg gap-1 flex-1 bg-blue-600 hover:bg-blue-700 text-white">
 
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
+                            <Edit className="w-3 h-3" /> Edit
+                          </Button>
+                          <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleFavoriteMutation.mutate({ id: snippet.id, isFavorite: snippet.is_favorite })}
+                      className={`rounded-lg flex-1 gap-1 ${snippet.is_favorite ? "bg-amber-50 text-amber-700 border-amber-200" : ""}`}>
+
+                            <Star className={`w-3 h-3 ${snippet.is_favorite ? "fill-current" : ""}`} /> {snippet.is_favorite ? "Favorited" : "Favorite"}
+                          </Button>
+                        </div>
+                        <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (confirm("Delete this snippet?")) {
+                          deleteMutation.mutate(snippet.id);
+                        }
+                      }}
+                      className="rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50 gap-1 w-full">
+
+                            <Trash2 className="w-3 h-3" /> Delete
+                          </Button>
                       </div>
                     </>
               }

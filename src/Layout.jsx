@@ -84,15 +84,15 @@ export default function Layout({ children, currentPageName }) {
       `}</style>
 
       {/* Sidebar - Desktop */}
-      <aside className="hidden lg:flex flex-col w-64 fixed h-full z-30 glass-effect border-r border-[rgba(139,92,246,0.1)]" style={{ background: 'linear-gradient(165deg, #1a1f2e 0%, #0f1419 100%)' }}>
-        <div className="p-6 border-b border-purple-500/10">
+      <aside className="hidden lg:flex flex-col w-64 fixed h-full z-30 glass-effect border-r border-slate-200" style={{ background: 'linear-gradient(165deg, #f8fafc 0%, #ffffff 100%)' }}>
+        <div className="p-6 border-b border-slate-200">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-purple-500 via-violet-500 to-indigo-500 flex items-center justify-center shadow-xl shadow-purple-500/20 ring-2 ring-purple-500/20">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-200 ring-2 ring-blue-100">
               <Stethoscope className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-tight text-white">MedScribe</h1>
-              <p className="text-xs text-purple-300/80">Clinical AI Assistant</p>
+              <h1 className="text-lg font-bold tracking-tight text-slate-900">MedScribe</h1>
+              <p className="text-xs text-slate-600">Clinical AI Assistant</p>
             </div>
           </div>
         </div>

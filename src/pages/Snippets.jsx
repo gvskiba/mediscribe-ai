@@ -15,6 +15,8 @@ import AISnippetGenerator from "@/components/snippets/AISnippetGenerator";
 import RichTextEditor from "@/components/snippets/RichTextEditor";
 import SnippetVersionHistory from "@/components/snippets/SnippetVersionHistory";
 import FolderManager from "@/components/snippets/FolderManager";
+import SectionSnippetOrganizer from "@/components/snippets/SectionSnippetOrganizer";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const defaultCategories = [
   { value: "exam", label: "Physical Exam" },

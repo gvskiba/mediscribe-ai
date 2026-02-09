@@ -972,7 +972,37 @@ FORMATTING RULES (CRITICAL):
            </div>
          </div>
 
-        {/* Diagnoses & ICD-10 Codes Box - Bottom */}
+        {/* Suggested ICD-10 Codes Box */}
+         {note.icd10_suggestions && note.icd10_suggestions.length > 0 && (
+           <div className="bg-white rounded-xl border-2 border-cyan-300 shadow-sm overflow-hidden">
+             <div className="bg-cyan-50 px-4 py-3 border-b border-cyan-200 flex items-center gap-2">
+               <Target className="w-5 h-5 text-cyan-600" />
+               <h3 className="font-semibold text-slate-900">Suggested ICD-10 Codes</h3>
+             </div>
+             <div className="p-4 space-y-3">
+               {note.icd10_suggestions.map((code, idx) => (
+                 <div key={idx} className="bg-slate-50 rounded-lg border border-slate-200 p-3">
+                   <div className="flex items-start justify-between mb-2">
+                     <div>
+                       <p className="font-semibold text-slate-900">{code.code}</p>
+                       <p className="text-sm text-slate-600 mt-1">{code.description}</p>
+                     </div>
+                     <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                       code.confidence === 'high' ? 'bg-green-100 text-green-800' :
+                       code.confidence === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
+                       'bg-orange-100 text-orange-800'
+                     }`}>
+                       {code.confidence}
+                     </div>
+                   </div>
+                   <p className="text-xs text-slate-500">For: {code.diagnosis}</p>
+                 </div>
+               ))}
+             </div>
+           </div>
+         )}
+
+        {/* Diagnoses Box */}
          <div className="bg-white rounded-xl border-2 border-amber-300 shadow-sm overflow-hidden">
            <div className="bg-amber-50 px-4 py-3 border-b border-amber-200 flex items-center gap-2">
              <Target className="w-5 h-5 text-amber-600" />

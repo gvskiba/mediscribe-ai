@@ -719,7 +719,7 @@ Generated: ${new Date().toLocaleString()}
                </div>
              )}
 
-             {note.diagnoses && note.diagnoses.length > 0 && note.status === "finalized" ? (
+             {note.status === "finalized" && note.diagnoses && note.diagnoses.length > 0 ? (
                <>
                  {/* Linked Guidelines Section */}
                  {note.linked_guidelines && note.linked_guidelines.length > 0 && (
@@ -753,6 +753,17 @@ Generated: ${new Date().toLocaleString()}
                      loading={loadingIcd10}
                      readOnly={true}
                    />
+                   <div className="mt-4">
+                     <ICD10CodeSearch
+                       suggestions={icd10Suggestions}
+                       diagnoses={note.diagnoses}
+                       onAddDiagnoses={async (newDiagnoses) => {
+                         const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
+                         await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
+                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                       }}
+                     />
+                   </div>
                  </div>
 
                  {/* Clinical Guidelines */}

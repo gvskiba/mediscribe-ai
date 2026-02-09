@@ -1005,7 +1005,23 @@ Generated: ${new Date().toLocaleString()}
                )}
 
                <div className="pt-6 border-t border-slate-200">
-                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Diagnoses</p>
+                 <div className="flex items-center justify-between mb-3">
+                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Diagnoses</p>
+                   {note.status === "draft" && (
+                     <Button
+                       size="sm"
+                       onClick={extractStructuredData}
+                       disabled={extractingData || !note.raw_note}
+                       className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
+                     >
+                       {extractingData ? (
+                         <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating...</>
+                       ) : (
+                         <><Sparkles className="w-3.5 h-3.5" /> Generate Diagnoses</>
+                       )}
+                     </Button>
+                   )}
+                 </div>
 
                  {note.diagnoses && note.diagnoses.length > 0 ? (
                    <div className="space-y-3">

@@ -57,6 +57,7 @@ import NoteDetail from './pages/NoteDetail';
 import NoteTemplates from './pages/NoteTemplates';
 import NotesLibrary from './pages/NotesLibrary';
 import Snippets from './pages/Snippets';
+import TemplateSections from './pages/TemplateSections';
 import __Layout from './Layout.jsx';
 
 
@@ -71,6 +72,7 @@ export const PAGES = {
     "NoteTemplates": NoteTemplates,
     "NotesLibrary": NotesLibrary,
     "Snippets": Snippets,
+    "TemplateSections": TemplateSections,
 }
 
 export const pagesConfig = {

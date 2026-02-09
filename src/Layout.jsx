@@ -105,7 +105,7 @@ export default function Layout({ children, currentPageName }) {
             New Note
           </Link>
         </div>
-        <nav className="bg-blue-200 p-4 flex-1 space-y-1.5">
+        <nav className="flex-1 p-4 space-y-1.5">
           {navItems.map((item) =>
           <Link
             key={item.page}
@@ -121,7 +121,7 @@ export default function Layout({ children, currentPageName }) {
               </Link>
           )}
               </nav>
-              <div className="p-4 border-t border-slate-200">
+              <div className="bg-blue-100 p-4 border-t border-slate-200">
               <button
             onClick={() => base44.auth.logout()}
             className="nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 w-full">

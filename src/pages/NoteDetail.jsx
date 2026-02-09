@@ -75,7 +75,14 @@ export default function NoteDetail() {
       // Auto-link guidelines after finalization
       setTimeout(() => linkGuidelinesToNote(), 500);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["note", noteId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+      // Automatically fetch ICD-10 and guidelines after finalization
+      setTimeout(() => {
+        generateICD10Suggestions();
+        fetchGuidelineRecommendations();
+      }, 500);
+    },
   });
 
   const linkGuidelinesToNote = async () => {

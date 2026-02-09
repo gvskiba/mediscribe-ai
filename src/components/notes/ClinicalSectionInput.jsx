@@ -241,7 +241,7 @@ Provide a clearer, more concise version.`,
       raw_note: `Chief Complaint: ${formData.chief_complaint}\n\nHISTORY AND PHYSICAL:\n${clinicalData.history_and_physical || ""}\n\nREVIEW OF SYSTEMS:\n${clinicalData.review_of_systems || ""}\n\nPHYSICAL EXAMINATION:\n${clinicalData.physical_exam || ""}`
     };
     
-    onSubmit(submissionData, formData.templateId || undefined);
+    onSubmit(submissionData, formData.templateId || null);
   };
 
   return (

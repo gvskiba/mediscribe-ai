@@ -863,9 +863,9 @@ Generated: ${new Date().toLocaleString()}
 
                {note.created_date && (
                  <div className="pt-6 border-t border-slate-200 text-xs text-slate-500">
-                   <p>Created: {format(new Date(note.created_date), "MMMM d, yyyy 'at' h:mm a")}</p>
+                   <p>Created: {format(new Date(note.created_date), "MMMM d, yyyy 'at' h:mm aaa")}</p>
                    {note.updated_date && (
-                     <p>Last Updated: {format(new Date(note.updated_date), "MMMM d, yyyy 'at' h:mm a")}</p>
+                     <p>Last Updated: {format(new Date(note.updated_date), "MMMM d, yyyy 'at' h:mm aaa")}</p>
                    )}
                  </div>
                )}

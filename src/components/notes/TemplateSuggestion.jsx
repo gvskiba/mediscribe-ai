@@ -25,13 +25,16 @@ export default function TemplateSuggestion({
     if (!dismissed && (rawNote || chiefComplaint) && templates.length > 0 && !loading) {
       const timeoutId = setTimeout(() => {
         analyzeSuggestTemplates();
-      }, 1000); // Debounce to avoid excessive API calls
+      }, 1500); // Debounce to avoid excessive API calls
       
       return () => clearTimeout(timeoutId);
     }
-  }, [rawNote, noteType, specialty, chiefComplaint, dismissed]);
+  }, [rawNote, noteType, specialty, chiefComplaint, templates.length, dismissed, loading]);
 
   const analyzeSuggestTemplates = async () => {
+    // Prevent multiple simultaneous calls
+    if (loading) return;
+    
     setLoading(true);
     try {
       const result = await base44.integrations.Core.InvokeLLM({
@@ -120,6 +123,8 @@ If no template is a perfect match, suggest the closest option and explain what s
       setSuggestions(result);
     } catch (error) {
       console.error("Failed to suggest templates:", error);
+      // Clear loading state on error
+      setSuggestions(null);
     } finally {
       setLoading(false);
     }
@@ -131,6 +136,8 @@ If no template is a perfect match, suggest the closest option and explain what s
   };
 
   const handleSelectTemplate = (templateId) => {
+    if (!templateId) return;
+    
     const template = templates.find(t => t.id === templateId);
     if (template) {
       toast.success(`Template "${template.name}" applied`);
@@ -139,7 +146,13 @@ If no template is a perfect match, suggest the closest option and explain what s
     }
   };
 
-  if (dismissed || !suggestions || loading) {
+  // Don't show if dismissed or still loading
+  if (dismissed || loading) {
+    return null;
+  }
+
+  // Don't show if no suggestions yet
+  if (!suggestions || !suggestions.recommended_template_id) {
     return null;
   }
 

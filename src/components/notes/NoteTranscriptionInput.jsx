@@ -78,6 +78,9 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
   useEffect(() => {
     if (!templates.length) return;
     
+    // Don't auto-change if user has manually selected a template via suggestion
+    if (selectedTemplate && !showTemplateSuggestion) return;
+    
     const matchingTemplate = templates.find(t => 
       t.note_type === noteType && 
       (!specialty || !t.specialty || t.specialty.toLowerCase() === specialty.toLowerCase())
@@ -86,7 +89,7 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
     if (matchingTemplate) {
       setSelectedTemplate(matchingTemplate.id);
     }
-  }, [noteType, specialty, templates]);
+  }, [noteType, specialty, templates.length]);
 
   const toggleRecording = () => {
     if (isRecording) {
@@ -239,13 +242,13 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
                 <SelectValue placeholder="Use default structure" />
               </SelectTrigger>
               <SelectContent>
-                 <SelectItem value={null}>Default Structure</SelectItem>
-                 {templates.map(template => (
-                   <SelectItem key={template.id} value={template.id}>
-                     {template.name} {template.is_default && "⭐"}
-                   </SelectItem>
-                 ))}
-               </SelectContent>
+                <SelectItem value={null}>Default Structure</SelectItem>
+                {templates.map(template => (
+                  <SelectItem key={template.id} value={template.id}>
+                    {template.name} {template.is_default && "⭐"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </div>
         )}

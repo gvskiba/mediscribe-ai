@@ -21,35 +21,35 @@ css
 
 @layer components {
   .card-dark {
-    @apply bg-[#1a1f2e] border border-purple-500/10 rounded-2xl shadow-xl;
+    @apply bg-white border border-slate-200 rounded-2xl shadow-sm;
   }
-  
+
   .btn-primary {
-    @apply bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 hover:from-purple-500 hover:via-violet-500 hover:to-indigo-500 text-white font-semibold rounded-xl px-6 py-3 shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98];
+    @apply bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl px-6 py-3 shadow-sm transition-all duration-300 hover:scale-[1.02] active:scale-[0.98];
   }
-  
+
   .btn-secondary {
-    @apply bg-[#1a1f2e] hover:bg-[#242938] text-slate-100 font-medium rounded-xl px-6 py-3 border border-purple-500/10 hover:border-purple-500/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98];
+    @apply bg-slate-100 hover:bg-slate-200 text-slate-900 font-medium rounded-xl px-6 py-3 border border-slate-300 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98];
   }
-  
+
   .input-dark {
-    @apply bg-[#1a1f2e] border border-purple-500/20 focus:border-purple-500/50 text-slate-100 rounded-xl px-4 py-2.5 placeholder:text-slate-400 focus:ring-2 focus:ring-purple-500/20 transition-all;
+    @apply bg-white border border-slate-300 focus:border-blue-500 text-slate-900 rounded-xl px-4 py-2.5 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-100 transition-all;
   }
-  
+
   .badge-dark {
-    @apply bg-purple-500/10 text-purple-200 border border-purple-500/20 rounded-lg px-3 py-1 text-xs font-medium;
+    @apply bg-blue-50 text-blue-700 border border-blue-200 rounded-lg px-3 py-1 text-xs font-medium;
   }
-  
+
   .text-muted {
-    @apply text-slate-400;
+    @apply text-slate-600;
   }
-  
+
   .text-primary {
-    @apply text-purple-300;
+    @apply text-blue-600;
   }
-  
+
   .text-heading {
-    @apply text-white font-semibold;
+    @apply text-slate-900 font-semibold;
   }
 }
 

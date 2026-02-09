@@ -551,11 +551,14 @@ Other systems as relevant..."
             </div>
             <p className="text-sm text-slate-500 mt-1">Document objective findings including vital signs, general appearance, and system-specific exams.</p>
           </div>
-          <Textarea
-            ref={examRef}
-            value={clinicalData.physical_exam}
-            onChange={(e) => handleClinicalDataChange("physical_exam", e.target.value)}
-            placeholder="Vital Signs: BP, HR, RR, Temp, O2 sat
+          <div className="relative">
+            <Textarea
+              ref={examRef}
+              value={clinicalData.physical_exam}
+              onChange={(e) => handleClinicalDataChange("physical_exam", e.target.value)}
+              onMouseUp={() => handleTextSelection("physical_exam")}
+              onKeyUp={() => handleTextSelection("physical_exam")}
+              placeholder="Vital Signs: BP, HR, RR, Temp, O2 sat
 General: alert and oriented, in mild/moderate/severe distress
 HEENT: normal, no lymphadenopathy
 Cardiovascular: regular rate and rhythm
@@ -564,8 +567,35 @@ Abdomen: soft, non-tender
 Extremities: no edema
 Neuro: motor and sensory intact
 Other exam findings..."
-            className="min-h-[150px] rounded-lg border-emerald-200 focus:border-emerald-400"
-          />
+              className="min-h-[150px] rounded-lg border-emerald-200 focus:border-emerald-400"
+            />
+            {showRefineMenu && activeSection === "physical_exam" && (
+              <div className="absolute top-2 right-2 flex gap-1 z-10">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleAddDetail}
+                  disabled={aiGenerating === "physical_exam"}
+                  className="text-xs shadow-lg"
+                >
+                  {aiGenerating === "physical_exam" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                  Add Detail
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleRephrase}
+                  disabled={aiGenerating === "physical_exam"}
+                  className="text-xs shadow-lg"
+                >
+                  {aiGenerating === "physical_exam" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Edit3 className="w-3 h-3" />}
+                  Rephrase
+                </Button>
+              </div>
+            )}
+          </div>
         </Card>
       </div>
 

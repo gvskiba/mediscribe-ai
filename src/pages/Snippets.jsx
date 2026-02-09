@@ -25,6 +25,7 @@ const defaultCategories = [
 export default function Snippets() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [aiGeneratorOpen, setAIGeneratorOpen] = useState(false);
   const [editingSnippet, setEditingSnippet] = useState(null);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");

@@ -83,7 +83,13 @@ export default function PatientIntakeForm({ onIntakeComplete, defaultPatientId =
 
   const handleNext = () => {
     const currentFields = steps[currentStep].fields;
-    const allFilled = currentFields.every(field => formData[field]?.trim());
+    const allFilled = currentFields.every(field => {
+      const value = formData[field];
+      if (field === "symptom_severity") {
+        return value && parseInt(value) >= 1 && parseInt(value) <= 10;
+      }
+      return value?.trim();
+    });
     
     if (!allFilled) {
       toast.error("Please fill in all fields before proceeding");

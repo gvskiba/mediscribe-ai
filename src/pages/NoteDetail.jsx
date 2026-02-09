@@ -419,7 +419,7 @@ Generated: ${new Date().toLocaleString()}
               )}
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Link to={createPageUrl("NewNote")}>
               <Button
                 className="rounded-xl gap-2 bg-blue-600 hover:bg-blue-700"
@@ -434,6 +434,38 @@ Generated: ${new Date().toLocaleString()}
             >
               <Sparkles className="w-4 h-4" /> Save as Template
             </Button>
+            <div className="flex gap-1 border-l border-slate-200 pl-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportNote('text')}
+                disabled={exportingFormat === 'text'}
+                className="rounded-lg gap-1.5"
+                title="Export as plain text"
+              >
+                {exportingFormat === 'text' ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5" />
+                )}
+                Text
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportNote('pdf')}
+                disabled={exportingFormat === 'pdf'}
+                className="rounded-lg gap-1.5"
+                title="Export as PDF"
+              >
+                {exportingFormat === 'pdf' ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5" />
+                )}
+                PDF
+              </Button>
+            </div>
             {note.status === "finalized" && patientSummary && (
               <Button
                 variant="outline"

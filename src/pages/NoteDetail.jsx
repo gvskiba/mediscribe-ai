@@ -1008,55 +1008,60 @@ Generated: ${new Date().toLocaleString()}
                              <Button
                                size="sm"
                                onClick={async () => {
-                                 let planText = `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-                                 planText += `GUIDELINE-BASED TREATMENT PLAN: ${rec.condition}\n`;
-                                 planText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+                                 try {
+                                   let planText = `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                                   planText += `GUIDELINE-BASED TREATMENT PLAN: ${rec.condition}\n`;
+                                   planText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-                                 if (rec.diagnostic_workup && rec.diagnostic_workup.length > 0) {
-                                   planText += `DIAGNOSTIC WORKUP:\n`;
-                                   rec.diagnostic_workup.forEach((test, i) => {
-                                     planText += `  ${i + 1}. ${test.test}\n`;
-                                     planText += `     • Indication: ${test.indication}\n`;
-                                     planText += `     • Timing: ${test.timing}\n`;
-                                   });
-                                   planText += `\n`;
-                                 }
-
-                                 if (rec.medications && rec.medications.length > 0) {
-                                   planText += `MEDICATIONS:\n`;
-                                   rec.medications.forEach((med, i) => {
-                                     planText += `  ${i + 1}. ${med.name}\n`;
-                                     planText += `     • Dosing: ${med.dosing}\n`;
-                                     planText += `     • Indication: ${med.indication}\n`;
-                                     planText += `     • Duration: ${med.duration}\n`;
-                                     if (med.monitoring) planText += `     • Monitoring: ${med.monitoring}\n`;
-                                   });
-                                   planText += `\n`;
-                                 }
-
-                                 if (rec.key_recommendations && rec.key_recommendations.length > 0) {
-                                   planText += `KEY RECOMMENDATIONS:\n`;
-                                   rec.key_recommendations.forEach((item, i) => {
-                                     const cleanedItem = item.replace(/[*_~`]/g, '').trim();
-                                     planText += `  • ${cleanedItem}\n`;
-                                   });
-                                   planText += `\n`;
-                                 }
-
-                                 if (rec.followup) {
-                                   planText += `MONITORING & FOLLOW-UP:\n`;
-                                   planText += `  • Follow-up: ${rec.followup.timing}\n`;
-                                   if (rec.followup.parameters && rec.followup.parameters.length > 0) {
-                                     planText += `  • Monitor: ${rec.followup.parameters.join(', ')}\n`;
+                                   if (rec.diagnostic_workup && rec.diagnostic_workup.length > 0) {
+                                     planText += `DIAGNOSTIC WORKUP:\n`;
+                                     rec.diagnostic_workup.forEach((test, i) => {
+                                       planText += `  ${i + 1}. ${test.test}\n`;
+                                       planText += `     • Indication: ${test.indication}\n`;
+                                       planText += `     • Timing: ${test.timing}\n`;
+                                     });
+                                     planText += `\n`;
                                    }
-                                   if (rec.followup.red_flags && rec.followup.red_flags.length > 0) {
-                                     planText += `  • Red Flags: ${rec.followup.red_flags.join('; ')}\n`;
-                                   }
-                                 }
 
-                                 const updatedPlan = (note.plan || "") + planText;
-                                 await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
-                                 queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                   if (rec.medications && rec.medications.length > 0) {
+                                     planText += `MEDICATIONS:\n`;
+                                     rec.medications.forEach((med, i) => {
+                                       planText += `  ${i + 1}. ${med.name}\n`;
+                                       planText += `     • Dosing: ${med.dosing}\n`;
+                                       planText += `     • Indication: ${med.indication}\n`;
+                                       planText += `     • Duration: ${med.duration}\n`;
+                                       if (med.monitoring) planText += `     • Monitoring: ${med.monitoring}\n`;
+                                     });
+                                     planText += `\n`;
+                                   }
+
+                                   if (rec.key_recommendations && rec.key_recommendations.length > 0) {
+                                     planText += `KEY RECOMMENDATIONS:\n`;
+                                     rec.key_recommendations.forEach((item, i) => {
+                                       const cleanedItem = item.replace(/[*_~`]/g, '').trim();
+                                       planText += `  • ${cleanedItem}\n`;
+                                     });
+                                     planText += `\n`;
+                                   }
+
+                                   if (rec.followup) {
+                                     planText += `MONITORING & FOLLOW-UP:\n`;
+                                     planText += `  • Follow-up: ${rec.followup.timing}\n`;
+                                     if (rec.followup.parameters && rec.followup.parameters.length > 0) {
+                                       planText += `  • Monitor: ${rec.followup.parameters.join(', ')}\n`;
+                                     }
+                                     if (rec.followup.red_flags && rec.followup.red_flags.length > 0) {
+                                       planText += `  • Red Flags: ${rec.followup.red_flags.join('; ')}\n`;
+                                     }
+                                   }
+
+                                   const updatedPlan = (note.plan || "") + planText;
+                                   await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
+                                   await queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                 } catch (error) {
+                                   console.error("Failed to add to plan:", error);
+                                   alert("Failed to add to plan. Please try again.");
+                                 }
                                }}
                                className="gap-1.5 bg-purple-600 hover:bg-purple-700 text-white"
                              >

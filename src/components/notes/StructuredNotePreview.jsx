@@ -24,6 +24,7 @@ export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpda
   const [showDifferentials, setShowDifferentials] = useState(false);
   const [aiSuggestionFeedback, setAiSuggestionFeedback] = useState({});
   const [knowledgeSearchOpen, setKnowledgeSearchOpen] = useState(false);
+  const [expandedDifferentials, setExpandedDifferentials] = useState(true);
 
   const generateFormattedNote = () => {
     let formatted = `CLINICAL NOTE\n${"=".repeat(60)}\n\n`;

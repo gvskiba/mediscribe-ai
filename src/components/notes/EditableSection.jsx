@@ -38,14 +38,9 @@ export default function EditableSection({
     cyan: "bg-cyan-50 text-cyan-600",
   };
 
-  const handleSave = () => {
-    onUpdate(field, editValue);
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    setEditValue(value);
-    setIsEditing(false);
+  const handleChange = (newValue) => {
+    setEditValue(newValue);
+    onUpdate(field, newValue);
   };
 
   const handleReanalyze = async () => {

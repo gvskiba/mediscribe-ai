@@ -43,17 +43,45 @@ export default function AISnippetGenerator({ onTemplatesGenerated, open, onOpenC
   const [selectedTone, setSelectedTone] = useState("formal");
   const [selectedFormat, setSelectedFormat] = useState("paragraph");
 
+  const generateTags = async (content) => {
+    try {
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt: `Analyze this medical snippet and suggest 2-4 relevant tags for organization and filtering. Tags should be short, lowercase, and relevant to clinical practice.
+
+Content: "${content}"
+
+Return as JSON with structure: { "tags": ["tag1", "tag2", "tag3"] }`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            tags: {
+              type: "array",
+              items: { type: "string" }
+            }
+          }
+        }
+      });
+      return response.data.tags || [];
+    } catch {
+      return [];
+    }
+  };
+
   const handleGenerate = async () => {
     setGenerating(true);
     try {
+      const toneLabel = tones.find(t => t.value === selectedTone)?.label || "formal";
+      const formatLabel = formats.find(f => f.value === selectedFormat)?.label || "paragraph";
+      
       const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate 3-5 clinical snippet templates for ${selectedSpecialty} doctors in the "${snippetCategories.find(c => c.value === selectedCategory)?.label}" category. 
+        prompt: `Generate 3-5 clinical snippet templates for ${selectedSpecialty} doctors in the "${snippetCategories.find(c => c.value === selectedCategory)?.label}" category.
         
-        Each template should be:
+        Requirements:
+        - Tone: ${toneLabel}
+        - Format: ${formatLabel}${selectedFormat === "bullets" ? "\n- Use bullet points instead of paragraphs" : ""}
         - A realistic, reusable clinical note snippet
-        - Professional medical language
-        - 2-3 sentences each
-        - Formatted with medical detail
+        - Medical language appropriate for the tone
+        ${selectedTone === "concise" ? "- Keep each snippet brief (1-2 sentences)" : "- 2-3 sentences each"}
         
         Return as JSON array with this structure:
         [
@@ -77,17 +105,17 @@ export default function AISnippetGenerator({ onTemplatesGenerated, open, onOpenC
         }
       });
 
-      const templates = response.data.snippets.map(s => ({
+      const templates = await Promise.all(response.data.snippets.map(async (s) => ({
         name: s.name,
         content: s.content,
         category: selectedCategory,
         specialty: selectedSpecialty,
-        tags: []
-      }));
+        tags: await generateTags(s.content)
+      })));
 
       onTemplatesGenerated(templates);
       onOpenChange(false);
-      toast.success(`Generated ${templates.length} snippet templates`);
+      toast.success(`Generated ${templates.length} snippet templates with auto-tags`);
     } catch (error) {
       toast.error("Failed to generate templates");
     } finally {

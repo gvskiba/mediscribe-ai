@@ -8,14 +8,14 @@ css
     @apply border-border;
   }
   body {
-    @apply bg-[#0f1419] text-slate-100;
+    @apply bg-white text-slate-900;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply text-white;
+    @apply text-slate-900;
   }
   p {
-    @apply text-slate-300;
+    @apply text-slate-700;
   }
 }
 

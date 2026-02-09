@@ -638,13 +638,19 @@ Focus on:
 4. Red flags or contraindications
 5. Follow-up recommendations
 
-Keep it actionable and concise (4-6 bullet points).`,
+Return 4-6 concise, actionable key recommendations.
+
+CRITICAL: Write each recommendation as a clean, complete sentence WITHOUT any inline citations, reference numbers, or bracketed numbers. Do not include [1], (1), or any citation markers in the key_points. Keep recommendations clear and citation-free.`,
             add_context_from_internet: true,
             response_json_schema: {
               type: "object",
               properties: {
                 summary: { type: "string" },
-                key_points: { type: "array", items: { type: "string" } },
+                key_points: { 
+                  type: "array", 
+                  items: { type: "string" },
+                  description: "Clean, actionable recommendations without inline citations or reference numbers"
+                },
                 sources: { type: "array", items: { type: "string" } },
               },
             },

@@ -461,14 +461,14 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
             <Button
               variant="outline"
               onClick={() => setSelectedForCompare([])}
-              className="rounded-xl"
+              className="rounded-xl text-slate-700 border-slate-300"
             >
               Clear
             </Button>
             <Button
               onClick={handleCompareGuidelines}
               disabled={selectedForCompare.length < 2}
-              className="bg-slate-700 hover:bg-slate-800 rounded-xl"
+              className="bg-green-600 hover:bg-green-700 text-white rounded-xl"
             >
               <ArrowLeftRight className="w-4 h-4 mr-2" />
               Compare Guidelines

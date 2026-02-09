@@ -1006,6 +1006,16 @@ FORMATTING RULES (CRITICAL):
           assessment: note.assessment,
           plan: note.plan
         }}
+        onAddToNote={(content, section) => {
+          if (section === "assessment") {
+            onUpdate("assessment", (note.assessment || "") + "\n\n" + content);
+          } else if (section === "plan") {
+            onUpdate("plan", (note.plan || "") + "\n\n" + content);
+          } else if (section === "medications") {
+            onUpdate("medications", [...(note.medications || []), content]);
+          }
+          toast.success(`Added to ${section}`);
+        }}
       />
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>

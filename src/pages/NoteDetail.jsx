@@ -51,6 +51,7 @@ export default function NoteDetail() {
   const [loadingIcd10, setLoadingIcd10] = useState(false);
   const [guidelineRecommendations, setGuidelineRecommendations] = useState([]);
   const [loadingGuidelines, setLoadingGuidelines] = useState(false);
+  const [exportingFormat, setExportingFormat] = useState(null);
 
   const { data: note, isLoading } = useQuery({
     queryKey: ["note", noteId],

@@ -660,7 +660,7 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                   setFilterDateRange("all");
                   setSearchTerm("");
                 }}
-                className="mt-3 rounded-xl"
+                className="mt-3 rounded-xl text-slate-700 border-slate-300"
               >
                 Clear Filters
               </Button>

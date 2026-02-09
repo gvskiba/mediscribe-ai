@@ -110,10 +110,10 @@ export default function Layout({ children, currentPageName }) {
           <Link
             key={item.page}
             to={createPageUrl(item.page)}
-            className={`nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium ${
+            className={`nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white ${
             currentPageName === item.page ?
-            "active text-blue-600 bg-blue-50" :
-            "text-slate-600 hover:text-slate-900 hover:bg-slate-100"}`
+            "active bg-blue-700" :
+            "hover:bg-blue-700"}`
             }>
 
               <item.icon className="w-[18px] h-[18px]" />

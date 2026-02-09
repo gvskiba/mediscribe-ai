@@ -623,9 +623,9 @@ Generated: ${new Date().toLocaleString()}
                           planText += `\n`;
                         }
                         
-                        if (rec.nonpharmacologic && rec.nonpharmacologic.length > 0) {
-                          planText += `NON-PHARMACOLOGIC INTERVENTIONS:\n`;
-                          rec.nonpharmacologic.forEach((item, i) => {
+                        if (rec.key_recommendations && rec.key_recommendations.length > 0) {
+                          planText += `KEY RECOMMENDATIONS:\n`;
+                          rec.key_recommendations.forEach((item, i) => {
                             planText += `  • ${item}\n`;
                           });
                           planText += `\n`;

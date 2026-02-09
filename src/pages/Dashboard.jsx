@@ -123,19 +123,19 @@ export default function Dashboard() {
          >
            <div className="flex items-center justify-between p-6 pb-2">
              <h2 className="text-lg font-semibold text-slate-900">Recent Queries</h2>
-            <Link to={createPageUrl("Guidelines")} className="text-sm text-purple-300 hover:text-purple-200 flex items-center gap-1 font-medium">
+            <Link to={createPageUrl("Guidelines")} className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 font-medium">
               Ask a question <ArrowRight className="w-3 h-3" />
             </Link>
-          </div>
-          <div className="px-2 pb-2">
+            </div>
+            <div className="px-2 pb-2">
             {isLoading ? (
               <div className="space-y-2 p-4">
-                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 rounded-xl bg-[#242938]" />)}
+                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 rounded-xl bg-slate-100" />)}
               </div>
             ) : recentQueries.length === 0 ? (
-              <div className="text-center py-12 text-slate-400">
+              <div className="text-center py-12 text-slate-500">
                 <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-40" />
-                <p className="text-sm text-slate-300">No guideline queries yet</p>
+                <p className="text-sm text-slate-600">No guideline queries yet</p>
                 <Link to={createPageUrl("Guidelines")} className="text-sm text-purple-300 hover:underline mt-1 inline-block">
                   Ask your first question
                 </Link>

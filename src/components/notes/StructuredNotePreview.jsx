@@ -794,25 +794,30 @@ FORMATTING RULES (CRITICAL):
         </div>
 
         {/* History of Present Illness Box */}
-        <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-sm overflow-hidden">
-          <div className="bg-indigo-50 px-4 py-3 border-b border-indigo-200 flex items-center gap-2">
-            <FileText className="w-5 h-5 text-indigo-600" />
-            <h3 className="font-semibold text-slate-900">History of Present Illness</h3>
-          </div>
-          <div className="p-4">
-            <EditableSection
-              icon={FileText}
-              title=""
-              color="indigo"
-              value={note.history_of_present_illness || "Not extracted"}
-              field="history_of_present_illness"
-              type="textarea"
-              onUpdate={onUpdate}
-              onReanalyze={onReanalyze}
-              hideBorder={true}
-            />
-          </div>
-        </div>
+         <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-sm overflow-hidden">
+           <div className="bg-indigo-50 px-4 py-3 border-b border-indigo-200 flex items-center gap-2">
+             <FileText className="w-5 h-5 text-indigo-600" />
+             <h3 className="font-semibold text-slate-900">History of Present Illness</h3>
+           </div>
+           <div className="p-4">
+             <EditableSection
+               icon={FileText}
+               title=""
+               color="indigo"
+               value={note.history_of_present_illness || "Not extracted"}
+               field="history_of_present_illness"
+               type="textarea"
+               onUpdate={onUpdate}
+               onReanalyze={onReanalyze}
+               hideBorder={true}
+               noteContext={{
+                 diagnoses: note.diagnoses,
+                 assessment: note.assessment,
+                 plan: note.plan
+               }}
+             />
+           </div>
+         </div>
 
         {/* Medical History Box */}
         <div className="bg-white rounded-xl border-2 border-slate-300 shadow-sm overflow-hidden">

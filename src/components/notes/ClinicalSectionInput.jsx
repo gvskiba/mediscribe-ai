@@ -338,12 +338,16 @@ Provide a clearer, more concise version.`,
               className="bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200 p-4 hover:border-blue-300 transition-colors"
             >
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3 block">Specialty</label>
-              <Input
-                value={formData.specialty}
-                onChange={(e) => handleInputChange("specialty", e.target.value)}
-                placeholder="e.g., Cardiology"
-                className="rounded-lg border-slate-300 bg-white focus:border-blue-400 focus:ring-blue-400/20 text-slate-900 placeholder:text-slate-400"
-              />
+              <Select value={formData.specialty} onValueChange={(v) => handleInputChange("specialty", v)}>
+                <SelectTrigger className="rounded-lg border-slate-300 bg-white text-slate-900 font-medium">
+                  <SelectValue placeholder="Select specialty" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SPECIALTIES.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </motion.div>
           </div>
 

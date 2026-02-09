@@ -495,273 +495,384 @@ Generated: ${new Date().toLocaleString()}
         </div>
       </motion.div>
 
-      {/* Patient Summary */}
-      {generatingSummary && !patientSummary && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl border border-slate-100 p-6"
-        >
-          <div className="flex items-center gap-3 text-slate-500">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span className="text-sm">Generating AI summary...</span>
-          </div>
-        </motion.div>
-      )}
-      {patientSummary && (
-        <PatientSummary 
-          summary={patientSummary} 
-          patientName={note.patient_name}
-          onDownload={downloadSummary}
-        />
-      )}
+      {/* Tabbed Interface */}
+       <motion.div
+         initial={{ opacity: 0, y: 12 }}
+         animate={{ opacity: 1, y: 0 }}
+         className="bg-white rounded-2xl border border-slate-100 shadow-sm"
+       >
+         <Tabs defaultValue="summary" className="w-full">
+           <TabsList className="w-full justify-start border-b border-slate-200 rounded-none bg-transparent px-6 h-14">
+             <TabsTrigger value="summary" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 px-3">
+               Summary
+             </TabsTrigger>
+             <TabsTrigger value="clinical" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 px-3">
+               Clinical Note
+             </TabsTrigger>
+             <TabsTrigger value="guidelines" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 px-3">
+               Guidelines & Codes
+             </TabsTrigger>
+             <TabsTrigger value="metadata" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 px-3">
+               Metadata
+             </TabsTrigger>
+           </TabsList>
 
-      {/* Clinical Guidelines */}
-      {note.diagnoses && note.diagnoses.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-purple-600" />
-                Clinical Guidelines
-              </h2>
-              <p className="text-sm text-slate-500 mt-1">Evidence-based recommendations for identified diagnoses</p>
-            </div>
-          </div>
+           {/* Summary Tab */}
+           <TabsContent value="summary" className="p-6 space-y-4">
+             {generatingSummary && !patientSummary && (
+               <div className="flex items-center gap-3 text-slate-500 py-8">
+                 <Loader2 className="w-5 h-5 animate-spin" />
+                 <span className="text-sm">Generating AI summary...</span>
+               </div>
+             )}
+             {patientSummary ? (
+               <PatientSummary 
+                 summary={patientSummary} 
+                 patientName={note.patient_name}
+                 onDownload={downloadSummary}
+               />
+             ) : !generatingSummary && (
+               <p className="text-sm text-slate-500 text-center py-8">Summary will appear here after finalization</p>
+             )}
+           </TabsContent>
 
-          {loadingGuidelines ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Loader2 className="w-8 h-8 animate-spin text-purple-600 mb-3" />
-              <p className="text-sm font-medium text-slate-900">Fetching guidelines</p>
-              <p className="text-xs text-slate-500 mt-1">Analyzing your diagnoses for relevant recommendations...</p>
-            </div>
-          ) : guidelineRecommendations.length > 0 ? (
-            <div className="space-y-4">
-              {guidelineRecommendations.map((rec, idx) => (
-                <div key={idx} className="bg-gradient-to-br from-slate-50 to-white rounded-xl border-2 border-slate-200 p-5 hover:border-purple-300 transition-all shadow-sm">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h3 className="font-bold text-slate-900 text-base mb-2">{rec.condition}</h3>
-                      <p className="text-sm text-slate-600 leading-relaxed">{rec.summary}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Diagnostic Workup */}
-                  {rec.diagnostic_workup && rec.diagnostic_workup.length > 0 && (
-                    <div className="mt-4 bg-blue-50 rounded-lg border border-blue-200 p-4">
-                      <h4 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
-                        <Code className="w-4 h-4" />
-                        Diagnostic Workup
-                      </h4>
-                      <div className="space-y-2">
-                        {rec.diagnostic_workup.map((test, i) => (
-                          <div key={i} className="bg-white rounded-lg p-3 border border-blue-100">
-                            <p className="text-sm font-semibold text-slate-900">{test.test}</p>
-                            <p className="text-xs text-slate-600 mt-1"><strong>Indication:</strong> {test.indication}</p>
-                            <p className="text-xs text-slate-600"><strong>Timing:</strong> {test.timing}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+           {/* Clinical Note Tab */}
+           <TabsContent value="clinical" className="p-6 space-y-6">
+             <StructuredNotePreview 
+               note={note} 
+               onUpdate={(field, value) => {
+                 queryClient.setQueryData(["note", noteId], (old) => ({
+                   ...old,
+                   [field]: value
+                 }));
+               }}
+               onReanalyze={() => {}}
+               guidelineRecommendations={guidelineRecommendations}
+               loadingGuidelines={loadingGuidelines}
+               medicationRecommendations={[]}
+               loadingMedications={false}
+             />
 
-                  {/* Medications */}
-                  {rec.medications && rec.medications.length > 0 && (
-                    <div className="mt-4 bg-green-50 rounded-lg border border-green-200 p-4">
-                      <h4 className="text-sm font-bold text-green-900 mb-3 flex items-center gap-2">
-                        <Plus className="w-4 h-4" />
-                        Medications
-                      </h4>
-                      <div className="space-y-3">
-                        {rec.medications.map((med, i) => (
-                          <div key={i} className="bg-white rounded-lg p-3 border border-green-100">
-                            <p className="text-sm font-semibold text-slate-900">{med.name}</p>
-                            <div className="mt-2 space-y-1">
-                              <p className="text-xs text-slate-700"><strong className="text-green-700">Dosing:</strong> {med.dosing}</p>
-                              <p className="text-xs text-slate-700"><strong className="text-green-700">Indication:</strong> {med.indication}</p>
-                              <p className="text-xs text-slate-700"><strong className="text-green-700">Duration:</strong> {med.duration}</p>
-                              {med.monitoring && (
-                                <p className="text-xs text-slate-700"><strong className="text-green-700">Monitoring:</strong> {med.monitoring}</p>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+             <div className="pt-6 border-t border-slate-200">
+               <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                 <FileCode className="w-4 h-4" />
+                 Original Note
+               </h3>
+               <div className="bg-slate-50 rounded-xl p-4 text-sm text-slate-600 leading-relaxed whitespace-pre-wrap font-mono">
+                 {note.raw_note}
+               </div>
+             </div>
+           </TabsContent>
 
-                  {/* Key Recommendations */}
-                  {rec.key_recommendations && rec.key_recommendations.length > 0 && (
-                    <div className="mt-4 bg-amber-50 rounded-lg border border-amber-200 p-4">
-                      <h4 className="text-sm font-bold text-amber-900 mb-2">Key Recommendations</h4>
-                      <ul className="space-y-1">
-                        {rec.key_recommendations.map((item, i) => (
-                          <li key={i} className="text-xs text-slate-700 flex items-start gap-2">
-                            <span className="text-amber-600 mt-0.5">•</span>
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+           {/* Guidelines & Codes Tab */}
+           <TabsContent value="guidelines" className="p-6 space-y-6">
+             {note.diagnoses && note.diagnoses.length > 0 ? (
+               <>
+                 {/* Clinical Guidelines */}
+                 <div>
+                   <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                     <Sparkles className="w-4 h-4 text-purple-600" />
+                     Evidence-Based Guidelines
+                   </h3>
 
-                  {/* Follow-up */}
-                  {rec.followup && (
-                    <div className="mt-4 bg-purple-50 rounded-lg border border-purple-200 p-4">
-                      <h4 className="text-sm font-bold text-purple-900 mb-2">Monitoring & Follow-up</h4>
-                      <div className="space-y-2">
-                        <p className="text-xs text-slate-700"><strong>Timing:</strong> {rec.followup.timing}</p>
-                        {rec.followup.parameters && rec.followup.parameters.length > 0 && (
-                          <div>
-                            <p className="text-xs font-semibold text-purple-900 mb-1">Monitor:</p>
-                            <ul className="space-y-1">
-                              {rec.followup.parameters.map((param, i) => (
-                                <li key={i} className="text-xs text-slate-700 flex items-start gap-2">
-                                  <span className="text-purple-600">•</span>
-                                  <span>{param}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        {rec.followup.red_flags && rec.followup.red_flags.length > 0 && (
-                          <div>
-                            <p className="text-xs font-semibold text-red-900 mb-1">Red Flags:</p>
-                            <ul className="space-y-1">
-                              {rec.followup.red_flags.map((flag, i) => (
-                                <li key={i} className="text-xs text-red-700 flex items-start gap-2">
-                                  <span className="text-red-600">⚠️</span>
-                                  <span>{flag}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                   {loadingGuidelines ? (
+                     <div className="flex flex-col items-center justify-center py-8 text-center">
+                       <Loader2 className="w-8 h-8 animate-spin text-purple-600 mb-3" />
+                       <p className="text-sm font-medium text-slate-900">Fetching guidelines</p>
+                       <p className="text-xs text-slate-500 mt-1">Analyzing diagnoses for relevant recommendations...</p>
+                     </div>
+                   ) : guidelineRecommendations.length > 0 ? (
+                     <div className="space-y-4">
+                       {guidelineRecommendations.map((rec, idx) => (
+                         <div key={idx} className="bg-gradient-to-br from-slate-50 to-white rounded-xl border-2 border-slate-200 p-5 hover:border-purple-300 transition-all">
+                           <div className="flex items-start justify-between mb-3">
+                             <div className="flex-1">
+                               <h4 className="font-bold text-slate-900 text-base mb-2">{rec.condition}</h4>
+                               <p className="text-sm text-slate-600 leading-relaxed">{rec.summary}</p>
+                             </div>
+                           </div>
 
-                  {rec.sources && rec.sources.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-slate-200">
-                      <p className="text-xs font-semibold text-slate-700 mb-2">References:</p>
-                      <div className="space-y-1">
-                        {rec.sources.map((source, i) => (
-                          <p key={i} className="text-xs text-slate-600">{i + 1}. {source}</p>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                           {/* Diagnostic Workup */}
+                           {rec.diagnostic_workup && rec.diagnostic_workup.length > 0 && (
+                             <div className="mt-4 bg-blue-50 rounded-lg border border-blue-200 p-4">
+                               <h5 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
+                                 <Code className="w-4 h-4" />
+                                 Diagnostic Workup
+                               </h5>
+                               <div className="space-y-2">
+                                 {rec.diagnostic_workup.map((test, i) => (
+                                   <div key={i} className="bg-white rounded-lg p-3 border border-blue-100">
+                                     <p className="text-sm font-semibold text-slate-900">{test.test}</p>
+                                     <p className="text-xs text-slate-600 mt-1"><strong>Indication:</strong> {test.indication}</p>
+                                     <p className="text-xs text-slate-600"><strong>Timing:</strong> {test.timing}</p>
+                                   </div>
+                                 ))}
+                               </div>
+                             </div>
+                           )}
 
-                  <div className="mt-4 pt-4 border-t border-slate-200 flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={async () => {
-                        let planText = `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-                        planText += `GUIDELINE-BASED TREATMENT PLAN: ${rec.condition}\n`;
-                        planText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-                        
-                        if (rec.diagnostic_workup && rec.diagnostic_workup.length > 0) {
-                          planText += `DIAGNOSTIC WORKUP:\n`;
-                          rec.diagnostic_workup.forEach((test, i) => {
-                            planText += `  ${i + 1}. ${test.test}\n`;
-                            planText += `     • Indication: ${test.indication}\n`;
-                            planText += `     • Timing: ${test.timing}\n`;
-                          });
-                          planText += `\n`;
-                        }
-                        
-                        if (rec.medications && rec.medications.length > 0) {
-                          planText += `MEDICATIONS:\n`;
-                          rec.medications.forEach((med, i) => {
-                            planText += `  ${i + 1}. ${med.name}\n`;
-                            planText += `     • Dosing: ${med.dosing}\n`;
-                            planText += `     • Indication: ${med.indication}\n`;
-                            planText += `     • Duration: ${med.duration}\n`;
-                            if (med.monitoring) planText += `     • Monitoring: ${med.monitoring}\n`;
-                          });
-                          planText += `\n`;
-                        }
-                        
-                        if (rec.key_recommendations && rec.key_recommendations.length > 0) {
-                          planText += `KEY RECOMMENDATIONS:\n`;
-                          rec.key_recommendations.forEach((item, i) => {
-                            const cleanedItem = item.replace(/[*_~`]/g, '').trim();
-                            planText += `  • ${cleanedItem}\n`;
-                          });
-                          planText += `\n`;
-                        }
-                        
-                        if (rec.followup) {
-                          planText += `MONITORING & FOLLOW-UP:\n`;
-                          planText += `  • Follow-up: ${rec.followup.timing}\n`;
-                          if (rec.followup.parameters && rec.followup.parameters.length > 0) {
-                            planText += `  • Monitor: ${rec.followup.parameters.join(', ')}\n`;
-                          }
-                          if (rec.followup.red_flags && rec.followup.red_flags.length > 0) {
-                            planText += `  • Red Flags: ${rec.followup.red_flags.join('; ')}\n`;
-                          }
-                        }
-                        
-                        const updatedPlan = (note.plan || "") + planText;
-                        await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
-                        queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                      }}
-                      className="flex-1 gap-1.5 bg-purple-600 hover:bg-purple-700 rounded-lg text-white"
-                    >
-                      <Check className="w-3.5 h-3.5" /> Add Complete Treatment Plan
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-slate-500 text-center py-8">No guideline recommendations available</p>
-          )}
-        </motion.div>
-      )}
+                           {/* Medications */}
+                           {rec.medications && rec.medications.length > 0 && (
+                             <div className="mt-4 bg-green-50 rounded-lg border border-green-200 p-4">
+                               <h5 className="text-sm font-bold text-green-900 mb-3 flex items-center gap-2">
+                                 <Plus className="w-4 h-4" />
+                                 Medications
+                               </h5>
+                               <div className="space-y-3">
+                                 {rec.medications.map((med, i) => (
+                                   <div key={i} className="bg-white rounded-lg p-3 border border-green-100">
+                                     <p className="text-sm font-semibold text-slate-900">{med.name}</p>
+                                     <div className="mt-2 space-y-1">
+                                       <p className="text-xs text-slate-700"><strong className="text-green-700">Dosing:</strong> {med.dosing}</p>
+                                       <p className="text-xs text-slate-700"><strong className="text-green-700">Indication:</strong> {med.indication}</p>
+                                       <p className="text-xs text-slate-700"><strong className="text-green-700">Duration:</strong> {med.duration}</p>
+                                       {med.monitoring && (
+                                         <p className="text-xs text-slate-700"><strong className="text-green-700">Monitoring:</strong> {med.monitoring}</p>
+                                       )}
+                                     </div>
+                                   </div>
+                                 ))}
+                               </div>
+                             </div>
+                           )}
 
-      {/* ICD-10 Code Suggestions */}
-      {note.diagnoses && note.diagnoses.length > 0 && (
-        <ICD10Suggestions
-          suggestions={icd10Suggestions}
-          loading={loadingIcd10}
-          readOnly={true}
-        />
-      )}
+                           {/* Key Recommendations */}
+                           {rec.key_recommendations && rec.key_recommendations.length > 0 && (
+                             <div className="mt-4 bg-amber-50 rounded-lg border border-amber-200 p-4">
+                               <h5 className="text-sm font-bold text-amber-900 mb-2">Key Recommendations</h5>
+                               <ul className="space-y-1">
+                                 {rec.key_recommendations.map((item, i) => (
+                                   <li key={i} className="text-xs text-slate-700 flex items-start gap-2">
+                                     <span className="text-amber-600 mt-0.5">•</span>
+                                     <span>{item}</span>
+                                   </li>
+                                 ))}
+                               </ul>
+                             </div>
+                           )}
 
-      {/* Structured Note */}
-      <StructuredNotePreview 
-        note={note} 
-        onUpdate={(field, value) => {
-          queryClient.setQueryData(["note", noteId], (old) => ({
-            ...old,
-            [field]: value
-          }));
-        }}
-        onReanalyze={() => {}}
-        guidelineRecommendations={guidelineRecommendations}
-        loadingGuidelines={loadingGuidelines}
-        medicationRecommendations={[]}
-        loadingMedications={false}
-      />
+                           {/* Follow-up */}
+                           {rec.followup && (
+                             <div className="mt-4 bg-purple-50 rounded-lg border border-purple-200 p-4">
+                               <h5 className="text-sm font-bold text-purple-900 mb-2">Monitoring & Follow-up</h5>
+                               <div className="space-y-2">
+                                 <p className="text-xs text-slate-700"><strong>Timing:</strong> {rec.followup.timing}</p>
+                                 {rec.followup.parameters && rec.followup.parameters.length > 0 && (
+                                   <div>
+                                     <p className="text-xs font-semibold text-purple-900 mb-1">Monitor:</p>
+                                     <ul className="space-y-1">
+                                       {rec.followup.parameters.map((param, i) => (
+                                         <li key={i} className="text-xs text-slate-700 flex items-start gap-2">
+                                           <span className="text-purple-600">•</span>
+                                           <span>{param}</span>
+                                         </li>
+                                       ))}
+                                     </ul>
+                                   </div>
+                                 )}
+                                 {rec.followup.red_flags && rec.followup.red_flags.length > 0 && (
+                                   <div>
+                                     <p className="text-xs font-semibold text-red-900 mb-1">Red Flags:</p>
+                                     <ul className="space-y-1">
+                                       {rec.followup.red_flags.map((flag, i) => (
+                                         <li key={i} className="text-xs text-red-700 flex items-start gap-2">
+                                           <span className="text-red-600">⚠️</span>
+                                           <span>{flag}</span>
+                                         </li>
+                                       ))}
+                                     </ul>
+                                   </div>
+                                 )}
+                               </div>
+                             </div>
+                           )}
 
-      {/* Raw Note */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="bg-white rounded-2xl border border-slate-100 p-6"
-      >
-        <h3 className="text-sm font-semibold text-slate-900 mb-3">Original Note</h3>
-        <div className="bg-slate-50 rounded-xl p-4 text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
-          {note.raw_note}
-        </div>
-      </motion.div>
+                           {rec.sources && rec.sources.length > 0 && (
+                             <div className="mt-4 pt-4 border-t border-slate-200">
+                               <p className="text-xs font-semibold text-slate-700 mb-2">References:</p>
+                               <div className="space-y-1">
+                                 {rec.sources.map((source, i) => (
+                                   <p key={i} className="text-xs text-slate-600">{i + 1}. {source}</p>
+                                 ))}
+                               </div>
+                             </div>
+                           )}
+
+                           <div className="mt-4 pt-4 border-t border-slate-200">
+                             <Button
+                               size="sm"
+                               onClick={async () => {
+                                 let planText = `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                                 planText += `GUIDELINE-BASED TREATMENT PLAN: ${rec.condition}\n`;
+                                 planText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+                                 if (rec.diagnostic_workup && rec.diagnostic_workup.length > 0) {
+                                   planText += `DIAGNOSTIC WORKUP:\n`;
+                                   rec.diagnostic_workup.forEach((test, i) => {
+                                     planText += `  ${i + 1}. ${test.test}\n`;
+                                     planText += `     • Indication: ${test.indication}\n`;
+                                     planText += `     • Timing: ${test.timing}\n`;
+                                   });
+                                   planText += `\n`;
+                                 }
+
+                                 if (rec.medications && rec.medications.length > 0) {
+                                   planText += `MEDICATIONS:\n`;
+                                   rec.medications.forEach((med, i) => {
+                                     planText += `  ${i + 1}. ${med.name}\n`;
+                                     planText += `     • Dosing: ${med.dosing}\n`;
+                                     planText += `     • Indication: ${med.indication}\n`;
+                                     planText += `     • Duration: ${med.duration}\n`;
+                                     if (med.monitoring) planText += `     • Monitoring: ${med.monitoring}\n`;
+                                   });
+                                   planText += `\n`;
+                                 }
+
+                                 if (rec.key_recommendations && rec.key_recommendations.length > 0) {
+                                   planText += `KEY RECOMMENDATIONS:\n`;
+                                   rec.key_recommendations.forEach((item, i) => {
+                                     const cleanedItem = item.replace(/[*_~`]/g, '').trim();
+                                     planText += `  • ${cleanedItem}\n`;
+                                   });
+                                   planText += `\n`;
+                                 }
+
+                                 if (rec.followup) {
+                                   planText += `MONITORING & FOLLOW-UP:\n`;
+                                   planText += `  • Follow-up: ${rec.followup.timing}\n`;
+                                   if (rec.followup.parameters && rec.followup.parameters.length > 0) {
+                                     planText += `  • Monitor: ${rec.followup.parameters.join(', ')}\n`;
+                                   }
+                                   if (rec.followup.red_flags && rec.followup.red_flags.length > 0) {
+                                     planText += `  • Red Flags: ${rec.followup.red_flags.join('; ')}\n`;
+                                   }
+                                 }
+
+                                 const updatedPlan = (note.plan || "") + planText;
+                                 await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
+                                 queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                               }}
+                               className="gap-1.5 bg-purple-600 hover:bg-purple-700 text-white"
+                             >
+                               <Check className="w-3.5 h-3.5" /> Add to Plan
+                             </Button>
+                           </div>
+                         </div>
+                       ))}
+                     </div>
+                   ) : (
+                     <p className="text-sm text-slate-500 text-center py-8">No guideline recommendations available</p>
+                   )}
+                 </div>
+
+                 {/* ICD-10 Code Suggestions */}
+                 <div className="pt-6 border-t border-slate-200">
+                   <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                     <BookOpen className="w-4 h-4 text-blue-600" />
+                     ICD-10 Code Suggestions
+                   </h3>
+                   <ICD10Suggestions
+                     suggestions={icd10Suggestions}
+                     loading={loadingIcd10}
+                     readOnly={true}
+                   />
+                 </div>
+               </>
+             ) : (
+               <p className="text-sm text-slate-500 text-center py-8">Guidelines and codes will appear here after note finalization</p>
+             )}
+           </TabsContent>
+
+           {/* Metadata Tab */}
+           <TabsContent value="metadata" className="p-6">
+             <div className="space-y-6">
+               <div className="grid md:grid-cols-2 gap-6">
+                 <div className="space-y-3">
+                   <div>
+                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Patient Name</p>
+                     <p className="text-base font-semibold text-slate-900">{note.patient_name}</p>
+                   </div>
+                   {note.patient_id && (
+                     <div>
+                       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Patient ID / MRN</p>
+                       <p className="text-base font-semibold text-slate-900">{note.patient_id}</p>
+                     </div>
+                   )}
+                   {note.date_of_birth && (
+                     <div>
+                       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Date of Birth</p>
+                       <p className="text-base font-semibold text-slate-900">{format(new Date(note.date_of_birth), "MMMM d, yyyy")}</p>
+                     </div>
+                   )}
+                 </div>
+
+                 <div className="space-y-3">
+                   {note.date_of_visit && (
+                     <div>
+                       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Visit Date</p>
+                       <p className="text-base font-semibold text-slate-900">{format(new Date(note.date_of_visit), "MMMM d, yyyy")}</p>
+                     </div>
+                   )}
+                   {note.time_of_visit && (
+                     <div>
+                       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Visit Time</p>
+                       <p className="text-base font-semibold text-slate-900">{note.time_of_visit}</p>
+                     </div>
+                   )}
+                   <div>
+                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Note Status</p>
+                     <Badge variant="outline" className={statusColors[note.status] || statusColors.draft}>
+                       {note.status || "draft"}
+                     </Badge>
+                   </div>
+                 </div>
+               </div>
+
+               <div className="grid md:grid-cols-2 gap-6 pt-6 border-t border-slate-200">
+                 <div>
+                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Note Type</p>
+                   <p className="text-base font-semibold text-slate-900">{typeLabels[note.note_type] || "Note"}</p>
+                 </div>
+                 {note.specialty && (
+                   <div>
+                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Specialty</p>
+                     <p className="text-base font-semibold text-slate-900">{note.specialty}</p>
+                   </div>
+                 )}
+               </div>
+
+               {note.chief_complaint && (
+                 <div className="pt-6 border-t border-slate-200">
+                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Chief Complaint</p>
+                   <p className="text-sm text-slate-700 leading-relaxed">{note.chief_complaint}</p>
+                 </div>
+               )}
+
+               {(note.diagnoses && note.diagnoses.length > 0) && (
+                 <div className="pt-6 border-t border-slate-200">
+                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Diagnoses</p>
+                   <div className="flex flex-wrap gap-2">
+                     {note.diagnoses.map((diag, i) => (
+                       <Badge key={i} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                         {diag}
+                       </Badge>
+                     ))}
+                   </div>
+                 </div>
+               )}
+
+               {note.created_date && (
+                 <div className="pt-6 border-t border-slate-200 text-xs text-slate-500">
+                   <p>Created: {format(new Date(note.created_date), "MMMM d, yyyy 'at' h:mm a")}</p>
+                   {note.updated_date && (
+                     <p>Last Updated: {format(new Date(note.updated_date), "MMMM d, yyyy 'at' h:mm a")}</p>
+                   )}
+                 </div>
+               )}
+             </div>
+           </TabsContent>
+         </Tabs>
+       </motion.div>
       </div>
 
       {/* Smart Guideline Panel */}

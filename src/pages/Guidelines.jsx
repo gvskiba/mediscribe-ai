@@ -608,7 +608,7 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                     setFilterDateRange("all");
                     setSearchTerm("");
                   }}
-                  className="w-full rounded-lg"
+                  className="w-full rounded-lg text-slate-700 border-slate-300"
                 >
                   Clear Filters
                 </Button>

@@ -756,6 +756,52 @@ Generated: ${new Date().toLocaleString()}
                    )}
                  </div>
 
+                 {/* Add Diagnoses to Assessment */}
+                 {note.diagnoses && note.diagnoses.length > 0 && (
+                   <div className="bg-white rounded-lg border border-slate-200 p-5">
+                     <div className="flex items-center justify-between mb-4">
+                       <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                         <Plus className="w-4 h-4 text-blue-600" />
+                         Add Diagnoses to Assessment
+                       </h3>
+                     </div>
+                     <div className="space-y-3 mb-4">
+                       {note.diagnoses.map((diagnosis, idx) => {
+                         const correspondingCode = icd10Suggestions.find(s => s.diagnosis === diagnosis);
+                         return (
+                           <div key={idx} className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                             <div className="flex-1">
+                               <p className="text-sm font-medium text-slate-900">{diagnosis}</p>
+                               {correspondingCode && (
+                                 <p className="text-xs text-slate-600 mt-1">Code: {correspondingCode.code} - {correspondingCode.description}</p>
+                               )}
+                             </div>
+                           </div>
+                         );
+                       })}
+                     </div>
+                     <Button
+                       onClick={async () => {
+                         let diagnosisText = `\n\nDIAGNOSES:\n`;
+                         note.diagnoses.forEach((diagnosis, idx) => {
+                           const correspondingCode = icd10Suggestions.find(s => s.diagnosis === diagnosis);
+                           diagnosisText += `${idx + 1}. ${diagnosis}`;
+                           if (correspondingCode) {
+                             diagnosisText += ` (${correspondingCode.code})`;
+                           }
+                           diagnosisText += `\n`;
+                         });
+                         const updatedAssessment = (note.assessment || "") + diagnosisText;
+                         await base44.entities.ClinicalNote.update(noteId, { assessment: updatedAssessment });
+                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                       }}
+                       className="w-full gap-2 bg-blue-600 hover:bg-blue-700"
+                     >
+                       <Plus className="w-4 h-4" /> Add to Assessment
+                     </Button>
+                   </div>
+                 )}
+
                  {/* Clinical Guidelines */}
                  <div>
                    <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">

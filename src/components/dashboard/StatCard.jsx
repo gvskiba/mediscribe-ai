@@ -19,7 +19,7 @@ export default function StatCard({ title, value, subtitle, icon: Icon, color = "
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-slate-600 uppercase tracking-wider">{title}</p>
-          <p className="text-3xl font-bold text-slate-900 mt-2">{value}</p>
+          <p className="text-3xl font-bold text-black mt-2">{value}</p>
           {subtitle && <p className="text-sm text-slate-600 mt-1">{subtitle}</p>}
         </div>
         <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${colorMap[color]}`}>

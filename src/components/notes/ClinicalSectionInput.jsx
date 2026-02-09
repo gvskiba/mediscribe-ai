@@ -30,8 +30,6 @@ export default function ClinicalSectionInput({
   onClinicalDataChange
 }) {
   const [formData, setFormData] = useState({
-    patient_name: "",
-    patient_id: "",
     chief_complaint: "",
     note_type: "h_and_p",
     specialty: "",

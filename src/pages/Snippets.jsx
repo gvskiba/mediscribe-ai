@@ -33,8 +33,12 @@ export default function Snippets() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [selectedTags, setSelectedTags] = useState([]);
+  const [selectedFolder, setSelectedFolder] = useState(null);
+  const [folderManagerOpen, setFolderManagerOpen] = useState(false);
   const [inlineEditingId, setInlineEditingId] = useState(null);
   const [versionHistoryId, setVersionHistoryId] = useState(null);
+  const [bulkSelectMode, setBulkSelectMode] = useState(false);
+  const [selectedSnippets, setSelectedSnippets] = useState(new Set());
   const [formData, setFormData] = useState({
     name: "",
     category: "custom",

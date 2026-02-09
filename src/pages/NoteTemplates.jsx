@@ -48,11 +48,11 @@ export default function NoteTemplates() {
   const [sectionSuggestions, setSectionSuggestions] = useState([]);
   const [loadingSectionSuggestions, setLoadingSectionSuggestions] = useState(false);
   const [aiCreatorOpen, setAiCreatorOpen] = useState(false);
-  const [tagFilter, setTagFilter] = useState("");
-  const [sortBy, setSortBy] = useState("name_asc");
-  const [favorites, setFavorites] = useState([]);
-  const [previewTemplate, setPreviewTemplate] = useState(null);
-  const [quickSearch, setQuickSearch] = useState("");
+  const [specialtyFilter, setSpecialtyFilter] = useState("");
+   const [sortBy, setSortBy] = useState("name_asc");
+   const [favorites, setFavorites] = useState([]);
+   const [previewTemplate, setPreviewTemplate] = useState(null);
+   const [quickSearch, setQuickSearch] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     description: "",

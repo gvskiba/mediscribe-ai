@@ -149,7 +149,7 @@ export default function NewNote() {
       
       let prompt = `You are a medical scribe AI. Given the following clinical note, extract and structure the information accurately.
 
-      Patient: ${noteData.patient_name}
+      ${noteData.patient_name ? `Patient: ${noteData.patient_name}` : ''}
       Note Type: ${noteData.note_type}
       Specialty: ${noteData.specialty || "General"}
       ${noteData.chief_complaint ? `Chief Complaint: ${noteData.chief_complaint}` : ''}

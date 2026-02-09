@@ -603,19 +603,30 @@ Keep it actionable and concise (4-6 bullet points).`,
         }
       });
 
-      // Format the complete plan - combine all recommendations then add references at bottom
-       let planContent = cleanPlanText(enhancedPlan.plan_content);
+      // Format the complete plan with organized sections and references at bottom
+       let planContent = `${enhancedPlan.headline}
+
+      ${enhancedPlan.summary}`;
+
+       // Add each section if it exists
+       if (enhancedPlan.labs) {
+         planContent += `\n\nLABS\n${cleanPlanText(enhancedPlan.labs)}`;
+       }
+
+       if (enhancedPlan.medications) {
+         planContent += `\n\nMEDICATIONS\n${cleanPlanText(enhancedPlan.medications)}`;
+       }
+
+       if (enhancedPlan.interventions) {
+         planContent += `\n\nINTERVENTIONS\n${cleanPlanText(enhancedPlan.interventions)}`;
+       }
 
        // Append references at the very end if they exist
        if (enhancedPlan.references && enhancedPlan.references.length > 0) {
-         planContent += `\n\nREFERENCES:\n${enhancedPlan.references.map((ref, i) => `${i + 1}. ${ref}`).join('\n')}`;
+         planContent += `\n\nREFERENCES\n${enhancedPlan.references.map((ref, i) => `${i + 1}. ${ref}`).join('\n')}`;
        }
 
-       const formattedPlan = `${enhancedPlan.headline}
-
-      ${enhancedPlan.summary}
-
-      ${planContent}`;
+       const formattedPlan = planContent;
 
       return {
         ...noteData,

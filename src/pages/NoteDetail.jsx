@@ -267,12 +267,13 @@ Keep recommendations specific, actionable, and evidence-based.`,
   const generateICD10Suggestions = async () => {
     if (!note) return;
     setLoadingIcd10(true);
-    
+
     try {
       const diagnosesList = note.diagnoses?.join(", ") || "";
       const assessment = note.assessment || "";
 
       if (!diagnosesList && !assessment) {
+        console.warn("No diagnoses or assessment found for ICD-10 suggestions");
         setLoadingIcd10(false);
         return;
       }

@@ -479,6 +479,26 @@ Generated: ${new Date().toLocaleString()}
       </Link>
 
       {/* Header Card */}
+      {/* Guideline Review Prompt */}
+      {showGuidelinePrompt && note?.linked_guidelines && (
+        <GuidelineReviewPrompt
+          linkedGuidelines={note.linked_guidelines}
+          onIncorporate={async (guideline) => {
+            // Update guideline as incorporated
+            const updatedGuidelines = note.linked_guidelines.map(g =>
+              g.guideline_query_id === guideline.guideline_query_id
+                ? { ...g, incorporated: true, adherence_notes: "Incorporated into plan" }
+                : g
+            );
+            await base44.entities.ClinicalNote.update(noteId, {
+              linked_guidelines: updatedGuidelines
+            });
+            queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+          }}
+          onDismiss={() => setShowGuidelinePrompt(false)}
+        />
+      )}
+
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}

@@ -221,13 +221,21 @@ Provide a clearer, more concise version.`,
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = (e) => {
+    if (e) {
+      e.preventDefault();
+    }
+    
+    console.log("Form submit triggered", { formData, clinicalData });
+    
     if (!formData.patient_name || !formData.chief_complaint) {
+      console.log("Validation failed: missing patient name or chief complaint");
       toast.error("Please provide patient name and chief complaint");
       return;
     }
 
     if (!clinicalData.history_and_physical && !clinicalData.review_of_systems && !clinicalData.physical_exam) {
+      console.log("Validation failed: no clinical sections filled");
       toast.error("Please fill in at least one clinical section");
       return;
     }
@@ -241,6 +249,7 @@ Provide a clearer, more concise version.`,
       raw_note: `Chief Complaint: ${formData.chief_complaint}\n\nHISTORY AND PHYSICAL:\n${clinicalData.history_and_physical || ""}\n\nREVIEW OF SYSTEMS:\n${clinicalData.review_of_systems || ""}\n\nPHYSICAL EXAMINATION:\n${clinicalData.physical_exam || ""}`
     };
     
+    console.log("Submitting data:", submissionData);
     onSubmit(submissionData, formData.templateId || null);
   };
 

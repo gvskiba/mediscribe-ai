@@ -347,6 +347,14 @@ export default function Snippets() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => setVersionHistoryId(snippet.id)}
+                          className="rounded-lg gap-1"
+                        >
+                          <Clock className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => {
                             if (confirm("Delete this snippet?")) {
                               deleteMutation.mutate(snippet.id);

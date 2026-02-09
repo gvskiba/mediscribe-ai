@@ -581,6 +581,32 @@ Generated: ${new Date().toLocaleString()}
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
+            {note?.status === "draft" && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-xs font-medium text-blue-700">
+                <Clock className="w-3 h-3 animate-pulse" />
+                {isSaving ? "Saving..." : "Auto-saving..."}
+              </div>
+            )}
+            {note?.status === "finalized" && (
+              <NoteRevisionHistory
+                noteId={noteId}
+                onRestore={(revision) => {
+                  const restoredData = {
+                    chief_complaint: revision.chief_complaint,
+                    history_of_present_illness: revision.history_of_present_illness,
+                    assessment: revision.assessment,
+                    plan: revision.plan,
+                    diagnoses: revision.diagnoses,
+                    medications: revision.medications,
+                  };
+                  setNoteData(restoredData);
+                  queryClient.setQueryData(["note", noteId], (old) => ({
+                    ...old,
+                    ...restoredData,
+                  }));
+                }}
+              />
+            )}
             <Link to={createPageUrl("NewNote")}>
               <Button
                 className="rounded-xl gap-2 bg-blue-600 hover:bg-blue-700"

@@ -27,6 +27,7 @@ export default function Snippets() {
   const [editingSnippet, setEditingSnippet] = useState(null);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [inlineEditingId, setInlineEditingId] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
     category: "custom",

@@ -175,8 +175,8 @@ export default function Snippets() {
         </div>
         <div className="flex gap-2 flex-wrap">
           <Badge
-            variant={categoryFilter === "all" ? "default" : "outline"}
-            className="cursor-pointer"
+            variant={categoryFilter === "all" ? "default" : "outline"} className="bg-primary text-zinc-950 px-2.5 py-0.5 text-xs font-semibold rounded-md inline-flex items-center border transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent shadow hover:bg-primary/80 cursor-pointer"
+
             onClick={() => setCategoryFilter("all")}>
 
             All

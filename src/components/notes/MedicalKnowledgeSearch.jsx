@@ -3,16 +3,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, BookOpen, Loader2, ExternalLink, Lightbulb, TrendingUp, Pill, AlertCircle } from "lucide-react";
+import { Search, BookOpen, Loader2, ExternalLink, Lightbulb, TrendingUp, Pill, AlertCircle, Plus, Stethoscope, Activity } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
 export default function MedicalKnowledgeSearch({ 
   open, 
   onClose, 
-  noteContext = {} 
+  noteContext = {},
+  onAddToNote = null
 }) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchType, setSearchType] = useState("general"); // "general", "condition", "medication", "procedure"
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState(null);
   const [suggestedQueries, setSuggestedQueries] = useState([]);

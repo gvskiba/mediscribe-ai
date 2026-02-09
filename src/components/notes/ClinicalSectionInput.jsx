@@ -461,17 +461,47 @@ Provide a clearer, more concise version.`,
             </div>
             <p className="text-sm text-slate-500 mt-1">Document symptoms by system. Include positive and negative findings relevant to the chief complaint.</p>
           </div>
-          <Textarea
-            ref={rosRef}
-            value={clinicalData.review_of_systems}
-            onChange={(e) => handleClinicalDataChange("review_of_systems", e.target.value)}
-            placeholder="Constitutional: fever, chills, weight changes
+          <div className="relative">
+            <Textarea
+              ref={rosRef}
+              value={clinicalData.review_of_systems}
+              onChange={(e) => handleClinicalDataChange("review_of_systems", e.target.value)}
+              onMouseUp={() => handleTextSelection("review_of_systems")}
+              onKeyUp={() => handleTextSelection("review_of_systems")}
+              placeholder="Constitutional: fever, chills, weight changes
 Cardiovascular: chest pain, palpitations, edema
 Respiratory: cough, shortness of breath, wheezing
 GI: nausea, vomiting, abdominal pain
 Other systems as relevant..."
-            className="min-h-[150px] rounded-lg border-purple-200 focus:border-purple-400"
-          />
+              className="min-h-[150px] rounded-lg border-purple-200 focus:border-purple-400"
+            />
+            {showRefineMenu && activeSection === "review_of_systems" && (
+              <div className="absolute top-2 right-2 flex gap-1 z-10">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleAddDetail}
+                  disabled={aiGenerating === "review_of_systems"}
+                  className="text-xs shadow-lg"
+                >
+                  {aiGenerating === "review_of_systems" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                  Add Detail
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleRephrase}
+                  disabled={aiGenerating === "review_of_systems"}
+                  className="text-xs shadow-lg"
+                >
+                  {aiGenerating === "review_of_systems" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Edit3 className="w-3 h-3" />}
+                  Rephrase
+                </Button>
+              </div>
+            )}
+          </div>
         </Card>
 
         {/* Physical Examination */}

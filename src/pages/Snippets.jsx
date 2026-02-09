@@ -611,6 +611,111 @@ export default function Snippets() {
       />
        </TabsContent>
       </Tabs>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingSnippet ? "Edit Snippet" : "Create Snippet"}</DialogTitle>
+            <DialogDescription>{editingSnippet ? "Update your snippet details" : "Create a new reusable snippet"}</DialogDescription>
+          </DialogHeader>
+         <div className="space-y-4 mt-4">
+           <div>
+             <label className="text-sm font-medium text-slate-700 mb-1.5 block">Snippet Name</label>
+             <Input
+               value={formData.name}
+               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+               placeholder="e.g., Normal Cardiovascular Exam"
+               className="rounded-xl"
+             />
+           </div>
+           <div>
+             <label className="text-sm font-medium text-slate-700 mb-1.5 block">Category</label>
+             <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
+               <SelectTrigger className="rounded-xl">
+                 <SelectValue />
+               </SelectTrigger>
+               <SelectContent>
+                   {getCategories().map(cat => (
+                     <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                   ))}
+                 </SelectContent>
+             </Select>
+           </div>
+           <div>
+             <label className="text-sm font-medium text-slate-700 mb-1.5 block">Content</label>
+             <RichTextEditor
+               value={formData.content}
+               onChange={(content) => setFormData({ ...formData, content })}
+               placeholder="Enter the snippet text..."
+             />
+           </div>
+           <div>
+             <label className="text-sm font-medium text-slate-700 mb-1.5 block">Specialty (Optional)</label>
+             <Input
+               value={formData.specialty}
+               onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+               placeholder="e.g., Cardiology"
+               className="rounded-xl"
+             />
+           </div>
+           <div>
+             <label className="text-sm font-medium text-slate-700 mb-1.5 block">Folder (Optional)</label>
+             <Button
+               variant="outline"
+               onClick={() => setFolderManagerOpen(true)}
+               className="w-full rounded-xl justify-start text-left gap-2"
+             >
+               <Folder className="w-4 h-4" />
+               {selectedFolder ? selectedFolder.name : "Select folder"}
+             </Button>
+           </div>
+           <div>
+             <label className="text-sm font-medium text-slate-700 mb-1.5 block">Tags (Optional)</label>
+             <Input
+               value={formData.tags.join(", ")}
+               onChange={(e) => setFormData({ ...formData, tags: e.target.value.split(",").map(t => t.trim()).filter(Boolean) })}
+               placeholder="e.g., cardio, urgent, template"
+               className="rounded-xl"
+             />
+             <p className="text-xs text-slate-500 mt-1">Separate tags with commas</p>
+           </div>
+           <div className="flex justify-end gap-2 pt-4">
+             <Button variant="outline" onClick={resetForm} className="rounded-xl">
+               Cancel
+             </Button>
+             <Button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 rounded-xl">
+               {editingSnippet ? "Update" : "Create"} Snippet
+             </Button>
+           </div>
+         </div>
+       </DialogContent>
+      </Dialog>
+
+      <AISnippetGenerator 
+       open={aiGeneratorOpen}
+       onOpenChange={setAIGeneratorOpen}
+       onTemplatesGenerated={(templates) => {
+         templates.forEach(template => {
+           createMutation.mutate(template);
+         });
+       }}
+      />
+
+      <SnippetVersionHistory 
+       snippetId={versionHistoryId}
+       open={!!versionHistoryId}
+       onClose={() => setVersionHistoryId(null)}
+       onRevert={async (version) => {
+         await base44.entities.Snippet.update(versionHistoryId, {
+           name: version.name,
+           content: version.content,
+           category: version.category,
+           tags: version.tags
+         });
+         queryClient.invalidateQueries({ queryKey: ["snippets"] });
+         setVersionHistoryId(null);
+       }}
+      />
       </div>
       );
       }

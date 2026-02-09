@@ -352,7 +352,23 @@ export default function Snippets() {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ delay: i * 0.02 }}
               >
-                <Card className="p-4 hover:shadow-md transition-all">
+                <Card className={`p-4 hover:shadow-md transition-all ${bulkSelectMode ? "cursor-pointer" : ""}`}>
+                  {bulkSelectMode && (
+                    <div className="flex items-center gap-3 mb-3">
+                      <Checkbox
+                        checked={selectedSnippets.has(snippet.id)}
+                        onCheckedChange={(checked) => {
+                          const newSet = new Set(selectedSnippets);
+                          if (checked) {
+                            newSet.add(snippet.id);
+                          } else {
+                            newSet.delete(snippet.id);
+                          }
+                          setSelectedSnippets(newSet);
+                        }}
+                      />
+                    </div>
+                  )}
                   {inlineEditingId === snippet.id ? (
                     <div className="space-y-3">
                       <Input

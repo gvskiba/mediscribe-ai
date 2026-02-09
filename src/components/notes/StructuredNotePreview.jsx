@@ -1129,20 +1129,9 @@ FORMATTING RULES (CRITICAL):
             </motion.div>
           )}
 
-            <EditableSection
-              icon={Pill}
-              title=""
-              color="rose"
-              value={note.medications && note.medications.length > 0 ? note.medications : ["Not extracted"]}
-              field="medications"
-              type="array"
-              onUpdate={onUpdate}
-              onReanalyze={onReanalyze}
-              hideBorder={true}
-            />
-          </div>
-        </div>
-      </div>
+            </div>
+            </div>
+            </div>
 
       {/* Preview & Copy Dialog */}
       <MedicalKnowledgeSearch

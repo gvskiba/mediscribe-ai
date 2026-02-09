@@ -267,9 +267,23 @@ FORMATTING RULES (CRITICAL):
         }
       });
 
+      // Clean up formatting
+      const cleanText = (text) => {
+        if (!text) return text;
+        return text
+          .replace(/[•\-\*→▸►✓✗]/g, '')
+          .replace(/[\u2022\u2023]/g, '')
+          .replace(/^[\s]*[-•*]\s+/gm, '')
+          .replace(/(\r\n|\n)+/g, '\n')
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => line.length > 0)
+          .join('\n\n');
+      };
+
       toast.success("Assessment & Plan Generated with Clinical Reasoning");
-      onUpdate("assessment", assessmentResult.assessment);
-      onUpdate("plan", assessmentResult.plan);
+      onUpdate("assessment", cleanText(assessmentResult.assessment));
+      onUpdate("plan", cleanText(assessmentResult.plan));
     } catch (error) {
       console.error("Failed to generate assessment/plan:", error);
       const errorMessage = error?.message || "Failed to generate assessment/plan";

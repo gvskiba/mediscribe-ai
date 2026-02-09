@@ -33,7 +33,7 @@ export default function NewNote() {
   const [medicationRecommendations, setMedicationRecommendations] = useState([]);
   const [loadingMedications, setLoadingMedications] = useState(false);
   const [encountersSummaryOpen, setEncountersSummaryOpen] = useState(false);
-  const [useDetailedInput, setUseDetailedInput] = useState(false);
+  const [useDetailedInput, setUseDetailedInput] = useState(null);
   const [clinicalData, setClinicalData] = useState({
     history_and_physical: "",
     medical_history: "",
@@ -979,8 +979,71 @@ ${JSON.stringify(structuredNote, null, 2)}`,
       <div className="max-w-4xl mx-auto space-y-6">
         {!structuredNote ? (
           <>
-            {!useDetailedInput ? (
+            {useDetailedInput === null ? (
+              <div className="min-h-[60vh] flex items-center justify-center">
+                <div className="max-w-3xl w-full space-y-8">
+                  <div className="text-center space-y-3">
+                    <h1 className="text-4xl font-bold text-white">Create New Clinical Note</h1>
+                    <p className="text-lg text-slate-300">Choose your preferred input method</p>
+                  </div>
+                  
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <button
+                      onClick={() => setUseDetailedInput(false)}
+                      className="group relative overflow-hidden bg-gradient-to-br from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-2xl p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl shadow-xl"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="relative space-y-4">
+                        <div className="w-16 h-16 mx-auto bg-white/20 rounded-2xl flex items-center justify-center">
+                          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                          </svg>
+                        </div>
+                        <div className="space-y-2">
+                          <h2 className="text-2xl font-bold text-white">Dictation Transcription</h2>
+                          <p className="text-purple-100">Speak or type your clinical note naturally, and let AI structure it for you</p>
+                        </div>
+                        <div className="flex items-center justify-center gap-2 text-sm text-purple-200">
+                          <span>Quick & Natural</span>
+                          <span>•</span>
+                          <span>Voice Supported</span>
+                        </div>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => setUseDetailedInput(true)}
+                      className="group relative overflow-hidden bg-gradient-to-br from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-2xl p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl shadow-xl"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="relative space-y-4">
+                        <div className="w-16 h-16 mx-auto bg-white/20 rounded-2xl flex items-center justify-center">
+                          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <div className="space-y-2">
+                          <h2 className="text-2xl font-bold text-white">Detailed Clinical Input</h2>
+                          <p className="text-blue-100">Enter information in structured sections: Subjective, Medical History, ROS, Physical Exam</p>
+                        </div>
+                        <div className="flex items-center justify-center gap-2 text-sm text-blue-200">
+                          <span>Organized</span>
+                          <span>•</span>
+                          <span>Section-by-Section</span>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : !useDetailedInput ? (
               <div className="space-y-4">
+                <button
+                  onClick={() => setUseDetailedInput(null)}
+                  className="text-sm text-purple-300 hover:text-purple-200 underline"
+                >
+                  ← Back to input selection
+                </button>
                 <NoteTranscriptionInput 
                   onSubmit={(noteData, templateId) => {
                     handleSubmit(noteData, templateId);
@@ -988,22 +1051,14 @@ ${JSON.stringify(structuredNote, null, 2)}`,
                   isProcessing={isProcessing}
                   templates={templates}
                 />
-                <div className="text-center">
-                  <button
-                    onClick={() => setUseDetailedInput(true)}
-                    className="text-sm text-blue-600 hover:text-blue-700 underline"
-                  >
-                    Or use detailed clinical input
-                  </button>
-                </div>
               </div>
             ) : (
               <div className="space-y-4">
                 <button
-                  onClick={() => setUseDetailedInput(false)}
-                  className="text-sm text-blue-600 hover:text-blue-700 underline mb-4"
+                  onClick={() => setUseDetailedInput(null)}
+                  className="text-sm text-purple-300 hover:text-purple-200 underline"
                 >
-                  ← Back to transcription
+                  ← Back to input selection
                 </button>
                 <ClinicalSectionInput 
                   onSubmit={handleDetailedInputSubmit}

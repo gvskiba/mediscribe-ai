@@ -27,23 +27,23 @@ export default function Layout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#0f1419] flex">
+    <div className="min-h-screen bg-white flex">
       <style>{`
         :root {
-          --primary: #8b5cf6;
-          --primary-dark: #7c3aed;
-          --primary-light: #a78bfa;
-          --accent: #06b6d4;
-          --bg-main: #0f1419;
-          --bg-secondary: #1a1f2e;
-          --sidebar-bg: linear-gradient(165deg, #1a1f2e 0%, #0f1419 100%);
-          --card-bg: #1a1f2e;
-          --border-subtle: rgba(139, 92, 246, 0.1);
+          --primary: #2563eb;
+          --primary-dark: #1d4ed8;
+          --primary-light: #3b82f6;
+          --accent: #0891b2;
+          --bg-main: #ffffff;
+          --bg-secondary: #f8fafc;
+          --sidebar-bg: linear-gradient(165deg, #f8fafc 0%, #ffffff 100%);
+          --card-bg: #ffffff;
+          --border-subtle: rgba(15, 23, 42, 0.08);
         }
         body { 
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
           background: var(--bg-main);
-          color: #e2e8f0;
+          color: #1f2937;
         }
         .nav-link { 
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);

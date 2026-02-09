@@ -22,10 +22,14 @@ export default function TemplateSuggestion({
 
   useEffect(() => {
     // Only analyze if we have enough context and haven't dismissed
-    if (!dismissed && (rawNote || chiefComplaint) && templates.length > 0) {
-      analyzeSuggestTemplates();
+    if (!dismissed && (rawNote || chiefComplaint) && templates.length > 0 && !loading) {
+      const timeoutId = setTimeout(() => {
+        analyzeSuggestTemplates();
+      }, 1000); // Debounce to avoid excessive API calls
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [rawNote, noteType, specialty, chiefComplaint, templates, dismissed]);
+  }, [rawNote, noteType, specialty, chiefComplaint, dismissed]);
 
   const analyzeSuggestTemplates = async () => {
     setLoading(true);
@@ -41,12 +45,12 @@ Specialty: ${specialty || "N/A"}
 Available Templates:
 ${templates.map(t => `
 - ID: ${t.id}
-  Name: ${t.name}
-  Type: ${t.note_type}
+  Name: ${t.name || "Untitled"}
+  Type: ${t.note_type || "N/A"}
   Specialty: ${t.specialty || "General"}
   Category: ${t.category || "general"}
   Description: ${t.description || "N/A"}
-  Sections: ${t.sections?.map(s => s.name).join(", ") || "N/A"}
+  Sections: ${Array.isArray(t.sections) ? t.sections.map(s => s.name || "Unnamed").join(", ") : "N/A"}
 `).join("\n")}
 
 Based on the clinical context, recommend:
@@ -107,12 +111,16 @@ If no template is a perfect match, identify which combination of templates would
     }
   };
 
-  if (dismissed || !suggestions || currentTemplateId === suggestions.recommended_template_id) {
+  if (dismissed || !suggestions || loading) {
     return null;
   }
 
   const recommendedTemplate = templates.find(t => t.id === suggestions.recommended_template_id);
-  if (!recommendedTemplate) return null;
+  
+  // Don't show if no valid recommendation or already selected
+  if (!recommendedTemplate || currentTemplateId === suggestions.recommended_template_id) {
+    return null;
+  }
 
   const confidenceColors = {
     high: "bg-green-100 text-green-800 border-green-300",

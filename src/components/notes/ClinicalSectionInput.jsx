@@ -95,10 +95,10 @@ export default function ClinicalSectionInput({
   };
 
   const handleAIAssist = async (section) => {
-    const currentText = clinicalData[section];
+    const currentText = clinicalData[section] || "";
     
     // If there's existing text, expand it; otherwise draft new content
-    const hasExistingText = currentText && currentText.trim().length > 0;
+    const hasExistingText = currentText.trim().length > 0;
     
     if (!hasExistingText && !formData.chief_complaint) {
       toast.error("Please enter chief complaint first");
@@ -139,8 +139,11 @@ Write a comprehensive and clinically appropriate ${section.replace(/_/g, " ")} s
         toast.success("Section drafted");
       }
       
-      handleClinicalDataChange(section, response);
+      // Ensure response is a string
+      const finalResponse = typeof response === 'string' ? response : String(response || '');
+      handleClinicalDataChange(section, finalResponse);
     } catch (error) {
+      console.error("AI assist error:", error);
       toast.error("Failed to generate section");
     } finally {
       setAiGenerating(null);
@@ -331,7 +334,7 @@ Provide a clearer, more concise version.`,
                   className="rounded-lg gap-1.5 text-xs text-blue-600 border-blue-300 hover:bg-blue-50"
                 >
                   {aiGenerating === "history_and_physical" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
-                  {clinicalData.history_and_physical ? "Expand" : "Draft"}
+                  {clinicalData.history_and_physical?.trim() ? "Expand" : "Draft"}
                 </Button>
                 <Button
                   type="button"
@@ -406,7 +409,7 @@ Provide a clearer, more concise version.`,
                   className="rounded-lg gap-1.5 text-xs text-purple-600 border-purple-300 hover:bg-purple-50"
                 >
                   {aiGenerating === "review_of_systems" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
-                  {clinicalData.review_of_systems ? "Expand" : "Draft"}
+                  {clinicalData.review_of_systems?.trim() ? "Expand" : "Draft"}
                 </Button>
                 <Button
                   type="button"
@@ -485,7 +488,7 @@ Other systems as relevant..."
                   className="rounded-lg gap-1.5 text-xs text-emerald-600 border-emerald-300 hover:bg-emerald-50"
                 >
                   {aiGenerating === "physical_exam" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
-                  {clinicalData.physical_exam ? "Expand" : "Draft"}
+                  {clinicalData.physical_exam?.trim() ? "Expand" : "Draft"}
                 </Button>
                 <Button
                   type="button"

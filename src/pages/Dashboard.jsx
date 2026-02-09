@@ -80,13 +80,13 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Notes */}
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-[#1a1f2e] rounded-2xl border border-purple-500/10 overflow-hidden shadow-xl"
-        >
-          <div className="flex items-center justify-between p-6 pb-2">
-            <h2 className="text-lg font-semibold text-white">Recent Notes</h2>
+           initial={{ opacity: 0, y: 12 }}
+           animate={{ opacity: 1, y: 0 }}
+           transition={{ delay: 0.1 }}
+           className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm"
+         >
+           <div className="flex items-center justify-between p-6 pb-2">
+             <h2 className="text-lg font-semibold text-slate-900">Recent Notes</h2>
             <Link to={createPageUrl("NotesLibrary")} className="text-sm text-purple-300 hover:text-purple-200 flex items-center gap-1 font-medium">
               View all <ArrowRight className="w-3 h-3" />
             </Link>

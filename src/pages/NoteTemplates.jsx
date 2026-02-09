@@ -429,9 +429,9 @@ Return a JSON structure with:
       
       const matchesCategory = categoryFilter === "all" || t.category === categoryFilter;
       const matchesNoteType = noteTypeFilter === "all" || t.note_type === noteTypeFilter;
-      const matchesTags = !tagFilter || t.tags?.includes(tagFilter);
+      const matchesSpecialty = !specialtyFilter || t.specialty === specialtyFilter;
       
-      return matchesSearch && matchesQuickSearch && matchesCategory && matchesNoteType && matchesTags;
+      return matchesSearch && matchesQuickSearch && matchesCategory && matchesNoteType && matchesSpecialty;
     });
 
     // Sort templates

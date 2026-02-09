@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
-import { FileText, Plus, Edit, Trash2, Star, Search, Sparkles } from "lucide-react";
+import { FileText, Plus, Edit, Trash2, Star, Search, Sparkles, Clock, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import AISnippetGenerator from "@/components/snippets/AISnippetGenerator";

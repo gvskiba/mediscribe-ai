@@ -300,6 +300,60 @@ For each code, provide:
     }
   };
 
+  const extractStructuredData = async () => {
+    if (!note?.raw_note) return;
+    setExtractingData(true);
+    
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Extract key medical information from this clinical note. Be thorough and accurate.
+
+CLINICAL NOTE:
+${note.raw_note}
+
+Extract and provide:
+1. Diagnoses - List all diagnoses mentioned (with ICD codes if available)
+2. Medications - All medications mentioned with dosages and frequency
+3. Allergies - All drug and environmental allergies
+4. Chief Complaint - The primary reason for visit
+5. Medical History - Significant past medical history items
+6. Review of Systems - Key ROS findings
+7. Physical Exam - Important physical exam findings`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            diagnoses: { type: "array", items: { type: "string" } },
+            medications: { type: "array", items: { type: "string" } },
+            allergies: { type: "array", items: { type: "string" } },
+            chief_complaint: { type: "string" },
+            medical_history: { type: "string" },
+            review_of_systems: { type: "string" },
+            physical_exam: { type: "string" }
+          }
+        }
+      });
+
+      // Update note with extracted data
+      const updateData = {};
+      if (result.diagnoses?.length > 0) updateData.diagnoses = result.diagnoses;
+      if (result.medications?.length > 0) updateData.medications = result.medications;
+      if (result.allergies?.length > 0) updateData.allergies = result.allergies;
+      if (result.chief_complaint) updateData.chief_complaint = result.chief_complaint;
+      if (result.medical_history) updateData.medical_history = result.medical_history;
+      if (result.review_of_systems) updateData.review_of_systems = result.review_of_systems;
+      if (result.physical_exam) updateData.physical_exam = result.physical_exam;
+
+      if (Object.keys(updateData).length > 0) {
+        await base44.entities.ClinicalNote.update(noteId, updateData);
+        queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+      }
+    } catch (error) {
+      console.error("Failed to extract data:", error);
+    } finally {
+      setExtractingData(false);
+    }
+  };
+
   const downloadSummary = () => {
     if (!patientSummary) return;
 

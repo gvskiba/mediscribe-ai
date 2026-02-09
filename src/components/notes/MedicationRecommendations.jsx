@@ -110,16 +110,30 @@ Focus on evidence-based, first-line therapies appropriate for primary care or ge
           <Sparkles className="w-5 h-5 text-emerald-600" />
           <h4 className="font-semibold text-slate-900">AI Medication Recommendations</h4>
         </div>
-        {recommendations.length > 0 && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setExpanded(!expanded)}
-            className="text-slate-600 hover:bg-white/50"
-          >
-            {expanded ? "Collapse" : "Expand"}
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {recommendations.length > 0 && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={generateRecommendations}
+              disabled={loading}
+              className="text-slate-600 hover:bg-white/50"
+              title="Regenerate based on current diagnoses"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Regenerate"}
+            </Button>
+          )}
+          {recommendations.length > 0 && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setExpanded(!expanded)}
+              className="text-slate-600 hover:bg-white/50"
+            >
+              {expanded ? "Collapse" : "Expand"}
+            </Button>
+          )}
+        </div>
       </div>
 
       {!expanded && recommendations.length === 0 ? (

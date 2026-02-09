@@ -322,7 +322,7 @@ Provide a clearer, more concise version.`,
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
                 <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold">1</span>
-                History and Physical
+                Subjective
               </h3>
               <div className="flex gap-1.5">
                 <Button
@@ -350,7 +350,7 @@ Provide a clearer, more concise version.`,
                 </Button>
               </div>
             </div>
-            <p className="text-sm text-slate-500 mt-1">Include medical history, past medical history, surgical history, medications, allergies, and any relevant clinical context.</p>
+            <p className="text-sm text-slate-500 mt-1">Patient's subjective report including symptoms, concerns, medical history, medications, allergies, and relevant context.</p>
           </div>
           <div className="relative">
             <Textarea

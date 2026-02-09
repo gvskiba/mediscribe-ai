@@ -73,6 +73,36 @@ export default function NoteDetail() {
     enabled: !!noteId,
   });
 
+  // Auto-save functionality
+  const { isSaving } = useAutoSave({
+    data: noteData || note,
+    entityName: "ClinicalNote",
+    entityId: noteId,
+    onSave: async (data) => {
+      if (noteId) {
+        await base44.entities.ClinicalNote.update(noteId, data);
+        // Create revision on auto-save
+        const revisions = await base44.entities.NoteRevision.list();
+        const noteRevisions = revisions.filter(r => r.note_id === noteId);
+        const nextRevision = (noteRevisions.length || 0) + 1;
+        await base44.entities.NoteRevision.create({
+          note_id: noteId,
+          revision_number: nextRevision,
+          chief_complaint: data.chief_complaint,
+          history_of_present_illness: data.history_of_present_illness,
+          assessment: data.assessment,
+          plan: data.plan,
+          diagnoses: data.diagnoses,
+          medications: data.medications,
+          change_summary: "Auto-save",
+          revision_date: new Date().toISOString(),
+        });
+      }
+    },
+    interval: 30000,
+    enabled: note?.status === "draft",
+  });
+
   const finalizeMutation = useMutation({
     mutationFn: async () => {
       await base44.entities.ClinicalNote.update(noteId, { status: "finalized" });

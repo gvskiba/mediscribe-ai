@@ -78,12 +78,17 @@ export default function EditableSection({
     if (type === "array") {
       const newArray = [...(Array.isArray(editValue) ? editValue : []), snippetText];
       setEditValue(newArray);
+      onUpdate(field, newArray);
+      setSnippetPickerOpen(false);
       return;
     }
 
     const textarea = textareaRef.current;
     if (!textarea) {
-      setEditValue((editValue || "") + "\n\n" + snippetText);
+      const newText = (editValue || "") + "\n\n" + snippetText;
+      setEditValue(newText);
+      onUpdate(field, newText);
+      setSnippetPickerOpen(false);
       return;
     }
 
@@ -92,11 +97,14 @@ export default function EditableSection({
     const currentValue = editValue || "";
     const newText = currentValue.substring(0, start) + snippetText + currentValue.substring(end);
     setEditValue(newText);
+    onUpdate(field, newText);
     
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(start + snippetText.length, start + snippetText.length);
     }, 0);
+    
+    setSnippetPickerOpen(false);
   };
 
   return (

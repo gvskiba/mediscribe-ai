@@ -800,10 +800,12 @@ Generated: ${new Date().toLocaleString()}
                  </div>
 
                  </>
+                 ) : !note.diagnoses || note.diagnoses.length === 0 ? (
+                 <p className="text-sm text-slate-500 text-center py-8">No diagnoses available. Add diagnoses to view guidelines and codes.</p>
                  ) : (
-                 <p className="text-sm text-slate-500 text-center py-8">Guidelines and codes will appear here after note finalization</p>
+                 <p className="text-sm text-slate-500 text-center py-8">Finalize the note to generate guidelines and codes.</p>
                  )}
-           </TabsContent>
+                 </TabsContent>
 
            {/* Metadata Tab */}
            <TabsContent value="metadata" className="p-6">

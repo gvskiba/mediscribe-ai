@@ -849,18 +849,23 @@ Generated: ${new Date().toLocaleString()}
                      </div>
                      <Button
                        onClick={async () => {
-                         let diagnosisText = `\n\nDIAGNOSES:\n`;
-                         note.diagnoses.forEach((diagnosis, idx) => {
-                           const correspondingCode = icd10Suggestions.find(s => s.diagnosis === diagnosis);
-                           diagnosisText += `${idx + 1}. ${diagnosis}`;
-                           if (correspondingCode) {
-                             diagnosisText += ` (${correspondingCode.code})`;
-                           }
-                           diagnosisText += `\n`;
-                         });
-                         const updatedAssessment = (note.assessment || "") + diagnosisText;
-                         await base44.entities.ClinicalNote.update(noteId, { assessment: updatedAssessment });
-                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                         try {
+                           let diagnosisText = `\n\nDIAGNOSES:\n`;
+                           note.diagnoses.forEach((diagnosis, idx) => {
+                             const correspondingCode = icd10Suggestions.find(s => s.diagnosis === diagnosis);
+                             diagnosisText += `${idx + 1}. ${diagnosis}`;
+                             if (correspondingCode) {
+                               diagnosisText += ` (${correspondingCode.code})`;
+                             }
+                             diagnosisText += `\n`;
+                           });
+                           const updatedAssessment = (note.assessment || "") + diagnosisText;
+                           await base44.entities.ClinicalNote.update(noteId, { assessment: updatedAssessment });
+                           await queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                         } catch (error) {
+                           console.error("Failed to add diagnoses to assessment:", error);
+                           alert("Failed to add diagnoses. Please try again.");
+                         }
                        }}
                        className="w-full gap-2 bg-blue-600 hover:bg-blue-700"
                      >

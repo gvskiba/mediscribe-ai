@@ -124,8 +124,11 @@ export default function NewNote() {
     setRawData(noteData);
 
     try {
-      // Check if patient exists
-      if (noteData.patient_id) {
+      // Skip patient checks for detailed clinical input (no patient name/ID provided)
+      const hasPatientInfo = noteData.patient_id || noteData.patient_name;
+      
+      // Check if patient exists (only for transcription input with patient info)
+      if (hasPatientInfo && noteData.patient_id) {
         const existingPatients = await base44.entities.Patient.filter({ patient_id: noteData.patient_id });
 
         if (existingPatients.length === 0) {
@@ -137,8 +140,8 @@ export default function NewNote() {
         }
       }
 
-      // Load patient history proactively
-      if (noteData.patient_id || noteData.patient_name) {
+      // Load patient history proactively (only if patient info available)
+      if (hasPatientInfo) {
         loadPatientHistory(noteData.patient_id, noteData.patient_name, historyFocus);
       }
 

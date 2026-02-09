@@ -156,8 +156,8 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
 
   return (
     <div className="space-y-4">
-      {/* Template Suggestion */}
-      {showTemplateSuggestion && rawNote.length > 50 && (
+      {/* Template Suggestion - Show after user has typed substantial content */}
+      {showTemplateSuggestion && rawNote.length > 100 && templates.length > 0 && (
         <TemplateSuggestion
           rawNote={rawNote}
           noteType={noteType}
@@ -167,7 +167,7 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
           currentTemplateId={selectedTemplate}
           onSelectTemplate={(templateId) => {
             setSelectedTemplate(templateId);
-            setShowTemplateSuggestion(false);
+            toast.success("Template applied! AI will use this structure when processing your note.");
           }}
           onDismiss={() => setShowTemplateSuggestion(false)}
         />

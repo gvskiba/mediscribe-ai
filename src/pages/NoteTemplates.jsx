@@ -463,14 +463,14 @@ Return a JSON structure with:
     });
 
     return sorted;
-  }, [templates, searchQuery, quickSearch, categoryFilter, noteTypeFilter, tagFilter, sortBy, favorites]);
+  }, [templates, searchQuery, quickSearch, categoryFilter, noteTypeFilter, specialtyFilter, sortBy, favorites]);
 
-  const allTags = useMemo(() => {
-    const tags = new Set();
+  const allSpecialties = useMemo(() => {
+    const specialties = new Set();
     templates.forEach(t => {
-      t.tags?.forEach(tag => tags.add(tag));
+      if (t.specialty) specialties.add(t.specialty);
     });
-    return Array.from(tags).sort();
+    return Array.from(specialties).sort();
   }, [templates]);
 
   return (

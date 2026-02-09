@@ -194,24 +194,49 @@ export default function Snippets() {
             className="pl-10 rounded-xl"
           />
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <Badge
-            variant={categoryFilter === "all" ? "default" : "outline"}
-            className="cursor-pointer"
-            onClick={() => setCategoryFilter("all")}
-          >
-            All
-          </Badge>
-          {getCategories().map(cat => (
+        <div>
+          <p className="text-xs text-slate-600 mb-2 font-medium">Categories</p>
+          <div className="flex gap-2 flex-wrap mb-4">
             <Badge
-              key={cat.value}
-              variant={categoryFilter === cat.value ? "default" : "outline"}
+              variant={categoryFilter === "all" ? "default" : "outline"}
               className="cursor-pointer"
-              onClick={() => setCategoryFilter(cat.value)}
+              onClick={() => setCategoryFilter("all")}
             >
-              {cat.label}
+              All
             </Badge>
-          ))}
+            {getCategories().map(cat => (
+              <Badge
+                key={cat.value}
+                variant={categoryFilter === cat.value ? "default" : "outline"}
+                className="cursor-pointer"
+                onClick={() => setCategoryFilter(cat.value)}
+              >
+                {cat.label}
+              </Badge>
+            ))}
+          </div>
+          {allTags.length > 0 && (
+            <>
+              <p className="text-xs text-slate-600 mb-2 font-medium">Tags</p>
+              <div className="flex gap-2 flex-wrap">
+                {allTags.map(tag => (
+                  <Badge
+                    key={tag}
+                    variant={selectedTags.includes(tag) ? "default" : "outline"}
+                    className="cursor-pointer text-xs"
+                    onClick={() => {
+                      setSelectedTags(selectedTags.includes(tag) 
+                        ? selectedTags.filter(t => t !== tag)
+                        : [...selectedTags, tag]
+                      );
+                    }}
+                  >
+                    #{tag}
+                  </Badge>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 

@@ -589,6 +589,13 @@ export default function Snippets() {
           setVersionHistoryId(null);
         }}
       />
+
+      <FolderManager
+        selectedFolder={selectedFolder}
+        onSelectFolder={setSelectedFolder}
+        isOpen={folderManagerOpen}
+        onClose={() => setFolderManagerOpen(false)}
+      />
     </div>
   );
 }

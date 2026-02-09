@@ -1084,12 +1084,11 @@ ${JSON.stringify(structuredNote, null, 2)}`,
                   ← Back to input selection
                 </button>
                 <ClinicalSectionInput 
-                  onSubmit={(data, templateId) => handleDetailedInputSubmit({ ...data, specialty: specialty || data.specialty }, templateId)}
+                  onSubmit={handleDetailedInputSubmit}
                   isProcessing={isProcessing}
                   templates={templates}
                   clinicalData={clinicalData}
                   onClinicalDataChange={setClinicalData}
-                  defaultSpecialty={specialty}
                 />
               </div>
             )}

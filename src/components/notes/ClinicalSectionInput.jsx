@@ -378,7 +378,7 @@ Provide a clearer, more concise version.`,
           <div className="relative">
             <Textarea
               ref={historyRef}
-              value={clinicalData.history_and_physical}
+              value={clinicalData.history_and_physical || ""}
               onChange={(e) => handleClinicalDataChange("history_and_physical", e.target.value)}
               onMouseUp={() => handleTextSelection("history_and_physical")}
               onKeyUp={() => handleTextSelection("history_and_physical")}

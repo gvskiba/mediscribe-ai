@@ -206,16 +206,29 @@ export default function EditableSection({
         )}
 
         <div className="space-y-2">
-          {type === "textarea" ? (
-            <Textarea
-              ref={textareaRef}
-              value={editValue || ""}
-              onChange={(e) => handleChange(e.target.value)}
-              onBlur={(e) => handleChange(e.target.value)}
-              className="min-h-[100px] rounded-xl border-slate-300 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm text-slate-900 transition-all hover:border-slate-400"
-              placeholder="Click to edit..."
-            />
-          ) : type === "array" ? (
+           {type === "textarea" ? (
+             <>
+               <Textarea
+                 ref={textareaRef}
+                 value={editValue || ""}
+                 onChange={(e) => {
+                   handleChange(e.target.value);
+                   if (!showSuggestions) setShowSuggestions(true);
+                 }}
+                 onBlur={(e) => handleChange(e.target.value)}
+                 className="min-h-[100px] rounded-xl border-slate-300 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm text-slate-900 transition-all hover:border-slate-400"
+                 placeholder="Click to edit..."
+               />
+               {showSuggestions && ["history_of_present_illness", "assessment", "plan"].includes(field) && (
+                 <SectionAISuggestions
+                   field={field}
+                   currentValue={editValue}
+                   context={noteContext}
+                   onApplySuggestion={handleApplySuggestion}
+                 />
+               )}
+             </>
+           ) : type === "array" ? (
             <div className="space-y-2">
               {(Array.isArray(editValue) ? editValue : []).map((item, index) => (
                 <div key={index} className="flex gap-2 group">

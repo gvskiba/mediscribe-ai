@@ -531,12 +531,15 @@ Generated: ${new Date().toLocaleString()}
                     <div className="mt-4 bg-amber-50 rounded-lg border border-amber-200 p-4">
                       <h4 className="text-sm font-bold text-amber-900 mb-2">Key Recommendations</h4>
                       <ul className="space-y-1">
-                        {rec.nonpharmacologic.map((item, i) => (
-                          <li key={i} className="text-xs text-slate-700 flex items-start gap-2">
-                            <span className="text-amber-600 mt-0.5">•</span>
-                            <span>{item}</span>
-                          </li>
-                        ))}
+                        {rec.nonpharmacologic.map((item, i) => {
+                          const cleanedItem = item.replace(/\[\d+\]/g, '').replace(/\(\d+\)/g, '').replace(/\[.*?\]/g, '').trim();
+                          return (
+                            <li key={i} className="text-xs text-slate-700 flex items-start gap-2">
+                              <span className="text-amber-600 mt-0.5">•</span>
+                              <span>{cleanedItem}</span>
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                   )}

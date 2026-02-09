@@ -38,8 +38,8 @@ export default function Dashboard() {
         className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4"
       >
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Dashboard</h1>
-          <p className="text-slate-300 mt-1">Your clinical workspace at a glance.</p>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
+          <p className="text-slate-600 mt-1">Your clinical workspace at a glance.</p>
         </div>
         <div className="flex gap-3">
           <Link to={createPageUrl("NewNote")}>

@@ -199,62 +199,107 @@ export default function Snippets() {
           </Button>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-3">
           <AnimatePresence>
             {filtered.map((snippet, i) => (
               <motion.div
                 key={snippet.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
                 transition={{ delay: i * 0.02 }}
               >
-                <Card className="p-5 hover:shadow-lg transition-shadow">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-slate-900">{snippet.name}</h3>
-                      {snippet.is_favorite && (
-                        <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                      )}
+                <Card className="p-4 hover:shadow-md transition-all">
+                  {inlineEditingId === snippet.id ? (
+                    <div className="space-y-3">
+                      <Input
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="Snippet name"
+                        className="rounded-lg font-semibold"
+                      />
+                      <Textarea
+                        value={formData.content}
+                        onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                        placeholder="Snippet content"
+                        className="min-h-[100px] rounded-lg text-sm"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => {
+                            updateMutation.mutate({ id: snippet.id, data: formData });
+                            setInlineEditingId(null);
+                          }}
+                          className="bg-blue-600 hover:bg-blue-700 rounded-lg text-sm flex-1"
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setInlineEditingId(null)}
+                          className="rounded-lg text-sm flex-1"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => toggleFavoriteMutation.mutate({ id: snippet.id, isFavorite: snippet.is_favorite })}
-                    >
-                      <Star className={`w-4 h-4 ${snippet.is_favorite ? "text-amber-500 fill-amber-500" : "text-slate-400"}`} />
-                    </Button>
-                  </div>
-                  <p className="text-sm text-slate-600 line-clamp-3 mb-3">{snippet.content}</p>
-                  <div className="flex gap-2 mb-3 flex-wrap">
-                    <Badge variant="outline">{snippet.category}</Badge>
-                    {snippet.usage_count > 0 && (
-                      <Badge variant="outline" className="text-xs">{snippet.usage_count} uses</Badge>
-                    )}
-                  </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(snippet)}
-                      className="rounded-lg gap-1 flex-1"
-                    >
-                      <Edit className="w-3 h-3" /> Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        if (confirm("Delete this snippet?")) {
-                          deleteMutation.mutate(snippet.id);
-                        }
-                      }}
-                      className="rounded-lg text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h3 className="font-semibold text-slate-900">{snippet.name}</h3>
+                          <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap">{snippet.content}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 flex-shrink-0"
+                          onClick={() => toggleFavoriteMutation.mutate({ id: snippet.id, isFavorite: snippet.is_favorite })}
+                        >
+                          <Star className={`w-4 h-4 ${snippet.is_favorite ? "text-amber-500 fill-amber-500" : "text-slate-400"}`} />
+                        </Button>
+                      </div>
+                      <div className="flex gap-2 mb-3 flex-wrap">
+                        <Badge variant="outline" className="text-xs">{snippet.category}</Badge>
+                        {snippet.specialty && <Badge variant="outline" className="text-xs">{snippet.specialty}</Badge>}
+                        {snippet.usage_count > 0 && (
+                          <Badge variant="outline" className="text-xs">{snippet.usage_count} uses</Badge>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingSnippet(snippet);
+                            setFormData({
+                              name: snippet.name,
+                              category: snippet.category || "custom",
+                              content: snippet.content,
+                              specialty: snippet.specialty || "",
+                              tags: snippet.tags || [],
+                            });
+                            setInlineEditingId(snippet.id);
+                          }}
+                          className="rounded-lg gap-1 flex-1"
+                        >
+                          <Edit className="w-3 h-3" /> Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (confirm("Delete this snippet?")) {
+                              deleteMutation.mutate(snippet.id);
+                            }
+                          }}
+                          className="rounded-lg text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </Card>
               </motion.div>
             ))}

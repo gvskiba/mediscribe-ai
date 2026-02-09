@@ -94,12 +94,12 @@ export default function Dashboard() {
           <div className="px-2 pb-2">
             {isLoading ? (
               <div className="space-y-2 p-4">
-                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 rounded-xl bg-[#242938]" />)}
+                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 rounded-xl bg-slate-100" />)}
               </div>
             ) : recentNotes.length === 0 ? (
-              <div className="text-center py-12 text-slate-400">
+              <div className="text-center py-12 text-slate-500">
                 <FileText className="w-10 h-10 mx-auto mb-3 opacity-40" />
-                <p className="text-sm text-slate-300">No clinical notes yet</p>
+                <p className="text-sm text-slate-600">No clinical notes yet</p>
                 <Link to={createPageUrl("NewNote")} className="text-sm text-purple-300 hover:underline mt-1 inline-block">
                   Create your first note
                 </Link>

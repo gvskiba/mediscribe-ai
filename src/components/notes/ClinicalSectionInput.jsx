@@ -374,6 +374,21 @@ Provide a clearer, more concise version.`,
         </div>
       </motion.div>
 
+      {/* Chief Complaint - Before Subjective Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-br from-red-50 to-white rounded-xl border border-red-200 p-4 hover:border-red-400 transition-colors"
+      >
+        <label className="text-xs font-bold text-red-600 uppercase tracking-wide mb-3 block">Chief Complaint</label>
+        <Input
+          value={formData.chief_complaint}
+          onChange={(e) => handleInputChange("chief_complaint", e.target.value)}
+          placeholder="e.g., Chest pain, persistent cough"
+          className="rounded-lg border-red-300 bg-white focus:border-red-400 focus:ring-red-400/20 text-slate-900 placeholder:text-slate-400"
+        />
+      </motion.div>
+
       {/* Clinical Sections */}
       <div className="space-y-4">
         {/* History and Physical */}

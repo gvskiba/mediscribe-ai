@@ -629,14 +629,14 @@ FORMATTING RULES (CRITICAL):
 
              <AnimatePresence>
                {expandedDifferentials && (
-             <motion.div
-               initial={{ height: 0, opacity: 0 }}
-               animate={{ height: "auto", opacity: 1 }}
-               exit={{ height: 0, opacity: 0 }}
-               transition={{ duration: 0.2 }}
-             >
-             <div className="p-5 space-y-3">
-              {differentialDiagnoses.map((diff, idx) => {
+                 <motion.div
+                   initial={{ height: 0, opacity: 0 }}
+                   animate={{ height: "auto", opacity: 1 }}
+                   exit={{ height: 0, opacity: 0 }}
+                   transition={{ duration: 0.2 }}
+                 >
+                   <div className="p-5 space-y-3">
+                     {differentialDiagnoses.map((diff, idx) => {
                 const probabilityColors = {
                   "Very High": "bg-red-100 border-red-300 text-red-800",
                   "High": "bg-orange-100 border-orange-300 text-orange-800",

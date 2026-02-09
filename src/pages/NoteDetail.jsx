@@ -29,6 +29,7 @@ import SmartGuidelinePanel from "../components/guidelines/SmartGuidelinePanel";
 import CreateTemplateFromNote from "../components/templates/CreateTemplateFromNote";
 import ICD10Suggestions from "../components/notes/ICD10Suggestions";
 import ICD10CodeSearch from "../components/notes/ICD10CodeSearch";
+import GuidelineReviewPrompt from "../components/notes/GuidelineReviewPrompt";
 
 const statusColors = {
   draft: "bg-amber-50 text-amber-700 border-amber-200",

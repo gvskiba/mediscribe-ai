@@ -255,19 +255,9 @@ export default function Snippets() {
                     </div> :
 
               <>
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h3 className="font-semibold text-slate-900">{snippet.name}</h3>
-                          <div className="text-sm text-slate-600 mt-1 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: snippet.content }} />
-                        </div>
-                        <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 flex-shrink-0"
-                    onClick={() => toggleFavoriteMutation.mutate({ id: snippet.id, isFavorite: snippet.is_favorite })}>
-
-                          <Star className={`w-4 h-4 ${snippet.is_favorite ? "text-amber-500 fill-amber-500" : "text-slate-400"}`} />
-                        </Button>
+                      <div className="mb-3">
+                        <h3 className="font-semibold text-slate-900">{snippet.name}</h3>
+                        <div className="text-sm text-slate-600 mt-2 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: snippet.content }} />
                       </div>
                       <div className="flex gap-2 mb-3 flex-wrap">
                         <Badge variant="outline" className="text-xs">{snippet.category}</Badge>

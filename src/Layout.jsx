@@ -96,10 +96,10 @@ export default function Layout({ children, currentPageName }) {
             </div>
           </div>
         </div>
-        <div className="px-4 py-4 border-b border-purple-500/10">
+        <div className="px-4 py-4 border-b border-slate-200">
           <Link
             to={createPageUrl("NewNote")}
-            className="w-full bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 hover:from-purple-500 hover:via-violet-500 hover:to-indigo-500 text-white rounded-2xl px-4 py-3 font-semibold text-sm transition-all duration-300 shadow-xl shadow-purple-500/30 hover:shadow-2xl hover:shadow-purple-500/40 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-4 py-3 font-semibold text-sm transition-all duration-300 shadow-sm flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
           >
             <FileText className="w-4 h-4" />
             New Note

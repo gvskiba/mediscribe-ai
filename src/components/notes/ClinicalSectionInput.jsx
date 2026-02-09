@@ -464,7 +464,7 @@ Provide a clearer, more concise version.`,
           <div className="relative">
             <Textarea
               ref={rosRef}
-              value={clinicalData.review_of_systems}
+              value={clinicalData.review_of_systems || ""}
               onChange={(e) => handleClinicalDataChange("review_of_systems", e.target.value)}
               onMouseUp={() => handleTextSelection("review_of_systems")}
               onKeyUp={() => handleTextSelection("review_of_systems")}

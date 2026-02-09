@@ -272,17 +272,42 @@ Keep summary ultra-concise and focus on actionable clinical information.`;
 
           {searchResults && !searching && (
             <div className="space-y-4">
-              {/* Summary */}
+              {/* Summary with Source Links */}
               <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                <h3 className="text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
                   <BookOpen className="w-4 h-4" />
                   Summary
                 </h3>
-                <p className="text-sm text-blue-800 leading-relaxed">{searchResults.summary}</p>
+                <p className="text-sm text-blue-800 leading-relaxed mb-3">{searchResults.summary}</p>
+
+                {/* Evidence Level Badge */}
                 {searchResults.evidence_level && (
-                  <Badge className="mt-3 bg-blue-100 text-blue-700 border border-blue-300">
+                  <Badge className="mb-3 bg-blue-100 text-blue-700 border border-blue-300">
                     Evidence Level: {searchResults.evidence_level}
                   </Badge>
+                )}
+
+                {/* Reference Links */}
+                {searchResults.source_links && searchResults.source_links.length > 0 && (
+                  <div className="space-y-2 pt-3 border-t border-blue-200">
+                    <p className="text-xs font-semibold text-blue-900 uppercase tracking-wide">References</p>
+                    <div className="space-y-1.5">
+                      {searchResults.source_links.map((link, idx) => (
+                        <a
+                          key={idx}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-start gap-2 text-xs text-blue-700 hover:text-blue-900 hover:underline break-all transition-colors"
+                        >
+                          <ExternalLink className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <span className="font-medium">{link.source}:</span> {link.title}
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
 

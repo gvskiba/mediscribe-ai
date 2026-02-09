@@ -53,12 +53,11 @@ export default function InteractivePlanSection({ value, onUpdate, onReanalyze })
 
   const detectCategory = (text) => {
     const lower = text.toLowerCase();
-    if (lower.includes("prescribe") || lower.includes("medication") || lower.includes("mg") || lower.includes("tablet")) return "medications";
-    if (lower.includes("test") || lower.includes("lab") || lower.includes("x-ray") || lower.includes("ct") || lower.includes("mri")) return "diagnostics";
-    if (lower.includes("procedure") || lower.includes("surgery") || lower.includes("biopsy")) return "procedures";
-    if (lower.includes("follow") || lower.includes("return") || lower.includes("appointment")) return "followup";
-    if (lower.includes("educate") || lower.includes("counsel") || lower.includes("instruct")) return "education";
-    if (lower.includes("refer") || lower.includes("consult") || lower.includes("specialist")) return "referrals";
+    for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+      if (keywords.some(keyword => lower.includes(keyword))) {
+        return category;
+      }
+    }
     return "other";
   };
 

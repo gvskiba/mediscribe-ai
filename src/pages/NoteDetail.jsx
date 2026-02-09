@@ -719,52 +719,65 @@ Generated: ${new Date().toLocaleString()}
                </div>
              )}
 
-             {note.status === "finalized" && note.diagnoses && note.diagnoses.length > 0 ? (
+             {note.status === "finalized" ? (
                <>
-                 {/* Linked Guidelines Section */}
-                 {note.linked_guidelines && note.linked_guidelines.length > 0 && (
-                   <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                     <h4 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
-                       <Check className="w-4 h-4" />
-                       Automatically Linked Guidelines
-                     </h4>
-                     <div className="space-y-2">
-                       {note.linked_guidelines.map((link, idx) => (
-                         <div key={idx} className="flex items-start gap-2 text-sm">
-                           <Check className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                           <div>
-                             <p className="text-blue-900 font-medium">{link.condition}</p>
-                             <p className="text-xs text-blue-700">{link.adherence_notes}</p>
-                           </div>
-                         </div>
-                       ))}
-                     </div>
-                   </div>
-                 )}
-
                  {/* ICD-10 Codes Section */}
                  <div>
                    <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
                      <Code className="w-4 h-4 text-blue-600" />
                      ICD-10 Code Suggestions
                    </h3>
-                   <ICD10Suggestions
-                     suggestions={icd10Suggestions}
-                     loading={loadingIcd10}
-                     readOnly={true}
-                   />
-                   <div className="mt-4">
-                     <ICD10CodeSearch
-                       suggestions={icd10Suggestions}
-                       diagnoses={note.diagnoses}
-                       onAddDiagnoses={async (newDiagnoses) => {
-                         const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
-                         await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
-                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                       }}
-                     />
-                   </div>
+                   {icd10Suggestions && icd10Suggestions.length > 0 ? (
+                     <>
+                       <ICD10Suggestions
+                         suggestions={icd10Suggestions}
+                         loading={loadingIcd10}
+                         readOnly={true}
+                       />
+                       <div className="mt-4">
+                         <ICD10CodeSearch
+                           suggestions={icd10Suggestions}
+                           diagnoses={note.diagnoses}
+                           onAddDiagnoses={async (newDiagnoses) => {
+                             const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
+                             await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
+                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                           }}
+                         />
+                       </div>
+                     </>
+                   ) : loadingIcd10 ? (
+                     <div className="flex items-center gap-3 text-slate-500 py-8">
+                       <Loader2 className="w-5 h-5 animate-spin" />
+                       <span className="text-sm">Generating ICD-10 suggestions...</span>
+                     </div>
+                   ) : (
+                     <p className="text-sm text-slate-500 text-center py-8">No ICD-10 suggestions available</p>
+                   )}
                  </div>
+
+                 {/* Linked Guidelines Section */}
+                 {note.diagnoses && note.diagnoses.length > 0 && (
+                   <>
+                     {note.linked_guidelines && note.linked_guidelines.length > 0 && (
+                       <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                         <h4 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                           <Check className="w-4 h-4" />
+                           Automatically Linked Guidelines
+                         </h4>
+                         <div className="space-y-2">
+                           {note.linked_guidelines.map((link, idx) => (
+                             <div key={idx} className="flex items-start gap-2 text-sm">
+                               <Check className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                               <div>
+                                 <p className="text-blue-900 font-medium">{link.condition}</p>
+                                 <p className="text-xs text-blue-700">{link.adherence_notes}</p>
+                               </div>
+                             </div>
+                           ))}
+                         </div>
+                       </div>
+                     )}
 
                  {/* Clinical Guidelines */}
                  <div>

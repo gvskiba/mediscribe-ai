@@ -36,6 +36,9 @@ export default function ClinicalSectionInput({
   const [snippetPickerOpen, setSnippetPickerOpen] = useState(false);
   const [activeSection, setActiveSection] = useState(null);
   const [aiGenerating, setAiGenerating] = useState(null);
+  const [selectedText, setSelectedText] = useState("");
+  const [selectionRange, setSelectionRange] = useState({ start: 0, end: 0 });
+  const [showRefineMenu, setShowRefineMenu] = useState(false);
   const historyRef = useRef(null);
   const rosRef = useRef(null);
   const examRef = useRef(null);

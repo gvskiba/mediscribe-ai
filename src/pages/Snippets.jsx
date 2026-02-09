@@ -420,6 +420,16 @@ export default function Snippets() {
                 className="rounded-xl"
               />
             </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Tags (Optional)</label>
+              <Input
+                value={formData.tags.join(", ")}
+                onChange={(e) => setFormData({ ...formData, tags: e.target.value.split(",").map(t => t.trim()).filter(Boolean) })}
+                placeholder="e.g., cardio, urgent, template"
+                className="rounded-xl"
+              />
+              <p className="text-xs text-slate-500 mt-1">Separate tags with commas</p>
+            </div>
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={resetForm} className="rounded-xl">
                 Cancel

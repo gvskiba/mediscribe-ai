@@ -529,7 +529,7 @@ Generated: ${new Date().toLocaleString()}
                   {/* Non-pharmacologic */}
                   {rec.nonpharmacologic && rec.nonpharmacologic.length > 0 && (
                     <div className="mt-4 bg-amber-50 rounded-lg border border-amber-200 p-4">
-                      <h4 className="text-sm font-bold text-amber-900 mb-2">Non-Pharmacologic Interventions</h4>
+                      <h4 className="text-sm font-bold text-amber-900 mb-2">Key Recommendations</h4>
                       <ul className="space-y-1">
                         {rec.nonpharmacologic.map((item, i) => (
                           <li key={i} className="text-xs text-slate-700 flex items-start gap-2">

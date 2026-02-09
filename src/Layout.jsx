@@ -105,7 +105,7 @@ export default function Layout({ children, currentPageName }) {
             New Note
           </Link>
         </div>
-        <nav className="flex-1 p-4 space-y-1.5">
+        <nav className="bg-blue-200 p-4 flex-1 space-y-1.5">
           {navItems.map((item) =>
           <Link
             key={item.page}

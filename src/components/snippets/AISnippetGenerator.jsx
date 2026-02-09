@@ -158,8 +158,34 @@ Return as JSON with structure: { "tags": ["tag1", "tag2", "tag3"] }`,
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          <div className="flex gap-2 pt-4">
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-2 block">Tone</label>
+              <Select value={selectedTone} onValueChange={setSelectedTone}>
+                <SelectTrigger className="rounded-lg">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {tones.map(tone => (
+                    <SelectItem key={tone.value} value={tone.value}>{tone.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-2 block">Format</label>
+              <Select value={selectedFormat} onValueChange={setSelectedFormat}>
+                <SelectTrigger className="rounded-lg">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {formats.map(format => (
+                    <SelectItem key={format.value} value={format.value}>{format.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2 pt-4">
             <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-lg flex-1">
               Cancel
             </Button>

@@ -298,6 +298,50 @@ export default function Snippets() {
           </Button>
         </Card>
       ) : (
+        <>
+          {bulkSelectMode && selectedSnippets.size > 0 && (
+            <div className="sticky top-0 z-20 bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+              <span className="text-sm font-medium text-blue-900">{selectedSnippets.size} selected</span>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedSnippets(new Set());
+                    setBulkSelectMode(false);
+                  }}
+                  className="rounded-lg"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-lg gap-1"
+                  onClick={() => {
+                    if (confirm("Move selected snippets to folder?")) {
+                      setFolderManagerOpen(true);
+                    }
+                  }}
+                >
+                  <Folder className="w-3 h-3" /> Move
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => {
+                    if (confirm(`Delete ${selectedSnippets.size} snippets?`)) {
+                      bulkDeleteMutation.mutate();
+                    }
+                  }}
+                  className="rounded-lg"
+                >
+                  <Trash2 className="w-3 h-3" /> Delete
+                </Button>
+              </div>
+            </div>
+          )}
+
         <div className="grid grid-cols-1 gap-3">
           <AnimatePresence>
             {filtered.map((snippet, i) => (

@@ -698,6 +698,27 @@ Generated: ${new Date().toLocaleString()}
 
            {/* Guidelines & Codes Tab */}
            <TabsContent value="guidelines" className="p-6 space-y-6">
+             {/* Generate Diagnoses Section */}
+             {note.status === "draft" && (
+               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+                 <div>
+                   <p className="text-sm font-semibold text-blue-900">Generate Diagnoses</p>
+                   <p className="text-xs text-blue-700 mt-1">Extract diagnoses from your clinical note using AI</p>
+                 </div>
+                 <Button
+                   onClick={extractStructuredData}
+                   disabled={extractingData || !note.raw_note}
+                   className="gap-2 bg-blue-600 hover:bg-blue-700 text-white flex-shrink-0"
+                 >
+                   {extractingData ? (
+                     <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
+                   ) : (
+                     <><Sparkles className="w-4 h-4" /> Generate</>
+                   )}
+                 </Button>
+               </div>
+             )}
+
              {note.diagnoses && note.diagnoses.length > 0 && note.status === "finalized" ? (
                <>
                  {/* Linked Guidelines Section */}

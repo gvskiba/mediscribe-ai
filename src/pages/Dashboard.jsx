@@ -116,13 +116,13 @@ export default function Dashboard() {
 
         {/* Recent Queries */}
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-[#1a1f2e] rounded-2xl border border-purple-500/10 overflow-hidden shadow-xl"
-        >
-          <div className="flex items-center justify-between p-6 pb-2">
-            <h2 className="text-lg font-semibold text-white">Recent Queries</h2>
+           initial={{ opacity: 0, y: 12 }}
+           animate={{ opacity: 1, y: 0 }}
+           transition={{ delay: 0.2 }}
+           className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm"
+         >
+           <div className="flex items-center justify-between p-6 pb-2">
+             <h2 className="text-lg font-semibold text-slate-900">Recent Queries</h2>
             <Link to={createPageUrl("Guidelines")} className="text-sm text-purple-300 hover:text-purple-200 flex items-center gap-1 font-medium">
               Ask a question <ArrowRight className="w-3 h-3" />
             </Link>

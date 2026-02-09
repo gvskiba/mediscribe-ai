@@ -226,7 +226,28 @@ Return ONLY the extracted information in a structured format.`,
               {fieldLabels[field]}
             </label>
             
-            {field === "symptom_severity" ? (
+            {field === "patient_age" ? (
+              <Input
+                type="number"
+                min="0"
+                max="120"
+                value={formData[field]}
+                onChange={(e) => handleInputChange(field, e.target.value)}
+                placeholder={fieldPlaceholders[field]}
+                className="border-slate-300"
+              />
+            ) : field === "gender" ? (
+              <select
+                value={formData[field]}
+                onChange={(e) => handleInputChange(field, e.target.value)}
+                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="">Select gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            ) : field === "symptom_severity" ? (
               <div className="space-y-2">
                 <Input
                   type="number"

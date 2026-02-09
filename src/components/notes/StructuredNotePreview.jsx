@@ -595,33 +595,47 @@ FORMATTING RULES (CRITICAL):
         )}
 
         {/* Differential Diagnosis Panel */}
-        {showDifferentials && differentialDiagnoses.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl border-2 border-indigo-300 shadow-lg overflow-hidden"
-          >
-            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 px-5 py-4 border-b border-indigo-200 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
-                  <Stethoscope className="w-5 h-5 text-indigo-600" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-slate-900">Differential Diagnosis</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">AI-powered clinical reasoning analysis</p>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowDifferentials(false)}
-                className="h-8 w-8 rounded-lg hover:bg-slate-100"
-              >
-                <X className="w-4 h-4 text-slate-400" />
-              </Button>
-            </div>
+         {showDifferentials && differentialDiagnoses.length > 0 && (
+           <motion.div
+             initial={{ opacity: 0, y: 10 }}
+             animate={{ opacity: 1, y: 0 }}
+             className="bg-white rounded-xl border-2 border-indigo-300 shadow-lg overflow-hidden"
+           >
+             <div className="bg-gradient-to-r from-indigo-50 to-purple-50 px-5 py-4 border-b border-indigo-200 flex items-center justify-between">
+               <button 
+                 onClick={() => setExpandedDifferentials(!expandedDifferentials)}
+                 className="flex items-center gap-3 flex-1 hover:opacity-80 transition-opacity text-left"
+               >
+                 <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+                   <Stethoscope className="w-5 h-5 text-indigo-600" />
+                 </div>
+                 <div>
+                   <h3 className="text-base font-semibold text-slate-900">Differential Diagnosis</h3>
+                   <p className="text-xs text-slate-500 mt-0.5">AI-powered clinical reasoning analysis</p>
+                 </div>
+               </button>
+               <div className="flex items-center gap-2">
+                 <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${expandedDifferentials ? 'rotate-180' : ''}`} />
+                 <Button
+                   variant="ghost"
+                   size="icon"
+                   onClick={() => setShowDifferentials(false)}
+                   className="h-8 w-8 rounded-lg hover:bg-slate-100"
+                 >
+                   <X className="w-4 h-4 text-slate-400" />
+                 </Button>
+               </div>
+             </div>
 
-            <div className="p-5 space-y-3">
+             <AnimatePresence>
+               {expandedDifferentials && (
+             <motion.div
+               initial={{ height: 0, opacity: 0 }}
+               animate={{ height: "auto", opacity: 1 }}
+               exit={{ height: 0, opacity: 0 }}
+               transition={{ duration: 0.2 }}
+             >
+             <div className="p-5 space-y-3">
               {differentialDiagnoses.map((diff, idx) => {
                 const probabilityColors = {
                   "Very High": "bg-red-100 border-red-300 text-red-800",

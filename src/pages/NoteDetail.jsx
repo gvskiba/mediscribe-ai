@@ -540,12 +540,27 @@ Generated: ${new Date().toLocaleString()}
               </Button>
             )}
             {note.status === "draft" && (
-              <Button
-                onClick={() => finalizeMutation.mutate()}
-                className="bg-emerald-600 hover:bg-emerald-700 rounded-xl gap-2"
-              >
-                <Check className="w-4 h-4" /> Finalize
-              </Button>
+              <>
+                <Button
+                  onClick={() => finalizeMutation.mutate()}
+                  className="bg-emerald-600 hover:bg-emerald-700 rounded-xl gap-2"
+                >
+                  <Check className="w-4 h-4" /> Finalize
+                </Button>
+                <Button
+                  onClick={extractStructuredData}
+                  disabled={extractingData}
+                  variant="outline"
+                  className="rounded-xl gap-2"
+                  title="Extract diagnoses, medications, allergies and other key information from the note"
+                >
+                  {extractingData ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Extracting...</>
+                  ) : (
+                    <><Sparkles className="w-4 h-4" /> Extract Data</>
+                  )}
+                </Button>
+              </>
             )}
           </div>
         </div>

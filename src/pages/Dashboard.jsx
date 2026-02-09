@@ -105,7 +105,7 @@ export default function Dashboard() {
                 </Link>
               </div>
             ) : (
-              <div className="divide-y divide-purple-500/10">
+              <div className="divide-y divide-slate-200">
                 {recentNotes.map((note) => (
                   <RecentNoteCard key={note.id} note={note} />
                 ))}

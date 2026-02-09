@@ -556,50 +556,48 @@ Keep it actionable and concise (4-6 bullet points).`,
       ).join(" ");
 
       const enhancedPlan = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a medical AI assistant${noteData.specialty ? ` specializing in ${noteData.specialty}` : ''}. Review the following clinical note and evidence-based guidelines, then construct a comprehensive, guideline-informed treatment plan.
+        prompt: `You are a medical AI assistant${noteData.specialty ? ` specializing in ${noteData.specialty}` : ''}. Review the following clinical note and evidence-based guidelines, then construct a comprehensive, guideline-informed treatment plan organized by category.
 
-Current Clinical Note:
-Chief Complaint: ${noteData.chief_complaint || "N/A"}
-HPI: ${noteData.history_of_present_illness || "N/A"}
-Assessment: ${noteData.assessment || "N/A"}
-Current Plan: ${noteData.plan || "N/A"}
-Diagnoses: ${noteData.diagnoses?.join(", ") || "N/A"}
-Specialty: ${noteData.specialty || "General Medicine"}
-${historyContext}
+      Current Clinical Note:
+      Chief Complaint: ${noteData.chief_complaint || "N/A"}
+      HPI: ${noteData.history_of_present_illness || "N/A"}
+      Assessment: ${noteData.assessment || "N/A"}
+      Current Plan: ${noteData.plan || "N/A"}
+      Diagnoses: ${noteData.diagnoses?.join(", ") || "N/A"}
+      Specialty: ${noteData.specialty || "General Medicine"}
+      ${historyContext}
 
-Evidence-Based Guidelines:
-${guidelinesSummary}
+      Evidence-Based Guidelines:
+      ${guidelinesSummary}
 
-TASK: Create a professional treatment plan with these components:
+      TASK: Create a professional treatment plan organized into separate treatment categories:
 
-1. Plan Headline: Start with a clear, concise headline that summarizes the primary treatment approach (1 sentence, 15-25 words)
+      1. Plan Headline: A clear, concise headline summarizing the primary treatment approach (1 sentence, 15-25 words)
 
-2. Plan Summary: Provide a brief overview of the entire treatment strategy (2-3 sentences summarizing key interventions)
+      2. Plan Summary: Brief 2-3 sentence overview of the entire treatment strategy
 
-3. Detailed Plan Sections:
-   - Medications: List specific medications with dosages and rationale
-   - Diagnostic Testing: Describe all needed labs and studies
-   - Monitoring: Specify follow-up timing, parameters to monitor, and re-evaluation points
-   - Patient Education: Include education topics and safety instructions
-   - Referrals: Mention any specialist referrals needed
+      3. LABS: List all laboratory tests and diagnostic studies needed with timing and clinical rationale
 
-4. References: List all evidence-based guideline sources at the end
+      4. MEDICATIONS: List all medications with specific dosages, frequency, duration, and clinical rationale for each
 
-FORMATTING RULES (CRITICAL):
-- NO bullet points, dashes, asterisks, arrows, or special symbols in the main plan text
-- Use flowing paragraphs with complete sentences
-- Use periods and commas ONLY for punctuation
-- Write in clear, professional medical language
-- Each section heading on its own line followed by content as flowing paragraphs
-- References section at the very end with numbered citations
+      5. INTERVENTIONS: Describe any procedures, therapies, monitoring protocols, patient education, and follow-up appointments
 
-Be comprehensive, evidence-based, and clinically appropriate for ${noteData.specialty || "general medicine"} practice.`,
+      6. References: List all evidence-based guideline sources
+
+      FORMATTING RULES (CRITICAL):
+      - Write each section (Labs, Medications, Interventions) as flowing paragraphs with complete sentences
+      - NO bullet points, dashes, asterisks, arrows, or special symbols in the plan text
+      - Use clear, professional medical language
+      - Be specific with dosages, frequencies, and timing
+      - Be comprehensive, evidence-based, and clinically appropriate for ${noteData.specialty || "general medicine"} practice.`,
         response_json_schema: {
           type: "object",
           properties: {
             headline: { type: "string", description: "Brief treatment plan headline" },
             summary: { type: "string", description: "2-3 sentence overview of treatment strategy" },
-            plan_content: { type: "string", description: "Detailed treatment plan sections" },
+            labs: { type: "string", description: "Laboratory tests and diagnostic studies" },
+            medications: { type: "string", description: "Medication recommendations with dosages and rationale" },
+            interventions: { type: "string", description: "Procedures, therapies, monitoring, education, and follow-up" },
             references: { type: "array", items: { type: "string" }, description: "Evidence-based guideline sources" }
           }
         }

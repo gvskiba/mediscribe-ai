@@ -294,22 +294,6 @@ Provide a clearer, more concise version.`,
         </div>
 
         <div className="p-6 space-y-4">
-          {/* Chief Complaint */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200 p-4 hover:border-blue-300 transition-colors md:col-span-2"
-          >
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3 block">Chief Complaint</label>
-            <Input
-              value={formData.chief_complaint}
-              onChange={(e) => handleInputChange("chief_complaint", e.target.value)}
-              placeholder="e.g., Chest pain, persistent cough"
-              className="rounded-lg border-slate-300 bg-white focus:border-blue-400 focus:ring-blue-400/20 text-slate-900 placeholder:text-slate-400"
-            />
-          </motion.div>
-
           {/* Note Type & Specialty Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <motion.div

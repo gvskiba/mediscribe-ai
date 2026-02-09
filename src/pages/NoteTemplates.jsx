@@ -539,27 +539,27 @@ Return a JSON structure with:
             onNoteTypeChange={setNoteTypeFilter}
           />
           
-          {allTags.length > 0 && (
+          {allSpecialties.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-slate-600 uppercase">Filter by Tags</p>
+              <p className="text-xs font-semibold text-slate-600 uppercase">Filter by Specialty</p>
               <div className="flex flex-wrap gap-2">
                 <Badge 
-                  variant={tagFilter === "" ? "default" : "outline"}
-                  className="cursor-pointer bg-gradient-to-r from-cyan-500 to-cyan-600 text-white hover:from-cyan-600 hover:to-cyan-700"
-                  onClick={() => setTagFilter("")}
+                  variant={specialtyFilter === "" ? "default" : "outline"}
+                  className="cursor-pointer bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700"
+                  onClick={() => setSpecialtyFilter("")}
                 >
-                  All Tags ({allTags.length})
+                  All Specialties ({allSpecialties.length})
                 </Badge>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                {allTags.map(tag => (
+                {allSpecialties.map(specialty => (
                   <Badge 
-                    key={tag}
-                    variant={tagFilter === tag ? "default" : "outline"}
-                    className={`cursor-pointer text-xs justify-center ${tagFilter === tag ? "bg-gradient-to-r from-cyan-500 to-cyan-600 text-white" : "bg-slate-50 hover:bg-slate-100"}`}
-                    onClick={() => setTagFilter(tag)}
+                    key={specialty}
+                    variant={specialtyFilter === specialty ? "default" : "outline"}
+                    className={`cursor-pointer text-xs justify-center ${specialtyFilter === specialty ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white" : "bg-slate-50 hover:bg-slate-100"}`}
+                    onClick={() => setSpecialtyFilter(specialty)}
                   >
-                    {tag}
+                    {specialty}
                   </Badge>
                 ))}
               </div>

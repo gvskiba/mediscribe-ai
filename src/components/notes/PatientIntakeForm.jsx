@@ -49,7 +49,8 @@ export default function PatientIntakeForm({ onIntakeComplete, defaultPatientId =
   ];
 
   const fieldLabels = {
-    patient_name: "Patient Name",
+    patient_age: "Age",
+    gender: "Gender",
     patient_id: "Patient ID / MRN",
     chief_complaint: "What brings you in today?",
     symptom_onset: "When did the symptoms start?",

@@ -19,7 +19,8 @@ import {
   Code,
   Download,
   BookOpen,
-  FileCode
+  FileCode,
+  Clock
 } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";

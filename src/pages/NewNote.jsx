@@ -1010,30 +1010,6 @@ ${JSON.stringify(structuredNote, null, 2)}`,
                     <p className="text-lg text-slate-800">Choose your preferred input method</p>
                   </div>
 
-                  <div className="bg-slate-700/50 rounded-xl p-6 border border-slate-600">
-                    <label className="text-sm font-semibold text-white mb-3 block">Medical Specialty</label>
-                    <select
-                      value={specialty}
-                      onChange={(e) => setSpecialty(e.target.value)}
-                      className="w-full bg-slate-800 text-white border border-slate-600 rounded-lg px-4 py-2.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                    >
-                      <option value="">Select a specialty...</option>
-                      <option value="General Medicine">General Medicine</option>
-                      <option value="Cardiology">Cardiology</option>
-                      <option value="Pulmonology">Pulmonology</option>
-                      <option value="Gastroenterology">Gastroenterology</option>
-                      <option value="Neurology">Neurology</option>
-                      <option value="Endocrinology">Endocrinology</option>
-                      <option value="Rheumatology">Rheumatology</option>
-                      <option value="Orthopedics">Orthopedics</option>
-                      <option value="Surgery">Surgery</option>
-                      <option value="Emergency Medicine">Emergency Medicine</option>
-                      <option value="Psychiatry">Psychiatry</option>
-                      <option value="Pediatrics">Pediatrics</option>
-                      <option value="Oncology">Oncology</option>
-                    </select>
-                  </div>
-
                   <div className="grid md:grid-cols-2 gap-6">
                     <button
                       onClick={() => setUseDetailedInput(false)}

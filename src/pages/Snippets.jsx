@@ -452,6 +452,22 @@ export default function Snippets() {
           });
         }}
       />
+
+      <SnippetVersionHistory 
+        snippetId={versionHistoryId}
+        open={!!versionHistoryId}
+        onClose={() => setVersionHistoryId(null)}
+        onRevert={async (version) => {
+          await base44.entities.Snippet.update(versionHistoryId, {
+            name: version.name,
+            content: version.content,
+            category: version.category,
+            tags: version.tags
+          });
+          queryClient.invalidateQueries({ queryKey: ["snippets"] });
+          setVersionHistoryId(null);
+        }}
+      />
     </div>
   );
 }

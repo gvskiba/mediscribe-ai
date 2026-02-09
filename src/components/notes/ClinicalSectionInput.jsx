@@ -241,8 +241,6 @@ Provide a clearer, more concise version.`,
     }
 
     const submissionData = {
-      patient_name: formData.patient_name,
-      patient_id: formData.patient_id,
       chief_complaint: formData.chief_complaint,
       note_type: formData.note_type,
       specialty: formData.specialty,

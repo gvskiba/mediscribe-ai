@@ -417,21 +417,27 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
           <p className="text-slate-600">Evidence-based clinical guidelines with AI-powered search</p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant={viewMode === "search" ? "default" : "outline"}
+          <button
             onClick={() => setViewMode("search")}
-            className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white border-0"
+            className={`px-4 py-2 rounded-xl font-medium transition-colors ${
+              viewMode === "search" 
+                ? "bg-blue-600 text-white" 
+                : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+            }`}
           >
             Search
-          </Button>
-          <Button
-            variant={viewMode === "browse" ? "default" : "outline"}
+          </button>
+          <button
             onClick={() => setViewMode("browse")}
-            className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white border-0"
+            className={`px-4 py-2 rounded-xl font-medium transition-colors flex items-center gap-2 ${
+              viewMode === "browse" 
+                ? "bg-blue-600 text-white" 
+                : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+            }`}
           >
-            <BookOpen className="w-4 h-4 mr-2" />
+            <BookOpen className="w-4 h-4" />
             Browse
-          </Button>
+          </button>
         </div>
       </div>
 

@@ -162,6 +162,11 @@ Provide:
   };
 
   const handleGenerateAssessmentPlan = async () => {
+    if (!note?.chief_complaint && !note?.history_of_present_illness) {
+      toast.error("Please fill in at least Chief Complaint or History before generating Assessment & Plan");
+      return;
+    }
+
     setGeneratingAssessmentPlan(true);
     try {
       const { base44 } = await import("@/api/base44Client");

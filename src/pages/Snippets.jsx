@@ -14,13 +14,13 @@ import AISnippetGenerator from "@/components/snippets/AISnippetGenerator";
 import RichTextEditor from "@/components/snippets/RichTextEditor";
 
 const defaultCategories = [
-  { value: "exam", label: "Physical Exam" },
-  { value: "ros", label: "Review of Systems" },
-  { value: "hpi", label: "HPI" },
-  { value: "assessment", label: "Assessment" },
-  { value: "plan", label: "Plan" },
-  { value: "custom", label: "Custom" },
-];
+{ value: "exam", label: "Physical Exam" },
+{ value: "ros", label: "Review of Systems" },
+{ value: "hpi", label: "HPI" },
+{ value: "assessment", label: "Assessment" },
+{ value: "plan", label: "Plan" },
+{ value: "custom", label: "Custom" }];
+
 
 export default function Snippets() {
   const queryClient = useQueryClient();
@@ -35,24 +35,24 @@ export default function Snippets() {
     category: "custom",
     content: "",
     specialty: "",
-    tags: [],
+    tags: []
   });
 
   const { data: snippets = [], isLoading } = useQuery({
     queryKey: ["snippets"],
-    queryFn: () => base44.entities.Snippet.list("-last_used", 200),
+    queryFn: () => base44.entities.Snippet.list("-last_used", 200)
   });
 
   const getUniqueCategories = () => {
-    const cats = new Set(snippets.map(s => s.category).filter(Boolean));
+    const cats = new Set(snippets.map((s) => s.category).filter(Boolean));
     return Array.from(cats).sort();
   };
 
   const getCategories = () => {
     const custom = getUniqueCategories();
-    const all = [...defaultCategories.map(c => c.value), ...custom.filter(c => !defaultCategories.find(d => d.value === c))];
-    return all.map(val => {
-      const defaults = defaultCategories.find(c => c.value === val);
+    const all = [...defaultCategories.map((c) => c.value), ...custom.filter((c) => !defaultCategories.find((d) => d.value === c))];
+    return all.map((val) => {
+      const defaults = defaultCategories.find((c) => c.value === val);
       return { value: val, label: defaults?.label || val };
     });
   };
@@ -63,7 +63,7 @@ export default function Snippets() {
       queryClient.invalidateQueries({ queryKey: ["snippets"] });
       resetForm();
       toast.success("Snippet created");
-    },
+    }
   });
 
   const updateMutation = useMutation({
@@ -72,7 +72,7 @@ export default function Snippets() {
       queryClient.invalidateQueries({ queryKey: ["snippets"] });
       resetForm();
       toast.success("Snippet updated");
-    },
+    }
   });
 
   const deleteMutation = useMutation({
@@ -80,15 +80,15 @@ export default function Snippets() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["snippets"] });
       toast.success("Snippet deleted");
-    },
+    }
   });
 
   const toggleFavoriteMutation = useMutation({
-    mutationFn: ({ id, isFavorite }) => 
-      base44.entities.Snippet.update(id, { is_favorite: !isFavorite }),
+    mutationFn: ({ id, isFavorite }) =>
+    base44.entities.Snippet.update(id, { is_favorite: !isFavorite }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["snippets"] });
-    },
+    }
   });
 
   const resetForm = () => {
@@ -97,7 +97,7 @@ export default function Snippets() {
       category: "custom",
       content: "",
       specialty: "",
-      tags: [],
+      tags: []
     });
     setEditingSnippet(null);
     setDialogOpen(false);
@@ -110,7 +110,7 @@ export default function Snippets() {
       category: snippet.category || "custom",
       content: snippet.content,
       specialty: snippet.specialty || "",
-      tags: snippet.tags || [],
+      tags: snippet.tags || []
     });
     setDialogOpen(true);
   };
@@ -128,10 +128,10 @@ export default function Snippets() {
     }
   };
 
-  const filtered = snippets.filter(s => {
-    const matchSearch = !search || 
-      s.name?.toLowerCase().includes(search.toLowerCase()) ||
-      s.content?.toLowerCase().includes(search.toLowerCase());
+  const filtered = snippets.filter((s) => {
+    const matchSearch = !search ||
+    s.name?.toLowerCase().includes(search.toLowerCase()) ||
+    s.content?.toLowerCase().includes(search.toLowerCase());
     const matchCategory = categoryFilter === "all" || s.category === categoryFilter;
     return matchSearch && matchCategory;
   });
@@ -147,8 +147,8 @@ export default function Snippets() {
           <Button
             onClick={() => setAIGeneratorOpen(true)}
             variant="outline"
-            className="rounded-xl gap-2"
-          >
+            className="rounded-xl gap-2">
+
             <Sparkles className="w-4 h-4" /> AI Generate
           </Button>
           <Button
@@ -156,8 +156,8 @@ export default function Snippets() {
               resetForm();
               setDialogOpen(true);
             }}
-            className="bg-blue-600 hover:bg-blue-700 rounded-xl gap-2"
-          >
+            className="bg-blue-600 hover:bg-blue-700 rounded-xl gap-2">
+
             <Plus className="w-4 h-4" /> New Snippet
           </Button>
         </div>
@@ -170,152 +170,152 @@ export default function Snippets() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search snippets..."
-            className="pl-10 rounded-xl"
-          />
+            className="pl-10 rounded-xl" />
+
         </div>
         <div className="flex gap-2 flex-wrap">
           <Badge
             variant={categoryFilter === "all" ? "default" : "outline"}
             className="cursor-pointer"
-            onClick={() => setCategoryFilter("all")}
-          >
+            onClick={() => setCategoryFilter("all")}>
+
             All
           </Badge>
-          {getCategories().map(cat => (
-            <Badge
-              key={cat.value}
-              variant={categoryFilter === cat.value ? "default" : "outline"}
-              className="cursor-pointer"
-              onClick={() => setCategoryFilter(cat.value)}
-            >
+          {getCategories().map((cat) =>
+          <Badge
+            key={cat.value}
+            variant={categoryFilter === cat.value ? "default" : "outline"} className="bg-primary text-slate-950 px-2.5 py-0.5 text-xs font-semibold rounded-md inline-flex items-center border transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent shadow hover:bg-primary/80 cursor-pointer"
+
+            onClick={() => setCategoryFilter(cat.value)}>
+
               {cat.label}
             </Badge>
-          ))}
+          )}
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-48 bg-slate-100 rounded-2xl animate-pulse" />
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <Card className="p-12 text-center">
+      {isLoading ?
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) =>
+        <div key={i} className="h-48 bg-slate-100 rounded-2xl animate-pulse" />
+        )}
+        </div> :
+      filtered.length === 0 ?
+      <Card className="p-12 text-center">
           <FileText className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-slate-900 mb-2">No snippets found</h3>
           <p className="text-slate-500 mb-4">Create reusable text snippets for faster documentation</p>
           <Button onClick={() => setDialogOpen(true)} className="rounded-xl gap-2">
             <Plus className="w-4 h-4" /> Create Snippet
           </Button>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 gap-3">
+        </Card> :
+
+      <div className="grid grid-cols-1 gap-3">
           <AnimatePresence>
-            {filtered.map((snippet, i) => (
-              <motion.div
-                key={snippet.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ delay: i * 0.02 }}
-              >
+            {filtered.map((snippet, i) =>
+          <motion.div
+            key={snippet.id}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ delay: i * 0.02 }}>
+
                 <Card className="p-4 hover:shadow-md transition-all">
-                  {inlineEditingId === snippet.id ? (
-                    <div className="space-y-3">
+                  {inlineEditingId === snippet.id ?
+              <div className="space-y-3">
                       <Input
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="Snippet name"
-                        className="rounded-lg font-semibold"
-                      />
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Snippet name"
+                  className="rounded-lg font-semibold" />
+
                       <RichTextEditor
-                        value={formData.content}
-                        onChange={(content) => setFormData({ ...formData, content })}
-                        placeholder="Snippet content"
-                      />
+                  value={formData.content}
+                  onChange={(content) => setFormData({ ...formData, content })}
+                  placeholder="Snippet content" />
+
                       <div className="flex gap-2">
                         <Button
-                          onClick={() => {
-                            updateMutation.mutate({ id: snippet.id, data: formData });
-                            setInlineEditingId(null);
-                          }}
-                          className="bg-blue-600 hover:bg-blue-700 rounded-lg text-sm flex-1"
-                        >
+                    onClick={() => {
+                      updateMutation.mutate({ id: snippet.id, data: formData });
+                      setInlineEditingId(null);
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700 rounded-lg text-sm flex-1">
+
                           Save
                         </Button>
                         <Button
-                          variant="outline"
-                          onClick={() => setInlineEditingId(null)}
-                          className="rounded-lg text-sm flex-1"
-                        >
+                    variant="outline"
+                    onClick={() => setInlineEditingId(null)}
+                    className="rounded-lg text-sm flex-1">
+
                           Cancel
                         </Button>
                       </div>
-                    </div>
-                  ) : (
-                    <>
+                    </div> :
+
+              <>
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <h3 className="font-semibold text-slate-900">{snippet.name}</h3>
                           <div className="text-sm text-slate-600 mt-1 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: snippet.content }} />
                         </div>
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 flex-shrink-0"
-                          onClick={() => toggleFavoriteMutation.mutate({ id: snippet.id, isFavorite: snippet.is_favorite })}
-                        >
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 flex-shrink-0"
+                    onClick={() => toggleFavoriteMutation.mutate({ id: snippet.id, isFavorite: snippet.is_favorite })}>
+
                           <Star className={`w-4 h-4 ${snippet.is_favorite ? "text-amber-500 fill-amber-500" : "text-slate-400"}`} />
                         </Button>
                       </div>
                       <div className="flex gap-2 mb-3 flex-wrap">
                         <Badge variant="outline" className="text-xs">{snippet.category}</Badge>
                         {snippet.specialty && <Badge variant="outline" className="text-xs">{snippet.specialty}</Badge>}
-                        {snippet.usage_count > 0 && (
-                          <Badge variant="outline" className="text-xs">{snippet.usage_count} uses</Badge>
-                        )}
+                        {snippet.usage_count > 0 &&
+                  <Badge variant="outline" className="text-xs">{snippet.usage_count} uses</Badge>
+                  }
                       </div>
                       <div className="flex gap-2">
                         <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setEditingSnippet(snippet);
-                            setFormData({
-                              name: snippet.name,
-                              category: snippet.category || "custom",
-                              content: snippet.content,
-                              specialty: snippet.specialty || "",
-                              tags: snippet.tags || [],
-                            });
-                            setInlineEditingId(snippet.id);
-                          }}
-                          className="rounded-lg gap-1 flex-1"
-                        >
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditingSnippet(snippet);
+                      setFormData({
+                        name: snippet.name,
+                        category: snippet.category || "custom",
+                        content: snippet.content,
+                        specialty: snippet.specialty || "",
+                        tags: snippet.tags || []
+                      });
+                      setInlineEditingId(snippet.id);
+                    }}
+                    className="rounded-lg gap-1 flex-1">
+
                           <Edit className="w-3 h-3" /> Edit
                         </Button>
                         <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            if (confirm("Delete this snippet?")) {
-                              deleteMutation.mutate(snippet.id);
-                            }
-                          }}
-                          className="rounded-lg text-red-600 hover:text-red-700"
-                        >
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (confirm("Delete this snippet?")) {
+                        deleteMutation.mutate(snippet.id);
+                      }
+                    }}
+                    className="rounded-lg text-red-600 hover:text-red-700">
+
                           <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
                     </>
-                  )}
+              }
                 </Card>
               </motion.div>
-            ))}
+          )}
           </AnimatePresence>
         </div>
-      )}
+      }
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
          <DialogContent className="max-w-2xl">
@@ -330,8 +330,8 @@ export default function Snippets() {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="e.g., Normal Cardiovascular Exam"
-                className="rounded-xl"
-              />
+                className="rounded-xl" />
+
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">Category</label>
@@ -340,9 +340,9 @@ export default function Snippets() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                    {getCategories().map(cat => (
-                      <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
-                    ))}
+                    {getCategories().map((cat) =>
+                  <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                  )}
                   </SelectContent>
               </Select>
             </div>
@@ -351,8 +351,8 @@ export default function Snippets() {
               <RichTextEditor
                 value={formData.content}
                 onChange={(content) => setFormData({ ...formData, content })}
-                placeholder="Enter the snippet text..."
-              />
+                placeholder="Enter the snippet text..." />
+
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">Specialty (Optional)</label>
@@ -360,8 +360,8 @@ export default function Snippets() {
                 value={formData.specialty}
                 onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
                 placeholder="e.g., Cardiology"
-                className="rounded-xl"
-              />
+                className="rounded-xl" />
+
             </div>
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={resetForm} className="rounded-xl">
@@ -375,15 +375,15 @@ export default function Snippets() {
         </DialogContent>
       </Dialog>
 
-      <AISnippetGenerator 
+      <AISnippetGenerator
         open={aiGeneratorOpen}
         onOpenChange={setAIGeneratorOpen}
         onTemplatesGenerated={(templates) => {
-          templates.forEach(template => {
+          templates.forEach((template) => {
             createMutation.mutate(template);
           });
-        }}
-      />
-    </div>
-  );
+        }} />
+
+    </div>);
+
 }

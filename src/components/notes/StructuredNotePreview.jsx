@@ -934,14 +934,50 @@ FORMATTING RULES (CRITICAL):
         ))}
 
         {/* Medications Box */}
-        <div className="bg-white rounded-xl border-2 border-rose-300 shadow-sm overflow-hidden">
-          <div className="bg-rose-50 px-4 py-3 border-b border-rose-200 flex items-center gap-2">
-            <Pill className="w-5 h-5 text-rose-600" />
-            <h3 className="font-semibold text-slate-900">Medications</h3>
-          </div>
-          <div className="p-4 space-y-4">
-          {/* Medication Recommendations */}
-          {(loadingMedications || (medicationRecommendations.length > 0 && showMedications)) && (
+         <div className="bg-white rounded-xl border-2 border-rose-300 shadow-sm overflow-hidden">
+           <div className="bg-rose-50 px-4 py-3 border-b border-rose-200 flex items-center gap-2">
+             <Pill className="w-5 h-5 text-rose-600" />
+             <h3 className="font-semibold text-slate-900">Medications</h3>
+           </div>
+           <div className="p-4 space-y-4">
+             <EditableSection
+               icon={Pill}
+               title=""
+               color="rose"
+               value={note.medications && note.medications.length > 0 ? note.medications : ["Not extracted"]}
+               field="medications"
+               type="array"
+               onUpdate={onUpdate}
+               onReanalyze={onReanalyze}
+               hideBorder={true}
+             />
+           </div>
+         </div>
+
+        {/* Diagnoses & ICD-10 Codes Box - Bottom */}
+         <div className="bg-white rounded-xl border-2 border-amber-300 shadow-sm overflow-hidden">
+           <div className="bg-amber-50 px-4 py-3 border-b border-amber-200 flex items-center gap-2">
+             <Target className="w-5 h-5 text-amber-600" />
+             <h3 className="font-semibold text-slate-900">Diagnoses</h3>
+           </div>
+           <div className="p-4">
+             <EditableSection
+               icon={Target}
+               title=""
+               color="amber"
+               value={note.diagnoses && note.diagnoses.length > 0 ? note.diagnoses : ["Not extracted"]}
+               field="diagnoses"
+               type="array"
+               onUpdate={onUpdate}
+               onReanalyze={onReanalyze}
+               hideBorder={true}
+             />
+           </div>
+         </div>
+
+         {/* ICD-10 Suggestions - Moved to Bottom */}
+         {/* Medication Recommendations */}
+         {(loadingMedications || (medicationRecommendations.length > 0 && showMedications)) && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}

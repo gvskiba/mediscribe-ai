@@ -181,64 +181,93 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
         animate={{ opacity: 1, y: 0 }}
         className="bg-white rounded-2xl border border-slate-100 shadow-sm"
       >
-      <div className="p-6 border-b border-slate-100">
-        <h2 className="text-xl font-semibold text-slate-900">New Clinical Note</h2>
-        <p className="text-sm text-slate-500 mt-1">
-          Enter or dictate your note — AI will structure it automatically.
+      <div className="p-6 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-slate-50">
+        <h2 className="text-2xl font-bold text-slate-900">New Clinical Note</h2>
+        <p className="text-sm text-slate-600 mt-2">
+          Configure your note settings and provide patient information
         </p>
       </div>
 
       <div className="p-6 space-y-6">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-700">Note Settings</h3>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={saveAsDefaults}
-              className="gap-1.5 text-xs text-amber-700 hover:text-amber-800 hover:bg-amber-50"
-            >
-              <Star className="w-3.5 h-3.5" /> Save as Defaults
-            </Button>
-          </div>
+        {/* Note Type & Specialty Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200 p-4 hover:border-blue-300 transition-colors"
+          >
+            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3 block">Note Type</Label>
+            <Select value={noteType} onValueChange={setNoteType}>
+              <SelectTrigger className="rounded-lg border-slate-300 bg-white text-slate-900 font-medium">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {NOTE_TYPES.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-slate-700 font-medium">Note Type</Label>
-              <Select value={noteType} onValueChange={setNoteType}>
-                <SelectTrigger className="rounded-xl border-slate-200">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {NOTE_TYPES.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-slate-700 font-medium">Specialty</Label>
-              <Select value={specialty} onValueChange={setSpecialty}>
-                <SelectTrigger className="rounded-xl border-slate-200">
-                  <SelectValue placeholder="Select specialty" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SPECIALTIES.map((s) => (
-                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200 p-4 hover:border-blue-300 transition-colors"
+          >
+            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3 block">Specialty</Label>
+            <Select value={specialty} onValueChange={setSpecialty}>
+              <SelectTrigger className="rounded-lg border-slate-300 bg-white text-slate-900 font-medium">
+                <SelectValue placeholder="Select specialty" />
+              </SelectTrigger>
+              <SelectContent>
+                {SPECIALTIES.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </motion.div>
         </div>
+
+        {/* Chief Complaint */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200 p-4 hover:border-blue-300 transition-colors"
+        >
+          <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3 block">Chief Complaint</Label>
+          <Input
+            value={chiefComplaint}
+            onChange={(e) => setChiefComplaint(e.target.value)}
+            placeholder="e.g., Chest pain, Shortness of breath"
+            className="rounded-lg border-slate-300 bg-white focus:border-blue-400 focus:ring-blue-400/20 text-slate-900 placeholder:text-slate-400"
+          />
+        </motion.div>
 
         {/* Template Selection */}
         {templates.length > 0 && (
-          <div className="space-y-2">
-            <Label className="text-slate-700 font-medium">Template (Optional)</Label>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-gradient-to-br from-purple-50 to-white rounded-xl border border-purple-200 p-4 hover:border-purple-400 transition-colors"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <Label className="text-xs font-bold text-purple-600 uppercase tracking-wide">Template</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={saveAsDefaults}
+                className="gap-1.5 text-xs h-7 px-2 text-amber-700 hover:text-amber-800 hover:bg-amber-50"
+              >
+                <Star className="w-3 h-3" /> Save Defaults
+              </Button>
+            </div>
             <Select value={selectedTemplate || ""} onValueChange={(value) => setSelectedTemplate(value || "")}>
-              <SelectTrigger className="rounded-xl border-slate-200">
+              <SelectTrigger className="rounded-lg border-purple-300 bg-white text-slate-900">
                 <SelectValue placeholder="Use default structure" />
               </SelectTrigger>
               <SelectContent>
@@ -250,18 +279,8 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </motion.div>
         )}
-
-                  <div className="space-y-2">
-                  <Label className="text-slate-700 font-medium">Chief Complaint</Label>
-                  <Input
-                  value={chiefComplaint}
-                  onChange={(e) => setChiefComplaint(e.target.value)}
-                  placeholder="e.g., Chest pain, Shortness of breath"
-                  className="rounded-xl border-slate-200 focus:border-blue-400 focus:ring-blue-400/20 text-slate-900 placeholder:text-slate-500"
-                  />
-                  </div>
 
                   {/* Note Input */}
         <div className="space-y-2">

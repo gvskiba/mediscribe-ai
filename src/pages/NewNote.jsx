@@ -34,7 +34,6 @@ export default function NewNote() {
   const [loadingMedications, setLoadingMedications] = useState(false);
   const [encountersSummaryOpen, setEncountersSummaryOpen] = useState(false);
   const [useDetailedInput, setUseDetailedInput] = useState(null);
-  const [specialty, setSpecialty] = useState("");
   const [clinicalData, setClinicalData] = useState({
     history_and_physical: "",
     medical_history: "",

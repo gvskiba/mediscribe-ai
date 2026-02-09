@@ -66,7 +66,8 @@ export default function SnippetPicker({ open, onClose, onInsert, category = null
   const filtered = snippets.filter(s => {
     const matchSearch = !search || 
       s.name?.toLowerCase().includes(search.toLowerCase()) ||
-      s.content?.toLowerCase().includes(search.toLowerCase());
+      s.content?.toLowerCase().includes(search.toLowerCase()) ||
+      s.tags?.some(t => t.toLowerCase().includes(search.toLowerCase()));
     const matchCategory = selectedCategory === "all" || s.category === selectedCategory;
     return matchSearch && matchCategory;
   });

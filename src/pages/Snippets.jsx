@@ -374,6 +374,16 @@ export default function Snippets() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AISnippetGenerator 
+        open={aiGeneratorOpen}
+        onOpenChange={setAIGeneratorOpen}
+        onTemplatesGenerated={(templates) => {
+          templates.forEach(template => {
+            createMutation.mutate(template);
+          });
+        }}
+      />
     </div>
   );
 }

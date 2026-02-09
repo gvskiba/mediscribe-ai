@@ -6,6 +6,7 @@ import { createPageUrl } from "../utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft,
   FileText,
@@ -16,7 +17,9 @@ import {
   Check,
   Plus,
   Code,
-  Download
+  Download,
+  BookOpen,
+  FileCode
 } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";

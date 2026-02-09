@@ -195,29 +195,36 @@ export default function Snippets() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Clinical Snippets</h1>
-          <p className="text-slate-500 mt-1">Reusable text snippets for faster documentation</p>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Clinical Snippets</h1>
+            <p className="text-slate-500 mt-1">Reusable text snippets for faster documentation</p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setFolderManagerOpen(true)}
+              variant="outline"
+              className="rounded-xl gap-2"
+            >
+              <Folder className="w-4 h-4" /> Folders
+            </Button>
+            <Button
+              onClick={() => setAIGeneratorOpen(true)}
+              variant="outline"
+              className="rounded-xl gap-2"
+            >
+              <Sparkles className="w-4 h-4" /> AI Generate
+            </Button>
+            <Button
+              onClick={() => {
+                resetForm();
+                setDialogOpen(true);
+              }}
+              className="bg-blue-600 hover:bg-blue-700 rounded-xl gap-2"
+            >
+              <Plus className="w-4 h-4" /> New Snippet
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={() => setAIGeneratorOpen(true)}
-            variant="outline"
-            className="rounded-xl gap-2"
-          >
-            <Sparkles className="w-4 h-4" /> AI Generate
-          </Button>
-          <Button
-            onClick={() => {
-              resetForm();
-              setDialogOpen(true);
-            }}
-            className="bg-blue-600 hover:bg-blue-700 rounded-xl gap-2"
-          >
-            <Plus className="w-4 h-4" /> New Snippet
-          </Button>
-        </div>
-      </div>
 
       <div className="bg-white rounded-2xl border border-slate-100 p-4 space-y-3">
         <div className="relative">

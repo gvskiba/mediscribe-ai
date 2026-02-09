@@ -1069,11 +1069,10 @@ ${JSON.stringify(structuredNote, null, 2)}`,
                 </button>
                 <NoteTranscriptionInput 
                   onSubmit={(noteData, templateId) => {
-                    handleSubmit({ ...noteData, specialty: specialty || noteData.specialty }, templateId);
+                    handleSubmit(noteData, templateId);
                   }}
                   isProcessing={isProcessing}
                   templates={templates}
-                  defaultSpecialty={specialty}
                 />
               </div>
             ) : (

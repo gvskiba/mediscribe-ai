@@ -566,13 +566,13 @@ Generated: ${new Date().toLocaleString()}
 
            {/* Guidelines & Codes Tab */}
            <TabsContent value="guidelines" className="p-6 space-y-6">
-             {note.diagnoses && note.diagnoses.length > 0 ? (
+             {note.diagnoses && note.diagnoses.length > 0 && note.status === "finalized" ? (
                <>
                  {/* Linked Guidelines Section */}
                  {note.linked_guidelines && note.linked_guidelines.length > 0 && (
                    <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                      <h4 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
-                       <Link className="w-4 h-4" />
+                       <Check className="w-4 h-4" />
                        Automatically Linked Guidelines
                      </h4>
                      <div className="space-y-2">
@@ -588,6 +588,19 @@ Generated: ${new Date().toLocaleString()}
                      </div>
                    </div>
                  )}
+
+                 {/* ICD-10 Codes Section */}
+                 <div>
+                   <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                     <Code className="w-4 h-4 text-blue-600" />
+                     ICD-10 Code Suggestions
+                   </h3>
+                   <ICD10Suggestions
+                     suggestions={icd10Suggestions}
+                     loading={loadingIcd10}
+                     readOnly={true}
+                   />
+                 </div>
 
                  {/* Clinical Guidelines */}
                  <div>

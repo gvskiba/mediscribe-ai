@@ -65,7 +65,8 @@ export default function PatientIntakeForm({ onIntakeComplete, defaultPatientId =
   };
 
   const fieldPlaceholders = {
-    patient_name: "John Doe",
+    patient_age: "45",
+    gender: "Select gender",
     patient_id: "12345",
     chief_complaint: "Persistent cough for 2 weeks",
     symptom_onset: "Started 2 weeks ago",

@@ -4,15 +4,17 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
-import { FileText, Plus, Edit, Trash2, Star, Search, Sparkles, Clock, RotateCcw } from "lucide-react";
+import { FileText, Plus, Edit, Trash2, Star, Search, Sparkles, Clock, RotateCcw, Folder } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import AISnippetGenerator from "@/components/snippets/AISnippetGenerator";
 import RichTextEditor from "@/components/snippets/RichTextEditor";
 import SnippetVersionHistory from "@/components/snippets/SnippetVersionHistory";
+import FolderManager from "@/components/snippets/FolderManager";
 
 const defaultCategories = [
   { value: "exam", label: "Physical Exam" },

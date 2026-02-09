@@ -141,7 +141,7 @@ export default function Dashboard() {
                 </Link>
               </div>
             ) : (
-              <div className="divide-y divide-purple-500/10">
+              <div className="divide-y divide-slate-200">
                 {recentQueries.map((query) => (
                   <RecentQueryCard key={query.id} query={query} />
                 ))}

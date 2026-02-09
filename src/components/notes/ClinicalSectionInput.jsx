@@ -253,23 +253,47 @@ Provide an expanded, clinically detailed version.`,
         {/* History and Physical */}
         <Card className="p-6 border-blue-200">
           <div className="mb-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
                 <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold">1</span>
                 History and Physical
               </h3>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setActiveSection("history_and_physical");
-                  setSnippetPickerOpen(true);
-                }}
-                className="rounded-lg gap-1.5 text-xs text-slate-600 border-slate-300 hover:bg-slate-50"
-              >
-                <FileText className="w-3 h-3" /> Insert Snippet
-              </Button>
+              <div className="flex gap-1.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAIDraft("history_and_physical")}
+                  disabled={aiGenerating === "history_and_physical"}
+                  className="rounded-lg gap-1.5 text-xs text-slate-600 border-slate-300 hover:bg-slate-50"
+                >
+                  {aiGenerating === "history_and_physical" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                  Draft
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAIExpand("history_and_physical")}
+                  disabled={aiGenerating === "history_and_physical"}
+                  className="rounded-lg gap-1.5 text-xs text-slate-600 border-slate-300 hover:bg-slate-50"
+                >
+                  {aiGenerating === "history_and_physical" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                  Expand
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setActiveSection("history_and_physical");
+                    setSnippetPickerOpen(true);
+                  }}
+                  className="rounded-lg gap-1.5 text-xs text-slate-600 border-slate-300 hover:bg-slate-50"
+                >
+                  <FileText className="w-3 h-3" /> Snippet
+                </Button>
+              </div>
             </div>
             <p className="text-sm text-slate-500 mt-1">Include medical history, past medical history, surgical history, medications, allergies, and any relevant clinical context.</p>
           </div>

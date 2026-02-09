@@ -111,82 +111,57 @@ export default function EditableSection({
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
             <div className="flex gap-1">
-            {isEditing && type !== "text" && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => setSnippetPickerOpen(true)}
-              >
-                <FileText className="w-3.5 h-3.5 text-blue-500" />
-              </Button>
-            )}
-            {!isEditing && onReanalyze && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={handleReanalyze}
-                disabled={isReanalyzing}
-              >
-                {isReanalyzing ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-500" />
-                ) : (
-                  <Sparkles className="w-3.5 h-3.5 text-purple-500" />
-                )}
-              </Button>
-            )}
-            {!isEditing ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => setIsEditing(true)}
-              >
-                <Pencil className="w-3.5 h-3.5 text-slate-400" />
-              </Button>
-            ) : (
-              <>
+              {type !== "text" && (
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7"
-                  onClick={handleCancel}
+                  onClick={() => setSnippetPickerOpen(true)}
+                  title="Insert snippet"
                 >
-                  <X className="w-3.5 h-3.5 text-slate-400" />
+                  <FileText className="w-3.5 h-3.5 text-blue-500" />
                 </Button>
+              )}
+              {onReanalyze && (
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7"
-                  onClick={handleSave}
+                  onClick={handleReanalyze}
+                  disabled={isReanalyzing}
+                  title="AI reanalyze"
                 >
-                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                  {isReanalyzing ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-500" />
+                  ) : (
+                    <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+                  )}
                 </Button>
-              </>
-            )}
+              )}
             </div>
           </div>
         )}
         {!title && (
           <div className="flex justify-end mb-2">
-            {isEditing && type !== "text" && (
+            {type !== "text" && (
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
                 onClick={() => setSnippetPickerOpen(true)}
+                title="Insert snippet"
               >
                 <FileText className="w-3.5 h-3.5 text-blue-500" />
               </Button>
             )}
-            {!isEditing && onReanalyze && (
+            {onReanalyze && (
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
                 onClick={handleReanalyze}
                 disabled={isReanalyzing}
+                title="AI reanalyze"
               >
                 {isReanalyzing ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-500" />
@@ -195,98 +170,59 @@ export default function EditableSection({
                 )}
               </Button>
             )}
-            {!isEditing ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => setIsEditing(true)}
-              >
-                <Pencil className="w-3.5 h-3.5 text-slate-400" />
-              </Button>
-            ) : (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={handleCancel}
-                >
-                  <X className="w-3.5 h-3.5 text-slate-400" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={handleSave}
-                >
-                  <Check className="w-3.5 h-3.5 text-emerald-500" />
-                </Button>
-              </>
-            )}
           </div>
         )}
 
-        {isEditing ? (
-          <div className="space-y-2">
-            {type === "textarea" ? (
-              <Textarea
-                ref={textareaRef}
-                value={editValue || ""}
-                onChange={(e) => setEditValue(e.target.value)}
-                className="min-h-[100px] rounded-xl border-slate-200 focus:border-blue-400 text-sm"
-              />
-            ) : type === "array" ? (
-              <div className="space-y-2">
-                {(Array.isArray(editValue) ? editValue : []).map((item, index) => (
-                  <div key={index} className="flex gap-2">
-                    <Input
-                      value={item}
-                      onChange={(e) => handleArrayItemChange(index, e.target.value)}
-                      className="rounded-xl border-slate-200 focus:border-blue-400 text-sm"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleArrayItemRemove(index)}
-                      className="h-9 w-9 flex-shrink-0"
-                    >
-                      <Trash2 className="w-4 h-4 text-red-400" />
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleArrayItemAdd}
-                  className="gap-2 rounded-xl"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Add Item
-                </Button>
-              </div>
-            ) : (
-              <Input
-                value={editValue || ""}
-                onChange={(e) => setEditValue(e.target.value)}
-                className="rounded-xl border-slate-200 focus:border-blue-400 text-sm"
-              />
-            )}
-          </div>
-        ) : (
-          <div>
-            {type === "array" ? (
-              <div className="flex flex-wrap gap-2">
-                {(Array.isArray(value) ? value : []).map((item, i) => (
-                  <Badge key={i} variant="outline" className={`${colorMap[color].replace('text-', 'border-').replace('bg-', 'bg-')} px-3 py-1`}>
-                    {item}
-                  </Badge>
-                ))}
-              </div>
-            ) : (
-              <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">{value}</p>
-            )}
-          </div>
-        )}
+        <div className="space-y-2">
+          {type === "textarea" ? (
+            <Textarea
+              ref={textareaRef}
+              value={editValue || ""}
+              onChange={(e) => handleChange(e.target.value)}
+              onBlur={(e) => handleChange(e.target.value)}
+              className="min-h-[100px] rounded-xl border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm transition-all hover:border-slate-300"
+              placeholder="Click to edit..."
+            />
+          ) : type === "array" ? (
+            <div className="space-y-2">
+              {(Array.isArray(editValue) ? editValue : []).map((item, index) => (
+                <div key={index} className="flex gap-2 group">
+                  <Input
+                    value={item}
+                    onChange={(e) => handleArrayItemChange(index, e.target.value)}
+                    onBlur={(e) => handleArrayItemChange(index, e.target.value)}
+                    className="rounded-xl border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm transition-all hover:border-slate-300"
+                    placeholder={`Item ${index + 1}`}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleArrayItemRemove(index)}
+                    className="h-9 w-9 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleArrayItemAdd}
+                className="gap-2 rounded-xl hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add Item
+              </Button>
+            </div>
+          ) : (
+            <Input
+              value={editValue || ""}
+              onChange={(e) => handleChange(e.target.value)}
+              onBlur={(e) => handleChange(e.target.value)}
+              className="rounded-xl border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm transition-all hover:border-slate-300"
+              placeholder="Click to edit..."
+            />
+          )}
+        </div>
 
         <SnippetPicker
           open={snippetPickerOpen}

@@ -158,6 +158,17 @@ export default function NewNote() {
           setIsProcessing(false);
           return;
         }
+      } else if (hasPatientInfo && noteData.patient_name && !noteData.patient_id) {
+        // Try to find patient by name if no ID provided
+        const existingPatients = await base44.entities.Patient.filter({ patient_name: noteData.patient_name });
+
+        if (existingPatients.length === 0) {
+          // Patient doesn't exist, prompt to create
+          setPendingPatientData({ ...noteData, templateId: templateId || null });
+          setNewPatientDialogOpen(true);
+          setIsProcessing(false);
+          return;
+        }
       }
 
       // Load patient history proactively (only if patient info available)

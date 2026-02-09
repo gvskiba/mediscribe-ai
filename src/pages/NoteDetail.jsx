@@ -765,22 +765,10 @@ Generated: ${new Date().toLocaleString()}
                    )}
                  </div>
 
-                 {/* ICD-10 Code Suggestions */}
-                 <div className="pt-6 border-t border-slate-200">
-                   <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                     <BookOpen className="w-4 h-4 text-blue-600" />
-                     ICD-10 Code Suggestions
-                   </h3>
-                   <ICD10Suggestions
-                     suggestions={icd10Suggestions}
-                     loading={loadingIcd10}
-                     readOnly={true}
-                   />
-                 </div>
-               </>
-             ) : (
-               <p className="text-sm text-slate-500 text-center py-8">Guidelines and codes will appear here after note finalization</p>
-             )}
+                 </>
+                 ) : (
+                 <p className="text-sm text-slate-500 text-center py-8">Guidelines and codes will appear here after note finalization</p>
+                 )}
            </TabsContent>
 
            {/* Metadata Tab */}

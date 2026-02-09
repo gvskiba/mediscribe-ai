@@ -605,14 +605,19 @@ Be comprehensive, evidence-based, and clinically appropriate for ${noteData.spec
         }
       });
 
-      // Format the complete plan with headline, summary, content, and references
-      const formattedPlan = `${enhancedPlan.headline}
+      // Format the complete plan - combine all recommendations then add references at bottom
+       let planContent = cleanPlanText(enhancedPlan.plan_content);
 
-${enhancedPlan.summary}
+       // Append references at the very end if they exist
+       if (enhancedPlan.references && enhancedPlan.references.length > 0) {
+         planContent += `\n\nREFERENCES:\n${enhancedPlan.references.map((ref, i) => `${i + 1}. ${ref}`).join('\n')}`;
+       }
 
-${cleanPlanText(enhancedPlan.plan_content)}
+       const formattedPlan = `${enhancedPlan.headline}
 
-${enhancedPlan.references && enhancedPlan.references.length > 0 ? '\n\nREFERENCES:\n' + enhancedPlan.references.map((ref, i) => `${i + 1}. ${ref}`).join('\n') : ''}`;
+      ${enhancedPlan.summary}
+
+      ${planContent}`;
 
       return {
         ...noteData,

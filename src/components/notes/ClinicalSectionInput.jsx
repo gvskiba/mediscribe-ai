@@ -623,6 +623,6 @@ Other exam findings..."
         onClose={() => setSnippetPickerOpen(false)}
         onInsert={handleInsertSnippet}
       />
-    </div>
+    </form>
   );
 }

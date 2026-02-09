@@ -554,7 +554,7 @@ Other systems as relevant..."
           <div className="relative">
             <Textarea
               ref={examRef}
-              value={clinicalData.physical_exam}
+              value={clinicalData.physical_exam || ""}
               onChange={(e) => handleClinicalDataChange("physical_exam", e.target.value)}
               onMouseUp={() => handleTextSelection("physical_exam")}
               onKeyUp={() => handleTextSelection("physical_exam")}

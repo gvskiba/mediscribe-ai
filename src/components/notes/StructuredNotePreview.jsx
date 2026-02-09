@@ -883,25 +883,29 @@ FORMATTING RULES (CRITICAL):
         </div>
 
         {/* Assessment Box */}
-        <div className="bg-white rounded-xl border-2 border-purple-300 shadow-sm overflow-hidden">
-          <div className="bg-purple-50 px-4 py-3 border-b border-purple-200 flex items-center gap-2">
-            <Stethoscope className="w-5 h-5 text-purple-600" />
-            <h3 className="font-semibold text-slate-900">Assessment</h3>
-          </div>
-          <div className="p-4">
-            <EditableSection
-              icon={Stethoscope}
-              title=""
-              color="purple"
-              value={note.assessment || "Not extracted"}
-              field="assessment"
-              type="textarea"
-              onUpdate={onUpdate}
-              onReanalyze={onReanalyze}
-              hideBorder={true}
-            />
-          </div>
-        </div>
+         <div className="bg-white rounded-xl border-2 border-purple-300 shadow-sm overflow-hidden">
+           <div className="bg-purple-50 px-4 py-3 border-b border-purple-200 flex items-center gap-2">
+             <Stethoscope className="w-5 h-5 text-purple-600" />
+             <h3 className="font-semibold text-slate-900">Assessment</h3>
+           </div>
+           <div className="p-4">
+             <EditableSection
+               icon={Stethoscope}
+               title=""
+               color="purple"
+               value={note.assessment || "Not extracted"}
+               field="assessment"
+               type="textarea"
+               onUpdate={onUpdate}
+               onReanalyze={onReanalyze}
+               hideBorder={true}
+               noteContext={{
+                 diagnoses: note.diagnoses,
+                 medications: note.medications
+               }}
+             />
+           </div>
+         </div>
 
         {/* Plan Box */}
          <div className="bg-white rounded-xl border-2 border-green-300 shadow-sm overflow-hidden">

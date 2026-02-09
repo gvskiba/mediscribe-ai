@@ -264,7 +264,8 @@ Generate:
       onUpdate("plan", assessmentResult.plan);
     } catch (error) {
       console.error("Failed to generate assessment/plan:", error);
-      toast.error("Failed to generate assessment/plan");
+      const errorMessage = error?.message || "Failed to generate assessment/plan";
+      toast.error(errorMessage);
     } finally {
       setGeneratingAssessmentPlan(false);
     }

@@ -342,33 +342,33 @@ export default function Snippets() {
             </div>
           )}
 
-        <div className="grid grid-cols-1 gap-3">
-          <AnimatePresence>
-            {filtered.map((snippet, i) => (
-              <motion.div
-                key={snippet.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ delay: i * 0.02 }}
-              >
-                <Card className={`p-4 hover:shadow-md transition-all ${bulkSelectMode ? "cursor-pointer" : ""}`}>
-                  {bulkSelectMode && (
-                    <div className="flex items-center gap-3 mb-3">
-                      <Checkbox
-                        checked={selectedSnippets.has(snippet.id)}
-                        onCheckedChange={(checked) => {
-                          const newSet = new Set(selectedSnippets);
-                          if (checked) {
-                            newSet.add(snippet.id);
-                          } else {
-                            newSet.delete(snippet.id);
-                          }
-                          setSelectedSnippets(newSet);
-                        }}
-                      />
-                    </div>
-                  )}
+          <div className="grid grid-cols-1 gap-3">
+            <AnimatePresence>
+              {filtered.map((snippet, i) => (
+                <motion.div
+                  key={snippet.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ delay: i * 0.02 }}
+                >
+                  <Card className={`p-4 hover:shadow-md transition-all ${bulkSelectMode ? "cursor-pointer" : ""}`}>
+                    {bulkSelectMode && (
+                      <div className="flex items-center gap-3 mb-3">
+                        <Checkbox
+                          checked={selectedSnippets.has(snippet.id)}
+                          onCheckedChange={(checked) => {
+                            const newSet = new Set(selectedSnippets);
+                            if (checked) {
+                              newSet.add(snippet.id);
+                            } else {
+                              newSet.delete(snippet.id);
+                            }
+                            setSelectedSnippets(newSet);
+                          }}
+                        />
+                      </div>
+                    )}
                   {inlineEditingId === snippet.id ? (
                     <div className="space-y-3">
                       <Input

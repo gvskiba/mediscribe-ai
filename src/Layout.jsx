@@ -153,10 +153,10 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Mobile Nav Overlay */}
       {mobileOpen && (
-        <div className="lg:hidden fixed inset-0 z-30 bg-black/70 backdrop-blur-sm" onClick={() => setMobileOpen(false)}>
+        <div className="lg:hidden fixed inset-0 z-30 bg-black/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)}>
           <div
-            className="absolute left-0 top-16 bottom-0 w-64 text-white p-4 space-y-1.5 glass-effect border-r border-purple-500/10"
-            style={{ background: 'linear-gradient(165deg, #1a1f2e 0%, #0f1419 100%)' }}
+            className="absolute left-0 top-16 bottom-0 w-64 text-slate-900 p-4 space-y-1.5 glass-effect border-r border-slate-200"
+            style={{ background: 'linear-gradient(165deg, #f8fafc 0%, #ffffff 100%)' }}
             onClick={(e) => e.stopPropagation()}
           >
             {navItems.map((item) => (
@@ -166,8 +166,8 @@ export default function Layout({ children, currentPageName }) {
                 onClick={() => setMobileOpen(false)}
                 className={`nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium ${
                   currentPageName === item.page
-                    ? "active text-white"
-                    : "text-cyan-100 hover:text-white"
+                    ? "active text-blue-600 bg-blue-50"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                 }`}
               >
                 <item.icon className="w-[18px] h-[18px]" />

@@ -94,56 +94,54 @@ export default function ClinicalSectionInput({
     setSnippetPickerOpen(false);
   };
 
-  const handleAIDraft = async (section) => {
-    if (!formData.chief_complaint) {
+  const handleAIAssist = async (section) => {
+    const currentText = clinicalData[section];
+    
+    // If there's existing text, expand it; otherwise draft new content
+    const hasExistingText = currentText && currentText.trim().length > 0;
+    
+    if (!hasExistingText && !formData.chief_complaint) {
       toast.error("Please enter chief complaint first");
       return;
     }
 
     setAiGenerating(section);
     try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Draft a detailed ${section.replace(/_/g, " ")} section for a clinical note with the following:
+      let response;
+      
+      if (hasExistingText) {
+        // Expand existing content
+        response = await base44.integrations.Core.InvokeLLM({
+          prompt: `Expand and enhance the following clinical ${section.replace(/_/g, " ")} text into full, detailed paragraphs with proper medical formatting and terminology. Add relevant clinical detail while maintaining accuracy and professional tone:
+
+${currentText}
+
+Context:
+- Chief Complaint: ${formData.chief_complaint || "N/A"}
+- Specialty: ${formData.specialty || "General"}
+- Note Type: ${formData.note_type}
+
+Provide an expanded, clinically detailed version with additional relevant information.`,
+          add_context_from_internet: false
+        });
+        toast.success("Section expanded");
+      } else {
+        // Draft new content
+        response = await base44.integrations.Core.InvokeLLM({
+          prompt: `Draft a detailed ${section.replace(/_/g, " ")} section for a clinical note with the following context:
 - Chief Complaint: ${formData.chief_complaint}
-- Patient Name: ${formData.patient_name}
 - Specialty: ${formData.specialty || "General"}
 - Note Type: ${formData.note_type}
 
 Write a comprehensive and clinically appropriate ${section.replace(/_/g, " ")} section with proper medical terminology and formatting. Keep it detailed but concise.`,
-        add_context_from_internet: false
-      });
+          add_context_from_internet: false
+        });
+        toast.success("Section drafted");
+      }
       
       handleClinicalDataChange(section, response);
-      toast.success("Section drafted");
     } catch (error) {
       toast.error("Failed to generate section");
-    } finally {
-      setAiGenerating(null);
-    }
-  };
-
-  const handleAIExpand = async (section) => {
-    const currentText = clinicalData[section];
-    if (!currentText || currentText.trim().length === 0) {
-      toast.error("Please enter some text first");
-      return;
-    }
-
-    setAiGenerating(section);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Expand the following clinical ${section.replace(/_/g, " ")} text into full, detailed paragraphs with proper medical formatting and terminology. Maintain clinical accuracy and professional tone:
-
-${currentText}
-
-Provide an expanded, clinically detailed version.`,
-        add_context_from_internet: false
-      });
-      
-      handleClinicalDataChange(section, response);
-      toast.success("Section expanded");
-    } catch (error) {
-      toast.error("Failed to expand section");
     } finally {
       setAiGenerating(null);
     }
@@ -328,23 +326,12 @@ Provide a clearer, more concise version.`,
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleAIDraft("history_and_physical")}
+                  onClick={() => handleAIAssist("history_and_physical")}
                   disabled={aiGenerating === "history_and_physical"}
-                  className="rounded-lg gap-1.5 text-xs text-slate-600 border-slate-300 hover:bg-slate-50"
+                  className="rounded-lg gap-1.5 text-xs text-blue-600 border-blue-300 hover:bg-blue-50"
                 >
                   {aiGenerating === "history_and_physical" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
-                  Draft
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleAIExpand("history_and_physical")}
-                  disabled={aiGenerating === "history_and_physical"}
-                  className="rounded-lg gap-1.5 text-xs text-slate-600 border-slate-300 hover:bg-slate-50"
-                >
-                  {aiGenerating === "history_and_physical" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
-                  Expand
+                  {clinicalData.history_and_physical ? "Expand" : "Draft"}
                 </Button>
                 <Button
                   type="button"
@@ -414,23 +401,12 @@ Provide a clearer, more concise version.`,
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleAIDraft("review_of_systems")}
+                  onClick={() => handleAIAssist("review_of_systems")}
                   disabled={aiGenerating === "review_of_systems"}
-                  className="rounded-lg gap-1.5 text-xs text-slate-600 border-slate-300 hover:bg-slate-50"
+                  className="rounded-lg gap-1.5 text-xs text-purple-600 border-purple-300 hover:bg-purple-50"
                 >
                   {aiGenerating === "review_of_systems" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
-                  Draft
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleAIExpand("review_of_systems")}
-                  disabled={aiGenerating === "review_of_systems"}
-                  className="rounded-lg gap-1.5 text-xs text-slate-600 border-slate-300 hover:bg-slate-50"
-                >
-                  {aiGenerating === "review_of_systems" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
-                  Expand
+                  {clinicalData.review_of_systems ? "Expand" : "Draft"}
                 </Button>
                 <Button
                   type="button"
@@ -504,23 +480,12 @@ Other systems as relevant..."
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleAIDraft("physical_exam")}
+                  onClick={() => handleAIAssist("physical_exam")}
                   disabled={aiGenerating === "physical_exam"}
-                  className="rounded-lg gap-1.5 text-xs text-slate-600 border-slate-300 hover:bg-slate-50"
+                  className="rounded-lg gap-1.5 text-xs text-emerald-600 border-emerald-300 hover:bg-emerald-50"
                 >
                   {aiGenerating === "physical_exam" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
-                  Draft
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleAIExpand("physical_exam")}
-                  disabled={aiGenerating === "physical_exam"}
-                  className="rounded-lg gap-1.5 text-xs text-slate-600 border-slate-300 hover:bg-slate-50"
-                >
-                  {aiGenerating === "physical_exam" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
-                  Expand
+                  {clinicalData.physical_exam ? "Expand" : "Draft"}
                 </Button>
                 <Button
                   type="button"

@@ -533,10 +533,10 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
       {pastQueries.length > 0 && !latestAnswer && !selectedQuery && (
         <div className="bg-white rounded-2xl border border-slate-100 p-6">
           <div className="mb-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-1">
+            <h2 className="text-lg font-semibold text-white mb-1">
               {viewMode === "browse" ? "Guidelines Knowledge Base" : "Query History"}
             </h2>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-300">
               {viewMode === "browse" 
                 ? "Browse and filter all saved clinical guidelines" 
                 : "Search through past clinical guideline queries"}

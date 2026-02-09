@@ -25,10 +25,23 @@ const specialties = [
   "Orthopedics",
 ];
 
+const tones = [
+  { value: "formal", label: "Formal" },
+  { value: "casual", label: "Casual" },
+  { value: "concise", label: "Concise" },
+];
+
+const formats = [
+  { value: "paragraph", label: "Paragraph" },
+  { value: "bullets", label: "Bullet Points" },
+];
+
 export default function AISnippetGenerator({ onTemplatesGenerated, open, onOpenChange }) {
   const [generating, setGenerating] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("exam");
   const [selectedSpecialty, setSelectedSpecialty] = useState("General Medicine");
+  const [selectedTone, setSelectedTone] = useState("formal");
+  const [selectedFormat, setSelectedFormat] = useState("paragraph");
 
   const handleGenerate = async () => {
     setGenerating(true);

@@ -179,7 +179,7 @@ export default function Layout({ children, currentPageName }) {
       )}
 
       {/* Main Content */}
-      <main className="flex-1 lg:ml-64 pt-16 lg:pt-0 min-h-screen" style={{ background: 'linear-gradient(135deg, #0f1419 0%, #1a1f2e 50%, #0f1419 100%)' }}>
+      <main className="flex-1 lg:ml-64 pt-16 lg:pt-0 min-h-screen bg-white">
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
           {children}
         </div>

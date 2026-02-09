@@ -4,9 +4,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, FileText, Wand2, Edit3, Plus } from "lucide-react";
+import { Loader2, FileText, Wand2, Edit3, Plus, Star } from "lucide-react";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
+import { motion } from "framer-motion";
 import SnippetPicker from "../snippets/SnippetPicker";
 import {
   Popover,

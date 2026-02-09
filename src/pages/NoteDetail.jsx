@@ -31,6 +31,8 @@ import CreateTemplateFromNote from "../components/templates/CreateTemplateFromNo
 import ICD10Suggestions from "../components/notes/ICD10Suggestions";
 import ICD10CodeSearch from "../components/notes/ICD10CodeSearch";
 import GuidelineReviewPrompt from "../components/notes/GuidelineReviewPrompt";
+import NoteRevisionHistory from "../components/notes/NoteRevisionHistory";
+import { useAutoSave } from "../components/utils/useAutoSave";
 
 const statusColors = {
   draft: "bg-amber-50 text-amber-700 border-amber-200",

@@ -11,6 +11,7 @@ import PatientHistoryPanel from "../components/notes/PatientHistoryPanel";
 import HistoryFocusSelector from "../components/notes/HistoryFocusSelector";
 import ICD10Suggestions from "../components/notes/ICD10Suggestions";
 import PatientEducationMaterials from "../components/notes/PatientEducationMaterials";
+import PatientIntakeForm from "../components/notes/PatientIntakeForm";
 import { Clock } from "lucide-react";
 import NewPatientDialog from "../components/notes/NewPatientDialog";
 import ManualHistoryInput from "../components/notes/ManualHistoryInput";

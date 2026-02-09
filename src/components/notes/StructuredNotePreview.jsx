@@ -990,24 +990,33 @@ FORMATTING RULES (CRITICAL):
                <h3 className="font-semibold text-slate-900">Suggested ICD-10 Codes</h3>
              </div>
              <div className="p-4 space-y-3">
-               {note.icd10_suggestions.map((code, idx) => (
-                 <div key={idx} className="bg-slate-50 rounded-lg border border-slate-200 p-3">
-                   <div className="flex items-start justify-between mb-2">
-                     <div>
-                       <p className="font-semibold text-slate-900">{code.code}</p>
-                       <p className="text-sm text-slate-600 mt-1">{code.description}</p>
+               <ICD10CodeSearch
+                 suggestions={note.icd10_suggestions}
+                 diagnoses={note.diagnoses}
+                 onAddDiagnoses={(codes) => {
+                   onUpdate("diagnoses", [...(note.diagnoses || []), ...codes]);
+                 }}
+               />
+               <div className="border-t border-slate-200 pt-3">
+                 {note.icd10_suggestions.map((code, idx) => (
+                   <div key={idx} className="bg-slate-50 rounded-lg border border-slate-200 p-3 mb-2 last:mb-0">
+                     <div className="flex items-start justify-between mb-2">
+                       <div>
+                         <p className="font-semibold text-slate-900">{code.code}</p>
+                         <p className="text-sm text-slate-600 mt-1">{code.description}</p>
+                       </div>
+                       <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                         code.confidence === 'high' ? 'bg-green-100 text-green-800' :
+                         code.confidence === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
+                         'bg-orange-100 text-orange-800'
+                       }`}>
+                         {code.confidence}
+                       </div>
                      </div>
-                     <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                       code.confidence === 'high' ? 'bg-green-100 text-green-800' :
-                       code.confidence === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
-                       'bg-orange-100 text-orange-800'
-                     }`}>
-                       {code.confidence}
-                     </div>
+                     <p className="text-xs text-slate-500">For: {code.diagnosis}</p>
                    </div>
-                   <p className="text-xs text-slate-500">For: {code.diagnosis}</p>
-                 </div>
-               ))}
+                 ))}
+               </div>
              </div>
            </div>
          )}

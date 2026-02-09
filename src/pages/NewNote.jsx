@@ -1184,8 +1184,68 @@ ${JSON.stringify(structuredNote, null, 2)}`,
           }
 
             {/* Manual History Input */}
-            <ManualHistoryInput
-            onHistoryExtracted={handleManualHistoryExtracted} />
+             <ManualHistoryInput
+             onHistoryExtracted={handleManualHistoryExtracted} />
+
+            {/* Patient Document Upload */}
+            {structuredNote &&
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="p-4">
+                <Button
+                  onClick={() => setDocumentUploadOpen(!documentUploadOpen)}
+                  variant="outline"
+                  className="w-full gap-2 text-slate-700 border-slate-300 hover:bg-slate-50"
+                >
+                  <Upload className="w-4 h-4" />
+                  Import Patient Documents
+                </Button>
+              </div>
+              {documentUploadOpen &&
+              <div className="border-t border-slate-200">
+                <PatientDocumentUpload
+                  onClose={() => setDocumentUploadOpen(false)}
+                  onDataExtracted={(extractedData, fileName) => {
+                    // Apply extracted data to note
+                    if (extractedData.lab_results?.length > 0) {
+                      const labSummary = extractedData.lab_results
+                        .map(r => `${r.test_name}: ${r.value} ${r.unit || ''}`)
+                        .join(", ");
+                      setStructuredNote(prev => ({
+                        ...prev,
+                        physical_exam: (prev.physical_exam || '') + (prev.physical_exam ? '\n' : '') + `LAB RESULTS (${fileName}): ${labSummary}`
+                      }));
+                    }
+                    if (extractedData.diagnoses?.length > 0) {
+                      setStructuredNote(prev => ({
+                        ...prev,
+                        diagnoses: [...(prev.diagnoses || []), ...extractedData.diagnoses]
+                      }));
+                    }
+                    if (extractedData.medications?.length > 0) {
+                      setStructuredNote(prev => ({
+                        ...prev,
+                        medications: [...(prev.medications || []), ...extractedData.medications]
+                      }));
+                    }
+                    if (extractedData.imaging_findings) {
+                      setStructuredNote(prev => ({
+                        ...prev,
+                        physical_exam: (prev.physical_exam || '') + (prev.physical_exam ? '\n' : '') + `IMAGING (${fileName}): ${extractedData.imaging_findings}`
+                      }));
+                    }
+                    if (extractedData.medical_history?.length > 0) {
+                      const historyText = extractedData.medical_history.join(", ");
+                      setPatientHistory(prev => ({
+                        ...prev,
+                        chronic_conditions: [...(prev?.chronic_conditions || []), ...extractedData.medical_history]
+                      }));
+                    }
+                  }}
+                />
+              </div>
+            }
+            </div>
+            }
 
 
             {/* Previous Encounters Summary */}

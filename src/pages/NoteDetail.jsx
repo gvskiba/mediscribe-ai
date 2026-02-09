@@ -155,10 +155,11 @@ Include detailed, actionable recommendations with:
    - Duration of therapy
    - Monitoring requirements for each medication
 
-3. NON-PHARMACOLOGIC INTERVENTIONS
-   - Lifestyle modifications
-   - Physical therapy or rehabilitation
-   - Patient education topics
+3. KEY RECOMMENDATIONS
+   - Provide 4-6 concise, actionable recommendations
+   - Include lifestyle modifications, patient education, and follow-up guidance
+   - Write as clear bullet points WITHOUT any inline citations, reference numbers, or bracketed numbers
+   - Make each recommendation specific and immediately actionable
 
 4. MONITORING & FOLLOW-UP
    - Follow-up timing

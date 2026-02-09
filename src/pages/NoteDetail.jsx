@@ -63,6 +63,7 @@ export default function NoteDetail() {
   const [extractingData, setExtractingData] = useState(false);
   const [linkingGuidelines, setLinkingGuidelines] = useState(false);
   const [showGuidelinePrompt, setShowGuidelinePrompt] = useState(false);
+  const [noteData, setNoteData] = useState(null);
 
   const { data: note, isLoading } = useQuery({
     queryKey: ["note", noteId],

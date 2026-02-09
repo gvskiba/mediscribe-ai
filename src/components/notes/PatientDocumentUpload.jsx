@@ -24,6 +24,11 @@ export default function PatientDocumentUpload({ onDataExtracted, onClose }) {
   const processFiles = async (files) => {
     for (const file of files) {
       // Validate file
+      if (!file || !file.name) {
+        toast.error("Invalid file");
+        continue;
+      }
+
       const extension = "." + file.name.split(".").pop().toLowerCase();
       if (!acceptedFormats.includes(extension)) {
         toast.error(`Unsupported file format: ${file.name}`);
@@ -36,37 +41,39 @@ export default function PatientDocumentUpload({ onDataExtracted, onClose }) {
 
       // Add to processing list
       const fileId = Math.random().toString(36).substr(2, 9);
-      setUploadedFiles(prev => [...prev, { id: fileId, name: file.name, status: "uploading", progress: 0 }]);
+      setUploadedFiles(prev => [...prev, { id: fileId, name: file.name, status: "uploading" }]);
 
       try {
         // Upload file
         const uploadResponse = await base44.integrations.Core.UploadFile({ file });
         
+        if (!uploadResponse?.file_url) {
+          throw new Error("File upload failed - no URL returned");
+        }
+
         setUploadedFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: "extracting", fileUrl: uploadResponse.file_url } : f));
 
         // Extract data based on file type
         let extractedData = null;
         
         if ([".pdf", ".png", ".jpg", ".jpeg"].includes(extension)) {
-          // Use LLM for OCR on images/PDFs
           extractedData = await extractFromDocument(uploadResponse.file_url, file.name);
         } else if ([".xlsx", ".csv"].includes(extension)) {
-          // Extract structured data from spreadsheets
           extractedData = await extractFromSpreadsheet(uploadResponse.file_url, file.name);
         } else if ([".txt", ".docx"].includes(extension)) {
-          // Extract text content
           extractedData = await extractFromTextDocument(uploadResponse.file_url, file.name);
         }
 
-        setUploadedFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: "success", data: extractedData } : f));
-        
-        if (extractedData) {
-          toast.success(`Successfully extracted data from ${file.name}`);
+        if (!extractedData) {
+          throw new Error("No data extracted from document");
         }
+
+        setUploadedFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: "success", data: extractedData } : f));
+        toast.success(`Successfully extracted data from ${file.name}`);
       } catch (error) {
         console.error(`Failed to process ${file.name}:`, error);
         setUploadedFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: "error", error: error.message } : f));
-        toast.error(`Failed to process ${file.name}`);
+        toast.error(`Failed to process ${file.name}: ${error.message}`);
       }
     }
   };

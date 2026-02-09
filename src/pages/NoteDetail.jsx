@@ -766,15 +766,6 @@ Generated: ${new Date().toLocaleString()}
                loadingMedications={false}
              />
 
-             <div className="pt-6 border-t border-slate-200">
-               <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                 <FileCode className="w-4 h-4" />
-                 Original Note
-               </h3>
-               <div className="bg-slate-50 rounded-xl p-4 text-sm text-slate-600 leading-relaxed whitespace-pre-wrap font-mono">
-                 {note.raw_note}
-               </div>
-             </div>
            </TabsContent>
 
            {/* Guidelines & Codes Tab */}

@@ -472,33 +472,114 @@ Generated: ${new Date().toLocaleString()}
               <p className="text-xs text-slate-500 mt-1">Analyzing your diagnoses for relevant recommendations...</p>
             </div>
           ) : guidelineRecommendations.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {guidelineRecommendations.map((rec, idx) => (
-                <div key={idx} className="bg-slate-50 rounded-lg border border-slate-200 p-4 hover:border-purple-300 transition-colors">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <h3 className="font-semibold text-slate-900 text-sm">{rec.condition}</h3>
-                      <p className="text-xs text-slate-600 mt-1">{rec.summary}</p>
+                <div key={idx} className="bg-gradient-to-br from-slate-50 to-white rounded-xl border-2 border-slate-200 p-5 hover:border-purple-300 transition-all shadow-sm">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h3 className="font-bold text-slate-900 text-base mb-2">{rec.condition}</h3>
+                      <p className="text-sm text-slate-600 leading-relaxed">{rec.summary}</p>
                     </div>
                   </div>
                   
-                  {rec.key_points && rec.key_points.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-slate-200">
-                      <p className="text-xs font-semibold text-slate-700 mb-2">Key Recommendations:</p>
+                  {/* Diagnostic Workup */}
+                  {rec.diagnostic_workup && rec.diagnostic_workup.length > 0 && (
+                    <div className="mt-4 bg-blue-50 rounded-lg border border-blue-200 p-4">
+                      <h4 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
+                        <Code className="w-4 h-4" />
+                        Diagnostic Workup
+                      </h4>
+                      <div className="space-y-2">
+                        {rec.diagnostic_workup.map((test, i) => (
+                          <div key={i} className="bg-white rounded-lg p-3 border border-blue-100">
+                            <p className="text-sm font-semibold text-slate-900">{test.test}</p>
+                            <p className="text-xs text-slate-600 mt-1"><strong>Indication:</strong> {test.indication}</p>
+                            <p className="text-xs text-slate-600"><strong>Timing:</strong> {test.timing}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Medications */}
+                  {rec.medications && rec.medications.length > 0 && (
+                    <div className="mt-4 bg-green-50 rounded-lg border border-green-200 p-4">
+                      <h4 className="text-sm font-bold text-green-900 mb-3 flex items-center gap-2">
+                        <Plus className="w-4 h-4" />
+                        Medications
+                      </h4>
+                      <div className="space-y-3">
+                        {rec.medications.map((med, i) => (
+                          <div key={i} className="bg-white rounded-lg p-3 border border-green-100">
+                            <p className="text-sm font-semibold text-slate-900">{med.name}</p>
+                            <div className="mt-2 space-y-1">
+                              <p className="text-xs text-slate-700"><strong className="text-green-700">Dosing:</strong> {med.dosing}</p>
+                              <p className="text-xs text-slate-700"><strong className="text-green-700">Indication:</strong> {med.indication}</p>
+                              <p className="text-xs text-slate-700"><strong className="text-green-700">Duration:</strong> {med.duration}</p>
+                              {med.monitoring && (
+                                <p className="text-xs text-slate-700"><strong className="text-green-700">Monitoring:</strong> {med.monitoring}</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Non-pharmacologic */}
+                  {rec.nonpharmacologic && rec.nonpharmacologic.length > 0 && (
+                    <div className="mt-4 bg-amber-50 rounded-lg border border-amber-200 p-4">
+                      <h4 className="text-sm font-bold text-amber-900 mb-2">Non-Pharmacologic Interventions</h4>
                       <ul className="space-y-1">
-                        {rec.key_points.map((point, i) => (
-                          <li key={i} className="text-xs text-slate-600 flex items-start gap-2">
-                            <span className="text-purple-600 mt-0.5">•</span>
-                            <span>{point.replace(/[•\-\*→▸►]/g, '').trim()}</span>
+                        {rec.nonpharmacologic.map((item, i) => (
+                          <li key={i} className="text-xs text-slate-700 flex items-start gap-2">
+                            <span className="text-amber-600 mt-0.5">•</span>
+                            <span>{item}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
                   )}
 
+                  {/* Follow-up */}
+                  {rec.followup && (
+                    <div className="mt-4 bg-purple-50 rounded-lg border border-purple-200 p-4">
+                      <h4 className="text-sm font-bold text-purple-900 mb-2">Monitoring & Follow-up</h4>
+                      <div className="space-y-2">
+                        <p className="text-xs text-slate-700"><strong>Timing:</strong> {rec.followup.timing}</p>
+                        {rec.followup.parameters && rec.followup.parameters.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold text-purple-900 mb-1">Monitor:</p>
+                            <ul className="space-y-1">
+                              {rec.followup.parameters.map((param, i) => (
+                                <li key={i} className="text-xs text-slate-700 flex items-start gap-2">
+                                  <span className="text-purple-600">•</span>
+                                  <span>{param}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {rec.followup.red_flags && rec.followup.red_flags.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold text-red-900 mb-1">Red Flags:</p>
+                            <ul className="space-y-1">
+                              {rec.followup.red_flags.map((flag, i) => (
+                                <li key={i} className="text-xs text-red-700 flex items-start gap-2">
+                                  <span className="text-red-600">⚠️</span>
+                                  <span>{flag}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {rec.sources && rec.sources.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-slate-200">
-                      <p className="text-xs font-semibold text-slate-700 mb-1">References:</p>
+                    <div className="mt-4 pt-4 border-t border-slate-200">
+                      <p className="text-xs font-semibold text-slate-700 mb-2">References:</p>
                       <div className="space-y-1">
                         {rec.sources.map((source, i) => (
                           <p key={i} className="text-xs text-slate-600">{i + 1}. {source}</p>
@@ -507,18 +588,62 @@ Generated: ${new Date().toLocaleString()}
                     </div>
                   )}
 
-                  <div className="mt-3 pt-3 border-t border-slate-200 flex gap-2">
+                  <div className="mt-4 pt-4 border-t border-slate-200 flex gap-2">
                     <Button
                       size="sm"
                       onClick={async () => {
-                        const guidelineText = `\n\n[Guideline - ${rec.condition}]\n${rec.summary}\n\nKey Points:\n${rec.key_points?.map(p => `- ${p}`).join('\n')}`;
-                        const updatedPlan = (note.plan || "") + guidelineText;
+                        let planText = `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                        planText += `GUIDELINE-BASED TREATMENT PLAN: ${rec.condition}\n`;
+                        planText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+                        
+                        if (rec.diagnostic_workup && rec.diagnostic_workup.length > 0) {
+                          planText += `DIAGNOSTIC WORKUP:\n`;
+                          rec.diagnostic_workup.forEach((test, i) => {
+                            planText += `  ${i + 1}. ${test.test}\n`;
+                            planText += `     • Indication: ${test.indication}\n`;
+                            planText += `     • Timing: ${test.timing}\n`;
+                          });
+                          planText += `\n`;
+                        }
+                        
+                        if (rec.medications && rec.medications.length > 0) {
+                          planText += `MEDICATIONS:\n`;
+                          rec.medications.forEach((med, i) => {
+                            planText += `  ${i + 1}. ${med.name}\n`;
+                            planText += `     • Dosing: ${med.dosing}\n`;
+                            planText += `     • Indication: ${med.indication}\n`;
+                            planText += `     • Duration: ${med.duration}\n`;
+                            if (med.monitoring) planText += `     • Monitoring: ${med.monitoring}\n`;
+                          });
+                          planText += `\n`;
+                        }
+                        
+                        if (rec.nonpharmacologic && rec.nonpharmacologic.length > 0) {
+                          planText += `NON-PHARMACOLOGIC INTERVENTIONS:\n`;
+                          rec.nonpharmacologic.forEach((item, i) => {
+                            planText += `  • ${item}\n`;
+                          });
+                          planText += `\n`;
+                        }
+                        
+                        if (rec.followup) {
+                          planText += `MONITORING & FOLLOW-UP:\n`;
+                          planText += `  • Follow-up: ${rec.followup.timing}\n`;
+                          if (rec.followup.parameters && rec.followup.parameters.length > 0) {
+                            planText += `  • Monitor: ${rec.followup.parameters.join(', ')}\n`;
+                          }
+                          if (rec.followup.red_flags && rec.followup.red_flags.length > 0) {
+                            planText += `  • Red Flags: ${rec.followup.red_flags.join('; ')}\n`;
+                          }
+                        }
+                        
+                        const updatedPlan = (note.plan || "") + planText;
                         await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
                       }}
                       className="flex-1 gap-1.5 bg-purple-600 hover:bg-purple-700 rounded-lg text-white"
                     >
-                      <Check className="w-3.5 h-3.5" /> Add to Plan
+                      <Check className="w-3.5 h-3.5" /> Add Complete Treatment Plan
                     </Button>
                   </div>
                 </div>

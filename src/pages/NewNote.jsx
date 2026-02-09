@@ -569,27 +569,37 @@ ${historyContext}
 Evidence-Based Guidelines:
 ${guidelinesSummary}
 
-TASK: Create a professional treatment plan with these sections combined into flowing paragraphs:
+TASK: Create a professional treatment plan with these components:
 
-Medications: List specific medications with dosages and rationale, combined into flowing prose.
-Diagnostic Testing: Describe all needed labs and studies in complete sentences.
-Monitoring: Specify follow-up timing, parameters to monitor, and re-evaluation points.
-Patient Education: Include education topics and safety instructions.
-Referrals: Mention any specialist referrals needed.
+1. Plan Headline: Start with a clear, concise headline that summarizes the primary treatment approach (1 sentence, 15-25 words)
+
+2. Plan Summary: Provide a brief overview of the entire treatment strategy (2-3 sentences summarizing key interventions)
+
+3. Detailed Plan Sections:
+   - Medications: List specific medications with dosages and rationale
+   - Diagnostic Testing: Describe all needed labs and studies
+   - Monitoring: Specify follow-up timing, parameters to monitor, and re-evaluation points
+   - Patient Education: Include education topics and safety instructions
+   - Referrals: Mention any specialist referrals needed
+
+4. References: List all evidence-based guideline sources at the end
 
 FORMATTING RULES (CRITICAL):
-- NO bullet points, dashes, asterisks, arrows, or special symbols
-- NO line breaks within sections - use flowing paragraphs only
-- Combine related information into complete sentences
+- NO bullet points, dashes, asterisks, arrows, or special symbols in the main plan text
+- Use flowing paragraphs with complete sentences
 - Use periods and commas ONLY for punctuation
 - Write in clear, professional medical language
-- Each section heading followed by a colon then the content on the same line or next line as one paragraph
+- Each section heading on its own line followed by content as flowing paragraphs
+- References section at the very end with numbered citations
 
 Be comprehensive, evidence-based, and clinically appropriate for ${noteData.specialty || "general medicine"} practice.`,
         response_json_schema: {
           type: "object",
           properties: {
-            enhanced_plan: { type: "string" }
+            headline: { type: "string", description: "Brief treatment plan headline" },
+            summary: { type: "string", description: "2-3 sentence overview of treatment strategy" },
+            plan_content: { type: "string", description: "Detailed treatment plan sections" },
+            references: { type: "array", items: { type: "string" }, description: "Evidence-based guideline sources" }
           }
         }
       });

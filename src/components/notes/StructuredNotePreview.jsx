@@ -248,7 +248,15 @@ Generate:
    - Provides specific interventions with rationale
    - Includes medications with dosing and clinical reasoning
    - Specifies follow-up timing and red flags
-   - Incorporates patient education and safety netting`,
+   - Incorporates patient education and safety netting
+
+FORMATTING RULES (CRITICAL):
+- NO bullet points, dashes, asterisks, arrows, or special symbols
+- Write in flowing paragraphs with complete sentences
+- Use periods and commas ONLY for punctuation
+- Combine related information into coherent paragraphs
+- Write in clear, professional medical language
+- Separate major sections with a single line break`,
         add_context_from_internet: true,
         response_json_schema: {
           type: "object",

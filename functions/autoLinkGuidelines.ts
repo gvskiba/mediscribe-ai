@@ -12,165 +12,94 @@ Deno.serve(async (req) => {
     const { noteId } = await req.json();
 
     if (!noteId) {
-      return Response.json({ error: 'noteId is required' }, { status: 400 });
+      return Response.json({ error: 'Note ID is required' }, { status: 400 });
     }
 
     // Fetch the note
-    const note = await base44.entities.ClinicalNote.list().then(
-      notes => notes.find(n => n.id === noteId)
-    );
+    const notes = await base44.entities.ClinicalNote.list();
+    const note = notes.find(n => n.id === noteId);
 
     if (!note) {
       return Response.json({ error: 'Note not found' }, { status: 404 });
     }
 
-    // Extract all clinical data that should be linked to guidelines
-    const diagnosesToLink = note.diagnoses || [];
-    const symptoms = extractSymptoms(note.history_of_present_illness || '');
-    const conditions = extractConditions(note.assessment || '');
-
-    // Fetch all available guidelines for this user
-    const guidelines = await base44.entities.GuidelineQuery.list();
-
-    // Match note content to guidelines
-    const linkedGuidelines = [];
-    const linkedGuidelineIds = new Set();
-
-    // Match diagnoses to guidelines
-    diagnosesToLink.forEach(diagnosis => {
-      const cleanDiagnosis = diagnosis.replace(/\(.*?\)/g, '').trim();
-      const matches = guidelines.filter(g => 
-        matchText(g.question, cleanDiagnosis) || 
-        matchText(g.answer, cleanDiagnosis)
-      );
-
-      matches.forEach(match => {
-        if (!linkedGuidelineIds.has(match.id)) {
-          linkedGuidelines.push({
-            guideline_query_id: match.id,
-            condition: cleanDiagnosis,
-            incorporated: false,
-            adherence_notes: `Automatically linked based on diagnosis match`
-          });
-          linkedGuidelineIds.add(match.id);
-        }
+    // Extract diagnoses from note
+    const diagnoses = note.diagnoses || [];
+    if (diagnoses.length === 0) {
+      return Response.json({ 
+        success: true, 
+        message: 'No diagnoses found to link guidelines',
+        linked_guidelines: []
       });
+    }
+
+    // Fetch guidelines for top diagnoses
+    const guidelinePromises = diagnoses.slice(0, 3).map(async (diagnosis) => {
+      try {
+        const cleanDiagnosis = diagnosis.replace(/\(.*?\)/g, '').trim();
+        
+        const result = await base44.integrations.Core.InvokeLLM({
+          prompt: `Provide a brief evidence-based guideline recommendation for: ${cleanDiagnosis}
+          
+Include:
+1. Key diagnostic criteria and workup
+2. First-line treatment recommendations
+3. When to refer or escalate care
+
+Be concise and actionable.`,
+          add_context_from_internet: true,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              summary: { type: "string" },
+              key_recommendations: { 
+                type: "array", 
+                items: { type: "string" }
+              },
+              diagnostic_approach: { type: "string" },
+              first_line_treatments: { 
+                type: "array",
+                items: { type: "string" }
+              },
+              referral_criteria: { type: "string" }
+            }
+          }
+        });
+
+        return {
+          condition: cleanDiagnosis,
+          guideline_query_id: `guideline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          summary: result.summary,
+          recommendations: result.key_recommendations || [],
+          diagnostic_approach: result.diagnostic_approach,
+          first_line_treatments: result.first_line_treatments || [],
+          referral_criteria: result.referral_criteria,
+          incorporated: false,
+          adherence_notes: "Awaiting review and incorporation"
+        };
+      } catch (error) {
+        console.error(`Failed to fetch guideline for ${diagnosis}:`, error);
+        return null;
+      }
     });
 
-    // Match symptoms to guidelines
-    symptoms.forEach(symptom => {
-      const matches = guidelines.filter(g => 
-        matchText(g.question, symptom) || 
-        matchText(g.answer, symptom)
-      );
-
-      matches.forEach(match => {
-        if (!linkedGuidelineIds.has(match.id)) {
-          linkedGuidelines.push({
-            guideline_query_id: match.id,
-            condition: symptom,
-            incorporated: false,
-            adherence_notes: `Automatically linked based on symptom match`
-          });
-          linkedGuidelineIds.add(match.id);
-        }
-      });
-    });
-
-    // Match conditions from assessment
-    conditions.forEach(condition => {
-      const matches = guidelines.filter(g => 
-        matchText(g.question, condition) || 
-        matchText(g.answer, condition)
-      );
-
-      matches.forEach(match => {
-        if (!linkedGuidelineIds.has(match.id)) {
-          linkedGuidelines.push({
-            guideline_query_id: match.id,
-            condition: condition,
-            incorporated: false,
-            adherence_notes: `Automatically linked based on clinical finding`
-          });
-          linkedGuidelineIds.add(match.id);
-        }
-      });
-    });
+    const fetchedGuidelines = await Promise.all(guidelinePromises);
+    const linkedGuidelines = fetchedGuidelines.filter(g => g !== null);
 
     // Update note with linked guidelines
     if (linkedGuidelines.length > 0) {
-      const existingLinks = note.linked_guidelines || [];
-      const allLinks = [...existingLinks, ...linkedGuidelines];
-      
       await base44.entities.ClinicalNote.update(noteId, {
-        linked_guidelines: allLinks
+        linked_guidelines: linkedGuidelines
       });
     }
 
     return Response.json({
       success: true,
-      linkedCount: linkedGuidelines.length,
-      linkedGuidelines: linkedGuidelines
+      linked_guidelines: linkedGuidelines,
+      message: `Successfully linked ${linkedGuidelines.length} evidence-based guidelines`
     });
   } catch (error) {
-    console.error('Error in autoLinkGuidelines:', error);
+    console.error('Auto-link guidelines error:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
-
-function extractSymptoms(text) {
-  const symptoms = [];
-  const symptomKeywords = [
-    'pain', 'fever', 'cough', 'shortness of breath', 'dyspnea', 'chest', 
-    'headache', 'nausea', 'vomiting', 'diarrhea', 'rash', 'fatigue',
-    'weakness', 'dizziness', 'palpitations', 'tremor', 'sweating'
-  ];
-
-  symptomKeywords.forEach(keyword => {
-    const regex = new RegExp(keyword, 'gi');
-    if (regex.test(text)) {
-      symptoms.push(keyword);
-    }
-  });
-
-  return [...new Set(symptoms)];
-}
-
-function extractConditions(text) {
-  const conditions = [];
-  const conditionKeywords = [
-    'hypertension', 'diabetes', 'asthma', 'copd', 'heart disease',
-    'coronary artery disease', 'heart failure', 'arrhythmia', 'angina',
-    'pneumonia', 'bronchitis', 'flu', 'cold', 'infection', 'sepsis',
-    'stroke', 'tia', 'anemia', 'thyroid', 'hyperthyroid', 'hypothyroid'
-  ];
-
-  conditionKeywords.forEach(keyword => {
-    const regex = new RegExp(keyword, 'gi');
-    if (regex.test(text)) {
-      conditions.push(keyword);
-    }
-  });
-
-  return [...new Set(conditions)];
-}
-
-function matchText(text1, text2) {
-  if (!text1 || !text2) return false;
-  const norm1 = text1.toLowerCase().replace(/[^\w\s]/g, '');
-  const norm2 = text2.toLowerCase().replace(/[^\w\s]/g, '');
-  
-  // Check for exact match
-  if (norm1.includes(norm2) || norm2.includes(norm1)) {
-    return true;
-  }
-
-  // Check for word overlap (at least 70% of words should match)
-  const words1 = norm1.split(/\s+/);
-  const words2 = norm2.split(/\s+/);
-  const shortText = words1.length < words2.length ? words1 : words2;
-  const longText = words1.length >= words2.length ? words1 : words2;
-
-  const matches = shortText.filter(word => longText.includes(word)).length;
-  return (matches / shortText.length) > 0.7;
-}

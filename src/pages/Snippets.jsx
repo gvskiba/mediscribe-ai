@@ -348,11 +348,10 @@ export default function Snippets() {
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">Content</label>
-              <Textarea
+              <RichTextEditor
                 value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                onChange={(content) => setFormData({ ...formData, content })}
                 placeholder="Enter the snippet text..."
-                className="min-h-[150px] rounded-xl"
               />
             </div>
             <div>

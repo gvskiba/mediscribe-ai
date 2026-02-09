@@ -352,15 +352,51 @@ Format with direct reference links when available.`;
                 </div>
               )}
 
-              {/* Additional Resources */}
-              {searchResults.additional_resources && searchResults.additional_resources.length > 0 && (
-                <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                  <h3 className="text-sm font-semibold text-slate-900 mb-3">Additional Resources</h3>
-                  <ul className="space-y-1">
-                    {searchResults.additional_resources.map((resource, idx) => (
-                      <li key={idx} className="text-sm text-slate-700">• {resource}</li>
+              {/* Source Links */}
+              {searchResults.source_links && searchResults.source_links.length > 0 && (
+                <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
+                  <h3 className="text-sm font-semibold text-indigo-900 mb-3 flex items-center gap-2">
+                    <ExternalLink className="w-4 h-4" />
+                    Reputable Sources & References
+                  </h3>
+                  <div className="space-y-2">
+                    {searchResults.source_links.map((link, idx) => (
+                      <a
+                        key={idx}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block text-sm text-indigo-700 hover:text-indigo-900 hover:underline break-all"
+                      >
+                        <span className="font-medium">{link.source}:</span> {link.title}
+                      </a>
                     ))}
-                  </ul>
+                  </div>
+                </div>
+              )}
+
+              {/* Quick Add Section */}
+              {onAddToNote && (
+                <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
+                  <h3 className="text-sm font-semibold text-emerald-900 mb-3 flex items-center gap-2">
+                    <Plus className="w-4 h-4" />
+                    Add to Note
+                  </h3>
+                  <div className="space-y-2">
+                    <p className="text-xs text-emerald-800 mb-2">Quick add to note section:</p>
+                    {["assessment", "plan", "medications"].map(section => (
+                      <Button
+                        key={section}
+                        onClick={() => handleQuickAdd(searchResults.summary, section)}
+                        variant="outline"
+                        size="sm"
+                        className="w-full gap-2 text-emerald-700 border-emerald-300 hover:bg-emerald-100"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Summary to {section.charAt(0).toUpperCase() + section.slice(1)}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

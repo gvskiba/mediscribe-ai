@@ -10,7 +10,8 @@ export default function PatientIntakeForm({ onIntakeComplete, defaultPatientId =
   const [currentStep, setCurrentStep] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState({
-    patient_name: defaultPatientName || "",
+    patient_age: "",
+    gender: "",
     patient_id: defaultPatientId || "",
     chief_complaint: "",
     symptom_onset: "",

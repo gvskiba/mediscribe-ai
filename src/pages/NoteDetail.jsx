@@ -195,7 +195,11 @@ Keep recommendations specific, actionable, and evidence-based.`,
                     }
                   }
                 },
-                nonpharmacologic: { type: "array", items: { type: "string" } },
+                key_recommendations: { 
+                  type: "array", 
+                  items: { type: "string" },
+                  description: "Concise, actionable recommendations as bullet points without any inline citations or reference numbers"
+                },
                 followup: {
                   type: "object",
                   properties: {

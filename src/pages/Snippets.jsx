@@ -318,6 +318,9 @@ export default function Snippets() {
                       <div className="flex gap-2 mb-3 flex-wrap">
                         <Badge variant="outline" className="text-xs">{snippet.category}</Badge>
                         {snippet.specialty && <Badge variant="outline" className="text-xs">{snippet.specialty}</Badge>}
+                        {(snippet.tags || []).map(tag => (
+                          <Badge key={tag} className="text-xs bg-blue-50 text-blue-700 border-blue-200">#{tag}</Badge>
+                        ))}
                         {snippet.usage_count > 0 && (
                           <Badge variant="outline" className="text-xs">{snippet.usage_count} uses</Badge>
                         )}

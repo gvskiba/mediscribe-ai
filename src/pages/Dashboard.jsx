@@ -48,7 +48,7 @@ export default function Dashboard() {
             </Button>
           </Link>
           <Link to={createPageUrl("Guidelines")}>
-            <Button variant="outline" className="rounded-xl gap-2 bg-[#1a1f2e] text-slate-100 border-purple-500/20 hover:border-purple-500/40 hover:bg-[#242938]">
+            <Button variant="outline" className="rounded-xl gap-2">
               <BookOpen className="w-4 h-4" /> Ask Guidelines
             </Button>
           </Link>

@@ -67,7 +67,7 @@ Return the most relevant ICD-10 codes (up to 5) that match this search term. For
     setSelectedCodes(newSelected);
   };
 
-  const handleAddSelected = () => {
+  const handleAddSelected = async () => {
     const selectedArray = Array.from(selectedCodes).map(idx => {
       const code = searchResults[idx];
       return `${code.code} - ${code.description}`;
@@ -78,12 +78,17 @@ Return the most relevant ICD-10 codes (up to 5) that match this search term. For
       return;
     }
 
-    onAddDiagnoses(selectedArray);
-    setSelectedCodes(new Set());
-    setSearchResults([]);
-    setSearchQuery("");
-    setShowSearch(false);
-    toast.success(`Added ${selectedArray.length} diagnosis code(s)`);
+    try {
+      await onAddDiagnoses(selectedArray);
+      setSelectedCodes(new Set());
+      setSearchResults([]);
+      setSearchQuery("");
+      setShowSearch(false);
+      toast.success(`Added ${selectedArray.length} diagnosis code(s)`);
+    } catch (error) {
+      console.error("Failed to add diagnoses:", error);
+      toast.error("Failed to add diagnoses. Please try again.");
+    }
   };
 
   return (

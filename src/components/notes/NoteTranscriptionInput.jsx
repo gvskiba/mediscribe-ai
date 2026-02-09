@@ -9,6 +9,7 @@ import { Mic, MicOff, Loader2, Sparkles, FileText, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import SnippetPicker from "../snippets/SnippetPicker";
+import TemplateSuggestion from "./TemplateSuggestion";
 
 const NOTE_TYPES = [
   { value: "progress_note", label: "Progress Note" },
@@ -44,6 +45,7 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
   const [isRecording, setIsRecording] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(templates.find(t => t.is_default)?.id || "");
   const [snippetPickerOpen, setSnippetPickerOpen] = useState(false);
+  const [showTemplateSuggestion, setShowTemplateSuggestion] = useState(true);
   const recognitionRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -153,11 +155,29 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl border border-slate-100 shadow-sm"
-    >
+    <div className="space-y-4">
+      {/* Template Suggestion */}
+      {showTemplateSuggestion && rawNote.length > 50 && (
+        <TemplateSuggestion
+          rawNote={rawNote}
+          noteType={noteType}
+          specialty={specialty}
+          chiefComplaint={chiefComplaint}
+          templates={templates}
+          currentTemplateId={selectedTemplate}
+          onSelectTemplate={(templateId) => {
+            setSelectedTemplate(templateId);
+            setShowTemplateSuggestion(false);
+          }}
+          onDismiss={() => setShowTemplateSuggestion(false)}
+        />
+      )}
+
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-2xl border border-slate-100 shadow-sm"
+      >
       <div className="p-6 border-b border-slate-100">
         <h2 className="text-xl font-semibold text-slate-900">New Clinical Note</h2>
         <p className="text-sm text-slate-500 mt-1">
@@ -302,10 +322,11 @@ export default function NoteTranscriptionInput({ onSubmit, isProcessing, templat
         </div>
 
         <SnippetPicker
-        open={snippetPickerOpen}
-        onClose={() => setSnippetPickerOpen(false)}
-        onInsert={handleInsertSnippet}
+          open={snippetPickerOpen}
+          onClose={() => setSnippetPickerOpen(false)}
+          onInsert={handleInsertSnippet}
         />
-        </motion.div>
-        );
-        }
+      </motion.div>
+    </div>
+  );
+}

@@ -558,130 +558,58 @@ Generated: ${new Date().toLocaleString()}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl border border-slate-100 p-6"
+        className="bg-white rounded-2xl border border-slate-200 p-6"
       >
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-2xl font-bold text-slate-900">{note.patient_name}</h1>
-              <Badge variant="outline" className={statusColors[note.status] || statusColors.draft}>
-                {note.status || "draft"}
-              </Badge>
-            </div>
-            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
-              {note.patient_id && (
-                <span className="flex items-center gap-1.5"><Hash className="w-3.5 h-3.5" /> {note.patient_id}</span>
-              )}
-              <span className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> {typeLabels[note.note_type] || "Note"}</span>
-              {note.date_of_visit && (
-                <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> {format(new Date(note.date_of_visit), "MMMM d, yyyy")}</span>
-              )}
-              {note.specialty && (
-                <span className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> {note.specialty}</span>
-              )}
-            </div>
+        {/* Patient Info */}
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-3">
+            <h1 className="text-3xl font-bold text-slate-900">{note.patient_name}</h1>
+            <Badge variant="outline" className={statusColors[note.status] || statusColors.draft}>
+              {note.status || "draft"}
+            </Badge>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            {note?.status === "draft" && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-xs font-medium text-blue-700">
-                <Clock className="w-3 h-3 animate-pulse" />
-                {isSaving ? "Saving..." : "Auto-saving..."}
-              </div>
+          <div className="grid sm:grid-cols-2 gap-3 text-sm text-slate-600">
+            {note.patient_id && (
+              <span className="flex items-center gap-2"><Hash className="w-4 h-4 text-slate-400" /> {note.patient_id}</span>
             )}
-            {note?.status === "finalized" && (
-              <NoteRevisionHistory
-                noteId={noteId}
-                onRestore={(revision) => {
-                  const restoredData = {
-                    chief_complaint: revision.chief_complaint,
-                    history_of_present_illness: revision.history_of_present_illness,
-                    assessment: revision.assessment,
-                    plan: revision.plan,
-                    diagnoses: revision.diagnoses,
-                    medications: revision.medications,
-                  };
-                  setNoteData(restoredData);
-                  queryClient.setQueryData(["note", noteId], (old) => ({
-                    ...old,
-                    ...restoredData,
-                  }));
-                }}
-              />
+            {note.date_of_visit && (
+              <span className="flex items-center gap-2"><Calendar className="w-4 h-4 text-slate-400" /> {format(new Date(note.date_of_visit), "MMM d, yyyy")}</span>
             )}
-            <Link to={createPageUrl("NewNote")}>
-              <Button
-                className="rounded-xl gap-2 bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="w-4 h-4" /> New Note
-              </Button>
-            </Link>
-            <Button
-              variant="outline"
-              onClick={() => setTemplateDialogOpen(true)}
-              className="rounded-xl gap-2"
-            >
-              <Sparkles className="w-4 h-4" /> Save as Template
-            </Button>
-            <div className="flex gap-1 border-l border-slate-200 pl-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => exportNote('text')}
-                disabled={exportingFormat === 'text'}
-                className="rounded-lg gap-1.5"
-                title="Export as plain text"
-              >
-                {exportingFormat === 'text' ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Download className="w-3.5 h-3.5" />
-                )}
-                Text
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => exportNote('pdf')}
-                disabled={exportingFormat === 'pdf'}
-                className="rounded-lg gap-1.5"
-                title="Export as PDF"
-              >
-                {exportingFormat === 'pdf' ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Download className="w-3.5 h-3.5" />
-                )}
-                PDF
-              </Button>
-            </div>
-            {note.status === "finalized" && patientSummary && (
-              <Button
-                variant="outline"
-                onClick={generateSummary}
-                disabled={generatingSummary}
-                className="rounded-xl gap-2"
-              >
-                {generatingSummary ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Regenerating...</>
-                ) : (
-                  <><Sparkles className="w-4 h-4" /> Regenerate Summary</>
-                )}
-              </Button>
+            {note.note_type && (
+              <span className="flex items-center gap-2"><FileText className="w-4 h-4 text-slate-400" /> {typeLabels[note.note_type]}</span>
             )}
-            {note.status === "draft" && (
-              <>
+            {note.specialty && (
+              <span className="text-slate-600">{note.specialty}</span>
+            )}
+          </div>
+        </div>
+
+        {/* Auto-save Status */}
+        {note?.status === "draft" && (
+          <div className="mb-6 flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 text-xs font-medium text-blue-700 w-fit">
+            <Clock className="w-3 h-3 animate-pulse" />
+            {isSaving ? "Saving..." : "Auto-saving..."}
+          </div>
+        )}
+
+        {/* Action Buttons - Organized by workflow */}
+        <div className="space-y-4 border-t border-slate-200 pt-6">
+          {/* Primary Actions */}
+          {note.status === "draft" && (
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase mb-3">Note Actions</p>
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Button
                   onClick={() => finalizeMutation.mutate()}
-                  className="bg-emerald-600 hover:bg-emerald-700 rounded-xl gap-2"
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 rounded-lg gap-2"
                 >
-                  <Check className="w-4 h-4" /> Finalize
+                  <Check className="w-4 h-4" /> Finalize Note
                 </Button>
                 <Button
                   onClick={extractStructuredData}
                   disabled={extractingData}
                   variant="outline"
-                  className="rounded-xl gap-2"
-                  title="Extract diagnoses, medications, allergies and other key information from the note"
+                  className="flex-1 rounded-lg gap-2"
                 >
                   {extractingData ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> Extracting...</>
@@ -689,9 +617,99 @@ Generated: ${new Date().toLocaleString()}
                     <><Sparkles className="w-4 h-4" /> Extract Data</>
                   )}
                 </Button>
-              </>
-            )}
+              </div>
+            </div>
+          )}
+
+          {/* Template & Export Actions */}
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase mb-3">Save & Export</p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setTemplateDialogOpen(true)}
+                className="flex-1 rounded-lg gap-2"
+              >
+                <Sparkles className="w-4 h-4" /> Save as Template
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => exportNote('pdf')}
+                disabled={exportingFormat === 'pdf'}
+                className="flex-1 rounded-lg gap-2"
+              >
+                {exportingFormat === 'pdf' ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                Export PDF
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => exportNote('text')}
+                disabled={exportingFormat === 'text'}
+                className="flex-1 rounded-lg gap-2"
+              >
+                {exportingFormat === 'text' ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                Export Text
+              </Button>
+            </div>
           </div>
+
+          {/* Finalized Note Actions */}
+          {note.status === "finalized" && (
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase mb-3">Summary Actions</p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                {note?.status === "finalized" && (
+                  <NoteRevisionHistory
+                    noteId={noteId}
+                    onRestore={(revision) => {
+                      const restoredData = {
+                        chief_complaint: revision.chief_complaint,
+                        history_of_present_illness: revision.history_of_present_illness,
+                        assessment: revision.assessment,
+                        plan: revision.plan,
+                        diagnoses: revision.diagnoses,
+                        medications: revision.medications,
+                      };
+                      setNoteData(restoredData);
+                      queryClient.setQueryData(["note", noteId], (old) => ({
+                        ...old,
+                        ...restoredData,
+                      }));
+                    }}
+                  />
+                )}
+                {patientSummary && (
+                  <Button
+                    variant="outline"
+                    onClick={generateSummary}
+                    disabled={generatingSummary}
+                    className="flex-1 rounded-lg gap-2"
+                  >
+                    {generatingSummary ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" /> Regenerating...</>
+                    ) : (
+                      <><Sparkles className="w-4 h-4" /> Regenerate Summary</>
+                    )}
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* New Note Action */}
+          <Link to={createPageUrl("NewNote")} className="block">
+            <Button className="w-full bg-blue-600 hover:bg-blue-700 rounded-lg gap-2">
+              <Plus className="w-4 h-4" /> Create New Note
+            </Button>
+          </Link>
         </div>
       </motion.div>
 

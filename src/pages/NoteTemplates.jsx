@@ -540,24 +540,29 @@ Return a JSON structure with:
           />
           
           {allTags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              <Badge 
-                variant={tagFilter === "" ? "default" : "outline"}
-                className="cursor-pointer bg-gradient-to-r from-cyan-500 to-cyan-600 text-white hover:from-cyan-600 hover:to-cyan-700"
-                onClick={() => setTagFilter("")}
-              >
-                All Tags
-              </Badge>
-              {allTags.map(tag => (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-slate-600 uppercase">Filter by Tags</p>
+              <div className="flex flex-wrap gap-2">
                 <Badge 
-                  key={tag}
-                  variant={tagFilter === tag ? "default" : "outline"}
-                  className={`cursor-pointer ${tagFilter === tag ? "bg-gradient-to-r from-cyan-500 to-cyan-600 text-white" : ""}`}
-                  onClick={() => setTagFilter(tag)}
+                  variant={tagFilter === "" ? "default" : "outline"}
+                  className="cursor-pointer bg-gradient-to-r from-cyan-500 to-cyan-600 text-white hover:from-cyan-600 hover:to-cyan-700"
+                  onClick={() => setTagFilter("")}
                 >
-                  {tag}
+                  All Tags ({allTags.length})
                 </Badge>
-              ))}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                {allTags.map(tag => (
+                  <Badge 
+                    key={tag}
+                    variant={tagFilter === tag ? "default" : "outline"}
+                    className={`cursor-pointer text-xs justify-center ${tagFilter === tag ? "bg-gradient-to-r from-cyan-500 to-cyan-600 text-white" : "bg-slate-50 hover:bg-slate-100"}`}
+                    onClick={() => setTagFilter(tag)}
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
             </div>
           )}
         </div>

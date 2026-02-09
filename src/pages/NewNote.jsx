@@ -45,7 +45,7 @@ export default function NewNote() {
 
   const { data: templates = [] } = useQuery({
     queryKey: ["noteTemplates"],
-    queryFn: () => base44.entities.NoteTemplate.list(),
+    queryFn: () => base44.entities.NoteTemplate.list()
   });
 
   const loadPatientHistory = async (patientId, patientName, focusArea = "comprehensive") => {
@@ -54,9 +54,9 @@ export default function NewNote() {
     setLoadingHistory(true);
     try {
       const allNotes = await base44.entities.ClinicalNote.list();
-      const patientNotes = allNotes.filter(note => 
-        (patientId && note.patient_id === patientId) || 
-        (patientName && note.patient_name?.toLowerCase() === patientName.toLowerCase())
+      const patientNotes = allNotes.filter((note) =>
+      patientId && note.patient_id === patientId ||
+      patientName && note.patient_name?.toLowerCase() === patientName.toLowerCase()
       ).sort((a, b) => new Date(b.date_of_visit) - new Date(a.date_of_visit));
 
       if (patientNotes.length === 0) {
@@ -80,7 +80,7 @@ export default function NewNote() {
       FOCUS: ${focusInstructions[focusArea] || focusInstructions.comprehensive}
 
       Previous Notes (${patientNotes.length} total, showing 5 most recent):
-      ${patientNotes.slice(0, 5).map(note => `
+      ${patientNotes.slice(0, 5).map((note) => `
       Date: ${note.date_of_visit}
       Raw Note: ${note.raw_note || "N/A"}
       Diagnoses: ${note.diagnoses?.join(", ") || "N/A"}
@@ -128,7 +128,7 @@ export default function NewNote() {
     try {
       // Skip patient checks for detailed clinical input (no patient name/ID provided)
       const hasPatientInfo = noteData.patient_id || noteData.patient_name;
-      
+
       // Check if patient exists (only for transcription input with patient info)
       if (hasPatientInfo && noteData.patient_id) {
         const existingPatients = await base44.entities.Patient.filter({ patient_id: noteData.patient_id });
@@ -147,8 +147,8 @@ export default function NewNote() {
         loadPatientHistory(noteData.patient_id, noteData.patient_name, historyFocus);
       }
 
-      const template = templateId ? templates.find(t => t.id === templateId) : null;
-      
+      const template = templateId ? templates.find((t) => t.id === templateId) : null;
+
       let prompt = `You are a medical scribe AI. Given the following clinical note, extract and structure the information accurately.
 
       ${noteData.patient_name ? `Patient: ${noteData.patient_name}` : ''}
@@ -160,7 +160,7 @@ export default function NewNote() {
 
       // Enhance prompt with patient context when available
       if (patientHistory) {
-       prompt += `\n\n=== PATIENT HISTORY CONTEXT ===
+        prompt += `\n\n=== PATIENT HISTORY CONTEXT ===
       Known Chronic Conditions: ${patientHistory.chronic_conditions?.join(", ") || "None"}
       Current Medications: ${patientHistory.current_medications?.join(", ") || "None"}
       Known Allergies: ${patientHistory.allergies?.join(", ") || "None"}
@@ -182,25 +182,25 @@ export default function NewNote() {
           plan: { type: "string" },
           clinical_impression: { type: "string" },
           diagnoses: { type: "array", items: { type: "string" } },
-          medications: { type: "array", items: { type: "string" } },
-        },
+          medications: { type: "array", items: { type: "string" } }
+        }
       };
 
       if (template && template.sections) {
         // Filter only enabled sections and sort by order
-        const activeSections = template.sections
-          .filter(section => section.enabled !== false)
-          .sort((a, b) => (a.order || 0) - (b.order || 0));
+        const activeSections = template.sections.
+        filter((section) => section.enabled !== false).
+        sort((a, b) => (a.order || 0) - (b.order || 0));
 
         // Helper function to evaluate a single condition
         const evaluateCondition = (condition) => {
           const { type, value, match_type = "partial", secondary_value } = condition;
-          
+
           const matchValue = (haystack, pattern, matchType) => {
             if (!haystack || !pattern) return false;
             const hay = String(haystack).toLowerCase();
             const pat = String(pattern).toLowerCase();
-            
+
             if (matchType === "exact") {
               return hay === pat;
             } else if (matchType === "regex") {
@@ -210,7 +210,7 @@ export default function NewNote() {
               } catch {
                 return false;
               }
-            } else { // partial
+            } else {// partial
               return hay.includes(pat);
             }
           };
@@ -221,16 +221,16 @@ export default function NewNote() {
             } else if (type === "specialty") {
               return matchValue(noteData.specialty, value, match_type);
             } else if (type === "diagnosis_contains") {
-              return Array.isArray(noteData.diagnoses) && noteData.diagnoses.some(d => matchValue(d, value, match_type));
+              return Array.isArray(noteData.diagnoses) && noteData.diagnoses.some((d) => matchValue(d, value, match_type));
             } else if (type === "chronic_condition_contains") {
-              return Array.isArray(patientHistory?.chronic_conditions) && patientHistory.chronic_conditions.some(c => matchValue(c, value, match_type));
+              return Array.isArray(patientHistory?.chronic_conditions) && patientHistory.chronic_conditions.some((c) => matchValue(c, value, match_type));
             } else if (type === "medication_contains") {
-              return Array.isArray(patientHistory?.current_medications) && patientHistory.current_medications.some(m => matchValue(m, value, match_type));
+              return Array.isArray(patientHistory?.current_medications) && patientHistory.current_medications.some((m) => matchValue(m, value, match_type));
             } else if (type === "allergy_contains") {
-              return Array.isArray(patientHistory?.allergies) && patientHistory.allergies.some(a => matchValue(a, value, match_type));
+              return Array.isArray(patientHistory?.allergies) && patientHistory.allergies.some((a) => matchValue(a, value, match_type));
             } else if (type === "patient_age") {
               // Age range matching (e.g., "18-65")
-              const [min, max] = value.split("-").map(v => parseInt(v));
+              const [min, max] = value.split("-").map((v) => parseInt(v));
               return !isNaN(min) && !isNaN(max);
             } else if (type === "symptom_contains") {
               const hpi = noteData.history_of_present_illness || "";
@@ -244,31 +244,31 @@ export default function NewNote() {
         };
 
         // Apply conditional logic filtering
-        const applicableSections = activeSections.filter(section => {
+        const applicableSections = activeSections.filter((section) => {
           if (!section.conditional_logic?.enabled) return true;
 
           const { operator = "AND", conditions = [] } = section.conditional_logic;
-          
+
           if (conditions.length === 0) return true;
 
           const results = conditions.map(evaluateCondition);
-          
+
           // AND: all conditions must be true
           if (operator === "AND") {
-            return results.every(r => r === true);
-          } else { // OR: at least one condition must be true
-            return results.some(r => r === true);
+            return results.every((r) => r === true);
+          } else {// OR: at least one condition must be true
+            return results.some((r) => r === true);
           }
         });
 
-          console.log(`Template: ${template.name} - Using ${applicableSections.length}/${activeSections.length} sections based on conditions`);
+        console.log(`Template: ${template.name} - Using ${applicableSections.length}/${activeSections.length} sections based on conditions`);
 
         prompt += `\n\n=== FOLLOW THIS TEMPLATE STRUCTURE ===`;
         prompt += `\nTemplate: ${template.name}`;
         if (template.ai_instructions) {
           prompt += `\n\nGlobal Instructions: ${template.ai_instructions}`;
         }
-        
+
         prompt += `\n\n=== REQUIRED SECTIONS ===`;
         prompt += `\nExtract information from the raw note above and populate each section below.`;
         prompt += `\nFOLLOW THE SPECIFIC INSTRUCTIONS FOR EACH SECTION CAREFULLY:\n`;
@@ -278,33 +278,33 @@ export default function NewNote() {
           if (section.description) {
             prompt += `\n   Purpose: ${section.description}`;
           }
-          
+
           // Include detailed AI instructions if available
           if (section.ai_instructions_detailed?.global_instructions) {
             prompt += `\n   ⚡ SECTION GUIDELINES: ${section.ai_instructions_detailed.global_instructions}`;
           } else if (section.ai_instructions) {
             prompt += `\n   ⚡ SPECIFIC INSTRUCTIONS: ${section.ai_instructions}`;
           }
-          
+
           // Include field-specific instructions
           if (section.ai_instructions_detailed?.field_instructions && section.ai_instructions_detailed.field_instructions.length > 0) {
             prompt += `\n   FIELD-SPECIFIC EXTRACTION:\n`;
-            section.ai_instructions_detailed.field_instructions.forEach(field => {
+            section.ai_instructions_detailed.field_instructions.forEach((field) => {
               prompt += `     • ${field.field_name}: ${field.instructions}\n`;
             });
           }
-          
+
           if (section.fallback_from_hpi) {
             prompt += `\n   ℹ️  FALLBACK: If this section cannot be populated from the raw note, infer reasonable content from the History of Present Illness (HPI).`;
           }
-          
+
           if (section.ai_instructions || section.ai_instructions_detailed?.global_instructions) {
             prompt += `\n   → CRITICAL: Follow these instructions precisely when extracting data for this section.`;
           } else {
             prompt += `\n   → Extract all relevant content from the raw note for this section.`;
           }
         });
-        
+
         prompt += `\n\n=== IMPORTANT ===`;
         prompt += `\nUse ONLY the information from the raw note provided above. Do not add external information.`;
         prompt += `\nIf a section cannot be populated from the raw note, provide a brief note like "Not documented in this encounter."`;
@@ -321,7 +321,7 @@ export default function NewNote() {
         prompt += `\n- diagnoses (array of strings)`;
         prompt += `\n- medications (array of strings)`;
         prompt += `\nMap the template sections to these standard fields based on content and purpose.`;
-        
+
         // Build schema from applicable sections but always include standard fields
         const properties = {
           chief_complaint: { type: "string" },
@@ -333,12 +333,12 @@ export default function NewNote() {
           plan: { type: "string" },
           clinical_impression: { type: "string" },
           diagnoses: { type: "array", items: { type: "string" } },
-          medications: { type: "array", items: { type: "string" } },
+          medications: { type: "array", items: { type: "string" } }
         };
-        
+
         schema = {
           type: "object",
-          properties,
+          properties
         };
       } else {
         prompt += `\n\n=== EXTRACTION INSTRUCTIONS ===
@@ -431,7 +431,7 @@ Extract ALL information from the raw note and populate the following sections. B
 
       // When using templates, ensure we always have standard fields
       let mergedNote = { ...noteData, ...result };
-      
+
       // If chief complaint was provided upfront, use it (unless AI extracted a better one)
       if (noteData.chief_complaint && !result.chief_complaint) {
         mergedNote.chief_complaint = noteData.chief_complaint;
@@ -439,7 +439,7 @@ Extract ALL information from the raw note and populate the following sections. B
 
       // Ensure standard fields exist even if using template
       if (!mergedNote.chief_complaint && template) {
-        mergedNote.chief_complaint = result.chief_complaint || (result[Object.keys(result)[0]] || "");
+        mergedNote.chief_complaint = result.chief_complaint || result[Object.keys(result)[0]] || "";
       }
       if (!mergedNote.diagnoses) {
         mergedNote.diagnoses = Array.isArray(result.diagnoses) ? result.diagnoses : [];
@@ -447,7 +447,7 @@ Extract ALL information from the raw note and populate the following sections. B
       if (!mergedNote.medications) {
         mergedNote.medications = Array.isArray(result.medications) ? result.medications : [];
       }
-      
+
       // If patient history was loaded and medical_history is empty, auto-apply it
       if (patientHistory && (!result.medical_history || result.medical_history === "Not extracted" || result.medical_history === "Not documented in this encounter.")) {
         mergedNote.medical_history = `CHRONIC CONDITIONS: ${patientHistory.chronic_conditions?.join(", ") || "None"}
@@ -457,7 +457,7 @@ Extract ALL information from the raw note and populate the following sections. B
       FAMILY HISTORY: ${patientHistory.family_history?.join(", ") || "None"}
       TRENDS: ${patientHistory.trends || "N/A"}`;
       }
-      
+
       // Update template usage count and last_used
       if (templateId) {
         await base44.entities.NoteTemplate.update(templateId, {
@@ -472,10 +472,10 @@ Extract ALL information from the raw note and populate the following sections. B
 
       // Automatically fetch guideline recommendations, ICD-10 codes, and medication recommendations in parallel
       Promise.all([
-        fetchGuidelineRecommendations(enhancedNote),
-        generateICD10Suggestions(enhancedNote),
-        fetchMedicationRecommendations(enhancedNote)
-      ]).catch(error => {
+      fetchGuidelineRecommendations(enhancedNote),
+      generateICD10Suggestions(enhancedNote),
+      fetchMedicationRecommendations(enhancedNote)]
+      ).catch((error) => {
         console.error("Failed to fetch additional data:", error);
       });
     } catch (error) {
@@ -488,18 +488,18 @@ Extract ALL information from the raw note and populate the following sections. B
 
   const cleanPlanText = (text) => {
     if (!text) return text;
-    
+
     // Replace special characters with spaces, then clean up
-    let cleaned = text
-      .replace(/[•\-\*→▸►✓✗]/g, '') // Remove bullet points and arrows
-      .replace(/[\u2022\u2023]/g, '') // Remove other bullet variants
-      .replace(/^[\s]*[-•*]\s+/gm, '') // Remove bullets at line start
-      .replace(/(\r\n|\n)+/g, '\n') // Normalize line breaks
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0)
-      .join('\n');
-    
+    let cleaned = text.
+    replace(/[•\-\*→▸►✓✗]/g, '') // Remove bullet points and arrows
+    .replace(/[\u2022\u2023]/g, '') // Remove other bullet variants
+    .replace(/^[\s]*[-•*]\s+/gm, '') // Remove bullets at line start
+    .replace(/(\r\n|\n)+/g, '\n') // Normalize line breaks
+    .split('\n').
+    map((line) => line.trim()).
+    filter((line) => line.length > 0).
+    join('\n');
+
     return cleaned;
   };
 
@@ -543,17 +543,17 @@ Keep it actionable and concise (4-6 bullet points).`,
               properties: {
                 summary: { type: "string" },
                 key_points: { type: "array", items: { type: "string" } },
-                sources: { type: "array", items: { type: "string" } },
-              },
-            },
+                sources: { type: "array", items: { type: "string" } }
+              }
+            }
           });
           return { condition: cleanCondition, ...result };
         })
       );
 
       // Generate enhanced plan based on guidelines
-      const guidelinesSummary = guidelines.map(g => 
-        `${g.condition}: ${g.key_points.join(" ")}`
+      const guidelinesSummary = guidelines.map((g) =>
+      `${g.condition}: ${g.key_points.join(" ")}`
       ).join(" ");
 
       const enhancedPlan = await base44.integrations.Core.InvokeLLM({
@@ -605,29 +605,29 @@ Keep it actionable and concise (4-6 bullet points).`,
       });
 
       // Format the complete plan with organized sections and references at bottom
-       let planContent = `${enhancedPlan.headline}
+      let planContent = `${enhancedPlan.headline}
 
       ${enhancedPlan.summary}`;
 
-       // Add each section if it exists
-       if (enhancedPlan.labs) {
-         planContent += `\n\nLABS\n${cleanPlanText(enhancedPlan.labs)}`;
-       }
+      // Add each section if it exists
+      if (enhancedPlan.labs) {
+        planContent += `\n\nLABS\n${cleanPlanText(enhancedPlan.labs)}`;
+      }
 
-       if (enhancedPlan.medications) {
-         planContent += `\n\nMEDICATIONS\n${cleanPlanText(enhancedPlan.medications)}`;
-       }
+      if (enhancedPlan.medications) {
+        planContent += `\n\nMEDICATIONS\n${cleanPlanText(enhancedPlan.medications)}`;
+      }
 
-       if (enhancedPlan.interventions) {
-         planContent += `\n\nINTERVENTIONS\n${cleanPlanText(enhancedPlan.interventions)}`;
-       }
+      if (enhancedPlan.interventions) {
+        planContent += `\n\nINTERVENTIONS\n${cleanPlanText(enhancedPlan.interventions)}`;
+      }
 
-       // Append references at the very end if they exist
-       if (enhancedPlan.references && enhancedPlan.references.length > 0) {
-         planContent += `\n\nREFERENCES\n${enhancedPlan.references.map((ref, i) => `${i + 1}. ${ref}`).join('\n')}`;
-       }
+      // Append references at the very end if they exist
+      if (enhancedPlan.references && enhancedPlan.references.length > 0) {
+        planContent += `\n\nREFERENCES\n${enhancedPlan.references.map((ref, i) => `${i + 1}. ${ref}`).join('\n')}`;
+      }
 
-       const formattedPlan = planContent;
+      const formattedPlan = planContent;
 
       return {
         ...noteData,
@@ -681,14 +681,14 @@ CRITICAL: Write each recommendation as a clean, complete sentence WITHOUT any in
               type: "object",
               properties: {
                 summary: { type: "string" },
-                key_points: { 
-                  type: "array", 
+                key_points: {
+                  type: "array",
                   items: { type: "string" },
                   description: "Clean, actionable recommendations without inline citations or reference numbers"
                 },
-                sources: { type: "array", items: { type: "string" } },
-              },
-            },
+                sources: { type: "array", items: { type: "string" } }
+              }
+            }
           });
 
           // Save to GuidelineQuery entity for tracking
@@ -700,10 +700,10 @@ CRITICAL: Write each recommendation as a clean, complete sentence WITHOUT any in
             confidence_level: "high"
           });
 
-          return { 
-            condition: cleanCondition, 
+          return {
+            condition: cleanCondition,
             guideline_id: savedGuideline.id,
-            ...result 
+            ...result
           };
         })
       );
@@ -728,7 +728,7 @@ CRITICAL: Write each recommendation as a clean, complete sentence WITHOUT any in
       }
 
       const result = await base44.integrations.Core.InvokeLLM({
-            prompt: `You are an expert medical coder. Analyze the following clinical information and suggest the most appropriate ICD-10 codes. Rank codes by specificity and clinical relevance.
+        prompt: `You are an expert medical coder. Analyze the following clinical information and suggest the most appropriate ICD-10 codes. Rank codes by specificity and clinical relevance.
 
       PATIENT CONTEXT:
       Chief Complaint: ${noteData.chief_complaint || "N/A"}
@@ -750,24 +750,24 @@ CRITICAL: Write each recommendation as a clean, complete sentence WITHOUT any in
       2. The complete description
       3. Which diagnosis this code addresses
       4. Your confidence level (high, moderate, low) based on documentation completeness`,
-            response_json_schema: {
-              type: "object",
-              properties: {
-                suggestions: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      code: { type: "string" },
-                      description: { type: "string" },
-                      diagnosis: { type: "string" },
-                      confidence: { type: "string", enum: ["high", "moderate", "low"] }
-                    }
-                  }
+        response_json_schema: {
+          type: "object",
+          properties: {
+            suggestions: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  code: { type: "string" },
+                  description: { type: "string" },
+                  diagnosis: { type: "string" },
+                  confidence: { type: "string", enum: ["high", "moderate", "low"] }
                 }
               }
             }
-          });
+          }
+        }
+      });
 
       setIcd10Suggestions(result.suggestions || []);
     } catch (error) {
@@ -866,7 +866,7 @@ Return specific, actionable medication recommendations based on current clinical
   PAST PROCEDURES: ${history.past_procedures?.join(", ") || "None"}
   FAMILY HISTORY: ${history.family_history?.join(", ") || "None"}`;
 
-    setStructuredNote(prev => ({
+    setStructuredNote((prev) => ({
       ...prev,
       medical_history: historyText
     }));
@@ -876,25 +876,25 @@ Return specific, actionable medication recommendations based on current clinical
     // Merge extracted history with existing patient history
     const mergedHistory = {
       chronic_conditions: [
-        ...(patientHistory?.chronic_conditions || []),
-        ...(extractedHistory.chronic_conditions || [])
-      ],
+      ...(patientHistory?.chronic_conditions || []),
+      ...(extractedHistory.chronic_conditions || [])],
+
       allergies: [
-        ...(patientHistory?.allergies || []),
-        ...(extractedHistory.allergies || [])
-      ],
+      ...(patientHistory?.allergies || []),
+      ...(extractedHistory.allergies || [])],
+
       current_medications: [
-        ...(patientHistory?.current_medications || []),
-        ...(extractedHistory.current_medications || [])
-      ],
+      ...(patientHistory?.current_medications || []),
+      ...(extractedHistory.current_medications || [])],
+
       past_procedures: [
-        ...(patientHistory?.past_procedures || []),
-        ...(extractedHistory.past_procedures || [])
-      ],
+      ...(patientHistory?.past_procedures || []),
+      ...(extractedHistory.past_procedures || [])],
+
       family_history: [
-        ...(patientHistory?.family_history || []),
-        ...(extractedHistory.family_history || [])
-      ],
+      ...(patientHistory?.family_history || []),
+      ...(extractedHistory.family_history || [])],
+
       trends: patientHistory?.trends || "",
       notes_reviewed: patientHistory?.notes_reviewed || 0
     };
@@ -903,25 +903,25 @@ Return specific, actionable medication recommendations based on current clinical
   };
 
   const handleFinalize = async () => {
-     const created = await base44.entities.ClinicalNote.create({
-       ...rawData,
-       ...structuredNote,
-       status: "finalized",
-     });
+    const created = await base44.entities.ClinicalNote.create({
+      ...rawData,
+      ...structuredNote,
+      status: "finalized"
+    });
 
-     // Automatically link guidelines to the finalized note
-     try {
-       await base44.functions.invoke('autoLinkGuidelines', { noteId: created.id });
-     } catch (error) {
-       console.error("Failed to auto-link guidelines:", error);
-       // Continue anyway - linking failure shouldn't block note finalization
-     }
+    // Automatically link guidelines to the finalized note
+    try {
+      await base44.functions.invoke('autoLinkGuidelines', { noteId: created.id });
+    } catch (error) {
+      console.error("Failed to auto-link guidelines:", error);
+      // Continue anyway - linking failure shouldn't block note finalization
+    }
 
-     navigate(createPageUrl(`NoteDetail?id=${created.id}`));
-   };
+    navigate(createPageUrl(`NoteDetail?id=${created.id}`));
+  };
 
   const handleUpdate = (field, value) => {
-    setStructuredNote(prev => ({ ...prev, [field]: value }));
+    setStructuredNote((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleCreatePatient = async (patientData) => {
@@ -932,7 +932,7 @@ Return specific, actionable medication recommendations based on current clinical
         date_of_birth: patientData.date_of_birth || null,
         gender: patientData.gender || null,
         contact_number: patientData.contact_number || null,
-        email: patientData.email || null,
+        email: patientData.email || null
       });
 
       setNewPatientDialogOpen(false);
@@ -964,7 +964,7 @@ Return specific, actionable medication recommendations based on current clinical
       plan: "Provide a comprehensive treatment plan including medications, follow-ups, and orders",
       clinical_impression: "Synthesize a 2-4 sentence clinical impression identifying the PRIMARY issues, key findings, and clinical context from the entire note",
       diagnoses: "List all diagnoses with ICD-10 codes if possible",
-      medications: "List all medications mentioned with dosages",
+      medications: "List all medications mentioned with dosages"
     };
 
     const responseSchemas = {
@@ -977,7 +977,7 @@ Return specific, actionable medication recommendations based on current clinical
       plan: { type: "object", properties: { result: { type: "string" } } },
       clinical_impression: { type: "object", properties: { result: { type: "string" } } },
       diagnoses: { type: "object", properties: { result: { type: "array", items: { type: "string" } } } },
-      medications: { type: "object", properties: { result: { type: "array", items: { type: "string" } } } },
+      medications: { type: "object", properties: { result: { type: "array", items: { type: "string" } } } }
     };
 
     const result = await base44.integrations.Core.InvokeLLM({
@@ -988,7 +988,7 @@ ${rawData.raw_note}
 
 Current structured data:
 ${JSON.stringify(structuredNote, null, 2)}`,
-      response_json_schema: responseSchemas[field],
+      response_json_schema: responseSchemas[field]
     });
 
     return result.result;
@@ -1001,23 +1001,23 @@ ${JSON.stringify(structuredNote, null, 2)}`,
   return (
     <>
       <div className="max-w-4xl mx-auto space-y-6">
-        {!structuredNote ? (
-          <>
-            {useDetailedInput === null ? (
-              <div className="min-h-[60vh] flex items-center justify-center">
+        {!structuredNote ?
+        <>
+            {useDetailedInput === null ?
+          <div className="min-h-[60vh] flex items-center justify-center">
                 <div className="max-w-3xl w-full space-y-8">
                   <div className="text-center space-y-3">
-                    <h1 className="text-4xl font-bold text-white">Create New Clinical Note</h1>
+                    <h1 className="text-gray-950 text-4xl font-bold">Create New Clinical Note</h1>
                     <p className="text-lg text-slate-800">Choose your preferred input method</p>
                   </div>
 
                   <div className="bg-slate-700/50 rounded-xl p-6 border border-slate-600">
                     <label className="text-sm font-semibold text-white mb-3 block">Medical Specialty</label>
                     <select
-                      value={specialty}
-                      onChange={(e) => setSpecialty(e.target.value)}
-                      className="w-full bg-slate-800 text-white border border-slate-600 rounded-lg px-4 py-2.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                    >
+                  value={specialty}
+                  onChange={(e) => setSpecialty(e.target.value)}
+                  className="w-full bg-slate-800 text-white border border-slate-600 rounded-lg px-4 py-2.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+
                       <option value="">Select a specialty...</option>
                       <option value="General Medicine">General Medicine</option>
                       <option value="Cardiology">Cardiology</option>
@@ -1037,9 +1037,9 @@ ${JSON.stringify(structuredNote, null, 2)}`,
 
                   <div className="grid md:grid-cols-2 gap-6">
                     <button
-                      onClick={() => setUseDetailedInput(false)}
-                      className="group relative overflow-hidden bg-gradient-to-br from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-2xl p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl shadow-xl"
-                    >
+                  onClick={() => setUseDetailedInput(false)}
+                  className="group relative overflow-hidden bg-gradient-to-br from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-2xl p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl shadow-xl">
+
                       <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                       <div className="relative space-y-4">
                         <div className="w-16 h-16 mx-auto bg-white/20 rounded-2xl flex items-center justify-center">
@@ -1060,9 +1060,9 @@ ${JSON.stringify(structuredNote, null, 2)}`,
                     </button>
 
                     <button
-                      onClick={() => setUseDetailedInput(true)}
-                      className="group relative overflow-hidden bg-gradient-to-br from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-2xl p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl shadow-xl"
-                    >
+                  onClick={() => setUseDetailedInput(true)}
+                  className="group relative overflow-hidden bg-gradient-to-br from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-2xl p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl shadow-xl">
+
                       <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                       <div className="relative space-y-4">
                         <div className="w-16 h-16 mx-auto bg-white/20 rounded-2xl flex items-center justify-center">
@@ -1083,131 +1083,131 @@ ${JSON.stringify(structuredNote, null, 2)}`,
                     </button>
                   </div>
                 </div>
-              </div>
-            ) : !useDetailedInput ? (
-              <div className="space-y-4">
+              </div> :
+          !useDetailedInput ?
+          <div className="space-y-4">
                 <button
-                  onClick={() => setUseDetailedInput(null)}
-                  className="text-sm text-purple-300 hover:text-purple-200 underline"
-                >
+              onClick={() => setUseDetailedInput(null)}
+              className="text-sm text-purple-300 hover:text-purple-200 underline">
+
                   ← Back to input selection
                 </button>
-                <NoteTranscriptionInput 
-                  onSubmit={(noteData, templateId) => {
-                    handleSubmit({ ...noteData, specialty: specialty || noteData.specialty }, templateId);
-                  }}
-                  isProcessing={isProcessing}
-                  templates={templates}
-                  defaultSpecialty={specialty}
-                />
-              </div>
-            ) : (
-              <div className="space-y-4">
+                <NoteTranscriptionInput
+              onSubmit={(noteData, templateId) => {
+                handleSubmit({ ...noteData, specialty: specialty || noteData.specialty }, templateId);
+              }}
+              isProcessing={isProcessing}
+              templates={templates}
+              defaultSpecialty={specialty} />
+
+              </div> :
+
+          <div className="space-y-4">
                 <button
-                  onClick={() => setUseDetailedInput(null)}
-                  className="text-sm text-purple-300 hover:text-purple-200 underline"
-                >
+              onClick={() => setUseDetailedInput(null)}
+              className="text-sm text-purple-300 hover:text-purple-200 underline">
+
                   ← Back to input selection
                 </button>
-                <ClinicalSectionInput 
-                  onSubmit={(data, templateId) => handleDetailedInputSubmit({ ...data, specialty: specialty || data.specialty }, templateId)}
-                  isProcessing={isProcessing}
-                  templates={templates}
-                  clinicalData={clinicalData}
-                  onClinicalDataChange={setClinicalData}
-                  defaultSpecialty={specialty}
-                />
+                <ClinicalSectionInput
+              onSubmit={(data, templateId) => handleDetailedInputSubmit({ ...data, specialty: specialty || data.specialty }, templateId)}
+              isProcessing={isProcessing}
+              templates={templates}
+              clinicalData={clinicalData}
+              onClinicalDataChange={setClinicalData}
+              defaultSpecialty={specialty} />
+
               </div>
-            )}
-          </>
-        ) : (
-          <>
+          }
+          </> :
+
+        <>
             {/* History Focus Selector */}
-            {rawData && (rawData.patient_id || rawData.patient_name) && (
-              <HistoryFocusSelector
-                value={historyFocus}
-                onChange={(value) => {
-                  setHistoryFocus(value);
-                  loadPatientHistory(rawData.patient_id, rawData.patient_name, value);
-                }}
-                onRefresh={() => loadPatientHistory(rawData.patient_id, rawData.patient_name, historyFocus)}
-                disabled={loadingHistory}
-              />
-            )}
+            {rawData && (rawData.patient_id || rawData.patient_name) &&
+          <HistoryFocusSelector
+            value={historyFocus}
+            onChange={(value) => {
+              setHistoryFocus(value);
+              loadPatientHistory(rawData.patient_id, rawData.patient_name, value);
+            }}
+            onRefresh={() => loadPatientHistory(rawData.patient_id, rawData.patient_name, historyFocus)}
+            disabled={loadingHistory} />
+
+          }
 
             {/* Manual History Input */}
-            <ManualHistoryInput 
-              onHistoryExtracted={handleManualHistoryExtracted}
-            />
+            <ManualHistoryInput
+            onHistoryExtracted={handleManualHistoryExtracted} />
+
 
             {/* Previous Encounters Summary */}
-            {rawData && (rawData.patient_id || rawData.patient_name) && (
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            {rawData && (rawData.patient_id || rawData.patient_name) &&
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-4">
-                  <Button 
-                    onClick={() => setEncountersSummaryOpen(true)}
-                    variant="outline"
-                    className="w-full gap-2 text-slate-700 border-slate-300 hover:bg-slate-50"
-                  >
+                  <Button
+                onClick={() => setEncountersSummaryOpen(true)}
+                variant="outline"
+                className="w-full gap-2 text-slate-700 border-slate-300 hover:bg-slate-50">
+
                     <Clock className="w-4 h-4" />
                     View Previous Encounters Summary
                   </Button>
                 </div>
               </div>
-            )}
+          }
 
             {/* Patient History Panel */}
-            <PatientHistoryPanel 
-              history={patientHistory}
-              loading={loadingHistory}
-              onApplyToNote={handleApplyHistory}
-            />
+            <PatientHistoryPanel
+            history={patientHistory}
+            loading={loadingHistory}
+            onApplyToNote={handleApplyHistory} />
+
 
             {/* ICD-10 Code Suggestions */}
             <ICD10Suggestions
-              suggestions={icd10Suggestions}
-              loading={loadingIcd10}
-              onAccept={(code) => {
-                const newDiagnosis = `${code.diagnosis} (${code.code})`;
-                setStructuredNote(prev => ({
-                  ...prev,
-                  diagnoses: [...(prev.diagnoses || []), newDiagnosis]
-                }));
-              }}
-              onApplyToNote={(codes) => {
-                const newDiagnoses = codes.map(code => `${code.diagnosis} (${code.code})`);
-                setStructuredNote(prev => ({
-                  ...prev,
-                  diagnoses: [...(prev.diagnoses || []), ...newDiagnoses]
-                }));
-              }}
-            />
+            suggestions={icd10Suggestions}
+            loading={loadingIcd10}
+            onAccept={(code) => {
+              const newDiagnosis = `${code.diagnosis} (${code.code})`;
+              setStructuredNote((prev) => ({
+                ...prev,
+                diagnoses: [...(prev.diagnoses || []), newDiagnosis]
+              }));
+            }}
+            onApplyToNote={(codes) => {
+              const newDiagnoses = codes.map((code) => `${code.diagnosis} (${code.code})`);
+              setStructuredNote((prev) => ({
+                ...prev,
+                diagnoses: [...(prev.diagnoses || []), ...newDiagnoses]
+              }));
+            }} />
+
 
             {/* Structured Note Preview */}
             <StructuredNotePreview
-              note={structuredNote}
-              onFinalize={handleFinalize}
-              onUpdate={handleUpdate}
-              onReanalyze={handleReanalyze}
-              guidelineRecommendations={guidelineRecommendations}
-              loadingGuidelines={loadingGuidelines}
-              medicationRecommendations={medicationRecommendations}
-              loadingMedications={loadingMedications}
-              onGenerateEducationMaterials={() => setEducationMaterialsOpen(true)}
-              />
+            note={structuredNote}
+            onFinalize={handleFinalize}
+            onUpdate={handleUpdate}
+            onReanalyze={handleReanalyze}
+            guidelineRecommendations={guidelineRecommendations}
+            loadingGuidelines={loadingGuidelines}
+            medicationRecommendations={medicationRecommendations}
+            loadingMedications={loadingMedications}
+            onGenerateEducationMaterials={() => setEducationMaterialsOpen(true)} />
+
           </>
-        )}
+        }
       </div>
 
       {/* Smart Guideline Panel */}
-      {structuredNote && (
-        <SmartGuidelinePanel
-          noteContent={rawData?.raw_note || ""}
-          diagnoses={structuredNote.diagnoses || []}
-          medications={structuredNote.medications || []}
-          patientHistory={patientHistory}
-        />
-      )}
+      {structuredNote &&
+      <SmartGuidelinePanel
+        noteContent={rawData?.raw_note || ""}
+        diagnoses={structuredNote.diagnoses || []}
+        medications={structuredNote.medications || []}
+        patientHistory={patientHistory} />
+
+      }
 
       {/* Patient Education Materials */}
       <PatientEducationMaterials
@@ -1215,8 +1215,8 @@ ${JSON.stringify(structuredNote, null, 2)}`,
         plan={structuredNote?.plan || ""}
         medications={structuredNote?.medications || []}
         open={educationMaterialsOpen}
-        onClose={() => setEducationMaterialsOpen(false)}
-      />
+        onClose={() => setEducationMaterialsOpen(false)} />
+
 
       {/* New Patient Creation Dialog */}
       <NewPatientDialog
@@ -1226,8 +1226,8 @@ ${JSON.stringify(structuredNote, null, 2)}`,
           setPendingPatientData(null);
         }}
         patientData={pendingPatientData}
-        onCreatePatient={handleCreatePatient}
-      />
+        onCreatePatient={handleCreatePatient} />
+
 
       {/* Previous Encounters Summary Dialog */}
       <PreviousEncountersSummary
@@ -1236,12 +1236,12 @@ ${JSON.stringify(structuredNote, null, 2)}`,
         open={encountersSummaryOpen}
         onClose={() => setEncountersSummaryOpen(false)}
         onApplyToNote={(summaryText) => {
-          setStructuredNote(prev => ({
+          setStructuredNote((prev) => ({
             ...prev,
             medical_history: summaryText
           }));
-        }}
-      />
-    </>
-  );
+        }} />
+
+    </>);
+
 }

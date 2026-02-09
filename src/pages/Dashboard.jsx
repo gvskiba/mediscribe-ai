@@ -87,7 +87,7 @@ export default function Dashboard() {
          >
            <div className="flex items-center justify-between p-6 pb-2">
              <h2 className="text-lg font-semibold text-slate-900">Recent Notes</h2>
-            <Link to={createPageUrl("NotesLibrary")} className="text-sm text-purple-300 hover:text-purple-200 flex items-center gap-1 font-medium">
+            <Link to={createPageUrl("NotesLibrary")} className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 font-medium">
               View all <ArrowRight className="w-3 h-3" />
             </Link>
           </div>

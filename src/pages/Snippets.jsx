@@ -151,8 +151,11 @@ export default function Snippets() {
       s.name?.toLowerCase().includes(search.toLowerCase()) ||
       s.content?.toLowerCase().includes(search.toLowerCase());
     const matchCategory = categoryFilter === "all" || s.category === categoryFilter;
-    return matchSearch && matchCategory;
+    const matchTags = selectedTags.length === 0 || selectedTags.some(tag => (s.tags || []).includes(tag));
+    return matchSearch && matchCategory && matchTags;
   });
+
+  const allTags = Array.from(new Set(snippets.flatMap(s => s.tags || []))).sort();
 
   return (
     <div className="space-y-6">

@@ -72,7 +72,24 @@ Return specific, actionable queries that a clinician would search for.`,
     }
   };
 
-  const handleSearch = async (query) => {
+  const getSearchPrompt = (query, type) => {
+    const basePrompt = `Search medical literature and clinical guidelines for: "${query}"
+
+Focus on ${type === "medication" ? "pharmacology, dosing, side effects, drug interactions, and clinical use" : type === "condition" ? "pathophysiology, diagnosis, and treatment" : type === "procedure" ? "indications, technique, complications, and outcomes" : "clinical information and evidence-based recommendations"}
+
+Provide:
+1. Concise summary and key facts
+2. Evidence level and source quality
+3. Practical clinical guidance
+4. Important contraindications, warnings, or adverse effects
+5. Relevant links to reputable sources (UpToDate, PubMed, specialty society guidelines)
+
+Format with direct reference links when available.`;
+
+    return basePrompt;
+  };
+
+  const handleSearch = async (query, type = searchType) => {
     if (!query.trim()) return;
 
     setSearchQuery(query);
@@ -81,16 +98,7 @@ Return specific, actionable queries that a clinician would search for.`,
 
     try {
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Search medical literature and clinical guidelines for: "${query}"
-
-Provide a comprehensive evidence-based answer including:
-1. Key clinical information and current guidelines
-2. Evidence level and source quality
-3. Practical clinical recommendations
-4. Important contraindications or warnings
-5. References to major guidelines (e.g., AHA, ACC, ACCP, UpToDate)
-
-Focus on actionable, evidence-based information for clinical decision making.`,
+        prompt: getSearchPrompt(query, type),
         add_context_from_internet: true,
         response_json_schema: {
           type: "object",
@@ -101,18 +109,35 @@ Focus on actionable, evidence-based information for clinical decision making.`,
             evidence_level: { type: "string" },
             warnings: { type: "array", items: { type: "string" } },
             guidelines_referenced: { type: "array", items: { type: "string" } },
-            additional_resources: { type: "array", items: { type: "string" } }
+            source_links: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  title: { type: "string" },
+                  url: { type: "string" },
+                  source: { type: "string" }
+                }
+              }
+            }
           }
         }
       });
 
-      setSearchResults(result);
+      setSearchResults({ ...result, searchType: type, searchQuery: query });
       toast.success("Search completed");
     } catch (error) {
       console.error("Search failed:", error);
       toast.error("Search failed. Please try again.");
     } finally {
       setSearching(false);
+    }
+  };
+
+  const handleQuickAdd = (content, section = "assessment") => {
+    if (onAddToNote) {
+      onAddToNote(content, section);
+      toast.success(`Added to ${section}`);
     }
   };
 

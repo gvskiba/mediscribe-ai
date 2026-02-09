@@ -636,7 +636,7 @@ Generate:
                           </div>
                         )}
 
-                        {diff.recommended_workup && diff.recommended_workup.length > 0 && (
+                        {Array.isArray(diff.recommended_workup) && diff.recommended_workup.length > 0 && (
                           <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
                             <h5 className="text-xs font-semibold text-purple-900 mb-2">Recommended Workup</h5>
                             <ul className="space-y-1">

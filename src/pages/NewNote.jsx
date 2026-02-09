@@ -1201,6 +1201,19 @@ ${JSON.stringify(structuredNote, null, 2)}`,
              <ManualHistoryInput
              onHistoryExtracted={handleManualHistoryExtracted} />
 
+            {/* Section Inserter */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+              <SectionInserter
+                onInsertSection={(section) => {
+                  setStructuredNote((prev) => ({
+                    ...prev,
+                    history_of_present_illness: (prev.history_of_present_illness || "") + "\n\n" + section.content
+                  }));
+                }}
+                specialty={rawData?.specialty}
+              />
+            </div>
+
             {/* Patient Document Upload */}
             {structuredNote &&
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">

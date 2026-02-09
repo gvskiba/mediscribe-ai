@@ -43,6 +43,7 @@ export default function ClinicalSectionInput({
   const [selectionRange, setSelectionRange] = useState({ start: 0, end: 0 });
   const [showRefineMenu, setShowRefineMenu] = useState(false);
   const historyRef = useRef(null);
+  const medicalHistoryRef = useRef(null);
   const rosRef = useRef(null);
   const examRef = useRef(null);
 
@@ -61,6 +62,8 @@ export default function ClinicalSectionInput({
     switch(section) {
       case "history_and_physical":
         return historyRef;
+      case "medical_history":
+        return medicalHistoryRef;
       case "review_of_systems":
         return rosRef;
       case "physical_exam":
@@ -233,7 +236,7 @@ Provide a clearer, more concise version.`,
       return;
     }
 
-    if (!clinicalData.history_and_physical && !clinicalData.review_of_systems && !clinicalData.physical_exam) {
+    if (!clinicalData.history_and_physical && !clinicalData.medical_history && !clinicalData.review_of_systems && !clinicalData.physical_exam) {
       console.log("Validation failed: no clinical sections filled");
       toast.error("Please fill in at least one clinical section");
       return;
@@ -243,7 +246,7 @@ Provide a clearer, more concise version.`,
       chief_complaint: formData.chief_complaint,
       note_type: formData.note_type,
       specialty: formData.specialty,
-      raw_note: `Chief Complaint: ${formData.chief_complaint}\n\nHISTORY AND PHYSICAL:\n${clinicalData.history_and_physical || ""}\n\nREVIEW OF SYSTEMS:\n${clinicalData.review_of_systems || ""}\n\nPHYSICAL EXAMINATION:\n${clinicalData.physical_exam || ""}`
+      raw_note: `Chief Complaint: ${formData.chief_complaint}\n\nSUBJECTIVE:\n${clinicalData.history_and_physical || ""}\n\nMEDICAL HISTORY:\n${clinicalData.medical_history || ""}\n\nREVIEW OF SYSTEMS:\n${clinicalData.review_of_systems || ""}\n\nPHYSICAL EXAMINATION:\n${clinicalData.physical_exam || ""}`
     };
     
     console.log("Submitting data:", submissionData);
@@ -350,7 +353,7 @@ Provide a clearer, more concise version.`,
                 </Button>
               </div>
             </div>
-            <p className="text-sm text-slate-500 mt-1">Patient's subjective report including symptoms, concerns, medical history, medications, allergies, and relevant context.</p>
+            <p className="text-sm text-slate-500 mt-1">Patient's subjective report of current symptoms, concerns, and complaints in their own words.</p>
           </div>
           <div className="relative">
             <Textarea
@@ -359,7 +362,7 @@ Provide a clearer, more concise version.`,
               onChange={(e) => handleClinicalDataChange("history_and_physical", e.target.value)}
               onMouseUp={() => handleTextSelection("history_and_physical")}
               onKeyUp={() => handleTextSelection("history_and_physical")}
-              placeholder="Patient's relevant medical history, current medications, allergies, past surgeries, family history, social history, etc."
+              placeholder="Patient reports: chest pain, shortness of breath, feeling tired. Started 3 days ago. Pain is sharp, worse with deep breathing. No fever or cough."
               className="min-h-[150px] rounded-lg border-blue-200 focus:border-blue-400"
             />
             {showRefineMenu && activeSection === "history_and_physical" && (
@@ -391,12 +394,92 @@ Provide a clearer, more concise version.`,
           </div>
         </Card>
 
+        {/* Medical History */}
+        <Card className="p-6 border-indigo-200">
+          <div className="mb-4">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                <span className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm font-bold">2</span>
+                Medical History
+              </h3>
+              <div className="flex gap-1.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAIAssist("medical_history")}
+                  disabled={aiGenerating === "medical_history"}
+                  className="rounded-lg gap-1.5 text-xs text-indigo-600 border-indigo-300 hover:bg-indigo-50"
+                >
+                  {aiGenerating === "medical_history" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                  {clinicalData.medical_history?.trim() ? "Expand" : "Draft"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setActiveSection("medical_history");
+                    setSnippetPickerOpen(true);
+                  }}
+                  className="rounded-lg gap-1.5 text-xs text-slate-600 border-slate-300 hover:bg-slate-50"
+                >
+                  <FileText className="w-3 h-3" /> Snippet
+                </Button>
+              </div>
+            </div>
+            <p className="text-sm text-slate-500 mt-1">Past medical history, chronic conditions, medications, allergies, surgeries, family history, and social history.</p>
+          </div>
+          <div className="relative">
+            <Textarea
+              ref={medicalHistoryRef}
+              value={clinicalData.medical_history || ""}
+              onChange={(e) => handleClinicalDataChange("medical_history", e.target.value)}
+              onMouseUp={() => handleTextSelection("medical_history")}
+              onKeyUp={() => handleTextSelection("medical_history")}
+              placeholder="Past Medical History: HTN, Type 2 DM, CAD
+Medications: Metformin 1000mg BID, Lisinopril 10mg daily, Aspirin 81mg daily
+Allergies: PCN (rash)
+Surgeries: Appendectomy 2015
+Family History: Father - MI at age 60
+Social History: Non-smoker, occasional alcohol"
+              className="min-h-[150px] rounded-lg border-indigo-200 focus:border-indigo-400"
+            />
+            {showRefineMenu && activeSection === "medical_history" && (
+              <div className="absolute top-2 right-2 flex gap-1 z-10">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleAddDetail}
+                  disabled={aiGenerating === "medical_history"}
+                  className="text-xs shadow-lg"
+                >
+                  {aiGenerating === "medical_history" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                  Add Detail
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleRephrase}
+                  disabled={aiGenerating === "medical_history"}
+                  className="text-xs shadow-lg"
+                >
+                  {aiGenerating === "medical_history" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Edit3 className="w-3 h-3" />}
+                  Rephrase
+                </Button>
+              </div>
+            )}
+          </div>
+        </Card>
+
         {/* Review of Systems */}
         <Card className="p-6 border-purple-200">
           <div className="mb-4">
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                <span className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-sm font-bold">2</span>
+                <span className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-sm font-bold">3</span>
                 Review of Systems
               </h3>
               <div className="flex gap-1.5">
@@ -475,7 +558,7 @@ Other systems as relevant..."
           <div className="mb-4">
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                <span className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-sm font-bold">3</span>
+                <span className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-sm font-bold">4</span>
                 Physical Examination
               </h3>
               <div className="flex gap-1.5">

@@ -609,6 +609,8 @@ export default function Snippets() {
         isOpen={folderManagerOpen}
         onClose={() => setFolderManagerOpen(false)}
       />
-    </div>
-  );
-}
+       </TabsContent>
+      </Tabs>
+      </div>
+      );
+      }

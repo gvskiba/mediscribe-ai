@@ -258,7 +258,7 @@ export default function Snippets() {
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <h3 className="font-semibold text-slate-900">{snippet.name}</h3>
-                          <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap">{snippet.content}</p>
+                          <div className="text-sm text-slate-600 mt-1 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: snippet.content }} />
                         </div>
                         <Button
                           variant="ghost"

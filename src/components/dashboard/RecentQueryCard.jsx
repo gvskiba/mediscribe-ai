@@ -39,15 +39,15 @@ export default function RecentQueryCard({ query }) {
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-black line-clamp-2">{query.question}</p>
-        <div className="flex items-center gap-2 mt-2">
-          <Badge variant="outline" className="text-xs bg-purple-500/20 text-purple-200 border-purple-500/30">
-            {categoryLabels[query.category] || "General"}
-          </Badge>
-          {query.confidence_level && (
-            <Badge variant="outline" className="text-xs bg-purple-500/20 text-purple-200 border-purple-500/30">
-              {query.confidence_level} confidence
-            </Badge>
-          )}
+         <div className="flex items-center gap-2 mt-2">
+           <Badge variant="outline" className="text-xs bg-purple-500/20 text-black border-purple-500/30">
+             {categoryLabels[query.category] || "General"}
+           </Badge>
+           {query.confidence_level && (
+             <Badge variant="outline" className="text-xs bg-purple-500/20 text-black border-purple-500/30">
+               {query.confidence_level} confidence
+             </Badge>
+           )}
         </div>
       </div>
       <ArrowUpRight className="w-4 h-4 text-purple-300 group-hover:text-purple-200 transition-colors flex-shrink-0 mt-1" />

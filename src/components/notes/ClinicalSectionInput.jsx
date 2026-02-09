@@ -602,8 +602,7 @@ Other exam findings..."
       {/* Submit Button */}
       <div className="flex gap-3 pt-4">
         <Button
-          type="button"
-          onClick={handleSubmit}
+          type="submit"
           disabled={isProcessing}
           className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl gap-2 h-11"
         >

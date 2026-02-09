@@ -23,6 +23,24 @@ const noteTypes = [
   { value: "procedure_note", label: "Procedure Note" },
 ];
 
+const SPECIALTIES = [
+  { value: "general", label: "General Medicine" },
+  { value: "cardiology", label: "Cardiology" },
+  { value: "pulmonology", label: "Pulmonology" },
+  { value: "endocrinology", label: "Endocrinology" },
+  { value: "neurology", label: "Neurology" },
+  { value: "oncology", label: "Oncology" },
+  { value: "gastroenterology", label: "Gastroenterology" },
+  { value: "nephrology", label: "Nephrology" },
+  { value: "rheumatology", label: "Rheumatology" },
+  { value: "infectious_disease", label: "Infectious Disease" },
+  { value: "psychiatry", label: "Psychiatry" },
+  { value: "pediatrics", label: "Pediatrics" },
+  { value: "emergency_medicine", label: "Emergency Medicine" },
+  { value: "family_medicine", label: "Family Medicine" },
+  { value: "internal_medicine", label: "Internal Medicine" },
+];
+
 export default function ClinicalSectionInput({
   onSubmit,
   isProcessing,

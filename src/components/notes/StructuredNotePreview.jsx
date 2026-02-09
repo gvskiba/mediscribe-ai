@@ -859,19 +859,28 @@ FORMATTING RULES (CRITICAL):
         </div>
 
         {/* Plan Box */}
-        <div className="bg-white rounded-xl border-2 border-green-300 shadow-sm overflow-hidden">
-          <div className="bg-green-50 px-4 py-3 border-b border-green-200 flex items-center gap-2">
-            <ClipboardList className="w-5 h-5 text-green-600" />
-            <h3 className="font-semibold text-slate-900">Plan</h3>
-          </div>
-          <div className="p-4">
-            <InteractivePlanSection
-              value={note.plan || "Not extracted"}
-              onUpdate={onUpdate}
-              onReanalyze={onReanalyze}
-            />
-          </div>
-        </div>
+         <div className="bg-white rounded-xl border-2 border-green-300 shadow-sm overflow-hidden">
+           <div className="bg-green-50 px-4 py-3 border-b border-green-200 flex items-center gap-2">
+             <ClipboardList className="w-5 h-5 text-green-600" />
+             <h3 className="font-semibold text-slate-900">Treatment Plan</h3>
+           </div>
+           <div className="p-4 space-y-4">
+             <TreatmentPlanSelector
+               plan={note.plan || ""}
+               onAddToNote={(selectedPlan) => {
+                 onUpdate("plan", selectedPlan);
+                 toast.success("Plan sections updated");
+               }}
+             />
+             <div className="pt-4 border-t border-slate-200">
+               <InteractivePlanSection
+                 value={note.plan || "Not extracted"}
+                 onUpdate={onUpdate}
+                 onReanalyze={onReanalyze}
+               />
+             </div>
+           </div>
+         </div>
 
         {/* Diagnoses Box */}
         <div className="bg-white rounded-xl border-2 border-amber-300 shadow-sm overflow-hidden">

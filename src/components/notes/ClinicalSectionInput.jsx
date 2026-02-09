@@ -369,23 +369,47 @@ Other systems as relevant..."
         {/* Physical Examination */}
         <Card className="p-6 border-emerald-200">
           <div className="mb-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
                 <span className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-sm font-bold">3</span>
                 Physical Examination
               </h3>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setActiveSection("physical_exam");
-                  setSnippetPickerOpen(true);
-                }}
-                className="rounded-lg gap-1.5 text-xs text-slate-600 border-slate-300 hover:bg-slate-50"
-              >
-                <FileText className="w-3 h-3" /> Insert Snippet
-              </Button>
+              <div className="flex gap-1.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAIDraft("physical_exam")}
+                  disabled={aiGenerating === "physical_exam"}
+                  className="rounded-lg gap-1.5 text-xs text-slate-600 border-slate-300 hover:bg-slate-50"
+                >
+                  {aiGenerating === "physical_exam" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                  Draft
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAIExpand("physical_exam")}
+                  disabled={aiGenerating === "physical_exam"}
+                  className="rounded-lg gap-1.5 text-xs text-slate-600 border-slate-300 hover:bg-slate-50"
+                >
+                  {aiGenerating === "physical_exam" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                  Expand
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setActiveSection("physical_exam");
+                    setSnippetPickerOpen(true);
+                  }}
+                  className="rounded-lg gap-1.5 text-xs text-slate-600 border-slate-300 hover:bg-slate-50"
+                >
+                  <FileText className="w-3 h-3" /> Snippet
+                </Button>
+              </div>
             </div>
             <p className="text-sm text-slate-500 mt-1">Document objective findings including vital signs, general appearance, and system-specific exams.</p>
           </div>

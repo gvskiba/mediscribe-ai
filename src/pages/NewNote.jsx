@@ -1011,7 +1011,7 @@ ${JSON.stringify(structuredNote, null, 2)}`,
                     <p className="text-lg text-slate-800">Choose your preferred input method</p>
                   </div>
 
-                  <div className="bg-slate-700/50 rounded-xl p-6 border border-slate-600">
+                  <div className="bg-blue-600 p-6 rounded-xl border border-slate-600">
                     <label className="text-sm font-semibold text-white mb-3 block">Medical Specialty</label>
                     <select
                   value={specialty}

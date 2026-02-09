@@ -142,7 +142,7 @@ export default function Layout({ children, currentPageName }) {
         </div>
         <Link
           to={createPageUrl("NewNote")}
-          className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 rounded-xl p-2.5 transition-all shadow-lg shadow-purple-500/30 flex-shrink-0"
+          className="bg-blue-600 hover:bg-blue-700 rounded-xl p-2.5 transition-all shadow-sm flex-shrink-0 text-white"
         >
           <FileText className="w-5 h-5" />
         </Link>

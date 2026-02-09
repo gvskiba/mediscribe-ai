@@ -265,58 +265,108 @@ Provide a clearer, more concise version.`,
       </div>
 
       {/* Patient & Note Information */}
-      <Card className="p-6 space-y-4">
-        <h3 className="text-lg font-semibold text-slate-900">Note Information</h3>
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm"
+      >
+        <div className="p-6 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-slate-50">
+          <h2 className="text-2xl font-bold text-slate-900">Note Information</h2>
+          <p className="text-sm text-slate-600 mt-2">Configure your note settings and provide patient information</p>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="md:col-span-2">
-            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Chief Complaint</label>
+        <div className="p-6 space-y-4">
+          {/* Chief Complaint */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200 p-4 hover:border-blue-300 transition-colors md:col-span-2"
+          >
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3 block">Chief Complaint</label>
             <Input
               value={formData.chief_complaint}
               onChange={(e) => handleInputChange("chief_complaint", e.target.value)}
               placeholder="e.g., Chest pain, persistent cough"
-              className="rounded-lg"
+              className="rounded-lg border-slate-300 bg-white focus:border-blue-400 focus:ring-blue-400/20 text-slate-900 placeholder:text-slate-400"
             />
+          </motion.div>
+
+          {/* Note Type & Specialty Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200 p-4 hover:border-blue-300 transition-colors"
+            >
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3 block">Note Type</label>
+              <Select value={formData.note_type} onValueChange={(v) => handleInputChange("note_type", v)}>
+                <SelectTrigger className="rounded-lg border-slate-300 bg-white text-slate-900 font-medium">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {noteTypes.map(type => (
+                    <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200 p-4 hover:border-blue-300 transition-colors"
+            >
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3 block">Specialty</label>
+              <Input
+                value={formData.specialty}
+                onChange={(e) => handleInputChange("specialty", e.target.value)}
+                placeholder="e.g., Cardiology"
+                className="rounded-lg border-slate-300 bg-white focus:border-blue-400 focus:ring-blue-400/20 text-slate-900 placeholder:text-slate-400"
+              />
+            </motion.div>
           </div>
-          <div>
-            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Note Type</label>
-            <Select value={formData.note_type} onValueChange={(v) => handleInputChange("note_type", v)}>
-              <SelectTrigger className="rounded-lg">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {noteTypes.map(type => (
-                  <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Specialty (Optional)</label>
-            <Input
-              value={formData.specialty}
-              onChange={(e) => handleInputChange("specialty", e.target.value)}
-              placeholder="e.g., Cardiology"
-              className="rounded-lg"
-            />
-          </div>
+
+          {/* Template Selection */}
           {templates.length > 0 && (
-            <div className="md:col-span-2">
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Template (Optional)</label>
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-gradient-to-br from-purple-50 to-white rounded-xl border border-purple-200 p-4 hover:border-purple-400 transition-colors"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-xs font-bold text-purple-600 uppercase tracking-wide">Template</label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const defaults = { noteType: formData.note_type, specialty: formData.specialty, templateId: formData.templateId };
+                    localStorage.setItem("clinicalDefaults", JSON.stringify(defaults));
+                    toast.success("Saved as default selections");
+                  }}
+                  className="gap-1.5 text-xs h-7 px-2 text-amber-700 hover:text-amber-800 hover:bg-amber-50"
+                >
+                  <Star className="w-3 h-3" /> Save Defaults
+                </Button>
+              </div>
               <Select value={formData.templateId || ""} onValueChange={(v) => handleInputChange("templateId", v)}>
-                    <SelectTrigger className="rounded-lg">
-                      <SelectValue placeholder="Select template" />
-                    </SelectTrigger>
+                <SelectTrigger className="rounded-lg border-purple-300 bg-white text-slate-900">
+                  <SelectValue placeholder="Select template" />
+                </SelectTrigger>
                 <SelectContent>
                   {templates.map(template => (
                     <SelectItem key={template.id} value={template.id}>{template.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+            </motion.div>
           )}
         </div>
-      </Card>
+      </motion.div>
 
       {/* Clinical Sections */}
       <div className="space-y-4">

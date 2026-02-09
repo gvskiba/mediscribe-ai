@@ -719,20 +719,33 @@ Generated: ${new Date().toLocaleString()}
 
            {/* Summary Tab */}
            <TabsContent value="summary" className="p-6 space-y-4">
-             {generatingSummary && !patientSummary && (
-               <div className="flex items-center gap-3 text-slate-500 py-8">
-                 <Loader2 className="w-5 h-5 animate-spin" />
-                 <span className="text-sm">Generating AI summary...</span>
-               </div>
-             )}
-             {patientSummary ? (
-               <PatientSummary 
-                 summary={patientSummary} 
-                 patientName={note.patient_name}
-                 onDownload={downloadSummary}
+             {note.status === "draft" ? (
+               <EditableSummaryGenerator
+                 note={note}
+                 onSave={async (finalSummary) => {
+                   await base44.entities.ClinicalNote.update(noteId, { summary: finalSummary });
+                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                 }}
+                 onCancel={() => {}}
                />
-             ) : !generatingSummary && (
-               <p className="text-sm text-slate-500 text-center py-8">Summary will appear here after finalization</p>
+             ) : (
+               <>
+                 {generatingSummary && !patientSummary && (
+                   <div className="flex items-center gap-3 text-slate-500 py-8">
+                     <Loader2 className="w-5 h-5 animate-spin" />
+                     <span className="text-sm">Generating AI summary...</span>
+                   </div>
+                 )}
+                 {patientSummary ? (
+                   <PatientSummary 
+                     summary={patientSummary} 
+                     patientName={note.patient_name}
+                     onDownload={downloadSummary}
+                   />
+                 ) : !generatingSummary && (
+                   <p className="text-sm text-slate-500 text-center py-8">Summary will appear here after finalization</p>
+                 )}
+               </>
              )}
            </TabsContent>
 

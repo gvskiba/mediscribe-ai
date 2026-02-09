@@ -146,6 +146,76 @@ Provide an expanded, clinically detailed version.`,
     }
   };
 
+  const handleTextSelection = (section) => {
+    const textarea = getTextareaRef(section)?.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = textarea.value.substring(start, end);
+
+    if (selected.trim().length > 0) {
+      setSelectedText(selected);
+      setSelectionRange({ start, end });
+      setActiveSection(section);
+      setShowRefineMenu(true);
+    } else {
+      setShowRefineMenu(false);
+    }
+  };
+
+  const handleAddDetail = async () => {
+    if (!selectedText || !activeSection) return;
+
+    setAiGenerating(activeSection);
+    setShowRefineMenu(false);
+    try {
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt: `Add more clinical detail and elaboration to the following text while maintaining medical accuracy and professional tone:
+
+"${selectedText}"
+
+Provide an enhanced, more detailed version with additional relevant clinical information.`,
+        add_context_from_internet: false
+      });
+
+      const currentText = clinicalData[activeSection];
+      const newText = currentText.substring(0, selectionRange.start) + response + currentText.substring(selectionRange.end);
+      handleClinicalDataChange(activeSection, newText);
+      toast.success("Detail added");
+    } catch (error) {
+      toast.error("Failed to add detail");
+    } finally {
+      setAiGenerating(null);
+    }
+  };
+
+  const handleRephrase = async () => {
+    if (!selectedText || !activeSection) return;
+
+    setAiGenerating(activeSection);
+    setShowRefineMenu(false);
+    try {
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt: `Rephrase the following clinical text for improved clarity and conciseness while maintaining all medical accuracy and essential information:
+
+"${selectedText}"
+
+Provide a clearer, more concise version.`,
+        add_context_from_internet: false
+      });
+
+      const currentText = clinicalData[activeSection];
+      const newText = currentText.substring(0, selectionRange.start) + response + currentText.substring(selectionRange.end);
+      handleClinicalDataChange(activeSection, newText);
+      toast.success("Text rephrased");
+    } catch (error) {
+      toast.error("Failed to rephrase");
+    } finally {
+      setAiGenerating(null);
+    }
+  };
+
   const handleSubmit = () => {
     if (!formData.patient_name || !formData.chief_complaint) {
       toast.error("Please provide patient name and chief complaint");

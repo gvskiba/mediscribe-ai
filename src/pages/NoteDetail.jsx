@@ -756,29 +756,6 @@ Generated: ${new Date().toLocaleString()}
                    )}
                  </div>
 
-                 {/* Linked Guidelines Section */}
-                 {note.diagnoses && note.diagnoses.length > 0 && (
-                   <>
-                     {note.linked_guidelines && note.linked_guidelines.length > 0 && (
-                       <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                         <h4 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
-                           <Check className="w-4 h-4" />
-                           Automatically Linked Guidelines
-                         </h4>
-                         <div className="space-y-2">
-                           {note.linked_guidelines.map((link, idx) => (
-                             <div key={idx} className="flex items-start gap-2 text-sm">
-                               <Check className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                               <div>
-                                 <p className="text-blue-900 font-medium">{link.condition}</p>
-                                 <p className="text-xs text-blue-700">{link.adherence_notes}</p>
-                               </div>
-                             </div>
-                           ))}
-                         </div>
-                       </div>
-                     )}
-
                  {/* Clinical Guidelines */}
                  <div>
                    <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
@@ -975,12 +952,9 @@ Generated: ${new Date().toLocaleString()}
                      <p className="text-sm text-slate-500 text-center py-8">No guideline recommendations available</p>
                    )}
                  </div>
-
                  </>
-                 ) : !note.diagnoses || note.diagnoses.length === 0 ? (
-                 <p className="text-sm text-slate-500 text-center py-8">No diagnoses available. Add diagnoses to view guidelines and codes.</p>
                  ) : (
-                 <p className="text-sm text-slate-500 text-center py-8">Finalize the note to generate guidelines and codes.</p>
+                 <p className="text-sm text-slate-500 text-center py-8">Finalize the note to view guidelines and ICD-10 codes.</p>
                  )}
                  </TabsContent>
 

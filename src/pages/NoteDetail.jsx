@@ -945,7 +945,7 @@ Generated: ${new Date().toLocaleString()}
                  )}
 
                  {/* Allergies Card */}
-                 {note.allergies && note.allergies.length > 0 && (
+                 {note.allergies && Array.isArray(note.allergies) && note.allergies.length > 0 && (
                    <div className="bg-gradient-to-br from-red-50 to-white rounded-xl border border-red-200 p-5">
                      <h3 className="text-sm font-bold text-red-900 mb-3 flex items-center gap-2">
                        <AlertCircle className="w-4 h-4" />

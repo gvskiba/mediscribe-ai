@@ -824,26 +824,22 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                     moderate: "bg-amber-50 text-amber-700 border-amber-200",
                     low: "bg-red-50 text-red-700 border-red-200"
                   };
-                  
+                  const isSelected = selectedForCompareIds.includes(query.id);
+
                   return (
                     <div key={query.id} className="flex items-start gap-4 group">
                       <div className="pt-6">
                          <input 
+                           key={`checkbox-${query.id}-${isSelected}`}
                            type="checkbox"
-                           checked={selectedForCompareIds.includes(query.id)}
+                           checked={isSelected}
                            onChange={(e) => {
-                             e.preventDefault();
-                             e.stopPropagation();
-                             if (e.target.checked) {
-                               setSelectedForCompareIds(prev => [...prev, query.id]);
-                             } else {
-                               setSelectedForCompareIds(prev => prev.filter(id => id !== query.id));
-                             }
+                             const newSelected = isSelected 
+                               ? selectedForCompareIds.filter(id => id !== query.id)
+                               : [...selectedForCompareIds, query.id];
+                             setSelectedForCompareIds(newSelected);
                            }}
-                           onClick={(e) => {
-                             e.preventDefault();
-                             e.stopPropagation();
-                           }}
+                           onClick={(e) => e.stopPropagation()}
                            className="rounded w-5 h-5 cursor-pointer"
                          />
                        </div>

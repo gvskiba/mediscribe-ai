@@ -18,6 +18,7 @@ import NewPatientDialog from "../components/notes/NewPatientDialog";
 import ManualHistoryInput from "../components/notes/ManualHistoryInput";
 import PreviousEncountersSummary from "../components/notes/PreviousEncountersSummary";
 import SectionInserter from "../components/notes/SectionInserter";
+import TemplateAutoFiller from "../components/templates/TemplateAutoFiller";
 import { useAutoSave } from "../components/utils/useAutoSave";
 
 export default function NewNote() {

@@ -180,11 +180,13 @@ export default function Dashboard() {
                         </p>
                       </div>
                       <Switch
-                        checked={activeWidgets.includes(widget.id)}
-                        onCheckedChange={() => {
-                          toggleWidget(widget.id);
-                        }}
-                      />
+                         checked={activeWidgets.includes(widget.id)}
+                         onCheckedChange={(checked) => {
+                           if (checked !== activeWidgets.includes(widget.id)) {
+                             toggleWidget(widget.id);
+                           }
+                         }}
+                       />
                     </div>
                   ))}
                 </div>

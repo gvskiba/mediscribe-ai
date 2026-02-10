@@ -116,11 +116,8 @@ export default function NoteDetail() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-      // Automatically fetch ICD-10 and guidelines after finalization
-      setTimeout(async () => {
-        await generateICD10Suggestions();
-        await fetchGuidelineRecommendations();
-      }, 1000);
+      // Wait for query to refetch updated note
+      await new Promise(resolve => setTimeout(resolve, 500));
     },
     onError: (error) => {
       console.error("Finalization failed:", error);

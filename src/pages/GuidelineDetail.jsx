@@ -14,6 +14,8 @@ export default function GuidelineDetail() {
   const guidelineId = urlParams.get("id");
   const [relatedGuidelines, setRelatedGuidelines] = useState([]);
   const [loadingRelated, setLoadingRelated] = useState(false);
+  const [summary, setSummary] = useState("");
+  const [loadingSummary, setLoadingSummary] = useState(false);
 
   const { data: guideline, isLoading } = useQuery({
     queryKey: ["guideline", guidelineId],

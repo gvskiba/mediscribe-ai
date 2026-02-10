@@ -1851,7 +1851,7 @@ Generated: ${new Date().toLocaleString()}
                        <div className="space-y-3">
                          <div className="flex items-center gap-2 mb-3">
                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
-                             {note.diagnoses.filter(d => d && /^[A-Z0-9]{1,}.*-/.test(d.trim())).length} ICD-10 Codes
+                             {note.diagnoses.filter(d => d && /^[A-Z0-9]{1,}.*-/.test(d.trim())).length} ICD-10 Codes (User Added)
                            </span>
                          </div>
                          <div className="grid gap-2">

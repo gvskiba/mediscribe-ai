@@ -38,13 +38,13 @@ export default function Dashboard() {
         className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4"
       >
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Patient Dashboard</h1>
           <p className="text-slate-600 mt-1">Your clinical workspace at a glance.</p>
         </div>
         <div className="flex gap-3">
           <Link to={createPageUrl("NewNote")}>
             <Button className="bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 hover:from-purple-500 hover:via-violet-500 hover:to-indigo-500 text-white rounded-xl gap-2 shadow-lg shadow-purple-500/30 font-semibold">
-              <Plus className="w-4 h-4" /> New Note
+              <Plus className="w-4 h-4" /> New Clinical Note
             </Button>
           </Link>
           <Link to={createPageUrl("Guidelines")}>

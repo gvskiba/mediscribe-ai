@@ -1811,34 +1811,60 @@ Generated: ${new Date().toLocaleString()}
                )}
 
                <div className="pt-6 border-t border-slate-200">
-                 <div className="flex items-center justify-between mb-4">
+                 <div className="flex items-center justify-between mb-5">
                    <div>
                      <h3 className="text-sm font-bold text-slate-900">Clinical Diagnoses</h3>
                      <p className="text-xs text-slate-500 mt-1">Primary and secondary diagnoses identified</p>
                    </div>
-                   {note.diagnoses && Array.isArray(note.diagnoses) && note.diagnoses.filter(d => d && /^[A-Z0-9]{1,}.*-/.test(d.trim())).length > 0 && (
-                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
-                         {note.diagnoses.filter(d => d && /^[A-Z0-9]{1,}.*-/.test(d.trim())).length} ICD-10 Codes
-                       </span>
-                     )}
-                   </div>
+                 </div>
 
-                   {note.diagnoses && Array.isArray(note.diagnoses) && note.diagnoses.filter(d => d && /^[A-Z0-9]{1,}.*-/.test(d.trim())).length > 0 ? (
-                   <div className="space-y-3">
-                     <div className="grid gap-2">
-                       {note.diagnoses
-                         .filter(d => d && /^[A-Z0-9]{1,}.*-/.test(d.trim()))
-                         .map((diag, i) => (
-                         <div key={i} className="group flex items-start gap-3 p-3 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-white hover:border-blue-300 hover:shadow-sm transition-all">
-                           <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-xs font-bold flex-shrink-0 mt-0.5">
-                             {i + 1}
-                           </div>
-                           <div className="flex-1 min-w-0">
-                             <p className="text-sm font-medium text-slate-900 break-words">{diag}</p>
-                           </div>
+                 {note.diagnoses && Array.isArray(note.diagnoses) && note.diagnoses.length > 0 ? (
+                   <div className="space-y-4">
+                     {/* ICD-10 Coded Diagnoses */}
+                     {note.diagnoses.filter(d => d && /^[A-Z0-9]{1,}.*-/.test(d.trim())).length > 0 && (
+                       <div className="space-y-3">
+                         <div className="flex items-center gap-2 mb-3">
+                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
+                             {note.diagnoses.filter(d => d && /^[A-Z0-9]{1,}.*-/.test(d.trim())).length} ICD-10 Codes
+                           </span>
                          </div>
-                       ))}
-                     </div>
+                         <div className="grid gap-2">
+                           {note.diagnoses
+                             .filter(d => d && /^[A-Z0-9]{1,}.*-/.test(d.trim()))
+                             .map((diag, i) => (
+                             <div key={i} className="flex items-start gap-3 p-3 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-white hover:border-blue-300 hover:shadow-sm transition-all">
+                               <div className="flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white text-xs font-bold flex-shrink-0">
+                                 {i + 1}
+                               </div>
+                               <div className="flex-1 min-w-0">
+                                 <p className="text-sm font-medium text-slate-900 break-words">{diag}</p>
+                               </div>
+                             </div>
+                           ))}
+                         </div>
+                       </div>
+                     )}
+
+                     {/* Non-Coded Diagnoses */}
+                     {note.diagnoses.filter(d => d && !/^[A-Z0-9]{1,}.*-/.test(d.trim())).length > 0 && (
+                       <div className="space-y-3">
+                         <div className="flex items-center gap-2">
+                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold">
+                             {note.diagnoses.filter(d => d && !/^[A-Z0-9]{1,}.*-/.test(d.trim())).length} Uncoded
+                           </span>
+                           <p className="text-xs text-slate-500">(pending ICD-10 coding)</p>
+                         </div>
+                         <div className="flex flex-wrap gap-2">
+                           {note.diagnoses
+                             .filter(d => d && !/^[A-Z0-9]{1,}.*-/.test(d.trim()))
+                             .map((diag, i) => (
+                             <span key={i} className="inline-flex items-center px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-medium border border-slate-300 hover:bg-slate-200 transition-colors">
+                               {diag}
+                             </span>
+                           ))}
+                         </div>
+                       </div>
+                     )}
 
                      {note.status === "finalized" && (
                        <div className="mt-4 pt-4 border-t border-slate-200">

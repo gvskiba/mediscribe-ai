@@ -151,7 +151,7 @@ export default function Dashboard() {
                 Manage Widgets
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Manage Dashboard Widgets</DialogTitle>
               </DialogHeader>

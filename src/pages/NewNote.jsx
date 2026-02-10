@@ -140,6 +140,9 @@ export default function NewNote() {
     }
   };
 
+  const [selectedTemplateForAutoFill, setSelectedTemplateForAutoFill] = useState(null);
+  const [showAutoFiller, setShowAutoFiller] = useState(false);
+
   const handleSubmit = async (noteData, templateId) => {
     setIsProcessing(true);
     setRawData(noteData);

@@ -925,24 +925,24 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                 })}
               </div>
               )}
-            </div>
-            )}
-            </div>
-            )}
+              </div>
+              )}
+              </div>
+              )}
 
-            {/* Compare Dialog */}
-            {showCompare && (
-        <CompareGuidelines
-          selectedGuidelines={selectedForCompare}
-          onClose={() => {
-            setShowCompare(false);
-            setComparison(null);
-          }}
-          comparison={comparison}
-          isLoading={comparing}
-          onCompare={handleCompareGuidelines}
-        />
-      )}
-    </div>
-  );
-}
+              {/* Compare Dialog */}
+              {showCompare && (
+              <CompareGuidelines
+              selectedGuidelines={selectedForCompare}
+              onClose={() => {
+              setShowCompare(false);
+              setComparison(null);
+              }}
+              comparison={comparison}
+              isLoading={comparing}
+              onCompare={handleCompareGuidelines}
+              />
+              )}
+              </div>
+              );
+              }

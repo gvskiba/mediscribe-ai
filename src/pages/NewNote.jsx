@@ -1053,11 +1053,10 @@ ${JSON.stringify(structuredNote, null, 2)}`,
             </button>
             <PatientIntakeForm
               onIntakeComplete={(intakeData) => {
-                // Convert intake data to raw note and submit
+                // Submit intake data for AI processing
                 handleSubmit({ 
                   ...intakeData, 
-                  specialty: specialty || intakeData.specialty,
-                  note_type: "progress_note"
+                  specialty: specialty || intakeData.specialty
                 }, null);
               }}
             />

@@ -212,17 +212,46 @@ export default function EditableSection({
         <div className="space-y-2">
            {type === "textarea" ? (
              <>
-               <Textarea
-                 ref={textareaRef}
-                 value={editValue || ""}
-                 onChange={(e) => {
-                   handleChange(e.target.value);
-                   if (!showSuggestions) setShowSuggestions(true);
-                 }}
-                 onBlur={(e) => handleChange(e.target.value)}
-                 className="min-h-[100px] rounded-xl border-slate-300 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm text-slate-900 transition-all hover:border-slate-400"
-                 placeholder="Click to edit..."
-               />
+               {["assessment", "plan"].includes(field) && (
+                 <div className="flex justify-end mb-2 gap-2">
+                   <Button
+                     size="sm"
+                     variant="ghost"
+                     onClick={() => setTemplatesOpen(true)}
+                     className="text-xs text-slate-600 hover:text-slate-900"
+                   >
+                     Templates
+                   </Button>
+                   <Button
+                     size="sm"
+                     variant="ghost"
+                     onClick={() => setUseRichText(!useRichText)}
+                     className="text-xs text-slate-600 hover:text-slate-900"
+                   >
+                     {useRichText ? "Plain Text" : "Rich Text"}
+                   </Button>
+                 </div>
+               )}
+               {useRichText && ["assessment", "plan"].includes(field) ? (
+                 <RichTextEditor
+                   value={editValue || ""}
+                   onChange={handleChange}
+                   onInsertTemplate={() => setTemplatesOpen(true)}
+                   diagnoses={noteContext?.diagnoses || []}
+                 />
+               ) : (
+                 <Textarea
+                   ref={textareaRef}
+                   value={editValue || ""}
+                   onChange={(e) => {
+                     handleChange(e.target.value);
+                     if (!showSuggestions) setShowSuggestions(true);
+                   }}
+                   onBlur={(e) => handleChange(e.target.value)}
+                   className="min-h-[100px] rounded-xl border-slate-300 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm text-slate-900 transition-all hover:border-slate-400"
+                   placeholder="Click to edit..."
+                 />
+               )}
                {showSuggestions && ["history_of_present_illness", "assessment", "plan"].includes(field) && (
                  <SectionAISuggestions
                    field={field}

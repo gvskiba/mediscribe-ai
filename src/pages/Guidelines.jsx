@@ -42,6 +42,7 @@ export default function Guidelines() {
     setIsLoading(true);
     setLatestAnswer(null);
     setSearchTerm("");
+    trackGuidelineSearch(question);
 
     let contextSection = "";
     if (attachedFiles.length > 0) {

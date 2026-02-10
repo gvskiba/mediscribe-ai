@@ -42,6 +42,15 @@ import LabsAnalysis from "../components/notes/LabsAnalysis";
 import DiagnosisICD10Matcher from "../components/notes/DiagnosisICD10Matcher";
 import DiagnosisRecommendations from "../components/notes/DiagnosisRecommendations";
 import { useAutoSave } from "../components/utils/useAutoSave";
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+
+const TAB_CONFIGS = [
+  { id: 'summary', label: 'Summary' },
+  { id: 'clinical', label: 'Clinical Note' },
+  { id: 'guidelines', label: 'Guidelines & Codes' },
+  { id: 'imaging', label: 'Result Analysis' },
+  { id: 'diagnoses', label: 'Diagnoses' },
+];
 
 const statusColors = {
   draft: "bg-amber-50 text-amber-700 border-amber-200",

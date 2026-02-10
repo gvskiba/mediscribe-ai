@@ -17,7 +17,8 @@ import {
   Loader2,
   Eye,
   Plus,
-  Edit3
+  Edit3,
+  Clock
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -41,37 +42,44 @@ export default function StructuredNoteReview({
   onReanalyze,
   onGenerateGuidelines,
   onGenerateICD10,
-  onGenerateMedications
+  onGenerateMedications,
+  onSaveDraft,
+  onFinalize
 }) {
   const navigate = useNavigate();
+  const [saving, setSaving] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const [generatingSummary, setGeneratingSummary] = useState(false);
   const [aiSummary, setAiSummary] = useState(null);
   const [editingField, setEditingField] = useState(null);
 
-  const handleFinalize = async () => {
-    setFinalizing(true);
-    try {
-      const created = await base44.entities.ClinicalNote.create({
-        ...rawData,
-        ...structuredNote,
-        status: "finalized"
-      });
-
-      // Auto-link guidelines
+  const handleSaveDraft = async () => {
+    if (onSaveDraft) {
+      setSaving(true);
       try {
-        await base44.functions.invoke('autoLinkGuidelines', { noteId: created.id });
+        await onSaveDraft();
+        toast.success("Draft saved successfully");
       } catch (error) {
-        console.error("Failed to auto-link guidelines:", error);
+        console.error("Failed to save draft:", error);
+        toast.error("Failed to save draft");
+      } finally {
+        setSaving(false);
       }
+    }
+  };
 
-      toast.success("Note finalized successfully");
-      navigate(createPageUrl(`NoteDetail?id=${created.id}`));
-    } catch (error) {
-      console.error("Failed to finalize note:", error);
-      toast.error("Failed to finalize note");
-    } finally {
-      setFinalizing(false);
+  const handleFinalize = async () => {
+    if (onFinalize) {
+      setFinalizing(true);
+      try {
+        await onFinalize();
+        toast.success("Note finalized successfully");
+      } catch (error) {
+        console.error("Failed to finalize note:", error);
+        toast.error("Failed to finalize note");
+      } finally {
+        setFinalizing(false);
+      }
     }
   };
 
@@ -150,8 +158,20 @@ Provide:
 
         <div className="flex gap-3 pt-4 border-t border-slate-200">
           <Button
+            onClick={handleSaveDraft}
+            disabled={saving || !onSaveDraft}
+            variant="outline"
+            className="flex-1 gap-2"
+          >
+            {saving ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
+            ) : (
+              <><Clock className="w-4 h-4" /> Save as Draft</>
+            )}
+          </Button>
+          <Button
             onClick={handleFinalize}
-            disabled={finalizing}
+            disabled={finalizing || !onFinalize}
             className="flex-1 bg-emerald-600 hover:bg-emerald-700 gap-2"
           >
             {finalizing ? (

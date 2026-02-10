@@ -1098,7 +1098,7 @@ FORMATTING RULES (CRITICAL):
                field="diagnoses"
                type="array"
                onUpdate={onUpdate}
-               onReanalyze={onReanalyze}
+               onReanalyze={handleReanalyze}
                hideBorder={true}
              />
            </div>

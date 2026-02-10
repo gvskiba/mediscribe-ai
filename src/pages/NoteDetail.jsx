@@ -1291,10 +1291,6 @@ Generated: ${new Date().toLocaleString()}
                    <div className="grid grid-cols-2 gap-6">
                      {/* Left Column - Imaging Analysis */}
                      <div>
-                       <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                         <ImageIcon className="w-5 h-5 text-cyan-600" />
-                         Imaging Analysis
-                       </h3>
                        <ImagingAnalysis
                          noteId={noteId}
                          onAddToNote={async (imagingText, linkedFindings) => {

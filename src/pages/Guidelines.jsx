@@ -27,7 +27,7 @@ export default function Guidelines() {
   const [filterDateRange, setFilterDateRange] = useState("all");
   const [viewMode, setViewMode] = useState("search");
   const [relatedGuidelines, setRelatedGuidelines] = useState([]);
-  const [selectedForCompare, setSelectedForCompare] = useState([]);
+  const [selectedForCompareIds, setSelectedForCompareIds] = useState([]);
   const [showCompare, setShowCompare] = useState(false);
   const [comparison, setComparison] = useState(null);
   const [comparing, setComparing] = useState(false);

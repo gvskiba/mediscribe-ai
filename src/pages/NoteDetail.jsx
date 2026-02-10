@@ -20,7 +20,9 @@ import {
   Download,
   BookOpen,
   FileCode,
-  Clock
+  Clock,
+  AlertCircle,
+  ImageIcon
 } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";

@@ -189,7 +189,7 @@ export default function Layout({ children, currentPageName }) {
           style={{ background: 'linear-gradient(165deg, #f8fafc 0%, #ffffff 100%)' }}
           onClick={(e) => e.stopPropagation()}>
 
-            {navItems.map((item) =>
+            {navSections.flatMap(section => section.items).map((item) =>
           <Link
             key={item.page}
             to={createPageUrl(item.page)}

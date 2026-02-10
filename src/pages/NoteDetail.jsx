@@ -1088,8 +1088,8 @@ Generated: ${new Date().toLocaleString()}
                      <Button
                        onClick={async () => {
                          try {
+                           if (!Array.isArray(note.diagnoses)) return;
                            let diagnosisText = `\n\nDIAGNOSES:\n`;
-                           if (Array.isArray(note.diagnoses)) {
                            note.diagnoses.forEach((diagnosis, idx) => {
                              const correspondingCode = icd10Suggestions.find(s => s.diagnosis === diagnosis);
                              diagnosisText += `${idx + 1}. ${diagnosis}`;
@@ -1097,9 +1097,8 @@ Generated: ${new Date().toLocaleString()}
                                diagnosisText += ` (${correspondingCode.code})`;
                              }
                              diagnosisText += `\n`;
-                             });
-                             }
-                             const updatedAssessment = (note.assessment || "") + diagnosisText;
+                           });
+                           const updatedAssessment = (note.assessment || "") + diagnosisText;
                            await base44.entities.ClinicalNote.update(noteId, { assessment: updatedAssessment });
                            await queryClient.invalidateQueries({ queryKey: ["note", noteId] });
                          } catch (error) {

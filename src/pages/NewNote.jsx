@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
+import { Button } from "@/components/ui/button";
 import NoteTranscriptionInput from "../components/notes/NoteTranscriptionInput";
 import ClinicalSectionInput from "../components/notes/ClinicalSectionInput";
 import StructuredNotePreview from "../components/notes/StructuredNotePreview";

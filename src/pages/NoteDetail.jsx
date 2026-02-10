@@ -428,12 +428,14 @@ IMPORTANT: Always return diagnoses as an array with at least one entry describin
       });
 
       console.log("Extracted data:", result);
+      console.log("Diagnoses from LLM:", result.diagnoses);
 
       // Update note with extracted data
       const updateData = {};
       if (result.diagnoses?.length > 0) {
-        updateData.diagnoses = result.diagnoses;
-        console.log("Setting diagnoses:", result.diagnoses);
+        console.log("Diagnoses array:", Array.isArray(result.diagnoses), result.diagnoses);
+        updateData.diagnoses = Array.isArray(result.diagnoses) ? result.diagnoses : [result.diagnoses];
+        console.log("Setting diagnoses:", updateData.diagnoses);
       }
       if (result.medications?.length > 0) updateData.medications = result.medications;
       if (result.allergies?.length > 0) updateData.allergies = result.allergies;

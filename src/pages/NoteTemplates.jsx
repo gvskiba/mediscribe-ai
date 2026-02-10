@@ -20,6 +20,9 @@ import AITemplateSuggestions from "../components/templates/AITemplateSuggestions
 import TemplateVersionComparison from "../components/templates/TemplateVersionComparison";
 import TemplateSearch from "../components/templates/TemplateSearch";
 import AITemplateCreator from "../components/templates/AITemplateCreator";
+import AISectionGenerator from "../components/templates/AISectionGenerator";
+import AIInstructionRefinement from "../components/templates/AIInstructionRefinement";
+import SectionOrganizationSuggestions from "../components/templates/SectionOrganizationSuggestions";
 import { toast } from "sonner";
 
 const noteTypes = [

@@ -9,6 +9,8 @@ import RecentQueryCard from "../components/dashboard/RecentQueryCard";
 import CompareGuidelines from "../components/guidelines/CompareGuidelines";
 import PersonalizedRecommendations from "../components/guidelines/PersonalizedRecommendations";
 import { trackGuidelineView, trackGuidelineSearch } from "../components/guidelines/GuidelineViewTracker";
+import GuidlineSummaryCard from "../components/guidelines/GuidlineSummaryCard";
+import { generateMultipleSummaries } from "../components/guidelines/AutoSummaryGenerator";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";

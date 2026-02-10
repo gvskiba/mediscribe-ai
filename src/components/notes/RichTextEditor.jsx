@@ -1,104 +1,91 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Save } from "lucide-react";
-import { toast } from "sonner";
+import { FileText, Link as LinkIcon } from "lucide-react";
 
-const MODULES = {
+const modules = {
   toolbar: [
-    [{ header: [1, 2, 3, 4, false] }],
-    ["bold", "italic", "underline", "strike"],
-    ["blockquote", "code-block"],
+    ["bold", "italic", "underline"],
     [{ list: "ordered" }, { list: "bullet" }],
-    [{ align: [] }],
-    ["clean"],
+    [{ header: [2, 3, false] }],
   ],
 };
 
-const FORMATS = [
-  "header",
-  "bold",
-  "italic",
-  "underline",
-  "strike",
-  "blockquote",
-  "code-block",
-  "list",
-  "bullet",
-  "align",
-];
-
-export default function RichTextEditor({
-  value = "",
-  onChange,
-  onSave,
-  placeholder = "Enter clinical note...",
-  loading = false,
-  showSaveButton = true,
-  readOnly = false,
+export default function RichTextEditor({ 
+  value, 
+  onChange, 
+  placeholder = "Click to edit...",
+  onInsertTemplate,
+  diagnoses = []
 }) {
-  const [isSaving, setIsSaving] = useState(false);
+  const [showDiagnosisLinks, setShowDiagnosisLinks] = useState(false);
+  const editorRef = useRef(null);
 
-  const handleSave = async () => {
-    if (onSave) {
-      setIsSaving(true);
-      try {
-        await onSave(value);
-        toast.success("Note saved");
-      } catch (error) {
-        toast.error("Failed to save note");
-      } finally {
-        setIsSaving(false);
-      }
-    }
-  };
-
-  const handleReset = () => {
-    if (onChange) {
-      onChange("");
-      toast.info("Note cleared");
+  const handleInsertDiagnosis = (diagnosis) => {
+    const quill = editorRef.current?.getEditor();
+    if (quill) {
+      const selection = quill.getSelection();
+      const index = selection ? selection.index : quill.getLength();
+      quill.insertText(index, `[${diagnosis}]`, { link: `diagnosis:${diagnosis}` });
+      quill.setSelection(index + diagnosis.length + 2);
+      setShowDiagnosisLinks(false);
     }
   };
 
   return (
-    <div className="space-y-3">
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+    <div className="space-y-2">
+      <div className="bg-white rounded-xl border border-slate-300 overflow-hidden">
         <ReactQuill
-          value={value}
+          ref={editorRef}
+          theme="snow"
+          value={value || ""}
           onChange={onChange}
-          modules={readOnly ? {} : MODULES}
-          formats={readOnly ? [] : FORMATS}
+          modules={modules}
           placeholder={placeholder}
-          readOnly={readOnly}
-          className="min-h-[300px] [&_.ql-container]:text-sm [&_.ql-editor]:p-4"
+          className="rounded-none text-sm"
         />
       </div>
 
-      {showSaveButton && !readOnly && (
-        <div className="flex gap-2 justify-end">
+      {diagnoses.length > 0 && (
+        <div className="flex gap-2">
           <Button
+            size="sm"
             variant="outline"
-            size="sm"
-            onClick={handleReset}
-            disabled={!value || loading || isSaving}
-            className="gap-2"
+            onClick={() => setShowDiagnosisLinks(!showDiagnosisLinks)}
+            className="gap-2 border-blue-300 hover:bg-blue-50"
           >
-            <RotateCcw className="w-4 h-4" /> Clear
+            <LinkIcon className="w-3.5 h-3.5" />
+            Link Diagnoses
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={!value || loading || isSaving}
-            className="gap-2 bg-blue-600 hover:bg-blue-700"
-            size="sm"
-          >
-            {isSaving ? (
-              <span className="animate-spin">⏳</span>
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
-            Save
-          </Button>
+          {onInsertTemplate && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onInsertTemplate()}
+              className="gap-2 border-purple-300 hover:bg-purple-50"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              Quick Templates
+            </Button>
+          )}
+        </div>
+      )}
+
+      {showDiagnosisLinks && diagnoses.length > 0 && (
+        <div className="bg-blue-50 rounded-lg border border-blue-200 p-3 space-y-2">
+          <p className="text-xs font-semibold text-blue-900 mb-2">Link diagnosis to text:</p>
+          <div className="flex flex-wrap gap-2">
+            {diagnoses.map((dx, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleInsertDiagnosis(dx)}
+                className="text-xs bg-white border border-blue-200 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                {dx}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>

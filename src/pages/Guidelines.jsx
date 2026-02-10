@@ -838,6 +838,7 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                                setSelectedForCompareIds(prev => prev.filter(id => id !== query.id));
                              }
                            }}
+                           onClick={(e) => e.stopPropagation()}
                            className="rounded w-5 h-5 cursor-pointer"
                          />
                        </div>

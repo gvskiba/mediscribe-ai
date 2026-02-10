@@ -7,7 +7,7 @@ import { Sparkles, Loader2, Plus, X, FileText } from "lucide-react";
 import SnippetPicker from "../snippets/SnippetPicker";
 import SectionAISuggestions from "./SectionAISuggestions";
 import RichTextEditor from "./RichTextEditor.jsx";
-import QuickTextTemplates from "./QuickTextTemplates.jsx";
+
 
 export default function EditableSection({ 
   icon: Icon, 
@@ -22,12 +22,11 @@ export default function EditableSection({
   noteContext = {}
 }) {
   const [editValue, setEditValue] = useState(value);
-  const [isReanalyzing, setIsReanalyzing] = useState(false);
-  const [snippetPickerOpen, setSnippetPickerOpen] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [templatesOpen, setTemplatesOpen] = useState(false);
-  const [useRichText, setUseRichText] = useState(false);
-  const textareaRef = useRef(null);
+   const [isReanalyzing, setIsReanalyzing] = useState(false);
+   const [snippetPickerOpen, setSnippetPickerOpen] = useState(false);
+   const [showSuggestions, setShowSuggestions] = useState(false);
+   const [useRichText, setUseRichText] = useState(false);
+   const textareaRef = useRef(null);
 
   useEffect(() => {
     setEditValue(value);
@@ -217,14 +216,6 @@ export default function EditableSection({
                    <Button
                      size="sm"
                      variant="ghost"
-                     onClick={() => setTemplatesOpen(true)}
-                     className="text-xs text-slate-600 hover:text-slate-900"
-                   >
-                     Templates
-                   </Button>
-                   <Button
-                     size="sm"
-                     variant="ghost"
                      onClick={() => setUseRichText(!useRichText)}
                      className="text-xs text-slate-600 hover:text-slate-900"
                    >
@@ -309,17 +300,7 @@ export default function EditableSection({
            category={field === "physical_exam" ? "exam" : field === "review_of_systems" ? "ros" : null}
          />
 
-        {["assessment", "plan"].includes(field) && (
-          <QuickTextTemplates
-            field={field}
-            open={templatesOpen}
-            onClose={() => setTemplatesOpen(false)}
-            onInsert={(template) => {
-              const newValue = (editValue || "") + "\n\n" + template;
-              handleChange(newValue);
-            }}
-          />
-        )}
+
         </div>
         </div>
         );

@@ -582,10 +582,16 @@ CRITICAL: The diagnoses field MUST always contain at least one entry. If no diag
 
       // Update note with extracted data
       const updateData = {};
-      
-      // Always update diagnoses if present, even if empty - the LLM should return at least one
+
+      // Filter diagnoses to only include ICD-10 coded ones (format: CODE - Description)
       if (result.diagnoses) {
-        updateData.diagnoses = Array.isArray(result.diagnoses) ? result.diagnoses : [result.diagnoses];
+        const diagnosisArray = Array.isArray(result.diagnoses) ? result.diagnoses : [result.diagnoses];
+        const filteredDiagnoses = diagnosisArray.filter(d => 
+          d && typeof d === 'string' && /^[A-Z0-9]{1,}.*-/.test(d.trim())
+        );
+        if (filteredDiagnoses.length > 0) {
+          updateData.diagnoses = filteredDiagnoses;
+        }
       }
       if (result.chief_complaint) updateData.chief_complaint = result.chief_complaint;
       if (result.medications?.length > 0) updateData.medications = result.medications;

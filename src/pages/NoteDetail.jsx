@@ -40,6 +40,7 @@ import NoteRevisionHistory from "../components/notes/NoteRevisionHistory";
 import ImagingAnalysis from "../components/notes/ImagingAnalysis";
 import LabsAnalysis from "../components/notes/LabsAnalysis";
 import DiagnosisICD10Matcher from "../components/notes/DiagnosisICD10Matcher";
+import DiagnosesWithRecommendations from "../components/notes/DiagnosesWithRecommendations";
 import { useAutoSave } from "../components/utils/useAutoSave";
 
 const statusColors = {

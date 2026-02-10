@@ -1292,20 +1292,42 @@ Generated: ${new Date().toLocaleString()}
                  Imaging Results
                  </h3>
                  <ImagingAnalysis
-                 noteId={noteId}
-                 onAddToNote={async (imagingText) => {
-                   try {
-                     const updatedAssessment = (note.assessment || "") + imagingText;
-                     await base44.entities.ClinicalNote.update(noteId, { 
-                       assessment: updatedAssessment
-                     });
-                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                     alert("Imaging summary added to assessment section");
-                   } catch (error) {
-                     console.error("Failed to add imaging to note:", error);
-                     alert("Failed to add imaging. Please try again.");
-                   }
-                 }}
+                   noteId={noteId}
+                   onAddToNote={async (imagingText, linkedFindings) => {
+                     try {
+                       const updates = {};
+
+                       // Add imaging text to assessment (always added)
+                       updates.assessment = (note.assessment || "") + imagingText;
+
+                       // If findings are linked to other sections, add them there too
+                       if (linkedFindings && Object.keys(linkedFindings).length > 0) {
+                         Object.entries(linkedFindings).forEach(([findingKey, sections]) => {
+                           sections.forEach((sectionId) => {
+                             const fieldMap = {
+                               assessment: "assessment",
+                               plan: "plan",
+                               history_of_present_illness: "history_of_present_illness",
+                             };
+
+                             if (fieldMap[sectionId]) {
+                               const sectionText = `\n\n[Imaging Finding] ${imagingText.split("\n")[0]}`;
+                               updates[fieldMap[sectionId]] =
+                                 (updates[fieldMap[sectionId]] || note[fieldMap[sectionId]] || "") +
+                                 sectionText;
+                             }
+                           });
+                         });
+                       }
+
+                       await base44.entities.ClinicalNote.update(noteId, updates);
+                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                       alert("Imaging summary added to clinical note");
+                     } catch (error) {
+                       console.error("Failed to add imaging to note:", error);
+                       alert("Failed to add imaging. Please try again.");
+                     }
+                   }}
                  />
                  </div>
                  </TabsContent>

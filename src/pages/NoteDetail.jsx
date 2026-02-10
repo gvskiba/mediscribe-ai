@@ -935,12 +935,12 @@ Generated: ${new Date().toLocaleString()}
                        Medications ({note.medications.length})
                      </h3>
                      <div className="space-y-2 max-h-48 overflow-y-auto">
-                         {note.medications && Array.isArray(note.medications) && note.medications.map((medication, idx) => (
-                           <div key={idx} className="bg-white rounded-lg p-3 border border-green-100 text-xs text-slate-700">
-                             {medication}
-                           </div>
-                         ))}
-                       </div>
+                       {note.medications.map((medication, idx) => (
+                         <div key={idx} className="bg-white rounded-lg p-3 border border-green-100 text-xs text-slate-700">
+                           {medication}
+                         </div>
+                       ))}
+                     </div>
                    </div>
                  )}
 

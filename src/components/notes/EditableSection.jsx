@@ -248,7 +248,7 @@ export default function EditableSection({
                  <Button
                    size="sm"
                    variant="outline"
-                   onClick={() => applyFormatting("bold")}
+                   onMouseDown={(e) => applyFormatting("bold", e)}
                    className="h-8 w-8 p-0 rounded-lg"
                    title="Bold"
                  >
@@ -257,7 +257,7 @@ export default function EditableSection({
                  <Button
                    size="sm"
                    variant="outline"
-                   onClick={() => applyFormatting("italic")}
+                   onMouseDown={(e) => applyFormatting("italic", e)}
                    className="h-8 w-8 p-0 rounded-lg"
                    title="Italic"
                  >
@@ -266,7 +266,7 @@ export default function EditableSection({
                  <Button
                    size="sm"
                    variant="outline"
-                   onClick={() => applyFormatting("bullet")}
+                   onMouseDown={(e) => applyFormatting("bullet", e)}
                    className="h-8 w-8 p-0 rounded-lg"
                    title="Bullet points"
                  >

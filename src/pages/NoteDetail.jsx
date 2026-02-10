@@ -35,6 +35,7 @@ import ICD10Suggestions from "../components/notes/ICD10Suggestions";
 import ICD10CodeSearch from "../components/notes/ICD10CodeSearch";
 import GuidelineReviewPrompt from "../components/notes/GuidelineReviewPrompt";
 import NoteRevisionHistory from "../components/notes/NoteRevisionHistory";
+import ImagingAnalysis from "../components/notes/ImagingAnalysis";
 import { useAutoSave } from "../components/utils/useAutoSave";
 
 const statusColors = {

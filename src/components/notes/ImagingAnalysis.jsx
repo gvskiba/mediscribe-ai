@@ -165,19 +165,85 @@ Format the response in a clear, clinically actionable way.`,
         </h3>
 
         {/* Input Section */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2 block">
-            Paste Imaging Results
-          </label>
-          <Textarea
-            value={imagingResults}
-            onChange={(e) => {
-              setImagingResults(e.target.value);
-              setError(null);
-            }}
-            placeholder="Paste imaging report text here (CT, MRI, X-ray, etc.)..."
-            className="min-h-32 rounded-lg resize-none border-slate-300"
-          />
+        <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-3">
+          {/* File Upload */}
+          <div>
+            <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2 block">
+              Upload Imaging Files
+            </label>
+            <label className="flex items-center justify-center w-full p-4 border-2 border-dashed border-cyan-300 rounded-lg cursor-pointer hover:bg-cyan-50 transition-colors">
+              <div className="text-center">
+                <Upload className="w-5 h-5 text-cyan-600 mx-auto mb-1" />
+                <span className="text-xs font-medium text-slate-700">
+                  Click to upload PDF, DICOM preview, or image files
+                </span>
+                <span className="text-xs text-slate-500 mt-1 block">
+                  Supported: PDF, JPG, PNG, DICOM preview
+                </span>
+              </div>
+              <input
+                type="file"
+                multiple
+                accept=".pdf,.jpg,.jpeg,.png,.dcm,.dicom"
+                onChange={handleFileUpload}
+                disabled={uploadingFile}
+                className="hidden"
+              />
+            </label>
+            {uploadingFile && (
+              <div className="flex items-center gap-2 mt-2 text-sm text-cyan-700">
+                <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
+              </div>
+            )}
+          </div>
+
+          {/* Uploaded Files List */}
+          {uploadedFiles.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-slate-700 mb-2">Uploaded Files:</p>
+              <div className="space-y-2">
+                {uploadedFiles.map((file, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-2 bg-cyan-50 rounded-lg border border-cyan-200">
+                    <div className="flex items-center gap-2 flex-1">
+                      <FileText className="w-4 h-4 text-cyan-600" />
+                      <span className="text-xs text-slate-700 truncate">{file.name}</span>
+                    </div>
+                    <button
+                      onClick={() => setUploadedFiles((prev) => prev.filter((_, i) => i !== idx))}
+                      className="text-xs text-slate-500 hover:text-slate-700"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Divider */}
+          {uploadedFiles.length > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-px bg-slate-200" />
+              <span className="text-xs text-slate-500">or</span>
+              <div className="flex-1 h-px bg-slate-200" />
+            </div>
+          )}
+
+          {/* Text Paste */}
+          <div>
+            <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2 block">
+              Or Paste Imaging Results
+            </label>
+            <Textarea
+              value={imagingResults}
+              onChange={(e) => {
+                setImagingResults(e.target.value);
+                setError(null);
+              }}
+              placeholder="Paste imaging report text here (CT, MRI, X-ray, etc.)..."
+              className="min-h-32 rounded-lg resize-none border-slate-300"
+            />
+          </div>
 
           {error && (
             <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">

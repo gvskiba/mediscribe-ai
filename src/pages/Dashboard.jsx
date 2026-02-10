@@ -1,9 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "../utils";
-import { FileText, BookOpen, Calculator, Layers, FileCode } from "lucide-react";
-import { motion } from "framer-motion";
+import { FileText, BookOpen, Calculator, Layers, FileCode, X, Plus, GripVertical } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import MedicalNewsSection from "../components/dashboard/MedicalNewsSection";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const quickLinks = [
   {
@@ -11,7 +18,6 @@ const quickLinks = [
     description: "View and manage clinical notes",
     icon: FileText,
     page: "NotesLibrary",
-    color: "blue",
     gradient: "from-blue-500 to-blue-600"
   },
   {
@@ -19,7 +25,6 @@ const quickLinks = [
     description: "Manage note templates",
     icon: FileCode,
     page: "NoteTemplates",
-    color: "purple",
     gradient: "from-purple-500 to-purple-600"
   },
   {
@@ -27,7 +32,6 @@ const quickLinks = [
     description: "Quick text snippets",
     icon: Layers,
     page: "Snippets",
-    color: "emerald",
     gradient: "from-emerald-500 to-emerald-600"
   },
   {
@@ -35,7 +39,6 @@ const quickLinks = [
     description: "Evidence-based clinical guidelines",
     icon: BookOpen,
     page: "Guidelines",
-    color: "indigo",
     gradient: "from-indigo-500 to-indigo-600"
   },
   {
@@ -43,62 +46,137 @@ const quickLinks = [
     description: "Medical calculators and tools",
     icon: Calculator,
     page: "Calculators",
-    color: "cyan",
     gradient: "from-cyan-500 to-cyan-600"
   }
 ];
 
+const availableWidgets = [
+  { id: "quicklinks", name: "Quick Links", component: "QuickLinks" },
+  { id: "news", name: "Medical News", component: "MedicalNews" }
+];
+
 export default function Dashboard() {
+  const [activeWidgets, setActiveWidgets] = useState(["quicklinks", "news"]);
+
+  const removeWidget = (widgetId) => {
+    setActiveWidgets(prev => prev.filter(id => id !== widgetId));
+  };
+
+  const addWidget = (widgetId) => {
+    if (!activeWidgets.includes(widgetId)) {
+      setActiveWidgets(prev => [...prev, widgetId]);
+    }
+  };
+
+  const availableToAdd = availableWidgets.filter(w => !activeWidgets.includes(w.id));
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between"
       >
-        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Provider Dashboard</h1>
-        <p className="text-slate-600 mt-1">Your clinical workspace - quick access to all tools</p>
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Provider Dashboard</h1>
+          <p className="text-slate-600 mt-1">Customize your clinical workspace</p>
+        </div>
+        
+        {availableToAdd.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Plus className="w-4 h-4" />
+                Add Widget
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {availableToAdd.map(widget => (
+                <DropdownMenuItem key={widget.id} onClick={() => addWidget(widget.id)}>
+                  {widget.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </motion.div>
 
-      {/* Quick Links */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4"
-      >
-        {quickLinks.map((link, index) => {
-          const Icon = link.icon;
-          return (
-            <Link
-              key={link.page}
-              to={createPageUrl(link.page)}
-              className="group"
-            >
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="bg-white rounded-xl border border-slate-200 p-4 hover:border-blue-300 hover:shadow-lg transition-all duration-200"
-              >
-                <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${link.gradient} flex items-center justify-center mb-3 shadow-sm group-hover:scale-110 transition-transform duration-200`}>
-                  <Icon className="w-5 h-5 text-white" />
-                </div>
-                
-                <h3 className="text-sm font-bold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">
-                  {link.title}
+      {/* Widgets Grid */}
+      <AnimatePresence>
+        {activeWidgets.map((widgetId, index) => (
+          <motion.div
+            key={widgetId}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ delay: index * 0.05 }}
+            className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
+          >
+            <div className="flex items-center justify-between px-6 py-3 border-b border-slate-100 bg-slate-50">
+              <div className="flex items-center gap-2">
+                <GripVertical className="w-4 h-4 text-slate-400" />
+                <h3 className="text-sm font-semibold text-slate-900">
+                  {availableWidgets.find(w => w.id === widgetId)?.name}
                 </h3>
-                
-                <p className="text-xs text-slate-600 line-clamp-2">
-                  {link.description}
-                </p>
-              </motion.div>
-            </Link>
-          );
-        })}
-      </motion.div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => removeWidget(widgetId)}
+                className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
 
-      {/* Medical News Section */}
-      <MedicalNewsSection />
+            <div className="p-6">
+              {widgetId === "quicklinks" && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                  {quickLinks.map((link) => {
+                    const Icon = link.icon;
+                    return (
+                      <Link
+                        key={link.page}
+                        to={createPageUrl(link.page)}
+                        className="group"
+                      >
+                        <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 hover:border-blue-300 hover:shadow-md hover:bg-white transition-all duration-200 h-full flex flex-col">
+                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${link.gradient} flex items-center justify-center mb-3 shadow-sm group-hover:scale-110 transition-transform duration-200`}>
+                            <Icon className="w-5 h-5 text-white" />
+                          </div>
+                          
+                          <h3 className="text-sm font-bold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">
+                            {link.title}
+                          </h3>
+                          
+                          <p className="text-xs text-slate-600 line-clamp-2">
+                            {link.description}
+                          </p>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+
+              {widgetId === "news" && (
+                <MedicalNewsSection compact />
+              )}
+            </div>
+          </motion.div>
+        ))}
+      </AnimatePresence>
+
+      {activeWidgets.length === 0 && (
+        <div className="text-center py-20">
+          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Plus className="w-8 h-8 text-slate-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-slate-900 mb-2">No widgets added</h3>
+          <p className="text-slate-500 mb-4">Add widgets to customize your dashboard</p>
+        </div>
+      )}
     </div>
   );
 }

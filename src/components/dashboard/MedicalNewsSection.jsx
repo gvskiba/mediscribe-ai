@@ -20,7 +20,7 @@ const newsCategories = [
   { id: "public_health", label: "Public Health" }
 ];
 
-export default function MedicalNewsSection() {
+export default function MedicalNewsSection({ compact = false }) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState("all");
 
@@ -89,23 +89,14 @@ Focus on stories that have direct clinical implications or are practice-changing
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.1 }}
-      className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm"
-    >
-      <div className="flex items-center justify-between p-6 pb-4 border-b border-slate-100">
-        <div className="flex items-center gap-2">
-          <Newspaper className="w-5 h-5 text-blue-600" />
-          <h2 className="text-lg font-semibold text-slate-900">Medical News</h2>
-        </div>
+    <div>
+      <div className="flex items-center justify-between mb-4">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setRefreshKey(prev => prev + 1)}
           disabled={isLoading}
-          className="gap-2"
+          className="gap-2 ml-auto"
         >
           <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
           Refresh
@@ -113,14 +104,14 @@ Focus on stories that have direct clinical implications or are practice-changing
       </div>
 
       {/* Category Tabs */}
-      <div className="px-6 pt-4 pb-2 overflow-x-auto">
+      <div className="mb-4 overflow-x-auto">
         <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="w-full">
-          <TabsList className="inline-flex h-auto p-1 bg-slate-100 rounded-xl">
+          <TabsList className="inline-flex h-auto p-1 bg-slate-100 rounded-lg">
             {newsCategories.map((cat) => (
               <TabsTrigger
                 key={cat.id}
                 value={cat.id}
-                className="px-4 py-2 text-xs font-medium rounded-lg data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm"
+                className="px-3 py-1.5 text-xs font-medium rounded-md data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm"
               >
                 {cat.label}
               </TabsTrigger>
@@ -129,28 +120,28 @@ Focus on stories that have direct clinical implications or are practice-changing
         </Tabs>
       </div>
 
-      <div className="px-4 pb-4">
+      <div>
         {isLoading ? (
-          <div className="space-y-3">
-            {[...Array(3)].map((_, i) => (
-              <Card key={i} className="p-4">
-                <Skeleton className="h-4 w-24 mb-2" />
-                <Skeleton className="h-5 w-full mb-2" />
-                <Skeleton className="h-12 w-full" />
+          <div className="space-y-2">
+            {[...Array(compact ? 3 : 4)].map((_, i) => (
+              <Card key={i} className="p-3">
+                <Skeleton className="h-3 w-20 mb-2" />
+                <Skeleton className="h-4 w-full mb-1" />
+                <Skeleton className="h-8 w-full" />
               </Card>
             ))}
           </div>
         ) : newsData && newsData.length > 0 ? (
-          <div className="space-y-3">
-            {newsData.map((story, idx) => (
+          <div className="space-y-2">
+            {newsData.slice(0, compact ? 4 : 6).map((story, idx) => (
               <motion.div
                 key={idx}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.05 }}
+                transition={{ delay: idx * 0.03 }}
               >
-                <Card className="p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between gap-3 mb-2">
+                <Card className="p-3 hover:shadow-md transition-shadow">
+                  <div className="flex items-start justify-between gap-2 mb-2">
                     <Badge 
                       variant="outline" 
                       className={`text-xs ${getCategoryColor(story.category)}`}
@@ -158,17 +149,12 @@ Focus on stories that have direct clinical implications or are practice-changing
                       {story.category}
                     </Badge>
                   </div>
-                  <h3 className="font-semibold text-slate-900 mb-2 leading-snug">
+                  <h3 className="font-semibold text-slate-900 mb-1 leading-snug text-sm">
                     {story.title}
                   </h3>
-                  <p className="text-sm text-slate-600 leading-relaxed mb-3">
+                  <p className="text-xs text-slate-600 leading-relaxed mb-2 line-clamp-2">
                     {story.summary}
                   </p>
-                  {story.relevance && (
-                    <p className="text-xs text-slate-500 italic mb-2">
-                      Clinical Relevance: {story.relevance}
-                    </p>
-                  )}
                   {story.source && (
                     <div className="flex items-center text-xs text-slate-400">
                       <ExternalLink className="w-3 h-3 mr-1" />
@@ -180,12 +166,12 @@ Focus on stories that have direct clinical implications or are practice-changing
             ))}
           </div>
         ) : (
-          <div className="text-center py-8 text-slate-400">
-            <Newspaper className="w-10 h-10 mx-auto mb-3 opacity-40" />
-            <p className="text-sm">No news available</p>
+          <div className="text-center py-6 text-slate-400">
+            <Newspaper className="w-8 h-8 mx-auto mb-2 opacity-40" />
+            <p className="text-xs">No news available</p>
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }

@@ -90,6 +90,7 @@ Format each as a concise, actionable clinical question.`,
 
   useEffect(() => {
     if (guideline) {
+      trackGuidelineView(guideline.id);
       generateSummary();
       generateRelatedGuidelines();
     }

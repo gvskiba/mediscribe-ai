@@ -21,7 +21,6 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../../utils";
 import { toast } from "sonner";
-import StructuredNotePreview from "./StructuredNotePreview";
 import ICD10Suggestions from "./ICD10Suggestions";
 import ICD10CodeSearch from "./ICD10CodeSearch";
 import PatientSummary from "./PatientSummary";
@@ -217,16 +216,105 @@ Provide:
 
           {/* Clinical Note Tab */}
           <TabsContent value="clinical" className="p-6">
-            <StructuredNotePreview
-              note={structuredNote}
-              onUpdate={onUpdate}
-              onReanalyze={onReanalyze}
-              guidelineRecommendations={guidelineRecommendations}
-              loadingGuidelines={loadingGuidelines}
-              medicationRecommendations={medicationRecommendations}
-              loadingMedications={loadingMedications}
-              hideFinalize={true}
-            />
+            <div className="space-y-6">
+              {/* Chief Complaint */}
+              {structuredNote.chief_complaint && (
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 mb-2">Chief Complaint</h3>
+                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    <p className="text-slate-700">{structuredNote.chief_complaint}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* HPI */}
+              {structuredNote.history_of_present_illness && (
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 mb-2">History of Present Illness</h3>
+                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    <p className="text-slate-700 whitespace-pre-wrap">{structuredNote.history_of_present_illness}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Medical History */}
+              {structuredNote.medical_history && (
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 mb-2">Medical History</h3>
+                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    <p className="text-slate-700 whitespace-pre-wrap">{structuredNote.medical_history}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* ROS */}
+              {structuredNote.review_of_systems && (
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 mb-2">Review of Systems</h3>
+                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    <p className="text-slate-700 whitespace-pre-wrap">{structuredNote.review_of_systems}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Physical Exam */}
+              {structuredNote.physical_exam && (
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 mb-2">Physical Examination</h3>
+                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    <p className="text-slate-700 whitespace-pre-wrap">{structuredNote.physical_exam}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Assessment */}
+              {structuredNote.assessment && (
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 mb-2">Assessment</h3>
+                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    <p className="text-slate-700 whitespace-pre-wrap">{structuredNote.assessment}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Plan */}
+              {structuredNote.plan && (
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 mb-2">Plan</h3>
+                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    <p className="text-slate-700 whitespace-pre-wrap">{structuredNote.plan}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Diagnoses */}
+              {structuredNote.diagnoses && structuredNote.diagnoses.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 mb-2">Diagnoses</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {structuredNote.diagnoses.map((dx, idx) => (
+                      <Badge key={idx} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                        {dx}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Medications */}
+              {structuredNote.medications && structuredNote.medications.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 mb-2">Medications</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {structuredNote.medications.map((med, idx) => (
+                      <Badge key={idx} variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        {med}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </TabsContent>
 
           {/* Codes & Guidelines Tab */}

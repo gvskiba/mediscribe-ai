@@ -877,7 +877,7 @@ FORMATTING RULES (CRITICAL):
               field="medical_history"
               type="textarea"
               onUpdate={onUpdate}
-              onReanalyze={onReanalyze}
+              onReanalyze={handleReanalyze}
               hideBorder={true}
             />
           </div>

@@ -298,6 +298,8 @@ Use markdown formatting with clear headers, tables where appropriate, and bullet
   // Enhanced semantic search
   const [semanticSearching, setSemanticSearching] = useState(false);
   const [semanticResults, setSemanticResults] = useState(null);
+  const [generatingSummaries, setGeneratingSummaries] = useState(false);
+  const [summaries, setSummaries] = useState({});
 
   const performSemanticSearch = async (term) => {
     if (!term.trim()) {
@@ -387,6 +389,66 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
+
+  // Generate summaries for guidelines in browse mode
+  const generateSummariesForGuidelines = async (guidelines) => {
+    if (guidelines.length === 0 || generatingSummaries) return;
+    
+    setGeneratingSummaries(true);
+    const newSummaries = {};
+
+    try {
+      const summaryPromises = guidelines.slice(0, 10).map(async (query) => {
+        if (summaries[query.id]) {
+          newSummaries[query.id] = summaries[query.id];
+          return;
+        }
+
+        try {
+          const result = await base44.integrations.Core.InvokeLLM({
+            prompt: `Generate a concise clinical summary for this guideline query. Be brief and actionable.
+
+Question: ${query.question}
+Full Answer: ${query.answer?.substring(0, 800)}...
+Confidence: ${query.confidence_level}
+Sources: ${query.sources?.slice(0, 3).join('; ')}
+
+Provide:
+1. Key Recommendation: One-sentence primary clinical recommendation
+2. Essential Points: 2-3 bullet points of critical information
+3. Evidence Level: Brief note on confidence (${query.confidence_level})
+
+Keep total response under 100 words.`,
+            response_json_schema: {
+              type: "object",
+              properties: {
+                key_recommendation: { type: "string" },
+                essential_points: { type: "array", items: { type: "string" } },
+                evidence_note: { type: "string" }
+              }
+            }
+          });
+
+          newSummaries[query.id] = result;
+        } catch (error) {
+          console.error(`Failed to generate summary for ${query.id}:`, error);
+        }
+      });
+
+      await Promise.all(summaryPromises);
+      setSummaries(prev => ({ ...prev, ...newSummaries }));
+    } catch (error) {
+      console.error("Failed to generate summaries:", error);
+    } finally {
+      setGeneratingSummaries(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (viewMode === "browse" && filteredQueries.length > 0 && !latestAnswer && !selectedQuery) {
+      generateSummariesForGuidelines(filteredQueries);
+    }
+  }, [viewMode, filteredQueries.length]);
 
   // Apply filters
   let filteredQueries = semanticResults !== null ? semanticResults : pastQueries;
@@ -723,26 +785,88 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
               </div>
             ) : (
               <div className="space-y-3">
-                {filteredQueries.map((query) => (
-                  <div key={query.id} className="flex items-start gap-4 group">
-                    <div className="pt-6">
-                      <Checkbox
-                        checked={selectedForCompare.some(q => q.id === query.id)}
-                        onCheckedChange={(e) => {
-                          e.stopPropagation?.();
-                          toggleSelectForCompare(query);
-                        }}
-                        className="rounded-md w-5 h-5"
-                      />
+                {filteredQueries.map((query) => {
+                  const summary = summaries[query.id];
+                  const confidenceColors = {
+                    high: "bg-emerald-50 text-emerald-700 border-emerald-200",
+                    moderate: "bg-amber-50 text-amber-700 border-amber-200",
+                    low: "bg-red-50 text-red-700 border-red-200"
+                  };
+                  
+                  return (
+                    <div key={query.id} className="flex items-start gap-4 group">
+                      <div className="pt-6">
+                        <Checkbox
+                          checked={selectedForCompare.some(q => q.id === query.id)}
+                          onCheckedChange={(e) => {
+                            e.stopPropagation?.();
+                            toggleSelectForCompare(query);
+                          }}
+                          className="rounded-md w-5 h-5"
+                        />
+                      </div>
+                      <div
+                        onClick={() => handleSelectQuery(query)}
+                        className="flex-1 cursor-pointer bg-white border border-slate-200 rounded-2xl p-5 hover:border-blue-300 hover:shadow-md transition-all"
+                      >
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-slate-900 text-base mb-2 group-hover:text-blue-600 transition-colors">
+                              {query.question}
+                            </h3>
+                            <div className="flex flex-wrap gap-2">
+                              {query.category && (
+                                <span className="text-xs px-2 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 font-medium">
+                                  {query.category.replace(/_/g, ' ')}
+                                </span>
+                              )}
+                              {query.confidence_level && (
+                                <span className={`text-xs px-2 py-1 rounded-lg border font-medium ${confidenceColors[query.confidence_level]}`}>
+                                  {query.confidence_level} confidence
+                                </span>
+                              )}
+                              {query.sources?.length > 0 && (
+                                <span className="text-xs px-2 py-1 rounded-lg bg-slate-50 text-slate-700 border border-slate-200">
+                                  {query.sources.length} sources
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* AI Summary */}
+                        {summary ? (
+                          <div className="mt-4 p-4 bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border border-purple-200">
+                            <div className="flex items-start gap-2 mb-2">
+                              <Sparkles className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1">
+                                <p className="text-sm font-semibold text-purple-900 mb-2">
+                                  {summary.key_recommendation}
+                                </p>
+                                {summary.essential_points && summary.essential_points.length > 0 && (
+                                  <ul className="space-y-1 mb-2">
+                                    {summary.essential_points.map((point, idx) => (
+                                      <li key={idx} className="text-xs text-slate-700 flex items-start gap-2">
+                                        <span className="text-purple-500 mt-0.5">•</span>
+                                        <span>{point}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                                <p className="text-xs text-slate-600 italic">{summary.evidence_note}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ) : generatingSummaries ? (
+                          <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200 flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+                            <p className="text-xs text-slate-500">Generating summary...</p>
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
-                    <div
-                      onClick={() => handleSelectQuery(query)}
-                      className="flex-1 cursor-pointer"
-                    >
-                      <RecentQueryCard query={query} />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

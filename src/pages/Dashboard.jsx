@@ -12,7 +12,6 @@ import QuickStatsWidget from "../components/dashboard/QuickStatsWidget";
 import ClockWidget from "../components/dashboard/ClockWidget";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Switch } from "@/components/ui/switch";
 
 const quickLinks = [
   {

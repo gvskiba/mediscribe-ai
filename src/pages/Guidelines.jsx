@@ -811,31 +811,20 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
 
                         {/* AI Summary */}
                         {summary ? (
-                          <div className="mt-4 p-4 bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border border-purple-200">
-                            <div className="flex items-start gap-2 mb-2">
-                              <Sparkles className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
-                              <div className="flex-1">
-                                <p className="text-sm font-semibold text-purple-900 mb-2">
-                                  {summary.key_recommendation}
-                                </p>
-                                {summary.essential_points && summary.essential_points.length > 0 && (
-                                  <ul className="space-y-1 mb-2">
-                                    {summary.essential_points.map((point, idx) => (
-                                      <li key={idx} className="text-xs text-slate-700 flex items-start gap-2">
-                                        <span className="text-purple-500 mt-0.5">•</span>
-                                        <span>{point}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                )}
-                                <p className="text-xs text-slate-600 italic">{summary.evidence_note}</p>
-                              </div>
-                            </div>
+                          <div className="mt-4">
+                            <GuidlineSummaryCard 
+                              summary={summary}
+                              confidenceLevel={query.confidence_level}
+                              isLoading={false}
+                            />
                           </div>
                         ) : generatingSummaries ? (
-                          <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200 flex items-center gap-2">
-                            <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
-                            <p className="text-xs text-slate-500">Generating summary...</p>
+                          <div className="mt-4">
+                            <GuidlineSummaryCard 
+                              summary={null}
+                              confidenceLevel={query.confidence_level}
+                              isLoading={true}
+                            />
                           </div>
                         ) : null}
                       </div>

@@ -480,7 +480,7 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
     if (viewMode === "browse" && filteredQueries.length > 0 && !latestAnswer && !selectedQuery) {
       generateSummariesForGuidelines(filteredQueries);
     }
-  }, [viewMode, filteredQueries.length, latestAnswer, selectedQuery]);
+  }, [viewMode, filteredQueries.length, latestAnswer, selectedQuery, pastQueries]);
 
   const statsData = [
     { label: "Total Queries", value: pastQueries.length, icon: BookOpen, color: "blue" },

@@ -93,6 +93,18 @@ export default function NoteDetail() {
     return saved ? JSON.parse(saved) : TAB_CONFIGS.map(t => t.id);
   });
 
+  const handleDragEnd = (result) => {
+    const { source, destination } = result;
+    if (!destination || source.index === destination.index) return;
+
+    const newOrder = Array.from(tabOrder);
+    const [removed] = newOrder.splice(source.index, 1);
+    newOrder.splice(destination.index, 0, removed);
+
+    setTabOrder(newOrder);
+    localStorage.setItem('noteDetailTabOrder', JSON.stringify(newOrder));
+  };
+
   const { data: note, isLoading } = useQuery({
     queryKey: ["note", noteId],
     queryFn: () => base44.entities.ClinicalNote.list().then(

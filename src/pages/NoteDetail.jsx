@@ -928,7 +928,7 @@ Generated: ${new Date().toLocaleString()}
                  )}
 
                  {/* Medications Card */}
-                 {note.medications && note.medications.length > 0 && (
+                 {note.medications && Array.isArray(note.medications) && note.medications.length > 0 && (
                    <div className="bg-gradient-to-br from-green-50 to-white rounded-xl border border-green-200 p-5">
                      <h3 className="text-sm font-bold text-green-900 mb-3 flex items-center gap-2">
                        <Plus className="w-4 h-4" />

@@ -826,13 +826,10 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                     <div key={query.id} className="flex items-start gap-4 group">
                       <div className="pt-6">
                         <Checkbox
-                          checked={selectedForCompare.some(q => q.id === query.id)}
-                          onCheckedChange={(e) => {
-                            e.stopPropagation?.();
-                            toggleSelectForCompare(query);
-                          }}
-                          className="rounded-md w-5 h-5"
-                        />
+                           checked={selectedForCompare.some(q => q.id === query.id)}
+                           onCheckedChange={() => toggleSelectForCompare(query)}
+                           className="rounded-md w-5 h-5"
+                         />
                       </div>
                       <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-5 hover:border-blue-300 hover:shadow-md transition-all">
                         <div className="flex items-start justify-between gap-3 mb-3">

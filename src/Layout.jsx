@@ -136,22 +136,26 @@ export default function Layout({ children, currentPageName }) {
       </aside>
 
       {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 text-slate-900 flex items-center justify-between px-4 z-40 gap-3 glass-effect border-b border-slate-200" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)' }}>
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-200">
-            <Stethoscope className="w-5 h-5 text-white" />
+      <div className="lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-slate-200 text-slate-900 px-4 py-3 z-40 space-y-3 glass-effect" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)' }}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-200">
+              <Stethoscope className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-bold text-sm truncate">MedScribe</span>
           </div>
-          <span className="font-bold truncate">MedScribe</span>
+          <div className="flex items-center gap-2">
+            <Link
+              to={createPageUrl("NewNote")}
+              className="bg-blue-600 hover:bg-blue-700 rounded-lg p-2 transition-all shadow-sm text-white">
+              <FileText className="w-4 h-4" />
+            </Link>
+            <button onClick={() => setMobileOpen(!mobileOpen)} className="hover:bg-white/10 rounded-lg p-1 transition-colors">
+              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
-        <Link
-          to={createPageUrl("NewNote")}
-          className="bg-blue-600 hover:bg-blue-700 rounded-xl p-2.5 transition-all shadow-sm flex-shrink-0 text-white">
-
-          <FileText className="w-5 h-5" />
-        </Link>
-        <button onClick={() => setMobileOpen(!mobileOpen)} className="flex-shrink-0 hover:bg-white/10 rounded-lg p-1 transition-colors">
-          {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
+        <GlobalSearchBar />
       </div>
 
       {/* Mobile Nav Overlay */}

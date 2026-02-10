@@ -211,18 +211,6 @@ export default function EditableSection({
         <div className="space-y-2">
            {type === "textarea" ? (
              <>
-               {["assessment", "plan"].includes(field) && (
-                 <div className="flex justify-end mb-2 gap-2">
-                   <Button
-                     size="sm"
-                     variant="ghost"
-                     onClick={() => setUseRichText(!useRichText)}
-                     className="text-xs text-slate-600 hover:text-slate-900"
-                   >
-                     {useRichText ? "Plain Text" : "Rich Text"}
-                   </Button>
-                 </div>
-               )}
                <Textarea
                    ref={textareaRef}
                    value={editValue || ""}

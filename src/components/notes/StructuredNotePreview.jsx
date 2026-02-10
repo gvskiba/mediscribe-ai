@@ -14,6 +14,10 @@ import MedicationRecommendations from "./MedicationRecommendations";
 import ICD10CodeSearch from "./ICD10CodeSearch";
 
 export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpdate, onReanalyze, guidelineRecommendations = [], loadingGuidelines = false, medicationRecommendations = [], loadingMedications = false, onGenerateEducationMaterials }) {
+  // Default onReanalyze if not provided
+  const handleReanalyze = onReanalyze || (async (field) => {
+    return null; // No-op if not provided
+  });
   const [showGuidelines, setShowGuidelines] = useState(true);
   const [expandedGuideline, setExpandedGuideline] = useState(null);
   const [linkedGuidelines, setLinkedGuidelines] = useState(note.linked_guidelines || []);

@@ -631,6 +631,9 @@ Generated: ${new Date().toLocaleString()}
              <TabsTrigger value="imaging" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 px-3">
                Imaging
              </TabsTrigger>
+             <TabsTrigger value="labs" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 px-3">
+               Labs
+             </TabsTrigger>
              <TabsTrigger value="metadata" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 px-3">
                Metadata
              </TabsTrigger>

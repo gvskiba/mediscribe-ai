@@ -898,7 +898,7 @@ FORMATTING RULES (CRITICAL):
               field="review_of_systems"
               type="textarea"
               onUpdate={onUpdate}
-              onReanalyze={onReanalyze}
+              onReanalyze={handleReanalyze}
               hideBorder={true}
             />
           </div>

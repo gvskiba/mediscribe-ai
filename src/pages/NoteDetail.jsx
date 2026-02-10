@@ -768,147 +768,22 @@ Generated: ${new Date().toLocaleString()}
            </TabsContent>
 
            {/* Clinical Note Tab */}
-           <TabsContent value="clinical" className="p-6">
-             <div className="space-y-6">
-               {/* Chief Complaint */}
-               {note.chief_complaint && (
-                 <div className="bg-blue-50 rounded-xl p-5 border-2 border-blue-200">
-                   <h3 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
-                     <FileText className="w-4 h-4" />
-                     Chief Complaint
-                   </h3>
-                   <p className="text-slate-800 leading-relaxed">{note.chief_complaint}</p>
-                 </div>
-               )}
+           <TabsContent value="clinical" className="p-6 space-y-6">
+             <StructuredNotePreview 
+               note={note} 
+               onUpdate={(field, value) => {
+                 queryClient.setQueryData(["note", noteId], (old) => ({
+                   ...old,
+                   [field]: value
+                 }));
+               }}
+               onReanalyze={() => {}}
+               guidelineRecommendations={guidelineRecommendations}
+               loadingGuidelines={loadingGuidelines}
+               medicationRecommendations={[]}
+               loadingMedications={false}
+             />
 
-               {/* Clinical Impression */}
-               {note.clinical_impression && (
-                 <div className="bg-purple-50 rounded-xl p-5 border-2 border-purple-200">
-                   <h3 className="text-sm font-bold text-purple-900 mb-3">Clinical Impression</h3>
-                   <p className="text-slate-800 leading-relaxed">{note.clinical_impression}</p>
-                 </div>
-               )}
-
-               <div className="grid md:grid-cols-2 gap-6">
-                 {/* History of Present Illness */}
-                 {note.history_of_present_illness && (
-                   <div className="bg-white rounded-xl p-5 border border-slate-300 shadow-sm">
-                     <h3 className="text-sm font-bold text-slate-900 mb-3 pb-2 border-b border-slate-200">
-                       History of Present Illness
-                     </h3>
-                     <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
-                       {note.history_of_present_illness}
-                     </p>
-                   </div>
-                 )}
-
-                 {/* Review of Systems */}
-                 {note.review_of_systems && (
-                   <div className="bg-white rounded-xl p-5 border border-slate-300 shadow-sm">
-                     <h3 className="text-sm font-bold text-slate-900 mb-3 pb-2 border-b border-slate-200">
-                       Review of Systems
-                     </h3>
-                     <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
-                       {note.review_of_systems}
-                     </p>
-                   </div>
-                 )}
-               </div>
-
-               <div className="grid md:grid-cols-2 gap-6">
-                 {/* Physical Exam */}
-                 {note.physical_exam && (
-                   <div className="bg-white rounded-xl p-5 border border-slate-300 shadow-sm">
-                     <h3 className="text-sm font-bold text-slate-900 mb-3 pb-2 border-b border-slate-200">
-                       Physical Examination
-                     </h3>
-                     <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
-                       {note.physical_exam}
-                     </p>
-                   </div>
-                 )}
-
-                 {/* Medical History */}
-                 {note.medical_history && (
-                   <div className="bg-white rounded-xl p-5 border border-slate-300 shadow-sm">
-                     <h3 className="text-sm font-bold text-slate-900 mb-3 pb-2 border-b border-slate-200">
-                       Medical History
-                     </h3>
-                     <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
-                       {note.medical_history}
-                     </p>
-                   </div>
-                 )}
-               </div>
-
-               {/* Assessment */}
-               {note.assessment && (
-                 <div className="bg-amber-50 rounded-xl p-5 border-2 border-amber-200">
-                   <h3 className="text-sm font-bold text-amber-900 mb-3">Assessment</h3>
-                   <p className="text-slate-800 leading-relaxed whitespace-pre-wrap">{note.assessment}</p>
-                 </div>
-               )}
-
-               {/* Plan */}
-               {note.plan && (
-                 <div className="bg-green-50 rounded-xl p-5 border-2 border-green-200">
-                   <h3 className="text-sm font-bold text-green-900 mb-3">Treatment Plan</h3>
-                   <p className="text-slate-800 leading-relaxed whitespace-pre-wrap">{note.plan}</p>
-                 </div>
-               )}
-
-               {/* Medications & Diagnoses Row */}
-               <div className="grid md:grid-cols-2 gap-6">
-                 {note.diagnoses && note.diagnoses.length > 0 && (
-                   <div className="bg-white rounded-xl p-5 border border-slate-300 shadow-sm">
-                     <h3 className="text-sm font-bold text-slate-900 mb-3 pb-2 border-b border-slate-200">
-                       Diagnoses ({note.diagnoses.length})
-                     </h3>
-                     <div className="space-y-2">
-                       {note.diagnoses.map((dx, i) => (
-                         <div key={i} className="flex items-start gap-2 text-sm">
-                           <span className="text-blue-600 font-semibold mt-0.5">{i + 1}.</span>
-                           <span className="text-slate-700 flex-1">{dx}</span>
-                         </div>
-                       ))}
-                     </div>
-                   </div>
-                 )}
-
-                 {note.medications && note.medications.length > 0 && (
-                   <div className="bg-white rounded-xl p-5 border border-slate-300 shadow-sm">
-                     <h3 className="text-sm font-bold text-slate-900 mb-3 pb-2 border-b border-slate-200">
-                       Medications ({note.medications.length})
-                     </h3>
-                     <div className="space-y-2">
-                       {note.medications.map((med, i) => (
-                         <div key={i} className="flex items-start gap-2 text-sm">
-                           <span className="text-green-600 font-semibold mt-0.5">•</span>
-                           <span className="text-slate-700 flex-1">{med}</span>
-                         </div>
-                       ))}
-                     </div>
-                   </div>
-                 )}
-               </div>
-
-               {/* Allergies if present */}
-               {note.allergies && note.allergies.length > 0 && (
-                 <div className="bg-red-50 rounded-xl p-5 border-2 border-red-200">
-                   <h3 className="text-sm font-bold text-red-900 mb-3 flex items-center gap-2">
-                     <AlertCircle className="w-4 h-4" />
-                     Allergies
-                   </h3>
-                   <div className="flex flex-wrap gap-2">
-                     {note.allergies.map((allergy, i) => (
-                       <Badge key={i} variant="outline" className="bg-red-100 text-red-800 border-red-300">
-                         {allergy}
-                       </Badge>
-                     ))}
-                   </div>
-                 </div>
-               )}
-             </div>
            </TabsContent>
 
            {/* Guidelines & Codes Tab */}

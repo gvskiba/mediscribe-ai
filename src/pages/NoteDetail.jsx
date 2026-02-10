@@ -596,10 +596,22 @@ CRITICAL: The diagnoses field MUST always contain at least one entry. If no diag
       console.log("Diagnoses from LLM:", result.diagnoses, "Type:", Array.isArray(result.diagnoses));
 
       // Update note with extracted data
+      const handleDragEnd = (result) => {
+        const { source, destination } = result;
+        if (!destination || source.index === destination.index) return;
+
+        const newOrder = Array.from(tabOrder);
+        const [removed] = newOrder.splice(source.index, 1);
+        newOrder.splice(destination.index, 0, removed);
+
+        setTabOrder(newOrder);
+        localStorage.setItem('noteDetailTabOrder', JSON.stringify(newOrder));
+      };
+
       const updateData = {};
 
       // Filter diagnoses to only include ICD-10 coded ones (format: CODE - Description)
-      if (result.diagnoses) {
+            if (result.diagnoses) {
         const diagnosisArray = Array.isArray(result.diagnoses) ? result.diagnoses : [result.diagnoses];
         const filteredDiagnoses = diagnosisArray.filter(d => 
           d && typeof d === 'string' && /^[A-Z0-9]{1,}.*-/.test(d.trim())

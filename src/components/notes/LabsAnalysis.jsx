@@ -396,12 +396,32 @@ Be specific with values and ranges. Highlight critical values that need urgent a
               </div>
             )}
 
-            <Button
-              onClick={handleAddToNote}
-              className="w-full gap-2 bg-amber-600 hover:bg-amber-700 text-white"
-            >
-              <Plus className="w-4 h-4" /> Add to Clinical Note
-            </Button>
+            <div className="space-y-2 pt-4 border-t border-amber-200">
+              <Button
+                onClick={handleAddToNote}
+                className="w-full gap-2 bg-amber-600 hover:bg-amber-700 text-white"
+              >
+                <Plus className="w-4 h-4" /> Add All to Assessment
+              </Button>
+              <Button
+                onClick={() => {
+                  if (!labsSummary) return;
+                  let planText = `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                  planText += `LAB RECOMMENDATIONS\n`;
+                  planText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+                  if (labsSummary.recommendations?.length > 0) {
+                    labsSummary.recommendations.forEach((rec) => {
+                      planText += `• ${rec}\n`;
+                    });
+                  }
+                  onAddToNote(planText);
+                }}
+                variant="outline"
+                className="w-full gap-2 border-amber-300 hover:bg-amber-50"
+              >
+                <Plus className="w-4 h-4" /> Add Recommendations to Plan
+              </Button>
+            </div>
           </div>
         </div>
       )}

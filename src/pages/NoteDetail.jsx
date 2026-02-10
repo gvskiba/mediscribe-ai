@@ -88,6 +88,10 @@ export default function NoteDetail() {
   const [linkingGuidelines, setLinkingGuidelines] = useState(false);
   const [showGuidelinePrompt, setShowGuidelinePrompt] = useState(false);
   const [noteData, setNoteData] = useState(null);
+  const [tabOrder, setTabOrder] = useState(() => {
+    const saved = localStorage.getItem('noteDetailTabOrder');
+    return saved ? JSON.parse(saved) : TAB_CONFIGS.map(t => t.id);
+  });
 
   const { data: note, isLoading } = useQuery({
     queryKey: ["note", noteId],

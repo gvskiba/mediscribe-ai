@@ -409,36 +409,70 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
     return true;
   });
 
+  const statsData = [
+    { label: "Total Queries", value: pastQueries.length, icon: BookOpen, color: "blue" },
+    { label: "High Confidence", value: pastQueries.filter(q => q.confidence_level === "high").length, icon: Sparkles, color: "emerald" },
+    { label: "This Week", value: pastQueries.filter(q => (new Date() - new Date(q.created_date)) / (1000 * 60 * 60 * 24) <= 7).length, icon: Filter, color: "purple" },
+  ];
+
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">Clinical Guidelines</h1>
-          <p className="text-slate-600">Evidence-based clinical guidelines with AI-powered search</p>
+    <div className="max-w-7xl mx-auto space-y-6">
+      {/* Hero Header */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-3xl p-8 md:p-12 shadow-2xl">
+        <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:20px_20px]" />
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+              <BookOpen className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h1 className="text-4xl md:text-5xl font-bold text-white mb-1">Clinical Guidelines</h1>
+              <p className="text-blue-100 text-lg">Evidence-based recommendations with AI-powered semantic search</p>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4 mt-8">
+            {statsData.map((stat, idx) => {
+              const Icon = stat.icon;
+              return (
+                <div key={idx} className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Icon className="w-4 h-4 text-white/80" />
+                    <p className="text-xs font-medium text-white/70 uppercase tracking-wide">{stat.label}</p>
+                  </div>
+                  <p className="text-3xl font-bold text-white">{stat.value}</p>
+                </div>
+              );
+            })}
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setViewMode("search")}
-            className={`px-4 py-2 rounded-xl font-medium transition-colors ${
-              viewMode === "search" 
-                ? "bg-blue-600 text-white" 
-                : "bg-slate-200 text-slate-700 hover:bg-slate-300"
-            }`}
-          >
-            Search
-          </button>
-          <button
-            onClick={() => setViewMode("browse")}
-            className={`px-4 py-2 rounded-xl font-medium transition-colors flex items-center gap-2 ${
-              viewMode === "browse" 
-                ? "bg-blue-600 text-white" 
-                : "bg-slate-200 text-slate-700 hover:bg-slate-300"
-            }`}
-          >
-            <BookOpen className="w-4 h-4" />
-            Browse
-          </button>
-        </div>
+      </div>
+
+      {/* View Mode Tabs */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-2 inline-flex gap-2">
+        <button
+          onClick={() => setViewMode("search")}
+          className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+            viewMode === "search" 
+              ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30" 
+              : "text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          <Sparkles className="w-4 h-4 inline mr-2" />
+          New Search
+        </button>
+        <button
+          onClick={() => setViewMode("browse")}
+          className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+            viewMode === "browse" 
+              ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30" 
+              : "text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          <BookOpen className="w-4 h-4 inline mr-2" />
+          Browse History
+        </button>
       </div>
 
       {/* Compare Guidelines Bar */}
@@ -537,164 +571,181 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
 
       {/* Knowledge Base */}
       {pastQueries.length > 0 && !latestAnswer && !selectedQuery && (
-        <div className="bg-white rounded-2xl border border-slate-100 p-6">
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-1">
-              {viewMode === "browse" ? "Guidelines Knowledge Base" : "Query History"}
-            </h2>
-            <p className="text-sm text-slate-600">
-              {viewMode === "browse" 
-                ? "Browse and filter all saved clinical guidelines" 
-                : "Search through past clinical guideline queries"}
-            </p>
+        <div className="space-y-6">
+          {/* Advanced Search & Filters */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-6">
+              <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <Search className="w-5 h-5 text-blue-600" />
+                {viewMode === "browse" ? "Search Your Guidelines Library" : "Search History"}
+              </h2>
+              
+              {/* Main Search Bar */}
+              <div className="relative mb-6">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                {semanticSearching && (
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                    <Loader2 className="w-5 h-5 text-purple-500 animate-spin" />
+                  </div>
+                )}
+                <Input
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search by condition, medication, specialty... (AI-powered semantic search)"
+                  className="pl-12 pr-12 h-14 text-base rounded-xl border-slate-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              {searchTerm && semanticResults !== null && (
+                <div className="mb-6 p-3 bg-purple-50 border border-purple-200 rounded-xl flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-purple-600" />
+                  <p className="text-sm font-medium text-purple-900">
+                    AI found {filteredQueries.length} semantically related {filteredQueries.length === 1 ? 'guideline' : 'guidelines'}
+                  </p>
+                </div>
+              )}
+              
+              {/* Filters - Only in Browse Mode */}
+              {viewMode === "browse" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-slate-700">Advanced Filters</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setFilterCategory("all");
+                        setFilterConfidence("all");
+                        setFilterDateRange("all");
+                      }}
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    >
+                      Reset All
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Specialty</label>
+                      <Select value={filterCategory} onValueChange={setFilterCategory}>
+                        <SelectTrigger className="rounded-xl h-11 border-slate-300">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Specialties</SelectItem>
+                          <SelectItem value="cardiology">Cardiology</SelectItem>
+                          <SelectItem value="pulmonology">Pulmonology</SelectItem>
+                          <SelectItem value="endocrinology">Endocrinology</SelectItem>
+                          <SelectItem value="infectious_disease">Infectious Disease</SelectItem>
+                          <SelectItem value="neurology">Neurology</SelectItem>
+                          <SelectItem value="oncology">Oncology</SelectItem>
+                          <SelectItem value="gastroenterology">Gastroenterology</SelectItem>
+                          <SelectItem value="nephrology">Nephrology</SelectItem>
+                          <SelectItem value="rheumatology">Rheumatology</SelectItem>
+                          <SelectItem value="general">General Medicine</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Evidence Level</label>
+                      <Select value={filterConfidence} onValueChange={setFilterConfidence}>
+                        <SelectTrigger className="rounded-xl h-11 border-slate-300">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Levels</SelectItem>
+                          <SelectItem value="high">High Confidence</SelectItem>
+                          <SelectItem value="moderate">Moderate Confidence</SelectItem>
+                          <SelectItem value="low">Low Confidence</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Time Range</label>
+                      <Select value={filterDateRange} onValueChange={setFilterDateRange}>
+                        <SelectTrigger className="rounded-xl h-11 border-slate-300">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Time</SelectItem>
+                          <SelectItem value="week">Past Week</SelectItem>
+                          <SelectItem value="month">Past Month</SelectItem>
+                          <SelectItem value="quarter">Past 3 Months</SelectItem>
+                          <SelectItem value="year">Past Year</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-          
-          {/* Filters */}
-          {viewMode === "browse" && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6 p-4 bg-slate-50 rounded-xl">
+
+          {/* Results */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <div className="flex items-center justify-between mb-6">
               <div>
-                <label className="text-xs font-medium text-slate-600 mb-1.5 block">Specialty</label>
-                <Select value={filterCategory} onValueChange={setFilterCategory}>
-                  <SelectTrigger className="rounded-lg bg-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Specialties</SelectItem>
-                    <SelectItem value="cardiology">Cardiology</SelectItem>
-                    <SelectItem value="pulmonology">Pulmonology</SelectItem>
-                    <SelectItem value="endocrinology">Endocrinology</SelectItem>
-                    <SelectItem value="infectious_disease">Infectious Disease</SelectItem>
-                    <SelectItem value="neurology">Neurology</SelectItem>
-                    <SelectItem value="oncology">Oncology</SelectItem>
-                    <SelectItem value="gastroenterology">Gastroenterology</SelectItem>
-                    <SelectItem value="nephrology">Nephrology</SelectItem>
-                    <SelectItem value="rheumatology">Rheumatology</SelectItem>
-                    <SelectItem value="general">General Medicine</SelectItem>
-                  </SelectContent>
-                </Select>
+                <h3 className="text-lg font-bold text-slate-900">
+                  {filteredQueries.length} {filteredQueries.length === 1 ? 'Guideline' : 'Guidelines'} Found
+                </h3>
+                <p className="text-sm text-slate-500 mt-1">
+                  {selectedForCompare.length > 0 && `${selectedForCompare.length} selected for comparison`}
+                </p>
               </div>
-              
-              <div>
-                <label className="text-xs font-medium text-slate-600 mb-1.5 block">Confidence</label>
-                <Select value={filterConfidence} onValueChange={setFilterConfidence}>
-                  <SelectTrigger className="rounded-lg bg-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Levels</SelectItem>
-                    <SelectItem value="high">High Confidence</SelectItem>
-                    <SelectItem value="moderate">Moderate Confidence</SelectItem>
-                    <SelectItem value="low">Low Confidence</SelectItem>
-                  </SelectContent>
-                </Select>
+            </div>
+
+            {queriesLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} className="h-32 rounded-2xl" />
+                ))}
               </div>
-              
-              <div>
-                <label className="text-xs font-medium text-slate-600 mb-1.5 block">Time Period</label>
-                <Select value={filterDateRange} onValueChange={setFilterDateRange}>
-                  <SelectTrigger className="rounded-lg bg-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Time</SelectItem>
-                    <SelectItem value="week">Past Week</SelectItem>
-                    <SelectItem value="month">Past Month</SelectItem>
-                    <SelectItem value="quarter">Past 3 Months</SelectItem>
-                    <SelectItem value="year">Past Year</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="flex items-end">
+            ) : filteredQueries.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                  <BookOpen className="w-10 h-10 text-slate-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">No guidelines found</h3>
+                <p className="text-slate-500 mb-6">Try adjusting your search or filter criteria</p>
                 <Button
-                  variant="outline"
                   onClick={() => {
                     setFilterCategory("all");
                     setFilterConfidence("all");
                     setFilterDateRange("all");
                     setSearchTerm("");
                   }}
-                  className="w-full rounded-lg text-slate-700 border-slate-300"
+                  className="rounded-xl"
                 >
-                  Clear Filters
+                  Clear All Filters
                 </Button>
               </div>
-            </div>
-          )}
-
-          {/* Semantic Search */}
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            {semanticSearching && (
-              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-500 animate-spin" />
+            ) : (
+              <div className="space-y-3">
+                {filteredQueries.map((query) => (
+                  <div key={query.id} className="flex items-start gap-4 group">
+                    <div className="pt-6">
+                      <Checkbox
+                        checked={selectedForCompare.some(q => q.id === query.id)}
+                        onCheckedChange={(e) => {
+                          e.stopPropagation?.();
+                          toggleSelectForCompare(query);
+                        }}
+                        className="rounded-md w-5 h-5"
+                      />
+                    </div>
+                    <div
+                      onClick={() => handleSelectQuery(query)}
+                      className="flex-1 cursor-pointer"
+                    >
+                      <RecentQueryCard query={query} />
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
-            <Input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="AI-powered search: 'heart failure', 'diabetes', 'anticoagulation'..."
-              className="pl-10 pr-10 rounded-xl"
-            />
           </div>
-          {searchTerm && semanticResults !== null && (
-            <p className="text-xs text-slate-700 mb-4">
-              <Sparkles className="w-3 h-3 inline mr-1" />
-              AI semantic search • Found {filteredQueries.length} related {filteredQueries.length === 1 ? 'query' : 'queries'}
-            </p>
-          )}
-
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-slate-500">
-              {filteredQueries.length} guideline{filteredQueries.length !== 1 ? 's' : ''}
-            </p>
-          </div>
-
-          {queriesLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-24 rounded-xl" />
-              ))}
-            </div>
-          ) : filteredQueries.length === 0 ? (
-            <div className="text-center py-12">
-              <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-              <p className="text-sm text-slate-500">No guidelines found</p>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setFilterCategory("all");
-                  setFilterConfidence("all");
-                  setFilterDateRange("all");
-                  setSearchTerm("");
-                }}
-                className="mt-3 rounded-xl text-slate-700 border-slate-300"
-              >
-                Clear Filters
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filteredQueries.map((query) => (
-                <div key={query.id} className="flex items-start gap-3 group">
-                  <div className="pt-6">
-                    <Checkbox
-                      checked={selectedForCompare.some(q => q.id === query.id)}
-                      onCheckedChange={(e) => {
-                        e.stopPropagation?.();
-                        toggleSelectForCompare(query);
-                      }}
-                      className="rounded-md"
-                    />
-                  </div>
-                  <div
-                    onClick={() => handleSelectQuery(query)}
-                    className="block flex-1 cursor-pointer"
-                  >
-                    <RecentQueryCard query={query} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       )}
 

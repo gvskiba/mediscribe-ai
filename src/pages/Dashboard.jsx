@@ -1,34 +1,53 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "../utils";
-import { FileText, BookOpen, Activity, Clock, Plus, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { FileText, BookOpen, Calculator, Layers, FileCode, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
-import StatCard from "../components/dashboard/StatCard";
-import RecentNoteCard from "../components/dashboard/RecentNoteCard";
-import RecentQueryCard from "../components/dashboard/RecentQueryCard";
-import MedicalNewsSection from "../components/dashboard/MedicalNewsSection";
-import { Skeleton } from "@/components/ui/skeleton";
+
+const quickLinks = [
+  {
+    title: "Notes",
+    description: "View and manage clinical notes",
+    icon: FileText,
+    page: "NotesLibrary",
+    color: "blue",
+    gradient: "from-blue-500 to-blue-600"
+  },
+  {
+    title: "Templates",
+    description: "Manage note templates",
+    icon: FileCode,
+    page: "NoteTemplates",
+    color: "purple",
+    gradient: "from-purple-500 to-purple-600"
+  },
+  {
+    title: "Snippets",
+    description: "Quick text snippets",
+    icon: Layers,
+    page: "Snippets",
+    color: "emerald",
+    gradient: "from-emerald-500 to-emerald-600"
+  },
+  {
+    title: "Guidelines",
+    description: "Evidence-based clinical guidelines",
+    icon: BookOpen,
+    page: "Guidelines",
+    color: "indigo",
+    gradient: "from-indigo-500 to-indigo-600"
+  },
+  {
+    title: "Calculators",
+    description: "Medical calculators and tools",
+    icon: Calculator,
+    page: "Calculators",
+    color: "cyan",
+    gradient: "from-cyan-500 to-cyan-600"
+  }
+];
 
 export default function Dashboard() {
-  const { data: notes = [], isLoading: notesLoading } = useQuery({
-    queryKey: ["notes"],
-    queryFn: () => base44.entities.ClinicalNote.list("-created_date", 50),
-  });
-
-  const { data: queries = [], isLoading: queriesLoading } = useQuery({
-    queryKey: ["queries"],
-    queryFn: () => base44.entities.GuidelineQuery.list("-created_date", 50),
-  });
-
-  const isLoading = notesLoading || queriesLoading;
-
-  const draftCount = notes.filter((n) => n.status === "draft").length;
-  const recentNotes = notes.slice(0, 5);
-  const recentQueries = queries.slice(0, 5);
-
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -36,119 +55,55 @@ export default function Dashboard() {
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Patient Dashboard</h1>
-        <p className="text-slate-600 mt-1">Your clinical workspace at a glance.</p>
+        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Provider Dashboard</h1>
+        <p className="text-slate-600 mt-1">Your clinical workspace - quick access to all tools</p>
       </motion.div>
 
-      {/* Stats */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-32 rounded-2xl" />
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Total Notes" value={notes.length} subtitle="All time" icon={FileText} color="blue" />
-          <StatCard title="Drafts" value={draftCount} subtitle="Pending review" icon={Clock} color="amber" />
-          <StatCard title="Queries" value={queries.length} subtitle="Evidence lookups" icon={BookOpen} color="purple" />
-          <StatCard title="This Week" value={notes.filter(n => {
-            const d = new Date(n.created_date);
-            const now = new Date();
-            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-            return d >= weekAgo;
-          }).length} subtitle="Notes created" icon={Activity} color="emerald" />
-        </div>
-      )}
-
-      {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Notes */}
-        <motion.div
-           initial={{ opacity: 0, y: 12 }}
-           animate={{ opacity: 1, y: 0 }}
-           transition={{ delay: 0.1 }}
-           className="bg-blue-50 rounded-2xl border border-blue-200 overflow-hidden shadow-sm"
-         >
-           <div className="p-6 pb-3 space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-slate-900">Recent Notes</h2>
-              <Link to={createPageUrl("NotesLibrary")} className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 font-medium">
-                View all <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-            <Link to={createPageUrl("NewNote")} className="block">
-              <Button className="w-full bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 hover:from-purple-500 hover:via-violet-500 hover:to-indigo-500 text-white rounded-xl gap-2 shadow-lg shadow-purple-500/30 font-semibold">
-                <Plus className="w-4 h-4" /> New Clinical Note
-              </Button>
+      {/* Quick Links */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+      >
+        {quickLinks.map((link, index) => {
+          const Icon = link.icon;
+          return (
+            <Link
+              key={link.page}
+              to={createPageUrl(link.page)}
+              className="group"
+            >
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="relative bg-white rounded-2xl border-2 border-slate-200 p-6 hover:border-slate-300 hover:shadow-xl transition-all duration-300 overflow-hidden"
+              >
+                <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${link.gradient} opacity-10 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500`} />
+                
+                <div className="relative z-10">
+                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${link.gradient} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    <Icon className="w-7 h-7 text-white" />
+                  </div>
+                  
+                  <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
+                    {link.title}
+                  </h3>
+                  
+                  <p className="text-sm text-slate-600 mb-4">
+                    {link.description}
+                  </p>
+                  
+                  <div className="flex items-center text-blue-600 font-semibold text-sm group-hover:gap-2 transition-all">
+                    Open
+                    <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
+              </motion.div>
             </Link>
-          </div>
-          <div className="px-2 pb-2">
-            {isLoading ? (
-              <div className="space-y-2 p-4">
-                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 rounded-xl bg-slate-100" />)}
-              </div>
-            ) : recentNotes.length === 0 ? (
-              <div className="text-center py-12 text-slate-500">
-                <FileText className="w-10 h-10 mx-auto mb-3 opacity-40" />
-                <p className="text-sm text-slate-600">No clinical notes yet</p>
-                <Link to={createPageUrl("NewNote")} className="text-sm text-purple-300 hover:underline mt-1 inline-block">
-                  Create your first note
-                </Link>
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-200">
-                {recentNotes.map((note) => (
-                  <RecentNoteCard key={note.id} note={note} />
-                ))}
-              </div>
-            )}
-          </div>
-        </motion.div>
-
-        {/* Recent Queries */}
-        <motion.div
-           initial={{ opacity: 0, y: 12 }}
-           animate={{ opacity: 1, y: 0 }}
-           transition={{ delay: 0.2 }}
-           className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm"
-         >
-           <div className="p-6 pb-3 space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-slate-900">Recent Queries</h2>
-            </div>
-            <Link to={createPageUrl("Guidelines")} className="block">
-              <Button className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white rounded-xl gap-2 shadow-lg shadow-blue-500/30 font-semibold">
-                <BookOpen className="w-4 h-4" /> Search Knowledge
-              </Button>
-            </Link>
-          </div>
-            <div className="px-2 pb-2">
-            {isLoading ? (
-              <div className="space-y-2 p-4">
-                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 rounded-xl bg-slate-100" />)}
-              </div>
-            ) : recentQueries.length === 0 ? (
-              <div className="text-center py-12 text-slate-500">
-                <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-40" />
-                <p className="text-sm text-slate-600">No guideline queries yet</p>
-                <Link to={createPageUrl("Guidelines")} className="text-sm text-purple-300 hover:underline mt-1 inline-block">
-                  Ask your first question
-                </Link>
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-200">
-                {recentQueries.map((query) => (
-                  <RecentQueryCard key={query.id} query={query} />
-                ))}
-              </div>
-            )}
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Medical News Section */}
-      <MedicalNewsSection />
+          );
+        })}
+      </motion.div>
     </div>
   );
 }

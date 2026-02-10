@@ -465,6 +465,12 @@ Keep total response under 100 words.`,
     return true;
   });
 
+  React.useEffect(() => {
+    if (viewMode === "browse" && filteredQueries.length > 0 && !latestAnswer && !selectedQuery) {
+      generateSummariesForGuidelines(filteredQueries);
+    }
+  }, [viewMode, filteredQueries.length, latestAnswer, selectedQuery]);
+
   const statsData = [
     { label: "Total Queries", value: pastQueries.length, icon: BookOpen, color: "blue" },
     { label: "High Confidence", value: pastQueries.filter(q => q.confidence_level === "high").length, icon: Sparkles, color: "emerald" },

@@ -22,6 +22,8 @@ import SectionInserter from "../components/notes/SectionInserter";
 import TemplateAutoFiller from "../components/templates/TemplateAutoFiller";
 import StructuredNoteReview from "../components/notes/StructuredNoteReview";
 import { useAutoSave } from "../components/utils/useAutoSave";
+import AINotesAssistant from "../components/notes/AINotesAssistant";
+import AITagsSuggestions from "../components/notes/AITagsSuggestions";
 
 export default function NewNote() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -50,6 +52,7 @@ export default function NewNote() {
     review_of_systems: "",
     physical_exam: ""
   });
+  const [aiTagsSuggestions, setAITagsSuggestions] = useState(null);
   const navigate = useNavigate();
 
   // Auto-save draft notes (only when creating, not when structuredNote exists)
@@ -1183,6 +1186,20 @@ ${JSON.stringify(structuredNote, null, 2)}`,
 
                   ← Back to input selection
                 </button>
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+                  <AINotesAssistant
+                    onContentGenerated={(content) => {
+                      // Populate the transcription with generated content
+                      setRawData({ raw_note: content, specialty });
+                      setStructuredNote(null);
+                      handleSubmit({ raw_note: content, specialty }, null);
+                    }}
+                    onSummarize={(summary, keyPoints) => {
+                      toast.success(`Summary created with ${keyPoints.length} key points`);
+                    }}
+                    onTagsSuggested={setAITagsSuggestions}
+                  />
+                </div>
                 <NoteTranscriptionInput
               onSubmit={(noteData, templateId) => {
                 handleSubmit({ ...noteData, specialty: specialty || noteData.specialty }, templateId);
@@ -1200,6 +1217,17 @@ ${JSON.stringify(structuredNote, null, 2)}`,
 
                   ← Back to input selection
                 </button>
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+                  <AINotesAssistant
+                    onContentGenerated={(content) => {
+                      setClinicalData({ ...clinicalData, history_and_physical: content });
+                    }}
+                    onSummarize={(summary) => {
+                      toast.success("Note summarized");
+                    }}
+                    onTagsSuggested={setAITagsSuggestions}
+                  />
+                </div>
                 <ClinicalSectionInput
               onSubmit={(data, templateId) => handleDetailedInputSubmit({ ...data, specialty: specialty || data.specialty }, templateId)}
               isProcessing={isProcessing}

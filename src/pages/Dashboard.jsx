@@ -181,11 +181,7 @@ export default function Dashboard() {
                       </div>
                       <Switch
                          checked={activeWidgets.includes(widget.id)}
-                         onCheckedChange={(checked) => {
-                           if (checked !== activeWidgets.includes(widget.id)) {
-                             toggleWidget(widget.id);
-                           }
-                         }}
+                         onCheckedChange={toggleWidget.bind(null, widget.id)}
                        />
                     </div>
                   ))}

@@ -705,7 +705,7 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                   <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl border border-blue-200">
                     <Checkbox
                       checked={showSavedOnly}
-                      onCheckedChange={(checked) => setShowSavedOnly(checked === true)}
+                      onCheckedChange={setShowSavedOnly}
                       id="saved-only"
                     />
                     <label 
@@ -836,11 +836,7 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                       <div className="pt-6">
                          <Checkbox
                             checked={selectedForCompare.some(q => q.id === query.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked !== selectedForCompare.some(q => q.id === query.id)) {
-                                toggleSelectForCompare(query);
-                              }
-                            }}
+                            onCheckedChange={() => toggleSelectForCompare(query)}
                             className="rounded-md w-5 h-5"
                           />
                        </div>

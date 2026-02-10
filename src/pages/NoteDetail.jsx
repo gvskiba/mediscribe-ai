@@ -1141,17 +1141,7 @@ Generated: ${new Date().toLocaleString()}
                    </>
                  )}
 
-                 {note.status === "finalized" && (
-                   <DiagnosesWithRecommendations
-                     note={note}
-                     icd10Suggestions={icd10Suggestions}
-                     loadingIcd10={loadingIcd10}
-                     onAddDiagnoses={async (updatedDiagnoses) => {
-                       await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
-                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                     }}
-                   />
-                 )}
+
 
                  {/* Medications Card */}
                  {note.medications && Array.isArray(note.medications) && note.medications.length > 0 && (

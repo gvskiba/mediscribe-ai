@@ -1089,6 +1089,7 @@ Generated: ${new Date().toLocaleString()}
                        onClick={async () => {
                          try {
                            let diagnosisText = `\n\nDIAGNOSES:\n`;
+                           if (Array.isArray(note.diagnoses)) {
                            note.diagnoses.forEach((diagnosis, idx) => {
                              const correspondingCode = icd10Suggestions.find(s => s.diagnosis === diagnosis);
                              diagnosisText += `${idx + 1}. ${diagnosis}`;

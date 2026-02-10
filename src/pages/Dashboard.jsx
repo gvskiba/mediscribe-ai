@@ -179,9 +179,11 @@ export default function Dashboard() {
                           {activeWidgets.includes(widget.id) ? "Currently active" : "Currently hidden"}
                         </p>
                       </div>
-                      <Switch
+                      <input 
+                         type="checkbox"
                          checked={activeWidgets.includes(widget.id)}
-                         onCheckedChange={toggleWidget.bind(null, widget.id)}
+                         onChange={() => toggleWidget(widget.id)}
+                         className="rounded w-4 h-4 cursor-pointer"
                        />
                     </div>
                   ))}

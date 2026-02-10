@@ -155,69 +155,69 @@ export default function Dashboard() {
             if (!widget) return null;
             
             return (
-          <motion.div
-            key={widgetId}
-            layout
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
-          >
-            <div className="flex items-center justify-between px-6 py-3 border-b border-slate-100 bg-slate-50">
-              <h3 className="text-sm font-semibold text-slate-900">
-                {widget.name}
-              </h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => removeWidget(widgetId)}
-                className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600"
+              <motion.div
+                key={widgetId}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
               >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-
-            <div className="p-6">
-              {widgetId === "quicklinks" && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                  {quickLinks.map((link) => {
-                    const Icon = link.icon;
-                    return (
-                      <Link
-                        key={link.page}
-                        to={createPageUrl(link.page)}
-                        className="group"
-                      >
-                        <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 hover:border-blue-300 hover:shadow-md hover:bg-white transition-all duration-200 h-full flex flex-col">
-                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${link.gradient} flex items-center justify-center mb-3 shadow-sm group-hover:scale-110 transition-transform duration-200`}>
-                            <Icon className="w-5 h-5 text-white" />
-                          </div>
-                          
-                          <h3 className="text-sm font-bold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">
-                            {link.title}
-                          </h3>
-                          
-                          <p className="text-xs text-slate-600 line-clamp-2">
-                            {link.description}
-                          </p>
-                        </div>
-                      </Link>
-                    );
-                  })}
+                <div className="flex items-center justify-between px-6 py-3 border-b border-slate-100 bg-slate-50">
+                  <h3 className="text-sm font-semibold text-slate-900">
+                    {widget.name}
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeWidget(widgetId)}
+                    className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
                 </div>
-              )}
 
-              {widgetId === "stats" && <QuickStatsWidget />}
+                <div className="p-6">
+                  {widgetId === "quicklinks" && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                      {quickLinks.map((link) => {
+                        const Icon = link.icon;
+                        return (
+                          <Link
+                            key={link.page}
+                            to={createPageUrl(link.page)}
+                            className="group"
+                          >
+                            <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 hover:border-blue-300 hover:shadow-md hover:bg-white transition-all duration-200 h-full flex flex-col">
+                              <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${link.gradient} flex items-center justify-center mb-3 shadow-sm group-hover:scale-110 transition-transform duration-200`}>
+                                <Icon className="w-5 h-5 text-white" />
+                              </div>
+                              
+                              <h3 className="text-sm font-bold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">
+                                {link.title}
+                              </h3>
+                              
+                              <p className="text-xs text-slate-600 line-clamp-2">
+                                {link.description}
+                              </p>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
 
-              {widgetId === "recentnotes" && <RecentNotesWidget />}
+                  {widgetId === "stats" && <QuickStatsWidget />}
 
-              {widgetId === "recentguidelines" && <RecentGuidelinesWidget />}
+                  {widgetId === "recentnotes" && <RecentNotesWidget />}
 
-              {widgetId === "news" && (
-                <MedicalNewsSection compact />
-              )}
-              </div>
-            </motion.div>
+                  {widgetId === "recentguidelines" && <RecentGuidelinesWidget />}
+
+                  {widgetId === "news" && (
+                    <MedicalNewsSection compact />
+                  )}
+                </div>
+              </motion.div>
             );
           })}
         </AnimatePresence>

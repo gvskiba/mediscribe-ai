@@ -226,7 +226,8 @@ Provide:
     try {
       const conditions = [];
       if (Array.isArray(note.diagnoses) && note.diagnoses.length > 0) {
-        conditions.push(...note.diagnoses.slice(0, 3));
+        const validDiagnoses = note.diagnoses.filter(d => d && typeof d === 'string' && d.trim().length > 1);
+        conditions.push(...validDiagnoses.slice(0, 3));
       }
 
       if (conditions.length === 0) {

@@ -163,8 +163,17 @@ export default function NoteDetail() {
       if (!guidelineRecommendations.length && !loadingGuidelines) {
         fetchGuidelineRecommendations();
       }
+      if (!drugInteractions.length && !loadingInteractions && note.medications?.length > 0) {
+        analyzeDrugInteractions();
+      }
+      if (!followUpTests.length && !loadingFollowUp && note.diagnoses?.length > 0) {
+        suggestFollowUpTests();
+      }
+      if (!differentialDiagnosis.length && !loadingDifferential && note.chief_complaint) {
+        generateDifferentialDiagnosis();
+      }
     }
-  }, [note?.id, note?.status, patientSummary, generatingSummary, icd10Suggestions.length, loadingIcd10, guidelineRecommendations.length, loadingGuidelines]);
+  }, [note?.id, note?.status, patientSummary, generatingSummary, icd10Suggestions.length, loadingIcd10, guidelineRecommendations.length, loadingGuidelines, drugInteractions.length, loadingInteractions, followUpTests.length, loadingFollowUp, differentialDiagnosis.length, loadingDifferential]);
 
   const generateSummary = async () => {
     if (!note) return;

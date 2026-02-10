@@ -911,7 +911,7 @@ Generated: ${new Date().toLocaleString()}
                  </div>
 
                  {/* Diagnoses Card */}
-                 {note.diagnoses && note.diagnoses.length > 0 && (
+                 {note.diagnoses && Array.isArray(note.diagnoses) && note.diagnoses.length > 0 && (
                    <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl border border-blue-200 p-5">
                      <h3 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
                        <Code className="w-4 h-4" />

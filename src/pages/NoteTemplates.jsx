@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { FileText, Plus, Edit, Trash2, Star, Check, Sparkles, Loader2, BarChart3, Share2, History, Filter, TrendingUp, Wand2, Eye, Search, ArrowUpDown } from "lucide-react";
+import { FileText, Plus, Edit, Trash2, Star, Check, Sparkles, Loader2, BarChart3, Share2, History, Filter, TrendingUp, Wand2, Eye, Search, ArrowUpDown, GitBranch } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import SectionEditor from "../components/templates/SectionEditor";

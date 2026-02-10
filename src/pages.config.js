@@ -59,6 +59,7 @@ import NotesLibrary from './pages/NotesLibrary';
 import Snippets from './pages/Snippets';
 import TemplateSections from './pages/TemplateSections';
 import Search from './pages/Search';
+import UserPreferences from './pages/UserPreferences';
 import __Layout from './Layout.jsx';
 
 
@@ -75,6 +76,7 @@ export const PAGES = {
     "Snippets": Snippets,
     "TemplateSections": TemplateSections,
     "Search": Search,
+    "UserPreferences": UserPreferences,
 }
 
 export const pagesConfig = {

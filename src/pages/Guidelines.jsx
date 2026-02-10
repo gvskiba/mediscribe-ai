@@ -830,7 +830,7 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                     moderate: "bg-amber-50 text-amber-700 border-amber-200",
                     low: "bg-red-50 text-red-700 border-red-200"
                   };
-
+                  
                   return (
                     <div key={query.id} className="flex items-start gap-4 group">
                       <div className="pt-6">
@@ -924,25 +924,26 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                   );
                 })}
               </div>
-            )}
-            </div>
-            </div>
-            </div>
-            )}
+              )}
+              </div>
+              )}
+              </div>
+              </div>
+              )}
 
-            {/* Compare Dialog */}
-            {showCompare && (
-              <CompareGuidelines
-                selectedGuidelines={selectedForCompare}
-                onClose={() => {
-                  setShowCompare(false);
-                  setComparison(null);
-                }}
-                comparison={comparison}
-                isLoading={comparing}
-                onCompare={handleCompareGuidelines}
-              />
-            )}
-            </div>
-            );
-            }
+      {/* Compare Dialog */}
+      {showCompare && (
+        <CompareGuidelines
+          selectedGuidelines={selectedForCompare}
+          onClose={() => {
+            setShowCompare(false);
+            setComparison(null);
+          }}
+          comparison={comparison}
+          isLoading={comparing}
+          onCompare={handleCompareGuidelines}
+        />
+      )}
+    </div>
+  );
+}

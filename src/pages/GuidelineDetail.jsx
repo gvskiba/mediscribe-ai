@@ -94,9 +94,10 @@ Format each as a concise, actionable clinical question.`,
 
   useEffect(() => {
     if (guideline) {
+      generateSummary();
       generateRelatedGuidelines();
     }
-  }, [guideline, generateRelatedGuidelines]);
+  }, [guideline, generateSummary, generateRelatedGuidelines]);
 
   const handleRate = async (queryId, rating) => {
     await base44.entities.GuidelineQuery.update(queryId, { rating });

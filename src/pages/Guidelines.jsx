@@ -928,10 +928,10 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
               </div>
               )}
               </div>
-              </div>
               )}
+              </div>
 
-      {/* Compare Dialog */}
+              {/* Compare Dialog */}
       {showCompare && (
         <CompareGuidelines
           selectedGuidelines={selectedForCompare}

@@ -932,16 +932,16 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
 
             {/* Compare Dialog */}
             {showCompare && (
-            <CompareGuidelines
-            selectedGuidelines={selectedForCompare}
-            onClose={() => {
-            setShowCompare(false);
-            setComparison(null);
-            }}
-            comparison={comparison}
-            isLoading={comparing}
-            onCompare={handleCompareGuidelines}
-            />
+              <CompareGuidelines
+                selectedGuidelines={selectedForCompare}
+                onClose={() => {
+                  setShowCompare(false);
+                  setComparison(null);
+                }}
+                comparison={comparison}
+                isLoading={comparing}
+                onCompare={handleCompareGuidelines}
+              />
             )}
             </div>
             );

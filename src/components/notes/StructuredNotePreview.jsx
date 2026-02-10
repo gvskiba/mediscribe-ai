@@ -802,15 +802,15 @@ FORMATTING RULES (CRITICAL):
           </div>
           <div className="p-4">
             <EditableSection
-              icon={Sparkles}
-              title=""
-              color="purple"
-              value={note.clinical_impression || "Not extracted"}
-              field="clinical_impression"
-              type="textarea"
-              onUpdate={onUpdate}
-              onReanalyze={onReanalyze}
-              hideBorder={true}
+             icon={Sparkles}
+             title=""
+             color="purple"
+             value={note.clinical_impression || "Not extracted"}
+             field="clinical_impression"
+             type="textarea"
+             onUpdate={onUpdate}
+             onReanalyze={handleReanalyze}
+             hideBorder={true}
             />
           </div>
         </div>

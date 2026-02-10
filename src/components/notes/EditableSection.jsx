@@ -134,6 +134,36 @@ export default function EditableSection({
     }
   };
 
+  const applyFormatting = (format) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = editValue || "";
+    const selectedText = text.substring(start, end);
+
+    if (!selectedText) return;
+
+    let formattedText = selectedText;
+    if (format === "bold") {
+      formattedText = `**${selectedText}**`;
+    } else if (format === "italic") {
+      formattedText = `*${selectedText}*`;
+    } else if (format === "bullet") {
+      formattedText = selectedText.split("\n").map(line => `• ${line}`).join("\n");
+    }
+
+    const newText = text.substring(0, start) + formattedText + text.substring(end);
+    setEditValue(newText);
+    onUpdate(field, newText);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + formattedText.length, start + formattedText.length);
+    }, 0);
+  };
+
   return (
     <div className={hideBorder ? "" : "flex gap-4"}>
       {!hideBorder && (

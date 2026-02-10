@@ -10,8 +10,10 @@ export default function DiagnosisICD10Matcher({ diagnoses = [], onCodesGenerated
   const [loading, setLoading] = useState(false);
   const [generatedCodes, setGeneratedCodes] = useState([]);
 
-  // Ensure diagnoses is always an array
-  const diagnosisArray = Array.isArray(diagnoses) ? diagnoses : (diagnoses ? [diagnoses] : []);
+  // Ensure diagnoses is always an array of strings, not individual characters
+  const diagnosisArray = Array.isArray(diagnoses) 
+    ? diagnoses.filter(d => d && typeof d === 'string' && d.trim().length > 1)
+    : [];
 
   const handleDiagnosisToggle = (diagnosis) => {
     setSelectedDiagnoses((prev) =>

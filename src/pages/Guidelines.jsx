@@ -406,47 +406,8 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
     if (guidelines.length === 0 || generatingSummaries) return;
     
     setGeneratingSummaries(true);
-    const newSummaries = {};
-
     try {
-      const summaryPromises = guidelines.slice(0, 10).map(async (query) => {
-        if (summaries[query.id]) {
-          newSummaries[query.id] = summaries[query.id];
-          return;
-        }
-
-        try {
-          const result = await base44.integrations.Core.InvokeLLM({
-            prompt: `Generate a concise clinical summary for this guideline query. Be brief and actionable.
-
-Question: ${query.question}
-Full Answer: ${query.answer?.substring(0, 800)}...
-Confidence: ${query.confidence_level}
-Sources: ${query.sources?.slice(0, 3).join('; ')}
-
-Provide:
-1. Key Recommendation: One-sentence primary clinical recommendation
-2. Essential Points: 2-3 bullet points of critical information
-3. Evidence Level: Brief note on confidence (${query.confidence_level})
-
-Keep total response under 100 words.`,
-            response_json_schema: {
-              type: "object",
-              properties: {
-                key_recommendation: { type: "string" },
-                essential_points: { type: "array", items: { type: "string" } },
-                evidence_note: { type: "string" }
-              }
-            }
-          });
-
-          newSummaries[query.id] = result;
-        } catch (error) {
-          console.error(`Failed to generate summary for ${query.id}:`, error);
-        }
-      });
-
-      await Promise.all(summaryPromises);
+      const newSummaries = await generateMultipleSummaries(guidelines.slice(0, 10));
       setSummaries(prev => ({ ...prev, ...newSummaries }));
     } catch (error) {
       console.error("Failed to generate summaries:", error);

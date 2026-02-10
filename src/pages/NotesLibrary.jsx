@@ -16,19 +16,7 @@ import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
-const statusColors = {
-  draft: "bg-amber-50 text-amber-700 border-amber-200",
-  finalized: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  amended: "bg-blue-50 text-blue-700 border-blue-200",
-};
 
-const typeLabels = {
-  progress_note: "Progress Note",
-  h_and_p: "H&P",
-  discharge_summary: "Discharge",
-  consult: "Consult",
-  procedure_note: "Procedure",
-};
 
 export default function NotesLibrary() {
   const queryClient = useQueryClient();
@@ -338,9 +326,43 @@ export default function NotesLibrary() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200 text-center py-16">
-          <FileText className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+          <Plus className="w-12 h-12 text-slate-200 mx-auto mb-4" />
           <p className="text-slate-500 font-medium">No notes found</p>
           <p className="text-sm text-slate-400 mt-1">Try adjusting your filters or create a new note.</p>
+        </div>
+      ) : viewMode === "by-patient" ? (
+        /* BY PATIENT VIEW */
+        <div className="space-y-4">
+          {Object.entries(notesByPatient).map(([patientName, patientNotes]) => (
+            <PatientNotesGroup
+              key={patientName}
+              patientName={patientName}
+              notes={patientNotes}
+              selectedNotes={selectedNotes}
+              onToggleNote={handleToggleNote}
+              onPreview={setPreviewNote}
+            />
+          ))}
+        </div>
+      ) : layoutMode === "grid" ? (
+        /* GRID VIEW */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((note, i) => (
+            <motion.div
+              key={note.id}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: i * 0.03 }}
+            >
+              <NoteCard
+                note={note}
+                selected={selectedNotes.includes(note.id)}
+                onSelect={handleToggleNote}
+                onPreview={setPreviewNote}
+                layoutMode="grid"
+              />
+            </motion.div>
+          ))}
         </div>
       ) : viewMode === "by-patient" ? (
         /* BY PATIENT VIEW */

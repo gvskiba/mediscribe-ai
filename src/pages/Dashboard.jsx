@@ -4,6 +4,9 @@ import { createPageUrl } from "../utils";
 import { FileText, BookOpen, Calculator, Layers, FileCode, X, Plus, GripVertical, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MedicalNewsSection from "../components/dashboard/MedicalNewsSection";
+import RecentNotesWidget from "../components/dashboard/RecentNotesWidget";
+import RecentGuidelinesWidget from "../components/dashboard/RecentGuidelinesWidget";
+import QuickStatsWidget from "../components/dashboard/QuickStatsWidget";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
@@ -48,11 +51,14 @@ const quickLinks = [
 
 const availableWidgets = [
   { id: "quicklinks", name: "Quick Links", component: "QuickLinks" },
+  { id: "stats", name: "Quick Stats", component: "QuickStats" },
+  { id: "recentnotes", name: "Recent Notes", component: "RecentNotes" },
+  { id: "recentguidelines", name: "Recent Guidelines", component: "RecentGuidelines" },
   { id: "news", name: "Medical News", component: "MedicalNews" }
 ];
 
 export default function Dashboard() {
-  const [activeWidgets, setActiveWidgets] = useState(["quicklinks", "news"]);
+  const [activeWidgets, setActiveWidgets] = useState(["quicklinks", "stats", "recentnotes", "news"]);
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
 
   const toggleWidget = (widgetId) => {
@@ -164,6 +170,12 @@ export default function Dashboard() {
                   })}
                 </div>
               )}
+
+              {widgetId === "stats" && <QuickStatsWidget />}
+
+              {widgetId === "recentnotes" && <RecentNotesWidget />}
+
+              {widgetId === "recentguidelines" && <RecentGuidelinesWidget />}
 
               {widgetId === "news" && (
                 <MedicalNewsSection compact />

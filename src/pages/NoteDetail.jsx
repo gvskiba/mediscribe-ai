@@ -592,73 +592,44 @@ Generated: ${new Date().toLocaleString()}
           </div>
         )}
 
-        {/* Action Buttons - Organized by workflow */}
-        <div className="space-y-3 border-t border-slate-200 pt-6">
-          {/* Primary Actions */}
+        {/* Action Buttons - Better organized with visual grouping */}
+        <div className="border-t border-slate-200 pt-6 space-y-4">
+          {/* Primary Actions - Draft Note */}
           {note.status === "draft" && (
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                onClick={() => finalizeMutation.mutate()}
-                className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white rounded-xl gap-2 shadow-lg shadow-emerald-500/30 font-semibold transition-all"
-              >
-                <Check className="w-4 h-4" /> Finalize Note
-              </Button>
-              <Button
-                onClick={extractStructuredData}
-                disabled={extractingData}
-                variant="outline"
-                className="flex-1 rounded-xl gap-2 border-slate-300 hover:bg-slate-50 hover:border-slate-400 transition-all disabled:opacity-50"
-              >
-                {extractingData ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Extracting...</>
-                ) : (
-                  <><Sparkles className="w-4 h-4" /> Extract Data</>
-                )}
-              </Button>
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-4 border border-emerald-200">
+              <h3 className="text-xs font-bold text-emerald-900 uppercase tracking-wide mb-3 flex items-center gap-2">
+                <Check className="w-3.5 h-3.5" /> Note Actions
+              </h3>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <Button
+                  onClick={() => finalizeMutation.mutate()}
+                  className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white rounded-xl gap-2 shadow-lg shadow-emerald-500/30 font-semibold transition-all"
+                >
+                  <Check className="w-4 h-4" /> Finalize Note
+                </Button>
+                <Button
+                  onClick={extractStructuredData}
+                  disabled={extractingData}
+                  variant="outline"
+                  className="w-full rounded-xl gap-2 border-emerald-300 bg-white hover:bg-emerald-50 hover:border-emerald-400 transition-all disabled:opacity-50"
+                >
+                  {extractingData ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Extracting...</>
+                  ) : (
+                    <><Sparkles className="w-4 h-4" /> Extract Data</>
+                  )}
+                </Button>
+              </div>
             </div>
           )}
 
-          {/* Template & Export Actions */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setTemplateDialogOpen(true)}
-              className="flex-1 rounded-xl gap-2 border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400 transition-all"
-            >
-              <Sparkles className="w-4 h-4" /> Save as Template
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => exportNote('pdf')}
-              disabled={exportingFormat === 'pdf'}
-              className="flex-1 rounded-xl gap-2 border-blue-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400 transition-all disabled:opacity-50"
-            >
-              {exportingFormat === 'pdf' ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Download className="w-4 h-4" />
-              )}
-              Export PDF
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => exportNote('text')}
-              disabled={exportingFormat === 'text'}
-              className="flex-1 rounded-xl gap-2 border-slate-300 hover:bg-slate-50 hover:border-slate-400 transition-all disabled:opacity-50"
-            >
-              {exportingFormat === 'text' ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Download className="w-4 h-4" />
-              )}
-              Export Text
-            </Button>
-          </div>
-
           {/* Finalized Note Actions */}
           {note.status === "finalized" && (
-            <div className="flex flex-col sm:flex-row gap-3">
-              {note?.status === "finalized" && (
+            <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl p-4 border border-cyan-200">
+              <h3 className="text-xs font-bold text-cyan-900 uppercase tracking-wide mb-3 flex items-center gap-2">
+                <History className="w-3.5 h-3.5" /> Review Actions
+              </h3>
+              <div className="grid sm:grid-cols-2 gap-3">
                 <NoteRevisionHistory
                   noteId={noteId}
                   onRestore={(revision) => {
@@ -677,27 +648,69 @@ Generated: ${new Date().toLocaleString()}
                     }));
                   }}
                 />
-              )}
-              {patientSummary && (
-                <Button
-                  variant="outline"
-                  onClick={generateSummary}
-                  disabled={generatingSummary}
-                  className="flex-1 rounded-xl gap-2 border-cyan-300 text-cyan-700 hover:bg-cyan-50 hover:border-cyan-400 transition-all disabled:opacity-50"
-                >
-                  {generatingSummary ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Regenerating...</>
-                  ) : (
-                    <><Sparkles className="w-4 h-4" /> Regenerate Summary</>
-                  )}
-                </Button>
-              )}
+                {patientSummary && (
+                  <Button
+                    variant="outline"
+                    onClick={generateSummary}
+                    disabled={generatingSummary}
+                    className="w-full rounded-xl gap-2 border-cyan-300 bg-white hover:bg-cyan-50 hover:border-cyan-400 transition-all disabled:opacity-50"
+                  >
+                    {generatingSummary ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" /> Regenerating...</>
+                    ) : (
+                      <><Sparkles className="w-4 h-4" /> Regenerate Summary</>
+                    )}
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 
+          {/* Save & Export Actions */}
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-4 border border-purple-200">
+            <h3 className="text-xs font-bold text-purple-900 uppercase tracking-wide mb-3 flex items-center gap-2">
+              <Download className="w-3.5 h-3.5" /> Save & Export
+            </h3>
+            <div className="grid sm:grid-cols-3 gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setTemplateDialogOpen(true)}
+                className="w-full rounded-xl gap-2 border-purple-300 bg-white text-purple-700 hover:bg-purple-50 hover:border-purple-400 transition-all"
+              >
+                <Sparkles className="w-4 h-4" /> Template
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => exportNote('pdf')}
+                disabled={exportingFormat === 'pdf'}
+                className="w-full rounded-xl gap-2 border-pink-300 bg-white text-pink-700 hover:bg-pink-50 hover:border-pink-400 transition-all disabled:opacity-50"
+              >
+                {exportingFormat === 'pdf' ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                PDF
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => exportNote('text')}
+                disabled={exportingFormat === 'text'}
+                className="w-full rounded-xl gap-2 border-purple-300 bg-white text-purple-700 hover:bg-purple-50 hover:border-purple-400 transition-all disabled:opacity-50"
+              >
+                {exportingFormat === 'text' ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                Text
+              </Button>
+            </div>
+          </div>
+
           {/* New Note Action */}
           <Link to={createPageUrl("NewNote")} className="block">
-            <Button className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl gap-2 shadow-lg shadow-blue-500/30 font-semibold transition-all">
+            <Button className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl gap-2 shadow-lg shadow-blue-500/30 font-semibold transition-all h-12">
               <Plus className="w-4 h-4" /> Create New Note
             </Button>
           </Link>

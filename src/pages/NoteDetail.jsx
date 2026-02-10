@@ -1330,10 +1330,6 @@ Generated: ${new Date().toLocaleString()}
 
                      {/* Right Column - Laboratory Analysis */}
                      <div>
-                       <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                         <Beaker className="w-5 h-5 text-amber-600" />
-                         Laboratory Analysis
-                       </h3>
                        <LabsAnalysis
                          noteId={noteId}
                          onAddToNote={async (labsText) => {

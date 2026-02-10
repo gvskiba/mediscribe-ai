@@ -123,7 +123,7 @@ Format the response in a clear, clinically actionable way.`,
     }
   };
 
-  const handleAddToNote = () => {
+  const handleAddToNote = (linkedFindings) => {
     if (!imagingSummary) return;
 
     let imagingText = `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
@@ -153,7 +153,7 @@ Format the response in a clear, clinically actionable way.`,
       });
     }
 
-    onAddToNote(imagingText);
+    onAddToNote(imagingText, linkedFindings);
   };
 
   return (

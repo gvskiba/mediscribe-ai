@@ -859,23 +859,38 @@ Generated: ${new Date().toLocaleString()}
          className="bg-white rounded-2xl border border-slate-100 shadow-sm"
        >
          <Tabs defaultValue="summary" className="w-full">
-           <TabsList className="w-full justify-start border-b border-slate-200 rounded-none bg-transparent px-6 h-14">
-             <TabsTrigger value="summary" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 px-3">
-               Summary
-             </TabsTrigger>
-             <TabsTrigger value="clinical" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 px-3">
-               Clinical Note
-             </TabsTrigger>
-             <TabsTrigger value="guidelines" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 px-3">
-               Guidelines & Codes
-             </TabsTrigger>
-             <TabsTrigger value="imaging" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 px-3">
-               Result Analysis
-             </TabsTrigger>
-             <TabsTrigger value="diagnoses" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 px-3">
-               Diagnoses
-             </TabsTrigger>
-           </TabsList>
+           <DragDropContext onDragEnd={handleDragEnd}>
+             <Droppable droppableId="tabs" direction="horizontal">
+               {(provided) => (
+                 <TabsList 
+                   className="w-full justify-start border-b border-slate-200 rounded-none bg-transparent px-6 h-14"
+                   ref={provided.innerRef}
+                   {...provided.droppableProps}
+                 >
+                   {tabOrder.map((tabId, index) => {
+                     const tab = TAB_CONFIGS.find(t => t.id === tabId);
+                     return (
+                       <Draggable key={tabId} draggableId={tabId} index={index}>
+                         {(provided, snapshot) => (
+                           <div
+                             ref={provided.innerRef}
+                             {...provided.draggableProps}
+                             {...provided.dragHandleProps}
+                             className={snapshot.isDragging ? 'opacity-50' : ''}
+                           >
+                             <TabsTrigger value={tabId} className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 px-3 cursor-grab active:cursor-grabbing">
+                               {tab.label}
+                             </TabsTrigger>
+                           </div>
+                         )}
+                       </Draggable>
+                     );
+                   })}
+                   {provided.placeholder}
+                 </TabsList>
+               )}
+             </Droppable>
+           </DragDropContext>
 
            {/* Summary Tab */}
            <TabsContent value="summary" className="p-6 space-y-4">

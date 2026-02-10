@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import StructuredNotePreview from "../components/notes/StructuredNotePreview";
 import PatientSummary from "../components/notes/PatientSummary";
 import EditableSummaryGenerator from "../components/notes/EditableSummaryGenerator";
@@ -1318,8 +1319,8 @@ Generated: ${new Date().toLocaleString()}
                              }
 
                              await base44.entities.ClinicalNote.update(noteId, updates);
-                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                             alert("Imaging summary added to clinical note");
+                               queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                               toast.success("Imaging summary added to clinical note");
                            } catch (error) {
                              console.error("Failed to add imaging to note:", error);
                              alert("Failed to add imaging. Please try again.");
@@ -1339,7 +1340,7 @@ Generated: ${new Date().toLocaleString()}
                                assessment: updatedAssessment
                              });
                              queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                             alert("Lab summary added to clinical note");
+                             toast.success("Lab summary added to clinical note");
                            } catch (error) {
                              console.error("Failed to add labs to note:", error);
                              alert("Failed to add labs. Please try again.");

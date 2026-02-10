@@ -1101,9 +1101,10 @@ Generated: ${new Date().toLocaleString()}
                            const updatedAssessment = (note.assessment || "") + diagnosisText;
                            await base44.entities.ClinicalNote.update(noteId, { assessment: updatedAssessment });
                            await queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                           toast.success("Diagnoses added to assessment");
                          } catch (error) {
                            console.error("Failed to add diagnoses to assessment:", error);
-                           alert("Failed to add diagnoses. Please try again.");
+                           toast.error("Failed to add diagnoses. Please try again.");
                          }
                        }}
                        className="w-full gap-2 bg-blue-600 hover:bg-blue-700"

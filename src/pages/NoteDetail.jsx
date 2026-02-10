@@ -338,6 +338,139 @@ Keep recommendations specific, actionable, and evidence-based.`,
     }
   };
 
+  const analyzeDrugInteractions = async () => {
+    if (!note?.medications || note.medications.length === 0) return;
+    setLoadingInteractions(true);
+
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Analyze potential drug-drug interactions in this medication list. For each significant interaction, provide severity, mechanism, and clinical recommendation.
+
+  MEDICATIONS:
+  ${note.medications.join('\n')}
+
+  Provide results as a JSON array with objects containing: drug_pair, severity (mild/moderate/severe), mechanism, recommendation.`,
+        add_context_from_internet: true,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            interactions: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  drug_pair: { type: "string" },
+                  severity: { type: "string", enum: ["mild", "moderate", "severe"] },
+                  mechanism: { type: "string" },
+                  recommendation: { type: "string" }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      setDrugInteractions(result.interactions || []);
+    } catch (error) {
+      console.error("Failed to analyze drug interactions:", error);
+    } finally {
+      setLoadingInteractions(false);
+    }
+  };
+
+  const suggestFollowUpTests = async () => {
+    if (!note?.diagnoses || note.diagnoses.length === 0) return;
+    setLoadingFollowUp(true);
+
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Based on these diagnoses, suggest relevant follow-up tests, labs, imaging, or specialist consultations needed for comprehensive evaluation and management.
+
+  DIAGNOSES:
+  ${note.diagnoses.join('\n')}
+
+  CURRENT ASSESSMENT:
+  ${note.assessment || "N/A"}
+
+  Provide results with: test_name, type (lab/imaging/consult), timing, clinical_rationale.`,
+        add_context_from_internet: true,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            follow_ups: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  test_name: { type: "string" },
+                  type: { type: "string", enum: ["lab", "imaging", "consult", "other"] },
+                  timing: { type: "string" },
+                  clinical_rationale: { type: "string" }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      setFollowUpTests(result.follow_ups || []);
+    } catch (error) {
+      console.error("Failed to suggest follow-up tests:", error);
+    } finally {
+      setLoadingFollowUp(false);
+    }
+  };
+
+  const generateDifferentialDiagnosis = async () => {
+    if (!note?.chief_complaint) return;
+    setLoadingDifferential(true);
+
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Generate a comprehensive differential diagnosis list based on this clinical presentation. Rank by likelihood and provide reasoning for each.
+
+  CHIEF COMPLAINT:
+  ${note.chief_complaint}
+
+  HISTORY OF PRESENT ILLNESS:
+  ${note.history_of_present_illness || "N/A"}
+
+  PHYSICAL EXAM:
+  ${note.physical_exam || "N/A"}
+
+  VITAL SIGNS & ASSESSMENT:
+  ${note.assessment || "N/A"}
+
+  Provide results with: diagnosis, likelihood_rank (1-5, 5 being most likely), clinical_reasoning, red_flags_to_monitor.`,
+        add_context_from_internet: true,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            differentials: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  diagnosis: { type: "string" },
+                  likelihood_rank: { type: "number", minimum: 1, maximum: 5 },
+                  clinical_reasoning: { type: "string" },
+                  red_flags_to_monitor: { type: "array", items: { type: "string" } }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      const sorted = (result.differentials || []).sort((a, b) => b.likelihood_rank - a.likelihood_rank);
+      setDifferentialDiagnosis(sorted);
+    } catch (error) {
+      console.error("Failed to generate differential diagnosis:", error);
+    } finally {
+      setLoadingDifferential(false);
+    }
+  };
+
   const generateICD10Suggestions = async () => {
     if (!note) return;
     setLoadingIcd10(true);

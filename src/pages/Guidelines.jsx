@@ -221,16 +221,25 @@ Format each as a concise clinical question (similar to the original).`,
     });
   };
 
-  const handleCompareGuidelines = async () => {
+  const handleCompareGuidelines = async (focusAspects = ["medications", "diagnostics", "treatment", "evidence"]) => {
     if (selectedForCompare.length < 2) return;
     
     setComparing(true);
-    setShowCompare(true);
+    if (!showCompare) setShowCompare(true);
     setComparison(null);
+
+    const aspectInstructions = {
+      medications: `- **Drug Recommendations**: Compare medication choices with specific names, dosing regimens, duration, monitoring requirements. Highlight first-line vs. alternatives, generic vs. brand considerations, and cost-effectiveness.`,
+      diagnostics: `- **Diagnostic Criteria**: Compare diagnostic tests, imaging modalities, laboratory thresholds, sensitivity/specificity considerations, and diagnostic algorithms. Note when to use each test.`,
+      treatment: `- **Treatment Protocols**: Compare overall management strategies, timing of interventions, escalation criteria, combination therapies, and non-pharmacological approaches.`,
+      evidence: `- **Evidence Quality**: Compare strength of evidence (Level A/B/C), types of studies cited (RCTs, meta-analyses, observational), sample sizes, publication years, and consensus levels.`
+    };
+
+    const selectedInstructions = focusAspects.map(aspect => aspectInstructions[aspect]).join('\n');
 
     try {
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a clinical evidence expert. Compare these clinical guidelines and provide a comprehensive analysis.
+        prompt: `You are a clinical evidence expert with expertise in guideline analysis. Compare these clinical guidelines with deep focus on the selected aspects.
 
 GUIDELINES TO COMPARE:
 ${selectedForCompare.map((g, i) => `
@@ -240,50 +249,46 @@ Category: ${g.category}
 Confidence Level: ${g.confidence_level}
 Answer: ${g.answer}
 Sources: ${g.sources?.join('; ') || 'None'}
-`).join('\n---\n')}
+Created: ${new Date(g.created_date).toLocaleDateString()}
+`).join('\n━━━━━━━━━━━━━━━\n')}
 
-COMPREHENSIVE COMPARISON REQUIREMENTS:
+FOCUSED COMPARISON REQUIREMENTS - ANALYZE THESE ASPECTS IN DEPTH:
+${selectedInstructions}
 
-1. **Executive Summary**
-   - Brief overview of what each guideline addresses
-   - Key commonalities and differences at a glance
+For the focused aspects above, provide:
 
-2. **Recommendations Comparison**
-   - Create a detailed table or structured comparison of specific clinical recommendations
-   - Highlight where guidelines agree vs. disagree
-   - Note any conflicting advice and explain why differences may exist
+1. **Side-by-Side Analysis Table**
+   - Create a detailed comparison table for each selected aspect
+   - Use columns for each guideline
+   - Highlight agreements (✓) and disagreements (✗)
 
-3. **Evidence Quality & Confidence Levels**
-   - Compare the strength of evidence cited by each guideline
-   - Discuss confidence levels and what they mean clinically
-   - Note recency of guidelines and any updates
+2. **Discrepancy Analysis** (CRITICAL)
+   For each disagreement, explain potential reasons:
+   - **Regional Variations**: Different practice patterns (US vs. European guidelines)
+   - **Evidence Updates**: One guideline may reflect newer studies or trials
+   - **Population Differences**: Guidelines may target different patient demographics
+   - **Specialty Perspectives**: Cardiology vs. internal medicine approaches may differ
+   - **Resource Considerations**: Availability and cost of interventions
+   - **Risk Tolerance**: Conservative vs. aggressive treatment philosophies
+   - **Regulatory Factors**: FDA vs. EMA approval status, local regulations
 
-4. **Target Populations**
-   - Compare patient populations each guideline applies to
-   - Note any specific inclusion/exclusion criteria
-   - Highlight population differences that affect applicability
+3. **Evidence Timeline**
+   - When was each guideline's evidence base established?
+   - Have there been major trials published since?
+   - Which guideline reflects the most current evidence?
 
-5. **Drug/Treatment Specifics**
-   - Compare recommended medications, dosages, and treatment protocols
-   - Note class of recommendations (I/IIa/IIb) if available
-   - Highlight first-line vs. alternative therapies
+4. **Practical Synthesis**
+   - How to choose between conflicting recommendations
+   - Clinical scenarios where one guideline is preferred
+   - Red flags or contraindications specific to each approach
 
-6. **Practical Clinical Implications**
-   - Which guideline to use in specific clinical scenarios
-   - How to reconcile conflicting recommendations
-   - Key decision points for clinicians
+5. **Strength of Recommendations**
+   - Compare class of recommendation (I, IIa, IIb, III) if available
+   - Compare level of evidence (A, B, C)
+   - Which guideline has stronger backing?
 
-7. **Sources & Credibility**
-   - Compare the authoritative bodies behind each guideline
-   - Note publication dates and whether guidelines are current
-   - Discuss evidence base quality
-
-8. **Clinical Decision Framework**
-   - Provide a decision tree or framework for choosing between guidelines
-   - Consider patient factors, comorbidities, and clinical context
-
-Use markdown formatting with clear headers, tables where appropriate, and bullet points for readability. Be specific and clinically actionable.`,
-        add_context_from_internet: false,
+Use clear markdown formatting with tables, bullet points, and highlighting for differences. Be specific and clinically actionable.`,
+        add_context_from_internet: true,
       });
 
       setComparison(result);
@@ -883,6 +888,7 @@ Keep total response under 100 words.`,
           }}
           comparison={comparison}
           isLoading={comparing}
+          onCompare={handleCompareGuidelines}
         />
       )}
     </div>

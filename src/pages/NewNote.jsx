@@ -19,6 +19,7 @@ import ManualHistoryInput from "../components/notes/ManualHistoryInput";
 import PreviousEncountersSummary from "../components/notes/PreviousEncountersSummary";
 import SectionInserter from "../components/notes/SectionInserter";
 import TemplateAutoFiller from "../components/templates/TemplateAutoFiller";
+import StructuredNoteReview from "../components/notes/StructuredNoteReview";
 import { useAutoSave } from "../components/utils/useAutoSave";
 
 export default function NewNote() {
@@ -1204,6 +1205,25 @@ ${JSON.stringify(structuredNote, null, 2)}`,
           </> :
 
         <>
+            <StructuredNoteReview
+              structuredNote={structuredNote}
+              rawData={rawData}
+              patientHistory={patientHistory}
+              guidelineRecommendations={guidelineRecommendations}
+              loadingGuidelines={loadingGuidelines}
+              icd10Suggestions={icd10Suggestions}
+              loadingIcd10={loadingIcd10}
+              medicationRecommendations={medicationRecommendations}
+              loadingMedications={loadingMedications}
+              onUpdate={handleUpdate}
+              onReanalyze={handleReanalyze}
+              onGenerateGuidelines={() => fetchGuidelineRecommendations(structuredNote)}
+              onGenerateICD10={() => generateICD10Suggestions(structuredNote)}
+              onGenerateMedications={() => fetchMedicationRecommendations(structuredNote)}
+            />
+
+            {/* Legacy Components - Hidden but available */}
+            <div className="hidden">
             {/* History Focus Selector */}
             {rawData && (rawData.patient_id || rawData.patient_name) &&
           <HistoryFocusSelector
@@ -1400,7 +1420,7 @@ ${JSON.stringify(structuredNote, null, 2)}`,
             medicationRecommendations={medicationRecommendations}
             loadingMedications={loadingMedications}
             onGenerateEducationMaterials={() => setEducationMaterialsOpen(true)} />
-
+            </div>
           </>
         }
       </div>

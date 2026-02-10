@@ -940,7 +940,7 @@ FORMATTING RULES (CRITICAL):
                field="assessment"
                type="textarea"
                onUpdate={onUpdate}
-               onReanalyze={onReanalyze}
+               onReanalyze={handleReanalyze}
                hideBorder={true}
                noteContext={{
                  diagnoses: note.diagnoses,

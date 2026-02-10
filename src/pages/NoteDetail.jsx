@@ -721,6 +721,66 @@ Generated: ${new Date().toLocaleString()}
 
            {/* Clinical Note Tab */}
            <TabsContent value="clinical" className="p-6">
+             {/* Action Buttons */}
+             {note.status === "draft" && (
+               <div className="flex gap-3 mb-6">
+                 <Button
+                   onClick={() => finalizeMutation.mutate()}
+                   className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white rounded-xl gap-2 shadow-lg shadow-emerald-500/30 font-semibold"
+                 >
+                   <Check className="w-4 h-4" /> Finalize Note
+                 </Button>
+                 <Button
+                   onClick={extractStructuredData}
+                   disabled={extractingData}
+                   variant="outline"
+                   className="flex-1 rounded-xl gap-2 border-emerald-300 hover:bg-emerald-50 disabled:opacity-50"
+                 >
+                   {extractingData ? (
+                     <><Loader2 className="w-4 h-4 animate-spin" /> Extracting...</>
+                   ) : (
+                     <><Sparkles className="w-4 h-4" /> Extract Data</>
+                   )}
+                 </Button>
+               </div>
+             )}
+             {note.status === "finalized" && (
+               <div className="flex gap-3 mb-6">
+                 <Button
+                   variant="outline"
+                   onClick={() => exportNote('pdf')}
+                   disabled={exportingFormat === 'pdf'}
+                   className="flex-1 rounded-xl gap-2 border-blue-300 hover:bg-blue-50 disabled:opacity-50"
+                 >
+                   {exportingFormat === 'pdf' ? (
+                     <Loader2 className="w-4 h-4 animate-spin" />
+                   ) : (
+                     <Download className="w-4 h-4" />
+                   )}
+                   Export PDF
+                 </Button>
+                 <Button
+                   variant="outline"
+                   onClick={() => exportNote('text')}
+                   disabled={exportingFormat === 'text'}
+                   className="flex-1 rounded-xl gap-2 border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+                 >
+                   {exportingFormat === 'text' ? (
+                     <Loader2 className="w-4 h-4 animate-spin" />
+                   ) : (
+                     <Download className="w-4 h-4" />
+                   )}
+                   Export Text
+                 </Button>
+                 <Button
+                   variant="outline"
+                   onClick={() => setTemplateDialogOpen(true)}
+                   className="flex-1 rounded-xl gap-2 border-purple-300 text-purple-700 hover:bg-purple-50"
+                 >
+                   <Sparkles className="w-4 h-4" /> Save as Template
+                 </Button>
+               </div>
+             )}
              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                {/* Main Content - Left Column (2/3) */}
                <div className="lg:col-span-2 space-y-6">

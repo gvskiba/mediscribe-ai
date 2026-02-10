@@ -930,12 +930,12 @@ Generated: ${new Date().toLocaleString()}
                        Diagnoses ({note.diagnoses.length})
                      </h3>
                      <div className="space-y-2 max-h-48 overflow-y-auto">
-                         {note.diagnoses && Array.isArray(note.diagnoses) && note.diagnoses.map((diagnosis, idx) => (
-                           <div key={idx} className="bg-white rounded-lg p-3 border border-blue-100 text-xs text-slate-700">
-                             {diagnosis}
-                           </div>
-                         ))}
-                       </div>
+                       {note.diagnoses.map((diagnosis, idx) => (
+                         <div key={idx} className="bg-white rounded-lg p-3 border border-blue-100 text-xs text-slate-700">
+                           {diagnosis}
+                         </div>
+                       ))}
+                     </div>
                    </div>
                  )}
 

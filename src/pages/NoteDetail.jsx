@@ -1190,7 +1190,6 @@ Generated: ${new Date().toLocaleString()}
                      }}
                    />
                  </div>
-                 <>
                  {/* ICD-10 Codes Section */}
                  <div>
                    <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">

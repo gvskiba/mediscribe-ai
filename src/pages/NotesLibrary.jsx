@@ -83,21 +83,6 @@ export default function NotesLibrary() {
   });
 
   const uniquePatients = [...new Set(notes.map(n => n.patient_name).filter(Boolean))].sort();
-  
-  // Group notes by patient
-  const notesByPatient = filtered.reduce((acc, note) => {
-    const patientName = note.patient_name || "Unknown Patient";
-    if (!acc[patientName]) acc[patientName] = [];
-    acc[patientName].push(note);
-    return acc;
-  }, {});
-  
-  // Sort each patient's notes by date
-  Object.keys(notesByPatient).forEach(patient => {
-    notesByPatient[patient].sort((a, b) => 
-      new Date(b.date_of_visit || b.created_date) - new Date(a.date_of_visit || a.created_date)
-    );
-  });
 
   const getDateRangeFilter = (note) => {
     if (!note.date_of_visit) return false;
@@ -126,6 +111,21 @@ export default function NotesLibrary() {
     const matchPatient = patientFilter === "all" || n.patient_name === patientFilter;
     const matchDate = dateRangeFilter === "all" || getDateRangeFilter(n);
     return matchSearch && matchStatus && matchType && matchPatient && matchDate;
+  });
+
+  // Group notes by patient (after filtered is defined)
+  const notesByPatient = filtered.reduce((acc, note) => {
+    const patientName = note.patient_name || "Unknown Patient";
+    if (!acc[patientName]) acc[patientName] = [];
+    acc[patientName].push(note);
+    return acc;
+  }, {});
+  
+  // Sort each patient's notes by date
+  Object.keys(notesByPatient).forEach(patient => {
+    notesByPatient[patient].sort((a, b) => 
+      new Date(b.date_of_visit || b.created_date) - new Date(a.date_of_visit || a.created_date)
+    );
   });
 
   const handleSelectAll = () => {

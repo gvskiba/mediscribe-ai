@@ -21,6 +21,7 @@ import PreviousEncountersSummary from "../components/notes/PreviousEncountersSum
 import SectionInserter from "../components/notes/SectionInserter";
 import TemplateAutoFiller from "../components/templates/TemplateAutoFiller";
 import StructuredNoteReview from "../components/notes/StructuredNoteReview";
+import { toast } from "sonner";
 import { useAutoSave } from "../components/utils/useAutoSave";
 import AINotesAssistant from "../components/notes/AINotesAssistant";
 import AITagsSuggestions from "../components/notes/AITagsSuggestions";

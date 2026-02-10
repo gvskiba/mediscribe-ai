@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { FileText, BookOpen, Calculator, Layers, FileCode, X, Plus, GripVertical, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import MedicalNewsSection from "../components/dashboard/MedicalNewsSection";
 import RecentNotesWidget from "../components/dashboard/RecentNotesWidget";
 import RecentGuidelinesWidget from "../components/dashboard/RecentGuidelinesWidget";
@@ -84,6 +85,16 @@ export default function Dashboard() {
     setActiveWidgets(prev => prev.filter(id => id !== widgetId));
   };
 
+  const handleDragEnd = (result) => {
+    const { source, destination } = result;
+    if (!destination) return;
+
+    const newWidgets = Array.from(activeWidgets);
+    const [removed] = newWidgets.splice(source.index, 1);
+    newWidgets.splice(destination.index, 0, removed);
+    setActiveWidgets(newWidgets);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -149,30 +160,49 @@ export default function Dashboard() {
       </motion.div>
 
       {/* Widgets Grid */}
-      <div style={{ 
-        display: "grid", 
-        gridTemplateColumns: `repeat(${layoutConfigs[layout].cols}, minmax(0, 1fr))`,
-        gap: "1.5rem",
-        width: "100%"
-      }}>
-        <AnimatePresence>
-          {activeWidgets.map((widgetId) => {
-            const widget = availableWidgets.find(w => w.id === widgetId);
-            if (!widget) return null;
-            
-            return (
-              <motion.div
-                key={widgetId}
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
-              >
-                <div className="flex items-center justify-between px-6 py-3 border-b border-slate-100 bg-slate-50">
-                  <h3 className="text-sm font-semibold text-slate-900">
-                    {widget.name}
-                  </h3>
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <Droppable droppableId="widgets" type="WIDGET">
+          {(provided, snapshot) => (
+            <div
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+              style={{ 
+                display: "grid", 
+                gridTemplateColumns: `repeat(${layoutConfigs[layout].cols}, minmax(0, 1fr))`,
+                gap: "1.5rem",
+                width: "100%",
+                backgroundColor: snapshot.isDraggingOver ? "rgba(59, 130, 246, 0.05)" : "transparent",
+                borderRadius: "0.5rem",
+                padding: "0.5rem",
+                transition: "background-color 0.2s",
+              }}
+            >
+              <AnimatePresence>
+                {activeWidgets.map((widgetId, index) => {
+                  const widget = availableWidgets.find(w => w.id === widgetId);
+                  if (!widget) return null;
+                  
+                  return (
+                    <Draggable key={widgetId} draggableId={widgetId} index={index}>
+                      {(provided, snapshot) => (
+                        <motion.div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          layout
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all ${
+                            snapshot.isDragging ? "shadow-lg ring-2 ring-blue-500" : ""
+                          }`}
+                        >
+                <div className="flex items-center justify-between px-6 py-3 border-b border-slate-100 bg-slate-50 cursor-grab active:cursor-grabbing" {...provided.dragHandleProps}>
+                  <div className="flex items-center gap-2">
+                    <GripVertical className="w-4 h-4 text-slate-400" />
+                    <h3 className="text-sm font-semibold text-slate-900">
+                      {widget.name}
+                    </h3>
+                  </div>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -225,11 +255,17 @@ export default function Dashboard() {
                     <MedicalNewsSection compact />
                   )}
                 </div>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
-      </div>
+                        </motion.div>
+                      )}
+                    </Draggable>
+                  );
+                })}
+              </AnimatePresence>
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
 
       {activeWidgets.length === 0 && (
         <motion.div

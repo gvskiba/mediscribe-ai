@@ -279,8 +279,6 @@ export default function EditableSection({
            onInsert={handleInsertSnippet}
            category={field === "physical_exam" ? "exam" : field === "review_of_systems" ? "ros" : null}
          />
-
-
         </div>
         </div>
         );

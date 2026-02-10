@@ -593,120 +593,111 @@ Generated: ${new Date().toLocaleString()}
         )}
 
         {/* Action Buttons - Organized by workflow */}
-        <div className="space-y-4 border-t border-slate-200 pt-6">
+        <div className="space-y-3 border-t border-slate-200 pt-6">
           {/* Primary Actions */}
           {note.status === "draft" && (
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase mb-3">Note Actions</p>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  onClick={() => finalizeMutation.mutate()}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 rounded-lg gap-2"
-                >
-                  <Check className="w-4 h-4" /> Finalize Note
-                </Button>
-                <Button
-                  onClick={extractStructuredData}
-                  disabled={extractingData}
-                  variant="outline"
-                  className="flex-1 rounded-lg gap-2"
-                >
-                  {extractingData ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Extracting...</>
-                  ) : (
-                    <><Sparkles className="w-4 h-4" /> Extract Data</>
-                  )}
-                </Button>
-              </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                onClick={() => finalizeMutation.mutate()}
+                className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white rounded-xl gap-2 shadow-lg shadow-emerald-500/30 font-semibold transition-all"
+              >
+                <Check className="w-4 h-4" /> Finalize Note
+              </Button>
+              <Button
+                onClick={extractStructuredData}
+                disabled={extractingData}
+                variant="outline"
+                className="flex-1 rounded-xl gap-2 border-slate-300 hover:bg-slate-50 hover:border-slate-400 transition-all disabled:opacity-50"
+              >
+                {extractingData ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Extracting...</>
+                ) : (
+                  <><Sparkles className="w-4 h-4" /> Extract Data</>
+                )}
+              </Button>
             </div>
           )}
 
           {/* Template & Export Actions */}
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase mb-3">Save & Export</p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setTemplateDialogOpen(true)}
-                className="flex-1 rounded-lg gap-2"
-              >
-                <Sparkles className="w-4 h-4" /> Save as Template
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => exportNote('pdf')}
-                disabled={exportingFormat === 'pdf'}
-                className="flex-1 rounded-lg gap-2"
-              >
-                {exportingFormat === 'pdf' ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Download className="w-4 h-4" />
-                )}
-                Export PDF
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => exportNote('text')}
-                disabled={exportingFormat === 'text'}
-                className="flex-1 rounded-lg gap-2"
-              >
-                {exportingFormat === 'text' ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Download className="w-4 h-4" />
-                )}
-                Export Text
-              </Button>
-            </div>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setTemplateDialogOpen(true)}
+              className="flex-1 rounded-xl gap-2 border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400 transition-all"
+            >
+              <Sparkles className="w-4 h-4" /> Save as Template
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => exportNote('pdf')}
+              disabled={exportingFormat === 'pdf'}
+              className="flex-1 rounded-xl gap-2 border-blue-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400 transition-all disabled:opacity-50"
+            >
+              {exportingFormat === 'pdf' ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              Export PDF
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => exportNote('text')}
+              disabled={exportingFormat === 'text'}
+              className="flex-1 rounded-xl gap-2 border-slate-300 hover:bg-slate-50 hover:border-slate-400 transition-all disabled:opacity-50"
+            >
+              {exportingFormat === 'text' ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              Export Text
+            </Button>
           </div>
 
           {/* Finalized Note Actions */}
           {note.status === "finalized" && (
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase mb-3">Summary Actions</p>
-              <div className="flex flex-col sm:flex-row gap-3">
-                {note?.status === "finalized" && (
-                  <NoteRevisionHistory
-                    noteId={noteId}
-                    onRestore={(revision) => {
-                      const restoredData = {
-                        chief_complaint: revision.chief_complaint,
-                        history_of_present_illness: revision.history_of_present_illness,
-                        assessment: revision.assessment,
-                        plan: revision.plan,
-                        diagnoses: revision.diagnoses,
-                        medications: revision.medications,
-                      };
-                      setNoteData(restoredData);
-                      queryClient.setQueryData(["note", noteId], (old) => ({
-                        ...old,
-                        ...restoredData,
-                      }));
-                    }}
-                  />
-                )}
-                {patientSummary && (
-                  <Button
-                    variant="outline"
-                    onClick={generateSummary}
-                    disabled={generatingSummary}
-                    className="flex-1 rounded-lg gap-2"
-                  >
-                    {generatingSummary ? (
-                      <><Loader2 className="w-4 h-4 animate-spin" /> Regenerating...</>
-                    ) : (
-                      <><Sparkles className="w-4 h-4" /> Regenerate Summary</>
-                    )}
-                  </Button>
-                )}
-              </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              {note?.status === "finalized" && (
+                <NoteRevisionHistory
+                  noteId={noteId}
+                  onRestore={(revision) => {
+                    const restoredData = {
+                      chief_complaint: revision.chief_complaint,
+                      history_of_present_illness: revision.history_of_present_illness,
+                      assessment: revision.assessment,
+                      plan: revision.plan,
+                      diagnoses: revision.diagnoses,
+                      medications: revision.medications,
+                    };
+                    setNoteData(restoredData);
+                    queryClient.setQueryData(["note", noteId], (old) => ({
+                      ...old,
+                      ...restoredData,
+                    }));
+                  }}
+                />
+              )}
+              {patientSummary && (
+                <Button
+                  variant="outline"
+                  onClick={generateSummary}
+                  disabled={generatingSummary}
+                  className="flex-1 rounded-xl gap-2 border-cyan-300 text-cyan-700 hover:bg-cyan-50 hover:border-cyan-400 transition-all disabled:opacity-50"
+                >
+                  {generatingSummary ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Regenerating...</>
+                  ) : (
+                    <><Sparkles className="w-4 h-4" /> Regenerate Summary</>
+                  )}
+                </Button>
+              )}
             </div>
           )}
 
           {/* New Note Action */}
           <Link to={createPageUrl("NewNote")} className="block">
-            <Button className="w-full bg-blue-600 hover:bg-blue-700 rounded-lg gap-2">
+            <Button className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl gap-2 shadow-lg shadow-blue-500/30 font-semibold transition-all">
               <Plus className="w-4 h-4" /> Create New Note
             </Button>
           </Link>

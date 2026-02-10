@@ -254,16 +254,7 @@ Format each as a concise clinical question (similar to the original).`,
     generateRelatedGuidelines(query);
   };
 
-  const toggleSelectForCompare = (query) => {
-    setSelectedForCompare(prev => {
-      const exists = prev.find(q => q.id === query.id);
-      if (exists) {
-        return prev.filter(q => q.id !== query.id);
-      } else {
-        return [...prev, query];
-      }
-    });
-  };
+
 
   const handleCompareGuidelines = async (focusAspects = ["medications", "diagnostics", "treatment", "evidence"]) => {
     if (selectedForCompareIds.length < 2) return;

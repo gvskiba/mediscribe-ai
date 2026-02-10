@@ -444,12 +444,6 @@ Keep total response under 100 words.`,
     }
   };
 
-  React.useEffect(() => {
-    if (viewMode === "browse" && filteredQueries.length > 0 && !latestAnswer && !selectedQuery) {
-      generateSummariesForGuidelines(filteredQueries);
-    }
-  }, [viewMode, filteredQueries.length]);
-
   // Apply filters
   let filteredQueries = semanticResults !== null ? semanticResults : pastQueries;
   

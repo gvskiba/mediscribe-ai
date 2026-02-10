@@ -1075,10 +1075,22 @@ Generated: ${new Date().toLocaleString()}
 
                  {/* Clinical Guidelines */}
                  <div>
-                   <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                     <Sparkles className="w-4 h-4 text-purple-600" />
-                     Evidence-Based Guidelines
-                   </h3>
+                   <div className="flex items-center justify-between mb-4">
+                     <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                       <Sparkles className="w-4 h-4 text-purple-600" />
+                       Evidence-Based Guidelines
+                     </h3>
+                     {!loadingGuidelines && guidelineRecommendations.length > 0 && (
+                       <Button
+                         size="sm"
+                         variant="ghost"
+                         onClick={fetchGuidelineRecommendations}
+                         className="text-xs text-purple-600 hover:bg-purple-50 h-6"
+                       >
+                         Refresh
+                       </Button>
+                     )}
+                   </div>
 
                    {loadingGuidelines ? (
                      <div className="flex flex-col items-center justify-center py-8 text-center">

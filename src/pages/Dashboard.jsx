@@ -143,23 +143,30 @@ export default function Dashboard() {
       </motion.div>
 
       {/* Widgets Grid */}
-      <AnimatePresence>
-        {activeWidgets.map((widgetId, index) => (
+      <div style={{ 
+        display: "grid", 
+        gridTemplateColumns: `repeat(${layoutConfigs[layout].cols}, minmax(0, 1fr))`,
+        gap: "1.5rem",
+        width: "100%"
+      }}>
+        <AnimatePresence>
+          {activeWidgets.map((widgetId) => {
+            const widget = availableWidgets.find(w => w.id === widgetId);
+            if (!widget) return null;
+            
+            return (
           <motion.div
             key={widgetId}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ delay: index * 0.05 }}
+            layout
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
             className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
           >
             <div className="flex items-center justify-between px-6 py-3 border-b border-slate-100 bg-slate-50">
-              <div className="flex items-center gap-2">
-                <GripVertical className="w-4 h-4 text-slate-400" />
-                <h3 className="text-sm font-semibold text-slate-900">
-                  {availableWidgets.find(w => w.id === widgetId)?.name}
-                </h3>
-              </div>
+              <h3 className="text-sm font-semibold text-slate-900">
+                {widget.name}
+              </h3>
               <Button
                 variant="ghost"
                 size="sm"
@@ -211,18 +218,23 @@ export default function Dashboard() {
               )}
               </div>
             </motion.div>
-            ))}
+            );
+          })}
         </AnimatePresence>
       </div>
 
       {activeWidgets.length === 0 && (
-        <div className="text-center py-20">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center py-20"
+        >
           <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <Plus className="w-8 h-8 text-slate-400" />
           </div>
           <h3 className="text-lg font-semibold text-slate-900 mb-2">No widgets added</h3>
           <p className="text-slate-500 mb-4">Add widgets to customize your dashboard</p>
-        </div>
+        </motion.div>
       )}
     </div>
   );

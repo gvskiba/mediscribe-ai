@@ -1288,7 +1288,7 @@ Generated: ${new Date().toLocaleString()}
 
                  {/* Result Analysis Tab */}
                  <TabsContent value="imaging" className="p-6">
-                   <div className="grid grid-cols-2 gap-6">
+                   <div className="space-y-6">
                      {/* Left Column - Imaging Analysis */}
                      <div>
                        <ImagingAnalysis

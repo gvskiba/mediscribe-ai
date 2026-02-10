@@ -98,7 +98,8 @@ export default function Layout({ children, currentPageName }) {
             </div>
           </div>
         </div>
-        <div className="px-4 py-4 border-b border-slate-200">
+        <div className="px-4 py-3 border-b border-slate-200 space-y-3">
+          <GlobalSearchBar />
           <Link
             to={createPageUrl("NewNote")}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-4 py-3 font-semibold text-sm transition-all duration-300 shadow-sm flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]">

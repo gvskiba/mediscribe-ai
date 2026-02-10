@@ -73,11 +73,11 @@ export default function Dashboard() {
       const user = await base44.auth.me();
       const prefs = user?.preferences || {
         dashboard_layout: "2x2",
-        active_widgets: ["quicklinks", "stats", "recentnotes", "news"]
+        active_widgets: ["quicklinks", "recentnotes"]
       };
       setUserPreferences(prefs);
       setLayout(prefs.dashboard_layout);
-      setActiveWidgets(prefs.active_widgets || ["quicklinks", "stats", "recentnotes", "news"]);
+      setActiveWidgets(prefs.active_widgets || ["quicklinks", "recentnotes"]);
     };
     loadPreferences();
   }, []);
@@ -97,8 +97,6 @@ export default function Dashboard() {
   const layoutConfigs = {
     "2x2": { cols: 2, name: "2x2 Grid" },
     "3x3": { cols: 3, name: "3x3 Grid" },
-    "4x4": { cols: 4, name: "4x4 Grid" },
-    "6x6": { cols: 6, name: "6x6 Grid" },
     "horizontal": { cols: 1, name: "Horizontal Stack" }
   };
 
@@ -139,8 +137,8 @@ export default function Dashboard() {
         className="flex items-center justify-between"
       >
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Provider Dashboard</h1>
-          <p className="text-slate-600 mt-1">Customize your clinical workspace</p>
+         <h1 className="text-4xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
+         <p className="text-slate-600 mt-1">Your clinical workspace</p>
         </div>
         
         <div className="flex gap-2">

@@ -210,6 +210,7 @@ Format each as a concise clinical question (similar to the original).`,
   const handleSelectQuery = (query) => {
     setSelectedQuery(query);
     setLatestAnswer(null);
+    trackGuidelineView(query.id);
     generateRelatedGuidelines(query);
   };
 

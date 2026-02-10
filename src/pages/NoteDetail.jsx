@@ -1121,16 +1121,38 @@ Generated: ${new Date().toLocaleString()}
                    </div>
                  </div>
 
-                 {/* Diagnoses with AI Recommendations */}
-                 <DiagnosesWithRecommendations
-                   note={note}
-                   icd10Suggestions={icd10Suggestions}
-                   loadingIcd10={loadingIcd10}
-                   onAddDiagnoses={async (updatedDiagnoses) => {
-                     await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
-                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                   }}
-                 />
+                 {note.status === "draft" && (
+                   <>
+                     {/* Diagnoses Card - Draft */}
+                     {note.diagnoses && Array.isArray(note.diagnoses) && note.diagnoses.length > 0 && (
+                       <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl border border-blue-200 p-5">
+                         <h3 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
+                           <Code className="w-4 h-4" />
+                           Diagnoses ({note.diagnoses.length})
+                         </h3>
+                         <div className="space-y-2 max-h-48 overflow-y-auto">
+                           {note.diagnoses.map((diagnosis, idx) => (
+                             <div key={idx} className="bg-white rounded-lg p-3 border border-blue-100 text-xs text-slate-700">
+                               {diagnosis}
+                             </div>
+                           ))}
+                         </div>
+                       </div>
+                     )}
+                   </>
+                 )}
+
+                 {note.status === "finalized" && (
+                   <DiagnosesWithRecommendations
+                     note={note}
+                     icd10Suggestions={icd10Suggestions}
+                     loadingIcd10={loadingIcd10}
+                     onAddDiagnoses={async (updatedDiagnoses) => {
+                       await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
+                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                     }}
+                   />
+                 )}
 
                  {/* Medications Card */}
                  {note.medications && Array.isArray(note.medications) && note.medications.length > 0 && (

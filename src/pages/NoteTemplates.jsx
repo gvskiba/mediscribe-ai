@@ -884,8 +884,30 @@ Return a JSON structure with:
                 onChange={(sections) => setFormData({ ...formData, sections })}
                 noteType={formData.note_type}
                 specialty={formData.specialty}
+                renderSectionActions={(section, index) => (
+                  <AIInstructionRefinement
+                    currentInstructions={section.ai_instructions}
+                    sectionName={section.name}
+                    onApply={(refinedInstructions) => {
+                      const updatedSections = [...formData.sections];
+                      updatedSections[index].ai_instructions = refinedInstructions;
+                      setFormData({ ...formData, sections: updatedSections });
+                    }}
+                    trigger={({ onClick }) => (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={onClick}
+                        className="gap-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      >
+                        <Wand2 className="w-3 h-3" /> Refine
+                      </Button>
+                    )}
+                  />
+                )}
               />
-              <p className="text-xs text-slate-500 mt-2">Enable/disable sections with the eye icon, configure conditional logic, and use AI suggestions based on note type</p>
+              <p className="text-xs text-slate-500 mt-2">Enable/disable sections with the eye icon, configure conditional logic, refine AI instructions, and use AI suggestions based on note type</p>
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">Global AI Instructions (Optional)</label>

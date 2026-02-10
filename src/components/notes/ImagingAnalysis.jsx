@@ -339,6 +339,33 @@ Format the response in a clear, clinically actionable way.`,
             </div>
           )}
 
+          {/* Add to Note Buttons */}
+          <div className="pt-4 border-t border-cyan-200 space-y-2">
+            <Button
+              onClick={() => handleAddToNote()}
+              className="w-full gap-2 bg-cyan-600 hover:bg-cyan-700 text-white"
+            >
+              <Plus className="w-4 h-4" /> Add All to Assessment
+            </Button>
+            <Button
+              onClick={() => {
+                let planText = `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                planText += `IMAGING RECOMMENDATIONS\n`;
+                planText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+                if (imagingSummary.recommendations?.length > 0) {
+                  imagingSummary.recommendations.forEach((rec) => {
+                    planText += `• ${rec}\n`;
+                  });
+                }
+                onAddToNote(planText);
+              }}
+              variant="outline"
+              className="w-full gap-2 border-cyan-300 hover:bg-cyan-50"
+            >
+              <Plus className="w-4 h-4" /> Add Recommendations to Plan
+            </Button>
+          </div>
+
           {/* Linking Section */}
           <ImagingFindingsLinker
             findings={imagingSummary.key_findings || []}

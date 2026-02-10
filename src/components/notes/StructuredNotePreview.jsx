@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Check, Pill, Stethoscope, ClipboardList, Target, Lightbulb, X, Loader2, ChevronDown, ChevronUp, FileText, Activity, BookOpen, Sparkles, Link, CheckCircle2, Copy, Eye, Search } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
+import { Check, Pill, Stethoscope, ClipboardList, Target, Lightbulb, X, Loader2, ChevronDown, ChevronUp, FileText, Activity, BookOpen, Sparkles, Link, CheckCircle2, Copy, Eye, Search, MoreVertical } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import EditableSection from "./EditableSection";
@@ -315,76 +316,114 @@ FORMATTING RULES (CRITICAL):
       className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
     >
       <div className="p-6 border-b border-slate-100">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-slate-900">AI-Structured Note</h2>
             <p className="text-sm text-slate-500 mt-1">Review and finalize the structured note.</p>
           </div>
           <div className="flex gap-2">
-            <Button 
-              variant="outline"
-              onClick={() => setKnowledgeSearchOpen(true)}
-              className="rounded-xl gap-2 text-blue-600 border-blue-300 hover:bg-blue-50"
-            >
-              <Search className="w-4 h-4" /> Search Knowledge
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => setPreviewOpen(true)}
-              className="rounded-xl gap-2"
-            >
-              <Eye className="w-4 h-4" /> Preview & Copy
-            </Button>
-            {onGenerateEducationMaterials && (
-              <Button 
-                variant="outline"
-                onClick={onGenerateEducationMaterials} 
-                className="rounded-xl gap-2 text-emerald-600 border-emerald-300 hover:bg-emerald-50"
-              >
-                <BookOpen className="w-4 h-4" /> Patient Education
-              </Button>
-            )}
+            {/* AI Actions Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline"
+                  disabled={analyzingHP || generatingAssessmentPlan}
+                  className="rounded-xl gap-2 text-purple-600 border-purple-300 hover:bg-purple-50"
+                >
+                  {(analyzingHP || generatingAssessmentPlan) ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-4 h-4" />
+                  )}
+                  AI Actions
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>AI-Powered Tools</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={handleAnalyzeHP}
+                  disabled={analyzingHP}
+                  className="gap-2 cursor-pointer"
+                >
+                  {analyzingHP ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Stethoscope className="w-4 h-4" />
+                  )}
+                  Analyze H&P
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={handleGenerateAssessmentPlan}
+                  disabled={generatingAssessmentPlan}
+                  className="gap-2 cursor-pointer"
+                >
+                  {generatingAssessmentPlan ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-4 h-4" />
+                  )}
+                  Generate Assessment & Plan
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* More Options Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline"
+                  className="rounded-xl gap-2"
+                >
+                  <MoreVertical className="w-4 h-4" />
+                  More
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Document Actions</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => setKnowledgeSearchOpen(true)}
+                  className="gap-2 cursor-pointer"
+                >
+                  <Search className="w-4 h-4" />
+                  Search Knowledge
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setPreviewOpen(true)}
+                  className="gap-2 cursor-pointer"
+                >
+                  <Eye className="w-4 h-4" />
+                  Preview & Copy
+                </DropdownMenuItem>
+                {onGenerateEducationMaterials && (
+                  <DropdownMenuItem 
+                    onClick={onGenerateEducationMaterials}
+                    className="gap-2 cursor-pointer"
+                  >
+                    <BookOpen className="w-4 h-4" />
+                    Patient Education
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={handleAddSection}
+                  className="gap-2 cursor-pointer"
+                >
+                  <ClipboardList className="w-4 h-4" />
+                  Add Section
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Finalize Button - Keep Prominent */}
             {onFinalize && (
               <Button onClick={onFinalize} className="bg-emerald-600 hover:bg-emerald-700 rounded-xl gap-2">
                 <Check className="w-4 h-4" /> Finalize
               </Button>
             )}
           </div>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline"
-            onClick={handleAnalyzeHP}
-            disabled={analyzingHP}
-            className="rounded-xl gap-2 text-blue-600 border-blue-300 hover:bg-blue-50"
-          >
-            {analyzingHP ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Stethoscope className="w-4 h-4" />
-            )}
-            Analyze H&P
-          </Button>
-          <Button 
-            variant="outline"
-            onClick={handleGenerateAssessmentPlan}
-            disabled={generatingAssessmentPlan}
-            className="rounded-xl gap-2 text-purple-600 border-purple-300 hover:bg-purple-50"
-          >
-            {generatingAssessmentPlan ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Sparkles className="w-4 h-4" />
-            )}
-            Generate Assessment & Plan
-          </Button>
-          <Button 
-            variant="outline"
-            onClick={handleAddSection}
-            className="rounded-xl gap-2 text-slate-600 border-slate-300 hover:bg-slate-50"
-          >
-            <ClipboardList className="w-4 h-4" /> Add Section
-          </Button>
         </div>
       </div>
 

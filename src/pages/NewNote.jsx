@@ -942,6 +942,16 @@ Return specific, actionable medication recommendations based on current clinical
     setPatientHistory(mergedHistory);
   };
 
+  const handleSaveDraft = async () => {
+    const created = await base44.entities.ClinicalNote.create({
+      ...rawData,
+      ...structuredNote,
+      status: "draft"
+    });
+
+    navigate(createPageUrl(`NoteDetail?id=${created.id}`));
+  };
+
   const handleFinalize = async () => {
     const created = await base44.entities.ClinicalNote.create({
       ...rawData,
@@ -1218,6 +1228,8 @@ ${JSON.stringify(structuredNote, null, 2)}`,
               onGenerateGuidelines={() => fetchGuidelineRecommendations(structuredNote)}
               onGenerateICD10={() => generateICD10Suggestions(structuredNote)}
               onGenerateMedications={() => fetchMedicationRecommendations(structuredNote)}
+              onSaveDraft={handleSaveDraft}
+              onFinalize={handleFinalize}
             />
 
             {/* Legacy Components - Hidden but available */}

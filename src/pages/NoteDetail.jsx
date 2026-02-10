@@ -1298,9 +1298,10 @@ Generated: ${new Date().toLocaleString()}
                                    const updatedPlan = (note.plan || "") + planText;
                                    await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
                                    await queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                   toast.success("Guideline added to plan");
                                  } catch (error) {
                                    console.error("Failed to add to plan:", error);
-                                   alert("Failed to add to plan. Please try again.");
+                                   toast.error("Failed to add to plan. Please try again.");
                                  }
                                }}
                                className="gap-1.5 bg-purple-600 hover:bg-purple-700 text-white"

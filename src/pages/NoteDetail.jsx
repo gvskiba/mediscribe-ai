@@ -1586,7 +1586,25 @@ Generated: ${new Date().toLocaleString()}
                  </TabsContent>
 
                  {/* Result Analysis Tab */}
-                 <TabsContent value="imaging" className="p-6">
+                 <TabsContent value="imaging" className="p-6 space-y-6">
+                   <div className="flex gap-3">
+                     <Button
+                       variant="outline"
+                       onClick={() => downloadResultsAnalysis('pdf')}
+                       className="flex-1 rounded-xl gap-2 border-blue-300 hover:bg-blue-50"
+                     >
+                       <Download className="w-4 h-4" />
+                       Download PDF
+                     </Button>
+                     <Button
+                       variant="outline"
+                       onClick={() => downloadResultsAnalysis('text')}
+                       className="flex-1 rounded-xl gap-2 border-slate-300 hover:bg-slate-50"
+                     >
+                       <Download className="w-4 h-4" />
+                       Download Text
+                     </Button>
+                   </div>
                    <div className="space-y-6">
                      {/* Left Column - Imaging Analysis */}
                      <div>

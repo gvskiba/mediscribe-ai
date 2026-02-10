@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "../utils";
+import { base44 } from "@/api/base44Client";
 import { FileText, BookOpen, Calculator, Layers, FileCode, X, Plus, GripVertical, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";

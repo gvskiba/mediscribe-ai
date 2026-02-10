@@ -1958,8 +1958,8 @@ Generated: ${new Date().toLocaleString()}
                )}
              </div>
            </TabsContent>
-         </Tabs>
-       </motion.div>
+           </Tabs>
+           </motion.div>
 
 
        </div>

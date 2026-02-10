@@ -432,26 +432,6 @@ FORMATTING RULES (CRITICAL):
       </div>
 
       <div className="p-6 space-y-6">
-        {/* SOAP Section Headers */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 border border-blue-200">
-            <p className="text-xs font-semibold text-blue-900">S</p>
-            <p className="text-xs text-blue-800 mt-1">Subjective</p>
-          </div>
-          <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-lg p-3 border border-teal-200">
-            <p className="text-xs font-semibold text-teal-900">O</p>
-            <p className="text-xs text-teal-800 mt-1">Objective</p>
-          </div>
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 border border-purple-200">
-            <p className="text-xs font-semibold text-purple-900">A</p>
-            <p className="text-xs text-purple-800 mt-1">Assessment</p>
-          </div>
-          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3 border border-green-200">
-            <p className="text-xs font-semibold text-green-900">P</p>
-            <p className="text-xs text-green-800 mt-1">Plan</p>
-          </div>
-        </div>
-
         {/* AI-Powered Guideline Recommendations */}
         {(loadingGuidelines || (guidelineRecommendations.length > 0 && showGuidelines)) && (
           <motion.div

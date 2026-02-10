@@ -458,6 +458,7 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
   let filteredQueries = semanticResults !== null ? semanticResults : pastQueries;
   
   filteredQueries = filteredQueries.filter(query => {
+    if (showSavedOnly && !query.is_favorite) return false;
     if (filterCategory !== "all" && query.category !== filterCategory) return false;
     if (filterConfidence !== "all" && query.confidence_level !== filterConfidence) return false;
     

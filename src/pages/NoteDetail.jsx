@@ -1290,50 +1290,85 @@ Generated: ${new Date().toLocaleString()}
 
                  {/* Imaging Tab */}
                  <TabsContent value="imaging" className="p-6 space-y-6">
-                 <div>
-                 <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                 <ImageIcon className="w-5 h-5 text-cyan-600" />
-                 Imaging Results
-                 </h3>
-                 <ImagingAnalysis
-                   noteId={noteId}
-                   onAddToNote={async (imagingText, linkedFindings) => {
-                     try {
-                       const updates = {};
+                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                     <ImagingAnalysis
+                       noteId={noteId}
+                       onAddToNote={async (imagingText, linkedFindings) => {
+                         try {
+                           const updates = {};
 
-                       // Add imaging text to assessment (always added)
-                       updates.assessment = (note.assessment || "") + imagingText;
+                           // Add imaging text to assessment (always added)
+                           updates.assessment = (note.assessment || "") + imagingText;
 
-                       // If findings are linked to other sections, add them there too
-                       if (linkedFindings && Object.keys(linkedFindings).length > 0) {
-                         Object.entries(linkedFindings).forEach(([findingKey, sections]) => {
-                           sections.forEach((sectionId) => {
-                             const fieldMap = {
-                               assessment: "assessment",
-                               plan: "plan",
-                               history_of_present_illness: "history_of_present_illness",
-                             };
+                           // If findings are linked to other sections, add them there too
+                           if (linkedFindings && Object.keys(linkedFindings).length > 0) {
+                             Object.entries(linkedFindings).forEach(([findingKey, sections]) => {
+                               sections.forEach((sectionId) => {
+                                 const fieldMap = {
+                                   assessment: "assessment",
+                                   plan: "plan",
+                                   history_of_present_illness: "history_of_present_illness",
+                                 };
 
-                             if (fieldMap[sectionId]) {
-                               const sectionText = `\n\n[Imaging Finding] ${imagingText.split("\n")[0]}`;
-                               updates[fieldMap[sectionId]] =
-                                 (updates[fieldMap[sectionId]] || note[fieldMap[sectionId]] || "") +
-                                 sectionText;
-                             }
+                                 if (fieldMap[sectionId]) {
+                                   const sectionText = `\n\n[Imaging Finding] ${imagingText.split("\n")[0]}`;
+                                   updates[fieldMap[sectionId]] =
+                                     (updates[fieldMap[sectionId]] || note[fieldMap[sectionId]] || "") +
+                                     sectionText;
+                                 }
+                               });
+                             });
+                           }
+
+                           await base44.entities.ClinicalNote.update(noteId, updates);
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                           alert("Imaging summary added to clinical note");
+                         } catch (error) {
+                           console.error("Failed to add imaging to note:", error);
+                           alert("Failed to add imaging. Please try again.");
+                         }
+                       }}
+                     />
+
+                     <LabsAnalysis
+                       noteId={noteId}
+                       onAddToNote={async (labsText) => {
+                         try {
+                           const updatedAssessment = (note.assessment || "") + labsText;
+                           await base44.entities.ClinicalNote.update(noteId, { 
+                             assessment: updatedAssessment
                            });
-                         });
-                       }
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                           alert("Lab summary added to clinical note");
+                         } catch (error) {
+                           console.error("Failed to add labs to note:", error);
+                           alert("Failed to add labs. Please try again.");
+                         }
+                       }}
+                     />
+                   </div>
+                 </TabsContent>
 
-                       await base44.entities.ClinicalNote.update(noteId, updates);
-                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                       alert("Imaging summary added to clinical note");
-                     } catch (error) {
-                       console.error("Failed to add imaging to note:", error);
-                       alert("Failed to add imaging. Please try again.");
-                     }
-                   }}
-                 />
-                 </div>
+                 {/* Labs Tab */}
+                 <TabsContent value="labs" className="p-6 space-y-6">
+                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                     <LabsAnalysis
+                       noteId={noteId}
+                       onAddToNote={async (labsText) => {
+                         try {
+                           const updatedAssessment = (note.assessment || "") + labsText;
+                           await base44.entities.ClinicalNote.update(noteId, { 
+                             assessment: updatedAssessment
+                           });
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                           alert("Lab summary added to clinical note");
+                         } catch (error) {
+                           console.error("Failed to add labs to note:", error);
+                           alert("Failed to add labs. Please try again.");
+                         }
+                       }}
+                     />
+                   </div>
                  </TabsContent>
 
                  {/* Metadata Tab */}

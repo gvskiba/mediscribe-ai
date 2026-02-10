@@ -134,27 +134,16 @@ Format each as a concise, actionable clinical question.`,
       <GuidelineAnswer query={guideline} onRate={handleRate} />
 
       {/* AI Summary */}
-      {summary && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl border border-emerald-100 p-6"
-        >
-          <div className="flex items-start gap-3">
-            <div className="flex-1">
-              <h3 className="text-sm font-semibold text-slate-900 mb-2">Key Takeaway</h3>
-              {loadingSummary ? (
-                <div className="flex items-center gap-2 text-slate-500">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm">Generating summary...</span>
-                </div>
-              ) : (
-                <p className="text-sm text-slate-700 leading-relaxed">{summary}</p>
-              )}
-            </div>
-          </div>
-        </motion.div>
-      )}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <GuidlineSummaryCard 
+          summary={summary}
+          confidenceLevel={guideline?.confidence_level}
+          isLoading={loadingSummary}
+        />
+      </motion.div>
 
       {/* AI-Powered Related Guidelines */}
       <motion.div

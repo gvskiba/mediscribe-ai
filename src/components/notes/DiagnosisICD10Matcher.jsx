@@ -10,6 +10,9 @@ export default function DiagnosisICD10Matcher({ diagnoses = [], onCodesGenerated
   const [loading, setLoading] = useState(false);
   const [generatedCodes, setGeneratedCodes] = useState([]);
 
+  // Ensure diagnoses is always an array
+  const diagnosisArray = Array.isArray(diagnoses) ? diagnoses : (diagnoses ? [diagnoses] : []);
+
   const handleDiagnosisToggle = (diagnosis) => {
     setSelectedDiagnoses((prev) =>
       prev.includes(diagnosis)
@@ -75,8 +78,8 @@ Format as a JSON array where each object has: code, description, diagnosis, conf
     <div className="space-y-4">
       {/* Diagnosis Selection */}
       <div className="space-y-2 max-h-48 overflow-y-auto bg-white rounded-lg border border-blue-100 p-4">
-        {diagnoses.length > 0 ? (
-          diagnoses.map((diagnosis, idx) => (
+        {diagnosisArray.length > 0 ? (
+          diagnosisArray.map((diagnosis, idx) => (
             <div key={idx} className="flex items-center gap-2">
               <Checkbox
                 id={`diag-${idx}`}

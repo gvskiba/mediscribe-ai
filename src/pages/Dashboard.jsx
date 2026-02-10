@@ -159,15 +159,15 @@ export default function Dashboard() {
                   <p className="text-sm font-semibold text-slate-900 mb-3">Layout</p>
                   <div className="grid grid-cols-2 gap-2">
                     {Object.entries(layoutConfigs).map(([key, config]) => (
-                      <Button
-                        key={key}
-                        variant={layout === key ? "default" : "outline"}
-                        className="text-xs h-9"
-                        onClick={() => setLayout(key)}
-                      >
-                        {config.name}
-                      </Button>
-                    ))}
+                        <Button
+                          key={key}
+                          variant={layout === key ? "default" : "outline"}
+                          className="text-xs h-9"
+                          onClick={() => handleLayoutChange(key)}
+                        >
+                          {config.name}
+                        </Button>
+                      ))}
                   </div>
                 </div>
                 <div className="border-t pt-4">

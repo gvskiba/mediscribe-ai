@@ -42,7 +42,7 @@ export default function NoteRevisionHistory({ noteId, onRestore }) {
   return (
     <Dialog open={openDialog} onOpenChange={setOpenDialog}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2 rounded-lg">
+        <Button variant="outline" className="gap-2 rounded-xl border-amber-300 text-amber-700 hover:bg-amber-50 hover:border-amber-400 transition-all">
           <History className="w-4 h-4" /> View Revisions ({revisions.length})
         </Button>
       </DialogTrigger>
@@ -193,7 +193,7 @@ export default function NoteRevisionHistory({ noteId, onRestore }) {
                         onRestore?.(revision);
                         setOpenDialog(false);
                       }}
-                      className="w-full gap-2 bg-purple-600 hover:bg-purple-700"
+                      className="w-full gap-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white rounded-xl shadow-lg shadow-purple-500/30 font-semibold transition-all"
                       size="sm"
                     >
                       Restore This Version

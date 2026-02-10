@@ -25,6 +25,8 @@ export default function EditableSection({
   const [isReanalyzing, setIsReanalyzing] = useState(false);
   const [snippetPickerOpen, setSnippetPickerOpen] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [useRichText, setUseRichText] = useState(false);
   const textareaRef = useRef(null);
 
   useEffect(() => {

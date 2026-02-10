@@ -1062,7 +1062,7 @@ Generated: ${new Date().toLocaleString()}
                  </div>
 
                  {/* Add Diagnoses to Assessment */}
-                 {note.diagnoses && note.diagnoses.length > 0 && (
+                 {note.diagnoses && Array.isArray(note.diagnoses) && note.diagnoses.length > 0 && (
                    <div className="bg-white rounded-lg border border-slate-200 p-5">
                      <div className="flex items-center justify-between mb-4">
                        <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">

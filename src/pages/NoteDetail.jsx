@@ -113,17 +113,19 @@ export default function NoteDetail() {
   const finalizeMutation = useMutation({
     mutationFn: async () => {
       await base44.entities.ClinicalNote.update(noteId, { status: "finalized" });
-      // Auto-link guidelines after finalization
-      setTimeout(() => linkGuidelinesToNote(), 500);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["note", noteId] });
       // Automatically fetch ICD-10 and guidelines after finalization
-      setTimeout(() => {
-        generateICD10Suggestions();
-        fetchGuidelineRecommendations();
-      }, 500);
+      setTimeout(async () => {
+        await generateICD10Suggestions();
+        await fetchGuidelineRecommendations();
+      }, 1000);
     },
+    onError: (error) => {
+      console.error("Finalization failed:", error);
+      toast.error("Failed to finalize note");
+    }
   });
 
   const linkGuidelinesToNote = async () => {

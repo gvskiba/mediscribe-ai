@@ -266,8 +266,9 @@ Format each as a concise clinical question (similar to the original).`,
   };
 
   const handleCompareGuidelines = async (focusAspects = ["medications", "diagnostics", "treatment", "evidence"]) => {
-    if (selectedForCompare.length < 2) return;
+    if (selectedForCompareIds.length < 2) return;
     
+    const selectedGuides = pastQueries.filter(q => selectedForCompareIds.includes(q.id));
     setComparing(true);
     if (!showCompare) setShowCompare(true);
     setComparison(null);
@@ -286,7 +287,7 @@ Format each as a concise clinical question (similar to the original).`,
         prompt: `You are a clinical evidence expert with expertise in guideline analysis. Compare these clinical guidelines with deep focus on the selected aspects.
 
 GUIDELINES TO COMPARE:
-${selectedForCompare.map((g, i) => `
+${selectedGuides.map((g, i) => `
 GUIDELINE ${i + 1}:
 Question: ${g.question}
 Category: ${g.category}

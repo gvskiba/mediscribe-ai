@@ -807,23 +807,48 @@ Return a JSON structure with:
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-sm font-medium text-slate-700">Note Sections</label>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={generateSectionSuggestions}
-                    disabled={loadingSectionSuggestions || sectionSuggestions.length > 0}
-                    className="rounded-lg gap-2 text-xs"
-                  >
-                    {loadingSectionSuggestions ? (
-                      <><Loader2 className="w-3 h-3 animate-spin" /> Loading...</>
-                    ) : sectionSuggestions.length > 0 ? (
-                      <><Sparkles className="w-3 h-3" /> Suggestions Below</>
-                    ) : (
-                      <><Sparkles className="w-3 h-3" /> Suggest Sections</>
+                <div className="flex flex-wrap gap-2">
+                  <AISectionGenerator
+                    templateId={editingTemplate?.id}
+                    onSectionGenerated={(section) => {
+                      setFormData({ ...formData, sections: [...formData.sections, section] });
+                    }}
+                    trigger={({ onClick }) => (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={onClick}
+                        className="rounded-lg gap-2 text-xs"
+                      >
+                        <Sparkles className="w-3 h-3" /> Generate Sections
+                      </Button>
                     )}
-                  </Button>
+                  />
+                  <SectionOrganizationSuggestions
+                    sections={formData.sections}
+                    noteType={formData.note_type}
+                    specialty={formData.specialty}
+                    onApplyOrdering={(newOrder) => {
+                      const updatedSections = formData.sections.map(section => {
+                        const orderItem = newOrder.find(o => o.name === section.name);
+                        return orderItem ? { ...section, order: orderItem.order } : section;
+                      });
+                      setFormData({ ...formData, sections: updatedSections });
+                    }}
+                    trigger={({ onClick }) => (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={onClick}
+                        disabled={formData.sections.length === 0}
+                        className="rounded-lg gap-2 text-xs"
+                      >
+                        <GitBranch className="w-3 h-3" /> Optimize Order
+                      </Button>
+                    )}
+                  />
                   <Button
                     type="button"
                     variant="outline"

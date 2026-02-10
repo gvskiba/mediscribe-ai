@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   FileText, 
   Code, 
@@ -15,7 +16,8 @@ import {
   BookOpen,
   Loader2,
   Eye,
-  Plus
+  Plus,
+  Edit3
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -45,6 +47,7 @@ export default function StructuredNoteReview({
   const [finalizing, setFinalizing] = useState(false);
   const [generatingSummary, setGeneratingSummary] = useState(false);
   const [aiSummary, setAiSummary] = useState(null);
+  const [editingField, setEditingField] = useState(null);
 
   const handleFinalize = async () => {
     setFinalizing(true);
@@ -134,9 +137,11 @@ Provide:
         <div className="flex items-start justify-between mb-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-900">
-              {structuredNote.patient_name || rawData?.patient_name || "New Clinical Note"}
+              Patient Worksheet
             </h1>
-            <p className="text-slate-500 mt-1">Review and finalize your clinical note</p>
+            <p className="text-slate-500 mt-1">
+              {structuredNote.patient_name || rawData?.patient_name || "New Patient"} • Review and edit before finalizing
+            </p>
           </div>
           <Badge className="bg-amber-100 text-amber-700 border-amber-200">
             Draft
@@ -220,70 +225,203 @@ Provide:
               {/* Chief Complaint */}
               {structuredNote.chief_complaint && (
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900 mb-2">Chief Complaint</h3>
-                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                    <p className="text-slate-700">{structuredNote.chief_complaint}</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-slate-900">Chief Complaint</h3>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setEditingField(editingField === "chief_complaint" ? null : "chief_complaint")}
+                      className="gap-1"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      {editingField === "chief_complaint" ? "Done" : "Edit"}
+                    </Button>
                   </div>
+                  {editingField === "chief_complaint" ? (
+                    <Textarea
+                      value={structuredNote.chief_complaint}
+                      onChange={(e) => onUpdate("chief_complaint", e.target.value)}
+                      className="min-h-[100px] border-slate-300"
+                    />
+                  ) : (
+                    <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 hover:border-slate-300 cursor-pointer transition-colors" onClick={() => setEditingField("chief_complaint")}>
+                      <p className="text-slate-700">{structuredNote.chief_complaint}</p>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* HPI */}
               {structuredNote.history_of_present_illness && (
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900 mb-2">History of Present Illness</h3>
-                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                    <p className="text-slate-700 whitespace-pre-wrap">{structuredNote.history_of_present_illness}</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-slate-900">History of Present Illness</h3>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setEditingField(editingField === "history_of_present_illness" ? null : "history_of_present_illness")}
+                      className="gap-1"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      {editingField === "history_of_present_illness" ? "Done" : "Edit"}
+                    </Button>
                   </div>
+                  {editingField === "history_of_present_illness" ? (
+                    <Textarea
+                      value={structuredNote.history_of_present_illness}
+                      onChange={(e) => onUpdate("history_of_present_illness", e.target.value)}
+                      className="min-h-[200px] border-slate-300"
+                    />
+                  ) : (
+                    <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 hover:border-slate-300 cursor-pointer transition-colors" onClick={() => setEditingField("history_of_present_illness")}>
+                      <p className="text-slate-700 whitespace-pre-wrap">{structuredNote.history_of_present_illness}</p>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Medical History */}
               {structuredNote.medical_history && (
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900 mb-2">Medical History</h3>
-                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                    <p className="text-slate-700 whitespace-pre-wrap">{structuredNote.medical_history}</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-slate-900">Medical History</h3>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setEditingField(editingField === "medical_history" ? null : "medical_history")}
+                      className="gap-1"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      {editingField === "medical_history" ? "Done" : "Edit"}
+                    </Button>
                   </div>
+                  {editingField === "medical_history" ? (
+                    <Textarea
+                      value={structuredNote.medical_history}
+                      onChange={(e) => onUpdate("medical_history", e.target.value)}
+                      className="min-h-[150px] border-slate-300"
+                    />
+                  ) : (
+                    <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 hover:border-slate-300 cursor-pointer transition-colors" onClick={() => setEditingField("medical_history")}>
+                      <p className="text-slate-700 whitespace-pre-wrap">{structuredNote.medical_history}</p>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* ROS */}
               {structuredNote.review_of_systems && (
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900 mb-2">Review of Systems</h3>
-                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                    <p className="text-slate-700 whitespace-pre-wrap">{structuredNote.review_of_systems}</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-slate-900">Review of Systems</h3>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setEditingField(editingField === "review_of_systems" ? null : "review_of_systems")}
+                      className="gap-1"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      {editingField === "review_of_systems" ? "Done" : "Edit"}
+                    </Button>
                   </div>
+                  {editingField === "review_of_systems" ? (
+                    <Textarea
+                      value={structuredNote.review_of_systems}
+                      onChange={(e) => onUpdate("review_of_systems", e.target.value)}
+                      className="min-h-[150px] border-slate-300"
+                    />
+                  ) : (
+                    <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 hover:border-slate-300 cursor-pointer transition-colors" onClick={() => setEditingField("review_of_systems")}>
+                      <p className="text-slate-700 whitespace-pre-wrap">{structuredNote.review_of_systems}</p>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Physical Exam */}
               {structuredNote.physical_exam && (
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900 mb-2">Physical Examination</h3>
-                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                    <p className="text-slate-700 whitespace-pre-wrap">{structuredNote.physical_exam}</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-slate-900">Physical Examination</h3>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setEditingField(editingField === "physical_exam" ? null : "physical_exam")}
+                      className="gap-1"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      {editingField === "physical_exam" ? "Done" : "Edit"}
+                    </Button>
                   </div>
+                  {editingField === "physical_exam" ? (
+                    <Textarea
+                      value={structuredNote.physical_exam}
+                      onChange={(e) => onUpdate("physical_exam", e.target.value)}
+                      className="min-h-[150px] border-slate-300"
+                    />
+                  ) : (
+                    <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 hover:border-slate-300 cursor-pointer transition-colors" onClick={() => setEditingField("physical_exam")}>
+                      <p className="text-slate-700 whitespace-pre-wrap">{structuredNote.physical_exam}</p>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Assessment */}
               {structuredNote.assessment && (
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900 mb-2">Assessment</h3>
-                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                    <p className="text-slate-700 whitespace-pre-wrap">{structuredNote.assessment}</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-slate-900">Assessment</h3>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setEditingField(editingField === "assessment" ? null : "assessment")}
+                      className="gap-1"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      {editingField === "assessment" ? "Done" : "Edit"}
+                    </Button>
                   </div>
+                  {editingField === "assessment" ? (
+                    <Textarea
+                      value={structuredNote.assessment}
+                      onChange={(e) => onUpdate("assessment", e.target.value)}
+                      className="min-h-[150px] border-slate-300"
+                    />
+                  ) : (
+                    <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 hover:border-slate-300 cursor-pointer transition-colors" onClick={() => setEditingField("assessment")}>
+                      <p className="text-slate-700 whitespace-pre-wrap">{structuredNote.assessment}</p>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Plan */}
               {structuredNote.plan && (
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900 mb-2">Plan</h3>
-                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                    <p className="text-slate-700 whitespace-pre-wrap">{structuredNote.plan}</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-slate-900">Plan</h3>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setEditingField(editingField === "plan" ? null : "plan")}
+                      className="gap-1"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      {editingField === "plan" ? "Done" : "Edit"}
+                    </Button>
                   </div>
+                  {editingField === "plan" ? (
+                    <Textarea
+                      value={structuredNote.plan}
+                      onChange={(e) => onUpdate("plan", e.target.value)}
+                      className="min-h-[200px] border-slate-300"
+                    />
+                  ) : (
+                    <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 hover:border-slate-300 cursor-pointer transition-colors" onClick={() => setEditingField("plan")}>
+                      <p className="text-slate-700 whitespace-pre-wrap">{structuredNote.plan}</p>
+                    </div>
+                  )}
                 </div>
               )}
 

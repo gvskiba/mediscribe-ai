@@ -101,6 +101,20 @@ export default function Dashboard() {
     setActiveWidgets(prev => prev.filter(id => id !== widgetId));
   };
 
+  const savePreferences = async () => {
+    try {
+      await base44.auth.updateMe({
+        preferences: {
+          ...userPreferences,
+          dashboard_layout: layout,
+          active_widgets: activeWidgets
+        }
+      });
+    } catch (error) {
+      console.error("Failed to save preferences:", error);
+    }
+  };
+
   const handleDragEnd = (result) => {
     const { source, destination } = result;
     if (!destination) return;

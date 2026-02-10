@@ -253,52 +253,52 @@ Include detailed, actionable recommendations with:
    - Red flags requiring urgent evaluation
 
 Keep recommendations specific, actionable, and evidence-based.`,
-            add_context_from_internet: true,
-            response_json_schema: {
-              type: "object",
-              properties: {
-                summary: { type: "string" },
-                diagnostic_workup: { 
-                  type: "array", 
-                  items: { 
+              add_context_from_internet: true,
+              response_json_schema: {
+                type: "object",
+                properties: {
+                  summary: { type: "string" },
+                  diagnostic_workup: { 
+                    type: "array", 
+                    items: { 
+                      type: "object",
+                      properties: {
+                        test: { type: "string" },
+                        indication: { type: "string" },
+                        timing: { type: "string" }
+                      }
+                    }
+                  },
+                  medications: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        name: { type: "string" },
+                        dosing: { type: "string" },
+                        indication: { type: "string" },
+                        duration: { type: "string" },
+                        monitoring: { type: "string" }
+                      }
+                    }
+                  },
+                  key_recommendations: { 
+                    type: "array", 
+                    items: { type: "string" },
+                    description: "Concise, actionable recommendations as bullet points without any inline citations or reference numbers"
+                  },
+                  followup: {
                     type: "object",
                     properties: {
-                      test: { type: "string" },
-                      indication: { type: "string" },
-                      timing: { type: "string" }
+                      timing: { type: "string" },
+                      parameters: { type: "array", items: { type: "string" } },
+                      red_flags: { type: "array", items: { type: "string" } }
                     }
-                  }
-                },
-                medications: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      name: { type: "string" },
-                      dosing: { type: "string" },
-                      indication: { type: "string" },
-                      duration: { type: "string" },
-                      monitoring: { type: "string" }
-                    }
-                  }
-                },
-                key_recommendations: { 
-                  type: "array", 
-                  items: { type: "string" },
-                  description: "Concise, actionable recommendations as bullet points without any inline citations or reference numbers"
-                },
-                followup: {
-                  type: "object",
-                  properties: {
-                    timing: { type: "string" },
-                    parameters: { type: "array", items: { type: "string" } },
-                    red_flags: { type: "array", items: { type: "string" } }
-                  }
-                },
-                sources: { type: "array", items: { type: "string" } }
+                  },
+                  sources: { type: "array", items: { type: "string" } }
+                }
               }
-            }
-          });
+            });
 
             return { 
               condition: cleanCondition, 

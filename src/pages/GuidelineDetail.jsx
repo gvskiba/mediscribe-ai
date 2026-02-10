@@ -8,6 +8,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Sparkles, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import GuidelineAnswer from "../components/guidelines/GuidelineAnswer";
+import GuidlineSummaryCard from "../components/guidelines/GuidlineSummaryCard";
+import { generateGuidlineSummary } from "../components/guidelines/AutoSummaryGenerator";
+import { trackGuidelineView } from "../components/guidelines/GuidelineViewTracker";
 
 export default function GuidelineDetail() {
   const urlParams = new URLSearchParams(window.location.search);

@@ -477,10 +477,10 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
   });
 
   React.useEffect(() => {
-    if (viewMode === "browse" && filteredQueries.length > 0 && !latestAnswer && !selectedQuery) {
+    if (viewMode === "browse" && filteredQueries.length > 0 && !latestAnswer && !selectedQuery && !generatingSummaries) {
       generateSummariesForGuidelines(filteredQueries);
     }
-  }, [viewMode, filteredQueries.length, latestAnswer, selectedQuery, pastQueries]);
+  }, [viewMode, filteredQueries, latestAnswer, selectedQuery, generatingSummaries]);
 
   const statsData = [
     { label: "Total Queries", value: pastQueries.length, icon: BookOpen, color: "blue" },

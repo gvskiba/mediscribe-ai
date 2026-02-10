@@ -13,9 +13,61 @@ export default function ImagingAnalysis({ noteId, onAddToNote }) {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
 
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    setUploadingFile(true);
+    setError(null);
+
+    try {
+      for (const file of files) {
+        const uploadedFile = await base44.integrations.Core.UploadFile({ file });
+
+        // Extract text from the uploaded file
+        let extractedText = "";
+        try {
+          const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
+            file_url: uploadedFile.file_url,
+            json_schema: {
+              type: "object",
+              properties: {
+                text: { type: "string", description: "All text content from the file" },
+              },
+            },
+          });
+          extractedText = extracted.output?.text || "";
+        } catch (extractErr) {
+          console.warn("Could not extract text automatically, file uploaded but may need manual review");
+        }
+
+        setUploadedFiles((prev) => [
+          ...prev,
+          {
+            name: file.name,
+            url: uploadedFile.file_url,
+            extractedText,
+            type: file.type,
+          },
+        ]);
+
+        // Auto-add extracted text to imaging results
+        if (extractedText) {
+          setImagingResults((prev) => `${prev}\n\n[From: ${file.name}]\n${extractedText}`);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to upload file:", err);
+      setError("Failed to upload file. Please try again.");
+    } finally {
+      setUploadingFile(false);
+      e.target.value = ""; // Reset file input
+    }
+  };
+
   const handleAnalyzeImaging = async () => {
     if (!imagingResults.trim()) {
-      setError("Please paste imaging results first");
+      setError("Please paste imaging results or upload files first");
       return;
     }
 

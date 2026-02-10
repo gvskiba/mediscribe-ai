@@ -339,13 +339,13 @@ Format the response in a clear, clinically actionable way.`,
             </div>
           )}
 
-          {/* Add to Note Button */}
-          <Button
-            onClick={handleAddToNote}
-            className="w-full mt-4 gap-2 bg-cyan-600 hover:bg-cyan-700 text-white"
-          >
-            <Plus className="w-4 h-4" /> Add to Clinical Note
-          </Button>
+          {/* Linking Section */}
+          <ImagingFindingsLinker
+            findings={imagingSummary.key_findings || []}
+            onLinkFindings={(linkedFindings) => {
+              handleAddToNote(linkedFindings);
+            }}
+          />
         </div>
       )}
 

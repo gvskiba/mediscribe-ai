@@ -199,6 +199,26 @@ Format each as a concise clinical question (similar to the original).`,
     },
   });
 
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: ({ queryId, isFavorite }) => 
+      base44.entities.GuidelineQuery.update(queryId, { is_favorite: isFavorite }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["queries"] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (queryId) => 
+      base44.entities.GuidelineQuery.delete(queryId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["queries"] });
+      if (selectedQuery) {
+        setSelectedQuery(null);
+        setLatestAnswer(null);
+      }
+    },
+  });
+
   const handleRate = async (queryId, rating) => {
     await rateMutation.mutateAsync({ queryId, rating });
     if (latestAnswer && latestAnswer.id === queryId) {

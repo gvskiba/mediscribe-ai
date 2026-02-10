@@ -241,6 +241,35 @@ export default function EditableSection({
         <div className="space-y-2">
            {type === "textarea" ? (
              <>
+               <div className="flex gap-1 mb-2">
+                 <Button
+                   size="sm"
+                   variant="outline"
+                   onClick={() => applyFormatting("bold")}
+                   className="h-8 w-8 p-0 rounded-lg"
+                   title="Bold"
+                 >
+                   <Bold className="w-4 h-4" />
+                 </Button>
+                 <Button
+                   size="sm"
+                   variant="outline"
+                   onClick={() => applyFormatting("italic")}
+                   className="h-8 w-8 p-0 rounded-lg"
+                   title="Italic"
+                 >
+                   <Italic className="w-4 h-4" />
+                 </Button>
+                 <Button
+                   size="sm"
+                   variant="outline"
+                   onClick={() => applyFormatting("bullet")}
+                   className="h-8 w-8 p-0 rounded-lg"
+                   title="Bullet points"
+                 >
+                   <List className="w-4 h-4" />
+                 </Button>
+               </div>
                <Textarea
                    ref={textareaRef}
                    value={editValue || ""}
@@ -260,8 +289,8 @@ export default function EditableSection({
                    onApplySuggestion={handleApplySuggestion}
                  />
                )}
-               </>
-               ) : type === "array" ? (
+             </>
+           ) : type === "array" ? (
             <div className="space-y-2">
               {(Array.isArray(editValue) ? editValue : []).map((item, index) => (
                 <div key={index} className="flex gap-2 group">

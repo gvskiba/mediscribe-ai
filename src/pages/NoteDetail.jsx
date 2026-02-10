@@ -1089,10 +1089,7 @@ Generated: ${new Date().toLocaleString()}
                    medicationRecommendations={[]}
                    loadingMedications={false}
                  />
-               </div>
-
-               {/* Sidebar - Right Column (1/3) */}
-               <div className="space-y-4">
+                 </div>
                  {note.status === "draft" && (
                    <>
                      {/* Diagnoses Card - Draft */}

@@ -216,7 +216,7 @@ export default function Dashboard() {
                 <div className="p-6">
                   {widgetId === "quicklinks" && (
                     <div className="space-y-4">
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                      <div className="flex flex-col gap-3">
                         {quickLinks.map((link) => {
                           const Icon = link.icon;
                           return (

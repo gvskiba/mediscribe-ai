@@ -693,11 +693,12 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                     </Button>
                   </div>
 
-                  <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl border border-blue-200">
+                  <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl border border-blue-200" onClick={(e) => e.stopPropagation()}>
                     <input 
                       type="checkbox"
                       checked={showSavedOnly}
                       onChange={(e) => setShowSavedOnly(e.target.checked)}
+                      onClick={(e) => e.stopPropagation()}
                       id="saved-only"
                       className="rounded w-4 h-4 cursor-pointer"
                     />

@@ -17,7 +17,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookOpen, Search, Loader2, Sparkles, Filter, ArrowLeftRight, ChevronDown } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Guidelines() {
   const [isLoading, setIsLoading] = useState(false);

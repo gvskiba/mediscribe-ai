@@ -846,8 +846,8 @@ Generated: ${new Date().toLocaleString()}
              <TabsTrigger value="imaging" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 px-3">
                Result Analysis
              </TabsTrigger>
-             <TabsTrigger value="metadata" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 px-3">
-               Metadata
+             <TabsTrigger value="diagnoses" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 px-3">
+               Diagnoses
              </TabsTrigger>
            </TabsList>
 

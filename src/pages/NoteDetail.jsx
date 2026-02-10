@@ -1284,8 +1284,34 @@ Generated: ${new Date().toLocaleString()}
                  )}
                  </TabsContent>
 
-           {/* Metadata Tab */}
-           <TabsContent value="metadata" className="p-6">
+                 {/* Imaging Tab */}
+                 <TabsContent value="imaging" className="p-6 space-y-6">
+                 <div>
+                 <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                 <ImageIcon className="w-5 h-5 text-cyan-600" />
+                 Imaging Results
+                 </h3>
+                 <ImagingAnalysis
+                 noteId={noteId}
+                 onAddToNote={async (imagingText) => {
+                   try {
+                     const updatedAssessment = (note.assessment || "") + imagingText;
+                     await base44.entities.ClinicalNote.update(noteId, { 
+                       assessment: updatedAssessment
+                     });
+                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                     alert("Imaging summary added to assessment section");
+                   } catch (error) {
+                     console.error("Failed to add imaging to note:", error);
+                     alert("Failed to add imaging. Please try again.");
+                   }
+                 }}
+                 />
+                 </div>
+                 </TabsContent>
+
+                 {/* Metadata Tab */}
+                 <TabsContent value="metadata" className="p-6">
              <div className="flex gap-3 mb-6">
                <Button
                  variant="outline"

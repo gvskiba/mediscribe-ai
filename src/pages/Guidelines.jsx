@@ -589,7 +589,10 @@ Keep total response under 100 words.`,
       )}
 
       {viewMode === "search" && (
-        <GuidelineSearchBar onSubmit={handleSubmit} isLoading={isLoading} />
+        <>
+          <PersonalizedRecommendations />
+          <GuidelineSearchBar onSubmit={handleSubmit} isLoading={isLoading} />
+        </>
       )}
 
       {isLoading && (

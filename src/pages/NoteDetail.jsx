@@ -216,6 +216,7 @@ Provide:
       }
 
       if (conditions.length === 0) {
+        console.warn("No diagnoses available for guidelines");
         setLoadingGuidelines(false);
         return;
       }
@@ -223,8 +224,9 @@ Provide:
       const recommendations = await Promise.all(
         conditions.slice(0, 2).map(async (condition) => {
           const cleanCondition = condition.replace(/\(.*?\)/g, "").trim();
-          const result = await base44.integrations.Core.InvokeLLM({
-            prompt: `Provide comprehensive evidence-based guideline treatment plan for: ${cleanCondition}
+          try {
+            const result = await base44.integrations.Core.InvokeLLM({
+              prompt: `Provide comprehensive evidence-based guideline treatment plan for: ${cleanCondition}
 
 Include detailed, actionable recommendations with:
 

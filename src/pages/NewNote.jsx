@@ -1109,7 +1109,7 @@ ${JSON.stringify(structuredNote, null, 2)}`,
                           </svg>
                         </div>
                         <div className="space-y-2">
-                          <h2 className="text-2xl font-bold text-white">Patient Intake Form</h2>
+                          <h2 className="text-2xl font-bold text-white">AI Assisted Form</h2>
                           <p className="text-emerald-100">Guided form for patient self-entry with AI pre-fill</p>
                         </div>
                         <div className="flex items-center justify-center gap-2 text-sm text-emerald-200">

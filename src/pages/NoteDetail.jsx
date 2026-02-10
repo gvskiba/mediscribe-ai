@@ -1823,6 +1823,19 @@ Generated: ${new Date().toLocaleString()}
                  </div>
                )}
 
+               {note.status === "finalized" && (
+                 <div className="pt-6 border-t border-slate-200">
+                   <DiagnosisRecommendations
+                     note={note}
+                     onAddDiagnoses={async (newDiagnoses) => {
+                       const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
+                       await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
+                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                     }}
+                   />
+                 </div>
+               )}
+
                <div className="pt-6 border-t border-slate-200">
                  <div className="flex items-center justify-between mb-5">
                    <div>

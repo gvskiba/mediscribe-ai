@@ -787,9 +787,9 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                 <h3 className="text-lg font-bold text-slate-900">
                   {filteredQueries.length} {filteredQueries.length === 1 ? 'Guideline' : 'Guidelines'} Found
                 </h3>
-                {selectedForCompare.length > 0 && (
+                {selectedForCompareIds.length > 0 && (
                   <p className="text-sm text-slate-500 mt-1">
-                    {selectedForCompare.length} selected for comparison
+                    {selectedForCompareIds.length} selected for comparison
                   </p>
                 )}
               </div>

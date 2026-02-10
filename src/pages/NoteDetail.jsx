@@ -1733,8 +1733,8 @@ Generated: ${new Date().toLocaleString()}
 
 
 
-                 {/* Metadata Tab */}
-                 <TabsContent value="metadata" className="p-6">
+                 {/* Diagnoses Tab */}
+                 <TabsContent value="diagnoses" className="p-6">
              <div className="flex gap-3 mb-6">
                <Button
                  variant="outline"

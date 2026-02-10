@@ -61,9 +61,25 @@ const availableWidgets = [
 ];
 
 export default function Dashboard() {
-  const [activeWidgets, setActiveWidgets] = useState(["quicklinks", "stats", "recentnotes", "news"]);
+  const [userPreferences, setUserPreferences] = React.useState(null);
+  const [activeWidgets, setActiveWidgets] = useState([]);
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
-  const [layout, setLayout] = useState("2x2"); // 2x2, 3x3, 4x4, 6x6, horizontal
+  const [layout, setLayout] = useState("2x2");
+
+  // Load user preferences on mount
+  React.useEffect(() => {
+    const loadPreferences = async () => {
+      const user = await base44.auth.me();
+      const prefs = user?.preferences || {
+        dashboard_layout: "2x2",
+        active_widgets: ["quicklinks", "stats", "recentnotes", "news"]
+      };
+      setUserPreferences(prefs);
+      setLayout(prefs.dashboard_layout);
+      setActiveWidgets(prefs.active_widgets || ["quicklinks", "stats", "recentnotes", "news"]);
+    };
+    loadPreferences();
+  }, []);
 
   const toggleWidget = (widgetId) => {
     setActiveWidgets(prev => 

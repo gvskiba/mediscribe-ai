@@ -919,7 +919,7 @@ FORMATTING RULES (CRITICAL):
               field="physical_exam"
               type="textarea"
               onUpdate={onUpdate}
-              onReanalyze={onReanalyze}
+              onReanalyze={handleReanalyze}
               hideBorder={true}
             />
           </div>

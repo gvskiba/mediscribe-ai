@@ -608,6 +608,47 @@ CRITICAL: The diagnoses field MUST always contain at least one entry. If no diag
     }
   };
 
+  const downloadResultsAnalysis = (format) => {
+    // This would ideally pull imaging and labs data, but since they're in separate components,
+    // we'll provide a template for the user to add their specific data
+    const content = `RESULT ANALYSIS REPORT
+  Patient: ${note.patient_name}
+  Date: ${note.date_of_visit ? format(new Date(note.date_of_visit), "MMMM d, yyyy") : "N/A"}
+  ${note.patient_id ? `MRN: ${note.patient_id}` : ""}
+
+  IMAGING ANALYSIS
+  [Imaging results will be populated here based on uploaded files]
+
+  LABORATORY ANALYSIS
+  [Lab results will be populated here based on uploaded data]
+
+  Generated: ${new Date().toLocaleString()}
+    `.trim();
+
+    if (format === 'pdf') {
+      // For PDF, we'd need jsPDF - using text export for now
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${note.patient_name}_ResultsAnalysis_${new Date().toISOString().split("T")[0]}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } else {
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${note.patient_name}_ResultsAnalysis_${new Date().toISOString().split("T")[0]}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    }
+  };
+
   const downloadSummary = () => {
     if (!patientSummary) return;
 

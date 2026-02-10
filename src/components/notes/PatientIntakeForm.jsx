@@ -166,20 +166,13 @@ Return ONLY the extracted information in a structured format.`,
         }
       });
 
-      // Pass structured data to parent
+      // Pass data to parent - just the raw note, let handleSubmit do the AI extraction
       const intakeOutput = {
         patient_age: formData.patient_age,
         gender: formData.gender,
         patient_id: formData.patient_id,
-        raw_note: intakeNarrative,
-        chief_complaint: structuredData.chief_complaint,
-        history_of_present_illness: structuredData.history_of_present_illness,
-        medical_history: structuredData.medical_history,
-        review_of_systems: structuredData.review_of_systems,
-        assessment: structuredData.assessment,
-        diagnoses: structuredData.diagnoses || [],
-        medications: structuredData.extracted_medications || [],
-        allergies: structuredData.allergies || []
+        patient_name: `Patient (Age ${formData.patient_age})`, // Add patient name for display
+        raw_note: intakeNarrative
       };
 
       toast.success("Intake form processed successfully");

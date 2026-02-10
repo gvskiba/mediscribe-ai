@@ -830,7 +830,7 @@ FORMATTING RULES (CRITICAL):
               field="chief_complaint"
               type="text"
               onUpdate={onUpdate}
-              onReanalyze={onReanalyze}
+              onReanalyze={handleReanalyze}
               hideBorder={true}
             />
           </div>

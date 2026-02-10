@@ -60,6 +60,7 @@ const availableWidgets = [
 export default function Dashboard() {
   const [activeWidgets, setActiveWidgets] = useState(["quicklinks", "stats", "recentnotes", "news"]);
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
+  const [layout, setLayout] = useState("2x2"); // 2x2, 3x3, 4x4, 6x6, horizontal
 
   const toggleWidget = (widgetId) => {
     setActiveWidgets(prev => 
@@ -67,6 +68,14 @@ export default function Dashboard() {
         ? prev.filter(id => id !== widgetId)
         : [...prev, widgetId]
     );
+  };
+
+  const layoutConfigs = {
+    "2x2": { cols: 2, name: "2x2 Grid" },
+    "3x3": { cols: 3, name: "3x3 Grid" },
+    "4x4": { cols: 4, name: "4x4 Grid" },
+    "6x6": { cols: 6, name: "6x6 Grid" },
+    "horizontal": { cols: 1, name: "Horizontal Stack" }
   };
 
   return (
@@ -82,35 +91,55 @@ export default function Dashboard() {
           <p className="text-slate-600 mt-1">Customize your clinical workspace</p>
         </div>
         
-        <Dialog open={manageDialogOpen} onOpenChange={setManageDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="gap-2">
-              <Settings className="w-4 h-4" />
-              Manage Widgets
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Manage Dashboard Widgets</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              {availableWidgets.map(widget => (
-                <div key={widget.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:bg-slate-50">
-                  <div>
-                    <p className="font-semibold text-slate-900">{widget.name}</p>
-                    <p className="text-xs text-slate-500">
-                      {activeWidgets.includes(widget.id) ? "Currently active" : "Currently hidden"}
-                    </p>
+        <div className="flex gap-2">
+          <Dialog open={manageDialogOpen} onOpenChange={setManageDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Settings className="w-4 h-4" />
+                Manage Widgets
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Manage Dashboard Widgets</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900 mb-3">Layout</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Object.entries(layoutConfigs).map(([key, config]) => (
+                      <Button
+                        key={key}
+                        variant={layout === key ? "default" : "outline"}
+                        className="text-xs h-9"
+                        onClick={() => setLayout(key)}
+                      >
+                        {config.name}
+                      </Button>
+                    ))}
                   </div>
-                  <Switch
-                    checked={activeWidgets.includes(widget.id)}
-                    onCheckedChange={() => toggleWidget(widget.id)}
-                  />
                 </div>
-              ))}
-            </div>
-          </DialogContent>
-        </Dialog>
+                <div className="border-t pt-4">
+                  <p className="text-sm font-semibold text-slate-900 mb-3">Widgets</p>
+                  {availableWidgets.map(widget => (
+                    <div key={widget.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:bg-slate-50">
+                      <div>
+                        <p className="font-semibold text-slate-900">{widget.name}</p>
+                        <p className="text-xs text-slate-500">
+                          {activeWidgets.includes(widget.id) ? "Currently active" : "Currently hidden"}
+                        </p>
+                      </div>
+                      <Switch
+                        checked={activeWidgets.includes(widget.id)}
+                        onCheckedChange={() => toggleWidget(widget.id)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </motion.div>
 
       {/* Widgets Grid */}
@@ -180,10 +209,11 @@ export default function Dashboard() {
               {widgetId === "news" && (
                 <MedicalNewsSection compact />
               )}
-            </div>
-          </motion.div>
-        ))}
-      </AnimatePresence>
+              </div>
+            </motion.div>
+            ))}
+        </AnimatePresence>
+      </div>
 
       {activeWidgets.length === 0 && (
         <div className="text-center py-20">

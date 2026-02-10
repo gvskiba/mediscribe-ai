@@ -7,22 +7,47 @@ import { Badge } from "@/components/ui/badge";
 import { Newspaper, ExternalLink, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+const newsCategories = [
+  { id: "all", label: "All News" },
+  { id: "clinical", label: "Clinical Guidelines" },
+  { id: "research", label: "Research" },
+  { id: "devices", label: "Medical Devices" },
+  { id: "emergency", label: "Emergency Medicine" },
+  { id: "ai", label: "AI & Technology" },
+  { id: "fda", label: "FDA Updates" },
+  { id: "public_health", label: "Public Health" }
+];
 
 export default function MedicalNewsSection() {
   const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState("all");
 
   const { data: newsData, isLoading } = useQuery({
-    queryKey: ["medicalNews", refreshKey],
+    queryKey: ["medicalNews", refreshKey, selectedCategory],
     queryFn: async () => {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Search for the top 5 most important medical news stories from the past 24-48 hours. Focus on:
-- Clinical practice updates
-- New treatment guidelines
-- Significant research findings
-- FDA approvals or warnings
-- Public health developments
+      const categoryPrompts = {
+        all: "Search for the top 6 most important medical news stories from the past 24-48 hours across all categories.",
+        clinical: "Search for the latest clinical practice guidelines and treatment protocol updates from the past 24-48 hours.",
+        research: "Search for significant recent medical research findings and breakthrough studies from the past 24-48 hours.",
+        devices: "Search for the latest medical device innovations, approvals, and safety updates from the past 24-48 hours.",
+        emergency: "Search for important emergency medicine updates, protocols, and critical care developments from the past 24-48 hours.",
+        ai: "Search for the latest AI and technology developments in healthcare and clinical practice from the past 24-48 hours.",
+        fda: "Search for recent FDA approvals, warnings, recalls, and regulatory updates from the past 24-48 hours.",
+        public_health: "Search for important public health developments, disease outbreaks, and population health updates from the past 24-48 hours."
+      };
 
-For each story, provide a concise professional summary (2-3 sentences) that a clinician would find actionable.`,
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `${categoryPrompts[selectedCategory] || categoryPrompts.all}
+
+For each story, provide:
+- A clear, actionable title
+- A concise professional summary (2-3 sentences) that a clinician would find useful
+- Clinical relevance or impact
+- Source information
+
+Focus on stories that have direct clinical implications or are practice-changing.`,
         add_context_from_internet: true,
         response_json_schema: {
           type: "object",
@@ -34,10 +59,7 @@ For each story, provide a concise professional summary (2-3 sentences) that a cl
                 properties: {
                   title: { type: "string" },
                   summary: { type: "string" },
-                  category: { 
-                    type: "string",
-                    enum: ["Clinical Guidelines", "Research", "FDA Updates", "Public Health", "Treatment Advances"]
-                  },
+                  category: { type: "string" },
                   relevance: { type: "string" },
                   source: { type: "string" }
                 }
@@ -49,25 +71,31 @@ For each story, provide a concise professional summary (2-3 sentences) that a cl
       
       return result.stories || [];
     },
-    staleTime: 1000 * 60 * 60,
+    staleTime: 1000 * 60 * 30,
   });
 
-  const categoryColors = {
-    "Clinical Guidelines": "bg-blue-50 text-blue-700 border-blue-200",
-    "Research": "bg-purple-50 text-purple-700 border-purple-200",
-    "FDA Updates": "bg-red-50 text-red-700 border-red-200",
-    "Public Health": "bg-green-50 text-green-700 border-green-200",
-    "Treatment Advances": "bg-amber-50 text-amber-700 border-amber-200"
+  const getCategoryColor = (category) => {
+    const colors = {
+      "Clinical Guidelines": "bg-blue-50 text-blue-700 border-blue-200",
+      "Research": "bg-purple-50 text-purple-700 border-purple-200",
+      "FDA Updates": "bg-red-50 text-red-700 border-red-200",
+      "Medical Devices": "bg-cyan-50 text-cyan-700 border-cyan-200",
+      "Emergency Medicine": "bg-orange-50 text-orange-700 border-orange-200",
+      "AI & Technology": "bg-indigo-50 text-indigo-700 border-indigo-200",
+      "Public Health": "bg-green-50 text-green-700 border-green-200",
+      "Treatment Advances": "bg-amber-50 text-amber-700 border-amber-200"
+    };
+    return colors[category] || "bg-slate-50 text-slate-700 border-slate-200";
   };
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3 }}
-      className="bg-white rounded-2xl border border-slate-100 overflow-hidden"
+      transition={{ delay: 0.1 }}
+      className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm"
     >
-      <div className="flex items-center justify-between p-6 pb-4">
+      <div className="flex items-center justify-between p-6 pb-4 border-b border-slate-100">
         <div className="flex items-center gap-2">
           <Newspaper className="w-5 h-5 text-blue-600" />
           <h2 className="text-lg font-semibold text-slate-900">Medical News</h2>
@@ -82,6 +110,23 @@ For each story, provide a concise professional summary (2-3 sentences) that a cl
           <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
           Refresh
         </Button>
+      </div>
+
+      {/* Category Tabs */}
+      <div className="px-6 pt-4 pb-2 overflow-x-auto">
+        <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="w-full">
+          <TabsList className="inline-flex h-auto p-1 bg-slate-100 rounded-xl">
+            {newsCategories.map((cat) => (
+              <TabsTrigger
+                key={cat.id}
+                value={cat.id}
+                className="px-4 py-2 text-xs font-medium rounded-lg data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm"
+              >
+                {cat.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </div>
 
       <div className="px-4 pb-4">
@@ -108,7 +153,7 @@ For each story, provide a concise professional summary (2-3 sentences) that a cl
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <Badge 
                       variant="outline" 
-                      className={`text-xs ${categoryColors[story.category] || "bg-slate-50 text-slate-700 border-slate-200"}`}
+                      className={`text-xs ${getCategoryColor(story.category)}`}
                     >
                       {story.category}
                     </Badge>

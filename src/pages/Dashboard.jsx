@@ -1,8 +1,9 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "../utils";
-import { FileText, BookOpen, Calculator, Layers, FileCode, ArrowRight } from "lucide-react";
+import { FileText, BookOpen, Calculator, Layers, FileCode } from "lucide-react";
 import { motion } from "framer-motion";
+import MedicalNewsSection from "../components/dashboard/MedicalNewsSection";
 
 const quickLinks = [
   {
@@ -63,7 +64,7 @@ export default function Dashboard() {
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4"
       >
         {quickLinks.map((link, index) => {
           const Icon = link.icon;
@@ -76,34 +77,28 @@ export default function Dashboard() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="relative bg-white rounded-2xl border-2 border-slate-200 p-6 hover:border-slate-300 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                transition={{ delay: index * 0.05 }}
+                className="bg-white rounded-xl border border-slate-200 p-4 hover:border-blue-300 hover:shadow-lg transition-all duration-200"
               >
-                <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${link.gradient} opacity-10 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500`} />
-                
-                <div className="relative z-10">
-                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${link.gradient} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                    <Icon className="w-7 h-7 text-white" />
-                  </div>
-                  
-                  <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
-                    {link.title}
-                  </h3>
-                  
-                  <p className="text-sm text-slate-600 mb-4">
-                    {link.description}
-                  </p>
-                  
-                  <div className="flex items-center text-blue-600 font-semibold text-sm group-hover:gap-2 transition-all">
-                    Open
-                    <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                  </div>
+                <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${link.gradient} flex items-center justify-center mb-3 shadow-sm group-hover:scale-110 transition-transform duration-200`}>
+                  <Icon className="w-5 h-5 text-white" />
                 </div>
+                
+                <h3 className="text-sm font-bold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">
+                  {link.title}
+                </h3>
+                
+                <p className="text-xs text-slate-600 line-clamp-2">
+                  {link.description}
+                </p>
               </motion.div>
             </Link>
           );
         })}
       </motion.div>
+
+      {/* Medical News Section */}
+      <MedicalNewsSection />
     </div>
   );
 }

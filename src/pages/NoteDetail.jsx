@@ -541,53 +541,54 @@ For each code, provide:
     
     try {
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Extract key medical information from this clinical note. Be thorough and accurate. Return ALL diagnoses found in the note, even if partial or inferred.
+        prompt: `Extract key medical information from this clinical note. Be thorough and accurate.
 
 CLINICAL NOTE:
 ${note.raw_note}
 
-Extract and provide:
-1. Diagnoses - List ALL diagnoses mentioned or implied in the note (with ICD codes if available). Include suspected conditions.
-2. Medications - All medications mentioned with dosages and frequency
-3. Allergies - All drug and environmental allergies
-4. Chief Complaint - The primary reason for visit
-5. Medical History - Significant past medical history items
-6. Review of Systems - Key ROS findings
-7. Physical Exam - Important physical exam findings
+Extract and return the following fields:
+1. chief_complaint: The primary reason for visit (string)
+2. diagnoses: ALL diagnoses, suspected conditions, and clinical impressions from the note (array of strings). If chief complaint or assessment suggests a condition, include it.
+3. medications: All medications mentioned with dosages and frequency (array of strings)
+4. allergies: All drug and environmental allergies (array of strings)
+5. medical_history: Significant past medical history items (string)
+6. review_of_systems: Key ROS findings (string)
+7. physical_exam: Important physical exam findings (string)
 
-IMPORTANT: Always return diagnoses as an array with at least one entry describing the main condition(s) being addressed in the note.`,
+CRITICAL: The diagnoses field MUST always contain at least one entry. If no diagnosis is explicitly stated, infer from the chief complaint and clinical presentation.`,
+        add_context_from_internet: false,
         response_json_schema: {
           type: "object",
           properties: {
+            chief_complaint: { type: "string" },
             diagnoses: { 
               type: "array", 
               items: { type: "string" },
-              description: "List of all diagnoses found in the note" 
+              description: "ALL diagnoses, suspected conditions, and impressions" 
             },
             medications: { type: "array", items: { type: "string" } },
             allergies: { type: "array", items: { type: "string" } },
-            chief_complaint: { type: "string" },
             medical_history: { type: "string" },
             review_of_systems: { type: "string" },
             physical_exam: { type: "string" }
           },
-          required: ["diagnoses"]
+          required: ["chief_complaint", "diagnoses"]
         }
       });
 
       console.log("Extracted data:", result);
-      console.log("Diagnoses from LLM:", result.diagnoses);
+      console.log("Diagnoses from LLM:", result.diagnoses, "Type:", Array.isArray(result.diagnoses));
 
       // Update note with extracted data
       const updateData = {};
-      if (result.diagnoses?.length > 0) {
-        console.log("Diagnoses array:", Array.isArray(result.diagnoses), result.diagnoses);
+      
+      // Always update diagnoses if present, even if empty - the LLM should return at least one
+      if (result.diagnoses) {
         updateData.diagnoses = Array.isArray(result.diagnoses) ? result.diagnoses : [result.diagnoses];
-        console.log("Setting diagnoses:", updateData.diagnoses);
       }
+      if (result.chief_complaint) updateData.chief_complaint = result.chief_complaint;
       if (result.medications?.length > 0) updateData.medications = result.medications;
       if (result.allergies?.length > 0) updateData.allergies = result.allergies;
-      if (result.chief_complaint) updateData.chief_complaint = result.chief_complaint;
       if (result.medical_history) updateData.medical_history = result.medical_history;
       if (result.review_of_systems) updateData.review_of_systems = result.review_of_systems;
       if (result.physical_exam) updateData.physical_exam = result.physical_exam;
@@ -596,9 +597,11 @@ IMPORTANT: Always return diagnoses as an array with at least one entry describin
         console.log("Updating note with:", updateData);
         await base44.entities.ClinicalNote.update(noteId, updateData);
         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+        toast.success("Data extracted and note updated");
       }
     } catch (error) {
       console.error("Failed to extract data:", error);
+      toast.error("Failed to extract data from note");
     } finally {
       setExtractingData(false);
     }

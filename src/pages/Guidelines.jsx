@@ -705,7 +705,7 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                   <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl border border-blue-200">
                     <Checkbox
                       checked={showSavedOnly}
-                      onCheckedChange={setShowSavedOnly}
+                      onCheckedChange={() => setShowSavedOnly(prev => !prev)}
                       id="saved-only"
                     />
                     <label 

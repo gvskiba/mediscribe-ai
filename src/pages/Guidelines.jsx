@@ -693,11 +693,26 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                         setFilterCategory("all");
                         setFilterConfidence("all");
                         setFilterDateRange("all");
+                        setShowSavedOnly(false);
                       }}
                       className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                     >
                       Reset All
                     </Button>
+                  </div>
+
+                  <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl border border-blue-200">
+                    <Checkbox
+                      checked={showSavedOnly}
+                      onCheckedChange={setShowSavedOnly}
+                      id="saved-only"
+                    />
+                    <label 
+                      htmlFor="saved-only"
+                      className="text-sm font-medium text-slate-700 cursor-pointer flex-1"
+                    >
+                      Show saved guidelines only
+                    </label>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

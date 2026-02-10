@@ -186,7 +186,7 @@ export default function Layout({ children, currentPageName }) {
       }
 
       {/* Main Content */}
-      <main className="bg-blue-100 pt-16 flex-1 lg:ml-64 lg:pt-0 min-h-screen">
+      <main className="bg-blue-100 pt-32 flex-1 lg:ml-64 lg:pt-0 min-h-screen lg:pt-0">
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
           {children}
         </div>

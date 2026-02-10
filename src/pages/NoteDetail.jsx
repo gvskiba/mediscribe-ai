@@ -1176,6 +1176,21 @@ Generated: ${new Date().toLocaleString()}
 
              {note.status === "finalized" ? (
                <>
+                 {/* ICD-10 Code Matcher - Direct Search & Selection */}
+                 <div className="border-2 border-blue-300 bg-blue-50 rounded-xl p-5">
+                   <h3 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
+                     <Sparkles className="w-4 h-4" />
+                     Smart ICD-10 Code Mapper
+                   </h3>
+                   <p className="text-xs text-blue-800 mb-4">Select diagnoses to generate ranked ICD-10 codes with clinical reasoning</p>
+                   <DiagnosisICD10Matcher
+                     diagnoses={note.diagnoses || []}
+                     onCodesGenerated={async (codes) => {
+                       // Codes generated in the component
+                     }}
+                   />
+                 </div>
+                 <>
                  {/* ICD-10 Codes Section */}
                  <div>
                    <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">

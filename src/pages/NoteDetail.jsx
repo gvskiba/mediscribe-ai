@@ -1289,31 +1289,6 @@ Generated: ${new Date().toLocaleString()}
                  {/* Result Analysis Tab */}
                  <TabsContent value="imaging" className="p-6">
                    <div className="space-y-6">
-                     <div className="flex justify-end">
-                       <Button
-                         onClick={async () => {
-                           try {
-                             const imagingText = "Clinical imaging analysis has been reviewed.";
-                             const labsText = "Laboratory results have been analyzed.";
-                             const combinedSummary = `## Analysis Summary\n\n### Imaging\n${imagingText}\n\n### Laboratory\n${labsText}`;
-
-                             await base44.entities.ClinicalNote.update(noteId, {
-                               assessment: (note.assessment || "") + "\n\n" + combinedSummary
-                             });
-                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                             alert("Analysis summary added to clinical note");
-                           } catch (error) {
-                             console.error("Failed to add analysis:", error);
-                             alert("Failed to add analysis. Please try again.");
-                           }
-                         }}
-                         className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
-                       >
-                         <Plus className="w-4 h-4 mr-2" />
-                         Add To Clinical Note
-                       </Button>
-                     </div>
-
                      {/* Left Column - Imaging Analysis */}
                      <div>
                        <ImagingAnalysis

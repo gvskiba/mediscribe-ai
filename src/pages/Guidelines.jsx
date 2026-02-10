@@ -550,7 +550,7 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
       </div>
 
       {/* Compare Guidelines Bar */}
-      {selectedForCompare.length > 0 && (
+      {selectedForCompareIds.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -562,10 +562,10 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-900">
-                {selectedForCompare.length} guideline{selectedForCompare.length !== 1 ? 's' : ''} selected for comparison
+                {selectedForCompareIds.length} guideline{selectedForCompareIds.length !== 1 ? 's' : ''} selected for comparison
               </p>
               <p className="text-xs text-slate-700">
-                {selectedForCompare.length < 2 
+                {selectedForCompareIds.length < 2 
                   ? "Select at least 2 guidelines to compare" 
                   : "Ready to compare"}
               </p>
@@ -574,14 +574,14 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
           <div className="flex gap-2">
             <Button
               variant="outline"
-              onClick={() => setSelectedForCompare([])}
+              onClick={() => setSelectedForCompareIds([])}
               className="rounded-xl text-slate-700 border-slate-300"
             >
               Clear
             </Button>
             <Button
               onClick={handleCompareGuidelines}
-              disabled={selectedForCompare.length < 2}
+              disabled={selectedForCompareIds.length < 2}
               className="bg-green-600 hover:bg-green-700 text-white rounded-xl"
             >
               <ArrowLeftRight className="w-4 h-4 mr-2" />

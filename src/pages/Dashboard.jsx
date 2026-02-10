@@ -181,7 +181,11 @@ export default function Dashboard() {
                       <input 
                          type="checkbox"
                          checked={activeWidgets.includes(widget.id)}
-                         onChange={() => toggleWidget(widget.id)}
+                         onChange={(e) => {
+                           e.stopPropagation();
+                           toggleWidget(widget.id);
+                         }}
+                         onClick={(e) => e.stopPropagation()}
                          className="rounded w-4 h-4 cursor-pointer"
                        />
                     </div>

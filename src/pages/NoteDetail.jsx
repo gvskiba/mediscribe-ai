@@ -66,6 +66,12 @@ export default function NoteDetail() {
   const [loadingIcd10, setLoadingIcd10] = useState(false);
   const [guidelineRecommendations, setGuidelineRecommendations] = useState([]);
   const [loadingGuidelines, setLoadingGuidelines] = useState(false);
+  const [drugInteractions, setDrugInteractions] = useState([]);
+  const [loadingInteractions, setLoadingInteractions] = useState(false);
+  const [followUpTests, setFollowUpTests] = useState([]);
+  const [loadingFollowUp, setLoadingFollowUp] = useState(false);
+  const [differentialDiagnosis, setDifferentialDiagnosis] = useState([]);
+  const [loadingDifferential, setLoadingDifferential] = useState(false);
   const [exportingFormat, setExportingFormat] = useState(null);
   const [extractingData, setExtractingData] = useState(false);
   const [linkingGuidelines, setLinkingGuidelines] = useState(false);

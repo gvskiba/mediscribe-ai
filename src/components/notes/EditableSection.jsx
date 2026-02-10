@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Sparkles, Loader2, Plus, X, FileText } from "lucide-react";
 import SnippetPicker from "../snippets/SnippetPicker";
 import SectionAISuggestions from "./SectionAISuggestions";
-import RichTextEditor from "./RichTextEditor.jsx";
+
 
 
 export default function EditableSection({ 

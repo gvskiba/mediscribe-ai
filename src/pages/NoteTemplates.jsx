@@ -886,26 +886,45 @@ Return a JSON structure with:
                 noteType={formData.note_type}
                 specialty={formData.specialty}
                 renderSectionActions={(section, index) => (
-                  <AIInstructionRefinement
-                    currentInstructions={section.ai_instructions}
-                    sectionName={section.name}
-                    onApply={(refinedInstructions) => {
-                      const updatedSections = [...formData.sections];
-                      updatedSections[index].ai_instructions = refinedInstructions;
-                      setFormData({ ...formData, sections: updatedSections });
-                    }}
-                    trigger={({ onClick }) => (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={onClick}
-                        className="gap-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      >
-                        <Wand2 className="w-3 h-3" /> Refine
-                      </Button>
-                    )}
-                  />
+                  <div className="flex gap-1">
+                    <AIInstructionRefinement
+                      currentInstructions={section.ai_instructions}
+                      sectionName={section.name}
+                      onApply={(refinedInstructions) => {
+                        const updatedSections = [...formData.sections];
+                        updatedSections[index].ai_instructions = refinedInstructions;
+                        setFormData({ ...formData, sections: updatedSections });
+                      }}
+                      trigger={({ onClick }) => (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={onClick}
+                          className="gap-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        >
+                          <Wand2 className="w-3 h-3" /> Refine
+                        </Button>
+                      )}
+                    />
+                    <SectionContentGenerator
+                      section={section}
+                      onContentGenerated={(content) => {
+                        toast.success("Draft content generated - copy and use in your notes");
+                      }}
+                      trigger={({ onClick }) => (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={onClick}
+                          className="gap-1.5 text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50"
+                        >
+                          <Sparkles className="w-3 h-3" /> Preview
+                        </Button>
+                      )}
+                    />
+                  </div>
                 )}
               />
               <p className="text-xs text-slate-500 mt-2">Enable/disable sections with the eye icon, configure conditional logic, refine AI instructions, and use AI suggestions based on note type</p>

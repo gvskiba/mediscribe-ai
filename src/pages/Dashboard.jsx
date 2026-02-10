@@ -1,16 +1,12 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "../utils";
-import { FileText, BookOpen, Calculator, Layers, FileCode, X, Plus, GripVertical } from "lucide-react";
+import { FileText, BookOpen, Calculator, Layers, FileCode, X, Plus, GripVertical, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MedicalNewsSection from "../components/dashboard/MedicalNewsSection";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 
 const quickLinks = [
   {
@@ -57,18 +53,15 @@ const availableWidgets = [
 
 export default function Dashboard() {
   const [activeWidgets, setActiveWidgets] = useState(["quicklinks", "news"]);
+  const [manageDialogOpen, setManageDialogOpen] = useState(false);
 
-  const removeWidget = (widgetId) => {
-    setActiveWidgets(prev => prev.filter(id => id !== widgetId));
+  const toggleWidget = (widgetId) => {
+    setActiveWidgets(prev => 
+      prev.includes(widgetId) 
+        ? prev.filter(id => id !== widgetId)
+        : [...prev, widgetId]
+    );
   };
-
-  const addWidget = (widgetId) => {
-    if (!activeWidgets.includes(widgetId)) {
-      setActiveWidgets(prev => [...prev, widgetId]);
-    }
-  };
-
-  const availableToAdd = availableWidgets.filter(w => !activeWidgets.includes(w.id));
 
   return (
     <div className="space-y-6">
@@ -83,23 +76,35 @@ export default function Dashboard() {
           <p className="text-slate-600 mt-1">Customize your clinical workspace</p>
         </div>
         
-        {availableToAdd.length > 0 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Plus className="w-4 h-4" />
-                Add Widget
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {availableToAdd.map(widget => (
-                <DropdownMenuItem key={widget.id} onClick={() => addWidget(widget.id)}>
-                  {widget.name}
-                </DropdownMenuItem>
+        <Dialog open={manageDialogOpen} onOpenChange={setManageDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="gap-2">
+              <Settings className="w-4 h-4" />
+              Manage Widgets
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Manage Dashboard Widgets</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {availableWidgets.map(widget => (
+                <div key={widget.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:bg-slate-50">
+                  <div>
+                    <p className="font-semibold text-slate-900">{widget.name}</p>
+                    <p className="text-xs text-slate-500">
+                      {activeWidgets.includes(widget.id) ? "Currently active" : "Currently hidden"}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={activeWidgets.includes(widget.id)}
+                    onCheckedChange={() => toggleWidget(widget.id)}
+                  />
+                </div>
               ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </motion.div>
 
       {/* Widgets Grid */}

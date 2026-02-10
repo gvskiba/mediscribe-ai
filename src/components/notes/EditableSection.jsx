@@ -7,7 +7,7 @@ import { Sparkles, Loader2, Plus, X, FileText } from "lucide-react";
 import SnippetPicker from "../snippets/SnippetPicker";
 import SectionAISuggestions from "./SectionAISuggestions";
 import RichTextEditor from "./RichTextEditor";
-import QuickTextTemplates from "./QuickTextTemplates";
+import QuickTextTemplates from "./QuickTextTemplates.jsx";
 
 export default function EditableSection({ 
   icon: Icon, 

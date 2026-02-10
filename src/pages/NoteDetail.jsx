@@ -803,7 +803,37 @@ Generated: ${new Date().toLocaleString()}
                        [field]: value
                      }));
                    }}
-                   onReanalyze={() => {}}
+                   onReanalyze={async (field) => {
+                     if (!note?.raw_note) return null;
+
+                     const fieldPrompts = {
+                       chief_complaint: `Extract the chief complaint from this clinical note: ${note.raw_note}`,
+                       history_of_present_illness: `Extract the history of present illness with OLDCARTS elements from this clinical note: ${note.raw_note}`,
+                       medical_history: `Extract the relevant medical history from this clinical note: ${note.raw_note}`,
+                       review_of_systems: `Extract the review of systems from this clinical note: ${note.raw_note}`,
+                       physical_exam: `Extract the physical examination findings from this clinical note: ${note.raw_note}`,
+                       assessment: `Extract the assessment from this clinical note: ${note.raw_note}`,
+                       plan: `Extract the treatment plan from this clinical note: ${note.raw_note}`,
+                       clinical_impression: `Extract the clinical impression from this clinical note: ${note.raw_note}`,
+                     };
+
+                     try {
+                       const result = await base44.integrations.Core.InvokeLLM({
+                         prompt: fieldPrompts[field] || `Reanalyze this field in the clinical note: ${note.raw_note}`,
+                         add_context_from_internet: false
+                       });
+
+                       queryClient.setQueryData(["note", noteId], (old) => ({
+                         ...old,
+                         [field]: result
+                       }));
+
+                       return result;
+                     } catch (error) {
+                       console.error(`Failed to reanalyze ${field}:`, error);
+                       return null;
+                     }
+                   }}
                    guidelineRecommendations={guidelineRecommendations}
                    loadingGuidelines={loadingGuidelines}
                    medicationRecommendations={[]}

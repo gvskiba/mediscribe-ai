@@ -966,20 +966,20 @@ FORMATTING RULES (CRITICAL):
               />
               <div className="pt-4 border-t border-slate-200">
                 <EditableSection
-                  icon={ClipboardList}
-                  title=""
-                  color="green"
-                  value={note.plan || "Not extracted"}
-                  field="plan"
-                  type="textarea"
-                  onUpdate={onUpdate}
-                  onReanalyze={onReanalyze}
-                  hideBorder={true}
-                  noteContext={{
-                    assessment: note.assessment,
-                    diagnoses: note.diagnoses
-                  }}
-                />
+                   icon={ClipboardList}
+                   title=""
+                   color="green"
+                   value={note.plan || "Not extracted"}
+                   field="plan"
+                   type="textarea"
+                   onUpdate={onUpdate}
+                   onReanalyze={handleReanalyze}
+                   hideBorder={true}
+                   noteContext={{
+                     assessment: note.assessment,
+                     diagnoses: note.diagnoses
+                   }}
+                 />
               </div>
             </div>
           </div>

@@ -627,7 +627,7 @@ Generated: ${new Date().toLocaleString()}
           {note.status === "finalized" && (
             <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl p-4 border border-cyan-200">
               <h3 className="text-xs font-bold text-cyan-900 uppercase tracking-wide mb-3 flex items-center gap-2">
-                <History className="w-3.5 h-3.5" /> Review Actions
+                <Clock className="w-3.5 h-3.5" /> Review Actions
               </h3>
               <div className="grid sm:grid-cols-2 gap-3">
                 <NoteRevisionHistory

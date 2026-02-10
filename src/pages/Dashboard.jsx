@@ -48,8 +48,8 @@ export default function Dashboard() {
             </Button>
           </Link>
           <Link to={createPageUrl("Guidelines")}>
-            <Button variant="outline" className="rounded-xl gap-2">
-              <BookOpen className="w-4 h-4" /> Ask Guidelines
+            <Button variant="outline" className="rounded-xl gap-2 border-slate-300 hover:bg-slate-50 hover:border-slate-400 transition-all">
+              <BookOpen className="w-4 h-4" /> Search Knowledge
             </Button>
           </Link>
         </div>

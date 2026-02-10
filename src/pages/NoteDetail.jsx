@@ -1845,27 +1845,6 @@ Generated: ${new Date().toLocaleString()}
                        </div>
                      )}
 
-                     {/* Non-Coded Diagnoses */}
-                     {note.diagnoses.filter(d => d && !/^[A-Z0-9]{1,}.*-/.test(d.trim())).length > 0 && (
-                       <div className="space-y-3">
-                         <div className="flex items-center gap-2">
-                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold">
-                             {note.diagnoses.filter(d => d && !/^[A-Z0-9]{1,}.*-/.test(d.trim())).length} Uncoded
-                           </span>
-                           <p className="text-xs text-slate-500">(pending ICD-10 coding)</p>
-                         </div>
-                         <div className="flex flex-wrap gap-2">
-                           {note.diagnoses
-                             .filter(d => d && !/^[A-Z0-9]{1,}.*-/.test(d.trim()))
-                             .map((diag, i) => (
-                             <span key={i} className="inline-flex items-center px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-medium border border-slate-300 hover:bg-slate-200 transition-colors">
-                               {diag}
-                             </span>
-                           ))}
-                         </div>
-                       </div>
-                     )}
-
                      {note.status === "finalized" && (
                        <div className="mt-4 pt-4 border-t border-slate-200">
                          <ICD10CodeSearch

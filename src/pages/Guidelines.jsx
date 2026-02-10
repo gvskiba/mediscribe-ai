@@ -943,7 +943,7 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
       {/* Compare Dialog */}
       {showCompare && (
         <CompareGuidelines
-          selectedGuidelines={selectedForCompare}
+          selectedGuidelines={pastQueries.filter(q => selectedForCompareIds.includes(q.id))}
           onClose={() => {
             setShowCompare(false);
             setComparison(null);

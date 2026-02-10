@@ -181,6 +181,11 @@ export default function NewNote() {
       }
 
       const template = templateId ? templates.find((t) => t.id === templateId) : null;
+      
+      // Store template for potential auto-fill
+      if (template) {
+        setSelectedTemplateForAutoFill(template);
+      }
 
       let prompt = `You are a medical scribe AI. Given the following clinical note, extract and structure the information accurately.
 

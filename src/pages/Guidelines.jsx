@@ -705,7 +705,7 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                   <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl border border-blue-200">
                     <Checkbox
                       checked={showSavedOnly}
-                      onCheckedChange={setShowSavedOnly}
+                      onCheckedChange={(checked) => setShowSavedOnly(checked === true)}
                       id="saved-only"
                     />
                     <label 
@@ -834,12 +834,16 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                   return (
                     <div key={query.id} className="flex items-start gap-4 group">
                       <div className="pt-6">
-                        <Checkbox
-                           checked={selectedForCompare.some(q => q.id === query.id)}
-                           onCheckedChange={() => toggleSelectForCompare(query)}
-                           className="rounded-md w-5 h-5"
-                         />
-                      </div>
+                         <Checkbox
+                            checked={selectedForCompare.some(q => q.id === query.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked !== selectedForCompare.some(q => q.id === query.id)) {
+                                toggleSelectForCompare(query);
+                              }
+                            }}
+                            className="rounded-md w-5 h-5"
+                          />
+                       </div>
                       <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-5 hover:border-blue-300 hover:shadow-md transition-all">
                         <div className="flex items-start justify-between gap-3 mb-3">
                           <div 

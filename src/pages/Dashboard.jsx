@@ -215,31 +215,33 @@ export default function Dashboard() {
 
                 <div className="p-6">
                   {widgetId === "quicklinks" && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                      {quickLinks.map((link) => {
-                        const Icon = link.icon;
-                        return (
-                          <Link
-                            key={link.page}
-                            to={createPageUrl(link.page)}
-                            className="group"
-                          >
-                            <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 hover:border-blue-300 hover:shadow-md hover:bg-white transition-all duration-200 h-full flex flex-col">
-                              <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${link.gradient} flex items-center justify-center mb-3 shadow-sm group-hover:scale-110 transition-transform duration-200`}>
-                                <Icon className="w-5 h-5 text-white" />
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                        {quickLinks.map((link) => {
+                          const Icon = link.icon;
+                          return (
+                            <Link
+                              key={link.page}
+                              to={createPageUrl(link.page)}
+                              className="group h-full"
+                            >
+                              <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl border border-slate-200 p-5 hover:border-blue-400 hover:shadow-lg hover:from-blue-50 hover:to-blue-100 transition-all duration-300 h-full flex flex-col items-center text-center group-hover:-translate-y-1">
+                                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${link.gradient} flex items-center justify-center mb-3 shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300`}>
+                                  <Icon className="w-7 h-7 text-white" />
+                                </div>
+                                
+                                <h3 className="text-sm font-bold text-slate-900 mb-2 group-hover:text-blue-700 transition-colors">
+                                  {link.title}
+                                </h3>
+                                
+                                <p className="text-xs text-slate-500 leading-relaxed">
+                                  {link.description}
+                                </p>
                               </div>
-                              
-                              <h3 className="text-sm font-bold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">
-                                {link.title}
-                              </h3>
-                              
-                              <p className="text-xs text-slate-600 line-clamp-2">
-                                {link.description}
-                              </p>
-                            </div>
-                          </Link>
-                        );
-                      })}
+                            </Link>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
 

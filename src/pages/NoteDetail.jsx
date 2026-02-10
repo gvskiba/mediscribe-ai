@@ -39,6 +39,7 @@ import GuidelineReviewPrompt from "../components/notes/GuidelineReviewPrompt";
 import NoteRevisionHistory from "../components/notes/NoteRevisionHistory";
 import ImagingAnalysis from "../components/notes/ImagingAnalysis";
 import LabsAnalysis from "../components/notes/LabsAnalysis";
+import ClinicalDecisionSupport from "../components/notes/ClinicalDecisionSupport";
 import { useAutoSave } from "../components/utils/useAutoSave";
 
 const statusColors = {
@@ -927,6 +928,18 @@ Generated: ${new Date().toLocaleString()}
                        ))}
                      </div>
                    </div>
+                 )}
+
+                 {/* Clinical Decision Support */}
+                 {note.status === "finalized" && (
+                   <ClinicalDecisionSupport
+                     medications={note.medications || []}
+                     diagnoses={note.diagnoses || []}
+                     medicalHistory={note.medical_history}
+                     allergies={note.allergies || []}
+                     vitalsAndLabs={note.physical_exam}
+                     specialty={note.specialty}
+                   />
                  )}
 
                  {/* Guidelines Preview */}

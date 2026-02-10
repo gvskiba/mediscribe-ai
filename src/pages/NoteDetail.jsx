@@ -768,22 +768,172 @@ Generated: ${new Date().toLocaleString()}
            </TabsContent>
 
            {/* Clinical Note Tab */}
-           <TabsContent value="clinical" className="p-6 space-y-6">
-             <StructuredNotePreview 
-               note={note} 
-               onUpdate={(field, value) => {
-                 queryClient.setQueryData(["note", noteId], (old) => ({
-                   ...old,
-                   [field]: value
-                 }));
-               }}
-               onReanalyze={() => {}}
-               guidelineRecommendations={guidelineRecommendations}
-               loadingGuidelines={loadingGuidelines}
-               medicationRecommendations={[]}
-               loadingMedications={false}
-             />
+           <TabsContent value="clinical" className="p-6">
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+               {/* Main Content - Left Column (2/3) */}
+               <div className="lg:col-span-2 space-y-6">
+                 <StructuredNotePreview 
+                   note={note} 
+                   onUpdate={(field, value) => {
+                     queryClient.setQueryData(["note", noteId], (old) => ({
+                       ...old,
+                       [field]: value
+                     }));
+                   }}
+                   onReanalyze={() => {}}
+                   guidelineRecommendations={guidelineRecommendations}
+                   loadingGuidelines={loadingGuidelines}
+                   medicationRecommendations={[]}
+                   loadingMedications={false}
+                 />
+               </div>
 
+               {/* Sidebar - Right Column (1/3) */}
+               <div className="space-y-4">
+                 {/* Quick Stats Card */}
+                 <div className="bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200 p-5">
+                   <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+                     <Sparkles className="w-4 h-4 text-blue-600" />
+                     Quick Stats
+                   </h3>
+                   <div className="space-y-3">
+                     <div className="flex items-center justify-between">
+                       <span className="text-xs text-slate-600">Sections Completed</span>
+                       <span className="text-sm font-bold text-slate-900">
+                         {[
+                           note.chief_complaint,
+                           note.history_of_present_illness,
+                           note.assessment,
+                           note.plan
+                         ].filter(Boolean).length} / 4
+                       </span>
+                     </div>
+                     <div className="flex items-center justify-between">
+                       <span className="text-xs text-slate-600">Diagnoses</span>
+                       <span className="text-sm font-bold text-slate-900">
+                         {note.diagnoses?.length || 0}
+                       </span>
+                     </div>
+                     <div className="flex items-center justify-between">
+                       <span className="text-xs text-slate-600">Medications</span>
+                       <span className="text-sm font-bold text-slate-900">
+                         {note.medications?.length || 0}
+                       </span>
+                     </div>
+                     {note.allergies && note.allergies.length > 0 && (
+                       <div className="flex items-center justify-between">
+                         <span className="text-xs text-slate-600">Allergies</span>
+                         <span className="text-sm font-bold text-red-600">
+                           {note.allergies.length}
+                         </span>
+                       </div>
+                     )}
+                   </div>
+                   <div className="mt-4 pt-4 border-t border-slate-200">
+                     <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                       <div 
+                         className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all"
+                         style={{ 
+                           width: `${Math.min(
+                             100,
+                             ([
+                               note.chief_complaint,
+                               note.history_of_present_illness,
+                               note.assessment,
+                               note.plan
+                             ].filter(Boolean).length / 4) * 100
+                           )}%` 
+                         }}
+                       />
+                     </div>
+                     <p className="text-xs text-slate-500 text-center mt-2">
+                       {Math.round(([
+                         note.chief_complaint,
+                         note.history_of_present_illness,
+                         note.assessment,
+                         note.plan
+                       ].filter(Boolean).length / 4) * 100)}% Complete
+                     </p>
+                   </div>
+                 </div>
+
+                 {/* Diagnoses Card */}
+                 {note.diagnoses && note.diagnoses.length > 0 && (
+                   <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl border border-blue-200 p-5">
+                     <h3 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
+                       <Code className="w-4 h-4" />
+                       Diagnoses ({note.diagnoses.length})
+                     </h3>
+                     <div className="space-y-2 max-h-48 overflow-y-auto">
+                       {note.diagnoses.map((diagnosis, idx) => (
+                         <div key={idx} className="bg-white rounded-lg p-3 border border-blue-100 text-xs text-slate-700">
+                           {diagnosis}
+                         </div>
+                       ))}
+                     </div>
+                   </div>
+                 )}
+
+                 {/* Medications Card */}
+                 {note.medications && note.medications.length > 0 && (
+                   <div className="bg-gradient-to-br from-green-50 to-white rounded-xl border border-green-200 p-5">
+                     <h3 className="text-sm font-bold text-green-900 mb-3 flex items-center gap-2">
+                       <Plus className="w-4 h-4" />
+                       Medications ({note.medications.length})
+                     </h3>
+                     <div className="space-y-2 max-h-48 overflow-y-auto">
+                       {note.medications.map((medication, idx) => (
+                         <div key={idx} className="bg-white rounded-lg p-3 border border-green-100 text-xs text-slate-700">
+                           {medication}
+                         </div>
+                       ))}
+                     </div>
+                   </div>
+                 )}
+
+                 {/* Allergies Card */}
+                 {note.allergies && note.allergies.length > 0 && (
+                   <div className="bg-gradient-to-br from-red-50 to-white rounded-xl border border-red-200 p-5">
+                     <h3 className="text-sm font-bold text-red-900 mb-3 flex items-center gap-2">
+                       <AlertCircle className="w-4 h-4" />
+                       Allergies ({note.allergies.length})
+                     </h3>
+                     <div className="space-y-2">
+                       {note.allergies.map((allergy, idx) => (
+                         <div key={idx} className="bg-white rounded-lg p-3 border border-red-100 text-xs text-red-700 font-medium">
+                           ⚠️ {allergy}
+                         </div>
+                       ))}
+                     </div>
+                   </div>
+                 )}
+
+                 {/* Guidelines Preview */}
+                 {note.status === "finalized" && guidelineRecommendations.length > 0 && (
+                   <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl border border-purple-200 p-5">
+                     <h3 className="text-sm font-bold text-purple-900 mb-3 flex items-center gap-2">
+                       <BookOpen className="w-4 h-4" />
+                       Guidelines Available
+                     </h3>
+                     <p className="text-xs text-slate-600 mb-3">
+                       {guidelineRecommendations.length} evidence-based guideline{guidelineRecommendations.length !== 1 ? 's' : ''} found
+                     </p>
+                     <Button
+                       size="sm"
+                       variant="outline"
+                       onClick={() => {
+                         const guidelinesTab = document.querySelector('[value="guidelines"]');
+                         if (guidelinesTab) guidelinesTab.click();
+                       }}
+                       className="w-full gap-2 border-purple-300 text-purple-700 hover:bg-purple-100"
+                     >
+                       <BookOpen className="w-3 h-3" />
+                       View Guidelines
+                     </Button>
+                   </div>
+                 )}
+               </div>
+             </div>
            </TabsContent>
 
            {/* Guidelines & Codes Tab */}

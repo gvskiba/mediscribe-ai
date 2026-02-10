@@ -1346,27 +1346,7 @@ Generated: ${new Date().toLocaleString()}
                    </div>
                  </TabsContent>
 
-                 {/* Labs Tab */}
-                 <TabsContent value="labs" className="p-6 space-y-6">
-                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                     <LabsAnalysis
-                       noteId={noteId}
-                       onAddToNote={async (labsText) => {
-                         try {
-                           const updatedAssessment = (note.assessment || "") + labsText;
-                           await base44.entities.ClinicalNote.update(noteId, { 
-                             assessment: updatedAssessment
-                           });
-                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                           alert("Lab summary added to clinical note");
-                         } catch (error) {
-                           console.error("Failed to add labs to note:", error);
-                           alert("Failed to add labs. Please try again.");
-                         }
-                       }}
-                     />
-                   </div>
-                 </TabsContent>
+
 
                  {/* Metadata Tab */}
                  <TabsContent value="metadata" className="p-6">

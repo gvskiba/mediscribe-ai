@@ -135,44 +135,14 @@ Allergies: ${formData.allergies}
 Recent Treatments: ${formData.recent_treatments}
 Lifestyle Factors: ${formData.lifestyle_factors}`;
 
-      // Use AI to convert intake form to structured clinical note
-      const structuredData = await base44.integrations.Core.InvokeLLM({
-        prompt: `Convert this patient intake form data into a structured clinical note format. Extract and organize the information appropriately.
-
-INTAKE DATA:
-${intakeNarrative}
-
-Generate a structured clinical note with these fields based on the intake data:
-1. chief_complaint - Main reason for visit (1-2 sentences)
-2. history_of_present_illness - Detailed HPI with OLDCARTS elements
-3. medical_history - Consolidate past medical history, surgeries, and conditions
-4. review_of_systems - Extract relevant symptoms by system
-5. assessment - Generate differential diagnoses based on chief complaint and HPI
-6. diagnoses - List potential diagnoses as an array
-
-Return ONLY the extracted information in a structured format.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            chief_complaint: { type: "string" },
-            history_of_present_illness: { type: "string" },
-            medical_history: { type: "string" },
-            review_of_systems: { type: "string" },
-            assessment: { type: "string" },
-            diagnoses: { type: "array", items: { type: "string" } },
-            extracted_medications: { type: "array", items: { type: "string" } },
-            allergies: { type: "array", items: { type: "string" } }
-          }
-        }
-      });
-
-      // Pass data to parent - just the raw note, let handleSubmit do the AI extraction
+      // Pass data to parent with the narrative - let parent handleSubmit do AI extraction
       const intakeOutput = {
         patient_age: formData.patient_age,
         gender: formData.gender,
         patient_id: formData.patient_id,
-        patient_name: `Patient (Age ${formData.patient_age})`, // Add patient name for display
-        raw_note: intakeNarrative
+        patient_name: `Patient (Age ${formData.patient_age})`,
+        raw_note: intakeNarrative,
+        note_type: "progress_note"
       };
 
       toast.success("Intake form processed successfully");

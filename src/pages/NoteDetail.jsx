@@ -1152,30 +1152,7 @@ Generated: ${new Date().toLocaleString()}
                    </div>
                  )}
 
-                 {/* Guidelines Preview */}
-                 {note.status === "finalized" && guidelineRecommendations.length > 0 && (
-                   <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl border border-purple-200 p-5">
-                     <h3 className="text-sm font-bold text-purple-900 mb-3 flex items-center gap-2">
-                       <BookOpen className="w-4 h-4" />
-                       Guidelines Available
-                     </h3>
-                     <p className="text-xs text-slate-600 mb-3">
-                       {guidelineRecommendations.length} evidence-based guideline{guidelineRecommendations.length !== 1 ? 's' : ''} found
-                     </p>
-                     <Button
-                       size="sm"
-                       variant="outline"
-                       onClick={() => {
-                         const guidelinesTab = document.querySelector('[value="guidelines"]');
-                         if (guidelinesTab) guidelinesTab.click();
-                       }}
-                       className="w-full gap-2 border-purple-300 text-purple-700 hover:bg-purple-100"
-                     >
-                       <BookOpen className="w-3 h-3" />
-                       View Guidelines
-                     </Button>
-                   </div>
-                 )}
+
                </div>
              </div>
            </TabsContent>

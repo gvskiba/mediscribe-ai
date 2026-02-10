@@ -14,6 +14,8 @@ import {
 import { base44 } from "@/api/base44Client";
 import GlobalSearchBar from "./components/search/GlobalSearchBar";
 
+import { Settings } from "lucide-react";
+
 const navItems = [
 { name: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
 { name: "New Note", icon: FileText, page: "NewNote" },
@@ -22,7 +24,8 @@ const navItems = [
 { name: "Section Library", icon: FileText, page: "TemplateSections" },
 { name: "Snippets", icon: FileText, page: "Snippets" },
 { name: "Guidelines", icon: BookOpen, page: "Guidelines" },
-{ name: "Calculators", icon: Activity, page: "Calculators" }];
+{ name: "Calculators", icon: Activity, page: "Calculators" },
+{ name: "Preferences", icon: Settings, page: "UserPreferences" }];
 
 
 export default function Layout({ children, currentPageName }) {

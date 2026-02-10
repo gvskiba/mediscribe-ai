@@ -1089,28 +1089,31 @@ Generated: ${new Date().toLocaleString()}
                      <Button
                        onClick={async () => {
                          try {
-                           if (!Array.isArray(note.diagnoses)) return;
+                           if (!Array.isArray(note.diagnoses) || note.diagnoses.length === 0) return;
+                           setAddingDiagnosesToAssessment(true);
                            let diagnosisText = `\n\nDIAGNOSES:\n`;
                            note.diagnoses.forEach((diagnosis, idx) => {
-                             const correspondingCode = icd10Suggestions.find(s => s.diagnosis === diagnosis);
-                             diagnosisText += `${idx + 1}. ${diagnosis}`;
-                             if (correspondingCode) {
-                               diagnosisText += ` (${correspondingCode.code})`;
-                             }
-                             diagnosisText += `\n`;
+                             diagnosisText += `${idx + 1}. ${diagnosis}\n`;
                            });
                            const updatedAssessment = (note.assessment || "") + diagnosisText;
                            await base44.entities.ClinicalNote.update(noteId, { assessment: updatedAssessment });
                            await queryClient.invalidateQueries({ queryKey: ["note", noteId] });
                            toast.success("Diagnoses added to assessment");
-                           } catch (error) {
+                         } catch (error) {
                            console.error("Failed to add diagnoses to assessment:", error);
                            toast.error("Failed to add diagnoses. Please try again.");
-                           }
+                         } finally {
+                           setAddingDiagnosesToAssessment(false);
+                         }
                        }}
-                       className="w-full gap-2 bg-blue-600 hover:bg-blue-700"
+                       disabled={addingDiagnosesToAssessment}
+                       className="w-full gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
                      >
-                       <Plus className="w-4 h-4" /> Add to Assessment
+                       {addingDiagnosesToAssessment ? (
+                         <><Loader2 className="w-4 h-4 animate-spin" /> Adding...</>
+                       ) : (
+                         <><Plus className="w-4 h-4" /> Add to Assessment</>
+                       )}
                      </Button>
                    </div>
                  )}

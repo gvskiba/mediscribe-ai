@@ -190,10 +190,21 @@ export default function Dashboard() {
                   ))}
                 </div>
               </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </motion.div>
+              <div className="flex gap-2 mt-4 pt-4 border-t">
+                <Button variant="outline" onClick={() => setManageDialogOpen(false)}>
+                  Close
+                </Button>
+                <Button onClick={() => {
+                  savePreferences();
+                  setManageDialogOpen(false);
+                }} className="bg-blue-600 hover:bg-blue-700">
+                  Save Changes
+                </Button>
+              </div>
+              </DialogContent>
+              </Dialog>
+              </div>
+              </motion.div>
 
       {/* Widgets Grid */}
       <DragDropContext onDragEnd={handleDragEnd}>

@@ -134,10 +134,12 @@ export default function EditableSection({
     }
   };
 
-  const applyFormatting = (format) => {
+  const applyFormatting = (format, e) => {
+    e?.preventDefault();
     const textarea = textareaRef.current;
     if (!textarea) return;
 
+    textarea.focus();
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const text = editValue || "";
@@ -160,7 +162,8 @@ export default function EditableSection({
 
     setTimeout(() => {
       textarea.focus();
-      textarea.setSelectionRange(start + formattedText.length, start + formattedText.length);
+      const newCursorPos = start + formattedText.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
     }, 0);
   };
 

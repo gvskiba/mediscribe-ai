@@ -89,6 +89,10 @@ export default function Dashboard() {
     );
   };
 
+  const handleLayoutChange = (newLayout) => {
+    setLayout(newLayout);
+  };
+
   const layoutConfigs = {
     "2x2": { cols: 2, name: "2x2 Grid" },
     "3x3": { cols: 3, name: "3x3 Grid" },

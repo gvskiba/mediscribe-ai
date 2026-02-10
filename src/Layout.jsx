@@ -12,6 +12,7 @@ import {
   Activity } from
 "lucide-react";
 import { base44 } from "@/api/base44Client";
+import GlobalSearchBar from "./components/search/GlobalSearchBar";
 
 const navItems = [
 { name: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },

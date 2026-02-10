@@ -78,6 +78,10 @@ export default function Dashboard() {
     "horizontal": { cols: 1, name: "Horizontal Stack" }
   };
 
+  const removeWidget = (widgetId) => {
+    setActiveWidgets(prev => prev.filter(id => id !== widgetId));
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}

@@ -1062,45 +1062,6 @@ Generated: ${new Date().toLocaleString()}
                    )}
                  </div>
 
-                 {/* Add Diagnoses to Assessment */}
-                 {note.diagnoses && Array.isArray(note.diagnoses) && note.diagnoses.length > 0 && (
-                   <div className="bg-white rounded-lg border border-slate-200 p-5">
-                     <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                       <Plus className="w-4 h-4 text-blue-600" />
-                       Add Diagnoses to Assessment
-                     </h3>
-                     <Button
-                       onClick={async () => {
-                         try {
-                           if (!Array.isArray(note.diagnoses) || note.diagnoses.length === 0) return;
-                           setAddingDiagnosesToAssessment(true);
-                           let diagnosisText = `\n\nDIAGNOSES:\n`;
-                           note.diagnoses.forEach((diagnosis, idx) => {
-                             diagnosisText += `${idx + 1}. ${diagnosis}\n`;
-                           });
-                           const updatedAssessment = (note.assessment || "") + diagnosisText;
-                           await base44.entities.ClinicalNote.update(noteId, { assessment: updatedAssessment });
-                           await queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                           toast.success("Diagnoses added to assessment");
-                         } catch (error) {
-                           console.error("Failed to add diagnoses to assessment:", error);
-                           toast.error("Failed to add diagnoses. Please try again.");
-                         } finally {
-                           setAddingDiagnosesToAssessment(false);
-                         }
-                       }}
-                       disabled={addingDiagnosesToAssessment}
-                       className="w-full gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-                     >
-                       {addingDiagnosesToAssessment ? (
-                         <><Loader2 className="w-4 h-4 animate-spin" /> Adding...</>
-                       ) : (
-                         <><Plus className="w-4 h-4" /> Add to Assessment</>
-                       )}
-                     </Button>
-                   </div>
-                 )}
-
                  {/* Clinical Guidelines */}
                  <div>
                    <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">

@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BookOpen, Search, Loader2, Sparkles, Filter, ArrowLeftRight } from "lucide-react";
+import { BookOpen, Search, Loader2, Sparkles, Filter, ArrowLeftRight, ChevronDown } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -34,6 +34,7 @@ export default function Guidelines() {
   const [comparing, setComparing] = useState(false);
   const [selectedQuery, setSelectedQuery] = useState(null);
   const [showSavedOnly, setShowSavedOnly] = useState(false);
+  const [resultsCollapsed, setResultsCollapsed] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: pastQueries = [], isLoading: queriesLoading } = useQuery({
@@ -775,17 +776,25 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
           </div>
 
           {/* Results */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <button
+              onClick={() => setResultsCollapsed(!resultsCollapsed)}
+              className="w-full flex items-center justify-between p-6 hover:bg-slate-50 transition-colors"
+            >
+              <div className="text-left">
                 <h3 className="text-lg font-bold text-slate-900">
                   {filteredQueries.length} {filteredQueries.length === 1 ? 'Guideline' : 'Guidelines'} Found
                 </h3>
-                <p className="text-sm text-slate-500 mt-1">
-                  {selectedForCompare.length > 0 && `${selectedForCompare.length} selected for comparison`}
-                </p>
+                {selectedForCompare.length > 0 && (
+                  <p className="text-sm text-slate-500 mt-1">
+                    {selectedForCompare.length} selected for comparison
+                  </p>
+                )}
               </div>
-            </div>
+              <ChevronDown className={`w-5 h-5 text-slate-600 transition-transform ${resultsCollapsed ? '-rotate-90' : ''}`} />
+            </button>
+            {!resultsCollapsed && (
+            <div className="border-t border-slate-200 px-6 py-6">
 
             {queriesLoading ? (
               <div className="space-y-4">
@@ -915,10 +924,12 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                   );
                 })}
               </div>
-            )}
-          </div>
-        </div>
-      )}
+              )}
+              </div>
+              )}
+              </div>
+              </div>
+              )}
 
       {/* Compare Dialog */}
       {showCompare && (

@@ -2,13 +2,16 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Sparkles, Check, Plus, ImageIcon, X } from "lucide-react";
+import { Loader2, Sparkles, Check, Plus, ImageIcon, X, Upload, FileText } from "lucide-react";
+import ImagingFindingsLinker from "./ImagingFindingsLinker";
 
 export default function ImagingAnalysis({ noteId, onAddToNote }) {
   const [imagingResults, setImagingResults] = useState("");
   const [analyzingSummary, setAnalyzingSummary] = useState(false);
   const [imagingSummary, setImagingSummary] = useState(null);
   const [error, setError] = useState(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
 
   const handleAnalyzeImaging = async () => {
     if (!imagingResults.trim()) {

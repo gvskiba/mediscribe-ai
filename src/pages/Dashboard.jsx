@@ -35,24 +35,9 @@ export default function Dashboard() {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4"
       >
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Patient Dashboard</h1>
-          <p className="text-slate-600 mt-1">Your clinical workspace at a glance.</p>
-        </div>
-        <div className="flex gap-3">
-          <Link to={createPageUrl("NewNote")}>
-            <Button className="bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 hover:from-purple-500 hover:via-violet-500 hover:to-indigo-500 text-white rounded-xl gap-2 shadow-lg shadow-purple-500/30 font-semibold">
-              <Plus className="w-4 h-4" /> New Clinical Note
-            </Button>
-          </Link>
-          <Link to={createPageUrl("Guidelines")}>
-            <Button variant="outline" className="rounded-xl gap-2 border-slate-300 hover:bg-slate-50 hover:border-slate-400 transition-all">
-              <BookOpen className="w-4 h-4" /> Search Knowledge
-            </Button>
-          </Link>
-        </div>
+        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Patient Dashboard</h1>
+        <p className="text-slate-600 mt-1">Your clinical workspace at a glance.</p>
       </motion.div>
 
       {/* Stats */}
@@ -85,10 +70,17 @@ export default function Dashboard() {
            transition={{ delay: 0.1 }}
            className="bg-blue-50 rounded-2xl border border-blue-200 overflow-hidden shadow-sm"
          >
-           <div className="flex items-center justify-between p-6 pb-2">
-             <h2 className="text-lg font-semibold text-slate-900">Recent Notes</h2>
-            <Link to={createPageUrl("NotesLibrary")} className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 font-medium">
-              View all <ArrowRight className="w-3 h-3" />
+           <div className="p-6 pb-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">Recent Notes</h2>
+              <Link to={createPageUrl("NotesLibrary")} className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 font-medium">
+                View all <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+            <Link to={createPageUrl("NewNote")} className="block">
+              <Button className="w-full bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 hover:from-purple-500 hover:via-violet-500 hover:to-indigo-500 text-white rounded-xl gap-2 shadow-lg shadow-purple-500/30 font-semibold">
+                <Plus className="w-4 h-4" /> New Clinical Note
+              </Button>
             </Link>
           </div>
           <div className="px-2 pb-2">
@@ -121,12 +113,16 @@ export default function Dashboard() {
            transition={{ delay: 0.2 }}
            className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm"
          >
-           <div className="flex items-center justify-between p-6 pb-2">
-             <h2 className="text-lg font-semibold text-slate-900">Recent Queries</h2>
-            <Link to={createPageUrl("Guidelines")} className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 font-medium">
-              Ask a question <ArrowRight className="w-3 h-3" />
-            </Link>
+           <div className="p-6 pb-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">Recent Queries</h2>
             </div>
+            <Link to={createPageUrl("Guidelines")} className="block">
+              <Button className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white rounded-xl gap-2 shadow-lg shadow-blue-500/30 font-semibold">
+                <BookOpen className="w-4 h-4" /> Search Knowledge
+              </Button>
+            </Link>
+          </div>
             <div className="px-2 pb-2">
             {isLoading ? (
               <div className="space-y-2 p-4">

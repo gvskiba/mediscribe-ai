@@ -26,6 +26,26 @@ export default function GuidelineDetail() {
     enabled: !!guidelineId,
   });
 
+  const generateSummary = useCallback(async () => {
+    if (!guideline) return;
+    
+    setLoadingSummary(true);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Provide a brief 2-3 sentence clinical summary of this guideline that captures the key takeaway for a healthcare provider:
+
+Question: "${guideline.question}"
+Answer: ${guideline.answer}
+
+Keep it concise, actionable, and focused on the most important clinical point.`,
+      });
+      setSummary(result);
+    } catch (error) {
+      console.error("Error generating summary:", error);
+    }
+    setLoadingSummary(false);
+  }, [guideline]);
+
   const generateRelatedGuidelines = useCallback(async () => {
     if (!guideline) return;
     

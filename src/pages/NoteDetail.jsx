@@ -952,12 +952,12 @@ Generated: ${new Date().toLocaleString()}
                        Allergies ({note.allergies.length})
                      </h3>
                      <div className="space-y-2">
-                       {note.allergies.map((allergy, idx) => (
-                         <div key={idx} className="bg-white rounded-lg p-3 border border-red-100 text-xs text-red-700 font-medium">
-                           ⚠️ {allergy}
-                         </div>
-                       ))}
-                     </div>
+                         {note.allergies && Array.isArray(note.allergies) && note.allergies.map((allergy, idx) => (
+                           <div key={idx} className="bg-white rounded-lg p-3 border border-red-100 text-xs text-red-700 font-medium">
+                             ⚠️ {allergy}
+                           </div>
+                         ))}
+                       </div>
                    </div>
                  )}
 

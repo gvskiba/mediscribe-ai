@@ -1739,10 +1739,12 @@ Generated: ${new Date().toLocaleString()}
                <div className="pt-6 border-t border-slate-200">
                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Diagnoses</p>
 
-                 {note.diagnoses && Array.isArray(note.diagnoses) && note.diagnoses.length > 0 ? (
+                 {note.diagnoses && Array.isArray(note.diagnoses) && note.diagnoses.filter(d => d && d.trim().length > 0 && !d.toLowerCase().includes("not documented") && !d.toLowerCase().includes("not extracted") && !d.toLowerCase().includes("based on")).length > 0 ? (
                    <div className="space-y-3">
                      <div className="flex flex-wrap gap-2">
-                       {note.diagnoses.map((diag, i) => (
+                       {note.diagnoses
+                         .filter(d => d && d.trim().length > 0 && !d.toLowerCase().includes("not documented") && !d.toLowerCase().includes("not extracted") && !d.toLowerCase().includes("based on"))
+                         .map((diag, i) => (
                          <Badge key={i} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                            {diag}
                          </Badge>

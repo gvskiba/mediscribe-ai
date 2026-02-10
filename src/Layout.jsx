@@ -16,16 +16,31 @@ import GlobalSearchBar from "./components/search/GlobalSearchBar";
 
 import { Settings } from "lucide-react";
 
-const navItems = [
-{ name: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
-{ name: "New Note", icon: FileText, page: "NewNote" },
-{ name: "Notes", icon: FileText, page: "NotesLibrary" },
-{ name: "Templates", icon: FileText, page: "NoteTemplates" },
-{ name: "Section Library", icon: FileText, page: "TemplateSections" },
-{ name: "Snippets", icon: FileText, page: "Snippets" },
-{ name: "Guidelines", icon: BookOpen, page: "Guidelines" },
-{ name: "Calculators", icon: Activity, page: "Calculators" },
-{ name: "Preferences", icon: Settings, page: "UserPreferences" }];
+const navSections = [
+      {
+        title: "Primary",
+        items: [
+          { name: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
+          { name: "New Note", icon: FileText, page: "NewNote" },
+          { name: "My Notes", icon: FileText, page: "NotesLibrary" },
+        ]
+      },
+      {
+        title: "Resources",
+        items: [
+          { name: "Guidelines", icon: BookOpen, page: "Guidelines" },
+          { name: "Calculators", icon: Activity, page: "Calculators" },
+          { name: "Templates", icon: FileText, page: "NoteTemplates" },
+          { name: "Snippets", icon: FileText, page: "Snippets" },
+        ]
+      },
+      {
+        title: "Settings",
+        items: [
+          { name: "Preferences", icon: Settings, page: "UserPreferences" },
+        ]
+      }
+    ];
 
 
 export default function Layout({ children, currentPageName }) {
@@ -101,32 +116,37 @@ export default function Layout({ children, currentPageName }) {
             </div>
           </div>
         </div>
-        <div className="px-4 py-3 border-b border-slate-200 space-y-3">
+        <div className="px-4 py-3 border-b border-slate-200 space-y-2">
           <GlobalSearchBar />
           <Link
             to={createPageUrl("NewNote")}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-4 py-3 font-semibold text-sm transition-all duration-300 shadow-sm flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]">
-
+            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg px-4 py-2.5 font-semibold text-sm transition-all duration-300 shadow-sm flex items-center justify-center gap-2 hover:shadow-md">
             <FileText className="w-4 h-4" />
             New Note
           </Link>
         </div>
-        <nav className="flex-1 p-4 space-y-1.5">
-          {navItems.map((item) =>
-          <Link
-            key={item.page}
-            to={createPageUrl(item.page)}
-            className={`nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium ${
-            currentPageName === item.page ?
-            "active text-blue-600 bg-blue-50" :
-            "text-slate-600 hover:text-slate-900 hover:bg-slate-100"}`
-            }>
-
-              <item.icon className="w-[18px] h-[18px]" />
-              {item.name}
-              </Link>
-          )}
-              </nav>
+        <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
+          {navSections.map((section) => (
+            <div key={section.title}>
+              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 mb-2">{section.title}</h3>
+              <div className="space-y-1">
+                {section.items.map((item) =>
+                  <Link
+                    key={item.page}
+                    to={createPageUrl(item.page)}
+                    className={`nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    currentPageName === item.page ?
+                    "active text-blue-600 bg-blue-50 border-l-3 border-blue-600" :
+                    "text-slate-600 hover:text-slate-900 hover:bg-slate-50"}`}
+                  >
+                    <item.icon className="w-[16px] h-[16px]" />
+                    {item.name}
+                  </Link>
+                )}
+              </div>
+            </div>
+          ))}
+        </nav>
               <div className="bg-blue-100 p-4 border-t border-slate-200">
               <button
             onClick={() => base44.auth.logout()}

@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BookOpen, Search, Loader2, Sparkles, Filter, ArrowLeftRight } from "lucide-react";
+import { BookOpen, Search, Loader2, Sparkles, Filter, ArrowLeftRight, Star, Trash2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Checkbox } from "@/components/ui/checkbox";
 

@@ -1221,6 +1221,57 @@ ${JSON.stringify(structuredNote, null, 2)}`,
              <ManualHistoryInput
              onHistoryExtracted={handleManualHistoryExtracted} />
 
+            {/* Template Auto-Filler */}
+            {selectedTemplateForAutoFill && showAutoFiller && (
+              <TemplateAutoFiller
+                template={selectedTemplateForAutoFill}
+                patientData={rawData}
+                rawNote={rawData?.raw_note}
+                onContentGenerated={(filledSections) => {
+                  // Apply filled sections to structured note
+                  const updatedNote = { ...structuredNote };
+                  
+                  Object.values(filledSections).forEach(section => {
+                    if (section.generated_content) {
+                      // Map section names to note fields
+                      const sectionName = section.name.toLowerCase();
+                      if (sectionName.includes('history') && sectionName.includes('present')) {
+                        updatedNote.history_of_present_illness = section.generated_content;
+                      } else if (sectionName.includes('review') && sectionName.includes('system')) {
+                        updatedNote.review_of_systems = section.generated_content;
+                      } else if (sectionName.includes('physical') || sectionName.includes('exam')) {
+                        updatedNote.physical_exam = section.generated_content;
+                      } else if (sectionName.includes('assessment')) {
+                        updatedNote.assessment = section.generated_content;
+                      } else if (sectionName.includes('plan')) {
+                        updatedNote.plan = section.generated_content;
+                      } else if (sectionName.includes('chief') || sectionName.includes('complaint')) {
+                        updatedNote.chief_complaint = section.generated_content;
+                      } else if (sectionName.includes('medical') && sectionName.includes('history')) {
+                        updatedNote.medical_history = section.generated_content;
+                      }
+                    }
+                  });
+                  
+                  setStructuredNote(updatedNote);
+                  setShowAutoFiller(false);
+                }}
+              />
+            )}
+
+            {selectedTemplateForAutoFill && !showAutoFiller && (
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                <Button
+                  onClick={() => setShowAutoFiller(true)}
+                  variant="outline"
+                  className="w-full gap-2 text-cyan-700 border-cyan-300 hover:bg-cyan-50"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Auto-Fill Template Sections with AI
+                </Button>
+              </div>
+            )}
+
             {/* Section Inserter */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
               <SectionInserter

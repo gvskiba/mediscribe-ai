@@ -1488,7 +1488,7 @@ Generated: ${new Date().toLocaleString()}
                <div className="pt-6 border-t border-slate-200">
                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Diagnoses</p>
 
-                 {note.diagnoses && note.diagnoses.length > 0 ? (
+                 {note.diagnoses && Array.isArray(note.diagnoses) && note.diagnoses.length > 0 ? (
                    <div className="space-y-3">
                      <div className="flex flex-wrap gap-2">
                        {note.diagnoses.map((diag, i) => (

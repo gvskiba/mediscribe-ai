@@ -1858,8 +1858,13 @@ Generated: ${new Date().toLocaleString()}
                            {note.diagnoses
                              .filter(d => d && /^[A-Z0-9]{1,}.*-/.test(d.trim()))
                              .map((diag, i) => (
-                             <div key={i} className="p-3 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-white hover:border-blue-300 hover:shadow-sm transition-all">
-                               <p className="text-sm font-medium text-slate-900">{diag}</p>
+                             <div key={i} className="flex items-start gap-3 p-3 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-white hover:border-blue-300 hover:shadow-sm transition-all">
+                               <div className="flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white text-xs font-bold flex-shrink-0">
+                                 {i + 1}
+                               </div>
+                               <div className="flex-1 min-w-0">
+                                 <p className="text-sm font-medium text-slate-900 break-words">{diag}</p>
+                               </div>
                              </div>
                            ))}
                          </div>

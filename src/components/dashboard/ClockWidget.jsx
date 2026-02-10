@@ -1,10 +1,117 @@
 import React, { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import moment from "moment";
+import { Button } from "@/components/ui/button";
+
+const AnalogClock = ({ time }) => {
+  const hours = time.hours() % 12;
+  const minutes = time.minutes();
+  const seconds = time.seconds();
+
+  const secondDegrees = (seconds / 60) * 360;
+  const minuteDegrees = (minutes / 60) * 360 + (seconds / 60) * 6;
+  const hourDegrees = (hours / 12) * 360 + (minutes / 60) * 30;
+
+  return (
+    <div className="relative w-full aspect-square max-w-xs mx-auto">
+      <div className="absolute inset-0 rounded-full border-8 border-slate-300 bg-white shadow-lg flex items-center justify-center">
+        {/* Hour markers */}
+        {[...Array(12)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-3 bg-slate-400"
+            style={{
+              left: "50%",
+              top: "8%",
+              transformOrigin: "center 92%",
+              transform: `rotate(${(i + 1) * 30}deg)`,
+            }}
+          />
+        ))}
+
+        {/* Center dot */}
+        <div className="absolute w-3 h-3 bg-slate-900 rounded-full z-10" />
+
+        {/* Hour hand */}
+        <div
+          className="absolute w-2 h-20 bg-slate-900 rounded-full origin-bottom left-1/2 -translate-x-1/2 bottom-1/2"
+          style={{ transform: `translateX(-50%) rotateZ(${hourDegrees}deg)` }}
+        />
+
+        {/* Minute hand */}
+        <div
+          className="absolute w-1.5 h-28 bg-slate-600 rounded-full origin-bottom left-1/2 -translate-x-1/2 bottom-1/2"
+          style={{ transform: `translateX(-50%) rotateZ(${minuteDegrees}deg)` }}
+        />
+
+        {/* Second hand */}
+        <div
+          className="absolute w-0.5 h-32 bg-red-500 origin-bottom left-1/2 -translate-x-1/2 bottom-1/2"
+          style={{ transform: `translateX(-50%) rotateZ(${secondDegrees}deg)` }}
+        />
+      </div>
+    </div>
+  );
+};
+
+const MinimalClock = ({ time }) => {
+  return (
+    <div className="text-center">
+      <div className="text-5xl font-light text-slate-900 font-mono tracking-tight mb-1">
+        {time.format("HH:mm")}
+      </div>
+      <div className="text-xs text-slate-400 tracking-widest uppercase">
+        {time.format("A")}
+      </div>
+    </div>
+  );
+};
+
+const BinaryClockCell = ({ value }) => {
+  return (
+    <div className="flex gap-0.5">
+      {[3, 2, 1, 0].map((bit) => (
+        <div
+          key={bit}
+          className={`w-3 h-3 rounded-sm ${
+            (value >> bit) & 1 ? "bg-blue-600" : "bg-slate-200"
+          }`}
+        />
+      ))}
+    </div>
+  );
+};
+
+const BinaryClock = ({ time }) => {
+  const h = time.hours();
+  const m = time.minutes();
+  const s = time.seconds();
+
+  return (
+    <div className="flex flex-col gap-3 items-center">
+      <div className="flex gap-4">
+        <BinaryClockCell value={Math.floor(h / 10)} />
+        <BinaryClockCell value={h % 10} />
+      </div>
+      <div className="flex gap-4">
+        <BinaryClockCell value={Math.floor(m / 10)} />
+        <BinaryClockCell value={m % 10} />
+      </div>
+      <div className="flex gap-4">
+        <BinaryClockCell value={Math.floor(s / 10)} />
+        <BinaryClockCell value={s % 10} />
+      </div>
+      <div className="text-xs text-slate-400 mt-2">
+        {time.format("HH:mm:ss")}
+      </div>
+    </div>
+  );
+};
 
 export default function ClockWidget() {
   const [time, setTime] = useState(moment());
   const [calendarDate, setCalendarDate] = useState(moment());
+  const [clockFace, setClockFace] = useState("digital");
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -33,19 +140,44 @@ export default function ClockWidget() {
 
   return (
     <div className="flex flex-col h-full gap-6">
-      {/* Digital Clock */}
-      <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl p-8 border border-slate-200 shadow-sm">
-        <div className="flex flex-col items-center justify-center gap-2">
-          <div className="text-6xl font-bold text-slate-900 font-mono tracking-tighter">
-            {time.format("HH:mm")}
+      {/* Clock Styles Selector */}
+      <div className="flex gap-2 justify-center">
+        {[
+          { id: "digital", label: "Digital" },
+          { id: "analog", label: "Analog" },
+          { id: "minimal", label: "Minimal" },
+          { id: "binary", label: "Binary" },
+        ].map((style) => (
+          <Button
+            key={style.id}
+            variant={clockFace === style.id ? "default" : "outline"}
+            size="sm"
+            onClick={() => setClockFace(style.id)}
+            className="text-xs"
+          >
+            {style.label}
+          </Button>
+        ))}
+      </div>
+
+      {/* Clock Display */}
+      <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl p-8 border border-slate-200 shadow-sm flex items-center justify-center">
+        {clockFace === "digital" && (
+          <div className="flex flex-col items-center justify-center gap-2">
+            <div className="text-6xl font-bold text-slate-900 font-mono tracking-tighter">
+              {time.format("HH:mm")}
+            </div>
+            <div className="text-sm font-medium text-slate-500 tracking-wide">
+              {time.format("dddd")}
+            </div>
+            <div className="text-xs text-slate-400">
+              {time.format("MMMM D, YYYY")}
+            </div>
           </div>
-          <div className="text-sm font-medium text-slate-500 tracking-wide">
-            {time.format("dddd")}
-          </div>
-          <div className="text-xs text-slate-400">
-            {time.format("MMMM D, YYYY")}
-          </div>
-        </div>
+        )}
+        {clockFace === "analog" && <AnalogClock time={time} />}
+        {clockFace === "minimal" && <MinimalClock time={time} />}
+        {clockFace === "binary" && <BinaryClock time={time} />}
       </div>
 
       {/* Calendar */}

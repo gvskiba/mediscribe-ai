@@ -1757,14 +1757,14 @@ Generated: ${new Date().toLocaleString()}
                      <h3 className="text-sm font-bold text-slate-900">Clinical Diagnoses</h3>
                      <p className="text-xs text-slate-500 mt-1">Primary and secondary diagnoses identified</p>
                    </div>
-                   {note.diagnoses && Array.isArray(note.diagnoses) && note.diagnoses.filter(d => d && d.trim().length > 0 && !d.toLowerCase().includes("not documented") && !d.toLowerCase().includes("not extracted") && !d.toLowerCase().includes("based on")).length > 0 && (
-                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
-                       {note.diagnoses.filter(d => d && d.trim().length > 0 && !d.toLowerCase().includes("not documented") && !d.toLowerCase().includes("not extracted") && !d.toLowerCase().includes("based on")).length} Active
-                     </span>
-                   )}
-                 </div>
+                   {note.diagnoses && Array.isArray(note.diagnoses) && note.diagnoses.filter(d => d && /^[A-Z0-9]{1,}.*-/.test(d.trim())).length > 0 && (
+                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
+                         {note.diagnoses.filter(d => d && /^[A-Z0-9]{1,}.*-/.test(d.trim())).length} ICD-10 Codes
+                       </span>
+                     )}
+                   </div>
 
-                 {note.diagnoses && Array.isArray(note.diagnoses) && note.diagnoses.filter(d => d && d.trim().length > 0 && !d.toLowerCase().includes("not documented") && !d.toLowerCase().includes("not extracted") && !d.toLowerCase().includes("based on")).length > 0 ? (
+                   {note.diagnoses && Array.isArray(note.diagnoses) && note.diagnoses.filter(d => d && /^[A-Z0-9]{1,}.*-/.test(d.trim())).length > 0 ? (
                    <div className="space-y-3">
                      <div className="grid gap-2">
                        {note.diagnoses

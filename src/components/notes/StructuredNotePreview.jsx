@@ -851,7 +851,7 @@ FORMATTING RULES (CRITICAL):
                field="history_of_present_illness"
                type="textarea"
                onUpdate={onUpdate}
-               onReanalyze={onReanalyze}
+               onReanalyze={handleReanalyze}
                hideBorder={true}
                noteContext={{
                  diagnoses: note.diagnoses,

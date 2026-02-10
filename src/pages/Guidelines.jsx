@@ -838,7 +838,14 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                          <input 
                            type="checkbox"
                            checked={selectedForCompare.some(q => q.id === query.id)}
-                           onChange={() => toggleSelectForCompare(query)}
+                           onChange={(e) => {
+                             e.stopPropagation();
+                             if (e.target.checked) {
+                               setSelectedForCompare(prev => [...prev, query]);
+                             } else {
+                               setSelectedForCompare(prev => prev.filter(q => q.id !== query.id));
+                             }
+                           }}
                            className="rounded w-5 h-5 cursor-pointer"
                          />
                        </div>

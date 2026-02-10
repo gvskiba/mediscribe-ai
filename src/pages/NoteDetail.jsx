@@ -22,7 +22,8 @@ import {
   FileCode,
   Clock,
   AlertCircle,
-  ImageIcon
+  ImageIcon,
+  Beaker
 } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";

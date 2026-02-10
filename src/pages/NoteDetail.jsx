@@ -1220,6 +1220,133 @@ Generated: ${new Date().toLocaleString()}
                    )}
                  </div>
 
+                 {/* Drug-Drug Interactions */}
+                 <div>
+                   <div className="flex items-center justify-between mb-4">
+                     <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                       <AlertCircle className="w-4 h-4 text-red-600" />
+                       Drug-Drug Interactions
+                     </h3>
+                   </div>
+
+                   {loadingInteractions ? (
+                     <div className="flex items-center gap-3 text-slate-500 py-8">
+                       <Loader2 className="w-5 h-5 animate-spin" />
+                       <span className="text-sm">Analyzing medications...</span>
+                     </div>
+                   ) : drugInteractions.length > 0 ? (
+                     <div className="space-y-3">
+                       {drugInteractions.map((interaction, idx) => (
+                         <div key={idx} className={`rounded-lg border p-4 ${
+                           interaction.severity === 'severe' ? 'bg-red-50 border-red-200' :
+                           interaction.severity === 'moderate' ? 'bg-yellow-50 border-yellow-200' :
+                           'bg-blue-50 border-blue-200'
+                         }`}>
+                           <p className="font-semibold text-sm text-slate-900">{interaction.drug_pair}</p>
+                           <p className={`text-xs font-medium mt-1 ${
+                             interaction.severity === 'severe' ? 'text-red-700' :
+                             interaction.severity === 'moderate' ? 'text-yellow-700' :
+                             'text-blue-700'
+                           }`}>Severity: {interaction.severity.toUpperCase()}</p>
+                           <p className="text-xs text-slate-600 mt-2"><strong>Mechanism:</strong> {interaction.mechanism}</p>
+                           <p className="text-xs text-slate-600 mt-1"><strong>Recommendation:</strong> {interaction.recommendation}</p>
+                         </div>
+                       ))}
+                     </div>
+                   ) : (
+                     <p className="text-sm text-slate-500 text-center py-8">No significant drug-drug interactions detected</p>
+                   )}
+                 </div>
+
+                 {/* Differential Diagnosis */}
+                 <div>
+                   <div className="flex items-center justify-between mb-4">
+                     <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                       <Sparkles className="w-4 h-4 text-indigo-600" />
+                       Differential Diagnosis
+                     </h3>
+                   </div>
+
+                   {loadingDifferential ? (
+                     <div className="flex items-center gap-3 text-slate-500 py-8">
+                       <Loader2 className="w-5 h-5 animate-spin" />
+                       <span className="text-sm">Generating differential...</span>
+                     </div>
+                   ) : differentialDiagnosis.length > 0 ? (
+                     <div className="space-y-3">
+                       {differentialDiagnosis.map((diff, idx) => (
+                         <div key={idx} className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+                           <div className="flex items-start justify-between">
+                             <div className="flex-1">
+                               <p className="font-semibold text-sm text-slate-900">{diff.diagnosis}</p>
+                               <div className="mt-2 flex items-center gap-2">
+                                 <span className="text-xs font-medium text-indigo-700">Likelihood:</span>
+                                 <div className="w-24 h-2 bg-indigo-200 rounded-full overflow-hidden">
+                                   <div className="h-full bg-indigo-600" style={{ width: `${(diff.likelihood_rank / 5) * 100}%` }} />
+                                 </div>
+                                 <span className="text-xs text-indigo-700 font-bold">{diff.likelihood_rank}/5</span>
+                               </div>
+                             </div>
+                           </div>
+                           <p className="text-xs text-slate-600 mt-3"><strong>Reasoning:</strong> {diff.clinical_reasoning}</p>
+                           {diff.red_flags_to_monitor?.length > 0 && (
+                             <div className="mt-2">
+                               <p className="text-xs font-semibold text-red-700 mb-1">Red Flags to Monitor:</p>
+                               <ul className="space-y-1">
+                                 {diff.red_flags_to_monitor.map((flag, i) => (
+                                   <li key={i} className="text-xs text-slate-600 flex gap-2">
+                                     <span>•</span>
+                                     <span>{flag}</span>
+                                   </li>
+                                 ))}
+                               </ul>
+                             </div>
+                           )}
+                         </div>
+                       ))}
+                     </div>
+                   ) : (
+                     <p className="text-sm text-slate-500 text-center py-8">No differential diagnosis generated</p>
+                   )}
+                 </div>
+
+                 {/* Follow-up Tests */}
+                 <div>
+                   <div className="flex items-center justify-between mb-4">
+                     <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                       <Beaker className="w-4 h-4 text-emerald-600" />
+                       Suggested Follow-up Tests & Consultations
+                     </h3>
+                   </div>
+
+                   {loadingFollowUp ? (
+                     <div className="flex items-center gap-3 text-slate-500 py-8">
+                       <Loader2 className="w-5 h-5 animate-spin" />
+                       <span className="text-sm">Generating suggestions...</span>
+                     </div>
+                   ) : followUpTests.length > 0 ? (
+                     <div className="space-y-3">
+                       {followUpTests.map((test, idx) => (
+                         <div key={idx} className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                           <p className="font-semibold text-sm text-slate-900">{test.test_name}</p>
+                           <div className="mt-2 flex gap-4 flex-wrap">
+                             <span className={`text-xs px-2 py-1 rounded font-medium ${
+                               test.type === 'lab' ? 'bg-blue-100 text-blue-700' :
+                               test.type === 'imaging' ? 'bg-purple-100 text-purple-700' :
+                               test.type === 'consult' ? 'bg-orange-100 text-orange-700' :
+                               'bg-slate-100 text-slate-700'
+                             }`}>{test.type.charAt(0).toUpperCase() + test.type.slice(1)}</span>
+                             <span className="text-xs text-slate-600"><strong>Timing:</strong> {test.timing}</span>
+                           </div>
+                           <p className="text-xs text-slate-600 mt-3">{test.clinical_rationale}</p>
+                         </div>
+                       ))}
+                     </div>
+                   ) : (
+                     <p className="text-sm text-slate-500 text-center py-8">No follow-up tests suggested</p>
+                   )}
+                 </div>
+
                  {/* Clinical Guidelines */}
                  <div>
                    <div className="flex items-center justify-between mb-4">

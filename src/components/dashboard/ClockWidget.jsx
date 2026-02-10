@@ -12,43 +12,70 @@ const AnalogClock = ({ time }) => {
   const minuteDegrees = (minutes / 60) * 360 + (seconds / 60) * 6;
   const hourDegrees = (hours / 12) * 360 + (minutes / 60) * 30;
 
+  const numbers = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+
   return (
     <div className="relative w-full aspect-square max-w-xs mx-auto">
-      <div className="absolute inset-0 rounded-full border-8 border-slate-300 bg-white shadow-lg flex items-center justify-center">
-        {/* Hour markers */}
+      <div className="absolute inset-0 rounded-full border-8 border-slate-300 bg-gradient-to-br from-white to-slate-50 shadow-lg flex items-center justify-center">
+        {/* Hour numbers */}
+        {numbers.map((num) => {
+          const angle = (num === 12 ? 0 : num * 30) * (Math.PI / 180);
+          const radius = 85;
+          const x = 50 + radius * Math.sin(angle);
+          const y = 50 - radius * Math.cos(angle);
+
+          return (
+            <div
+              key={num}
+              className="absolute w-6 h-6 flex items-center justify-center text-sm font-semibold text-slate-900"
+              style={{
+                left: `${x}%`,
+                top: `${y}%`,
+                transform: "translate(-50%, -50%)",
+              }}
+            >
+              {num}
+            </div>
+          );
+        })}
+
+        {/* Hour markers for non-number positions */}
         {[...Array(12)].map((_, i) => (
           <div
-            key={i}
-            className="absolute w-1 h-3 bg-slate-400"
+            key={`marker-${i}`}
+            className="absolute w-1 h-3 bg-slate-300 rounded-full"
             style={{
               left: "50%",
-              top: "8%",
-              transformOrigin: "center 92%",
-              transform: `rotate(${(i + 1) * 30}deg)`,
+              top: "5%",
+              transformOrigin: "center 95%",
+              transform: `rotate(${i * 30}deg)`,
             }}
           />
         ))}
 
-        {/* Center dot */}
-        <div className="absolute w-3 h-3 bg-slate-900 rounded-full z-10" />
+        {/* Center dot outer ring */}
+        <div className="absolute w-5 h-5 bg-slate-100 rounded-full z-20" />
 
         {/* Hour hand */}
         <div
-          className="absolute w-2 h-20 bg-slate-900 rounded-full origin-bottom left-1/2 -translate-x-1/2 bottom-1/2"
+          className="absolute w-2.5 h-16 bg-slate-900 rounded-full origin-bottom left-1/2 bottom-1/2"
           style={{ transform: `translateX(-50%) rotateZ(${hourDegrees}deg)` }}
         />
 
         {/* Minute hand */}
         <div
-          className="absolute w-1.5 h-28 bg-slate-600 rounded-full origin-bottom left-1/2 -translate-x-1/2 bottom-1/2"
+          className="absolute w-1.5 h-24 bg-slate-700 rounded-full origin-bottom left-1/2 bottom-1/2"
           style={{ transform: `translateX(-50%) rotateZ(${minuteDegrees}deg)` }}
         />
 
         {/* Second hand */}
         <div
-          className="absolute w-0.5 h-32 bg-red-500 origin-bottom left-1/2 -translate-x-1/2 bottom-1/2"
+          className="absolute w-0.5 h-28 bg-blue-500 origin-bottom left-1/2 bottom-1/2"
           style={{ transform: `translateX(-50%) rotateZ(${secondDegrees}deg)` }}
         />
+
+        {/* Center dot */}
+        <div className="absolute w-3 h-3 bg-slate-900 rounded-full z-30" />
       </div>
     </div>
   );

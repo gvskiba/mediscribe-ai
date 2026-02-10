@@ -56,9 +56,9 @@ import NewNote from './pages/NewNote';
 import NoteDetail from './pages/NoteDetail';
 import NoteTemplates from './pages/NoteTemplates';
 import NotesLibrary from './pages/NotesLibrary';
+import Search from './pages/Search';
 import Snippets from './pages/Snippets';
 import TemplateSections from './pages/TemplateSections';
-import Search from './pages/Search';
 import UserPreferences from './pages/UserPreferences';
 import __Layout from './Layout.jsx';
 
@@ -73,9 +73,9 @@ export const PAGES = {
     "NoteDetail": NoteDetail,
     "NoteTemplates": NoteTemplates,
     "NotesLibrary": NotesLibrary,
+    "Search": Search,
     "Snippets": Snippets,
     "TemplateSections": TemplateSections,
-    "Search": Search,
     "UserPreferences": UserPreferences,
 }
 

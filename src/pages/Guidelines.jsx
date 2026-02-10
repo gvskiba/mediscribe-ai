@@ -33,6 +33,7 @@ export default function Guidelines() {
   const [comparison, setComparison] = useState(null);
   const [comparing, setComparing] = useState(false);
   const [selectedQuery, setSelectedQuery] = useState(null);
+  const [showSavedOnly, setShowSavedOnly] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: pastQueries = [], isLoading: queriesLoading } = useQuery({

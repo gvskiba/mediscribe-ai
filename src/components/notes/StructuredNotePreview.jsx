@@ -1083,28 +1083,7 @@ FORMATTING RULES (CRITICAL):
            </div>
          )}
 
-        {/* Diagnoses Box */}
-         <div className="bg-white rounded-xl border-2 border-amber-300 shadow-sm overflow-hidden">
-           <div className="bg-amber-50 px-4 py-3 border-b border-amber-200 flex items-center gap-2">
-             <Target className="w-5 h-5 text-amber-600" />
-             <h3 className="font-semibold text-slate-900">Diagnoses</h3>
-           </div>
-           <div className="p-4">
-             <EditableSection
-               icon={Target}
-               title=""
-               color="amber"
-               value={note.diagnoses && note.diagnoses.length > 0 ? note.diagnoses : ["Not extracted"]}
-               field="diagnoses"
-               type="array"
-               onUpdate={onUpdate}
-               onReanalyze={handleReanalyze}
-               hideBorder={true}
-             />
-           </div>
-         </div>
-
-         </div>
+        </div>
 
       {/* Preview & Copy Dialog */}
       <MedicalKnowledgeSearch

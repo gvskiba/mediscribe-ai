@@ -1059,8 +1059,6 @@ ${JSON.stringify(structuredNote, null, 2)}`,
                   specialty: specialty || intakeData.specialty,
                   note_type: "progress_note"
                 }, null);
-                // Reset to form selection after processing
-                setUseIntakeForm(false);
               }}
             />
           </div>

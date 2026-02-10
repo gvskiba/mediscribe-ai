@@ -1065,27 +1065,10 @@ Generated: ${new Date().toLocaleString()}
                  {/* Add Diagnoses to Assessment */}
                  {note.diagnoses && Array.isArray(note.diagnoses) && note.diagnoses.length > 0 && (
                    <div className="bg-white rounded-lg border border-slate-200 p-5">
-                     <div className="flex items-center justify-between mb-4">
-                       <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                         <Plus className="w-4 h-4 text-blue-600" />
-                         Add Diagnoses to Assessment
-                       </h3>
-                     </div>
-                     <div className="space-y-3 mb-4">
-                       {note.diagnoses.map((diagnosis, idx) => {
-                         const correspondingCode = icd10Suggestions.find(s => s.diagnosis === diagnosis);
-                         return (
-                           <div key={idx} className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                             <div className="flex-1">
-                               <p className="text-sm font-medium text-slate-900">{diagnosis}</p>
-                               {correspondingCode && (
-                                 <p className="text-xs text-slate-600 mt-1">Code: {correspondingCode.code} - {correspondingCode.description}</p>
-                               )}
-                             </div>
-                           </div>
-                         );
-                       })}
-                     </div>
+                     <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                       <Plus className="w-4 h-4 text-blue-600" />
+                       Add Diagnoses to Assessment
+                     </h3>
                      <Button
                        onClick={async () => {
                          try {

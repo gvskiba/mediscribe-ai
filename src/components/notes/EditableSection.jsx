@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Loader2, Plus, X, FileText } from "lucide-react";
+import { Sparkles, Loader2, Plus, X, FileText, Bold, Italic, List } from "lucide-react";
 import SnippetPicker from "../snippets/SnippetPicker";
 import SectionAISuggestions from "./SectionAISuggestions";
 

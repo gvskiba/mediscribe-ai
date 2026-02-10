@@ -837,14 +837,13 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                     <div key={query.id} className="flex items-start gap-4 group">
                       <div className="pt-6" onClick={(e) => e.stopPropagation()}>
                          <input 
-                           key={`compare-${query.id}`}
                            type="checkbox"
-                           checked={selectedForCompare.some(q => q.id === query.id)}
+                           checked={selectedForCompareIds.includes(query.id)}
                            onChange={(e) => {
                              if (e.target.checked) {
-                               setSelectedForCompare(prev => [...prev, query]);
+                               setSelectedForCompareIds(prev => [...prev, query.id]);
                              } else {
-                               setSelectedForCompare(prev => prev.filter(q => q.id !== query.id));
+                               setSelectedForCompareIds(prev => prev.filter(id => id !== query.id));
                              }
                            }}
                            className="rounded w-5 h-5 cursor-pointer"

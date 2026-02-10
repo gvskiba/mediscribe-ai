@@ -300,17 +300,27 @@ Keep recommendations specific, actionable, and evidence-based.`,
             }
           });
 
-          return { 
-            condition: cleanCondition, 
-            guideline_id: `guideline_${Date.now()}_${Math.random()}`,
-            ...result 
-          };
+            return { 
+              condition: cleanCondition, 
+              guideline_id: `guideline_${Date.now()}_${Math.random()}`,
+              ...result 
+            };
+          } catch (err) {
+            console.error(`Failed to fetch guideline for ${cleanCondition}:`, err);
+            return null;
+          }
         })
       );
 
-      setGuidelineRecommendations(recommendations);
+      const validRecommendations = recommendations.filter(r => r !== null);
+      setGuidelineRecommendations(validRecommendations);
+      
+      if (validRecommendations.length === 0) {
+        console.warn("No valid guideline recommendations returned");
+      }
     } catch (error) {
       console.error("Failed to fetch guidelines:", error);
+      toast.error("Failed to fetch guidelines");
     } finally {
       setLoadingGuidelines(false);
     }

@@ -1097,8 +1097,9 @@ Generated: ${new Date().toLocaleString()}
                                diagnosisText += ` (${correspondingCode.code})`;
                              }
                              diagnosisText += `\n`;
-                           });
-                           const updatedAssessment = (note.assessment || "") + diagnosisText;
+                             });
+                             }
+                             const updatedAssessment = (note.assessment || "") + diagnosisText;
                            await base44.entities.ClinicalNote.update(noteId, { assessment: updatedAssessment });
                            await queryClient.invalidateQueries({ queryKey: ["note", noteId] });
                          } catch (error) {

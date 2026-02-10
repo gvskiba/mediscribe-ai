@@ -1044,112 +1044,50 @@ Generated: ${new Date().toLocaleString()}
                  </Button>
                </div>
              )}
-             <div className="space-y-6">
-                 <StructuredNotePreview 
-                   note={note} 
-                   onUpdate={(field, value) => {
-                     queryClient.setQueryData(["note", noteId], (old) => ({
-                       ...old,
-                       [field]: value
-                     }));
-                   }}
-                   onReanalyze={async (field) => {
-                     if (!note?.raw_note) return null;
+             <StructuredNotePreview 
+               note={note} 
+               onUpdate={(field, value) => {
+                 queryClient.setQueryData(["note", noteId], (old) => ({
+                   ...old,
+                   [field]: value
+                 }));
+               }}
+               onReanalyze={async (field) => {
+                 if (!note?.raw_note) return null;
 
-                     const fieldPrompts = {
-                       chief_complaint: `Extract the chief complaint from this clinical note: ${note.raw_note}`,
-                       history_of_present_illness: `Extract the history of present illness with OLDCARTS elements from this clinical note: ${note.raw_note}`,
-                       medical_history: `Extract the relevant medical history from this clinical note: ${note.raw_note}`,
-                       review_of_systems: `Extract the review of systems from this clinical note: ${note.raw_note}`,
-                       physical_exam: `Extract the physical examination findings from this clinical note: ${note.raw_note}`,
-                       assessment: `Extract the assessment from this clinical note: ${note.raw_note}`,
-                       plan: `Extract the treatment plan from this clinical note: ${note.raw_note}`,
-                       clinical_impression: `Extract the clinical impression from this clinical note: ${note.raw_note}`,
-                     };
+                 const fieldPrompts = {
+                   chief_complaint: `Extract the chief complaint from this clinical note: ${note.raw_note}`,
+                   history_of_present_illness: `Extract the history of present illness with OLDCARTS elements from this clinical note: ${note.raw_note}`,
+                   medical_history: `Extract the relevant medical history from this clinical note: ${note.raw_note}`,
+                   review_of_systems: `Extract the review of systems from this clinical note: ${note.raw_note}`,
+                   physical_exam: `Extract the physical examination findings from this clinical note: ${note.raw_note}`,
+                   assessment: `Extract the assessment from this clinical note: ${note.raw_note}`,
+                   plan: `Extract the treatment plan from this clinical note: ${note.raw_note}`,
+                   clinical_impression: `Extract the clinical impression from this clinical note: ${note.raw_note}`,
+                 };
 
-                     try {
-                       const result = await base44.integrations.Core.InvokeLLM({
-                         prompt: fieldPrompts[field] || `Reanalyze this field in the clinical note: ${note.raw_note}`,
-                         add_context_from_internet: false
-                       });
+                 try {
+                   const result = await base44.integrations.Core.InvokeLLM({
+                     prompt: fieldPrompts[field] || `Reanalyze this field in the clinical note: ${note.raw_note}`,
+                     add_context_from_internet: false
+                   });
 
-                       queryClient.setQueryData(["note", noteId], (old) => ({
-                         ...old,
-                         [field]: result
-                       }));
+                   queryClient.setQueryData(["note", noteId], (old) => ({
+                     ...old,
+                     [field]: result
+                   }));
 
-                       return result;
-                     } catch (error) {
-                       console.error(`Failed to reanalyze ${field}:`, error);
-                       return null;
-                     }
-                   }}
-                   guidelineRecommendations={guidelineRecommendations}
-                   loadingGuidelines={loadingGuidelines}
-                   medicationRecommendations={[]}
-                   loadingMedications={false}
-                 />
-                 </div>
-                 {note.status === "draft" && (
-                   <>
-                     {/* Diagnoses Card - Draft */}
-                     {note.diagnoses && Array.isArray(note.diagnoses) && note.diagnoses.length > 0 && (
-                       <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl border border-blue-200 p-5">
-                         <h3 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
-                           <Code className="w-4 h-4" />
-                           Diagnoses ({note.diagnoses.length})
-                         </h3>
-                         <div className="space-y-2 max-h-48 overflow-y-auto">
-                           {note.diagnoses.map((diagnosis, idx) => (
-                             <div key={idx} className="bg-white rounded-lg p-3 border border-blue-100 text-xs text-slate-700">
-                               {diagnosis}
-                             </div>
-                           ))}
-                         </div>
-                       </div>
-                     )}
-                   </>
-                 )}
-
-
-
-                 {/* Medications Card */}
-                 {note.medications && Array.isArray(note.medications) && note.medications.length > 0 && (
-                   <div className="bg-gradient-to-br from-green-50 to-white rounded-xl border border-green-200 p-5">
-                     <h3 className="text-sm font-bold text-green-900 mb-3 flex items-center gap-2">
-                       <Plus className="w-4 h-4" />
-                       Medications ({note.medications.length})
-                     </h3>
-                     <div className="space-y-2 max-h-48 overflow-y-auto">
-                       {note.medications.map((medication, idx) => (
-                         <div key={idx} className="bg-white rounded-lg p-3 border border-green-100 text-xs text-slate-700">
-                           {medication}
-                         </div>
-                       ))}
-                     </div>
-                   </div>
-                 )}
-
-                 {/* Allergies Card */}
-                 {note.allergies && Array.isArray(note.allergies) && note.allergies.length > 0 && (
-                   <div className="bg-gradient-to-br from-red-50 to-white rounded-xl border border-red-200 p-5">
-                     <h3 className="text-sm font-bold text-red-900 mb-3 flex items-center gap-2">
-                       <AlertCircle className="w-4 h-4" />
-                       Allergies ({note.allergies.length})
-                     </h3>
-                     <div className="space-y-2">
-                         {note.allergies && Array.isArray(note.allergies) && note.allergies.map((allergy, idx) => (
-                           <div key={idx} className="bg-white rounded-lg p-3 border border-red-100 text-xs text-red-700 font-medium">
-                             ⚠️ {allergy}
-                           </div>
-                         ))}
-                       </div>
-                   </div>
-                 )}
-
-
-               </div>
-             </div>
+                   return result;
+                 } catch (error) {
+                   console.error(`Failed to reanalyze ${field}:`, error);
+                   return null;
+                 }
+               }}
+               guidelineRecommendations={guidelineRecommendations}
+               loadingGuidelines={loadingGuidelines}
+               medicationRecommendations={[]}
+               loadingMedications={false}
+             />
            </TabsContent>
 
            {/* Guidelines & Codes Tab */}

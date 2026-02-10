@@ -1768,7 +1768,7 @@ Generated: ${new Date().toLocaleString()}
                    <div className="space-y-3">
                      <div className="grid gap-2">
                        {note.diagnoses
-                         .filter(d => d && d.trim().length > 0 && !d.toLowerCase().includes("not documented") && !d.toLowerCase().includes("not extracted") && !d.toLowerCase().includes("based on"))
+                         .filter(d => d && /^[A-Z0-9]{1,}.*-/.test(d.trim()))
                          .map((diag, i) => (
                          <div key={i} className="group flex items-start gap-3 p-3 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-white hover:border-blue-300 hover:shadow-sm transition-all">
                            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-xs font-bold flex-shrink-0 mt-0.5">

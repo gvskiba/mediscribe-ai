@@ -23,6 +23,7 @@ import AITemplateCreator from "../components/templates/AITemplateCreator";
 import AISectionGenerator from "../components/templates/AISectionGenerator";
 import AIInstructionRefinement from "../components/templates/AIInstructionRefinement";
 import SectionOrganizationSuggestions from "../components/templates/SectionOrganizationSuggestions";
+import SectionContentGenerator from "../components/templates/SectionContentGenerator";
 import { toast } from "sonner";
 
 const noteTypes = [

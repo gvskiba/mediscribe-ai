@@ -705,7 +705,7 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                     <input 
                       type="checkbox"
                       checked={showSavedOnly}
-                      onChange={() => setShowSavedOnly(prev => !prev)}
+                      onChange={(e) => setShowSavedOnly(e.target.checked)}
                       id="saved-only"
                       className="rounded w-4 h-4 cursor-pointer"
                     />

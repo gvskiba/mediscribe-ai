@@ -223,15 +223,7 @@ export default function EditableSection({
                    </Button>
                  </div>
                )}
-               {useRichText && ["assessment", "plan"].includes(field) ? (
-                 <RichTextEditor
-                   value={editValue || ""}
-                   onChange={handleChange}
-                   onInsertTemplate={() => setTemplatesOpen(true)}
-                   diagnoses={noteContext?.diagnoses || []}
-                 />
-               ) : (
-                 <Textarea
+               <Textarea
                    ref={textareaRef}
                    value={editValue || ""}
                    onChange={(e) => {

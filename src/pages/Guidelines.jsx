@@ -834,12 +834,12 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
                   
                   return (
                     <div key={query.id} className="flex items-start gap-4 group">
-                      <div className="pt-6">
+                      <div className="pt-6" onClick={(e) => e.stopPropagation()}>
                          <input 
+                           key={`compare-${query.id}`}
                            type="checkbox"
                            checked={selectedForCompare.some(q => q.id === query.id)}
                            onChange={(e) => {
-                             e.stopPropagation();
                              if (e.target.checked) {
                                setSelectedForCompare(prev => [...prev, query]);
                              } else {

@@ -298,6 +298,8 @@ export default function EditableSection({
                      if (!showSuggestions) setShowSuggestions(true);
                    }}
                    onBlur={(e) => handleChange(e.target.value)}
+                   onMouseUp={handleTextareaSelect}
+                   onKeyUp={handleTextareaSelect}
                    className="min-h-[100px] rounded-xl border-slate-300 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm text-slate-900 transition-all hover:border-slate-400"
                    placeholder="Click to edit..."
                  />

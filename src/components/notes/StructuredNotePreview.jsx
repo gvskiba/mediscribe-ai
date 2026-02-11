@@ -773,29 +773,6 @@ FORMATTING RULES (CRITICAL):
               </motion.div>
               )}
 
-        {/* Clinical Impression Box */}
-        <div className="bg-white rounded-xl border-2 border-purple-300 shadow-sm overflow-hidden">
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 px-4 py-3 border-b border-purple-200">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-purple-600" />
-              <h3 className="font-semibold text-slate-900">Clinical Impression</h3>
-            </div>
-          </div>
-          <div className="p-4">
-            <EditableSection
-             icon={Sparkles}
-             title=""
-             color="purple"
-             value={note.clinical_impression || "Not extracted"}
-             field="clinical_impression"
-             type="textarea"
-             onUpdate={onUpdate}
-             onReanalyze={handleReanalyze}
-             hideBorder={true}
-            />
-          </div>
-        </div>
-
         {/* Chief Complaint Box */}
         <div className="bg-white rounded-xl border-2 border-blue-300 shadow-sm overflow-hidden">
           <div className="bg-blue-50 px-4 py-3 border-b border-blue-200 flex items-center gap-2">

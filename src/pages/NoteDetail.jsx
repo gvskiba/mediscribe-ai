@@ -1202,8 +1202,8 @@ Generated: ${new Date().toLocaleString()}
                </div>
              )}
 
-
-
+             {note.status === "finalized" && (
+               <>
                  {/* Drug-Drug Interactions */}
                  <div>
                    <div className="flex items-center justify-between mb-4">

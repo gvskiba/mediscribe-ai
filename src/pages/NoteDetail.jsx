@@ -44,6 +44,7 @@ import GuidelineReviewPrompt from "../components/notes/GuidelineReviewPrompt";
 import NoteRevisionHistory from "../components/notes/NoteRevisionHistory";
 import ImagingAnalysis from "../components/notes/ImagingAnalysis";
 import LabsAnalysis from "../components/notes/LabsAnalysis";
+import EKGAnalysis from "../components/notes/EKGAnalysis";
 import DiagnosisICD10Matcher from "../components/notes/DiagnosisICD10Matcher";
 import DiagnosisRecommendations from "../components/notes/DiagnosisRecommendations";
 import { useAutoSave } from "../components/utils/useAutoSave";
@@ -1621,8 +1622,28 @@ Generated: ${new Date().toLocaleString()}
                          }}
                        />
                      </div>
-                   </div>
-                 </TabsContent>
+                     </div>
+
+                     {/* EKG Analysis Section */}
+                     <div className="mt-6">
+                     <EKGAnalysis
+                       noteId={noteId}
+                       onAddToNote={async (ekgText) => {
+                         try {
+                           const updatedAssessment = (note.assessment || "") + ekgText;
+                           await base44.entities.ClinicalNote.update(noteId, { 
+                             assessment: updatedAssessment
+                           });
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                           toast.success("EKG analysis added to clinical note");
+                         } catch (error) {
+                           console.error("Failed to add EKG to note:", error);
+                           alert("Failed to add EKG. Please try again.");
+                         }
+                       }}
+                     />
+                     </div>
+                     </TabsContent>
 
 
 

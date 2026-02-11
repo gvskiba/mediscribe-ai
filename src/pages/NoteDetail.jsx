@@ -867,14 +867,23 @@ Generated: ${new Date().toLocaleString()}
          className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
        >
          <Tabs defaultValue="summary" className="w-full">
-           <div className="border-b border-slate-200 bg-gradient-to-b from-slate-50 to-white">
+           <div className="bg-white border-b-2 border-slate-200">
+             <style>{`
+               .flag-tab {
+                 position: relative;
+                 clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%);
+               }
+               .flag-tab-active {
+                 clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%);
+               }
+             `}</style>
              <DragDropContext onDragEnd={handleDragEnd}>
                {TAB_ROWS.map((rowTabs, rowIndex) => (
                  <Droppable key={`row-${rowIndex}`} droppableId={`tabs-row-${rowIndex}`} direction="horizontal">
                    {(provided) => (
                      <div className={`${rowIndex > 0 ? 'border-t border-slate-100' : ''}`}>
                        <TabsList 
-                         className="w-full h-auto justify-start bg-transparent rounded-none px-6 py-3 gap-4 overflow-x-auto scrollbar-hide border-0"
+                         className="w-full h-auto justify-start bg-transparent rounded-none px-6 py-3 gap-1 overflow-x-auto scrollbar-hide border-0"
                          ref={provided.innerRef}
                          {...provided.droppableProps}
                        >
@@ -891,7 +900,7 @@ Generated: ${new Date().toLocaleString()}
                                  >
                                    <TabsTrigger 
                                      value={tab.id} 
-                                     className="whitespace-nowrap rounded-xl px-5 py-2.5 gap-2.5 font-semibold text-sm data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-md data-[state=inactive]:text-slate-600 hover:text-slate-900 hover:bg-white/80 transition-all duration-200 cursor-grab active:cursor-grabbing border border-transparent data-[state=active]:border-blue-100 flex-shrink-0"
+                                     className="flag-tab whitespace-nowrap px-6 py-3 gap-2.5 font-semibold text-sm data-[state=active]:flag-tab-active data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=inactive]:bg-slate-100 data-[state=inactive]:text-slate-700 hover:bg-slate-200 hover:text-slate-900 transition-all duration-200 cursor-grab active:cursor-grabbing border-0 rounded-none flex-shrink-0 mr-2"
                                    >
                                      {Icon && <Icon className="w-4 h-4" />}
                                      <span>{tab.label}</span>

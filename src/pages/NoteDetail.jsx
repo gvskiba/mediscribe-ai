@@ -55,7 +55,7 @@ const TAB_ROWS = [
     { id: 'summary', label: 'Summary', icon: Sparkles },
     { id: 'clinical', label: 'Clinical Note', icon: FileText },
     { id: 'assessment_plan', label: 'Assessments', icon: Activity },
-    { id: 'imaging', label: 'Results & Labs', icon: ImageIcon },
+    { id: 'imaging', label: 'Result Analysis', icon: ImageIcon },
     { id: 'diagnoses', label: 'Diagnoses', icon: Beaker },
   ],
   [

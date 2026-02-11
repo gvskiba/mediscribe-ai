@@ -65,8 +65,9 @@ const TAB_ROWS = [
     { id: 'treatments', label: 'Treatment', icon: Pill },
     { id: 'guidelines', label: 'Guidelines & Codes', icon: Code },
     { id: 'finalize', label: 'Finalize', icon: Check },
-  ]
-];
+    { id: 'patient_education', label: 'Patient Education', icon: BookOpen },
+    ]
+    ];
 
 const TAB_CONFIGS = TAB_ROWS.flat();
 
@@ -101,6 +102,8 @@ export default function NoteDetail() {
   const [loadingFollowUp, setLoadingFollowUp] = useState(false);
   const [differentialDiagnosis, setDifferentialDiagnosis] = useState([]);
   const [loadingDifferential, setLoadingDifferential] = useState(false);
+  const [patientEducation, setPatientEducation] = useState(null);
+  const [generatingEducation, setGeneratingEducation] = useState(false);
   const [exportingFormat, setExportingFormat] = useState(null);
   const [extractingData, setExtractingData] = useState(false);
   const [linkingGuidelines, setLinkingGuidelines] = useState(false);
@@ -465,6 +468,119 @@ Keep recommendations specific, actionable, and evidence-based.`,
     } finally {
       setLoadingFollowUp(false);
     }
+  };
+
+  const generatePatientEducation = async () => {
+    if (!note?.diagnoses || note.diagnoses.length === 0) {
+      toast.error("No diagnoses available for patient education");
+      return;
+    }
+
+    setGeneratingEducation(true);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Create comprehensive, easy-to-understand patient education materials for the following diagnoses. Use simple language that a non-medical person can understand.
+
+  DIAGNOSES:
+  ${note.diagnoses.join('\n')}
+
+  Create sections for each diagnosis with:
+  1. WHAT IS IT: Simple explanation of the condition in everyday language
+  2. SYMPTOMS TO WATCH FOR: Signs to monitor at home
+  3. WHAT YOU CAN DO: Practical steps for self-care and management
+  4. WHEN TO SEEK HELP: Red flags requiring immediate medical attention
+  5. QUESTIONS FOR YOUR DOCTOR: Suggested questions to ask at follow-up visits
+
+  Keep explanations concise and avoid medical jargon. Use analogies where helpful.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            education_materials: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  diagnosis: { type: "string" },
+                  what_is_it: { type: "string" },
+                  symptoms_to_watch: { type: "array", items: { type: "string" } },
+                  self_care: { type: "array", items: { type: "string" } },
+                  when_to_seek_help: { type: "array", items: { type: "string" } },
+                  questions_for_doctor: { type: "array", items: { type: "string" } }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      setPatientEducation(result.education_materials || []);
+      toast.success("Patient education generated");
+    } catch (error) {
+      console.error("Failed to generate patient education:", error);
+      toast.error("Failed to generate patient education");
+    } finally {
+      setGeneratingEducation(false);
+    }
+  };
+
+  const downloadPatientEducation = (format) => {
+    if (!patientEducation || patientEducation.length === 0) return;
+
+    let content = `PATIENT EDUCATION MATERIALS\n`;
+    content += `Patient: ${note.patient_name}\n`;
+    content += `Date: ${new Date().toLocaleDateString()}\n`;
+    content += `${"=".repeat(60)}\n\n`;
+
+    patientEducation.forEach((material, idx) => {
+      content += `${idx + 1}. ${material.diagnosis.toUpperCase()}\n`;
+      content += `${"-".repeat(60)}\n\n`;
+
+      content += `WHAT IS IT?\n${material.what_is_it}\n\n`;
+
+      if (material.symptoms_to_watch && material.symptoms_to_watch.length > 0) {
+        content += `SYMPTOMS TO WATCH FOR:\n`;
+        material.symptoms_to_watch.forEach(s => {
+          content += `• ${s}\n`;
+        });
+        content += `\n`;
+      }
+
+      if (material.self_care && material.self_care.length > 0) {
+        content += `WHAT YOU CAN DO:\n`;
+        material.self_care.forEach(s => {
+          content += `• ${s}\n`;
+        });
+        content += `\n`;
+      }
+
+      if (material.when_to_seek_help && material.when_to_seek_help.length > 0) {
+        content += `WHEN TO SEEK HELP:\n`;
+        material.when_to_seek_help.forEach(h => {
+          content += `⚠️ ${h}\n`;
+        });
+        content += `\n`;
+      }
+
+      if (material.questions_for_doctor && material.questions_for_doctor.length > 0) {
+        content += `QUESTIONS FOR YOUR DOCTOR:\n`;
+        material.questions_for_doctor.forEach(q => {
+          content += `? ${q}\n`;
+        });
+        content += `\n`;
+      }
+
+      content += `\n`;
+    });
+
+    const blob = new Blob([content], { type: format === 'pdf' ? 'text/plain' : 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${note.patient_name}_PatientEducation_${new Date().toISOString().split("T")[0]}.${format === 'pdf' ? 'pdf' : 'txt'}`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    a.remove();
   };
 
   const generateDifferentialDiagnosis = async () => {
@@ -2148,6 +2264,145 @@ Generated: ${new Date().toLocaleString()}
                          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 text-sm px-4 py-1">
                            {note.status}
                          </Badge>
+                       </div>
+                     )}
+                   </div>
+                 </TabsContent>
+
+                 {/* Patient Education Tab */}
+                 <TabsContent value="patient_education" className="p-6 space-y-6 overflow-y-auto">
+                   <div className="max-w-3xl mx-auto space-y-6">
+                     {/* Generate Education Button */}
+                     <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-5">
+                       <div className="flex items-start justify-between gap-4">
+                         <div className="flex-1">
+                           <h3 className="text-base font-bold text-slate-900 mb-2 flex items-center gap-2">
+                             <BookOpen className="w-5 h-5 text-green-600" />
+                             Patient Education Materials
+                           </h3>
+                           <p className="text-sm text-slate-600 mb-4">
+                             Generate easy-to-understand patient education based on diagnoses
+                           </p>
+                           <Button
+                             onClick={generatePatientEducation}
+                             disabled={generatingEducation || !note.diagnoses || note.diagnoses.length === 0}
+                             className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white gap-2 shadow-lg"
+                           >
+                             {generatingEducation ? (
+                               <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
+                             ) : (
+                               <><Sparkles className="w-4 h-4" /> Generate Patient Education</>
+                             )}
+                           </Button>
+                         </div>
+                       </div>
+                     </div>
+
+                     {/* Patient Education Content */}
+                     {patientEducation && patientEducation.length > 0 && (
+                       <>
+                         <div className="flex gap-3">
+                           <Button
+                             onClick={() => downloadPatientEducation('pdf')}
+                             variant="outline"
+                             className="flex-1 rounded-xl gap-2 border-green-300 hover:bg-green-50"
+                           >
+                             <Download className="w-4 h-4" />
+                             Download PDF
+                           </Button>
+                           <Button
+                             onClick={() => downloadPatientEducation('text')}
+                             variant="outline"
+                             className="flex-1 rounded-xl gap-2 border-slate-300 hover:bg-slate-50"
+                           >
+                             <Download className="w-4 h-4" />
+                             Download Text
+                           </Button>
+                         </div>
+
+                         <div className="space-y-6">
+                           {patientEducation.map((material, idx) => (
+                             <div key={idx} className="bg-white rounded-xl border-2 border-green-200 shadow-sm overflow-hidden">
+                               <div className="bg-green-50 px-5 py-4 border-b border-green-200">
+                                 <h3 className="text-lg font-bold text-slate-900">{material.diagnosis}</h3>
+                               </div>
+                               <div className="p-5 space-y-5">
+                                 {/* What Is It */}
+                                 <div>
+                                   <h4 className="text-sm font-bold text-slate-900 mb-2 text-green-700">What Is It?</h4>
+                                   <p className="text-sm text-slate-700 leading-relaxed">{material.what_is_it}</p>
+                                 </div>
+
+                                 {/* Symptoms to Watch */}
+                                 {material.symptoms_to_watch && material.symptoms_to_watch.length > 0 && (
+                                   <div>
+                                     <h4 className="text-sm font-bold text-slate-900 mb-2 text-amber-700">Symptoms to Watch For</h4>
+                                     <ul className="space-y-1">
+                                       {material.symptoms_to_watch.map((symptom, i) => (
+                                         <li key={i} className="text-sm text-slate-700 flex items-start gap-2">
+                                           <span className="text-amber-600 mt-0.5">•</span>
+                                           <span>{symptom}</span>
+                                         </li>
+                                       ))}
+                                     </ul>
+                                   </div>
+                                 )}
+
+                                 {/* Self Care */}
+                                 {material.self_care && material.self_care.length > 0 && (
+                                   <div>
+                                     <h4 className="text-sm font-bold text-slate-900 mb-2 text-blue-700">What You Can Do</h4>
+                                     <ul className="space-y-1">
+                                       {material.self_care.map((care, i) => (
+                                         <li key={i} className="text-sm text-slate-700 flex items-start gap-2">
+                                           <span className="text-blue-600 mt-0.5">•</span>
+                                           <span>{care}</span>
+                                         </li>
+                                       ))}
+                                     </ul>
+                                   </div>
+                                 )}
+
+                                 {/* When to Seek Help */}
+                                 {material.when_to_seek_help && material.when_to_seek_help.length > 0 && (
+                                   <div className="bg-red-50 rounded-lg border border-red-200 p-3">
+                                     <h4 className="text-sm font-bold text-red-900 mb-2">When to Seek Help</h4>
+                                     <ul className="space-y-1">
+                                       {material.when_to_seek_help.map((warning, i) => (
+                                         <li key={i} className="text-sm text-red-800 flex items-start gap-2">
+                                           <span className="text-red-600 mt-0.5">⚠️</span>
+                                           <span>{warning}</span>
+                                         </li>
+                                       ))}
+                                     </ul>
+                                   </div>
+                                 )}
+
+                                 {/* Questions for Doctor */}
+                                 {material.questions_for_doctor && material.questions_for_doctor.length > 0 && (
+                                   <div className="bg-blue-50 rounded-lg border border-blue-200 p-3">
+                                     <h4 className="text-sm font-bold text-blue-900 mb-2">Questions for Your Doctor</h4>
+                                     <ul className="space-y-1">
+                                       {material.questions_for_doctor.map((question, i) => (
+                                         <li key={i} className="text-sm text-blue-800 flex items-start gap-2">
+                                           <span className="text-blue-600 mt-0.5">?</span>
+                                           <span>{question}</span>
+                                         </li>
+                                       ))}
+                                     </ul>
+                                   </div>
+                                 )}
+                               </div>
+                             </div>
+                           ))}
+                         </div>
+                       </>
+                     )}
+
+                     {!patientEducation && !generatingEducation && (
+                       <div className="text-center py-12">
+                         <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                         <p className="text-slate-500">Patient education will appear here after generation</p>
                        </div>
                      )}
                    </div>

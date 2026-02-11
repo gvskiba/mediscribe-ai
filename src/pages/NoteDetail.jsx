@@ -1242,57 +1242,7 @@ Generated: ${new Date().toLocaleString()}
                    )}
                  </div>
 
-                 {/* Differential Diagnosis */}
-                 <div>
-                   <div className="flex items-center justify-between mb-4">
-                     <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                       <Sparkles className="w-4 h-4 text-indigo-600" />
-                       Differential Diagnosis
-                     </h3>
-                   </div>
 
-                   {loadingDifferential ? (
-                     <div className="flex items-center gap-3 text-slate-500 py-8">
-                       <Loader2 className="w-5 h-5 animate-spin" />
-                       <span className="text-sm">Generating differential...</span>
-                     </div>
-                   ) : differentialDiagnosis.length > 0 ? (
-                     <div className="space-y-3">
-                       {differentialDiagnosis.map((diff, idx) => (
-                         <div key={idx} className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
-                           <div className="flex items-start justify-between">
-                             <div className="flex-1">
-                               <p className="font-semibold text-sm text-slate-900">{diff.diagnosis}</p>
-                               <div className="mt-2 flex items-center gap-2">
-                                 <span className="text-xs font-medium text-indigo-700">Likelihood:</span>
-                                 <div className="w-24 h-2 bg-indigo-200 rounded-full overflow-hidden">
-                                   <div className="h-full bg-indigo-600" style={{ width: `${(diff.likelihood_rank / 5) * 100}%` }} />
-                                 </div>
-                                 <span className="text-xs text-indigo-700 font-bold">{diff.likelihood_rank}/5</span>
-                               </div>
-                             </div>
-                           </div>
-                           <p className="text-xs text-slate-600 mt-3"><strong>Reasoning:</strong> {diff.clinical_reasoning}</p>
-                           {diff.red_flags_to_monitor?.length > 0 && (
-                             <div className="mt-2">
-                               <p className="text-xs font-semibold text-red-700 mb-1">Red Flags to Monitor:</p>
-                               <ul className="space-y-1">
-                                 {diff.red_flags_to_monitor.map((flag, i) => (
-                                   <li key={i} className="text-xs text-slate-600 flex gap-2">
-                                     <span>•</span>
-                                     <span>{flag}</span>
-                                   </li>
-                                 ))}
-                               </ul>
-                             </div>
-                           )}
-                         </div>
-                       ))}
-                     </div>
-                   ) : (
-                     <p className="text-sm text-slate-500 text-center py-8">No differential diagnosis generated</p>
-                   )}
-                 </div>
 
                  {/* Follow-up Tests */}
                  <div>
@@ -1642,6 +1592,58 @@ Generated: ${new Date().toLocaleString()}
                  <TabsContent value="assessment_plan" className="p-6 space-y-6 overflow-y-auto">
                    {note.status === "finalized" && (
                      <>
+                       {/* Differential Diagnosis */}
+                       <div>
+                         <div className="flex items-center justify-between mb-4">
+                           <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                             <Sparkles className="w-4 h-4 text-indigo-600" />
+                             Differential Diagnosis
+                           </h3>
+                         </div>
+
+                         {loadingDifferential ? (
+                           <div className="flex items-center gap-3 text-slate-500 py-8">
+                             <Loader2 className="w-5 h-5 animate-spin" />
+                             <span className="text-sm">Generating differential...</span>
+                           </div>
+                         ) : differentialDiagnosis.length > 0 ? (
+                           <div className="space-y-3">
+                             {differentialDiagnosis.map((diff, idx) => (
+                               <div key={idx} className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+                                 <div className="flex items-start justify-between">
+                                   <div className="flex-1">
+                                     <p className="font-semibold text-sm text-slate-900">{diff.diagnosis}</p>
+                                     <div className="mt-2 flex items-center gap-2">
+                                       <span className="text-xs font-medium text-indigo-700">Likelihood:</span>
+                                       <div className="w-24 h-2 bg-indigo-200 rounded-full overflow-hidden">
+                                         <div className="h-full bg-indigo-600" style={{ width: `${(diff.likelihood_rank / 5) * 100}%` }} />
+                                       </div>
+                                       <span className="text-xs text-indigo-700 font-bold">{diff.likelihood_rank}/5</span>
+                                     </div>
+                                   </div>
+                                 </div>
+                                 <p className="text-xs text-slate-600 mt-3"><strong>Reasoning:</strong> {diff.clinical_reasoning}</p>
+                                 {diff.red_flags_to_monitor?.length > 0 && (
+                                   <div className="mt-2">
+                                     <p className="text-xs font-semibold text-red-700 mb-1">Red Flags to Monitor:</p>
+                                     <ul className="space-y-1">
+                                       {diff.red_flags_to_monitor.map((flag, i) => (
+                                         <li key={i} className="text-xs text-slate-600 flex gap-2">
+                                           <span>•</span>
+                                           <span>{flag}</span>
+                                         </li>
+                                       ))}
+                                     </ul>
+                                   </div>
+                                 )}
+                               </div>
+                             ))}
+                           </div>
+                         ) : (
+                           <p className="text-sm text-slate-500 text-center py-8">No differential diagnosis generated</p>
+                         )}
+                       </div>
+
                        {/* ICD-10 Code Mapper - Direct Search & Selection */}
                        <div className="border-2 border-blue-300 bg-blue-50 rounded-xl p-5">
                          <h3 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">

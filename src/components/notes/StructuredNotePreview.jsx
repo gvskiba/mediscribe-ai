@@ -762,6 +762,19 @@ FORMATTING RULES (CRITICAL):
               </motion.div>
               )}
 
+        {/* Note Type Box */}
+        {note.note_type && (
+          <div className="bg-white rounded-xl border-2 border-slate-300 shadow-sm overflow-hidden">
+            <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-slate-600" />
+              <h3 className="font-semibold text-slate-900">Note Type</h3>
+            </div>
+            <div className="p-4">
+              <p className="text-lg font-semibold text-slate-900">{note.note_type.replace(/_/g, " ").split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}</p>
+            </div>
+          </div>
+        )}
+
         {/* Chief Complaint Box */}
         <div className="bg-white rounded-xl border-2 border-blue-300 shadow-sm overflow-hidden">
           <div className="bg-blue-50 px-4 py-3 border-b border-blue-200 flex items-center gap-2">

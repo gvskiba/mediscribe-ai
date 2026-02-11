@@ -194,7 +194,7 @@ export default function Layout({ children, currentPageName }) {
                     "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                   }`}
                 >
-                  <item.icon className="w-5 h-5" />
+                  <item.icon className="w-6 h-6" />
                 </Link>
               ))}
             </div>

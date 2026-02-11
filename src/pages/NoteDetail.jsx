@@ -46,12 +46,12 @@ import { useAutoSave } from "../components/utils/useAutoSave";
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 const TAB_CONFIGS = [
-  { id: 'summary', label: 'Summary' },
-  { id: 'clinical', label: 'Clinical Note' },
-  { id: 'assessment_plan', label: 'Assessment & Plan' },
-  { id: 'guidelines', label: 'Guidelines & Codes' },
-  { id: 'imaging', label: 'Result Analysis' },
-  { id: 'diagnoses', label: 'Diagnoses' },
+  { id: 'summary', label: 'Summary', icon: Sparkles },
+  { id: 'clinical', label: 'Clinical Note', icon: FileText },
+  { id: 'assessment_plan', label: 'Assessment & Plan', icon: Activity },
+  { id: 'guidelines', label: 'Guidelines & Codes', icon: Code },
+  { id: 'imaging', label: 'Result Analysis', icon: ImageIcon },
+  { id: 'diagnoses', label: 'Diagnoses', icon: Beaker },
 ];
 
 const statusColors = {
@@ -865,12 +865,13 @@ Generated: ${new Date().toLocaleString()}
              <Droppable droppableId="tabs" direction="horizontal">
                {(provided) => (
                  <TabsList 
-                   className="w-full justify-start border-b border-slate-200 rounded-none bg-transparent px-6 h-14"
+                   className="w-full justify-start bg-slate-50 px-6 h-auto py-2 rounded-none border-b border-slate-200"
                    ref={provided.innerRef}
                    {...provided.droppableProps}
                  >
                    {tabOrder.map((tabId, index) => {
                      const tab = TAB_CONFIGS.find(t => t.id === tabId);
+                     const Icon = tab?.icon;
                      return (
                        <Draggable key={tabId} draggableId={tabId} index={index}>
                          {(provided, snapshot) => (
@@ -880,7 +881,11 @@ Generated: ${new Date().toLocaleString()}
                              {...provided.dragHandleProps}
                              className={snapshot.isDragging ? 'opacity-50' : ''}
                            >
-                             <TabsTrigger value={tabId} className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 px-3 cursor-grab active:cursor-grabbing">
+                             <TabsTrigger 
+                               value={tabId} 
+                               className="rounded-lg px-4 py-2.5 gap-2 font-medium text-sm data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm data-[state=inactive]:text-slate-600 hover:text-slate-900 hover:bg-white/50 transition-all cursor-grab active:cursor-grabbing border border-transparent data-[state=active]:border-slate-200"
+                             >
+                               {Icon && <Icon className="w-4 h-4" />}
                                {tab.label}
                              </TabsTrigger>
                            </div>

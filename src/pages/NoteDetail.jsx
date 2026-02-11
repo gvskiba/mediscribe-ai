@@ -1091,6 +1091,83 @@ Generated: ${new Date().toLocaleString()}
                medicationRecommendations={[]}
                loadingMedications={false}
              />
+
+             {/* Assessment Section */}
+             <div className="bg-white rounded-xl border-2 border-purple-300 shadow-sm overflow-hidden mt-6">
+               <div className="bg-purple-50 px-4 py-3 border-b border-purple-200 flex items-center gap-2">
+                 <Activity className="w-5 h-5 text-purple-600" />
+                 <h3 className="font-semibold text-slate-900">Assessment</h3>
+               </div>
+               <div className="p-4">
+                 <EditableSection
+                   icon={Activity}
+                   title=""
+                   color="purple"
+                   value={note.assessment || "Not extracted"}
+                   field="assessment"
+                   type="textarea"
+                   onUpdate={async (field, value) => {
+                     await base44.entities.ClinicalNote.update(noteId, { [field]: value });
+                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                   }}
+                   onReanalyze={async (field) => {
+                     if (!note?.raw_note) return null;
+                     const result = await base44.integrations.Core.InvokeLLM({
+                       prompt: `Extract the assessment from this clinical note: ${note.raw_note}`,
+                       add_context_from_internet: false
+                     });
+                     await base44.entities.ClinicalNote.update(noteId, { [field]: result });
+                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                     return result;
+                   }}
+                   hideBorder={true}
+                   note={note}
+                   noteContext={{
+                     diagnoses: note.diagnoses,
+                     medications: note.medications
+                   }}
+                 />
+               </div>
+             </div>
+
+             {/* Treatment Plan Section */}
+             <div className="bg-white rounded-xl border-2 border-green-300 shadow-sm overflow-hidden mt-6">
+               <div className="bg-green-50 px-4 py-3 border-b border-green-200 flex items-center gap-2">
+                 <FileText className="w-5 h-5 text-green-600" />
+                 <h3 className="font-semibold text-slate-900">Treatment Plan</h3>
+               </div>
+               <div className="p-4">
+                 <EditableSection
+                   icon={FileText}
+                   title=""
+                   color="green"
+                   value={note.plan || "Not extracted"}
+                   field="plan"
+                   type="textarea"
+                   onUpdate={async (field, value) => {
+                     await base44.entities.ClinicalNote.update(noteId, { [field]: value });
+                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                   }}
+                   onReanalyze={async (field) => {
+                     if (!note?.raw_note) return null;
+                     const result = await base44.integrations.Core.InvokeLLM({
+                       prompt: `Extract the treatment plan from this clinical note: ${note.raw_note}`,
+                       add_context_from_internet: false
+                     });
+                     await base44.entities.ClinicalNote.update(noteId, { [field]: result });
+                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                     return result;
+                   }}
+                   hideBorder={true}
+                   enableStructuredList={true}
+                   note={note}
+                   noteContext={{
+                     assessment: note.assessment,
+                     diagnoses: note.diagnoses
+                   }}
+                 />
+               </div>
+             </div>
            </TabsContent>
 
            {/* Guidelines & Codes Tab */}
@@ -1621,79 +1698,8 @@ Generated: ${new Date().toLocaleString()}
 
                  {/* Assessment & Plan Tab */}
                  <TabsContent value="assessment_plan" className="p-6 space-y-6 overflow-y-auto">
-                   <div className="bg-white rounded-xl border-2 border-purple-300 shadow-sm overflow-hidden">
-                     <div className="bg-purple-50 px-4 py-3 border-b border-purple-200 flex items-center gap-2">
-                       <Activity className="w-5 h-5 text-purple-600" />
-                       <h3 className="font-semibold text-slate-900">Assessment</h3>
-                     </div>
-                     <div className="p-4">
-                       <EditableSection
-                         icon={Activity}
-                         title=""
-                         color="purple"
-                         value={note.assessment || "Not extracted"}
-                         field="assessment"
-                         type="textarea"
-                         onUpdate={async (field, value) => {
-                           await base44.entities.ClinicalNote.update(noteId, { [field]: value });
-                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                         }}
-                         onReanalyze={async (field) => {
-                           if (!note?.raw_note) return null;
-                           const result = await base44.integrations.Core.InvokeLLM({
-                             prompt: `Extract the assessment from this clinical note: ${note.raw_note}`,
-                             add_context_from_internet: false
-                           });
-                           await base44.entities.ClinicalNote.update(noteId, { [field]: result });
-                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                           return result;
-                         }}
-                         hideBorder={true}
-                         note={note}
-                         noteContext={{
-                           diagnoses: note.diagnoses,
-                           medications: note.medications
-                         }}
-                       />
-                     </div>
-                   </div>
-
-                   <div className="bg-white rounded-xl border-2 border-green-300 shadow-sm overflow-hidden">
-                     <div className="bg-green-50 px-4 py-3 border-b border-green-200 flex items-center gap-2">
-                       <FileText className="w-5 h-5 text-green-600" />
-                       <h3 className="font-semibold text-slate-900">Treatment Plan</h3>
-                     </div>
-                     <div className="p-4">
-                       <EditableSection
-                         icon={FileText}
-                         title=""
-                         color="green"
-                         value={note.plan || "Not extracted"}
-                         field="plan"
-                         type="textarea"
-                         onUpdate={async (field, value) => {
-                           await base44.entities.ClinicalNote.update(noteId, { [field]: value });
-                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                         }}
-                         onReanalyze={async (field) => {
-                           if (!note?.raw_note) return null;
-                           const result = await base44.integrations.Core.InvokeLLM({
-                             prompt: `Extract the treatment plan from this clinical note: ${note.raw_note}`,
-                             add_context_from_internet: false
-                           });
-                           await base44.entities.ClinicalNote.update(noteId, { [field]: result });
-                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                           return result;
-                         }}
-                         hideBorder={true}
-                         enableStructuredList={true}
-                         note={note}
-                         noteContext={{
-                           assessment: note.assessment,
-                           diagnoses: note.diagnoses
-                         }}
-                       />
-                     </div>
+                   <div className="text-center py-12">
+                     <p className="text-slate-500">Assessment and Treatment Plan sections have been moved to the Clinical Note tab.</p>
                    </div>
                  </TabsContent>
 

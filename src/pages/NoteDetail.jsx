@@ -1087,8 +1087,8 @@ Generated: ${new Date().toLocaleString()}
                    return null;
                  }
                }}
-               guidelineRecommendations={guidelineRecommendations}
-               loadingGuidelines={loadingGuidelines}
+               guidelineRecommendations={[]}
+               loadingGuidelines={false}
                medicationRecommendations={[]}
                loadingMedications={false}
              />

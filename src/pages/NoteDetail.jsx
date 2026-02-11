@@ -58,6 +58,7 @@ const TAB_ROWS = [
     { id: 'diagnoses', label: 'Diagnoses', icon: Beaker },
   ],
   [
+    { id: 'plan', label: 'Plan', icon: FileText },
     { id: 'final_impression', label: 'Final Impression', icon: FileText },
     { id: 'mdm', label: 'MDM', icon: AlertCircle },
     { id: 'treatments', label: 'Treatment', icon: Pill },
@@ -1705,6 +1706,47 @@ Generated: ${new Date().toLocaleString()}
                      </div>
                      <div className="p-4">
                        <p className="text-sm text-slate-500">MDM content will be available here</p>
+                     </div>
+                   </div>
+                 </TabsContent>
+
+                 {/* Plan Tab */}
+                 <TabsContent value="plan" className="p-6 space-y-6 overflow-y-auto">
+                   <div className="bg-white rounded-xl border-2 border-green-300 shadow-sm overflow-hidden">
+                     <div className="bg-green-50 px-4 py-3 border-b border-green-200 flex items-center gap-2">
+                       <FileText className="w-5 h-5 text-green-600" />
+                       <h3 className="font-semibold text-slate-900">Treatment Plan</h3>
+                     </div>
+                     <div className="p-4">
+                       <EditableSection
+                         icon={FileText}
+                         title=""
+                         color="green"
+                         value={note.plan || "Not extracted"}
+                         field="plan"
+                         type="textarea"
+                         onUpdate={async (field, value) => {
+                           await base44.entities.ClinicalNote.update(noteId, { [field]: value });
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                         }}
+                         onReanalyze={async (field) => {
+                           if (!note?.raw_note) return null;
+                           const result = await base44.integrations.Core.InvokeLLM({
+                             prompt: `Extract the treatment plan from this clinical note: ${note.raw_note}`,
+                             add_context_from_internet: false
+                           });
+                           await base44.entities.ClinicalNote.update(noteId, { [field]: result });
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                           return result;
+                         }}
+                         hideBorder={true}
+                         enableStructuredList={true}
+                         note={note}
+                         noteContext={{
+                           assessment: note.assessment,
+                           diagnoses: note.diagnoses
+                         }}
+                       />
                      </div>
                    </div>
                  </TabsContent>

@@ -45,14 +45,20 @@ import DiagnosisRecommendations from "../components/notes/DiagnosisRecommendatio
 import { useAutoSave } from "../components/utils/useAutoSave";
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
-const TAB_CONFIGS = [
-  { id: 'summary', label: 'Summary', icon: Sparkles },
-  { id: 'clinical', label: 'Clinical Note', icon: FileText },
-  { id: 'assessment_plan', label: 'Assessment & Plan', icon: Activity },
-  { id: 'guidelines', label: 'Guidelines & Codes', icon: Code },
-  { id: 'imaging', label: 'Result Analysis', icon: ImageIcon },
-  { id: 'diagnoses', label: 'Diagnoses', icon: Beaker },
+const TAB_ROWS = [
+  [
+    { id: 'summary', label: 'Summary', icon: Sparkles },
+    { id: 'clinical', label: 'Clinical Note', icon: FileText },
+    { id: 'assessment_plan', label: 'Assessment & Plan', icon: Activity },
+  ],
+  [
+    { id: 'diagnoses', label: 'Diagnoses', icon: Beaker },
+    { id: 'guidelines', label: 'Guidelines & Codes', icon: Code },
+    { id: 'imaging', label: 'Result Analysis', icon: ImageIcon },
+  ]
 ];
+
+const TAB_CONFIGS = TAB_ROWS.flat();
 
 const statusColors = {
   draft: "bg-amber-50 text-amber-700 border-amber-200",
@@ -861,43 +867,46 @@ Generated: ${new Date().toLocaleString()}
          className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
        >
          <Tabs defaultValue="summary" className="w-full">
-           <DragDropContext onDragEnd={handleDragEnd}>
-             <Droppable droppableId="tabs" direction="horizontal">
-               {(provided) => (
-                 <TabsList 
-                   className="w-full h-auto justify-start bg-slate-50/50 border-b border-slate-200 rounded-none px-4 py-3 gap-2 overflow-x-auto scrollbar-hide"
-                   ref={provided.innerRef}
-                   {...provided.droppableProps}
-                 >
-                   {tabOrder.map((tabId, index) => {
-                     const tab = TAB_CONFIGS.find(t => t.id === tabId);
-                     const Icon = tab?.icon;
-                     return (
-                       <Draggable key={tabId} draggableId={tabId} index={index}>
-                         {(provided, snapshot) => (
-                           <div
-                             ref={provided.innerRef}
-                             {...provided.draggableProps}
-                             {...provided.dragHandleProps}
-                             className={snapshot.isDragging ? 'opacity-50 z-50' : ''}
-                           >
-                             <TabsTrigger 
-                               value={tabId} 
-                               className="whitespace-nowrap rounded-lg px-3 py-2 gap-2 font-medium text-xs data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm data-[state=inactive]:text-slate-600 hover:text-slate-900 hover:bg-white/60 transition-all cursor-grab active:cursor-grabbing border border-transparent data-[state=active]:border-slate-200 flex-shrink-0"
-                             >
-                               {Icon && <Icon className="w-3.5 h-3.5" />}
-                               <span className="text-xs">{tab.label}</span>
-                             </TabsTrigger>
-                           </div>
-                         )}
-                       </Draggable>
-                     );
-                   })}
-                   {provided.placeholder}
-                 </TabsList>
-               )}
-             </Droppable>
-           </DragDropContext>
+           <div className="border-b border-slate-200 bg-slate-50/50">
+             <DragDropContext onDragEnd={handleDragEnd}>
+               {TAB_ROWS.map((rowTabs, rowIndex) => (
+                 <Droppable key={`row-${rowIndex}`} droppableId={`tabs-row-${rowIndex}`} direction="horizontal">
+                   {(provided) => (
+                     <TabsList 
+                       className="w-full h-auto justify-start bg-transparent rounded-none px-4 py-2 gap-2 overflow-x-auto scrollbar-hide border-0"
+                       ref={provided.innerRef}
+                       {...provided.droppableProps}
+                     >
+                       {rowTabs.map((tab, index) => {
+                         const Icon = tab.icon;
+                         return (
+                           <Draggable key={tab.id} draggableId={tab.id} index={index}>
+                             {(provided, snapshot) => (
+                               <div
+                                 ref={provided.innerRef}
+                                 {...provided.draggableProps}
+                                 {...provided.dragHandleProps}
+                                 className={snapshot.isDragging ? 'opacity-50 z-50' : ''}
+                               >
+                                 <TabsTrigger 
+                                   value={tab.id} 
+                                   className="whitespace-nowrap rounded-lg px-3 py-2 gap-2 font-medium text-xs data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm data-[state=inactive]:text-slate-600 hover:text-slate-900 hover:bg-white/60 transition-all cursor-grab active:cursor-grabbing border border-transparent data-[state=active]:border-slate-200 flex-shrink-0"
+                                 >
+                                   {Icon && <Icon className="w-3.5 h-3.5" />}
+                                   <span className="text-xs">{tab.label}</span>
+                                 </TabsTrigger>
+                               </div>
+                             )}
+                           </Draggable>
+                         );
+                       })}
+                       {provided.placeholder}
+                     </TabsList>
+                   )}
+                 </Droppable>
+               ))}
+             </DragDropContext>
+           </div>
 
            {/* Summary Tab */}
            <TabsContent value="summary" className="p-6 space-y-4">

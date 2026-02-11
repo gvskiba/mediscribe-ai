@@ -44,6 +44,7 @@ import GuidelineReviewPrompt from "../components/notes/GuidelineReviewPrompt";
 import NoteRevisionHistory from "../components/notes/NoteRevisionHistory";
 import ImagingAnalysis from "../components/notes/ImagingAnalysis";
 import LabsAnalysis from "../components/notes/LabsAnalysis";
+import EKGAnalysis from "../components/notes/EKGAnalysis";
 import DiagnosisICD10Matcher from "../components/notes/DiagnosisICD10Matcher";
 import DiagnosisRecommendations from "../components/notes/DiagnosisRecommendations";
 import { useAutoSave } from "../components/utils/useAutoSave";
@@ -53,16 +54,17 @@ const TAB_ROWS = [
   [
     { id: 'summary', label: 'Summary', icon: Sparkles },
     { id: 'clinical', label: 'Clinical Note', icon: FileText },
-    { id: 'assessment_plan', label: 'Initial Assessment & Plan', icon: Activity },
-    { id: 'mdm', label: 'MDM', icon: AlertCircle },
-    { id: 'treatments', label: 'Treatments', icon: Pill },
+    { id: 'assessment_plan', label: 'Assessments', icon: Activity },
+    { id: 'imaging', label: 'Result Analysis', icon: ImageIcon },
+    { id: 'diagnoses', label: 'Diagnoses', icon: Beaker },
   ],
   [
-    { id: 'diagnoses', label: 'Diagnoses', icon: Beaker },
-    { id: 'guidelines', label: 'Guidelines & Codes', icon: Code },
-    { id: 'imaging', label: 'Result Analysis', icon: ImageIcon },
+    { id: 'plan', label: 'Plan', icon: FileText },
     { id: 'final_impression', label: 'Final Impression', icon: FileText },
-    { id: 'finalize', label: 'Finalize Note', icon: Check },
+    { id: 'mdm', label: 'MDM', icon: AlertCircle },
+    { id: 'treatments', label: 'Treatment', icon: Pill },
+    { id: 'guidelines', label: 'Guidelines & Codes', icon: Code },
+    { id: 'finalize', label: 'Finalize', icon: Check },
   ]
 ];
 
@@ -786,7 +788,7 @@ Generated: ${new Date().toLocaleString()}
 
   return (
     <>
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Back Nav */}
         <Link
         to={createPageUrl("NotesLibrary")}
@@ -874,61 +876,28 @@ Generated: ${new Date().toLocaleString()}
          animate={{ opacity: 1, y: 0 }}
          className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
        >
-         <Tabs defaultValue="summary" className="w-full">
-           <div className="bg-white border-b-2 border-slate-200">
-             <style>{`
-               .flag-tab {
-                 position: relative;
-                 clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%);
-               }
-               .flag-tab-active {
-                 clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%);
-               }
-             `}</style>
-             <DragDropContext onDragEnd={handleDragEnd}>
-               {TAB_ROWS.map((rowTabs, rowIndex) => (
-                 <Droppable key={`row-${rowIndex}`} droppableId={`tabs-row-${rowIndex}`} direction="horizontal">
-                   {(provided) => (
-                     <div className={`${rowIndex > 0 ? 'border-t border-slate-100' : ''}`}>
-                       <TabsList 
-                         className="w-full h-auto justify-between bg-transparent rounded-none px-6 py-3 gap-1 overflow-x-auto scrollbar-hide border-0"
-                         ref={provided.innerRef}
-                         {...provided.droppableProps}
-                       >
-                         {rowTabs.map((tab, index) => {
-                           const Icon = tab.icon;
-                           return (
-                             <Draggable key={tab.id} draggableId={tab.id} index={index}>
-                               {(provided, snapshot) => (
-                                 <div
-                                   ref={provided.innerRef}
-                                   {...provided.draggableProps}
-                                   {...provided.dragHandleProps}
-                                   className={snapshot.isDragging ? 'opacity-50 z-50' : ''}
-                                 >
-                                   <TabsTrigger 
-                                     value={tab.id} 
-                                     className="flag-tab whitespace-nowrap px-6 py-3 gap-2.5 font-semibold text-sm data-[state=active]:flag-tab-active data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=inactive]:bg-slate-100 data-[state=inactive]:text-slate-700 hover:bg-slate-200 hover:text-slate-900 transition-all duration-200 cursor-grab active:cursor-grabbing border-0 rounded-none flex-shrink-0 mr-2"
-                                   >
-                                     {Icon && <Icon className="w-4 h-4" />}
-                                     <span>{tab.label}</span>
-                                   </TabsTrigger>
-                                 </div>
-                               )}
-                             </Draggable>
-                           );
-                         })}
-                         {provided.placeholder}
-                       </TabsList>
-                     </div>
-                   )}
-                 </Droppable>
-               ))}
-             </DragDropContext>
+         <Tabs defaultValue="summary" className="w-full flex items-start">
+           <div className="w-64 bg-slate-50 border-r border-slate-200 flex-shrink-0 sticky top-8 self-start" style={{ maxHeight: 'calc(100vh - 4rem)' }}>
+             <TabsList className="w-full h-full flex flex-col items-stretch gap-1 bg-transparent p-3 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 4rem)' }}>
+               {TAB_CONFIGS.map((tab) => {
+                 const Icon = tab.icon;
+                 return (
+                   <TabsTrigger 
+                     key={tab.id}
+                     value={tab.id} 
+                     className="justify-start px-4 py-3 gap-3 font-medium text-sm data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-transparent data-[state=inactive]:text-slate-700 hover:bg-slate-100 data-[state=active]:hover:bg-blue-700 transition-all duration-200 rounded-lg"
+                   >
+                     {Icon && <Icon className="w-4 h-4" />}
+                     <span className="text-left">{tab.label}</span>
+                   </TabsTrigger>
+                 );
+               })}
+             </TabsList>
            </div>
+           <div className="flex-1 overflow-hidden">
 
            {/* Summary Tab */}
-           <TabsContent value="summary" className="p-6 space-y-4">
+           <TabsContent value="summary" className="p-6 space-y-4 overflow-y-auto">
              {note.status === "draft" && (
                <div className="flex gap-3 mb-4">
                  <Button
@@ -1018,7 +987,7 @@ Generated: ${new Date().toLocaleString()}
              </TabsContent>
 
            {/* Clinical Note Tab */}
-           <TabsContent value="clinical" className="p-6">
+           <TabsContent value="clinical" className="p-6 overflow-y-auto">
              {/* Action Buttons */}
              {note.status === "draft" && (
                <div className="flex gap-3 mb-6">
@@ -1123,10 +1092,169 @@ Generated: ${new Date().toLocaleString()}
                medicationRecommendations={[]}
                loadingMedications={false}
              />
-           </TabsContent>
 
-           {/* Guidelines & Codes Tab */}
-           <TabsContent value="guidelines" className="p-6 space-y-6">
+             {/* Assessment Section */}
+             <div className="bg-white rounded-xl border-2 border-purple-300 shadow-sm overflow-hidden mt-6">
+               <div className="bg-purple-50 px-4 py-3 border-b border-purple-200 flex items-center gap-2">
+                 <Activity className="w-5 h-5 text-purple-600" />
+                 <h3 className="font-semibold text-slate-900">Assessment</h3>
+               </div>
+               <div className="p-4">
+                 <EditableSection
+                   icon={Activity}
+                   title=""
+                   color="purple"
+                   value={note.assessment || "Not extracted"}
+                   field="assessment"
+                   type="textarea"
+                   onUpdate={async (field, value) => {
+                     await base44.entities.ClinicalNote.update(noteId, { [field]: value });
+                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                   }}
+                   onReanalyze={async (field) => {
+                     if (!note?.raw_note) return null;
+                     const result = await base44.integrations.Core.InvokeLLM({
+                       prompt: `Extract the assessment from this clinical note: ${note.raw_note}`,
+                       add_context_from_internet: false
+                     });
+                     await base44.entities.ClinicalNote.update(noteId, { [field]: result });
+                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                     return result;
+                   }}
+                   hideBorder={true}
+                   note={note}
+                   noteContext={{
+                     diagnoses: note.diagnoses,
+                     medications: note.medications
+                   }}
+                 />
+               </div>
+             </div>
+
+             {/* Treatment Plan Section */}
+             <div className="bg-white rounded-xl border-2 border-green-300 shadow-sm overflow-hidden mt-6">
+               <div className="bg-green-50 px-4 py-3 border-b border-green-200 flex items-center gap-2">
+                 <FileText className="w-5 h-5 text-green-600" />
+                 <h3 className="font-semibold text-slate-900">Treatment Plan</h3>
+               </div>
+               <div className="p-4">
+                 <EditableSection
+                   icon={FileText}
+                   title=""
+                   color="green"
+                   value={note.plan || "Not extracted"}
+                   field="plan"
+                   type="textarea"
+                   onUpdate={async (field, value) => {
+                     await base44.entities.ClinicalNote.update(noteId, { [field]: value });
+                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                   }}
+                   onReanalyze={async (field) => {
+                     if (!note?.raw_note) return null;
+                     const result = await base44.integrations.Core.InvokeLLM({
+                       prompt: `Extract the treatment plan from this clinical note: ${note.raw_note}`,
+                       add_context_from_internet: false
+                     });
+                     await base44.entities.ClinicalNote.update(noteId, { [field]: result });
+                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                     return result;
+                   }}
+                   hideBorder={true}
+                   enableStructuredList={true}
+                   note={note}
+                   noteContext={{
+                     assessment: note.assessment,
+                     diagnoses: note.diagnoses
+                   }}
+                 />
+               </div>
+             </div>
+
+             {/* Clinical Diagnoses Section */}
+             <div className="bg-white rounded-xl border-2 border-slate-300 shadow-sm overflow-hidden mt-6">
+               <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+                 <div>
+                   <h3 className="font-semibold text-slate-900">Clinical Diagnoses</h3>
+                   <p className="text-xs text-slate-500 mt-1">Primary and secondary diagnoses identified</p>
+                 </div>
+               </div>
+               <div className="p-4">
+                 {note.diagnoses && Array.isArray(note.diagnoses) && note.diagnoses.length > 0 ? (
+                   <div className="space-y-4">
+                     {/* ICD-10 Coded Diagnoses */}
+                     {note.diagnoses.filter(d => d && /^[A-Z0-9]{1,}.*-/.test(d.trim())).length > 0 && (
+                       <div className="space-y-3">
+                         <div className="flex items-center gap-2 mb-3">
+                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
+                             {note.diagnoses.filter(d => d && /^[A-Z0-9]{1,}.*-/.test(d.trim())).length} ICD-10 Codes (User Added)
+                           </span>
+                         </div>
+                         <div className="grid gap-2">
+                           {note.diagnoses
+                             .filter(d => d && /^[A-Z0-9]{1,}.*-/.test(d.trim()))
+                             .map((diag, i) => (
+                             <div key={i} className="flex items-start gap-3 p-3 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-white hover:border-blue-300 hover:shadow-sm transition-all">
+                               <div className="flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white text-xs font-bold flex-shrink-0">
+                                 {i + 1}
+                               </div>
+                               <div className="flex-1 min-w-0">
+                                 <p className="text-sm font-medium text-slate-900 break-words">{diag}</p>
+                               </div>
+                             </div>
+                           ))}
+                         </div>
+                       </div>
+                     )}
+
+                     {note.status === "finalized" && (
+                       <div className="mt-4 pt-4 border-t border-slate-200">
+                         <ICD10CodeSearch
+                           suggestions={icd10Suggestions}
+                           diagnoses={note.diagnoses}
+                           onAddDiagnoses={async (newDiagnoses) => {
+                             const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
+                             await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
+                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                           }}
+                         />
+                       </div>
+                     )}
+                   </div>
+                 ) : (
+                   <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+                     <Code className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                     <p className="text-sm font-medium text-slate-600">No diagnoses added yet</p>
+                     <p className="text-xs text-slate-500 mt-1">Diagnoses will appear here after extraction or manual entry</p>
+                   </div>
+                 )}
+
+                 {note.status === "finalized" && (!note.diagnoses || note.diagnoses.length === 0) && (
+                   <div className="mt-4">
+                     <ICD10CodeSearch
+                       suggestions={icd10Suggestions}
+                       diagnoses={note.diagnoses || []}
+                       onAddDiagnoses={async (newDiagnoses) => {
+                         await base44.entities.ClinicalNote.update(noteId, { diagnoses: newDiagnoses });
+                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                       }}
+                     />
+                   </div>
+                 )}
+               </div>
+             </div>
+             </TabsContent>
+
+             {/* Guidelines & Codes Tab */}
+           <TabsContent value="guidelines" className="p-6 space-y-6 overflow-y-auto">
+             {/* Clinical Guidelines Panel */}
+             <div>
+               <SmartGuidelinePanel
+                 noteContent={note.raw_note}
+                 diagnoses={note.diagnoses || []}
+                 medications={note.medications || []}
+               />
+             </div>
+
              {/* Generate Diagnoses Section */}
              {note.status === "draft" && (
                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
@@ -1148,69 +1276,8 @@ Generated: ${new Date().toLocaleString()}
                </div>
              )}
 
-             {note.status === "finalized" ? (
+             {note.status === "finalized" && (
                <>
-                 {/* ICD-10 Code Matcher - Direct Search & Selection */}
-                 <div className="border-2 border-blue-300 bg-blue-50 rounded-xl p-5">
-                   <h3 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
-                     <Sparkles className="w-4 h-4" />
-                     Smart ICD-10 Code Mapper
-                   </h3>
-                   <p className="text-xs text-blue-800 mb-4">Select diagnoses to generate ranked ICD-10 codes with clinical reasoning</p>
-                   <DiagnosisICD10Matcher
-                     diagnoses={note.diagnoses || []}
-                     onCodesGenerated={async (codes) => {
-                       // Codes generated in the component
-                     }}
-                   />
-                 </div>
-                 {/* ICD-10 Codes Section */}
-                 <div>
-                   <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                     <Code className="w-4 h-4 text-blue-600" />
-                     ICD-10 Code Suggestions
-                   </h3>
-                   {icd10Suggestions && icd10Suggestions.length > 0 ? (
-                     <>
-                     <ICD10Suggestions
-                       suggestions={icd10Suggestions}
-                       loading={loadingIcd10}
-                       readOnly={false}
-                       onApplyToNote={async (codes) => {
-                         try {
-                           const newDiagnoses = codes.map(c => `${c.code} - ${c.description}`);
-                           const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
-                           await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
-                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                           toast.success(`Added ${newDiagnoses.length} diagnosis code(s)`);
-                         } catch (error) {
-                           console.error("Failed to add diagnoses:", error);
-                           toast.error("Failed to add diagnoses. Please try again.");
-                         }
-                       }}
-                     />
-                       <div className="mt-4">
-                         <ICD10CodeSearch
-                           suggestions={icd10Suggestions}
-                           diagnoses={note.diagnoses}
-                           onAddDiagnoses={async (newDiagnoses) => {
-                             const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
-                             await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
-                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                           }}
-                         />
-                       </div>
-                     </>
-                   ) : loadingIcd10 ? (
-                     <div className="flex items-center gap-3 text-slate-500 py-8">
-                       <Loader2 className="w-5 h-5 animate-spin" />
-                       <span className="text-sm">Generating ICD-10 suggestions...</span>
-                     </div>
-                   ) : (
-                     <p className="text-sm text-slate-500 text-center py-8">No ICD-10 suggestions available</p>
-                   )}
-                 </div>
-
                  {/* Drug-Drug Interactions */}
                  <div>
                    <div className="flex items-center justify-between mb-4">
@@ -1249,94 +1316,9 @@ Generated: ${new Date().toLocaleString()}
                    )}
                  </div>
 
-                 {/* Differential Diagnosis */}
-                 <div>
-                   <div className="flex items-center justify-between mb-4">
-                     <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                       <Sparkles className="w-4 h-4 text-indigo-600" />
-                       Differential Diagnosis
-                     </h3>
-                   </div>
 
-                   {loadingDifferential ? (
-                     <div className="flex items-center gap-3 text-slate-500 py-8">
-                       <Loader2 className="w-5 h-5 animate-spin" />
-                       <span className="text-sm">Generating differential...</span>
-                     </div>
-                   ) : differentialDiagnosis.length > 0 ? (
-                     <div className="space-y-3">
-                       {differentialDiagnosis.map((diff, idx) => (
-                         <div key={idx} className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
-                           <div className="flex items-start justify-between">
-                             <div className="flex-1">
-                               <p className="font-semibold text-sm text-slate-900">{diff.diagnosis}</p>
-                               <div className="mt-2 flex items-center gap-2">
-                                 <span className="text-xs font-medium text-indigo-700">Likelihood:</span>
-                                 <div className="w-24 h-2 bg-indigo-200 rounded-full overflow-hidden">
-                                   <div className="h-full bg-indigo-600" style={{ width: `${(diff.likelihood_rank / 5) * 100}%` }} />
-                                 </div>
-                                 <span className="text-xs text-indigo-700 font-bold">{diff.likelihood_rank}/5</span>
-                               </div>
-                             </div>
-                           </div>
-                           <p className="text-xs text-slate-600 mt-3"><strong>Reasoning:</strong> {diff.clinical_reasoning}</p>
-                           {diff.red_flags_to_monitor?.length > 0 && (
-                             <div className="mt-2">
-                               <p className="text-xs font-semibold text-red-700 mb-1">Red Flags to Monitor:</p>
-                               <ul className="space-y-1">
-                                 {diff.red_flags_to_monitor.map((flag, i) => (
-                                   <li key={i} className="text-xs text-slate-600 flex gap-2">
-                                     <span>•</span>
-                                     <span>{flag}</span>
-                                   </li>
-                                 ))}
-                               </ul>
-                             </div>
-                           )}
-                         </div>
-                       ))}
-                     </div>
-                   ) : (
-                     <p className="text-sm text-slate-500 text-center py-8">No differential diagnosis generated</p>
-                   )}
-                 </div>
 
-                 {/* Follow-up Tests */}
-                 <div>
-                   <div className="flex items-center justify-between mb-4">
-                     <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                       <Beaker className="w-4 h-4 text-emerald-600" />
-                       Suggested Follow-up Tests & Consultations
-                     </h3>
-                   </div>
 
-                   {loadingFollowUp ? (
-                     <div className="flex items-center gap-3 text-slate-500 py-8">
-                       <Loader2 className="w-5 h-5 animate-spin" />
-                       <span className="text-sm">Generating suggestions...</span>
-                     </div>
-                   ) : followUpTests.length > 0 ? (
-                     <div className="space-y-3">
-                       {followUpTests.map((test, idx) => (
-                         <div key={idx} className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-                           <p className="font-semibold text-sm text-slate-900">{test.test_name}</p>
-                           <div className="mt-2 flex gap-4 flex-wrap">
-                             <span className={`text-xs px-2 py-1 rounded font-medium ${
-                               test.type === 'lab' ? 'bg-blue-100 text-blue-700' :
-                               test.type === 'imaging' ? 'bg-purple-100 text-purple-700' :
-                               test.type === 'consult' ? 'bg-orange-100 text-orange-700' :
-                               'bg-slate-100 text-slate-700'
-                             }`}>{test.type.charAt(0).toUpperCase() + test.type.slice(1)}</span>
-                             <span className="text-xs text-slate-600"><strong>Timing:</strong> {test.timing}</span>
-                           </div>
-                           <p className="text-xs text-slate-600 mt-3">{test.clinical_rationale}</p>
-                         </div>
-                       ))}
-                     </div>
-                   ) : (
-                     <p className="text-sm text-slate-500 text-center py-8">No follow-up tests suggested</p>
-                   )}
-                 </div>
 
                  {/* Clinical Guidelines */}
                  <div>
@@ -1552,14 +1534,17 @@ Generated: ${new Date().toLocaleString()}
                      <p className="text-sm text-slate-500 text-center py-8">No guideline recommendations available</p>
                    )}
                  </div>
-                 </>
-                 ) : (
-                 <p className="text-sm text-slate-500 text-center py-8">Finalize the note to view guidelines and ICD-10 codes.</p>
-                 )}
-                 </TabsContent>
+         </>
+       )}
+       {note.status === "draft" && (
+         <div className="text-center py-12">
+           <p className="text-slate-500">Finalize the note to view additional clinical insights and ICD-10 codes.</p>
+         </div>
+       )}
+     </TabsContent>
 
                  {/* Result Analysis Tab */}
-                 <TabsContent value="imaging" className="p-6 space-y-6">
+                 <TabsContent value="imaging" className="p-6 space-y-6 overflow-y-auto">
                    <div className="flex gap-3">
                      <Button
                        variant="outline"
@@ -1637,50 +1622,172 @@ Generated: ${new Date().toLocaleString()}
                          }}
                        />
                      </div>
+                     </div>
+
+                     {/* EKG Analysis Section */}
+                     <div className="mt-6">
+                     <EKGAnalysis
+                       noteId={noteId}
+                       onAddToNote={async (ekgText) => {
+                         try {
+                           const updatedAssessment = (note.assessment || "") + ekgText;
+                           await base44.entities.ClinicalNote.update(noteId, { 
+                             assessment: updatedAssessment
+                           });
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                           toast.success("EKG analysis added to clinical note");
+                         } catch (error) {
+                           console.error("Failed to add EKG to note:", error);
+                           alert("Failed to add EKG. Please try again.");
+                         }
+                       }}
+                     />
+                     </div>
+                     </TabsContent>
+
+
+
+                 {/* Assessments Tab */}
+                 <TabsContent value="assessment_plan" className="p-6 space-y-6 overflow-y-auto">
+                   {note.status === "finalized" && (
+                     <>
+                       {/* Differential Diagnosis */}
+                       <div>
+                         <div className="flex items-center justify-between mb-4">
+                           <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                             <Sparkles className="w-4 h-4 text-indigo-600" />
+                             Differential Diagnosis
+                           </h3>
+                         </div>
+
+                         {loadingDifferential ? (
+                           <div className="flex items-center gap-3 text-slate-500 py-8">
+                             <Loader2 className="w-5 h-5 animate-spin" />
+                             <span className="text-sm">Generating differential...</span>
+                           </div>
+                         ) : differentialDiagnosis.length > 0 ? (
+                           <div className="space-y-3">
+                             {differentialDiagnosis.map((diff, idx) => (
+                               <div key={idx} className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+                                 <div className="flex items-start justify-between">
+                                   <div className="flex-1">
+                                     <p className="font-semibold text-sm text-slate-900">{diff.diagnosis}</p>
+                                     <div className="mt-2 flex items-center gap-2">
+                                       <span className="text-xs font-medium text-indigo-700">Likelihood:</span>
+                                       <div className="w-24 h-2 bg-indigo-200 rounded-full overflow-hidden">
+                                         <div className="h-full bg-indigo-600" style={{ width: `${(diff.likelihood_rank / 5) * 100}%` }} />
+                                       </div>
+                                       <span className="text-xs text-indigo-700 font-bold">{diff.likelihood_rank}/5</span>
+                                     </div>
+                                   </div>
+                                 </div>
+                                 <p className="text-xs text-slate-600 mt-3"><strong>Reasoning:</strong> {diff.clinical_reasoning}</p>
+                                 {diff.red_flags_to_monitor?.length > 0 && (
+                                   <div className="mt-2">
+                                     <p className="text-xs font-semibold text-red-700 mb-1">Red Flags to Monitor:</p>
+                                     <ul className="space-y-1">
+                                       {diff.red_flags_to_monitor.map((flag, i) => (
+                                         <li key={i} className="text-xs text-slate-600 flex gap-2">
+                                           <span>•</span>
+                                           <span>{flag}</span>
+                                         </li>
+                                       ))}
+                                     </ul>
+                                   </div>
+                                 )}
+                               </div>
+                             ))}
+                           </div>
+                         ) : (
+                           <p className="text-sm text-slate-500 text-center py-8">No differential diagnosis generated</p>
+                         )}
+                       </div>
+
+                       {/* ICD-10 Code Mapper - Direct Search & Selection */}
+                       <div className="border-2 border-blue-300 bg-blue-50 rounded-xl p-5">
+                         <h3 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
+                           <Sparkles className="w-4 h-4" />
+                           Smart ICD-10 Code Mapper
+                         </h3>
+                         <p className="text-xs text-blue-800 mb-4">Select diagnoses to generate ranked ICD-10 codes with clinical reasoning</p>
+                         <DiagnosisICD10Matcher
+                           diagnoses={note.diagnoses || []}
+                           onCodesGenerated={async (codes) => {
+                             // Codes generated in the component
+                           }}
+                         />
+                       </div>
+
+                       {/* ICD-10 Codes Section */}
+                       <div>
+                         <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                           <Code className="w-4 h-4 text-blue-600" />
+                           ICD-10 Code Suggestions
+                         </h3>
+                         {icd10Suggestions && icd10Suggestions.length > 0 ? (
+                           <>
+                           <ICD10Suggestions
+                             suggestions={icd10Suggestions}
+                             loading={loadingIcd10}
+                             readOnly={false}
+                             onApplyToNote={async (codes) => {
+                               try {
+                                 const newDiagnoses = codes.map(c => `${c.code} - ${c.description}`);
+                                 const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
+                                 await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
+                                 queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                 toast.success(`Added ${newDiagnoses.length} diagnosis code(s)`);
+                               } catch (error) {
+                                 console.error("Failed to add diagnoses:", error);
+                                 toast.error("Failed to add diagnoses. Please try again.");
+                               }
+                             }}
+                           />
+                             <div className="mt-4">
+                               <ICD10CodeSearch
+                                 suggestions={icd10Suggestions}
+                                 diagnoses={note.diagnoses}
+                                 onAddDiagnoses={async (newDiagnoses) => {
+                                   const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
+                                   await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
+                                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                 }}
+                               />
+                             </div>
+                           </>
+                         ) : loadingIcd10 ? (
+                           <div className="flex items-center gap-3 text-slate-500 py-8">
+                             <Loader2 className="w-5 h-5 animate-spin" />
+                             <span className="text-sm">Generating ICD-10 suggestions...</span>
+                           </div>
+                         ) : (
+                           <p className="text-sm text-slate-500 text-center py-8">No ICD-10 suggestions available</p>
+                         )}
+                       </div>
+                     </>
+                   )}
+                   {note.status === "draft" && (
+                     <div className="text-center py-12">
+                       <p className="text-slate-500">Finalize the note to view ICD-10 code suggestions.</p>
+                     </div>
+                   )}
+                 </TabsContent>
+
+                 {/* MDM Tab */}
+                 <TabsContent value="mdm" className="p-6 space-y-6 overflow-y-auto">
+                   <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-sm overflow-hidden">
+                     <div className="bg-indigo-50 px-4 py-3 border-b border-indigo-200 flex items-center gap-2">
+                       <AlertCircle className="w-5 h-5 text-indigo-600" />
+                       <h3 className="font-semibold text-slate-900">Medical Decision Making</h3>
+                     </div>
+                     <div className="p-4">
+                       <p className="text-sm text-slate-500">MDM content will be available here</p>
+                     </div>
                    </div>
                  </TabsContent>
 
-
-
-                 {/* Assessment & Plan Tab */}
-                 <TabsContent value="assessment_plan" className="p-6 space-y-6">
-                   <div className="bg-white rounded-xl border-2 border-purple-300 shadow-sm overflow-hidden">
-                     <div className="bg-purple-50 px-4 py-3 border-b border-purple-200 flex items-center gap-2">
-                       <Activity className="w-5 h-5 text-purple-600" />
-                       <h3 className="font-semibold text-slate-900">Assessment</h3>
-                     </div>
-                     <div className="p-4">
-                       <EditableSection
-                         icon={Activity}
-                         title=""
-                         color="purple"
-                         value={note.assessment || "Not extracted"}
-                         field="assessment"
-                         type="textarea"
-                         onUpdate={async (field, value) => {
-                           await base44.entities.ClinicalNote.update(noteId, { [field]: value });
-                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                         }}
-                         onReanalyze={async (field) => {
-                           if (!note?.raw_note) return null;
-                           const result = await base44.integrations.Core.InvokeLLM({
-                             prompt: `Extract the assessment from this clinical note: ${note.raw_note}`,
-                             add_context_from_internet: false
-                           });
-                           await base44.entities.ClinicalNote.update(noteId, { [field]: result });
-                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                           return result;
-                         }}
-                         hideBorder={true}
-                         note={note}
-                         noteContext={{
-                           diagnoses: note.diagnoses,
-                           medications: note.medications
-                         }}
-                       />
-                     </div>
-                   </div>
-
+                 {/* Plan Tab */}
+                 <TabsContent value="plan" className="p-6 space-y-6 overflow-y-auto">
                    <div className="bg-white rounded-xl border-2 border-green-300 shadow-sm overflow-hidden">
                      <div className="bg-green-50 px-4 py-3 border-b border-green-200 flex items-center gap-2">
                        <FileText className="w-5 h-5 text-green-600" />
@@ -1718,23 +1825,51 @@ Generated: ${new Date().toLocaleString()}
                        />
                      </div>
                    </div>
-                 </TabsContent>
 
-                 {/* MDM Tab */}
-                 <TabsContent value="mdm" className="p-6 space-y-6">
-                   <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-sm overflow-hidden">
-                     <div className="bg-indigo-50 px-4 py-3 border-b border-indigo-200 flex items-center gap-2">
-                       <AlertCircle className="w-5 h-5 text-indigo-600" />
-                       <h3 className="font-semibold text-slate-900">Medical Decision Making</h3>
-                     </div>
-                     <div className="p-4">
-                       <p className="text-sm text-slate-500">MDM content will be available here</p>
-                     </div>
-                   </div>
+                   {note.status === "finalized" && (
+                     <>
+                       {/* Follow-up Tests */}
+                       <div>
+                         <div className="flex items-center justify-between mb-4">
+                           <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                             <Beaker className="w-4 h-4 text-emerald-600" />
+                             Suggested Follow-up Tests & Consultations
+                           </h3>
+                         </div>
+
+                         {loadingFollowUp ? (
+                           <div className="flex items-center gap-3 text-slate-500 py-8">
+                             <Loader2 className="w-5 h-5 animate-spin" />
+                             <span className="text-sm">Generating suggestions...</span>
+                           </div>
+                         ) : followUpTests.length > 0 ? (
+                           <div className="space-y-3">
+                             {followUpTests.map((test, idx) => (
+                               <div key={idx} className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                                 <p className="font-semibold text-sm text-slate-900">{test.test_name}</p>
+                                 <div className="mt-2 flex gap-4 flex-wrap">
+                                   <span className={`text-xs px-2 py-1 rounded font-medium ${
+                                     test.type === 'lab' ? 'bg-blue-100 text-blue-700' :
+                                     test.type === 'imaging' ? 'bg-purple-100 text-purple-700' :
+                                     test.type === 'consult' ? 'bg-orange-100 text-orange-700' :
+                                     'bg-slate-100 text-slate-700'
+                                   }`}>{test.type.charAt(0).toUpperCase() + test.type.slice(1)}</span>
+                                   <span className="text-xs text-slate-600"><strong>Timing:</strong> {test.timing}</span>
+                                 </div>
+                                 <p className="text-xs text-slate-600 mt-3">{test.clinical_rationale}</p>
+                               </div>
+                             ))}
+                           </div>
+                         ) : (
+                           <p className="text-sm text-slate-500 text-center py-8">No follow-up tests suggested</p>
+                         )}
+                       </div>
+                     </>
+                   )}
                  </TabsContent>
 
                  {/* Treatments Tab */}
-                 <TabsContent value="treatments" className="p-6 space-y-6">
+                 <TabsContent value="treatments" className="p-6 space-y-6 overflow-y-auto">
                    <div className="space-y-6">
                      {/* Treatment Plan Selector */}
                      <div className="bg-white rounded-xl border-2 border-green-300 shadow-sm overflow-hidden">
@@ -1853,7 +1988,7 @@ Generated: ${new Date().toLocaleString()}
                  </TabsContent>
 
                  {/* Final Impression Tab */}
-                 <TabsContent value="final_impression" className="p-6 space-y-6">
+                 <TabsContent value="final_impression" className="p-6 space-y-6 overflow-y-auto">
                    <div className="bg-white rounded-xl border-2 border-slate-300 shadow-sm overflow-hidden">
                      <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center gap-2">
                        <FileText className="w-5 h-5 text-slate-600" />
@@ -1866,7 +2001,7 @@ Generated: ${new Date().toLocaleString()}
                  </TabsContent>
 
                  {/* Finalize Note Tab */}
-                 <TabsContent value="finalize" className="p-6 space-y-6">
+                 <TabsContent value="finalize" className="p-6 space-y-6 overflow-y-auto">
                    <div className="max-w-2xl mx-auto">
                      <div className="text-center mb-8">
                        <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
@@ -1954,7 +2089,7 @@ Generated: ${new Date().toLocaleString()}
                  </TabsContent>
 
                  {/* Diagnoses Tab */}
-                 <TabsContent value="diagnoses" className="p-6">
+                 <TabsContent value="diagnoses" className="p-6 overflow-y-auto">
              <div className="flex gap-3 mb-6">
                <Button
                  variant="outline"
@@ -2147,20 +2282,14 @@ Generated: ${new Date().toLocaleString()}
                )}
              </div>
            </TabsContent>
-           </Tabs>
-           </motion.div>
+           </div>
+         </Tabs>
+       </motion.div>
 
 
        </div>
 
-       {/* Smart Guideline Panel */}
-      <SmartGuidelinePanel
-        noteContent={note.raw_note}
-        diagnoses={note.diagnoses || []}
-        medications={note.medications || []}
-      />
-
-      {/* Create Template Dialog */}
+       {/* Create Template Dialog */}
       <CreateTemplateFromNote
         open={templateDialogOpen}
         onClose={() => setTemplateDialogOpen(false)}

@@ -874,9 +874,9 @@ Generated: ${new Date().toLocaleString()}
          animate={{ opacity: 1, y: 0 }}
          className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
        >
-         <Tabs defaultValue="summary" className="w-full flex">
-           <div className="w-64 bg-slate-50 border-r border-slate-200 flex-shrink-0 sticky top-0 self-start max-h-screen overflow-y-auto">
-             <TabsList className="w-full h-full flex flex-col items-stretch gap-1 bg-transparent p-3">
+         <Tabs defaultValue="summary" className="w-full flex items-start">
+           <div className="w-64 bg-slate-50 border-r border-slate-200 flex-shrink-0 sticky top-8 self-start" style={{ maxHeight: 'calc(100vh - 4rem)' }}>
+             <TabsList className="w-full h-full flex flex-col items-stretch gap-1 bg-transparent p-3 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 4rem)' }}>
                {TAB_CONFIGS.map((tab) => {
                  const Icon = tab.icon;
                  return (

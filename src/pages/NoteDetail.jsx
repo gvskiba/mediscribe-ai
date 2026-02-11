@@ -47,6 +47,7 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 const TAB_CONFIGS = [
   { id: 'summary', label: 'Summary' },
   { id: 'clinical', label: 'Clinical Note' },
+  { id: 'assessment_plan', label: 'Assessment & Plan' },
   { id: 'guidelines', label: 'Guidelines & Codes' },
   { id: 'imaging', label: 'Result Analysis' },
   { id: 'diagnoses', label: 'Diagnoses' },
@@ -1606,6 +1607,45 @@ Generated: ${new Date().toLocaleString()}
                  </TabsContent>
 
 
+
+                 {/* Assessment & Plan Tab */}
+                 <TabsContent value="assessment_plan" className="p-6 space-y-6">
+                   <div className="bg-white rounded-xl border-2 border-purple-300 shadow-sm overflow-hidden">
+                     <div className="bg-purple-50 px-4 py-3 border-b border-purple-200 flex items-center gap-2">
+                       <Activity className="w-5 h-5 text-purple-600" />
+                       <h3 className="font-semibold text-slate-900">Assessment</h3>
+                     </div>
+                     <div className="p-4">
+                       {note.assessment ? (
+                         <div className="prose prose-sm max-w-none text-slate-700">
+                           {note.assessment.split('\n').map((para, i) => (
+                             <p key={i} className="mb-3 leading-relaxed">{para}</p>
+                           ))}
+                         </div>
+                       ) : (
+                         <p className="text-sm text-slate-500 italic">No assessment documented</p>
+                       )}
+                     </div>
+                   </div>
+
+                   <div className="bg-white rounded-xl border-2 border-green-300 shadow-sm overflow-hidden">
+                     <div className="bg-green-50 px-4 py-3 border-b border-green-200 flex items-center gap-2">
+                       <FileText className="w-5 h-5 text-green-600" />
+                       <h3 className="font-semibold text-slate-900">Plan</h3>
+                     </div>
+                     <div className="p-4">
+                       {note.plan ? (
+                         <div className="prose prose-sm max-w-none text-slate-700">
+                           {note.plan.split('\n').map((para, i) => (
+                             <p key={i} className="mb-3 leading-relaxed">{para}</p>
+                           ))}
+                         </div>
+                       ) : (
+                         <p className="text-sm text-slate-500 italic">No plan documented</p>
+                       )}
+                     </div>
+                   </div>
+                 </TabsContent>
 
                  {/* Diagnoses Tab */}
                  <TabsContent value="diagnoses" className="p-6">

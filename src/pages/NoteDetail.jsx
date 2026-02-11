@@ -1317,42 +1317,7 @@ Generated: ${new Date().toLocaleString()}
 
 
 
-                 {/* Follow-up Tests */}
-                 <div>
-                   <div className="flex items-center justify-between mb-4">
-                     <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                       <Beaker className="w-4 h-4 text-emerald-600" />
-                       Suggested Follow-up Tests & Consultations
-                     </h3>
-                   </div>
 
-                   {loadingFollowUp ? (
-                     <div className="flex items-center gap-3 text-slate-500 py-8">
-                       <Loader2 className="w-5 h-5 animate-spin" />
-                       <span className="text-sm">Generating suggestions...</span>
-                     </div>
-                   ) : followUpTests.length > 0 ? (
-                     <div className="space-y-3">
-                       {followUpTests.map((test, idx) => (
-                         <div key={idx} className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-                           <p className="font-semibold text-sm text-slate-900">{test.test_name}</p>
-                           <div className="mt-2 flex gap-4 flex-wrap">
-                             <span className={`text-xs px-2 py-1 rounded font-medium ${
-                               test.type === 'lab' ? 'bg-blue-100 text-blue-700' :
-                               test.type === 'imaging' ? 'bg-purple-100 text-purple-700' :
-                               test.type === 'consult' ? 'bg-orange-100 text-orange-700' :
-                               'bg-slate-100 text-slate-700'
-                             }`}>{test.type.charAt(0).toUpperCase() + test.type.slice(1)}</span>
-                             <span className="text-xs text-slate-600"><strong>Timing:</strong> {test.timing}</span>
-                           </div>
-                           <p className="text-xs text-slate-600 mt-3">{test.clinical_rationale}</p>
-                         </div>
-                       ))}
-                     </div>
-                   ) : (
-                     <p className="text-sm text-slate-500 text-center py-8">No follow-up tests suggested</p>
-                   )}
-                 </div>
 
                  {/* Clinical Guidelines */}
                  <div>
@@ -1839,6 +1804,47 @@ Generated: ${new Date().toLocaleString()}
                        />
                      </div>
                    </div>
+
+                   {note.status === "finalized" && (
+                     <>
+                       {/* Follow-up Tests */}
+                       <div>
+                         <div className="flex items-center justify-between mb-4">
+                           <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                             <Beaker className="w-4 h-4 text-emerald-600" />
+                             Suggested Follow-up Tests & Consultations
+                           </h3>
+                         </div>
+
+                         {loadingFollowUp ? (
+                           <div className="flex items-center gap-3 text-slate-500 py-8">
+                             <Loader2 className="w-5 h-5 animate-spin" />
+                             <span className="text-sm">Generating suggestions...</span>
+                           </div>
+                         ) : followUpTests.length > 0 ? (
+                           <div className="space-y-3">
+                             {followUpTests.map((test, idx) => (
+                               <div key={idx} className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                                 <p className="font-semibold text-sm text-slate-900">{test.test_name}</p>
+                                 <div className="mt-2 flex gap-4 flex-wrap">
+                                   <span className={`text-xs px-2 py-1 rounded font-medium ${
+                                     test.type === 'lab' ? 'bg-blue-100 text-blue-700' :
+                                     test.type === 'imaging' ? 'bg-purple-100 text-purple-700' :
+                                     test.type === 'consult' ? 'bg-orange-100 text-orange-700' :
+                                     'bg-slate-100 text-slate-700'
+                                   }`}>{test.type.charAt(0).toUpperCase() + test.type.slice(1)}</span>
+                                   <span className="text-xs text-slate-600"><strong>Timing:</strong> {test.timing}</span>
+                                 </div>
+                                 <p className="text-xs text-slate-600 mt-3">{test.clinical_rationale}</p>
+                               </div>
+                             ))}
+                           </div>
+                         ) : (
+                           <p className="text-sm text-slate-500 text-center py-8">No follow-up tests suggested</p>
+                         )}
+                       </div>
+                     </>
+                   )}
                  </TabsContent>
 
                  {/* Treatments Tab */}

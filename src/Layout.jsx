@@ -10,7 +10,9 @@ import {
   X,
   LogOut,
   Activity,
-  ChevronDown } from
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight } from
 "lucide-react";
 import { base44 } from "@/api/base44Client";
 import GlobalSearchBar from "./components/search/GlobalSearchBar";
@@ -46,6 +48,7 @@ const navSections = [
 
 export default function Layout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     primary: true,
     resources: true,
@@ -129,60 +132,89 @@ export default function Layout({ children, currentPageName }) {
             </div>
           </div>
         </div>
-        <div className="px-4 py-3 border-b border-slate-200 space-y-2">
-          <GlobalSearchBar />
-          <Link
-            to={createPageUrl("NewNote")}
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg px-4 py-2.5 font-semibold text-sm transition-all duration-300 shadow-sm flex items-center justify-center gap-2 hover:shadow-md">
-            <FileText className="w-4 h-4" />
-            New Note
-          </Link>
-        </div>
+        {!sidebarCollapsed && (
+          <div className="px-4 py-3 border-b border-slate-200 space-y-2">
+            <GlobalSearchBar />
+            <Link
+              to={createPageUrl("NewNote")}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg px-4 py-2.5 font-semibold text-sm transition-all duration-300 shadow-sm flex items-center justify-center gap-2 hover:shadow-md">
+              <FileText className="w-4 h-4" />
+              New Note
+            </Link>
+          </div>
+        )}
         <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
-          {navSections.map((section, idx) => {
-            const sectionKey = section.title.toLowerCase().replace(/\s+/g, '_');
-            const isExpanded = expandedSections[sectionKey];
+          {!sidebarCollapsed ? (
+            navSections.map((section, idx) => {
+              const sectionKey = section.title.toLowerCase().replace(/\s+/g, '_');
+              const isExpanded = expandedSections[sectionKey];
 
-            return (
-              <div key={section.title}>
-                <button
-                  onClick={() => toggleSection(sectionKey)}
-                  className="w-full flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 mb-2 hover:text-slate-700 transition-colors"
+              return (
+                <div key={section.title}>
+                  <button
+                    onClick={() => toggleSection(sectionKey)}
+                    className="w-full flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 mb-2 hover:text-slate-700 transition-colors"
+                  >
+                    <span>{section.title}</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
+                  </button>
+                  {isExpanded && (
+                    <div className="space-y-1">
+                      {section.items.map((item) =>
+                        <Link
+                          key={item.page}
+                          to={createPageUrl(item.page)}
+                          className={`nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                          currentPageName === item.page ?
+                          "active text-blue-600 bg-blue-50 border-l-3 border-blue-600" :
+                          "text-slate-600 hover:text-slate-900 hover:bg-slate-50"}`}
+                        >
+                          <item.icon className="w-[16px] h-[16px]" />
+                          {item.name}
+                        </Link>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            // Collapsed icon-only view
+            <div className="space-y-1">
+              {navSections.flatMap(section => section.items).map((item) => (
+                <Link
+                  key={item.page}
+                  to={createPageUrl(item.page)}
+                  title={item.name}
+                  className={`nav-link flex items-center justify-center p-3 rounded-lg transition-all ${
+                    currentPageName === item.page ?
+                    "text-blue-600 bg-blue-50" :
+                    "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                  }`}
                 >
-                  <span>{section.title}</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
-                </button>
-                {isExpanded && (
-                  <div className="space-y-1">
-                    {section.items.map((item) =>
-                      <Link
-                        key={item.page}
-                        to={createPageUrl(item.page)}
-                        className={`nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                        currentPageName === item.page ?
-                        "active text-blue-600 bg-blue-50 border-l-3 border-blue-600" :
-                        "text-slate-600 hover:text-slate-900 hover:bg-slate-50"}`}
-                      >
-                        <item.icon className="w-[16px] h-[16px]" />
-                        {item.name}
-                      </Link>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                  <item.icon className="w-5 h-5" />
+                </Link>
+              ))}
+            </div>
+          )}
         </nav>
-              <div className="bg-blue-100 p-4 border-t border-slate-200">
+              <div className="bg-blue-100 p-4 border-t border-slate-200 space-y-2">
               <button
-            onClick={() => base44.auth.logout()}
-            className="nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 w-full">
-
-              <LogOut className="w-[18px] h-[18px]" />
-              Sign Out
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="nav-link flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 w-full"
+              >
+                {sidebarCollapsed ? <ChevronRight className="w-[18px] h-[18px]" /> : <ChevronLeft className="w-[18px] h-[18px]" />}
+                {!sidebarCollapsed && <span>Collapse</span>}
+              </button>
+              <button
+                onClick={() => base44.auth.logout()}
+                className={`nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 w-full ${sidebarCollapsed ? 'justify-center' : ''}`}
+              >
+                <LogOut className="w-[18px] h-[18px]" />
+                {!sidebarCollapsed && <span>Sign Out</span>}
               </button>
               </div>
-      </aside>
+              </aside>
 
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-slate-200 text-slate-900 px-4 py-3 z-40 space-y-3 glass-effect" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)' }}>

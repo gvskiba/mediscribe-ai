@@ -8,24 +8,25 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  ArrowLeft,
-  FileText,
-  Calendar,
-  Hash,
-  Sparkles,
-  Loader2,
-  Check,
-  Plus,
-  Code,
-  Download,
-  BookOpen,
-  FileCode,
-  Clock,
-  AlertCircle,
-  ImageIcon,
-  Beaker,
-  Activity
-} from "lucide-react";
+        ArrowLeft,
+        FileText,
+        Calendar,
+        Hash,
+        Sparkles,
+        Loader2,
+        Check,
+        Plus,
+        Code,
+        Download,
+        BookOpen,
+        FileCode,
+        Clock,
+        AlertCircle,
+        ImageIcon,
+        Beaker,
+        Activity,
+        Pill
+      } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -53,6 +54,7 @@ const TAB_ROWS = [
   ],
   [
     { id: 'diagnoses', label: 'Diagnoses', icon: Beaker },
+    { id: 'treatments', label: 'Treatments', icon: Pill },
     { id: 'guidelines', label: 'Guidelines & Codes', icon: Code },
     { id: 'imaging', label: 'Result Analysis', icon: ImageIcon },
     { id: 'finalize', label: 'Finalize Note', icon: Check },
@@ -1671,6 +1673,94 @@ Generated: ${new Date().toLocaleString()}
                          <p className="text-sm text-slate-500 italic">No plan documented</p>
                        )}
                      </div>
+                   </div>
+                 </TabsContent>
+
+                 {/* Treatments Tab */}
+                 <TabsContent value="treatments" className="p-6 space-y-6">
+                   <div className="space-y-6">
+                     <div>
+                       <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+                         <Pill className="w-5 h-5 text-purple-600" />
+                         Current Medications
+                       </h3>
+                       {note.medications && note.medications.length > 0 ? (
+                         <div className="space-y-2">
+                           {note.medications.map((med, idx) => (
+                             <div key={idx} className="bg-white border border-purple-200 rounded-lg p-4 hover:border-purple-300 hover:shadow-sm transition-all">
+                               <p className="text-sm font-medium text-slate-900">{med}</p>
+                             </div>
+                           ))}
+                         </div>
+                       ) : (
+                         <div className="bg-slate-50 border border-dashed border-slate-300 rounded-lg p-6 text-center">
+                           <Pill className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                           <p className="text-sm text-slate-500">No medications documented</p>
+                         </div>
+                       )}
+                     </div>
+
+                     {note.status === "finalized" && note.medications && note.medications.length > 0 && (
+                       <>
+                         {/* Drug Interactions */}
+                         <div>
+                           <div className="flex items-center justify-between mb-4">
+                             <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                               <AlertCircle className="w-4 h-4 text-red-600" />
+                               Drug-Drug Interactions
+                             </h3>
+                           </div>
+
+                           {loadingInteractions ? (
+                             <div className="flex items-center gap-3 text-slate-500 py-8">
+                               <Loader2 className="w-5 h-5 animate-spin" />
+                               <span className="text-sm">Analyzing medications...</span>
+                             </div>
+                           ) : drugInteractions.length > 0 ? (
+                             <div className="space-y-3">
+                               {drugInteractions.map((interaction, idx) => (
+                                 <div key={idx} className={`rounded-lg border p-4 ${
+                                   interaction.severity === 'severe' ? 'bg-red-50 border-red-200' :
+                                   interaction.severity === 'moderate' ? 'bg-yellow-50 border-yellow-200' :
+                                   'bg-blue-50 border-blue-200'
+                                 }`}>
+                                   <p className="font-semibold text-sm text-slate-900">{interaction.drug_pair}</p>
+                                   <p className={`text-xs font-medium mt-1 ${
+                                     interaction.severity === 'severe' ? 'text-red-700' :
+                                     interaction.severity === 'moderate' ? 'text-yellow-700' :
+                                     'text-blue-700'
+                                   }`}>Severity: {interaction.severity.toUpperCase()}</p>
+                                   <p className="text-xs text-slate-600 mt-2"><strong>Mechanism:</strong> {interaction.mechanism}</p>
+                                   <p className="text-xs text-slate-600 mt-1"><strong>Recommendation:</strong> {interaction.recommendation}</p>
+                                 </div>
+                               ))}
+                             </div>
+                           ) : (
+                             <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-6 text-center">
+                               <Check className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
+                               <p className="text-sm text-emerald-700 font-medium">No significant drug interactions detected</p>
+                             </div>
+                           )}
+                         </div>
+
+                         {/* Treatment Plan from Plan Section */}
+                         {note.plan && (
+                           <div>
+                             <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                               <Activity className="w-4 h-4 text-green-600" />
+                               Treatment Plan
+                             </h3>
+                             <div className="bg-white border-2 border-green-200 rounded-xl p-5">
+                               <div className="prose prose-sm max-w-none text-slate-700">
+                                 {note.plan.split('\n').map((para, i) => (
+                                   <p key={i} className="mb-3 leading-relaxed">{para}</p>
+                                 ))}
+                               </div>
+                             </div>
+                           </div>
+                         )}
+                       </>
+                     )}
                    </div>
                  </TabsContent>
 

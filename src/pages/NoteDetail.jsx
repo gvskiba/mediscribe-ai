@@ -867,13 +867,13 @@ Generated: ${new Date().toLocaleString()}
          className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
        >
          <Tabs defaultValue="summary" className="w-full">
-           <div className="border-b border-slate-200 bg-slate-50/50">
+           <div className="border-b border-slate-200 bg-slate-50/50 py-2">
              <DragDropContext onDragEnd={handleDragEnd}>
                {TAB_ROWS.map((rowTabs, rowIndex) => (
                  <Droppable key={`row-${rowIndex}`} droppableId={`tabs-row-${rowIndex}`} direction="horizontal">
                    {(provided) => (
                      <TabsList 
-                       className="w-full h-auto justify-start bg-transparent rounded-none px-4 py-2 gap-2 overflow-x-auto scrollbar-hide border-0"
+                       className={`w-full h-auto justify-start bg-transparent rounded-none px-4 gap-3 overflow-x-auto scrollbar-hide border-0 ${rowIndex === 0 ? 'py-2 mb-2' : 'py-2'}`}
                        ref={provided.innerRef}
                        {...provided.droppableProps}
                      >
@@ -890,10 +890,10 @@ Generated: ${new Date().toLocaleString()}
                                >
                                  <TabsTrigger 
                                    value={tab.id} 
-                                   className="whitespace-nowrap rounded-lg px-3 py-2 gap-2 font-medium text-xs data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm data-[state=inactive]:text-slate-600 hover:text-slate-900 hover:bg-white/60 transition-all cursor-grab active:cursor-grabbing border border-transparent data-[state=active]:border-slate-200 flex-shrink-0"
+                                   className="whitespace-nowrap rounded-lg px-4 py-2.5 gap-2 font-medium text-sm data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm data-[state=inactive]:text-slate-600 hover:text-slate-900 hover:bg-white/60 transition-all cursor-grab active:cursor-grabbing border border-transparent data-[state=active]:border-slate-200 flex-shrink-0"
                                  >
-                                   {Icon && <Icon className="w-3.5 h-3.5" />}
-                                   <span className="text-xs">{tab.label}</span>
+                                   {Icon && <Icon className="w-4 h-4" />}
+                                   <span>{tab.label}</span>
                                  </TabsTrigger>
                                </div>
                              )}

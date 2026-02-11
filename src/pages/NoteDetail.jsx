@@ -1168,9 +1168,82 @@ Generated: ${new Date().toLocaleString()}
                  />
                </div>
              </div>
-           </TabsContent>
 
-           {/* Guidelines & Codes Tab */}
+             {/* Clinical Diagnoses Section */}
+             <div className="bg-white rounded-xl border-2 border-slate-300 shadow-sm overflow-hidden mt-6">
+               <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+                 <div>
+                   <h3 className="font-semibold text-slate-900">Clinical Diagnoses</h3>
+                   <p className="text-xs text-slate-500 mt-1">Primary and secondary diagnoses identified</p>
+                 </div>
+               </div>
+               <div className="p-4">
+                 {note.diagnoses && Array.isArray(note.diagnoses) && note.diagnoses.length > 0 ? (
+                   <div className="space-y-4">
+                     {/* ICD-10 Coded Diagnoses */}
+                     {note.diagnoses.filter(d => d && /^[A-Z0-9]{1,}.*-/.test(d.trim())).length > 0 && (
+                       <div className="space-y-3">
+                         <div className="flex items-center gap-2 mb-3">
+                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
+                             {note.diagnoses.filter(d => d && /^[A-Z0-9]{1,}.*-/.test(d.trim())).length} ICD-10 Codes (User Added)
+                           </span>
+                         </div>
+                         <div className="grid gap-2">
+                           {note.diagnoses
+                             .filter(d => d && /^[A-Z0-9]{1,}.*-/.test(d.trim()))
+                             .map((diag, i) => (
+                             <div key={i} className="flex items-start gap-3 p-3 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-white hover:border-blue-300 hover:shadow-sm transition-all">
+                               <div className="flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white text-xs font-bold flex-shrink-0">
+                                 {i + 1}
+                               </div>
+                               <div className="flex-1 min-w-0">
+                                 <p className="text-sm font-medium text-slate-900 break-words">{diag}</p>
+                               </div>
+                             </div>
+                           ))}
+                         </div>
+                       </div>
+                     )}
+
+                     {note.status === "finalized" && (
+                       <div className="mt-4 pt-4 border-t border-slate-200">
+                         <ICD10CodeSearch
+                           suggestions={icd10Suggestions}
+                           diagnoses={note.diagnoses}
+                           onAddDiagnoses={async (newDiagnoses) => {
+                             const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
+                             await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
+                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                           }}
+                         />
+                       </div>
+                     )}
+                   </div>
+                 ) : (
+                   <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+                     <Code className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                     <p className="text-sm font-medium text-slate-600">No diagnoses added yet</p>
+                     <p className="text-xs text-slate-500 mt-1">Diagnoses will appear here after extraction or manual entry</p>
+                   </div>
+                 )}
+
+                 {note.status === "finalized" && (!note.diagnoses || note.diagnoses.length === 0) && (
+                   <div className="mt-4">
+                     <ICD10CodeSearch
+                       suggestions={icd10Suggestions}
+                       diagnoses={note.diagnoses || []}
+                       onAddDiagnoses={async (newDiagnoses) => {
+                         await base44.entities.ClinicalNote.update(noteId, { diagnoses: newDiagnoses });
+                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                       }}
+                     />
+                   </div>
+                 )}
+               </div>
+             </div>
+             </TabsContent>
+
+             {/* Guidelines & Codes Tab */}
            <TabsContent value="guidelines" className="p-6 space-y-6 overflow-y-auto">
              {/* Clinical Guidelines Panel */}
              <div>

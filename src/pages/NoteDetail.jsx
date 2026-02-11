@@ -55,6 +55,7 @@ const TAB_ROWS = [
     { id: 'diagnoses', label: 'Diagnoses', icon: Beaker },
     { id: 'guidelines', label: 'Guidelines & Codes', icon: Code },
     { id: 'imaging', label: 'Result Analysis', icon: ImageIcon },
+    { id: 'finalize', label: 'Finalize Note', icon: Check },
   ]
 ];
 
@@ -1670,6 +1671,94 @@ Generated: ${new Date().toLocaleString()}
                          <p className="text-sm text-slate-500 italic">No plan documented</p>
                        )}
                      </div>
+                   </div>
+                 </TabsContent>
+
+                 {/* Finalize Note Tab */}
+                 <TabsContent value="finalize" className="p-6 space-y-6">
+                   <div className="max-w-2xl mx-auto">
+                     <div className="text-center mb-8">
+                       <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                         <Check className="w-8 h-8 text-emerald-600" />
+                       </div>
+                       <h2 className="text-2xl font-bold text-slate-900 mb-2">Finalize Clinical Note</h2>
+                       <p className="text-slate-600">Review and finalize your clinical documentation</p>
+                     </div>
+
+                     {note.status === "draft" ? (
+                       <div className="space-y-6">
+                         <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+                           <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                             <AlertCircle className="w-5 h-5 text-blue-600" />
+                             Before Finalizing
+                           </h3>
+                           <ul className="space-y-3 text-sm text-slate-700">
+                             <li className="flex items-start gap-2">
+                               <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                               <span>Review all clinical sections for accuracy and completeness</span>
+                             </li>
+                             <li className="flex items-start gap-2">
+                               <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                               <span>Verify patient demographics and visit information</span>
+                             </li>
+                             <li className="flex items-start gap-2">
+                               <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                               <span>Confirm diagnoses and ICD-10 codes are accurate</span>
+                             </li>
+                             <li className="flex items-start gap-2">
+                               <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                               <span>Review assessment and treatment plan</span>
+                             </li>
+                             <li className="flex items-start gap-2">
+                               <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                               <span>Ensure all required fields are complete</span>
+                             </li>
+                           </ul>
+                         </div>
+
+                         <div className="bg-white border-2 border-slate-200 rounded-xl p-6">
+                           <h3 className="font-semibold text-slate-900 mb-4">Note Status</h3>
+                           <div className="grid grid-cols-2 gap-4 mb-6">
+                             <div>
+                               <p className="text-xs text-slate-500 mb-1">Current Status</p>
+                               <Badge className="bg-amber-100 text-amber-700 border-amber-300">Draft</Badge>
+                             </div>
+                             <div>
+                               <p className="text-xs text-slate-500 mb-1">Last Modified</p>
+                               <p className="text-sm text-slate-900">{note.updated_date ? format(new Date(note.updated_date), "MMM d, h:mm a") : "N/A"}</p>
+                             </div>
+                           </div>
+
+                           <Button
+                             onClick={() => finalizeMutation.mutate()}
+                             disabled={finalizeMutation.isPending}
+                             className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white rounded-xl gap-2 shadow-lg shadow-emerald-500/30 font-semibold py-6 text-base"
+                           >
+                             {finalizeMutation.isPending ? (
+                               <><Loader2 className="w-5 h-5 animate-spin" /> Finalizing Note...</>
+                             ) : (
+                               <><Check className="w-5 h-5" /> Finalize Note</>
+                             )}
+                           </Button>
+                           <p className="text-xs text-slate-500 text-center mt-3">
+                             Once finalized, this note will be locked and timestamped
+                           </p>
+                         </div>
+                       </div>
+                     ) : (
+                       <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-8 text-center">
+                         <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                           <Check className="w-10 h-10 text-emerald-600" />
+                         </div>
+                         <h3 className="text-xl font-bold text-slate-900 mb-2">Note Finalized</h3>
+                         <p className="text-slate-700 mb-4">
+                           This note was finalized on {note.updated_date ? format(new Date(note.updated_date), "MMMM d, yyyy 'at' h:mm a") : "N/A"}
+                         </p>
+                         <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 text-sm px-4 py-1">
+                           {note.status}
+                         </Badge>
+                       </div>
+                     )}
                    </div>
                  </TabsContent>
 

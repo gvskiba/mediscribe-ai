@@ -27,6 +27,7 @@ export default function EditableSection({
    const [showSuggestions, setShowSuggestions] = useState(false);
    const [useRichText, setUseRichText] = useState(false);
    const textareaRef = useRef(null);
+   const selectionRef = useRef({ start: 0, end: 0 });
 
   useEffect(() => {
     setEditValue(value);

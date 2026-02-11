@@ -1545,11 +1545,14 @@ Generated: ${new Date().toLocaleString()}
                      <p className="text-sm text-slate-500 text-center py-8">No guideline recommendations available</p>
                    )}
                  </div>
-                 </>
-                 ) : (
-                 <p className="text-sm text-slate-500 text-center py-8">Finalize the note to view guidelines and ICD-10 codes.</p>
-                 )}
-                 </TabsContent>
+         </>
+       )}
+       {note.status === "draft" && (
+         <div className="text-center py-12">
+           <p className="text-slate-500">Finalize the note to view additional clinical insights and ICD-10 codes.</p>
+         </div>
+       )}
+     </TabsContent>
 
                  {/* Result Analysis Tab */}
                  <TabsContent value="imaging" className="p-6 space-y-6 overflow-y-auto">

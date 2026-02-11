@@ -54,6 +54,7 @@ const TAB_ROWS = [
     { id: 'summary', label: 'Summary', icon: Sparkles },
     { id: 'clinical', label: 'Clinical Note', icon: FileText },
     { id: 'assessment_plan', label: 'Assessment & Plan', icon: Activity },
+    { id: 'mdm', label: 'MDM', icon: AlertCircle },
     { id: 'treatments', label: 'Treatments', icon: Pill },
   ],
   [
@@ -1714,6 +1715,19 @@ Generated: ${new Date().toLocaleString()}
                            diagnoses: note.diagnoses
                          }}
                        />
+                     </div>
+                   </div>
+                 </TabsContent>
+
+                 {/* MDM Tab */}
+                 <TabsContent value="mdm" className="p-6 space-y-6">
+                   <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-sm overflow-hidden">
+                     <div className="bg-indigo-50 px-4 py-3 border-b border-indigo-200 flex items-center gap-2">
+                       <AlertCircle className="w-5 h-5 text-indigo-600" />
+                       <h3 className="font-semibold text-slate-900">Medical Decision Making</h3>
+                     </div>
+                     <div className="p-4">
+                       <p className="text-sm text-slate-500">MDM content will be available here</p>
                      </div>
                    </div>
                  </TabsContent>

@@ -12,6 +12,7 @@ import InteractivePlanSection from "./InteractivePlanSection";
 import TreatmentPlanSelector from "./TreatmentPlanSelector";
 import MedicationRecommendations from "./MedicationRecommendations";
 import ICD10CodeSearch from "./ICD10CodeSearch";
+import VitalSignsInput from "./VitalSignsInput";
 
 export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpdate, onReanalyze, guidelineRecommendations = [], loadingGuidelines = false, medicationRecommendations = [], loadingMedications = false, onGenerateEducationMaterials }) {
   // Default onReanalyze if not provided
@@ -865,43 +866,68 @@ FORMATTING RULES (CRITICAL):
 
         {/* Review of Systems Box */}
         <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-sm overflow-hidden">
-          <div className="bg-indigo-50 px-4 py-3 border-b border-indigo-200 flex items-center gap-2">
-            <ClipboardList className="w-5 h-5 text-indigo-600" />
-            <h3 className="font-semibold text-slate-900">Review of Systems</h3>
-          </div>
-          <div className="p-4">
-            <EditableSection
-              icon={ClipboardList}
-              title=""
-              color="indigo"
-              value={note.review_of_systems || "Not extracted"}
-              field="review_of_systems"
-              type="textarea"
-              onUpdate={onUpdate}
-              onReanalyze={handleReanalyze}
-              hideBorder={true}
-            />
-          </div>
+         <div className="bg-indigo-50 px-4 py-3 border-b border-indigo-200 flex items-center gap-2">
+           <ClipboardList className="w-5 h-5 text-indigo-600" />
+           <h3 className="font-semibold text-slate-900">Review of Systems</h3>
+         </div>
+         <div className="p-4">
+           <EditableSection
+             icon={ClipboardList}
+             title=""
+             color="indigo"
+             value={note.review_of_systems || "Not extracted"}
+             field="review_of_systems"
+             type="textarea"
+             onUpdate={onUpdate}
+             onReanalyze={handleReanalyze}
+             hideBorder={true}
+             enableStructuredList={true}
+             note={note}
+             onAddReference={(ref) => {
+               const refs = note.section_references || [];
+               onUpdate("section_references", [...refs, ref]);
+             }}
+             onRemoveReference={(refId) => {
+               const refs = note.section_references || [];
+               onUpdate("section_references", refs.filter(r => r.id !== refId));
+             }}
+           />
+         </div>
         </div>
 
-        {/* Physical Exam Box */}
+        {/* Vital Signs & Physical Exam */}
         <div className="bg-white rounded-xl border-2 border-teal-300 shadow-sm overflow-hidden">
           <div className="bg-teal-50 px-4 py-3 border-b border-teal-200 flex items-center gap-2">
             <Activity className="w-5 h-5 text-teal-600" />
-            <h3 className="font-semibold text-slate-900">Physical Exam</h3>
+            <h3 className="font-semibold text-slate-900">Physical Exam & Vital Signs</h3>
           </div>
-          <div className="p-4">
-            <EditableSection
-              icon={Activity}
-              title=""
-              color="teal"
-              value={note.physical_exam || "Not extracted"}
-              field="physical_exam"
-              type="textarea"
-              onUpdate={onUpdate}
-              onReanalyze={handleReanalyze}
-              hideBorder={true}
+          <div className="p-4 space-y-4">
+            <VitalSignsInput
+              vitalSigns={note.vital_signs}
+              onSave={(updatedVitals) => onUpdate("vital_signs", updatedVitals)}
             />
+            <div className="pt-4 border-t border-slate-200">
+              <EditableSection
+                icon={Activity}
+                title=""
+                color="teal"
+                value={note.physical_exam || "Not extracted"}
+                field="physical_exam"
+                type="textarea"
+                onUpdate={onUpdate}
+                onReanalyze={handleReanalyze}
+                hideBorder={true}
+                note={note}
+                onAddReference={(ref) => {
+                  const refs = note.section_references || [];
+                  onUpdate("section_references", [...refs, ref]);
+                }}
+                onRemoveReference={(refId) => {
+                  const refs = note.section_references || [];
+                  onUpdate("section_references", refs.filter(r => r.id !== refId));
+                }}
+              />
+            </div>
           </div>
         </div>
 
@@ -922,6 +948,15 @@ FORMATTING RULES (CRITICAL):
                onUpdate={onUpdate}
                onReanalyze={handleReanalyze}
                hideBorder={true}
+               note={note}
+               onAddReference={(ref) => {
+                 const refs = note.section_references || [];
+                 onUpdate("section_references", [...refs, ref]);
+               }}
+               onRemoveReference={(refId) => {
+                 const refs = note.section_references || [];
+                 onUpdate("section_references", refs.filter(r => r.id !== refId));
+               }}
                noteContext={{
                  diagnoses: note.diagnoses,
                  medications: note.medications
@@ -945,21 +980,31 @@ FORMATTING RULES (CRITICAL):
                 }}
               />
               <div className="pt-4 border-t border-slate-200">
-                <EditableSection
-                   icon={ClipboardList}
-                   title=""
-                   color="green"
-                   value={note.plan || "Not extracted"}
-                   field="plan"
-                   type="textarea"
-                   onUpdate={onUpdate}
-                   onReanalyze={handleReanalyze}
-                   hideBorder={true}
-                   noteContext={{
-                     assessment: note.assessment,
-                     diagnoses: note.diagnoses
-                   }}
-                 />
+               <EditableSection
+                  icon={ClipboardList}
+                  title=""
+                  color="green"
+                  value={note.plan || "Not extracted"}
+                  field="plan"
+                  type="textarea"
+                  onUpdate={onUpdate}
+                  onReanalyze={handleReanalyze}
+                  hideBorder={true}
+                  enableStructuredList={true}
+                  note={note}
+                  onAddReference={(ref) => {
+                    const refs = note.section_references || [];
+                    onUpdate("section_references", [...refs, ref]);
+                  }}
+                  onRemoveReference={(refId) => {
+                    const refs = note.section_references || [];
+                    onUpdate("section_references", refs.filter(r => r.id !== refId));
+                  }}
+                  noteContext={{
+                    assessment: note.assessment,
+                    diagnoses: note.diagnoses
+                  }}
+                />
               </div>
             </div>
           </div>

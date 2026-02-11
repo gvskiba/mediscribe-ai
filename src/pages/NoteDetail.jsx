@@ -874,61 +874,28 @@ Generated: ${new Date().toLocaleString()}
          animate={{ opacity: 1, y: 0 }}
          className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
        >
-         <Tabs defaultValue="summary" className="w-full">
-           <div className="bg-white border-b-2 border-slate-200">
-             <style>{`
-               .flag-tab {
-                 position: relative;
-                 clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%);
-               }
-               .flag-tab-active {
-                 clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%);
-               }
-             `}</style>
-             <DragDropContext onDragEnd={handleDragEnd}>
-               {TAB_ROWS.map((rowTabs, rowIndex) => (
-                 <Droppable key={`row-${rowIndex}`} droppableId={`tabs-row-${rowIndex}`} direction="horizontal">
-                   {(provided) => (
-                     <div className={`${rowIndex > 0 ? 'border-t border-slate-100' : ''}`}>
-                       <TabsList 
-                         className="w-full h-auto justify-between bg-transparent rounded-none px-6 py-3 gap-1 overflow-x-auto scrollbar-hide border-0"
-                         ref={provided.innerRef}
-                         {...provided.droppableProps}
-                       >
-                         {rowTabs.map((tab, index) => {
-                           const Icon = tab.icon;
-                           return (
-                             <Draggable key={tab.id} draggableId={tab.id} index={index}>
-                               {(provided, snapshot) => (
-                                 <div
-                                   ref={provided.innerRef}
-                                   {...provided.draggableProps}
-                                   {...provided.dragHandleProps}
-                                   className={snapshot.isDragging ? 'opacity-50 z-50' : ''}
-                                 >
-                                   <TabsTrigger 
-                                     value={tab.id} 
-                                     className="flag-tab whitespace-nowrap px-6 py-3 gap-2.5 font-semibold text-sm data-[state=active]:flag-tab-active data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=inactive]:bg-slate-100 data-[state=inactive]:text-slate-700 hover:bg-slate-200 hover:text-slate-900 transition-all duration-200 cursor-grab active:cursor-grabbing border-0 rounded-none flex-shrink-0 mr-2"
-                                   >
-                                     {Icon && <Icon className="w-4 h-4" />}
-                                     <span>{tab.label}</span>
-                                   </TabsTrigger>
-                                 </div>
-                               )}
-                             </Draggable>
-                           );
-                         })}
-                         {provided.placeholder}
-                       </TabsList>
-                     </div>
-                   )}
-                 </Droppable>
-               ))}
-             </DragDropContext>
+         <Tabs defaultValue="summary" className="w-full flex">
+           <div className="w-64 bg-slate-50 border-r border-slate-200 flex-shrink-0">
+             <TabsList className="w-full h-full flex flex-col items-stretch gap-1 bg-transparent p-3">
+               {TAB_CONFIGS.map((tab) => {
+                 const Icon = tab.icon;
+                 return (
+                   <TabsTrigger 
+                     key={tab.id}
+                     value={tab.id} 
+                     className="justify-start px-4 py-3 gap-3 font-medium text-sm data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-transparent data-[state=inactive]:text-slate-700 hover:bg-slate-100 data-[state=active]:hover:bg-blue-700 transition-all duration-200 rounded-lg"
+                   >
+                     {Icon && <Icon className="w-4 h-4" />}
+                     <span className="text-left">{tab.label}</span>
+                   </TabsTrigger>
+                 );
+               })}
+             </TabsList>
            </div>
+           <div className="flex-1 overflow-hidden">
 
            {/* Summary Tab */}
-           <TabsContent value="summary" className="p-6 space-y-4">
+           <TabsContent value="summary" className="p-6 space-y-4 overflow-y-auto">
              {note.status === "draft" && (
                <div className="flex gap-3 mb-4">
                  <Button
@@ -1018,7 +985,7 @@ Generated: ${new Date().toLocaleString()}
              </TabsContent>
 
            {/* Clinical Note Tab */}
-           <TabsContent value="clinical" className="p-6">
+           <TabsContent value="clinical" className="p-6 overflow-y-auto">
              {/* Action Buttons */}
              {note.status === "draft" && (
                <div className="flex gap-3 mb-6">
@@ -1126,7 +1093,7 @@ Generated: ${new Date().toLocaleString()}
            </TabsContent>
 
            {/* Guidelines & Codes Tab */}
-           <TabsContent value="guidelines" className="p-6 space-y-6">
+           <TabsContent value="guidelines" className="p-6 space-y-6 overflow-y-auto">
              {/* Generate Diagnoses Section */}
              {note.status === "draft" && (
                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
@@ -1559,7 +1526,7 @@ Generated: ${new Date().toLocaleString()}
                  </TabsContent>
 
                  {/* Result Analysis Tab */}
-                 <TabsContent value="imaging" className="p-6 space-y-6">
+                 <TabsContent value="imaging" className="p-6 space-y-6 overflow-y-auto">
                    <div className="flex gap-3">
                      <Button
                        variant="outline"
@@ -1643,7 +1610,7 @@ Generated: ${new Date().toLocaleString()}
 
 
                  {/* Assessment & Plan Tab */}
-                 <TabsContent value="assessment_plan" className="p-6 space-y-6">
+                 <TabsContent value="assessment_plan" className="p-6 space-y-6 overflow-y-auto">
                    <div className="bg-white rounded-xl border-2 border-purple-300 shadow-sm overflow-hidden">
                      <div className="bg-purple-50 px-4 py-3 border-b border-purple-200 flex items-center gap-2">
                        <Activity className="w-5 h-5 text-purple-600" />
@@ -1721,7 +1688,7 @@ Generated: ${new Date().toLocaleString()}
                  </TabsContent>
 
                  {/* MDM Tab */}
-                 <TabsContent value="mdm" className="p-6 space-y-6">
+                 <TabsContent value="mdm" className="p-6 space-y-6 overflow-y-auto">
                    <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-sm overflow-hidden">
                      <div className="bg-indigo-50 px-4 py-3 border-b border-indigo-200 flex items-center gap-2">
                        <AlertCircle className="w-5 h-5 text-indigo-600" />
@@ -1734,7 +1701,7 @@ Generated: ${new Date().toLocaleString()}
                  </TabsContent>
 
                  {/* Treatments Tab */}
-                 <TabsContent value="treatments" className="p-6 space-y-6">
+                 <TabsContent value="treatments" className="p-6 space-y-6 overflow-y-auto">
                    <div className="space-y-6">
                      {/* Treatment Plan Selector */}
                      <div className="bg-white rounded-xl border-2 border-green-300 shadow-sm overflow-hidden">
@@ -1853,7 +1820,7 @@ Generated: ${new Date().toLocaleString()}
                  </TabsContent>
 
                  {/* Final Impression Tab */}
-                 <TabsContent value="final_impression" className="p-6 space-y-6">
+                 <TabsContent value="final_impression" className="p-6 space-y-6 overflow-y-auto">
                    <div className="bg-white rounded-xl border-2 border-slate-300 shadow-sm overflow-hidden">
                      <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center gap-2">
                        <FileText className="w-5 h-5 text-slate-600" />
@@ -1866,7 +1833,7 @@ Generated: ${new Date().toLocaleString()}
                  </TabsContent>
 
                  {/* Finalize Note Tab */}
-                 <TabsContent value="finalize" className="p-6 space-y-6">
+                 <TabsContent value="finalize" className="p-6 space-y-6 overflow-y-auto">
                    <div className="max-w-2xl mx-auto">
                      <div className="text-center mb-8">
                        <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
@@ -1954,7 +1921,7 @@ Generated: ${new Date().toLocaleString()}
                  </TabsContent>
 
                  {/* Diagnoses Tab */}
-                 <TabsContent value="diagnoses" className="p-6">
+                 <TabsContent value="diagnoses" className="p-6 overflow-y-auto">
              <div className="flex gap-3 mb-6">
                <Button
                  variant="outline"
@@ -2147,8 +2114,9 @@ Generated: ${new Date().toLocaleString()}
                )}
              </div>
            </TabsContent>
-           </Tabs>
-           </motion.div>
+           </div>
+         </Tabs>
+       </motion.div>
 
 
        </div>

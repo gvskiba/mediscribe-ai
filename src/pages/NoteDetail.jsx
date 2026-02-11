@@ -883,7 +883,7 @@ Generated: ${new Date().toLocaleString()}
                    {(provided) => (
                      <div className={`${rowIndex > 0 ? 'border-t border-slate-100' : ''}`}>
                        <TabsList 
-                         className="w-full h-auto justify-start bg-transparent rounded-none px-6 py-3 gap-1 overflow-x-auto scrollbar-hide border-0"
+                         className="w-full h-auto justify-between bg-transparent rounded-none px-6 py-3 gap-1 overflow-x-auto scrollbar-hide border-0"
                          ref={provided.innerRef}
                          {...provided.droppableProps}
                        >

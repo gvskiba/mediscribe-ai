@@ -875,7 +875,7 @@ Generated: ${new Date().toLocaleString()}
          className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
        >
          <Tabs defaultValue="summary" className="w-full flex">
-           <div className="w-64 bg-slate-50 border-r border-slate-200 flex-shrink-0">
+           <div className="w-64 bg-slate-50 border-r border-slate-200 flex-shrink-0 sticky top-0 self-start max-h-screen overflow-y-auto">
              <TabsList className="w-full h-full flex flex-col items-stretch gap-1 bg-transparent p-3">
                {TAB_CONFIGS.map((tab) => {
                  const Icon = tab.icon;

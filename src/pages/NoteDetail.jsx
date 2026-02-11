@@ -1094,6 +1094,15 @@ Generated: ${new Date().toLocaleString()}
 
            {/* Guidelines & Codes Tab */}
            <TabsContent value="guidelines" className="p-6 space-y-6 overflow-y-auto">
+             {/* Clinical Guidelines Panel */}
+             <div>
+               <SmartGuidelinePanel
+                 noteContent={note.raw_note}
+                 diagnoses={note.diagnoses || []}
+                 medications={note.medications || []}
+               />
+             </div>
+
              {/* Generate Diagnoses Section */}
              {note.status === "draft" && (
                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
@@ -2121,14 +2130,7 @@ Generated: ${new Date().toLocaleString()}
 
        </div>
 
-       {/* Smart Guideline Panel */}
-      <SmartGuidelinePanel
-        noteContent={note.raw_note}
-        diagnoses={note.diagnoses || []}
-        medications={note.medications || []}
-      />
-
-      {/* Create Template Dialog */}
+       {/* Create Template Dialog */}
       <CreateTemplateFromNote
         open={templateDialogOpen}
         onClose={() => setTemplateDialogOpen(false)}

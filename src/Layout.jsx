@@ -120,16 +120,18 @@ export default function Layout({ children, currentPageName }) {
       `}</style>
 
       {/* Sidebar - Desktop */}
-      <aside className="hidden lg:flex flex-col w-64 fixed h-full z-30 glass-effect border-r border-slate-200" style={{ background: 'linear-gradient(165deg, #f8fafc 0%, #ffffff 100%)' }}>
-        <div className="p-6 border-b border-slate-200">
+      <aside className={`hidden lg:flex flex-col fixed h-full z-30 glass-effect border-r border-slate-200 transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-64'}`} style={{ background: 'linear-gradient(165deg, #f8fafc 0%, #ffffff 100%)' }}>
+        <div className={`border-b border-slate-200 ${sidebarCollapsed ? 'p-3' : 'p-6'}`}>
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-200 ring-2 ring-blue-100">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-200 ring-2 ring-blue-100 flex-shrink-0">
               <Stethoscope className="w-6 h-6 text-white" />
             </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight text-slate-900">MedScribe</h1>
-              <p className="text-xs text-slate-600">Clinical AI Assistant</p>
-            </div>
+            {!sidebarCollapsed && (
+              <div>
+                <h1 className="text-lg font-bold tracking-tight text-slate-900">MedScribe</h1>
+                <p className="text-xs text-slate-600">Clinical AI Assistant</p>
+              </div>
+            )}
           </div>
         </div>
         {!sidebarCollapsed && (
@@ -286,7 +288,7 @@ export default function Layout({ children, currentPageName }) {
       }
 
       {/* Main Content */}
-      <main className="bg-blue-100 pt-32 flex-1 lg:ml-64 lg:pt-0 min-h-screen lg:pt-0">
+      <main className={`bg-blue-100 pt-32 flex-1 lg:pt-0 min-h-screen transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`}>
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
           {children}
         </div>

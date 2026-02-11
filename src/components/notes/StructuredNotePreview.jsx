@@ -359,18 +359,7 @@ FORMATTING RULES (CRITICAL):
                   )}
                   Analyze H&P
                 </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={handleGenerateAssessmentPlan}
-                  disabled={generatingAssessmentPlan}
-                  className="gap-2 cursor-pointer"
-                >
-                  {generatingAssessmentPlan ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="w-4 h-4" />
-                  )}
-                  Generate Assessment & Plan
-                </DropdownMenuItem>
+
               </DropdownMenuContent>
             </DropdownMenu>
 

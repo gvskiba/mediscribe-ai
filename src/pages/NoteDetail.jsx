@@ -54,15 +54,15 @@ const TAB_ROWS = [
     { id: 'summary', label: 'Summary', icon: Sparkles },
     { id: 'clinical', label: 'Clinical Note', icon: FileText },
     { id: 'assessment_plan', label: 'Initial Assessment & Plan', icon: Activity },
-    { id: 'mdm', label: 'MDM', icon: AlertCircle },
-    { id: 'treatments', label: 'Treatments', icon: Pill },
+    { id: 'imaging', label: 'Results & Labs', icon: ImageIcon },
+    { id: 'diagnoses', label: 'Diagnoses', icon: Beaker },
   ],
   [
-    { id: 'diagnoses', label: 'Diagnoses', icon: Beaker },
-    { id: 'guidelines', label: 'Guidelines & Codes', icon: Code },
-    { id: 'imaging', label: 'Result Analysis', icon: ImageIcon },
     { id: 'final_impression', label: 'Final Impression', icon: FileText },
-    { id: 'finalize', label: 'Finalize Note', icon: Check },
+    { id: 'mdm', label: 'MDM', icon: AlertCircle },
+    { id: 'treatments', label: 'Treatment', icon: Pill },
+    { id: 'guidelines', label: 'Guidelines & Codes', icon: Code },
+    { id: 'finalize', label: 'Finalize', icon: Check },
   ]
 ];
 

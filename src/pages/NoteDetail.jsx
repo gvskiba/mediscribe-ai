@@ -23,7 +23,8 @@ import {
   Clock,
   AlertCircle,
   ImageIcon,
-  Beaker
+  Beaker,
+  Activity
 } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";

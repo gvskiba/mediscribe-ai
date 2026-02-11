@@ -26,6 +26,7 @@ export default function EditableSection({
    const [snippetPickerOpen, setSnippetPickerOpen] = useState(false);
    const [showSuggestions, setShowSuggestions] = useState(false);
    const [useRichText, setUseRichText] = useState(false);
+   const [showStructuredList, setShowStructuredList] = useState(false);
    const textareaRef = useRef(null);
    const selectionRef = useRef({ start: 0, end: 0 });
 

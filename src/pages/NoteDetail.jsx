@@ -993,23 +993,50 @@ Generated: ${new Date().toLocaleString()}
          className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
        >
          <Tabs defaultValue="summary" className="w-full flex items-start">
-           <div className="w-64 bg-slate-50 border-r border-slate-200 flex-shrink-0 sticky top-8 self-start" style={{ maxHeight: 'calc(100vh - 4rem)' }}>
-             <TabsList className="w-full h-full flex flex-col items-stretch gap-1 bg-transparent p-3 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 4rem)' }}>
-               {TAB_CONFIGS.map((tab) => {
-                 const Icon = tab.icon;
-                 return (
-                   <TabsTrigger 
-                     key={tab.id}
-                     value={tab.id} 
-                     className="justify-start px-4 py-3 gap-3 font-medium text-sm data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-transparent data-[state=inactive]:text-slate-700 hover:bg-slate-100 data-[state=active]:hover:bg-blue-700 transition-all duration-200 rounded-lg"
-                   >
-                     {Icon && <Icon className="w-4 h-4" />}
-                     <span className="text-left">{tab.label}</span>
-                   </TabsTrigger>
-                 );
-               })}
-             </TabsList>
-           </div>
+             <DragDropContext onDragEnd={handleDragEnd}>
+               <div className="w-64 bg-slate-50 border-r border-slate-200 flex-shrink-0 sticky top-8 self-start" style={{ maxHeight: 'calc(100vh - 4rem)' }}>
+                 <Droppable droppableId="tabs-list" type="TAB">
+                   {(provided, snapshot) => (
+                     <TabsList 
+                       ref={provided.innerRef}
+                       {...provided.droppableProps}
+                       className="w-full h-full flex flex-col items-stretch gap-1 bg-transparent p-3 overflow-y-auto" 
+                       style={{ maxHeight: 'calc(100vh - 4rem)', backgroundColor: snapshot.isDraggingOver ? '#f1f5f9' : undefined }}
+                     >
+                       {tabOrder.map((tabId, index) => {
+                         const tab = TAB_CONFIGS.find(t => t.id === tabId);
+                         if (!tab) return null;
+                         const Icon = tab.icon;
+                         return (
+                           <Draggable key={tab.id} draggableId={tab.id} index={index}>
+                             {(provided, snapshot) => (
+                               <div
+                                 ref={provided.innerRef}
+                                 {...provided.draggableProps}
+                                 {...provided.dragHandleProps}
+                                 style={{
+                                   ...provided.draggableProps.style,
+                                   opacity: snapshot.isDragging ? 0.5 : 1
+                                 }}
+                               >
+                                 <TabsTrigger 
+                                   value={tab.id} 
+                                   className="justify-start px-4 py-3 gap-3 font-medium text-sm data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-transparent data-[state=inactive]:text-slate-700 hover:bg-slate-100 data-[state=active]:hover:bg-blue-700 transition-all duration-200 rounded-lg w-full cursor-move"
+                                 >
+                                   {Icon && <Icon className="w-4 h-4" />}
+                                   <span className="text-left">{tab.label}</span>
+                                 </TabsTrigger>
+                               </div>
+                             )}
+                           </Draggable>
+                         );
+                       })}
+                       {provided.placeholder}
+                     </TabsList>
+                   )}
+                 </Droppable>
+               </div>
+             </DragDropContext>
            <div className="flex-1 overflow-hidden">
 
            {/* Summary Tab */}

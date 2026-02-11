@@ -61,6 +61,7 @@ const TAB_ROWS = [
     { id: 'diagnoses', label: 'Diagnoses', icon: Beaker },
     { id: 'guidelines', label: 'Guidelines & Codes', icon: Code },
     { id: 'imaging', label: 'Result Analysis', icon: ImageIcon },
+    { id: 'final_impression', label: 'Final Impression', icon: FileText },
     { id: 'finalize', label: 'Finalize Note', icon: Check },
   ]
 ];
@@ -1848,6 +1849,19 @@ Generated: ${new Date().toLocaleString()}
                          )}
                        </>
                      )}
+                   </div>
+                 </TabsContent>
+
+                 {/* Final Impression Tab */}
+                 <TabsContent value="final_impression" className="p-6 space-y-6">
+                   <div className="bg-white rounded-xl border-2 border-slate-300 shadow-sm overflow-hidden">
+                     <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center gap-2">
+                       <FileText className="w-5 h-5 text-slate-600" />
+                       <h3 className="font-semibold text-slate-900">Final Impression</h3>
+                     </div>
+                     <div className="p-4">
+                       <p className="text-sm text-slate-500">Final impression content will be available here</p>
+                     </div>
                    </div>
                  </TabsContent>
 

@@ -865,7 +865,7 @@ Generated: ${new Date().toLocaleString()}
              <Droppable droppableId="tabs" direction="horizontal">
                {(provided) => (
                  <TabsList 
-                   className="w-full justify-start bg-slate-50 px-6 h-auto py-2 rounded-none border-b border-slate-200"
+                   className="w-full justify-start bg-slate-50 px-6 h-auto py-2 rounded-none border-b border-slate-200 overflow-x-auto flex-nowrap"
                    ref={provided.innerRef}
                    {...provided.droppableProps}
                  >

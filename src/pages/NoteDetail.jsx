@@ -867,41 +867,43 @@ Generated: ${new Date().toLocaleString()}
          className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
        >
          <Tabs defaultValue="summary" className="w-full">
-           <div className="border-b border-slate-200 bg-slate-50/50 py-2">
+           <div className="border-b border-slate-200 bg-gradient-to-b from-slate-50 to-white">
              <DragDropContext onDragEnd={handleDragEnd}>
                {TAB_ROWS.map((rowTabs, rowIndex) => (
                  <Droppable key={`row-${rowIndex}`} droppableId={`tabs-row-${rowIndex}`} direction="horizontal">
                    {(provided) => (
-                     <TabsList 
-                       className={`w-full h-auto justify-start bg-transparent rounded-none px-4 gap-3 overflow-x-auto scrollbar-hide border-0 ${rowIndex === 0 ? 'py-2 mb-2' : 'py-2'}`}
-                       ref={provided.innerRef}
-                       {...provided.droppableProps}
-                     >
-                       {rowTabs.map((tab, index) => {
-                         const Icon = tab.icon;
-                         return (
-                           <Draggable key={tab.id} draggableId={tab.id} index={index}>
-                             {(provided, snapshot) => (
-                               <div
-                                 ref={provided.innerRef}
-                                 {...provided.draggableProps}
-                                 {...provided.dragHandleProps}
-                                 className={snapshot.isDragging ? 'opacity-50 z-50' : ''}
-                               >
-                                 <TabsTrigger 
-                                   value={tab.id} 
-                                   className="whitespace-nowrap rounded-lg px-4 py-2.5 gap-2 font-medium text-sm data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm data-[state=inactive]:text-slate-600 hover:text-slate-900 hover:bg-white/60 transition-all cursor-grab active:cursor-grabbing border border-transparent data-[state=active]:border-slate-200 flex-shrink-0"
+                     <div className={`${rowIndex > 0 ? 'border-t border-slate-100' : ''}`}>
+                       <TabsList 
+                         className="w-full h-auto justify-start bg-transparent rounded-none px-6 py-3 gap-4 overflow-x-auto scrollbar-hide border-0"
+                         ref={provided.innerRef}
+                         {...provided.droppableProps}
+                       >
+                         {rowTabs.map((tab, index) => {
+                           const Icon = tab.icon;
+                           return (
+                             <Draggable key={tab.id} draggableId={tab.id} index={index}>
+                               {(provided, snapshot) => (
+                                 <div
+                                   ref={provided.innerRef}
+                                   {...provided.draggableProps}
+                                   {...provided.dragHandleProps}
+                                   className={snapshot.isDragging ? 'opacity-50 z-50' : ''}
                                  >
-                                   {Icon && <Icon className="w-4 h-4" />}
-                                   <span>{tab.label}</span>
-                                 </TabsTrigger>
-                               </div>
-                             )}
-                           </Draggable>
-                         );
-                       })}
-                       {provided.placeholder}
-                     </TabsList>
+                                   <TabsTrigger 
+                                     value={tab.id} 
+                                     className="whitespace-nowrap rounded-xl px-5 py-2.5 gap-2.5 font-semibold text-sm data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-md data-[state=inactive]:text-slate-600 hover:text-slate-900 hover:bg-white/80 transition-all duration-200 cursor-grab active:cursor-grabbing border border-transparent data-[state=active]:border-blue-100 flex-shrink-0"
+                                   >
+                                     {Icon && <Icon className="w-4 h-4" />}
+                                     <span>{tab.label}</span>
+                                   </TabsTrigger>
+                                 </div>
+                               )}
+                             </Draggable>
+                           );
+                         })}
+                         {provided.placeholder}
+                       </TabsList>
+                     </div>
                    )}
                  </Droppable>
                ))}

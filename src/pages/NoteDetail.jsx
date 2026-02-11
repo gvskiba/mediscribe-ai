@@ -27,6 +27,7 @@ import {
         Activity,
         Pill
       } from "lucide-react";
+      import MedicationRecommendations from "../components/notes/MedicationRecommendations";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -1679,25 +1680,38 @@ Generated: ${new Date().toLocaleString()}
                  {/* Treatments Tab */}
                  <TabsContent value="treatments" className="p-6 space-y-6">
                    <div className="space-y-6">
-                     <div>
-                       <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-                         <Pill className="w-5 h-5 text-purple-600" />
-                         Current Medications
-                       </h3>
-                       {note.medications && note.medications.length > 0 ? (
-                         <div className="space-y-2">
-                           {note.medications.map((med, idx) => (
-                             <div key={idx} className="bg-white border border-purple-200 rounded-lg p-4 hover:border-purple-300 hover:shadow-sm transition-all">
-                               <p className="text-sm font-medium text-slate-900">{med}</p>
+                     {/* Medications Box */}
+                     <div className="bg-white rounded-xl border-2 border-rose-300 shadow-sm overflow-hidden">
+                       <div className="bg-rose-50 px-4 py-3 border-b border-rose-200 flex items-center gap-2">
+                         <Pill className="w-5 h-5 text-rose-600" />
+                         <h3 className="font-semibold text-slate-900">Medications</h3>
+                       </div>
+                       <div className="p-4 space-y-4">
+                         <MedicationRecommendations
+                           note={note}
+                           onAddMedications={async (meds) => {
+                             const updatedMeds = [...(note.medications || []), ...meds];
+                             await base44.entities.ClinicalNote.update(noteId, { medications: updatedMeds });
+                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                           }}
+                         />
+                         <div className="border-t border-slate-200 pt-4">
+                           {note.medications && note.medications.length > 0 ? (
+                             <div className="space-y-2">
+                               {note.medications.map((med, idx) => (
+                                 <div key={idx} className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                                   <p className="text-sm text-slate-900">{med}</p>
+                                 </div>
+                               ))}
                              </div>
-                           ))}
+                           ) : (
+                             <div className="bg-slate-50 border border-dashed border-slate-300 rounded-lg p-6 text-center">
+                               <Pill className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                               <p className="text-sm text-slate-500">No medications documented</p>
+                             </div>
+                           )}
                          </div>
-                       ) : (
-                         <div className="bg-slate-50 border border-dashed border-slate-300 rounded-lg p-6 text-center">
-                           <Pill className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                           <p className="text-sm text-slate-500">No medications documented</p>
-                         </div>
-                       )}
+                       </div>
                      </div>
 
                      {note.status === "finalized" && note.medications && note.medications.length > 0 && (

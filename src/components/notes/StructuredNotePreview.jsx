@@ -1040,34 +1040,7 @@ FORMATTING RULES (CRITICAL):
           </div>
         ))}
 
-        {/* Medications Box */}
-         <div className="bg-white rounded-xl border-2 border-rose-300 shadow-sm overflow-hidden">
-           <div className="bg-rose-50 px-4 py-3 border-b border-rose-200 flex items-center gap-2">
-             <Pill className="w-5 h-5 text-rose-600" />
-             <h3 className="font-semibold text-slate-900">Medications</h3>
-           </div>
-           <div className="p-4 space-y-4">
-             <MedicationRecommendations
-               note={note}
-               onAddMedications={(meds) => {
-                 onUpdate("medications", [...(note.medications || []), ...meds]);
-               }}
-             />
-             <div className="border-t border-slate-200 pt-4">
-               <EditableSection
-                 icon={Pill}
-                 title=""
-                 color="rose"
-                 value={note.medications && note.medications.length > 0 ? note.medications : ["Not extracted"]}
-                 field="medications"
-                 type="array"
-                 onUpdate={onUpdate}
-                 onReanalyze={handleReanalyze}
-                 hideBorder={true}
-               />
-             </div>
-           </div>
-         </div>
+
 
         {/* Suggested ICD-10 Codes Box */}
          {note.icd10_suggestions && note.icd10_suggestions.length > 0 && (

@@ -971,15 +971,7 @@ FORMATTING RULES (CRITICAL):
               <ClipboardList className="w-5 h-5 text-green-600" />
               <h3 className="font-semibold text-slate-900">Treatment Plan</h3>
             </div>
-            <div className="p-4 space-y-4">
-              <TreatmentPlanSelector
-                plan={note.plan || ""}
-                onAddToNote={(selectedPlan) => {
-                  onUpdate("plan", selectedPlan);
-                  toast.success("Plan sections updated");
-                }}
-              />
-              <div className="pt-4 border-t border-slate-200">
+            <div className="p-4">
                <EditableSection
                   icon={ClipboardList}
                   title=""
@@ -1005,7 +997,6 @@ FORMATTING RULES (CRITICAL):
                     diagnoses: note.diagnoses
                   }}
                 />
-              </div>
             </div>
           </div>
 

@@ -29,6 +29,7 @@ import {
       } from "lucide-react";
       import MedicationRecommendations from "../components/notes/MedicationRecommendations";
       import TreatmentPlanSelector from "../components/notes/TreatmentPlanSelector";
+      import EditableSection from "../components/notes/EditableSection";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -1647,33 +1648,72 @@ Generated: ${new Date().toLocaleString()}
                        <h3 className="font-semibold text-slate-900">Assessment</h3>
                      </div>
                      <div className="p-4">
-                       {note.assessment ? (
-                         <div className="prose prose-sm max-w-none text-slate-700">
-                           {note.assessment.split('\n').map((para, i) => (
-                             <p key={i} className="mb-3 leading-relaxed">{para}</p>
-                           ))}
-                         </div>
-                       ) : (
-                         <p className="text-sm text-slate-500 italic">No assessment documented</p>
-                       )}
+                       <EditableSection
+                         icon={Activity}
+                         title=""
+                         color="purple"
+                         value={note.assessment || "Not extracted"}
+                         field="assessment"
+                         type="textarea"
+                         onUpdate={async (field, value) => {
+                           await base44.entities.ClinicalNote.update(noteId, { [field]: value });
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                         }}
+                         onReanalyze={async (field) => {
+                           if (!note?.raw_note) return null;
+                           const result = await base44.integrations.Core.InvokeLLM({
+                             prompt: `Extract the assessment from this clinical note: ${note.raw_note}`,
+                             add_context_from_internet: false
+                           });
+                           await base44.entities.ClinicalNote.update(noteId, { [field]: result });
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                           return result;
+                         }}
+                         hideBorder={true}
+                         note={note}
+                         noteContext={{
+                           diagnoses: note.diagnoses,
+                           medications: note.medications
+                         }}
+                       />
                      </div>
                    </div>
 
                    <div className="bg-white rounded-xl border-2 border-green-300 shadow-sm overflow-hidden">
                      <div className="bg-green-50 px-4 py-3 border-b border-green-200 flex items-center gap-2">
                        <FileText className="w-5 h-5 text-green-600" />
-                       <h3 className="font-semibold text-slate-900">Plan</h3>
+                       <h3 className="font-semibold text-slate-900">Treatment Plan</h3>
                      </div>
                      <div className="p-4">
-                       {note.plan ? (
-                         <div className="prose prose-sm max-w-none text-slate-700">
-                           {note.plan.split('\n').map((para, i) => (
-                             <p key={i} className="mb-3 leading-relaxed">{para}</p>
-                           ))}
-                         </div>
-                       ) : (
-                         <p className="text-sm text-slate-500 italic">No plan documented</p>
-                       )}
+                       <EditableSection
+                         icon={FileText}
+                         title=""
+                         color="green"
+                         value={note.plan || "Not extracted"}
+                         field="plan"
+                         type="textarea"
+                         onUpdate={async (field, value) => {
+                           await base44.entities.ClinicalNote.update(noteId, { [field]: value });
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                         }}
+                         onReanalyze={async (field) => {
+                           if (!note?.raw_note) return null;
+                           const result = await base44.integrations.Core.InvokeLLM({
+                             prompt: `Extract the treatment plan from this clinical note: ${note.raw_note}`,
+                             add_context_from_internet: false
+                           });
+                           await base44.entities.ClinicalNote.update(noteId, { [field]: result });
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                           return result;
+                         }}
+                         hideBorder={true}
+                         enableStructuredList={true}
+                         note={note}
+                         noteContext={{
+                           assessment: note.assessment,
+                           diagnoses: note.diagnoses
+                         }}
+                       />
                      </div>
                    </div>
                  </TabsContent>

@@ -931,74 +931,7 @@ FORMATTING RULES (CRITICAL):
           </div>
         </div>
 
-        {/* Assessment Box */}
-         <div className="bg-white rounded-xl border-2 border-purple-300 shadow-sm overflow-hidden">
-           <div className="bg-purple-50 px-4 py-3 border-b border-purple-200 flex items-center gap-2">
-             <Stethoscope className="w-5 h-5 text-purple-600" />
-             <h3 className="font-semibold text-slate-900">Assessment</h3>
-           </div>
-           <div className="p-4">
-             <EditableSection
-               icon={Stethoscope}
-               title=""
-               color="purple"
-               value={note.assessment || "Not extracted"}
-               field="assessment"
-               type="textarea"
-               onUpdate={onUpdate}
-               onReanalyze={handleReanalyze}
-               hideBorder={true}
-               note={note}
-               onAddReference={(ref) => {
-                 const refs = note.section_references || [];
-                 onUpdate("section_references", [...refs, ref]);
-               }}
-               onRemoveReference={(refId) => {
-                 const refs = note.section_references || [];
-                 onUpdate("section_references", refs.filter(r => r.id !== refId));
-               }}
-               noteContext={{
-                 diagnoses: note.diagnoses,
-                 medications: note.medications
-               }}
-             />
-           </div>
-         </div>
 
-        {/* Plan Box */}
-          <div className="bg-white rounded-xl border-2 border-green-300 shadow-sm overflow-hidden">
-            <div className="bg-green-50 px-4 py-3 border-b border-green-200 flex items-center gap-2">
-              <ClipboardList className="w-5 h-5 text-green-600" />
-              <h3 className="font-semibold text-slate-900">Treatment Plan</h3>
-            </div>
-            <div className="p-4">
-               <EditableSection
-                  icon={ClipboardList}
-                  title=""
-                  color="green"
-                  value={note.plan || "Not extracted"}
-                  field="plan"
-                  type="textarea"
-                  onUpdate={onUpdate}
-                  onReanalyze={handleReanalyze}
-                  hideBorder={true}
-                  enableStructuredList={true}
-                  note={note}
-                  onAddReference={(ref) => {
-                    const refs = note.section_references || [];
-                    onUpdate("section_references", [...refs, ref]);
-                  }}
-                  onRemoveReference={(refId) => {
-                    const refs = note.section_references || [];
-                    onUpdate("section_references", refs.filter(r => r.id !== refId));
-                  }}
-                  noteContext={{
-                    assessment: note.assessment,
-                    diagnoses: note.diagnoses
-                  }}
-                />
-            </div>
-          </div>
 
         {/* Custom Sections */}
         {customSections.map((section) => (

@@ -135,18 +135,34 @@ export default function EditableSection({
     }
   };
 
+  const handleTextareaSelect = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      selectionRef.current = {
+        start: textarea.selectionStart,
+        end: textarea.selectionEnd
+      };
+    }
+  };
+
   const applyFormatting = (format, e) => {
-    e?.preventDefault();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     const textarea = textareaRef.current;
     if (!textarea) return;
 
-    textarea.focus();
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
+    const start = selectionRef.current.start;
+    const end = selectionRef.current.end;
     const text = editValue || "";
     const selectedText = text.substring(start, end);
 
-    if (!selectedText) return;
+    if (!selectedText) {
+      textarea.focus();
+      return;
+    }
 
     let formattedText = selectedText;
     if (format === "bold") {

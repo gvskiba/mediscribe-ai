@@ -1202,68 +1202,7 @@ Generated: ${new Date().toLocaleString()}
                </div>
              )}
 
-             {note.status === "finalized" ? (
-               <>
-                 {/* ICD-10 Code Matcher - Direct Search & Selection */}
-                 <div className="border-2 border-blue-300 bg-blue-50 rounded-xl p-5">
-                   <h3 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
-                     <Sparkles className="w-4 h-4" />
-                     Smart ICD-10 Code Mapper
-                   </h3>
-                   <p className="text-xs text-blue-800 mb-4">Select diagnoses to generate ranked ICD-10 codes with clinical reasoning</p>
-                   <DiagnosisICD10Matcher
-                     diagnoses={note.diagnoses || []}
-                     onCodesGenerated={async (codes) => {
-                       // Codes generated in the component
-                     }}
-                   />
-                 </div>
-                 {/* ICD-10 Codes Section */}
-                 <div>
-                   <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                     <Code className="w-4 h-4 text-blue-600" />
-                     ICD-10 Code Suggestions
-                   </h3>
-                   {icd10Suggestions && icd10Suggestions.length > 0 ? (
-                     <>
-                     <ICD10Suggestions
-                       suggestions={icd10Suggestions}
-                       loading={loadingIcd10}
-                       readOnly={false}
-                       onApplyToNote={async (codes) => {
-                         try {
-                           const newDiagnoses = codes.map(c => `${c.code} - ${c.description}`);
-                           const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
-                           await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
-                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                           toast.success(`Added ${newDiagnoses.length} diagnosis code(s)`);
-                         } catch (error) {
-                           console.error("Failed to add diagnoses:", error);
-                           toast.error("Failed to add diagnoses. Please try again.");
-                         }
-                       }}
-                     />
-                       <div className="mt-4">
-                         <ICD10CodeSearch
-                           suggestions={icd10Suggestions}
-                           diagnoses={note.diagnoses}
-                           onAddDiagnoses={async (newDiagnoses) => {
-                             const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
-                             await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
-                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                           }}
-                         />
-                       </div>
-                     </>
-                   ) : loadingIcd10 ? (
-                     <div className="flex items-center gap-3 text-slate-500 py-8">
-                       <Loader2 className="w-5 h-5 animate-spin" />
-                       <span className="text-sm">Generating ICD-10 suggestions...</span>
-                     </div>
-                   ) : (
-                     <p className="text-sm text-slate-500 text-center py-8">No ICD-10 suggestions available</p>
-                   )}
-                 </div>
+
 
                  {/* Drug-Drug Interactions */}
                  <div>
@@ -1696,11 +1635,78 @@ Generated: ${new Date().toLocaleString()}
 
 
 
-                 {/* Assessment & Plan Tab */}
+                 {/* Assessments Tab */}
                  <TabsContent value="assessment_plan" className="p-6 space-y-6 overflow-y-auto">
-                   <div className="text-center py-12">
-                     <p className="text-slate-500">Assessment and Treatment Plan sections have been moved to the Clinical Note tab.</p>
-                   </div>
+                   {note.status === "finalized" && (
+                     <>
+                       {/* ICD-10 Code Mapper - Direct Search & Selection */}
+                       <div className="border-2 border-blue-300 bg-blue-50 rounded-xl p-5">
+                         <h3 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
+                           <Sparkles className="w-4 h-4" />
+                           Smart ICD-10 Code Mapper
+                         </h3>
+                         <p className="text-xs text-blue-800 mb-4">Select diagnoses to generate ranked ICD-10 codes with clinical reasoning</p>
+                         <DiagnosisICD10Matcher
+                           diagnoses={note.diagnoses || []}
+                           onCodesGenerated={async (codes) => {
+                             // Codes generated in the component
+                           }}
+                         />
+                       </div>
+
+                       {/* ICD-10 Codes Section */}
+                       <div>
+                         <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                           <Code className="w-4 h-4 text-blue-600" />
+                           ICD-10 Code Suggestions
+                         </h3>
+                         {icd10Suggestions && icd10Suggestions.length > 0 ? (
+                           <>
+                           <ICD10Suggestions
+                             suggestions={icd10Suggestions}
+                             loading={loadingIcd10}
+                             readOnly={false}
+                             onApplyToNote={async (codes) => {
+                               try {
+                                 const newDiagnoses = codes.map(c => `${c.code} - ${c.description}`);
+                                 const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
+                                 await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
+                                 queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                 toast.success(`Added ${newDiagnoses.length} diagnosis code(s)`);
+                               } catch (error) {
+                                 console.error("Failed to add diagnoses:", error);
+                                 toast.error("Failed to add diagnoses. Please try again.");
+                               }
+                             }}
+                           />
+                             <div className="mt-4">
+                               <ICD10CodeSearch
+                                 suggestions={icd10Suggestions}
+                                 diagnoses={note.diagnoses}
+                                 onAddDiagnoses={async (newDiagnoses) => {
+                                   const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
+                                   await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
+                                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                 }}
+                               />
+                             </div>
+                           </>
+                         ) : loadingIcd10 ? (
+                           <div className="flex items-center gap-3 text-slate-500 py-8">
+                             <Loader2 className="w-5 h-5 animate-spin" />
+                             <span className="text-sm">Generating ICD-10 suggestions...</span>
+                           </div>
+                         ) : (
+                           <p className="text-sm text-slate-500 text-center py-8">No ICD-10 suggestions available</p>
+                         )}
+                       </div>
+                     </>
+                   )}
+                   {note.status === "draft" && (
+                     <div className="text-center py-12">
+                       <p className="text-slate-500">Finalize the note to view ICD-10 code suggestions.</p>
+                     </div>
+                   )}
                  </TabsContent>
 
                  {/* MDM Tab */}

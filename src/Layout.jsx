@@ -48,22 +48,9 @@ const navSections = [
 
 export default function Layout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [expandedSections, setExpandedSections] = useState({
-    primary: true,
-    resources: true,
-    settings: true
-  });
-
-  const toggleSection = (sectionKey) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [sectionKey]: !prev[sectionKey]
-    }));
-  };
 
   return (
-    <div className="min-h-screen bg-white flex">
+    <div className="min-h-screen bg-white flex flex-col">
       <style>{`
         :root {
           --primary: #2563eb;
@@ -82,144 +69,82 @@ export default function Layout({ children, currentPageName }) {
           color: #1f2937;
         }
         .nav-link { 
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          position: relative;
-          overflow: hidden;
-        }
-        .nav-link::before {
-          content: '';
-          position: absolute;
-          left: 0;
-          top: 0;
-          bottom: 0;
-          width: 0;
-          background: linear-gradient(90deg, rgba(59, 130, 246, 0.15) 0%, transparent 100%);
-          transition: width 0.3s ease;
-        }
-        .nav-link:hover::before {
-          width: 100%;
+          transition: all 0.2s ease;
         }
         .nav-link:hover { 
           background: rgba(59, 130, 246, 0.08);
-          transform: translateX(4px);
           color: #2563eb;
         }
         .nav-link.active { 
           background: rgba(59, 130, 246, 0.1);
           color: #2563eb;
-          border-left: 3px solid #2563eb;
           font-weight: 600;
+          border-bottom: 2px solid #2563eb;
         }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-        .glass-effect {
-          background: rgba(26, 31, 46, 0.8);
-          backdrop-filter: blur(12px);
-          border: 1px solid rgba(139, 92, 246, 0.1);
-        }
       `}</style>
 
-      {/* Sidebar - Desktop */}
-      <aside className={`hidden lg:flex flex-col fixed h-full z-30 glass-effect border-r border-slate-200 transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-64'}`} style={{ background: 'linear-gradient(165deg, #f8fafc 0%, #ffffff 100%)' }}>
-        <div className={`border-b border-slate-200 ${sidebarCollapsed ? 'p-3' : 'p-6'}`}>
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-200 ring-2 ring-blue-100 flex-shrink-0">
-              <Stethoscope className="w-6 h-6 text-white" />
-            </div>
-            {!sidebarCollapsed && (
+      {/* Desktop Header */}
+      <header className="hidden lg:block fixed top-0 left-0 right-0 bg-white border-b border-slate-200 z-40" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)' }}>
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between gap-6">
+            {/* Logo */}
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-200">
+                <Stethoscope className="w-5 h-5 text-white" />
+              </div>
               <div>
-                <h1 className="text-lg font-bold tracking-tight text-slate-900">MedScribe</h1>
+                <h1 className="text-base font-bold tracking-tight text-slate-900">MedScribe</h1>
                 <p className="text-xs text-slate-600">Clinical AI Assistant</p>
               </div>
-            )}
-          </div>
-        </div>
-        {!sidebarCollapsed && (
-          <div className="px-4 py-3 border-b border-slate-200 space-y-2">
-            <GlobalSearchBar />
-            <Link
-              to={createPageUrl("NewNote")}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg px-4 py-2.5 font-semibold text-sm transition-all duration-300 shadow-sm flex items-center justify-center gap-2 hover:shadow-md">
-              <FileText className="w-4 h-4" />
-              New Note
-            </Link>
-          </div>
-        )}
-        <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
-          {!sidebarCollapsed ? (
-            navSections.map((section, idx) => {
-              const sectionKey = section.title.toLowerCase().replace(/\s+/g, '_');
-              const isExpanded = expandedSections[sectionKey];
+            </div>
 
-              return (
-                <div key={section.title}>
-                  <button
-                    onClick={() => toggleSection(sectionKey)}
-                    className="w-full flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 mb-2 hover:text-slate-700 transition-colors"
-                  >
-                    <span>{section.title}</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
-                  </button>
-                  {isExpanded && (
-                    <div className="space-y-1">
-                      {section.items.map((item) =>
-                        <Link
-                          key={item.page}
-                          to={createPageUrl(item.page)}
-                          className={`nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                          currentPageName === item.page ?
-                          "active text-blue-600 bg-blue-50 border-l-3 border-blue-600" :
-                          "text-slate-600 hover:text-slate-900 hover:bg-slate-50"}`}
-                        >
-                          <item.icon className="w-[16px] h-[16px]" />
-                          {item.name}
-                        </Link>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          ) : (
-            // Collapsed icon-only view
-            <div className="space-y-1">
+            {/* Search Bar */}
+            <div className="flex-1 max-w-md">
+              <GlobalSearchBar />
+            </div>
+
+            {/* Navigation Links */}
+            <nav className="flex items-center gap-1">
               {navSections.flatMap(section => section.items).map((item) => (
                 <Link
                   key={item.page}
                   to={createPageUrl(item.page)}
-                  title={item.name}
-                  className={`nav-link flex items-center justify-center p-3 rounded-lg transition-all ${
+                  className={`nav-link flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                     currentPageName === item.page ?
-                    "text-blue-600 bg-blue-50" :
-                    "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                    "active text-blue-600 bg-blue-50" :
+                    "text-slate-600 hover:text-slate-900"
                   }`}
                 >
-                  <item.icon className="w-6 h-6" />
+                  <item.icon className="w-4 h-4" />
+                  <span>{item.name}</span>
                 </Link>
               ))}
-            </div>
-          )}
-        </nav>
-              <div className="bg-blue-100 p-4 border-t border-slate-200 space-y-2">
-              <button
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="nav-link flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 w-full"
-              >
-                {sidebarCollapsed ? <ChevronRight className="w-[18px] h-[18px]" /> : <ChevronLeft className="w-[18px] h-[18px]" />}
-                {!sidebarCollapsed && <span>Collapse</span>}
-              </button>
+            </nav>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Link
+                to={createPageUrl("NewNote")}
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg px-4 py-2 font-semibold text-sm transition-all shadow-sm flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                New Note
+              </Link>
               <button
                 onClick={() => base44.auth.logout()}
-                className={`nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 w-full ${sidebarCollapsed ? 'justify-center' : ''}`}
+                className="text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg p-2 transition-all"
+                title="Sign Out"
               >
-                <LogOut className="w-[18px] h-[18px]" />
-                {!sidebarCollapsed && <span>Sign Out</span>}
+                <LogOut className="w-5 h-5" />
               </button>
-              </div>
-              </aside>
+            </div>
+          </div>
+        </div>
+      </header>
 
       {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-slate-200 text-slate-900 px-4 py-3 z-40 space-y-3 glass-effect" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)' }}>
+      <div className="lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-slate-200 text-slate-900 px-4 py-3 z-40 space-y-3" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-200">
@@ -233,7 +158,7 @@ export default function Layout({ children, currentPageName }) {
               className="bg-blue-600 hover:bg-blue-700 rounded-lg p-2 transition-all shadow-sm text-white">
               <FileText className="w-4 h-4" />
             </Link>
-            <button onClick={() => setMobileOpen(!mobileOpen)} className="hover:bg-white/10 rounded-lg p-1 transition-colors">
+            <button onClick={() => setMobileOpen(!mobileOpen)} className="hover:bg-slate-100 rounded-lg p-1 transition-colors">
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
@@ -245,50 +170,36 @@ export default function Layout({ children, currentPageName }) {
       {mobileOpen &&
       <div className="lg:hidden fixed inset-0 z-30 bg-black/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)}>
           <div
-          className="absolute left-0 top-16 bottom-0 w-64 text-slate-900 p-4 space-y-4 glass-effect border-r border-slate-200 overflow-y-auto"
-          style={{ background: 'linear-gradient(165deg, #f8fafc 0%, #ffffff 100%)' }}
+          className="absolute left-0 top-20 bottom-0 w-64 bg-white text-slate-900 p-4 space-y-2 border-r border-slate-200 overflow-y-auto"
           onClick={(e) => e.stopPropagation()}>
-
-            {navSections.map((section) => {
-              const sectionKey = section.title.toLowerCase().replace(/\s+/g, '_');
-              const isExpanded = expandedSections[sectionKey];
-
-              return (
-                <div key={section.title}>
-                  <button
-                    onClick={() => toggleSection(sectionKey)}
-                    className="w-full flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 mb-2 hover:text-slate-700 transition-colors"
-                  >
-                    <span>{section.title}</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
-                  </button>
-                  {isExpanded && (
-                    <div className="space-y-1">
-                      {section.items.map((item) =>
-                        <Link
-                          key={item.page}
-                          to={createPageUrl(item.page)}
-                          onClick={() => setMobileOpen(false)}
-                          className={`nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium ${
-                          currentPageName === item.page ?
-                          "active text-blue-600 bg-blue-50" :
-                          "text-slate-600 hover:text-slate-900 hover:bg-slate-100"}`
-                          }>
-                            <item.icon className="w-[18px] h-[18px]" />
-                            {item.name}
-                          </Link>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            {navSections.flatMap(section => section.items).map((item) => (
+              <Link
+                key={item.page}
+                to={createPageUrl(item.page)}
+                onClick={() => setMobileOpen(false)}
+                className={`nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium ${
+                  currentPageName === item.page ?
+                  "active text-blue-600 bg-blue-50" :
+                  "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                }`}
+              >
+                <item.icon className="w-5 h-5" />
+                {item.name}
+              </Link>
+            ))}
+            <button
+              onClick={() => base44.auth.logout()}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 w-full"
+            >
+              <LogOut className="w-5 h-5" />
+              Sign Out
+            </button>
           </div>
         </div>
       }
 
       {/* Main Content */}
-      <main className={`bg-blue-100 pt-32 flex-1 lg:pt-0 min-h-screen transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`}>
+      <main className="bg-blue-100 pt-32 lg:pt-20 flex-1 min-h-screen">
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
           {children}
         </div>

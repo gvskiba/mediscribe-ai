@@ -20,13 +20,14 @@ import GlobalSearchBar from "./components/search/GlobalSearchBar";
 import { Settings } from "lucide-react";
 
 const navSections = [
-          {
-            title: "Primary",
-            items: [
-              { name: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
-              { name: "My Notes", icon: FileText, page: "NotesLibrary" },
-            ]
-          },
+      {
+        title: "Primary",
+        items: [
+          { name: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
+          { name: "New Note", icon: FileText, page: "NewNote" },
+          { name: "My Notes", icon: FileText, page: "NotesLibrary" },
+        ]
+      },
       {
         title: "Resources",
         items: [

@@ -961,13 +961,15 @@ Generated: ${new Date().toLocaleString()}
             {note.date_of_visit && (
               <span className="flex items-center gap-2"><Calendar className="w-4 h-4 text-slate-400" /> {format(new Date(note.date_of_visit), "MMM d, yyyy")}</span>
             )}
-            {note.note_type && (
-              <span className="flex items-center gap-2"><FileText className="w-4 h-4 text-slate-400" /> {typeLabels[note.note_type]}</span>
-            )}
             {note.specialty && (
               <span className="text-slate-600">{note.specialty}</span>
             )}
           </div>
+          {note.summary && (
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-slate-700 leading-relaxed">{note.summary}</p>
+            </div>
+          )}
         </div>
 
 

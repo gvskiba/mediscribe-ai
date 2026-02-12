@@ -49,7 +49,6 @@ import DiagnosisICD10Matcher from "../components/notes/DiagnosisICD10Matcher";
 import DiagnosisRecommendations from "../components/notes/DiagnosisRecommendations";
 import { useAutoSave } from "../components/utils/useAutoSave";
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const TAB_ROWS = [
   [
@@ -105,9 +104,6 @@ export default function NoteDetail() {
   const [loadingDifferential, setLoadingDifferential] = useState(false);
   const [patientEducation, setPatientEducation] = useState(null);
   const [generatingEducation, setGeneratingEducation] = useState(false);
-  const [templates, setTemplates] = useState([]);
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const [applyingTemplate, setApplyingTemplate] = useState(false);
   const [exportingFormat, setExportingFormat] = useState(null);
   const [extractingData, setExtractingData] = useState(false);
   const [linkingGuidelines, setLinkingGuidelines] = useState(false);
@@ -137,19 +133,6 @@ export default function NoteDetail() {
     ),
     enabled: !!noteId,
   });
-
-  // Fetch templates
-  useEffect(() => {
-    const fetchTemplates = async () => {
-      try {
-        const allTemplates = await base44.entities.NoteTemplate.list();
-        setTemplates(allTemplates || []);
-      } catch (error) {
-        console.error("Failed to fetch templates:", error);
-      }
-    };
-    fetchTemplates();
-  }, []);
 
   // Auto-save functionality
   const { isSaving } = useAutoSave({
@@ -537,53 +520,6 @@ Keep recommendations specific, actionable, and evidence-based.`,
       toast.error("Failed to generate patient education");
     } finally {
       setGeneratingEducation(false);
-    }
-  };
-
-  const applyTemplate = async (templateId) => {
-    if (!templateId) return;
-
-    setApplyingTemplate(true);
-    try {
-      const template = templates.find(t => t.id === templateId);
-      if (!template) return;
-
-      const updates = {};
-
-      // Map template sections to note fields
-      template.sections?.forEach(section => {
-        if (!section.enabled) return;
-
-        const fieldMap = {
-          'chief_complaint': 'chief_complaint',
-          'history_of_present_illness': 'history_of_present_illness',
-          'hpi': 'history_of_present_illness',
-          'medical_history': 'medical_history',
-          'review_of_systems': 'review_of_systems',
-          'ros': 'review_of_systems',
-          'physical_exam': 'physical_exam',
-          'assessment': 'assessment',
-          'plan': 'plan',
-          'clinical_impression': 'clinical_impression'
-        };
-
-        const noteField = fieldMap[section.id] || fieldMap[section.name?.toLowerCase().replace(/\s+/g, '_')];
-
-        if (noteField && section.ai_instructions) {
-          updates[noteField] = section.ai_instructions;
-        }
-      });
-
-      if (Object.keys(updates).length > 0) {
-        await base44.entities.ClinicalNote.update(noteId, updates);
-        queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-        toast.success(`Template "${template.name}" applied`);
-      }
-    } catch (error) {
-      console.error("Failed to apply template:", error);
-      toast.error("Failed to apply template");
-    } finally {
-      setApplyingTemplate(false);
     }
   };
 
@@ -1195,50 +1131,6 @@ Generated: ${new Date().toLocaleString()}
 
            {/* Clinical Note Tab */}
            <TabsContent value="clinical" className="p-6 overflow-y-auto">
-             {/* Template Selector */}
-             {note.status === "draft" && templates.length > 0 && (
-               <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-300 rounded-xl p-4 mb-6">
-                 <div className="flex items-center gap-4">
-                   <div className="flex-1">
-                     <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2">
-                       Apply Template
-                     </label>
-                     <select
-                       value={selectedTemplate || ""}
-                       onChange={(e) => {
-                         setSelectedTemplate(e.target.value);
-                         if (e.target.value) {
-                           applyTemplate(e.target.value);
-                         }
-                       }}
-                       disabled={applyingTemplate}
-                       className="w-full bg-white border-2 border-purple-300 text-slate-900 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                     >
-                       <option value="">Select a template...</option>
-                       {templates.map((template) => (
-                         <option key={template.id} value={template.id}>
-                           {template.name}
-                           {template.note_type && ` (${typeLabels[template.note_type] || template.note_type})`}
-                           {template.specialty && ` - ${template.specialty}`}
-                         </option>
-                       ))}
-                     </select>
-                   </div>
-                   {applyingTemplate && (
-                     <div className="flex items-center gap-2 text-purple-700">
-                       <Loader2 className="w-4 h-4 animate-spin" />
-                       <span className="text-sm font-medium">Applying...</span>
-                     </div>
-                   )}
-                 </div>
-                 {selectedTemplate && (
-                   <p className="text-xs text-purple-700 mt-3">
-                     Template sections will populate the clinical note fields. You can edit, add snippets, or use AI to reanalyze any section.
-                   </p>
-                 )}
-               </div>
-             )}
-
              {/* Action Buttons */}
              {note.status === "draft" && (
                <div className="flex gap-3 mb-6">
@@ -2625,23 +2517,8 @@ Generated: ${new Date().toLocaleString()}
 
                <div className="grid md:grid-cols-2 gap-6 pt-6 border-t border-slate-200">
                  <div>
-                   <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                     Note Type
-                   </label>
-                   <select
-                     value={note.note_type || "progress_note"}
-                     onChange={async (e) => {
-                       await base44.entities.ClinicalNote.update(noteId, { note_type: e.target.value });
-                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                     }}
-                     className="w-full bg-white border-2 border-slate-300 text-slate-900 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                   >
-                     <option value="progress_note">Progress Note</option>
-                     <option value="h_and_p">History & Physical</option>
-                     <option value="discharge_summary">Discharge Summary</option>
-                     <option value="consult">Consultation</option>
-                     <option value="procedure_note">Procedure Note</option>
-                   </select>
+                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Note Type</p>
+                   <p className="text-base font-semibold text-slate-900">{typeLabels[note.note_type] || "Note"}</p>
                  </div>
                  {note.specialty && (
                    <div>

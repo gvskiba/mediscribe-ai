@@ -1193,7 +1193,7 @@ Generated: ${new Date().toLocaleString()}
                    icon={Activity}
                    title=""
                    color="purple"
-                   value={note.assessment || "Not extracted"}
+                   value={note.assessment || ""}
                    field="assessment"
                    type="textarea"
                    onUpdate={async (field, value) => {
@@ -1270,7 +1270,7 @@ Generated: ${new Date().toLocaleString()}
                    icon={Sparkles}
                    title=""
                    color="purple"
-                   value={note.clinical_impression || "Not extracted"}
+                   value={note.clinical_impression || ""}
                    field="clinical_impression"
                    type="textarea"
                    onUpdate={async (field, value) => {
@@ -1919,7 +1919,7 @@ Generated: ${new Date().toLocaleString()}
                          icon={FileText}
                          title=""
                          color="green"
-                         value={note.plan || "Not extracted"}
+                         value={note.plan || ""}
                          field="plan"
                          type="textarea"
                          onUpdate={async (field, value) => {

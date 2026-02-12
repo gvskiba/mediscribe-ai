@@ -21,7 +21,7 @@ export default function EditableSection({
   hideBorder = false,
   noteContext = {}
 }) {
-  const [editValue, setEditValue] = useState(value);
+  const [editValue, setEditValue] = useState(value === "Not extracted" ? "" : value);
    const [isReanalyzing, setIsReanalyzing] = useState(false);
    const [snippetPickerOpen, setSnippetPickerOpen] = useState(false);
    const [showSuggestions, setShowSuggestions] = useState(false);
@@ -31,7 +31,7 @@ export default function EditableSection({
    const selectionRef = useRef({ start: 0, end: 0 });
 
   useEffect(() => {
-    setEditValue(value);
+    setEditValue(value === "Not extracted" ? "" : value);
   }, [value]);
 
   const colorMap = {
@@ -56,12 +56,26 @@ export default function EditableSection({
     const newValue = await onReanalyze(field);
     if (newValue) {
       const cleanedValue = typeof newValue === 'string' 
-        ? newValue.replace(/\*\*/g, '').replace(/\*/g, '') 
+        ? newValue.replace(/\*\*/g, '').replace(/\*/g, '').replace(/Not extracted/g, '')
         : newValue;
-      setEditValue(cleanedValue);
-      onUpdate(field, cleanedValue);
+      setEditValue(cleanedValue || "");
+      onUpdate(field, cleanedValue || "");
     }
     setIsReanalyzing(false);
+  };
+
+  const getPlaceholder = () => {
+    const placeholders = {
+      chief_complaint: "Enter the main reason for visit (e.g., 'Chest pain for 2 hours')",
+      history_of_present_illness: "Describe the patient's current condition using OLDCARTS (Onset, Location, Duration, Character, Alleviating/Aggravating factors, Radiation, Temporal patterns, Severity)",
+      medical_history: "Document past medical history, chronic conditions, surgeries, and relevant family/social history",
+      review_of_systems: "Document systematic review by body system (Constitutional, HEENT, Cardiovascular, Respiratory, GI, GU, MSK, Neuro, Psych, Skin)",
+      physical_exam: "Record vital signs and physical examination findings by system",
+      assessment: "Clinical interpretation of symptoms and findings, differential diagnoses, and clinical impression",
+      plan: "Treatment plan including medications, tests, procedures, follow-up, and patient education",
+      clinical_impression: "Synthesize the primary clinical issues, key findings, and clinical context in 2-4 sentences"
+    };
+    return placeholders[field] || "Enter clinical information here...";
   };
 
   const handleArrayItemAdd = () => {
@@ -302,7 +316,7 @@ export default function EditableSection({
                    onMouseUp={handleTextareaSelect}
                    onKeyUp={handleTextareaSelect}
                    className="min-h-[100px] rounded-xl border-slate-300 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm text-slate-900 transition-all hover:border-slate-400"
-                   placeholder="Click to edit..."
+                   placeholder={getPlaceholder()}
                  />
                {showSuggestions && ["history_of_present_illness", "assessment", "plan"].includes(field) && (
                  <SectionAISuggestions
@@ -349,7 +363,7 @@ export default function EditableSection({
               onChange={(e) => handleChange(e.target.value)}
               onBlur={(e) => handleChange(e.target.value)}
               className="rounded-xl border-slate-300 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm text-slate-900 transition-all hover:border-slate-400"
-              placeholder="Click to edit..."
+              placeholder={getPlaceholder()}
             />
           )}
         </div>

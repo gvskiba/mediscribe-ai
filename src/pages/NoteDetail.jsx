@@ -983,46 +983,7 @@ Generated: ${new Date().toLocaleString()}
               {note.status || "draft"}
             </Badge>
           </div>
-          <div className="grid sm:grid-cols-3 gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Age</label>
-              <input
-                type="number"
-                placeholder="Age"
-                value={note.patient_age || ""}
-                onChange={(e) => {
-                  queryClient.setQueryData(["note", noteId], (old) => ({
-                    ...old,
-                    patient_age: e.target.value
-                  }));
-                }}
-                onBlur={async (e) => {
-                  await base44.entities.ClinicalNote.update(noteId, { patient_age: e.target.value });
-                }}
-                className="w-20 px-2 py-1 rounded-md border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-slate-900"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Gender</label>
-              <select
-                value={note.patient_gender || ""}
-                onChange={async (e) => {
-                  queryClient.setQueryData(["note", noteId], (old) => ({
-                    ...old,
-                    patient_gender: e.target.value
-                  }));
-                  await base44.entities.ClinicalNote.update(noteId, { patient_gender: e.target.value });
-                }}
-                className="px-2 py-1 rounded-md border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-slate-900 bg-white"
-              >
-                <option value="">Select</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-          </div>
-          <div className="grid sm:grid-cols-2 gap-3 text-sm text-slate-600 mt-3">
+          <div className="grid sm:grid-cols-2 gap-3 text-sm text-slate-600">
             {note.patient_id && (
               <span className="flex items-center gap-2"><Hash className="w-4 h-4 text-slate-400" /> {note.patient_id}</span>
             )}

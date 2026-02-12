@@ -2221,6 +2221,33 @@ Generated: ${new Date().toLocaleString()}
 
                      {note.status === "draft" ? (
                        <div className="space-y-6">
+                         {/* Generate Note & Regenerate Note Buttons */}
+                         <div className="flex gap-3">
+                           <Button
+                             onClick={extractStructuredData}
+                             disabled={extractingData || !note.raw_note}
+                             className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white gap-2 shadow-lg rounded-xl py-6"
+                           >
+                             {extractingData ? (
+                               <><Loader2 className="w-5 h-5 animate-spin" /> Generating Note...</>
+                             ) : (
+                               <><Sparkles className="w-5 h-5" /> Generate Note</>
+                             )}
+                           </Button>
+                           <Button
+                             onClick={extractStructuredData}
+                             disabled={extractingData || !note.raw_note}
+                             variant="outline"
+                             className="flex-1 border-blue-300 hover:bg-blue-50 gap-2 rounded-xl py-6"
+                           >
+                             {extractingData ? (
+                               <><Loader2 className="w-5 h-5 animate-spin" /> Regenerating...</>
+                             ) : (
+                               <><Sparkles className="w-5 h-5" /> Regenerate Note</>
+                             )}
+                           </Button>
+                         </div>
+
                          <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
                            <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
                              <AlertCircle className="w-5 h-5 text-blue-600" />

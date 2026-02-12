@@ -2239,7 +2239,7 @@ Generated: ${new Date().toLocaleString()}
 
                  {/* Finalize Note Tab */}
                  <TabsContent value="finalize" className="p-6 space-y-6 overflow-y-auto">
-                   <div className="max-w-2xl mx-auto">
+                   <div className="max-w-2xl mx-auto space-y-6">
                      <div className="text-center mb-8">
                        <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
                          <Check className="w-8 h-8 text-emerald-600" />
@@ -2248,101 +2248,99 @@ Generated: ${new Date().toLocaleString()}
                        <p className="text-slate-600">Review and finalize your clinical documentation</p>
                      </div>
 
-                     <div className="space-y-6">
-                       {/* Generate Note & Regenerate Note Buttons */}
-                       <div className="flex gap-3">
-                         <Button
-                           onClick={extractStructuredData}
-                           disabled={extractingData || !note.raw_note}
-                           className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white gap-2 shadow-lg rounded-xl py-6"
-                         >
-                           {extractingData ? (
-                             <><Loader2 className="w-5 h-5 animate-spin" /> Generating Note...</>
-                           ) : (
-                             <><Sparkles className="w-5 h-5" /> Generate Note</>
-                           )}
-                         </Button>
-                         <Button
-                           onClick={extractStructuredData}
-                           disabled={extractingData || !note.raw_note}
-                           variant="outline"
-                           className="flex-1 border-blue-300 hover:bg-blue-50 gap-2 rounded-xl py-6"
-                         >
-                           {extractingData ? (
-                             <><Loader2 className="w-5 h-5 animate-spin" /> Regenerating...</>
-                           ) : (
-                             <><Sparkles className="w-5 h-5" /> Regenerate Note</>
-                           )}
-                         </Button>
-                       </div>
+                     {/* Generate Note & Regenerate Note Buttons */}
+                     <div className="flex gap-3">
+                       <Button
+                         onClick={extractStructuredData}
+                         disabled={extractingData || !note.raw_note}
+                         className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white gap-2 shadow-lg rounded-xl py-6"
+                       >
+                         {extractingData ? (
+                           <><Loader2 className="w-5 h-5 animate-spin" /> Generating Note...</>
+                         ) : (
+                           <><Sparkles className="w-5 h-5" /> Generate Note</>
+                         )}
+                       </Button>
+                       <Button
+                         onClick={extractStructuredData}
+                         disabled={extractingData || !note.raw_note}
+                         variant="outline"
+                         className="flex-1 border-blue-300 hover:bg-blue-50 gap-2 rounded-xl py-6"
+                       >
+                         {extractingData ? (
+                           <><Loader2 className="w-5 h-5 animate-spin" /> Regenerating...</>
+                         ) : (
+                           <><Sparkles className="w-5 h-5" /> Regenerate Note</>
+                         )}
+                       </Button>
+                     </div>
 
-                       <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-                           <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                             <AlertCircle className="w-5 h-5 text-blue-600" />
-                             Before Finalizing
-                           </h3>
-                           <ul className="space-y-3 text-sm text-slate-700">
-                             <li className="flex items-start gap-2">
-                               <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-                               <span>Review all clinical sections for accuracy and completeness</span>
-                             </li>
-                             <li className="flex items-start gap-2">
-                               <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-                               <span>Verify patient demographics and visit information</span>
-                             </li>
-                             <li className="flex items-start gap-2">
-                               <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-                               <span>Confirm diagnoses and ICD-10 codes are accurate</span>
-                             </li>
-                             <li className="flex items-start gap-2">
-                               <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-                               <span>Review assessment and treatment plan</span>
-                             </li>
-                             <li className="flex items-start gap-2">
-                               <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-                               <span>Ensure all required fields are complete</span>
-                             </li>
-                           </ul>
+                     <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+                       <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                         <AlertCircle className="w-5 h-5 text-blue-600" />
+                         Before Finalizing
+                       </h3>
+                       <ul className="space-y-3 text-sm text-slate-700">
+                         <li className="flex items-start gap-2">
+                           <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                           <span>Review all clinical sections for accuracy and completeness</span>
+                         </li>
+                         <li className="flex items-start gap-2">
+                           <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                           <span>Verify patient demographics and visit information</span>
+                         </li>
+                         <li className="flex items-start gap-2">
+                           <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                           <span>Confirm diagnoses and ICD-10 codes are accurate</span>
+                         </li>
+                         <li className="flex items-start gap-2">
+                           <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                           <span>Review assessment and treatment plan</span>
+                         </li>
+                         <li className="flex items-start gap-2">
+                           <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                           <span>Ensure all required fields are complete</span>
+                         </li>
+                       </ul>
+                     </div>
+
+                     <div className="bg-white border-2 border-slate-200 rounded-xl p-6">
+                       <h3 className="font-semibold text-slate-900 mb-4">Note Status</h3>
+                       <div className="grid grid-cols-2 gap-4 mb-6">
+                         <div>
+                           <p className="text-xs text-slate-500 mb-1">Current Status</p>
+                           <Badge className={statusColors[note.status] || statusColors.draft}>{note.status || "draft"}</Badge>
                          </div>
-
-                         <div className="bg-white border-2 border-slate-200 rounded-xl p-6">
-                           <h3 className="font-semibold text-slate-900 mb-4">Note Status</h3>
-                           <div className="grid grid-cols-2 gap-4 mb-6">
-                             <div>
-                               <p className="text-xs text-slate-500 mb-1">Current Status</p>
-                               <Badge className="bg-amber-100 text-amber-700 border-amber-300">Draft</Badge>
-                             </div>
-                             <div>
-                               <p className="text-xs text-slate-500 mb-1">Last Modified</p>
-                               <p className="text-sm text-slate-900">{note.updated_date ? format(new Date(note.updated_date), "MMM d, h:mm a") : "N/A"}</p>
-                             </div>
-                           </div>
-
-                           <Button
-                             onClick={() => finalizeMutation.mutate()}
-                             disabled={finalizeMutation.isPending}
-                             className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white rounded-xl gap-2 shadow-lg shadow-emerald-500/30 font-semibold py-6 text-base"
-                           >
-                             {finalizeMutation.isPending ? (
-                               <><Loader2 className="w-5 h-5 animate-spin" /> Finalizing Note...</>
-                             ) : (
-                               <><Check className="w-5 h-5" /> Finalize Note</>
-                             )}
-                           </Button>
-                           <p className="text-xs text-slate-500 text-center mt-3">
-                             Once finalized, this note will be locked and timestamped
-                           </p>
+                         <div>
+                           <p className="text-xs text-slate-500 mb-1">Last Modified</p>
+                           <p className="text-sm text-slate-900">{note.updated_date ? format(new Date(note.updated_date), "MMM d, h:mm a") : "N/A"}</p>
                          </div>
                        </div>
-                       <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-8 text-center">
-                         <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
-                           <Check className="w-10 h-10 text-emerald-600" />
-                         </div>
-                         <h3 className="text-xl font-bold text-slate-900 mb-2">Clinical Note</h3>
-                         <p className="text-slate-700 mb-4">
-                           Created on {note.created_date ? format(new Date(note.created_date), "MMMM d, yyyy 'at' h:mm a") : "N/A"}
-                         </p>
+
+                       <Button
+                         onClick={() => finalizeMutation.mutate()}
+                         disabled={finalizeMutation.isPending}
+                         className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white rounded-xl gap-2 shadow-lg shadow-emerald-500/30 font-semibold py-6 text-base"
+                       >
+                         {finalizeMutation.isPending ? (
+                           <><Loader2 className="w-5 h-5 animate-spin" /> Finalizing Note...</>
+                         ) : (
+                           <><Check className="w-5 h-5" /> Finalize Note</>
+                         )}
+                       </Button>
+                       <p className="text-xs text-slate-500 text-center mt-3">
+                         Once finalized, this note will be locked and timestamped
+                       </p>
+                     </div>
+
+                     <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-8 text-center">
+                       <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                         <Check className="w-10 h-10 text-emerald-600" />
                        </div>
+                       <h3 className="text-xl font-bold text-slate-900 mb-2">Clinical Note</h3>
+                       <p className="text-slate-700 mb-4">
+                         Created on {note.created_date ? format(new Date(note.created_date), "MMMM d, yyyy 'at' h:mm a") : "N/A"}
+                       </p>
                      </div>
                    </div>
                  </TabsContent>

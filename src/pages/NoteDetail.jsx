@@ -113,6 +113,9 @@ export default function NoteDetail() {
     const saved = localStorage.getItem('noteDetailTabOrder');
     return saved ? JSON.parse(saved) : TAB_CONFIGS.map(t => t.id);
   });
+  const [showCreateNote, setShowCreateNote] = useState(false);
+  const [creationMethod, setCreationMethod] = useState(null);
+  const [specialty, setSpecialty] = useState("");
 
   const handleDragEnd = (result) => {
     const { source, destination } = result;
@@ -973,11 +976,12 @@ Generated: ${new Date().toLocaleString()}
 
         {/* Quick Actions */}
         <div className="border-t border-slate-200 pt-6 flex gap-3">
-          <Link to={createPageUrl("NewNote")} className="flex-1">
-            <Button className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl gap-2 shadow-lg shadow-blue-500/30 font-semibold transition-all">
-              <Plus className="w-4 h-4" /> New Note
-            </Button>
-          </Link>
+          <Button 
+            onClick={() => setShowCreateNote(!showCreateNote)}
+            className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl gap-2 shadow-lg shadow-blue-500/30 font-semibold transition-all"
+          >
+            <Plus className="w-4 h-4" /> {showCreateNote ? "Close" : "New Note"}
+          </Button>
           <Link to={createPageUrl("NotesLibrary")} className="flex-1">
             <Button variant="outline" className="w-full rounded-xl gap-2 border-slate-300 hover:bg-slate-50">
               <FileText className="w-4 h-4" /> All Notes
@@ -985,6 +989,131 @@ Generated: ${new Date().toLocaleString()}
           </Link>
         </div>
       </motion.div>
+
+      {/* Create New Note Section */}
+      {showCreateNote && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8"
+        >
+          {!creationMethod ? (
+            <div className="space-y-8">
+              <div className="text-center space-y-3">
+                <h2 className="text-3xl font-bold text-slate-900">Create New Clinical Note</h2>
+                <p className="text-lg text-slate-600">Choose your preferred input method</p>
+              </div>
+
+              <div className="bg-blue-50 p-6 rounded-xl border border-blue-200">
+                <label className="text-sm font-semibold text-slate-900 mb-3 block">Medical Specialty</label>
+                <select
+                  value={specialty}
+                  onChange={(e) => setSpecialty(e.target.value)}
+                  className="bg-white text-slate-900 px-4 py-2.5 rounded-lg w-full border border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="">Select a specialty...</option>
+                  <option value="General Medicine">General Medicine</option>
+                  <option value="Cardiology">Cardiology</option>
+                  <option value="Pulmonology">Pulmonology</option>
+                  <option value="Gastroenterology">Gastroenterology</option>
+                  <option value="Neurology">Neurology</option>
+                  <option value="Endocrinology">Endocrinology</option>
+                  <option value="Rheumatology">Rheumatology</option>
+                  <option value="Orthopedics">Orthopedics</option>
+                  <option value="Surgery">Surgery</option>
+                  <option value="Emergency Medicine">Emergency Medicine</option>
+                  <option value="Psychiatry">Psychiatry</option>
+                  <option value="Pediatrics">Pediatrics</option>
+                  <option value="Oncology">Oncology</option>
+                </select>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-6">
+                <button
+                  onClick={() => setCreationMethod("form")}
+                  className="group relative overflow-hidden bg-gradient-to-br from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-2xl p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl shadow-xl"
+                >
+                  <div className="relative space-y-4">
+                    <div className="w-16 h-16 mx-auto bg-white/20 rounded-2xl flex items-center justify-center">
+                      <FileText className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-2xl font-bold text-white">AI Assisted Form</h3>
+                      <p className="text-emerald-100">Guided form for patient self-entry with AI pre-fill</p>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setCreationMethod("dictation")}
+                  className="group relative overflow-hidden bg-gradient-to-br from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-2xl p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl shadow-xl"
+                >
+                  <div className="relative space-y-4">
+                    <div className="w-16 h-16 mx-auto bg-white/20 rounded-2xl flex items-center justify-center">
+                      <Sparkles className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-2xl font-bold text-white">Dictation Transcription</h3>
+                      <p className="text-purple-100">Speak or type your clinical note naturally</p>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setCreationMethod("detailed")}
+                  className="group relative overflow-hidden bg-gradient-to-br from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-2xl p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl shadow-xl"
+                >
+                  <div className="relative space-y-4">
+                    <div className="w-16 h-16 mx-auto bg-white/20 rounded-2xl flex items-center justify-center">
+                      <FileText className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-2xl font-bold text-white">Detailed Clinical Input</h3>
+                      <p className="text-blue-100">Enter information in structured sections</p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <button
+                onClick={() => setCreationMethod(null)}
+                className="text-sm text-blue-600 hover:text-blue-700 underline"
+              >
+                ← Back to method selection
+              </button>
+              <p className="text-slate-600 text-center">Note creation interface will be loaded here based on method: {creationMethod}</p>
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => {
+                    setShowCreateNote(false);
+                    setCreationMethod(null);
+                  }}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={async () => {
+                    const newNote = await base44.entities.ClinicalNote.create({
+                      raw_note: "Sample note",
+                      specialty: specialty,
+                      patient_name: "New Patient",
+                      status: "finalized"
+                    });
+                    window.location.href = createPageUrl(`NoteDetail?id=${newNote.id}`);
+                  }}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Create Note
+                </Button>
+              </div>
+            </div>
+          )}
+        </motion.div>
+      )}
 
       {/* Tabbed Interface */}
        <motion.div
@@ -1041,39 +1170,9 @@ Generated: ${new Date().toLocaleString()}
 
            {/* Summary Tab */}
            <TabsContent value="summary" className="p-6 space-y-4 overflow-y-auto">
-             {note.status === "draft" && (
-               <div className="flex gap-3 mb-4">
-                 <Button
-                   onClick={() => finalizeMutation.mutate()}
-                   className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white rounded-xl gap-2 shadow-lg shadow-emerald-500/30 font-semibold"
-                 >
-                   <Check className="w-4 h-4" /> Finalize Note
-                 </Button>
-                 <Button
-                   onClick={extractStructuredData}
-                   disabled={extractingData}
-                   variant="outline"
-                   className="flex-1 rounded-xl gap-2 border-emerald-300 hover:bg-emerald-50 disabled:opacity-50"
-                 >
-                   {extractingData ? (
-                     <><Loader2 className="w-4 h-4 animate-spin" /> Extracting...</>
-                   ) : (
-                     <><Sparkles className="w-4 h-4" /> Extract Data</>
-                   )}
-                 </Button>
-               </div>
-             )}
-             {note.status === "draft" ? (
+             {note.status === "finalized" && (
                <EditableSummaryGenerator
                  note={note}
-                 onSave={async (finalSummary) => {
-                   await base44.entities.ClinicalNote.update(noteId, { summary: finalSummary });
-                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                 }}
-                 onCancel={() => {}}
-               />
-             ) : (
-               <>
                  {note.status === "finalized" && (
                    <div className="flex gap-3 mb-4">
                      <NoteRevisionHistory
@@ -1123,37 +1222,13 @@ Generated: ${new Date().toLocaleString()}
                      onDownload={downloadSummary}
                    />
                  ) : !generatingSummary && (
-                   <p className="text-sm text-slate-500 text-center py-8">Summary will appear here after finalization</p>
+                   <p className="text-sm text-slate-500 text-center py-8">No summary available yet</p>
                  )}
-               </>
-             )}
              </TabsContent>
 
            {/* Clinical Note Tab */}
            <TabsContent value="clinical" className="p-6 overflow-y-auto">
              {/* Action Buttons */}
-             {note.status === "draft" && (
-               <div className="flex gap-3 mb-6">
-                 <Button
-                   onClick={() => finalizeMutation.mutate()}
-                   className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white rounded-xl gap-2 shadow-lg shadow-emerald-500/30 font-semibold"
-                 >
-                   <Check className="w-4 h-4" /> Finalize Note
-                 </Button>
-                 <Button
-                   onClick={extractStructuredData}
-                   disabled={extractingData}
-                   variant="outline"
-                   className="flex-1 rounded-xl gap-2 border-emerald-300 hover:bg-emerald-50 disabled:opacity-50"
-                 >
-                   {extractingData ? (
-                     <><Loader2 className="w-4 h-4 animate-spin" /> Extracting...</>
-                   ) : (
-                     <><Sparkles className="w-4 h-4" /> Extract Data</>
-                   )}
-                 </Button>
-               </div>
-             )}
              {note.status === "finalized" && (
                <div className="flex gap-3 mb-6">
                  <Button
@@ -1718,11 +1793,7 @@ Generated: ${new Date().toLocaleString()}
                  </div>
          </>
        )}
-       {note.status === "draft" && (
-         <div className="text-center py-12">
-           <p className="text-slate-500">Finalize the note to view additional clinical insights and ICD-10 codes.</p>
-         </div>
-       )}
+
      </TabsContent>
 
                  {/* Result Analysis Tab */}
@@ -1974,11 +2045,7 @@ Generated: ${new Date().toLocaleString()}
                        </div>
                      </>
                    )}
-                   {note.status === "draft" && (
-                     <div className="text-center py-12">
-                       <p className="text-slate-500">Finalize the note to view ICD-10 code suggestions.</p>
-                     </div>
-                   )}
+
                  </TabsContent>
 
                  {/* MDM Tab */}
@@ -2219,36 +2286,35 @@ Generated: ${new Date().toLocaleString()}
                        <p className="text-slate-600">Review and finalize your clinical documentation</p>
                      </div>
 
-                     {note.status === "draft" ? (
-                       <div className="space-y-6">
-                         {/* Generate Note & Regenerate Note Buttons */}
-                         <div className="flex gap-3">
-                           <Button
-                             onClick={extractStructuredData}
-                             disabled={extractingData || !note.raw_note}
-                             className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white gap-2 shadow-lg rounded-xl py-6"
-                           >
-                             {extractingData ? (
-                               <><Loader2 className="w-5 h-5 animate-spin" /> Generating Note...</>
-                             ) : (
-                               <><Sparkles className="w-5 h-5" /> Generate Note</>
-                             )}
-                           </Button>
-                           <Button
-                             onClick={extractStructuredData}
-                             disabled={extractingData || !note.raw_note}
-                             variant="outline"
-                             className="flex-1 border-blue-300 hover:bg-blue-50 gap-2 rounded-xl py-6"
-                           >
-                             {extractingData ? (
-                               <><Loader2 className="w-5 h-5 animate-spin" /> Regenerating...</>
-                             ) : (
-                               <><Sparkles className="w-5 h-5" /> Regenerate Note</>
-                             )}
-                           </Button>
-                         </div>
+                     <div className="space-y-6">
+                       {/* Generate Note & Regenerate Note Buttons */}
+                       <div className="flex gap-3">
+                         <Button
+                           onClick={extractStructuredData}
+                           disabled={extractingData || !note.raw_note}
+                           className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white gap-2 shadow-lg rounded-xl py-6"
+                         >
+                           {extractingData ? (
+                             <><Loader2 className="w-5 h-5 animate-spin" /> Generating Note...</>
+                           ) : (
+                             <><Sparkles className="w-5 h-5" /> Generate Note</>
+                           )}
+                         </Button>
+                         <Button
+                           onClick={extractStructuredData}
+                           disabled={extractingData || !note.raw_note}
+                           variant="outline"
+                           className="flex-1 border-blue-300 hover:bg-blue-50 gap-2 rounded-xl py-6"
+                         >
+                           {extractingData ? (
+                             <><Loader2 className="w-5 h-5 animate-spin" /> Regenerating...</>
+                           ) : (
+                             <><Sparkles className="w-5 h-5" /> Regenerate Note</>
+                           )}
+                         </Button>
+                       </div>
 
-                         <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+                       <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
                            <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
                              <AlertCircle className="w-5 h-5 text-blue-600" />
                              Before Finalizing
@@ -2306,20 +2372,16 @@ Generated: ${new Date().toLocaleString()}
                            </p>
                          </div>
                        </div>
-                     ) : (
                        <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-8 text-center">
                          <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
                            <Check className="w-10 h-10 text-emerald-600" />
                          </div>
-                         <h3 className="text-xl font-bold text-slate-900 mb-2">Note Finalized</h3>
+                         <h3 className="text-xl font-bold text-slate-900 mb-2">Clinical Note</h3>
                          <p className="text-slate-700 mb-4">
-                           This note was finalized on {note.updated_date ? format(new Date(note.updated_date), "MMMM d, yyyy 'at' h:mm a") : "N/A"}
+                           Created on {note.created_date ? format(new Date(note.created_date), "MMMM d, yyyy 'at' h:mm a") : "N/A"}
                          </p>
-                         <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 text-sm px-4 py-1">
-                           {note.status}
-                         </Badge>
                        </div>
-                     )}
+                     </div>
                    </div>
                  </TabsContent>
 

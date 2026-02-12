@@ -227,8 +227,11 @@ export default function NoteDetail() {
       if (!differentialDiagnosis.length && !loadingDifferential && note.chief_complaint) {
         generateDifferentialDiagnosis();
       }
+      if (!patientEducation && !generatingEducation && note.diagnoses?.length > 0 && note.status === "finalized") {
+        generatePatientEducation();
+      }
     }
-  }, [note?.id, patientSummary, generatingSummary, icd10Suggestions.length, loadingIcd10, guidelineRecommendations.length, loadingGuidelines, drugInteractions.length, loadingInteractions, followUpTests.length, loadingFollowUp, differentialDiagnosis.length, loadingDifferential]);
+  }, [note?.id, note?.status, patientSummary, generatingSummary, icd10Suggestions.length, loadingIcd10, guidelineRecommendations.length, loadingGuidelines, drugInteractions.length, loadingInteractions, followUpTests.length, loadingFollowUp, differentialDiagnosis.length, loadingDifferential, patientEducation, generatingEducation]);
 
   const generateSummary = async () => {
     if (!note) return;
@@ -486,19 +489,30 @@ Keep recommendations specific, actionable, and evidence-based.`,
     setGeneratingEducation(true);
     try {
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Create comprehensive, easy-to-understand patient education materials for the following diagnoses. Use simple language that a non-medical person can understand.
+        prompt: `Create comprehensive, easy-to-understand patient education materials based on this clinical note. Use simple, clear language that a non-medical person can understand. Avoid medical jargon and use everyday terms.
 
-  DIAGNOSES:
-  ${note.diagnoses.join('\n')}
+    PATIENT CONTEXT:
+    Chief Complaint: ${note.chief_complaint || "N/A"}
 
-  Create sections for each diagnosis with:
-  1. WHAT IS IT: Simple explanation of the condition in everyday language
-  2. SYMPTOMS TO WATCH FOR: Signs to monitor at home
-  3. WHAT YOU CAN DO: Practical steps for self-care and management
-  4. WHEN TO SEEK HELP: Red flags requiring immediate medical attention
-  5. QUESTIONS FOR YOUR DOCTOR: Suggested questions to ask at follow-up visits
+    DIAGNOSES:
+    ${note.diagnoses.join('\n')}
 
-  Keep explanations concise and avoid medical jargon. Use analogies where helpful.`,
+    TREATMENT PLAN:
+    ${note.plan || "N/A"}
+
+    MEDICATIONS:
+    ${note.medications?.join('\n') || "None prescribed"}
+
+    Create sections for each diagnosis with:
+    1. WHAT IS IT: Simple explanation in 2-3 sentences using everyday language (e.g., "Your heart" instead of "cardiac", "sugar levels" instead of "glucose")
+    2. SYMPTOMS TO WATCH FOR: 3-5 specific signs to monitor at home
+    3. WHAT YOU CAN DO: 4-6 practical self-care steps including lifestyle changes, diet, exercise, and medication adherence
+    4. YOUR MEDICATIONS: If medications are prescribed for this condition, explain what they do in simple terms
+    5. WHEN TO SEEK HELP: 3-5 red flag symptoms requiring immediate medical attention
+    6. QUESTIONS FOR YOUR DOCTOR: 3-4 suggested questions to discuss at follow-up visits
+    7. FOLLOW-UP: When and why to return for care
+
+    Keep each explanation under 100 words. Use analogies and examples. Write at a 6th-grade reading level.`,
         response_json_schema: {
           type: "object",
           properties: {
@@ -511,8 +525,10 @@ Keep recommendations specific, actionable, and evidence-based.`,
                   what_is_it: { type: "string" },
                   symptoms_to_watch: { type: "array", items: { type: "string" } },
                   self_care: { type: "array", items: { type: "string" } },
+                  medications_explained: { type: "array", items: { type: "string" } },
                   when_to_seek_help: { type: "array", items: { type: "string" } },
-                  questions_for_doctor: { type: "array", items: { type: "string" } }
+                  questions_for_doctor: { type: "array", items: { type: "string" } },
+                  follow_up: { type: "string" }
                 }
               }
             }
@@ -2403,9 +2419,24 @@ Generated: ${new Date().toLocaleString()}
                                        ))}
                                      </ul>
                                    </div>
-                                 )}
+                                   )}
 
-                                 {/* When to Seek Help */}
+                                   {/* Medications Explained */}
+                                   {material.medications_explained && material.medications_explained.length > 0 && (
+                                   <div className="bg-purple-50 rounded-lg border border-purple-200 p-3">
+                                     <h4 className="text-sm font-bold text-purple-900 mb-2">Your Medications</h4>
+                                     <ul className="space-y-1">
+                                       {material.medications_explained.map((med, i) => (
+                                         <li key={i} className="text-sm text-purple-800 flex items-start gap-2">
+                                           <span className="text-purple-600 mt-0.5">💊</span>
+                                           <span>{med}</span>
+                                         </li>
+                                       ))}
+                                     </ul>
+                                   </div>
+                                   )}
+
+                                   {/* When to Seek Help */}
                                  {material.when_to_seek_help && material.when_to_seek_help.length > 0 && (
                                    <div className="bg-red-50 rounded-lg border border-red-200 p-3">
                                      <h4 className="text-sm font-bold text-red-900 mb-2">When to Seek Help</h4>
@@ -2432,6 +2463,14 @@ Generated: ${new Date().toLocaleString()}
                                          </li>
                                        ))}
                                      </ul>
+                                   </div>
+                                 )}
+
+                                 {/* Follow-up Care */}
+                                 {material.follow_up && (
+                                   <div className="bg-slate-50 rounded-lg border border-slate-200 p-3">
+                                     <h4 className="text-sm font-bold text-slate-900 mb-2">Follow-up Care</h4>
+                                     <p className="text-sm text-slate-700">{material.follow_up}</p>
                                    </div>
                                  )}
                                </div>

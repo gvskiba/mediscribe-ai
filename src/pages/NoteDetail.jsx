@@ -2138,52 +2138,7 @@ Generated: ${new Date().toLocaleString()}
                          />
                        </div>
 
-                       {/* ICD-10 Codes Section */}
-                       <div>
-                         <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                           <Code className="w-4 h-4 text-blue-600" />
-                           ICD-10 Code Suggestions
-                         </h3>
-                         {icd10Suggestions && icd10Suggestions.length > 0 ? (
-                           <>
-                           <ICD10Suggestions
-                             suggestions={icd10Suggestions}
-                             loading={loadingIcd10}
-                             readOnly={false}
-                             onApplyToNote={async (codes) => {
-                               try {
-                                 const newDiagnoses = codes.map(c => `${c.code} - ${c.description}`);
-                                 const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
-                                 await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
-                                 queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                                 toast.success(`Added ${newDiagnoses.length} diagnosis code(s)`);
-                               } catch (error) {
-                                 console.error("Failed to add diagnoses:", error);
-                                 toast.error("Failed to add diagnoses. Please try again.");
-                               }
-                             }}
-                           />
-                             <div className="mt-4">
-                               <ICD10CodeSearch
-                                 suggestions={icd10Suggestions}
-                                 diagnoses={note.diagnoses}
-                                 onAddDiagnoses={async (newDiagnoses) => {
-                                   const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
-                                   await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
-                                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                                 }}
-                               />
-                             </div>
-                           </>
-                         ) : loadingIcd10 ? (
-                           <div className="flex items-center gap-3 text-slate-500 py-8">
-                             <Loader2 className="w-5 h-5 animate-spin" />
-                             <span className="text-sm">Generating ICD-10 suggestions...</span>
-                           </div>
-                         ) : (
-                           <p className="text-sm text-slate-500 text-center py-8">No ICD-10 suggestions available</p>
-                         )}
-                       </div>
+
                      </>
                    )}
 

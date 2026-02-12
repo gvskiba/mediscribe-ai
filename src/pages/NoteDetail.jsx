@@ -63,7 +63,7 @@ const TAB_ROWS = [
     { id: 'final_impression', label: 'Final Impression', icon: FileText },
     { id: 'mdm', label: 'MDM', icon: AlertCircle },
     { id: 'treatments', label: 'Treatment', icon: Pill },
-    { id: 'guidelines', label: 'Guidelines & Codes', icon: Code },
+    { id: 'guidelines', label: 'Guidelines', icon: Code },
     { id: 'finalize', label: 'Finalize', icon: Check },
     { id: 'patient_education', label: 'Patient Education', icon: BookOpen },
     ]

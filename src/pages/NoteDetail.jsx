@@ -1758,7 +1758,7 @@ Generated: ${new Date().toLocaleString()}
                    )}
                  </div>
                  </>
-
+                 )}
                  </TabsContent>
 
                  {/* Result Analysis Tab */}

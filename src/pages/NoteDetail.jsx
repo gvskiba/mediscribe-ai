@@ -1007,6 +1007,78 @@ Generated: ${new Date().toLocaleString()}
         <div className="border-t border-slate-200 pt-6 flex gap-3">
           <Button 
             onClick={async () => {
+              setExtractingData(true);
+              try {
+                // Collect all available data from the note
+                const contextData = {
+                  raw_note: note.raw_note || "",
+                  chief_complaint: note.chief_complaint || "",
+                  history_of_present_illness: note.history_of_present_illness || "",
+                  medical_history: note.medical_history || "",
+                  review_of_systems: note.review_of_systems || "",
+                  physical_exam: note.physical_exam || "",
+                  assessment: note.assessment || "",
+                  plan: note.plan || "",
+                  clinical_impression: note.clinical_impression || "",
+                  diagnoses: note.diagnoses || [],
+                  medications: note.medications || [],
+                  allergies: note.allergies || []
+                };
+
+                const result = await base44.integrations.Core.InvokeLLM({
+                  prompt: `Analyze ALL the following clinical data and create a comprehensive, well-structured clinical note. Review each section carefully and extract/organize all relevant information into the appropriate fields.
+
+        AVAILABLE CLINICAL DATA:
+        ${JSON.stringify(contextData, null, 2)}
+
+        Your task is to:
+        1. Review ALL sections thoroughly
+        2. Extract and organize information appropriately
+        3. Fill in any missing sections based on available context
+        4. Ensure clinical coherence across all fields
+        5. Maintain professional medical documentation standards
+
+        Return a complete clinical note with ALL fields populated based on the available data:`,
+                  response_json_schema: {
+                    type: "object",
+                    properties: {
+                      chief_complaint: { type: "string" },
+                      history_of_present_illness: { type: "string" },
+                      medical_history: { type: "string" },
+                      review_of_systems: { type: "string" },
+                      physical_exam: { type: "string" },
+                      assessment: { type: "string" },
+                      plan: { type: "string" },
+                      clinical_impression: { type: "string" },
+                      diagnoses: { type: "array", items: { type: "string" } },
+                      medications: { type: "array", items: { type: "string" } },
+                      allergies: { type: "array", items: { type: "string" } }
+                    }
+                  }
+                });
+
+                // Update the note with all extracted data
+                await base44.entities.ClinicalNote.update(noteId, result);
+                queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                toast.success("Clinical note fields populated from AI analysis");
+              } catch (error) {
+                console.error("Failed to analyze and populate:", error);
+                toast.error("Failed to analyze note data");
+              } finally {
+                setExtractingData(false);
+              }
+            }}
+            disabled={extractingData}
+            className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl gap-2 shadow-lg shadow-purple-500/30 font-semibold transition-all"
+          >
+            {extractingData ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</>
+            ) : (
+              <><Sparkles className="w-4 h-4" /> AI Review & Fill</>
+            )}
+          </Button>
+          <Button 
+            onClick={async () => {
               const newNote = await base44.entities.ClinicalNote.create({
                 raw_note: "",
                 patient_name: "New Patient",

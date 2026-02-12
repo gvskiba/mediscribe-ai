@@ -1202,6 +1202,9 @@ Generated: ${new Date().toLocaleString()}
              ) : (
                <StructuredNotePreview 
                  note={note} 
+                 templates={templates}
+                 selectedTemplate={selectedTemplate}
+                 onTemplateChange={setSelectedTemplate}
                  onUpdate={(field, value) => {
                    queryClient.setQueryData(["note", noteId], (old) => ({
                      ...old,

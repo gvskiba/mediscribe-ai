@@ -14,7 +14,7 @@ import MedicationRecommendations from "./MedicationRecommendations";
 import ICD10CodeSearch from "./ICD10CodeSearch";
 import VitalSignsInput from "./VitalSignsInput";
 
-export default function StructuredNotePreview({ note, onFinalize, onEdit, onUpdate, onReanalyze, guidelineRecommendations = [], loadingGuidelines = false, medicationRecommendations = [], loadingMedications = false, onGenerateEducationMaterials }) {
+export default function StructuredNotePreview({ note, templates = [], selectedTemplate, onTemplateChange, onFinalize, onEdit, onUpdate, onReanalyze, guidelineRecommendations = [], loadingGuidelines = false, medicationRecommendations = [], loadingMedications = false, onGenerateEducationMaterials }) {
   // Default onReanalyze if not provided
   const handleReanalyze = onReanalyze || (async (field) => {
     return null; // No-op if not provided
@@ -762,21 +762,103 @@ FORMATTING RULES (CRITICAL):
               </motion.div>
               )}
 
-        {/* Note Type Box */}
-        {note.note_type && (
-          <div className="bg-white rounded-xl border-2 border-slate-300 shadow-sm overflow-hidden">
-            <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-slate-600" />
-              <h3 className="font-semibold text-slate-900">Note Type</h3>
+        {/* Note Type & Template Selector Box */}
+        <div className="bg-white rounded-xl border-2 border-slate-300 shadow-sm overflow-hidden">
+          <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-slate-600" />
+            <h3 className="font-semibold text-slate-900">Note Type</h3>
+          </div>
+          <div className="p-4 space-y-4">
+            <div>
+              <p className="text-lg font-semibold text-slate-900">
+                {note.note_type ? note.note_type.replace(/_/g, " ").split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : "Progress Note"}
+              </p>
             </div>
-            <div className="p-4">
-              <p className="text-lg font-semibold text-slate-900">{note.note_type.replace(/_/g, " ").split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}</p>
+            
+            <div className="pt-3 border-t border-slate-200">
+              <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2 block">
+                Template (Optional)
+              </label>
+              <select
+                value={selectedTemplate?.id || ""}
+                onChange={(e) => {
+                  const template = templates.find(t => t.id === e.target.value);
+                  onTemplateChange(template || null);
+                }}
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+              >
+                <option value="">No template - Standard sections</option>
+                {templates.map(t => (
+                  <option key={t.id} value={t.id}>
+                    {t.name} {t.specialty ? `(${t.specialty})` : ""}
+                  </option>
+                ))}
+              </select>
+              {selectedTemplate && (
+                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-xs text-blue-900 font-medium mb-1">{selectedTemplate.name}</p>
+                  <p className="text-xs text-blue-700">{selectedTemplate.description || "Custom template"}</p>
+                  <p className="text-xs text-blue-600 mt-2">
+                    {selectedTemplate.sections?.filter(s => s.enabled !== false).length || 0} sections
+                  </p>
+                </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
 
-        {/* Chief Complaint Box */}
-        <div className="bg-white rounded-xl border-2 border-blue-300 shadow-sm overflow-hidden">
+        {/* Template Sections OR Standard Sections */}
+        {selectedTemplate ? (
+          <>
+            {selectedTemplate.sections
+              ?.filter(s => s.enabled !== false)
+              .sort((a, b) => (a.order || 0) - (b.order || 0))
+              .map((section, idx) => (
+                <div key={section.id || idx} className="bg-white rounded-xl border-2 border-blue-300 shadow-sm overflow-hidden">
+                  <div className="bg-blue-50 px-4 py-3 border-b border-blue-200">
+                    <h3 className="font-semibold text-slate-900">{section.name}</h3>
+                    {section.description && (
+                      <p className="text-xs text-slate-600 mt-1">{section.description}</p>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <EditableSection
+                      icon={FileText}
+                      title=""
+                      color="blue"
+                      value={note[section.id] || ""}
+                      field={section.id}
+                      type="textarea"
+                      onUpdate={onUpdate}
+                      onReanalyze={async (field) => {
+                        if (!note?.raw_note) return null;
+                        const prompt = section.ai_instructions 
+                          ? `${section.ai_instructions}\n\nClinical note: ${note.raw_note}`
+                          : `Extract information for the section "${section.name}" from this clinical note: ${note.raw_note}`;
+                        
+                        const { base44 } = await import("@/api/base44Client");
+                        const result = await base44.integrations.Core.InvokeLLM({
+                          prompt,
+                          add_context_from_internet: false
+                        });
+                        
+                        onUpdate(field, result);
+                        return result;
+                      }}
+                      hideBorder={true}
+                      noteContext={{
+                        diagnoses: note.diagnoses,
+                        assessment: note.assessment
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+          </>
+        ) : (
+          <>
+            {/* Chief Complaint Box */}
+            <div className="bg-white rounded-xl border-2 border-blue-300 shadow-sm overflow-hidden">
           <div className="bg-blue-50 px-4 py-3 border-b border-blue-200 flex items-center gap-2">
             <Target className="w-5 h-5 text-blue-600" />
             <h3 className="font-semibold text-slate-900">Chief Complaint</h3>
@@ -946,6 +1028,9 @@ FORMATTING RULES (CRITICAL):
 
 
         {/* Suggested ICD-10 Codes Box */}
+         </>
+        )}
+
          {note.icd10_suggestions && note.icd10_suggestions.length > 0 && (
            <div className="bg-white rounded-xl border-2 border-cyan-300 shadow-sm overflow-hidden">
              <div className="bg-cyan-50 px-4 py-3 border-b border-cyan-200 flex items-center gap-2">

@@ -766,9 +766,9 @@ CRITICAL: The diagnoses field MUST always contain at least one entry. If no diag
 
       if (Object.keys(updateData).length > 0) {
         console.log("Updating note with:", updateData);
-        await base44.entities.ClinicalNote.update(noteId, updateData);
+        await base44.entities.ClinicalNote.update(noteId, { ...updateData, status: "finalized" });
         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-        toast.success("Data extracted and note updated");
+        toast.success("Note processed and finalized");
       }
     } catch (error) {
       console.error("Failed to extract data:", error);

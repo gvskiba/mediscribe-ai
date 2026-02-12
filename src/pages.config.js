@@ -52,14 +52,14 @@ import Dashboard from './pages/Dashboard';
 import GuidelineDetail from './pages/GuidelineDetail';
 import Guidelines from './pages/Guidelines';
 import Home from './pages/Home';
-import NewNote from './pages/NewNote';
+import NoteDetail from './pages/NoteDetail';
 import NoteTemplates from './pages/NoteTemplates';
 import NotesLibrary from './pages/NotesLibrary';
 import Search from './pages/Search';
 import Snippets from './pages/Snippets';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
-import NoteDetail from './pages/NoteDetail';
+import NewNote from './pages/NewNote';
 import __Layout from './Layout.jsx';
 
 
@@ -69,14 +69,14 @@ export const PAGES = {
     "GuidelineDetail": GuidelineDetail,
     "Guidelines": Guidelines,
     "Home": Home,
-    "NewNote": NewNote,
+    "NoteDetail": NoteDetail,
     "NoteTemplates": NoteTemplates,
     "NotesLibrary": NotesLibrary,
     "Search": Search,
     "Snippets": Snippets,
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
-    "NoteDetail": NoteDetail,
+    "NewNote": NewNote,
 }
 
 export const pagesConfig = {

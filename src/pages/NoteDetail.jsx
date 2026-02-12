@@ -2628,24 +2628,20 @@ Generated: ${new Date().toLocaleString()}
                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
                      Note Type
                    </label>
-                   {note.status === "draft" ? (
-                     <select
-                       value={note.note_type || "progress_note"}
-                       onChange={async (e) => {
-                         await base44.entities.ClinicalNote.update(noteId, { note_type: e.target.value });
-                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                       }}
-                       className="w-full bg-white border-2 border-slate-300 text-slate-900 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                     >
-                       <option value="progress_note">Progress Note</option>
-                       <option value="h_and_p">History & Physical</option>
-                       <option value="discharge_summary">Discharge Summary</option>
-                       <option value="consult">Consultation</option>
-                       <option value="procedure_note">Procedure Note</option>
-                     </select>
-                   ) : (
-                     <p className="text-base font-semibold text-slate-900">{typeLabels[note.note_type] || "Note"}</p>
-                   )}
+                   <select
+                     value={note.note_type || "progress_note"}
+                     onChange={async (e) => {
+                       await base44.entities.ClinicalNote.update(noteId, { note_type: e.target.value });
+                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                     }}
+                     className="w-full bg-white border-2 border-slate-300 text-slate-900 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                   >
+                     <option value="progress_note">Progress Note</option>
+                     <option value="h_and_p">History & Physical</option>
+                     <option value="discharge_summary">Discharge Summary</option>
+                     <option value="consult">Consultation</option>
+                     <option value="procedure_note">Procedure Note</option>
+                   </select>
                  </div>
                  {note.specialty && (
                    <div>

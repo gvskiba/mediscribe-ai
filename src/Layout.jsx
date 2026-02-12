@@ -125,19 +125,12 @@ export default function Layout({ children, currentPageName }) {
 
             {/* Actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                onClick={async () => {
-                  const newNote = await base44.entities.ClinicalNote.create({
-                    raw_note: "",
-                    patient_name: "New Patient",
-                    status: "draft"
-                  });
-                  window.location.href = createPageUrl(`NoteDetail?id=${newNote.id}`);
-                }}
+              <Link
+                to={createPageUrl("NewNote")}
                 className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg px-4 py-2 font-semibold text-sm transition-all shadow-sm flex items-center gap-2">
                 <FileText className="w-4 h-4" />
                 New Note
-              </button>
+              </Link>
               <button
                 onClick={() => base44.auth.logout()}
                 className="text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg p-2 transition-all"
@@ -160,18 +153,11 @@ export default function Layout({ children, currentPageName }) {
             <span className="font-bold text-sm truncate">MedScribe</span>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={async () => {
-                const newNote = await base44.entities.ClinicalNote.create({
-                  raw_note: "",
-                  patient_name: "New Patient",
-                  status: "draft"
-                });
-                window.location.href = createPageUrl(`NoteDetail?id=${newNote.id}`);
-              }}
+            <Link
+              to={createPageUrl("NewNote")}
               className="bg-blue-600 hover:bg-blue-700 rounded-lg p-2 transition-all shadow-sm text-white">
               <FileText className="w-4 h-4" />
-            </button>
+            </Link>
             <button onClick={() => setMobileOpen(!mobileOpen)} className="hover:bg-slate-100 rounded-lg p-1 transition-colors">
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>

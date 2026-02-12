@@ -1150,42 +1150,34 @@ Generated: ${new Date().toLocaleString()}
                  <FileText className="w-5 h-5 text-slate-600" />
                  <h3 className="font-semibold text-slate-900">Note Type</h3>
                </div>
-               <div className="p-4 space-y-4">
-                 <div>
-                   <p className="text-lg font-semibold text-slate-900">
-                     {note.note_type ? note.note_type.replace(/_/g, " ").split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : "Progress Note"}
-                   </p>
-                 </div>
-                 
-                 <div className="pt-3 border-t border-slate-200">
-                   <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2 block">
-                     Template (Optional)
-                   </label>
-                   <select
-                     value={selectedTemplate?.id || ""}
-                     onChange={(e) => {
-                       const template = templates.find(t => t.id === e.target.value);
-                       setSelectedTemplate(template || null);
-                     }}
-                     className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
-                   >
-                     <option value="">No template - Standard sections</option>
-                     {templates.map(t => (
-                       <option key={t.id} value={t.id}>
-                         {t.name} {t.specialty ? `(${t.specialty})` : ""}
-                       </option>
-                     ))}
-                   </select>
-                   {selectedTemplate && (
-                     <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                       <p className="text-xs text-blue-900 font-medium mb-1">{selectedTemplate.name}</p>
-                       <p className="text-xs text-blue-700">{selectedTemplate.description || "Custom template"}</p>
-                       <p className="text-xs text-blue-600 mt-2">
-                         {selectedTemplate.sections?.filter(s => s.enabled !== false).length || 0} sections
-                       </p>
-                     </div>
-                   )}
-                 </div>
+               <div className="p-4">
+                 <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2 block">
+                   Template (Optional)
+                 </label>
+                 <select
+                   value={selectedTemplate?.id || ""}
+                   onChange={(e) => {
+                     const template = templates.find(t => t.id === e.target.value);
+                     setSelectedTemplate(template || null);
+                   }}
+                   className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                 >
+                   <option value="">No template - Standard sections</option>
+                   {templates.map(t => (
+                     <option key={t.id} value={t.id}>
+                       {t.name} {t.specialty ? `(${t.specialty})` : ""}
+                     </option>
+                   ))}
+                 </select>
+                 {selectedTemplate && (
+                   <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                     <p className="text-xs text-blue-900 font-medium mb-1">{selectedTemplate.name}</p>
+                     <p className="text-xs text-blue-700">{selectedTemplate.description || "Custom template"}</p>
+                     <p className="text-xs text-blue-600 mt-2">
+                       {selectedTemplate.sections?.filter(s => s.enabled !== false).length || 0} sections
+                     </p>
+                   </div>
+                 )}
                </div>
              </div>
 

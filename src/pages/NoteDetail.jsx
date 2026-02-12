@@ -2248,32 +2248,18 @@ Generated: ${new Date().toLocaleString()}
                        <p className="text-slate-600">Review and finalize your clinical documentation</p>
                      </div>
 
-                     {/* Generate Note & Regenerate Note Buttons */}
-                     <div className="flex gap-3">
-                       <Button
-                         onClick={extractStructuredData}
-                         disabled={extractingData || !note.raw_note}
-                         className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white gap-2 shadow-lg rounded-xl py-6"
-                       >
-                         {extractingData ? (
-                           <><Loader2 className="w-5 h-5 animate-spin" /> Generating Note...</>
-                         ) : (
-                           <><Sparkles className="w-5 h-5" /> Generate Note</>
-                         )}
-                       </Button>
-                       <Button
-                         onClick={extractStructuredData}
-                         disabled={extractingData || !note.raw_note}
-                         variant="outline"
-                         className="flex-1 border-blue-300 hover:bg-blue-50 gap-2 rounded-xl py-6"
-                       >
-                         {extractingData ? (
-                           <><Loader2 className="w-5 h-5 animate-spin" /> Regenerating...</>
-                         ) : (
-                           <><Sparkles className="w-5 h-5" /> Regenerate Note</>
-                         )}
-                       </Button>
-                     </div>
+                     {/* Process Clinical Note Button */}
+                     <Button
+                       onClick={extractStructuredData}
+                       disabled={extractingData || !note.raw_note}
+                       className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white gap-2 shadow-lg rounded-xl py-6 text-base"
+                     >
+                       {extractingData ? (
+                         <><Loader2 className="w-5 h-5 animate-spin" /> Processing...</>
+                       ) : (
+                         <><Sparkles className="w-5 h-5" /> Process Clinical Note</>
+                       )}
+                     </Button>
 
                      <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
                        <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
@@ -2304,34 +2290,25 @@ Generated: ${new Date().toLocaleString()}
                        </ul>
                      </div>
 
-                     <div className="bg-white border-2 border-slate-200 rounded-xl p-6">
-                       <h3 className="font-semibold text-slate-900 mb-4">Note Status</h3>
-                       <div className="grid grid-cols-2 gap-4 mb-6">
-                         <div>
-                           <p className="text-xs text-slate-500 mb-1">Current Status</p>
-                           <Badge className={statusColors[note.status] || statusColors.draft}>{note.status || "draft"}</Badge>
+                     {note.status !== "finalized" && (
+                       <div className="bg-white border-2 border-slate-200 rounded-xl p-6">
+                         <h3 className="font-semibold text-slate-900 mb-4">Note Status</h3>
+                         <div className="grid grid-cols-2 gap-4 mb-6">
+                           <div>
+                             <p className="text-xs text-slate-500 mb-1">Current Status</p>
+                             <Badge className={statusColors[note.status] || statusColors.draft}>{note.status || "draft"}</Badge>
+                           </div>
+                           <div>
+                             <p className="text-xs text-slate-500 mb-1">Last Modified</p>
+                             <p className="text-sm text-slate-900">{note.updated_date ? format(new Date(note.updated_date), "MMM d, h:mm a") : "N/A"}</p>
+                           </div>
                          </div>
-                         <div>
-                           <p className="text-xs text-slate-500 mb-1">Last Modified</p>
-                           <p className="text-sm text-slate-900">{note.updated_date ? format(new Date(note.updated_date), "MMM d, h:mm a") : "N/A"}</p>
-                         </div>
-                       </div>
 
-                       <Button
-                         onClick={() => finalizeMutation.mutate()}
-                         disabled={finalizeMutation.isPending}
-                         className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white rounded-xl gap-2 shadow-lg shadow-emerald-500/30 font-semibold py-6 text-base"
-                       >
-                         {finalizeMutation.isPending ? (
-                           <><Loader2 className="w-5 h-5 animate-spin" /> Finalizing Note...</>
-                         ) : (
-                           <><Check className="w-5 h-5" /> Finalize Note</>
-                         )}
-                       </Button>
-                       <p className="text-xs text-slate-500 text-center mt-3">
-                         Once finalized, this note will be locked and timestamped
-                       </p>
-                     </div>
+                         <p className="text-sm text-slate-600 text-center mb-4">
+                           Click "Process Clinical Note" above to extract data and finalize
+                         </p>
+                       </div>
+                     )}
 
                      <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-8 text-center">
                        <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">

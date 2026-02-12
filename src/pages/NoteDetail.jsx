@@ -113,6 +113,7 @@ export default function NoteDetail() {
     const saved = localStorage.getItem('noteDetailTabOrder');
     return saved ? JSON.parse(saved) : TAB_CONFIGS.map(t => t.id);
   });
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
 
 
   const handleDragEnd = (result) => {
@@ -133,6 +134,11 @@ export default function NoteDetail() {
       (notes) => notes.find((n) => n.id === noteId)
     ),
     enabled: !!noteId,
+  });
+
+  const { data: templates = [] } = useQuery({
+    queryKey: ["noteTemplates"],
+    queryFn: () => base44.entities.NoteTemplate.list()
   });
 
   // Auto-save functionality
@@ -1137,50 +1143,108 @@ Generated: ${new Date().toLocaleString()}
                  </Button>
                </div>
              )}
-             <StructuredNotePreview 
-               note={note} 
-               onUpdate={(field, value) => {
-                 queryClient.setQueryData(["note", noteId], (old) => ({
-                   ...old,
-                   [field]: value
-                 }));
-               }}
-               onReanalyze={async (field) => {
-                 if (!note?.raw_note) return null;
+             {selectedTemplate ? (
+               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+                 <div className="border-b border-slate-200 pb-4">
+                   <h2 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
+                     <Sparkles className="w-5 h-5 text-purple-600" />
+                     {selectedTemplate.name}
+                   </h2>
+                   <p className="text-sm text-slate-600 mt-1">{selectedTemplate.description || "Fill in the template sections below"}</p>
+                 </div>
 
-                 const fieldPrompts = {
-                   chief_complaint: `Extract the chief complaint from this clinical note: ${note.raw_note}`,
-                   history_of_present_illness: `Extract the history of present illness with OLDCARTS elements from this clinical note: ${note.raw_note}`,
-                   medical_history: `Extract the relevant medical history from this clinical note: ${note.raw_note}`,
-                   review_of_systems: `Extract the review of systems from this clinical note: ${note.raw_note}`,
-                   physical_exam: `Extract the physical examination findings from this clinical note: ${note.raw_note}`,
-                   assessment: `Extract the assessment from this clinical note: ${note.raw_note}`,
-                   plan: `Extract the treatment plan from this clinical note: ${note.raw_note}`,
-                   clinical_impression: `Extract the clinical impression from this clinical note: ${note.raw_note}`,
-                 };
-
-                 try {
-                   const result = await base44.integrations.Core.InvokeLLM({
-                     prompt: fieldPrompts[field] || `Reanalyze this field in the clinical note: ${note.raw_note}`,
-                     add_context_from_internet: false
-                   });
-
+                 {selectedTemplate.sections
+                   ?.filter(s => s.enabled !== false)
+                   .sort((a, b) => (a.order || 0) - (b.order || 0))
+                   .map((section, idx) => (
+                     <div key={section.id || idx} className="bg-white rounded-xl border-2 border-blue-300 shadow-sm overflow-hidden">
+                       <div className="bg-blue-50 px-4 py-3 border-b border-blue-200">
+                         <h3 className="font-semibold text-slate-900">{section.name}</h3>
+                         {section.description && (
+                           <p className="text-xs text-slate-600 mt-1">{section.description}</p>
+                         )}
+                       </div>
+                       <div className="p-4">
+                         <EditableSection
+                           icon={FileText}
+                           title=""
+                           color="blue"
+                           value={note[section.id] || ""}
+                           field={section.id}
+                           type="textarea"
+                           onUpdate={async (field, value) => {
+                             await base44.entities.ClinicalNote.update(noteId, { [field]: value });
+                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                           }}
+                           onReanalyze={async (field) => {
+                             if (!note?.raw_note) return null;
+                             const prompt = section.ai_instructions 
+                               ? `${section.ai_instructions}\n\nClinical note: ${note.raw_note}`
+                               : `Extract information for the section "${section.name}" from this clinical note: ${note.raw_note}`;
+                             const result = await base44.integrations.Core.InvokeLLM({
+                               prompt,
+                               add_context_from_internet: false
+                             });
+                             await base44.entities.ClinicalNote.update(noteId, { [field]: result });
+                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                             return result;
+                           }}
+                           hideBorder={true}
+                           noteContext={{
+                             diagnoses: note.diagnoses,
+                             assessment: note.assessment
+                           }}
+                         />
+                       </div>
+                     </div>
+                   ))}
+               </div>
+             ) : (
+               <StructuredNotePreview 
+                 note={note} 
+                 onUpdate={(field, value) => {
                    queryClient.setQueryData(["note", noteId], (old) => ({
                      ...old,
-                     [field]: result
+                     [field]: value
                    }));
+                 }}
+                 onReanalyze={async (field) => {
+                   if (!note?.raw_note) return null;
 
-                   return result;
-                 } catch (error) {
-                   console.error(`Failed to reanalyze ${field}:`, error);
-                   return null;
-                 }
-               }}
-               guidelineRecommendations={[]}
-               loadingGuidelines={false}
-               medicationRecommendations={[]}
-               loadingMedications={false}
-             />
+                   const fieldPrompts = {
+                     chief_complaint: `Extract the chief complaint from this clinical note: ${note.raw_note}`,
+                     history_of_present_illness: `Extract the history of present illness with OLDCARTS elements from this clinical note: ${note.raw_note}`,
+                     medical_history: `Extract the relevant medical history from this clinical note: ${note.raw_note}`,
+                     review_of_systems: `Extract the review of systems from this clinical note: ${note.raw_note}`,
+                     physical_exam: `Extract the physical examination findings from this clinical note: ${note.raw_note}`,
+                     assessment: `Extract the assessment from this clinical note: ${note.raw_note}`,
+                     plan: `Extract the treatment plan from this clinical note: ${note.raw_note}`,
+                     clinical_impression: `Extract the clinical impression from this clinical note: ${note.raw_note}`,
+                   };
+
+                   try {
+                     const result = await base44.integrations.Core.InvokeLLM({
+                       prompt: fieldPrompts[field] || `Reanalyze this field in the clinical note: ${note.raw_note}`,
+                       add_context_from_internet: false
+                     });
+
+                     queryClient.setQueryData(["note", noteId], (old) => ({
+                       ...old,
+                       [field]: result
+                     }));
+
+                     return result;
+                   } catch (error) {
+                     console.error(`Failed to reanalyze ${field}:`, error);
+                     return null;
+                   }
+                 }}
+                 guidelineRecommendations={[]}
+                 loadingGuidelines={false}
+                 medicationRecommendations={[]}
+                 loadingMedications={false}
+               />
+             )}
 
              {/* Assessment Section */}
              <div className="bg-white rounded-xl border-2 border-purple-300 shadow-sm overflow-hidden mt-6">

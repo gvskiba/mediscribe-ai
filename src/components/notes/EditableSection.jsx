@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Loader2, Plus, X, FileText, Bold, Italic, List } from "lucide-react";
+import { Sparkles, Loader2, Plus, X, FileText, Bold, Italic, List, ListOrdered } from "lucide-react";
 import SnippetPicker from "../snippets/SnippetPicker";
 import SectionAISuggestions from "./SectionAISuggestions";
 
@@ -186,6 +186,8 @@ export default function EditableSection({
       formattedText = `*${selectedText}*`;
     } else if (format === "bullet") {
       formattedText = selectedText.split("\n").map(line => `• ${line}`).join("\n");
+    } else if (format === "numbered") {
+      formattedText = selectedText.split("\n").map((line, i) => `${i + 1}. ${line}`).join("\n");
     }
 
     const newText = text.substring(0, start) + formattedText + text.substring(end);
@@ -274,50 +276,60 @@ export default function EditableSection({
         )}
 
         <div className="space-y-2">
-           {type === "textarea" ? (
-             <>
-               <div className="flex gap-1 mb-2">
-                 <Button
-                   size="sm"
-                   variant="outline"
-                   onMouseDown={(e) => applyFormatting("bold", e)}
-                   className="h-8 w-8 p-0 rounded-lg"
-                   title="Bold"
-                 >
-                   <Bold className="w-4 h-4" />
-                 </Button>
-                 <Button
-                   size="sm"
-                   variant="outline"
-                   onMouseDown={(e) => applyFormatting("italic", e)}
-                   className="h-8 w-8 p-0 rounded-lg"
-                   title="Italic"
-                 >
-                   <Italic className="w-4 h-4" />
-                 </Button>
-                 <Button
-                   size="sm"
-                   variant="outline"
-                   onMouseDown={(e) => applyFormatting("bullet", e)}
-                   className="h-8 w-8 p-0 rounded-lg"
-                   title="Bullet points"
-                 >
-                   <List className="w-4 h-4" />
-                 </Button>
-               </div>
-               <Textarea
-                   ref={textareaRef}
-                   value={editValue || ""}
-                   onChange={(e) => {
-                     handleChange(e.target.value);
-                     if (!showSuggestions) setShowSuggestions(true);
-                   }}
-                   onBlur={(e) => handleChange(e.target.value)}
-                   onMouseUp={handleTextareaSelect}
-                   onKeyUp={handleTextareaSelect}
-                   className="min-h-[100px] rounded-xl border-slate-300 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm text-slate-900 transition-all hover:border-slate-400"
-                   placeholder={getPlaceholder()}
-                 />
+          {type === "textarea" ? (
+            <>
+              <div className="flex gap-1 mb-2 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onMouseDown={(e) => applyFormatting("bold", e)}
+                  className="h-8 w-8 p-0 rounded-md hover:bg-slate-100 hover:text-slate-900 border-0 bg-white shadow-sm"
+                  title="Bold (select text first)"
+                >
+                  <Bold className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onMouseDown={(e) => applyFormatting("italic", e)}
+                  className="h-8 w-8 p-0 rounded-md hover:bg-slate-100 hover:text-slate-900 border-0 bg-white shadow-sm"
+                  title="Italic (select text first)"
+                >
+                  <Italic className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onMouseDown={(e) => applyFormatting("bullet", e)}
+                  className="h-8 w-8 p-0 rounded-md hover:bg-slate-100 hover:text-slate-900 border-0 bg-white shadow-sm"
+                  title="Bullet list (select text first)"
+                >
+                  <List className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onMouseDown={(e) => applyFormatting("numbered", e)}
+                  className="h-8 w-8 p-0 rounded-md hover:bg-slate-100 hover:text-slate-900 border-0 bg-white shadow-sm"
+                  title="Numbered list (select text first)"
+                >
+                  <ListOrdered className="w-4 h-4" />
+                </Button>
+              </div>
+              <Textarea
+                  ref={textareaRef}
+                  value={editValue || ""}
+                  onChange={(e) => {
+                    handleChange(e.target.value);
+                    if (!showSuggestions) setShowSuggestions(true);
+                  }}
+                  onBlur={(e) => handleChange(e.target.value)}
+                  onMouseUp={handleTextareaSelect}
+                  onKeyUp={handleTextareaSelect}
+                  className="min-h-[100px] rounded-xl border-slate-300 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm text-slate-900 transition-all hover:border-slate-400"
+                  placeholder={getPlaceholder()}
+                  spellCheck="true"
+                />
                {showSuggestions && ["history_of_present_illness", "assessment", "plan"].includes(field) && (
                  <SectionAISuggestions
                    field={field}
@@ -358,13 +370,14 @@ export default function EditableSection({
               </Button>
             </div>
           ) : (
-            <Input
-              value={editValue || ""}
-              onChange={(e) => handleChange(e.target.value)}
-              onBlur={(e) => handleChange(e.target.value)}
-              className="rounded-xl border-slate-300 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm text-slate-900 transition-all hover:border-slate-400"
-              placeholder={getPlaceholder()}
-            />
+           <Input
+             value={editValue || ""}
+             onChange={(e) => handleChange(e.target.value)}
+             onBlur={(e) => handleChange(e.target.value)}
+             className="rounded-xl border-slate-300 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm text-slate-900 transition-all hover:border-slate-400"
+             placeholder={getPlaceholder()}
+             spellCheck="true"
+           />
           )}
         </div>
 

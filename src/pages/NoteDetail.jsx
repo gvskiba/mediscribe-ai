@@ -47,6 +47,7 @@ import LabsAnalysis from "../components/notes/LabsAnalysis";
 import EKGAnalysis from "../components/notes/EKGAnalysis";
 import DiagnosisICD10Matcher from "../components/notes/DiagnosisICD10Matcher";
 import DiagnosisRecommendations from "../components/notes/DiagnosisRecommendations";
+import MedicalLiteratureSearch from "../components/research/MedicalLiteratureSearch";
 import { useAutoSave } from "../components/utils/useAutoSave";
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
@@ -64,6 +65,7 @@ const TAB_ROWS = [
     { id: 'mdm', label: 'MDM', icon: AlertCircle },
     { id: 'treatments', label: 'Treatment', icon: Pill },
     { id: 'guidelines', label: 'Guidelines', icon: Code },
+    { id: 'research', label: 'Research', icon: BookOpen },
     { id: 'finalize', label: 'Finalize', icon: Check },
     { id: 'patient_education', label: 'Patient Education', icon: BookOpen },
     ]
@@ -2729,6 +2731,28 @@ Generated: ${new Date().toLocaleString()}
                        </div>
                      )}
                    </div>
+                 </TabsContent>
+
+                 {/* Research Tab */}
+                 <TabsContent value="research" className="p-6 overflow-y-auto">
+                   <MedicalLiteratureSearch
+                     noteContext={{
+                       chief_complaint: note.chief_complaint,
+                       diagnoses: note.diagnoses,
+                       assessment: note.assessment,
+                       plan: note.plan
+                     }}
+                     onAddToNote={async (citationText) => {
+                       try {
+                         const updatedPlan = (note.plan || "") + "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nREFERENCES\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" + citationText;
+                         await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
+                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                       } catch (error) {
+                         console.error("Failed to add citations:", error);
+                         toast.error("Failed to add citations to note");
+                       }
+                     }}
+                   />
                  </TabsContent>
 
                  {/* Diagnoses Tab */}

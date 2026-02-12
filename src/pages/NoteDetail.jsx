@@ -979,9 +979,96 @@ Generated: ${new Date().toLocaleString()}
               }}
               className="text-3xl font-bold text-slate-900 bg-transparent border-b-2 border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none transition-colors px-1 -ml-1"
             />
-            <Badge variant="outline" className={statusColors[note.status] || statusColors.draft}>
-              {note.status || "draft"}
-            </Badge>
+          </div>
+
+          {/* Chief Complaint Input */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-5 mb-4">
+            <label className="block text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-blue-600" />
+              Chief Complaint
+            </label>
+            <textarea
+              value={note.chief_complaint || ""}
+              onChange={(e) => {
+                queryClient.setQueryData(["note", noteId], (old) => ({
+                  ...old,
+                  chief_complaint: e.target.value
+                }));
+              }}
+              onBlur={async (e) => {
+                await base44.entities.ClinicalNote.update(noteId, { chief_complaint: e.target.value });
+              }}
+              placeholder="Enter the patient's chief complaint (e.g., 'Chest pain for 2 hours', 'Persistent cough for 1 week')..."
+              className="w-full px-4 py-3 rounded-lg border-2 border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all text-slate-900 placeholder:text-slate-400 resize-none"
+              rows="3"
+            />
+            <Button
+              onClick={async () => {
+                if (!note.chief_complaint) {
+                  toast.error("Please enter a chief complaint first");
+                  return;
+                }
+
+                setExtractingData(true);
+                try {
+                  const result = await base44.integrations.Core.InvokeLLM({
+                    prompt: `Based on this chief complaint, generate a comprehensive clinical note structure with detailed, clinically relevant content for each section.
+
+        CHIEF COMPLAINT: ${note.chief_complaint}
+
+        PATIENT CONTEXT:
+        - Name: ${note.patient_name}
+        - Age: ${note.patient_age || "Not specified"}
+        - Gender: ${note.patient_gender || "Not specified"}
+
+        Generate detailed content for each section as if you're documenting a real patient encounter. Include:
+        1. History of Present Illness: Detailed OLDCARTS analysis (Onset, Location, Duration, Character, Aggravating/Alleviating factors, Radiation, Timing, Severity)
+        2. Review of Systems: Systematic review covering all relevant systems
+        3. Physical Exam: Expected findings based on the chief complaint
+        4. Assessment: Clinical interpretation and likely diagnoses
+        5. Plan: Evidence-based diagnostic workup and treatment recommendations
+        6. Clinical Impression: Overall clinical picture
+        7. Diagnoses: List of primary and differential diagnoses
+        8. Medications: Recommended medications with dosing if applicable
+        9. Medical History: Relevant past medical history considerations
+
+        Make everything clinically realistic and professionally documented.`,
+                    add_context_from_internet: true,
+                    response_json_schema: {
+                      type: "object",
+                      properties: {
+                        history_of_present_illness: { type: "string" },
+                        medical_history: { type: "string" },
+                        review_of_systems: { type: "string" },
+                        physical_exam: { type: "string" },
+                        assessment: { type: "string" },
+                        plan: { type: "string" },
+                        clinical_impression: { type: "string" },
+                        diagnoses: { type: "array", items: { type: "string" } },
+                        medications: { type: "array", items: { type: "string" } }
+                      }
+                    }
+                  });
+
+                  await base44.entities.ClinicalNote.update(noteId, result);
+                  queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                  toast.success("Clinical note generated from chief complaint");
+                } catch (error) {
+                  console.error("Failed to generate from chief complaint:", error);
+                  toast.error("Failed to generate clinical note");
+                } finally {
+                  setExtractingData(false);
+                }
+              }}
+              disabled={extractingData || !note.chief_complaint}
+              className="mt-4 w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl gap-2 shadow-lg"
+            >
+              {extractingData ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Generating Clinical Note...</>
+              ) : (
+                <><Sparkles className="w-4 h-4" /> Generate Complete Note from Chief Complaint</>
+              )}
+            </Button>
           </div>
           <div className="grid sm:grid-cols-2 gap-3 text-sm text-slate-600">
             {note.patient_id && (

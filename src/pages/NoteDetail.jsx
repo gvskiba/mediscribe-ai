@@ -745,7 +745,9 @@ CRITICAL: The diagnoses field MUST always contain at least one entry. If no diag
       console.log("Diagnoses from LLM:", result.diagnoses, "Type:", Array.isArray(result.diagnoses));
 
       // Update note with extracted data
-      const updateData = {};
+      const updateData = {
+        status: "finalized"
+      };
 
       // Filter diagnoses to only include ICD-10 coded ones (format: CODE - Description)
             if (result.diagnoses) {
@@ -764,12 +766,10 @@ CRITICAL: The diagnoses field MUST always contain at least one entry. If no diag
       if (result.review_of_systems) updateData.review_of_systems = result.review_of_systems;
       if (result.physical_exam) updateData.physical_exam = result.physical_exam;
 
-      if (Object.keys(updateData).length > 0) {
-        console.log("Updating note with:", updateData);
-        await base44.entities.ClinicalNote.update(noteId, { ...updateData, status: "finalized" });
-        queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-        toast.success("Note processed and finalized");
-      }
+      console.log("Updating note with:", updateData);
+      await base44.entities.ClinicalNote.update(noteId, updateData);
+      queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+      toast.success("Note processed and finalized");
     } catch (error) {
       console.error("Failed to extract data:", error);
       toast.error("Failed to extract data from note");

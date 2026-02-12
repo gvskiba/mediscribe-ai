@@ -1646,13 +1646,62 @@ Generated: ${new Date().toLocaleString()}
                </div>
              </div>
 
-             {/* Clinical Impression Section */}
+             {/* Final Impression Section */}
              <div className="bg-white rounded-xl border-2 border-purple-300 shadow-sm overflow-hidden mt-6">
-               <div className="bg-purple-50 px-4 py-3 border-b border-purple-200 flex items-center gap-2">
-                 <Sparkles className="w-5 h-5 text-purple-600" />
-                 <h3 className="font-semibold text-slate-900">Clinical Impression</h3>
+               <div className="bg-purple-50 px-4 py-3 border-b border-purple-200 flex items-center justify-between">
+                 <div className="flex items-center gap-2">
+                   <Sparkles className="w-5 h-5 text-purple-600" />
+                   <h3 className="font-semibold text-slate-900">Final Impression</h3>
+                 </div>
+                 {differentialDiagnosis.length > 0 && (
+                   <Button
+                     size="sm"
+                     variant="ghost"
+                     onClick={() => {
+                       const topDiagnosis = differentialDiagnosis[0];
+                       const impressionText = `${topDiagnosis.diagnosis}\n\nClinical Reasoning: ${topDiagnosis.clinical_reasoning}\n\nRed Flags to Monitor:\n${topDiagnosis.red_flags_to_monitor?.map(flag => `• ${flag}`).join('\n') || 'None'}`;
+                       queryClient.setQueryData(["note", noteId], (old) => ({
+                         ...old,
+                         clinical_impression: (old.clinical_impression || "") + "\n\n" + impressionText
+                       }));
+                     }}
+                     className="text-purple-700 hover:bg-purple-100"
+                   >
+                     <Plus className="w-3 h-3 mr-1" /> Add Top Diagnosis
+                   </Button>
+                 )}
                </div>
                <div className="p-4">
+                 {differentialDiagnosis.length > 0 && (
+                   <div className="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                     <p className="text-xs font-semibold text-indigo-900 mb-3">Available Differential Diagnoses (click to add):</p>
+                     <div className="space-y-2">
+                       {differentialDiagnosis.slice(0, 3).map((diff, idx) => (
+                         <button
+                           key={idx}
+                           onClick={async () => {
+                             const impressionText = `\n\n${diff.diagnosis}\n\nLikelihood: ${diff.likelihood_rank}/5\n\nClinical Reasoning: ${diff.clinical_reasoning}\n\nRed Flags to Monitor:\n${diff.red_flags_to_monitor?.map(flag => `• ${flag}`).join('\n') || 'None'}`;
+                             const updatedImpression = (note.clinical_impression || "") + impressionText;
+                             await base44.entities.ClinicalNote.update(noteId, { clinical_impression: updatedImpression });
+                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                             toast.success("Diagnosis added to final impression");
+                           }}
+                           className="w-full text-left p-3 bg-white rounded-lg border border-indigo-200 hover:border-indigo-400 hover:shadow-sm transition-all"
+                         >
+                           <div className="flex items-center justify-between mb-1">
+                             <p className="font-semibold text-sm text-slate-900">{diff.diagnosis}</p>
+                             <div className="flex items-center gap-2">
+                               <span className="text-xs text-indigo-700 font-medium">Likelihood: {diff.likelihood_rank}/5</span>
+                               <Plus className="w-4 h-4 text-indigo-600" />
+                             </div>
+                           </div>
+                           <p className="text-xs text-slate-600 line-clamp-2">{diff.clinical_reasoning}</p>
+                         </button>
+                       ))}
+                     </div>
+                   </div>
+                 )}
+
                  <EditableSection
                    icon={Sparkles}
                    title=""

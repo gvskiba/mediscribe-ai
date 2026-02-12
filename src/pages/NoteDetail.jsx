@@ -1295,6 +1295,72 @@ Generated: ${new Date().toLocaleString()}
 
            {/* Clinical Note Tab */}
            <TabsContent value="clinical" className="p-6 overflow-y-auto">
+             {/* AI Note Summary */}
+             <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border-2 border-cyan-300 rounded-xl p-5 mb-6">
+               <div className="flex items-center justify-between mb-3">
+                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                   <Sparkles className="w-5 h-5 text-cyan-600" />
+                   Clinical Note Summary
+                 </h3>
+                 <Button
+                   size="sm"
+                   variant="ghost"
+                   onClick={async () => {
+                     setGeneratingSummary(true);
+                     try {
+                       const result = await base44.integrations.Core.InvokeLLM({
+                         prompt: `Generate a concise clinical note summary (2-3 paragraphs maximum) for this patient encounter:
+
+           PATIENT: ${note.patient_name}
+           CHIEF COMPLAINT: ${note.chief_complaint || "Not specified"}
+
+           CLINICAL INFORMATION:
+           - History: ${note.history_of_present_illness || "Not documented"}
+           - Physical Exam: ${note.physical_exam || "Not documented"}
+           - Assessment: ${note.assessment || "Not documented"}
+           - Plan: ${note.plan || "Not documented"}
+
+           DIAGNOSES: ${note.diagnoses?.join(", ") || "None documented"}
+           MEDICATIONS: ${note.medications?.join(", ") || "None prescribed"}
+
+           Create a brief, professionally written summary that captures:
+           1. Key clinical presentation and findings
+           2. Primary diagnoses
+           3. Treatment plan and follow-up
+
+           Keep it concise and focused on the most critical information.`,
+                         add_context_from_internet: false
+                       });
+
+                       await base44.entities.ClinicalNote.update(noteId, { summary: result });
+                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                       toast.success("Summary generated");
+                     } catch (error) {
+                       console.error("Failed to generate summary:", error);
+                       toast.error("Failed to generate summary");
+                     } finally {
+                       setGeneratingSummary(false);
+                     }
+                   }}
+                   disabled={generatingSummary}
+                   className="text-cyan-700 hover:bg-cyan-100"
+                 >
+                   {generatingSummary ? (
+                     <><Loader2 className="w-3 h-3 animate-spin" /> Generating...</>
+                   ) : (
+                     <><Sparkles className="w-3 h-3" /> {note.summary ? "Regenerate" : "Generate"}</>
+                   )}
+                 </Button>
+               </div>
+               {note.summary ? (
+                 <div className="bg-white rounded-lg p-4 border border-cyan-200">
+                   <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{note.summary}</p>
+                 </div>
+               ) : (
+                 <p className="text-sm text-slate-500 italic">Click "Generate" to create an AI summary of this clinical note</p>
+               )}
+             </div>
+
              {/* AI-Powered Clinical Reasoning */}
              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-300 rounded-xl p-5 mb-6">
                <div className="flex items-start justify-between gap-4">

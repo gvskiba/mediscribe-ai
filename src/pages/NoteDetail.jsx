@@ -113,9 +113,7 @@ export default function NoteDetail() {
     const saved = localStorage.getItem('noteDetailTabOrder');
     return saved ? JSON.parse(saved) : TAB_CONFIGS.map(t => t.id);
   });
-  const [showCreateNote, setShowCreateNote] = useState(false);
-  const [creationMethod, setCreationMethod] = useState(null);
-  const [specialty, setSpecialty] = useState("");
+
 
   const handleDragEnd = (result) => {
     const { source, destination } = result;
@@ -971,10 +969,17 @@ Generated: ${new Date().toLocaleString()}
         {/* Quick Actions */}
         <div className="border-t border-slate-200 pt-6 flex gap-3">
           <Button 
-            onClick={() => setShowCreateNote(!showCreateNote)}
+            onClick={async () => {
+              const newNote = await base44.entities.ClinicalNote.create({
+                raw_note: "",
+                patient_name: "New Patient",
+                status: "draft"
+              });
+              window.location.href = createPageUrl(`NoteDetail?id=${newNote.id}`);
+            }}
             className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl gap-2 shadow-lg shadow-blue-500/30 font-semibold transition-all"
           >
-            <Plus className="w-4 h-4" /> {showCreateNote ? "Close" : "New Note"}
+            <Plus className="w-4 h-4" /> New Note
           </Button>
           <Link to={createPageUrl("NotesLibrary")} className="flex-1">
             <Button variant="outline" className="w-full rounded-xl gap-2 border-slate-300 hover:bg-slate-50">
@@ -984,130 +989,7 @@ Generated: ${new Date().toLocaleString()}
         </div>
       </motion.div>
 
-      {/* Create New Note Section */}
-      {showCreateNote && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8"
-        >
-          {!creationMethod ? (
-            <div className="space-y-8">
-              <div className="text-center space-y-3">
-                <h2 className="text-3xl font-bold text-slate-900">Create New Clinical Note</h2>
-                <p className="text-lg text-slate-600">Choose your preferred input method</p>
-              </div>
 
-              <div className="bg-blue-50 p-6 rounded-xl border border-blue-200">
-                <label className="text-sm font-semibold text-slate-900 mb-3 block">Medical Specialty</label>
-                <select
-                  value={specialty}
-                  onChange={(e) => setSpecialty(e.target.value)}
-                  className="bg-white text-slate-900 px-4 py-2.5 rounded-lg w-full border border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="">Select a specialty...</option>
-                  <option value="General Medicine">General Medicine</option>
-                  <option value="Cardiology">Cardiology</option>
-                  <option value="Pulmonology">Pulmonology</option>
-                  <option value="Gastroenterology">Gastroenterology</option>
-                  <option value="Neurology">Neurology</option>
-                  <option value="Endocrinology">Endocrinology</option>
-                  <option value="Rheumatology">Rheumatology</option>
-                  <option value="Orthopedics">Orthopedics</option>
-                  <option value="Surgery">Surgery</option>
-                  <option value="Emergency Medicine">Emergency Medicine</option>
-                  <option value="Psychiatry">Psychiatry</option>
-                  <option value="Pediatrics">Pediatrics</option>
-                  <option value="Oncology">Oncology</option>
-                </select>
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-6">
-                <button
-                  onClick={() => setCreationMethod("form")}
-                  className="group relative overflow-hidden bg-gradient-to-br from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-2xl p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl shadow-xl"
-                >
-                  <div className="relative space-y-4">
-                    <div className="w-16 h-16 mx-auto bg-white/20 rounded-2xl flex items-center justify-center">
-                      <FileText className="w-8 h-8 text-white" />
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="text-2xl font-bold text-white">AI Assisted Form</h3>
-                      <p className="text-emerald-100">Guided form for patient self-entry with AI pre-fill</p>
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => setCreationMethod("dictation")}
-                  className="group relative overflow-hidden bg-gradient-to-br from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-2xl p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl shadow-xl"
-                >
-                  <div className="relative space-y-4">
-                    <div className="w-16 h-16 mx-auto bg-white/20 rounded-2xl flex items-center justify-center">
-                      <Sparkles className="w-8 h-8 text-white" />
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="text-2xl font-bold text-white">Dictation Transcription</h3>
-                      <p className="text-purple-100">Speak or type your clinical note naturally</p>
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => setCreationMethod("detailed")}
-                  className="group relative overflow-hidden bg-gradient-to-br from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-2xl p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl shadow-xl"
-                >
-                  <div className="relative space-y-4">
-                    <div className="w-16 h-16 mx-auto bg-white/20 rounded-2xl flex items-center justify-center">
-                      <FileText className="w-8 h-8 text-white" />
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="text-2xl font-bold text-white">Detailed Clinical Input</h3>
-                      <p className="text-blue-100">Enter information in structured sections</p>
-                    </div>
-                  </div>
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <button
-                onClick={() => setCreationMethod(null)}
-                className="text-sm text-blue-600 hover:text-blue-700 underline"
-              >
-                ← Back to method selection
-              </button>
-              <p className="text-slate-600 text-center">Note creation interface will be loaded here based on method: {creationMethod}</p>
-              <div className="flex gap-3">
-                <Button
-                  onClick={() => {
-                    setShowCreateNote(false);
-                    setCreationMethod(null);
-                  }}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={async () => {
-                    const newNote = await base44.entities.ClinicalNote.create({
-                      raw_note: "Sample note",
-                      specialty: specialty,
-                      patient_name: "New Patient",
-                      status: "finalized"
-                    });
-                    window.location.href = createPageUrl(`NoteDetail?id=${newNote.id}`);
-                  }}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Create Note
-                </Button>
-              </div>
-            </div>
-          )}
-        </motion.div>
-      )}
 
       {/* Tabbed Interface */}
        <motion.div

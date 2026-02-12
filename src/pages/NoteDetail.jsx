@@ -164,7 +164,7 @@ export default function NoteDetail() {
       }
     },
     interval: 30000,
-    enabled: note?.status === "draft",
+    enabled: false,
   });
 
   const finalizeMutation = useMutation({
@@ -202,9 +202,9 @@ export default function NoteDetail() {
     }
   };
 
-  // Auto-generate summary, guidelines, and ICD-10 suggestions for finalized notes
+  // Auto-generate summary, guidelines, and ICD-10 suggestions for all notes
   useEffect(() => {
-    if (note && note.status === "finalized") {
+    if (note) {
       if (!patientSummary && !generatingSummary) {
         generateSummary();
       }
@@ -224,7 +224,7 @@ export default function NoteDetail() {
         generateDifferentialDiagnosis();
       }
     }
-  }, [note?.id, note?.status, patientSummary, generatingSummary, icd10Suggestions.length, loadingIcd10, guidelineRecommendations.length, loadingGuidelines, drugInteractions.length, loadingInteractions, followUpTests.length, loadingFollowUp, differentialDiagnosis.length, loadingDifferential]);
+  }, [note?.id, patientSummary, generatingSummary, icd10Suggestions.length, loadingIcd10, guidelineRecommendations.length, loadingGuidelines, drugInteractions.length, loadingInteractions, followUpTests.length, loadingFollowUp, differentialDiagnosis.length, loadingDifferential]);
 
   const generateSummary = async () => {
     if (!note) return;
@@ -966,13 +966,7 @@ Generated: ${new Date().toLocaleString()}
           </div>
         </div>
 
-        {/* Auto-save Status */}
-        {note?.status === "draft" && (
-          <div className="mb-6 flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 text-xs font-medium text-blue-700 w-fit">
-            <Clock className="w-3 h-3 animate-pulse" />
-            {isSaving ? "Saving..." : "Auto-saving..."}
-          </div>
-        )}
+
 
         {/* Quick Actions */}
         <div className="border-t border-slate-200 pt-6 flex gap-3">
@@ -1170,60 +1164,55 @@ Generated: ${new Date().toLocaleString()}
 
            {/* Summary Tab */}
            <TabsContent value="summary" className="p-6 space-y-4 overflow-y-auto">
-             {note.status === "finalized" && (
-               <EditableSummaryGenerator
-                 note={note}
-                 {note.status === "finalized" && (
-                   <div className="flex gap-3 mb-4">
-                     <NoteRevisionHistory
-                       noteId={noteId}
-                       onRestore={(revision) => {
-                         const restoredData = {
-                           chief_complaint: revision.chief_complaint,
-                           history_of_present_illness: revision.history_of_present_illness,
-                           assessment: revision.assessment,
-                           plan: revision.plan,
-                           diagnoses: revision.diagnoses,
-                           medications: revision.medications,
-                         };
-                         setNoteData(restoredData);
-                         queryClient.setQueryData(["note", noteId], (old) => ({
-                           ...old,
-                           ...restoredData,
-                         }));
-                       }}
-                     />
-                     {patientSummary && (
-                       <Button
-                         variant="outline"
-                         onClick={generateSummary}
-                         disabled={generatingSummary}
-                         className="flex-1 rounded-xl gap-2 border-cyan-300 hover:bg-cyan-50 disabled:opacity-50"
-                       >
-                         {generatingSummary ? (
-                           <><Loader2 className="w-4 h-4 animate-spin" /> Regenerating...</>
-                         ) : (
-                           <><Sparkles className="w-4 h-4" /> Regenerate</>
-                         )}
-                       </Button>
-                     )}
-                   </div>
-                 )}
-                 {generatingSummary && !patientSummary && (
-                   <div className="flex items-center gap-3 text-slate-500 py-8">
-                     <Loader2 className="w-5 h-5 animate-spin" />
-                     <span className="text-sm">Generating AI summary...</span>
-                   </div>
-                 )}
-                 {patientSummary ? (
-                   <PatientSummary 
-                     summary={patientSummary} 
-                     patientName={note.patient_name}
-                     onDownload={downloadSummary}
-                   />
-                 ) : !generatingSummary && (
-                   <p className="text-sm text-slate-500 text-center py-8">No summary available yet</p>
-                 )}
+             <div className="flex gap-3 mb-4">
+               <NoteRevisionHistory
+                 noteId={noteId}
+                 onRestore={(revision) => {
+                   const restoredData = {
+                     chief_complaint: revision.chief_complaint,
+                     history_of_present_illness: revision.history_of_present_illness,
+                     assessment: revision.assessment,
+                     plan: revision.plan,
+                     diagnoses: revision.diagnoses,
+                     medications: revision.medications,
+                   };
+                   setNoteData(restoredData);
+                   queryClient.setQueryData(["note", noteId], (old) => ({
+                     ...old,
+                     ...restoredData,
+                   }));
+                 }}
+               />
+               {patientSummary && (
+                 <Button
+                   variant="outline"
+                   onClick={generateSummary}
+                   disabled={generatingSummary}
+                   className="flex-1 rounded-xl gap-2 border-cyan-300 hover:bg-cyan-50 disabled:opacity-50"
+                 >
+                   {generatingSummary ? (
+                     <><Loader2 className="w-4 h-4 animate-spin" /> Regenerating...</>
+                   ) : (
+                     <><Sparkles className="w-4 h-4" /> Regenerate</>
+                   )}
+                 </Button>
+               )}
+             </div>
+             {generatingSummary && !patientSummary && (
+               <div className="flex items-center gap-3 text-slate-500 py-8">
+                 <Loader2 className="w-5 h-5 animate-spin" />
+                 <span className="text-sm">Generating AI summary...</span>
+               </div>
+             )}
+             {patientSummary ? (
+               <PatientSummary 
+                 summary={patientSummary} 
+                 patientName={note.patient_name}
+                 onDownload={downloadSummary}
+               />
+             ) : !generatingSummary && (
+               <p className="text-sm text-slate-500 text-center py-8">No summary available yet</p>
+             )}
              </TabsContent>
 
            {/* Clinical Note Tab */}
@@ -1512,27 +1501,6 @@ Generated: ${new Date().toLocaleString()}
                />
              </div>
 
-             {/* Generate Diagnoses Section */}
-             {note.status === "draft" && (
-               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
-                 <div>
-                   <p className="text-sm font-semibold text-blue-900">Generate Diagnoses</p>
-                   <p className="text-xs text-blue-700 mt-1">Extract diagnoses from your clinical note using AI</p>
-                 </div>
-                 <Button
-                   onClick={extractStructuredData}
-                   disabled={extractingData || !note.raw_note}
-                   className="gap-2 bg-blue-600 hover:bg-blue-700 text-white flex-shrink-0"
-                 >
-                   {extractingData ? (
-                     <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
-                   ) : (
-                     <><Sparkles className="w-4 h-4" /> Generate</>
-                   )}
-                 </Button>
-               </div>
-             )}
-
              {note.status === "finalized" && (
                <>
                  {/* Drug-Drug Interactions */}
@@ -1791,10 +1759,9 @@ Generated: ${new Date().toLocaleString()}
                      <p className="text-sm text-slate-500 text-center py-8">No guideline recommendations available</p>
                    )}
                  </div>
-         </>
-       )}
+                 </>
 
-     </TabsContent>
+                 </TabsContent>
 
                  {/* Result Analysis Tab */}
                  <TabsContent value="imaging" className="p-6 space-y-6 overflow-y-auto">
@@ -1928,9 +1895,8 @@ Generated: ${new Date().toLocaleString()}
                      </div>
                    </div>
 
-                   {note.status === "finalized" && (
-                     <>
-                       {/* Differential Diagnosis */}
+                   <>
+                     {/* Differential Diagnosis */}
                        <div>
                          <div className="flex items-center justify-between mb-4">
                            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
@@ -2101,9 +2067,8 @@ Generated: ${new Date().toLocaleString()}
                      </div>
                    </div>
 
-                   {note.status === "finalized" && (
-                     <>
-                       {/* Follow-up Tests */}
+                   <>
+                     {/* Follow-up Tests */}
                        <div>
                          <div className="flex items-center justify-between mb-4">
                            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
@@ -2139,9 +2104,8 @@ Generated: ${new Date().toLocaleString()}
                            <p className="text-sm text-slate-500 text-center py-8">No follow-up tests suggested</p>
                          )}
                        </div>
-                     </>
-                   )}
-                 </TabsContent>
+                       </>
+                       </TabsContent>
 
                  {/* Treatments Tab */}
                  <TabsContent value="treatments" className="p-6 space-y-6 overflow-y-auto">
@@ -2198,7 +2162,7 @@ Generated: ${new Date().toLocaleString()}
                        </div>
                      </div>
 
-                     {note.status === "finalized" && note.medications && note.medications.length > 0 && (
+                     {note.medications && note.medications.length > 0 && (
                        <>
                          {/* Drug Interactions */}
                          <div>
@@ -2624,9 +2588,8 @@ Generated: ${new Date().toLocaleString()}
                  </div>
                )}
 
-               {note.status === "finalized" && (
-                 <div className="pt-6 border-t border-slate-200">
-                   <DiagnosisRecommendations
+               <div className="pt-6 border-t border-slate-200">
+                 <DiagnosisRecommendations
                      note={note}
                      onAddDiagnoses={async (newDiagnoses) => {
                        const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
@@ -2634,8 +2597,7 @@ Generated: ${new Date().toLocaleString()}
                        queryClient.invalidateQueries({ queryKey: ["note", noteId] });
                      }}
                    />
-                 </div>
-               )}
+               </div>
 
                <div className="pt-6 border-t border-slate-200">
                  <div className="flex items-center justify-between mb-5">

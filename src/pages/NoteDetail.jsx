@@ -1452,30 +1452,28 @@ Generated: ${new Date().toLocaleString()}
                        </div>
                      )}
 
-                     {note.status === "finalized" && (
-                       <div className="mt-4 pt-4 border-t border-slate-200">
-                         <ICD10CodeSearch
-                           suggestions={icd10Suggestions}
-                           diagnoses={note.diagnoses}
-                           onAddDiagnoses={async (newDiagnoses) => {
-                             const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
-                             await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
-                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                           }}
-                         />
-                       </div>
-                     )}
-                   </div>
-                 ) : (
-                   <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+                     <div className="mt-4 pt-4 border-t border-slate-200">
+                       <ICD10CodeSearch
+                         suggestions={icd10Suggestions}
+                         diagnoses={note.diagnoses}
+                         onAddDiagnoses={async (newDiagnoses) => {
+                           const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
+                           await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                         }}
+                       />
+                     </div>
+                     </div>
+                     ) : (
+                     <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
                      <Code className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                      <p className="text-sm font-medium text-slate-600">No diagnoses added yet</p>
                      <p className="text-xs text-slate-500 mt-1">Diagnoses will appear here after extraction or manual entry</p>
-                   </div>
-                 )}
+                     </div>
+                     )}
 
-                 {note.status === "finalized" && (!note.diagnoses || note.diagnoses.length === 0) && (
-                   <div className="mt-4">
+                     {(!note.diagnoses || note.diagnoses.length === 0) && (
+                     <div className="mt-4">
                      <ICD10CodeSearch
                        suggestions={icd10Suggestions}
                        diagnoses={note.diagnoses || []}
@@ -1484,11 +1482,11 @@ Generated: ${new Date().toLocaleString()}
                          queryClient.invalidateQueries({ queryKey: ["note", noteId] });
                        }}
                      />
-                   </div>
-                 )}
-               </div>
-             </div>
-             </TabsContent>
+                     </div>
+                     )}
+                     </div>
+                     </div>
+                     </TabsContent>
 
              {/* Guidelines & Codes Tab */}
            <TabsContent value="guidelines" className="p-6 space-y-6 overflow-y-auto">
@@ -2634,19 +2632,17 @@ Generated: ${new Date().toLocaleString()}
                        </div>
                      )}
 
-                     {note.status === "finalized" && (
-                       <div className="mt-4 pt-4 border-t border-slate-200">
-                         <ICD10CodeSearch
-                           suggestions={icd10Suggestions}
-                           diagnoses={note.diagnoses}
-                           onAddDiagnoses={async (newDiagnoses) => {
-                             const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
-                             await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
-                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                           }}
-                         />
-                       </div>
-                     )}
+                     <div className="mt-4 pt-4 border-t border-slate-200">
+                       <ICD10CodeSearch
+                         suggestions={icd10Suggestions}
+                         diagnoses={note.diagnoses}
+                         onAddDiagnoses={async (newDiagnoses) => {
+                           const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
+                           await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                         }}
+                       />
+                     </div>
                    </div>
                  ) : (
                    <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
@@ -2656,7 +2652,7 @@ Generated: ${new Date().toLocaleString()}
                    </div>
                  )}
 
-                 {note.status === "finalized" && (!note.diagnoses || note.diagnoses.length === 0) && (
+                 {(!note.diagnoses || note.diagnoses.length === 0) && (
                    <div className="mt-4">
                      <ICD10CodeSearch
                        suggestions={icd10Suggestions}

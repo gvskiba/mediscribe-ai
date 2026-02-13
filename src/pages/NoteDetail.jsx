@@ -51,6 +51,7 @@ import MedicalLiteratureSearch from "../components/research/MedicalLiteratureSea
 import VitalSignsInput from "../components/notes/VitalSignsInput";
 import { useAutoSave } from "../components/utils/useAutoSave";
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import ClinicalDecisionSupport from "../components/notes/ClinicalDecisionSupport";
 
 const TAB_ROWS = [
   [
@@ -1275,6 +1276,17 @@ Generated: ${new Date().toLocaleString()}
                  }}
                />
              </div>
+
+             {/* Real-time Diagnostic Suggestions */}
+             <ClinicalDecisionSupport
+               type="diagnostic"
+               note={note}
+               onAddToNote={async (diagnosis) => {
+                 const updatedDiagnoses = [...(note.diagnoses || []), diagnosis];
+                 await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
+                 queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+               }}
+             />
              
              {/* Next Button */}
              <div className="flex justify-end pt-4 border-t border-slate-200">
@@ -2270,6 +2282,17 @@ Generated: ${new Date().toLocaleString()}
                      {/* Assessments Tab */}
                  <TabsContent value="assessment_plan" className="p-6 space-y-6 overflow-y-auto">
                    <>
+                     {/* Real-time Treatment Pathway Recommendations */}
+                     <ClinicalDecisionSupport
+                       type="treatment_pathways"
+                       note={note}
+                       onAddToNote={async (pathwayText) => {
+                         const updatedPlan = (note.plan || "") + "\n\n" + pathwayText;
+                         await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
+                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                       }}
+                     />
+
                      {/* Differential Diagnosis */}
                        <div>
                          <div className="flex items-center justify-between mb-4">
@@ -2476,6 +2499,17 @@ Generated: ${new Date().toLocaleString()}
                  {/* Treatments Tab */}
                  <TabsContent value="treatments" className="p-6 space-y-6 overflow-y-auto">
                    <div className="space-y-6">
+                     {/* Real-time Medication Safety Alerts */}
+                     <ClinicalDecisionSupport
+                       type="contraindications"
+                       note={note}
+                       onAddToNote={async (warning) => {
+                         const updatedPlan = (note.plan || "") + "\n\n⚠️ MEDICATION ALERT: " + warning;
+                         await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
+                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                       }}
+                     />
+
                      {/* Treatment Plan Selector */}
                      <div className="bg-white rounded-xl border-2 border-green-300 shadow-sm overflow-hidden">
                        <div className="bg-green-50 px-4 py-3 border-b border-green-200 flex items-center gap-2">

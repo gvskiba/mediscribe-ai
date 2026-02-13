@@ -985,7 +985,12 @@ Generated: ${new Date().toLocaleString()}
             />
           </div>
 
-
+          {note.chief_complaint && (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3 mb-3">
+              <p className="text-xs font-semibold text-blue-900 mb-1">Chief Complaint:</p>
+              <p className="text-sm text-slate-700">{note.chief_complaint}</p>
+            </div>
+          )}
 
           <div className="grid sm:grid-cols-2 gap-3 text-sm text-slate-600">
             {note.patient_id && (
@@ -1110,7 +1115,7 @@ Generated: ${new Date().toLocaleString()}
          animate={{ opacity: 1, y: 0 }}
          className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
        >
-         <Tabs defaultValue="summary" className="w-full flex items-start">
+         <Tabs defaultValue="chief_complaint" className="w-full flex items-start">
              <DragDropContext onDragEnd={handleDragEnd}>
                <div className="w-64 bg-slate-50 border-r border-slate-200 flex-shrink-0 sticky top-8 self-start" style={{ maxHeight: 'calc(100vh - 4rem)' }}>
                  <Droppable droppableId="tabs-list" type="TAB">

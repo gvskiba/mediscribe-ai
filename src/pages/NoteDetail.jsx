@@ -52,6 +52,7 @@ import VitalSignsInput from "../components/notes/VitalSignsInput";
 import { useAutoSave } from "../components/utils/useAutoSave";
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import ClinicalDecisionSupport from "../components/notes/ClinicalDecisionSupport";
+import AITreatmentPlanAnalyzer from "../components/notes/AITreatmentPlanAnalyzer";
 
 const TAB_ROWS = [
   [
@@ -2418,6 +2419,16 @@ Generated: ${new Date().toLocaleString()}
 
                      {/* Plan Tab */}
                  <TabsContent value="plan" className="p-6 space-y-6 overflow-y-auto">
+                   {/* AI Treatment Plan Analyzer */}
+                   <AITreatmentPlanAnalyzer
+                     note={note}
+                     onAddToPlan={async (planText) => {
+                       const updatedPlan = (note.plan || "") + planText;
+                       await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
+                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                     }}
+                   />
+
                    <div className="bg-white rounded-xl border-2 border-green-300 shadow-sm overflow-hidden">
                      <div className="bg-green-50 px-4 py-3 border-b border-green-200 flex items-center gap-2">
                        <FileText className="w-5 h-5 text-green-600" />

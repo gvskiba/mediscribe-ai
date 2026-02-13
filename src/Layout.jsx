@@ -12,7 +12,8 @@ import {
   Activity,
   ChevronDown,
   ChevronLeft,
-  ChevronRight } from
+  ChevronRight,
+  Sparkles } from
 "lucide-react";
 import { base44 } from "@/api/base44Client";
 import GlobalSearchBar from "./components/search/GlobalSearchBar";

@@ -5,13 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { Activity, Thermometer, Heart, Wind, Droplet, Weight, Ruler, Save, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
-export default function VitalSignsInput({ vitalSigns, onSave, readOnly = false }) {
-  const [editing, setEditing] = useState(false);
+export default function VitalSignsInput({ vitalSigns, onChange, onSave, readOnly = false }) {
   const [values, setValues] = useState(vitalSigns || {});
 
   const handleSave = () => {
-    onSave(values);
-    setEditing(false);
+    if (onSave) {
+      onSave(values);
+    } else if (onChange) {
+      onChange(values);
+    }
   };
 
   const handleCancel = () => {
@@ -20,13 +22,17 @@ export default function VitalSignsInput({ vitalSigns, onSave, readOnly = false }
   };
 
   const updateValue = (field, key, value) => {
-    setValues(prev => ({
-      ...prev,
+    const newValues = {
+      ...values,
       [field]: {
-        ...prev[field],
+        ...values[field],
         [key]: value
       }
-    }));
+    };
+    setValues(newValues);
+    if (onChange) {
+      onChange(newValues);
+    }
   };
 
   const vitalSignConfig = [
@@ -117,42 +123,18 @@ export default function VitalSignsInput({ vitalSigns, onSave, readOnly = false }
     vitalSigns[key] && Object.keys(vitalSigns[key]).some(k => vitalSigns[key][k] !== undefined && vitalSigns[key][k] !== "")
   );
 
-  if (!editing && !hasAnyData && readOnly) {
+  if (!hasAnyData && readOnly) {
     return null;
   }
 
   return (
-    <Card className="p-5 bg-gradient-to-br from-slate-50 to-white border-slate-200">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-          <Activity className="w-4 h-4 text-blue-600" />
-          Vital Signs
-        </h3>
-        {!readOnly && (
-          editing ? (
-            <div className="flex gap-2">
-              <Button size="sm" onClick={handleSave} className="h-8 gap-1.5">
-                <Save className="w-3.5 h-3.5" />
-                Save
-              </Button>
-              <Button size="sm" variant="outline" onClick={handleCancel} className="h-8">
-                <X className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-          ) : (
-            <Button size="sm" variant="outline" onClick={() => setEditing(true)} className="h-8">
-              {hasAnyData ? "Edit" : "Add"}
-            </Button>
-          )
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
         {vitalSignConfig.map(({ field, label, icon: Icon, color, inputs }) => {
-          const data = editing ? values[field] : vitalSigns?.[field];
+          const data = values[field] || vitalSigns?.[field];
           const hasValue = data && Object.keys(data).some(k => data[k] !== undefined && data[k] !== "");
 
-          if (!editing && !hasValue) return null;
+          if (!hasValue && readOnly) return null;
 
           return (
             <div key={field} className={`rounded-lg border p-3 ${colorMap[color]}`}>
@@ -160,47 +142,37 @@ export default function VitalSignsInput({ vitalSigns, onSave, readOnly = false }
                 <Icon className="w-4 h-4" />
                 <span className="text-xs font-semibold">{label}</span>
               </div>
-              {editing ? (
-                <div className="flex gap-2 flex-wrap">
-                  {inputs.map(input => (
-                    <div key={input.key} className="flex-1 min-w-[60px]">
-                      {input.type === "select" ? (
-                        <select
-                          value={data?.[input.key] || input.options[0]}
-                          onChange={(e) => updateValue(field, input.key, e.target.value)}
-                          className="w-full px-2 py-1 text-sm rounded border border-slate-300 bg-white"
-                        >
-                          {input.options.map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <Input
-                          type={input.type}
-                          value={data?.[input.key] ?? (input.value || "")}
-                          onChange={(e) => updateValue(field, input.key, input.type === "number" ? parseFloat(e.target.value) : e.target.value)}
-                          placeholder={input.placeholder}
-                          step={input.step}
-                          disabled={input.disabled}
-                          className="h-8 text-sm bg-white"
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-base font-bold">
-                  {field === "blood_pressure" ? (
-                    `${data?.systolic || "-"}/${data?.diastolic || "-"} ${data?.unit || "mmHg"}`
-                  ) : (
-                    `${data?.value || "-"} ${data?.unit || ""}`
-                  )}
-                </div>
-              )}
+              <div className="flex gap-2 flex-wrap">
+                {inputs.map(input => (
+                  <div key={input.key} className="flex-1 min-w-[60px]">
+                    {input.type === "select" ? (
+                      <select
+                        value={data?.[input.key] || input.options[0]}
+                        onChange={(e) => updateValue(field, input.key, e.target.value)}
+                        className="w-full px-2 py-1.5 text-sm rounded-lg border border-slate-300 bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all"
+                      >
+                        {input.options.map(opt => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <Input
+                        type={input.type}
+                        value={data?.[input.key] ?? (input.value || "")}
+                        onChange={(e) => updateValue(field, input.key, input.type === "number" ? parseFloat(e.target.value) || "" : e.target.value)}
+                        placeholder={input.placeholder}
+                        step={input.step}
+                        disabled={input.disabled}
+                        className="h-9 text-sm bg-white border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           );
         })}
       </div>
-    </Card>
+    </div>
   );
 }

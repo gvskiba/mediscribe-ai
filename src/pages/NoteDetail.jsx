@@ -54,6 +54,7 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import ClinicalDecisionSupport from "../components/notes/ClinicalDecisionSupport";
 import AITreatmentPlanAnalyzer from "../components/notes/AITreatmentPlanAnalyzer";
 import ClinicalNoteView from "../components/notes/ClinicalNoteView";
+import SmartTemplateApplicator from "../components/templates/SmartTemplateApplicator";
 
 const TAB_ROWS = [
   [
@@ -1378,7 +1379,18 @@ Generated: ${new Date().toLocaleString()}
              </TabsContent>
 
              {/* Clinical Note Tab */}
-             <TabsContent value="clinical" className="p-6 overflow-y-auto">
+             <TabsContent value="clinical" className="p-6 overflow-y-auto space-y-6">
+             {/* Smart Template Applicator */}
+             <SmartTemplateApplicator
+              noteId={noteId}
+              note={note}
+              templates={templates}
+              onTemplateApplied={() => {
+                queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+              }}
+             />
+
+             {/* Clinical Note View */}
              <ClinicalNoteView
               note={note}
               onUpdate={async (field, value) => {

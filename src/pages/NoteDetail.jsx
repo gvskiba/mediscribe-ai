@@ -55,6 +55,7 @@ import ClinicalDecisionSupport from "../components/notes/ClinicalDecisionSupport
 import AITreatmentPlanAnalyzer from "../components/notes/AITreatmentPlanAnalyzer";
 import ClinicalNoteView from "../components/notes/ClinicalNoteView";
 import SmartTemplateApplicator from "../components/templates/SmartTemplateApplicator";
+import AIDocumentationAssistant from "../components/ai/AIDocumentationAssistant";
 
 const TAB_ROWS = [
   [
@@ -1174,9 +1175,18 @@ Generated: ${new Date().toLocaleString()}
            <div className="flex-1 overflow-hidden">
 
            {/* Chief Complaint Tab */}
-           <TabsContent value="chief_complaint" className="p-6 space-y-6 overflow-y-auto">
-             {/* Chief Complaint Input */}
-             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-5">
+              <TabsContent value="chief_complaint" className="p-6 space-y-6 overflow-y-auto">
+                {/* AI Documentation Assistant */}
+                <AIDocumentationAssistant
+                  note={note}
+                  onUpdateNote={async (updates) => {
+                    await base44.entities.ClinicalNote.update(noteId, updates);
+                    queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                  }}
+                />
+
+                {/* Chief Complaint Input */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-5">
                <label className="block text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
                  <Sparkles className="w-5 h-5 text-blue-600" />
                  Chief Complaint

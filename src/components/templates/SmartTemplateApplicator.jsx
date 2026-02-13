@@ -188,6 +188,6 @@ Generate detailed, clinically appropriate content for the "${section.name}" sect
           </motion.div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 };

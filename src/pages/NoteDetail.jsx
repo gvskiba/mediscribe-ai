@@ -118,7 +118,14 @@ export default function NoteDetail() {
     return saved ? JSON.parse(saved) : TAB_CONFIGS.map(t => t.id);
   });
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [activeTab, setActiveTab] = useState("chief_complaint");
 
+  const handleNext = () => {
+    const currentIndex = tabOrder.indexOf(activeTab);
+    if (currentIndex < tabOrder.length - 1) {
+      setActiveTab(tabOrder[currentIndex + 1]);
+    }
+  };
 
   const handleDragEnd = (result) => {
     const { source, destination } = result;
@@ -1115,7 +1122,7 @@ Generated: ${new Date().toLocaleString()}
          animate={{ opacity: 1, y: 0 }}
          className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
        >
-         <Tabs defaultValue="chief_complaint" className="w-full flex items-start">
+         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex items-start">
              <DragDropContext onDragEnd={handleDragEnd}>
                <div className="w-64 bg-slate-50 border-r border-slate-200 flex-shrink-0 sticky top-8 self-start" style={{ maxHeight: 'calc(100vh - 4rem)' }}>
                  <Droppable droppableId="tabs-list" type="TAB">
@@ -1268,6 +1275,13 @@ Generated: ${new Date().toLocaleString()}
                  }}
                />
              </div>
+             
+             {/* Next Button */}
+             <div className="flex justify-end pt-4 border-t border-slate-200">
+               <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                 Next <ArrowLeft className="w-4 h-4 rotate-180" />
+               </Button>
+             </div>
            </TabsContent>
 
            {/* Summary Tab */}
@@ -1321,9 +1335,16 @@ Generated: ${new Date().toLocaleString()}
              ) : !generatingSummary && (
                <p className="text-sm text-slate-500 text-center py-8">No summary available yet</p>
              )}
+
+             {/* Next Button */}
+             <div className="flex justify-end pt-4 border-t border-slate-200">
+               <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                 Next <ArrowLeft className="w-4 h-4 rotate-180" />
+               </Button>
+             </div>
              </TabsContent>
 
-           {/* Clinical Note Tab */}
+             {/* Clinical Note Tab */}
            <TabsContent value="clinical" className="p-6 overflow-y-auto">
              {/* AI Note Summary */}
              <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border-2 border-cyan-300 rounded-xl p-5 mb-6">
@@ -1834,9 +1855,16 @@ Generated: ${new Date().toLocaleString()}
                      )}
                      </div>
                      </div>
+
+                     {/* Next Button */}
+                     <div className="flex justify-end pt-4 border-t border-slate-200">
+                       <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                         Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                       </Button>
+                     </div>
                      </TabsContent>
 
-             {/* Guidelines & Codes Tab */}
+                     {/* Guidelines & Codes Tab */}
            <TabsContent value="guidelines" className="p-6 space-y-6 overflow-y-auto">
              {/* Clinical Guidelines Panel */}
              <div>
@@ -2209,11 +2237,18 @@ Generated: ${new Date().toLocaleString()}
                        }}
                      />
                      </div>
+
+                     {/* Next Button */}
+                     <div className="flex justify-end pt-4 border-t border-slate-200">
+                       <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                         Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                       </Button>
+                     </div>
                      </TabsContent>
 
 
 
-                 {/* Assessments Tab */}
+                     {/* Assessments Tab */}
                  <TabsContent value="assessment_plan" className="p-6 space-y-6 overflow-y-auto">
                    <>
                      {/* Differential Diagnosis */}
@@ -2285,11 +2320,18 @@ Generated: ${new Date().toLocaleString()}
 
 
                      </>
-                   )}
+                     )}
 
-                 </TabsContent>
+                     {/* Next Button */}
+                     <div className="flex justify-end pt-4 border-t border-slate-200">
+                     <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                       Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                     </Button>
+                     </div>
 
-                 {/* MDM Tab */}
+                     </TabsContent>
+
+                     {/* MDM Tab */}
                  <TabsContent value="mdm" className="p-6 space-y-6 overflow-y-auto">
                    <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-sm overflow-hidden">
                      <div className="bg-indigo-50 px-4 py-3 border-b border-indigo-200 flex items-center gap-2">
@@ -2299,10 +2341,17 @@ Generated: ${new Date().toLocaleString()}
                      <div className="p-4">
                        <p className="text-sm text-slate-500">MDM content will be available here</p>
                      </div>
-                   </div>
-                 </TabsContent>
+                     </div>
 
-                 {/* Plan Tab */}
+                     {/* Next Button */}
+                     <div className="flex justify-end pt-4 border-t border-slate-200">
+                     <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                       Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                     </Button>
+                     </div>
+                     </TabsContent>
+
+                     {/* Plan Tab */}
                  <TabsContent value="plan" className="p-6 space-y-6 overflow-y-auto">
                    <div className="bg-white rounded-xl border-2 border-green-300 shadow-sm overflow-hidden">
                      <div className="bg-green-50 px-4 py-3 border-b border-green-200 flex items-center gap-2">
@@ -2497,11 +2546,18 @@ Generated: ${new Date().toLocaleString()}
                            </div>
                          )}
                        </>
-                     )}
-                   </div>
-                 </TabsContent>
+                       )}
+                       </div>
 
-                 {/* Final Impression Tab */}
+                       {/* Next Button */}
+                       <div className="flex justify-end pt-4 border-t border-slate-200">
+                       <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                       Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                       </Button>
+                       </div>
+                       </TabsContent>
+
+                       {/* Final Impression Tab */}
                  <TabsContent value="final_impression" className="p-6 space-y-6 overflow-y-auto">
                    <div className="bg-white rounded-xl border-2 border-slate-300 shadow-sm overflow-hidden">
                      <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center gap-2">
@@ -2511,10 +2567,17 @@ Generated: ${new Date().toLocaleString()}
                      <div className="p-4">
                        <p className="text-sm text-slate-500">Final impression content will be available here</p>
                      </div>
-                   </div>
-                 </TabsContent>
+                     </div>
 
-                 {/* Finalize Note Tab */}
+                     {/* Next Button */}
+                     <div className="flex justify-end pt-4 border-t border-slate-200">
+                     <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                       Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                     </Button>
+                     </div>
+                     </TabsContent>
+
+                     {/* Finalize Note Tab */}
                  <TabsContent value="finalize" className="p-6 space-y-6 overflow-y-auto">
                    <div className="max-w-2xl mx-auto space-y-6">
                      <div className="text-center mb-8">
@@ -2596,10 +2659,17 @@ Generated: ${new Date().toLocaleString()}
                          Created on {note.created_date ? format(new Date(note.created_date), "MMMM d, yyyy 'at' h:mm a") : "N/A"}
                        </p>
                      </div>
-                   </div>
-                 </TabsContent>
+                     </div>
 
-                 {/* Patient Education Tab */}
+                     {/* Next Button */}
+                     <div className="flex justify-end pt-4 border-t border-slate-200">
+                     <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                       Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                     </Button>
+                     </div>
+                     </TabsContent>
+
+                     {/* Patient Education Tab */}
                  <TabsContent value="patient_education" className="p-6 space-y-6 overflow-y-auto">
                    <div className="max-w-3xl mx-auto space-y-6">
                      {/* Generate Education Button */}
@@ -2781,9 +2851,16 @@ Generated: ${new Date().toLocaleString()}
                        }
                      }}
                    />
-                 </TabsContent>
 
-                 {/* Diagnoses Tab */}
+                   {/* Next Button */}
+                   <div className="flex justify-end pt-4 border-t border-slate-200">
+                     <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                       Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                     </Button>
+                   </div>
+                   </TabsContent>
+
+                   {/* Diagnoses Tab */}
                  <TabsContent value="diagnoses" className="p-6 overflow-y-auto">
              <div className="flex gap-3 mb-6">
                <Button
@@ -2971,10 +3048,17 @@ Generated: ${new Date().toLocaleString()}
                    )}
                  </div>
                )}
-             </div>
-           </TabsContent>
-           </div>
-         </Tabs>
+               </div>
+
+               {/* Next Button */}
+               <div className="flex justify-end pt-4 border-t border-slate-200">
+               <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                 Next <ArrowLeft className="w-4 h-4 rotate-180" />
+               </Button>
+               </div>
+               </TabsContent>
+               </div>
+               </Tabs>
        </motion.div>
 
 

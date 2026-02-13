@@ -48,6 +48,7 @@ import EKGAnalysis from "../components/notes/EKGAnalysis";
 import DiagnosisICD10Matcher from "../components/notes/DiagnosisICD10Matcher";
 import DiagnosisRecommendations from "../components/notes/DiagnosisRecommendations";
 import MedicalLiteratureSearch from "../components/research/MedicalLiteratureSearch";
+import VitalSignsInput from "../components/notes/VitalSignsInput";
 import { useAutoSave } from "../components/utils/useAutoSave";
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
@@ -1072,6 +1073,22 @@ Generated: ${new Date().toLocaleString()}
               )}
             </Button>
           </div>
+
+          {/* Vital Signs Section */}
+          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-300 rounded-xl p-5 mb-4">
+            <label className="block text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+              <Activity className="w-5 h-5 text-emerald-600" />
+              Vital Signs
+            </label>
+            <VitalSignsInput
+              vitalSigns={note.vital_signs || {}}
+              onChange={async (newVitalSigns) => {
+                await base44.entities.ClinicalNote.update(noteId, { vital_signs: newVitalSigns });
+                queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+              }}
+            />
+          </div>
+
           <div className="grid sm:grid-cols-2 gap-3 text-sm text-slate-600">
             {note.patient_id && (
               <span className="flex items-center gap-2"><Hash className="w-4 h-4 text-slate-400" /> {note.patient_id}</span>

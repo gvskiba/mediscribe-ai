@@ -1327,11 +1327,30 @@ Generated: ${new Date().toLocaleString()}
                </div>
              )}
              {patientSummary ? (
-               <PatientSummary 
-                 summary={patientSummary} 
-                 patientName={note.patient_name}
-                 onDownload={downloadSummary}
-               />
+               <>
+                 <PatientSummary 
+                   summary={patientSummary} 
+                   patientName={note.patient_name}
+                   onDownload={downloadSummary}
+                 />
+                 <Button
+                   onClick={async () => {
+                     try {
+                       await base44.entities.ClinicalNote.update(noteId, { 
+                         summary: patientSummary.overview 
+                       });
+                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                       toast.success("Summary added to clinical note");
+                     } catch (error) {
+                       console.error("Failed to add summary:", error);
+                       toast.error("Failed to add summary");
+                     }
+                   }}
+                   className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white gap-2 mt-4"
+                 >
+                   <Plus className="w-4 h-4" /> Add Summary to Clinical Note
+                 </Button>
+               </>
              ) : !generatingSummary && (
                <p className="text-sm text-slate-500 text-center py-8">No summary available yet</p>
              )}
@@ -2301,9 +2320,32 @@ Generated: ${new Date().toLocaleString()}
                          ) : (
                            <p className="text-sm text-slate-500 text-center py-8">No differential diagnosis generated</p>
                          )}
-                       </div>
 
-                       {/* ICD-10 Code Mapper - Direct Search & Selection */}
+                         {differentialDiagnosis.length > 0 && (
+                           <Button
+                             onClick={async () => {
+                               try {
+                                 const diffText = differentialDiagnosis.map((diff, idx) => 
+                                   `${idx + 1}. ${diff.diagnosis} (Likelihood: ${diff.likelihood_rank}/5)\n   ${diff.clinical_reasoning}`
+                                 ).join('\n\n');
+
+                                 const updatedAssessment = (note.assessment || "") + "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nDIFFERENTIAL DIAGNOSIS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" + diffText;
+                                 await base44.entities.ClinicalNote.update(noteId, { assessment: updatedAssessment });
+                                 queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                 toast.success("Differential diagnosis added to assessment");
+                               } catch (error) {
+                                 console.error("Failed to add differential:", error);
+                                 toast.error("Failed to add differential diagnosis");
+                               }
+                             }}
+                             className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white gap-2"
+                           >
+                             <Plus className="w-4 h-4" /> Add Differential to Assessment
+                           </Button>
+                         )}
+                         </div>
+
+                         {/* ICD-10 Code Mapper - Direct Search & Selection */}
                        <div className="border-2 border-blue-300 bg-blue-50 rounded-xl p-5">
                          <h3 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
                            <Sparkles className="w-4 h-4" />
@@ -2526,10 +2568,33 @@ Generated: ${new Date().toLocaleString()}
                                <Check className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
                                <p className="text-sm text-emerald-700 font-medium">No significant drug interactions detected</p>
                              </div>
-                           )}
-                         </div>
+                             )}
+                             </div>
 
-                         {/* Treatment Plan from Plan Section */}
+                             {drugInteractions.length > 0 && (
+                             <Button
+                             onClick={async () => {
+                               try {
+                                 const interactionText = drugInteractions.map((int, idx) => 
+                                   `${idx + 1}. ${int.drug_pair} (${int.severity.toUpperCase()})\n   Mechanism: ${int.mechanism}\n   Recommendation: ${int.recommendation}`
+                                 ).join('\n\n');
+
+                                 const updatedPlan = (note.plan || "") + "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nDRUG INTERACTION ALERTS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" + interactionText;
+                                 await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
+                                 queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                 toast.success("Drug interactions added to plan");
+                               } catch (error) {
+                                 console.error("Failed to add interactions:", error);
+                                 toast.error("Failed to add drug interactions");
+                               }
+                             }}
+                             className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white gap-2 mt-4"
+                             >
+                             <Plus className="w-4 h-4" /> Add Drug Interactions to Plan
+                             </Button>
+                             )}
+
+                             {/* Treatment Plan from Plan Section */}
                          {note.plan && (
                            <div>
                              <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
@@ -2565,7 +2630,40 @@ Generated: ${new Date().toLocaleString()}
                        <h3 className="font-semibold text-slate-900">Final Impression</h3>
                      </div>
                      <div className="p-4">
-                       <p className="text-sm text-slate-500">Final impression content will be available here</p>
+                       <EditableSection
+                         icon={Sparkles}
+                         title=""
+                         color="slate"
+                         value={note.clinical_impression || ""}
+                         field="clinical_impression"
+                         type="textarea"
+                         onUpdate={async (field, value) => {
+                           await base44.entities.ClinicalNote.update(noteId, { [field]: value });
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                         }}
+                         onReanalyze={async (field) => {
+                           if (!note?.assessment || !note?.diagnoses) return null;
+                           const result = await base44.integrations.Core.InvokeLLM({
+                             prompt: `Generate a comprehensive clinical impression/final diagnosis based on the following clinical information:
+
+                     ASSESSMENT: ${note.assessment}
+                     DIAGNOSES: ${note.diagnoses?.join(", ") || "None"}
+                     PLAN: ${note.plan || "None"}
+
+                     Create a concise final impression that synthesizes the key clinical findings and primary diagnoses.`,
+                             add_context_from_internet: false
+                           });
+                           await base44.entities.ClinicalNote.update(noteId, { [field]: result });
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                           return result;
+                         }}
+                         hideBorder={true}
+                         noteContext={{
+                           assessment: note.assessment,
+                           diagnoses: note.diagnoses,
+                           plan: note.plan
+                         }}
+                       />
                      </div>
                      </div>
 
@@ -2819,19 +2917,49 @@ Generated: ${new Date().toLocaleString()}
                              </div>
                            ))}
                          </div>
-                       </>
-                     )}
+                       <div className="flex gap-3 mt-6">
+                         <Button
+                           onClick={async () => {
+                             try {
+                               let educationText = "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nPATIENT EDUCATION\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
+                               patientEducation.forEach((material) => {
+                                 educationText += `${material.diagnosis}:\n`;
+                                 educationText += `${material.what_is_it}\n\n`;
+                                 if (material.self_care?.length > 0) {
+                                   educationText += `What You Can Do:\n${material.self_care.map(c => `• ${c}`).join('\n')}\n\n`;
+                                 }
+                                 if (material.when_to_seek_help?.length > 0) {
+                                   educationText += `When to Seek Help:\n${material.when_to_seek_help.map(h => `⚠️ ${h}`).join('\n')}\n\n`;
+                                 }
+                               });
 
-                     {!patientEducation && !generatingEducation && (
-                       <div className="text-center py-12">
-                         <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                         <p className="text-slate-500">Patient education will appear here after generation</p>
+                               const updatedPlan = (note.plan || "") + educationText;
+                               await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
+                               queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                               toast.success("Patient education added to plan");
+                             } catch (error) {
+                               console.error("Failed to add education:", error);
+                               toast.error("Failed to add patient education");
+                             }
+                           }}
+                           className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white gap-2"
+                         >
+                           <Plus className="w-4 h-4" /> Add to Plan
+                         </Button>
                        </div>
-                     )}
-                   </div>
-                 </TabsContent>
+                       </>
+                       )}
 
-                 {/* Research Tab */}
+                       {!patientEducation && !generatingEducation && (
+                       <div className="text-center py-12">
+                       <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                       <p className="text-slate-500">Patient education will appear here after generation</p>
+                       </div>
+                       )}
+                       </div>
+                       </TabsContent>
+
+                       {/* Research Tab */}
                  <TabsContent value="research" className="p-6 overflow-y-auto">
                    <MedicalLiteratureSearch
                      noteContext={{

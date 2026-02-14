@@ -1958,56 +1958,18 @@ Generated: ${new Date().toLocaleString()}
                      </TabsContent>
 
                      {/* Plan Tab */}
-                 <TabsContent value="plan" className="p-6 space-y-6 overflow-y-auto">
-                   {/* AI Treatment Plan Analyzer */}
-                   <AITreatmentPlanAnalyzer
-                     note={note}
-                     onAddToPlan={async (planText) => {
-                       const updatedPlan = (note.plan || "") + planText;
-                       await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
-                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                     }}
-                   />
-
-                   <div className="bg-white rounded-xl border-2 border-green-300 shadow-sm overflow-hidden">
-                     <div className="bg-green-50 px-4 py-3 border-b border-green-200 flex items-center gap-2">
-                       <FileText className="w-5 h-5 text-green-600" />
-                       <h3 className="font-semibold text-slate-900">Treatment Plan</h3>
-                     </div>
-                     <div className="p-4">
-                       <EditableSection
-                         icon={FileText}
-                         title=""
-                         color="green"
-                         value={note.plan || ""}
-                         field="plan"
-                         type="textarea"
-                         onUpdate={async (field, value) => {
-                           await base44.entities.ClinicalNote.update(noteId, { [field]: value });
-                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                         }}
-                         onReanalyze={async (field) => {
-                           if (!note?.raw_note) return null;
-                           const result = await base44.integrations.Core.InvokeLLM({
-                             prompt: `Extract the treatment plan from this clinical note: ${note.raw_note}`,
-                             add_context_from_internet: false
-                           });
-                           await base44.entities.ClinicalNote.update(noteId, { [field]: result });
-                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                           return result;
-                         }}
-                         hideBorder={true}
-                         enableStructuredList={true}
+                     <TabsContent value="plan" className="p-6 space-y-6 overflow-y-auto">
+                       {/* AI Treatment Plan Analyzer */}
+                       <AITreatmentPlanAnalyzer
                          note={note}
-                         noteContext={{
-                           assessment: note.assessment,
-                           diagnoses: note.diagnoses
+                         onAddToPlan={async (planText) => {
+                           const updatedPlan = (note.plan || "") + planText;
+                           await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
                          }}
                        />
-                     </div>
-                   </div>
 
-                   <>
+                       <>
                      {/* Follow-up Tests */}
                        <div>
                          <div className="flex items-center justify-between mb-4">

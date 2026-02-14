@@ -225,6 +225,23 @@ export default function NoteDetail() {
 
   // Auto-generate summary, guidelines, and ICD-10 suggestions for all notes
   useEffect(() => {
+    // Listen for the custom event to add ER protocol to plan
+    const handleAddERProtocol = async (event) => {
+      const protocolText = event.detail;
+      const updatedPlan = (note.plan || "") + protocolText;
+      await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
+      queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+      toast.success("ER protocol added to treatment plan");
+    };
+
+    window.addEventListener('addERProtocolToPlan', handleAddERProtocol);
+
+    return () => {
+      window.removeEventListener('addERProtocolToPlan', handleAddERProtocol);
+    };
+  }, [note, noteId, queryClient]);
+
+  useEffect(() => {
     if (note) {
       if (!patientSummary && !generatingSummary) {
         generateSummary();
@@ -2032,6 +2049,298 @@ Generated: ${new Date().toLocaleString()}
                  {/* Treatments Tab */}
                  <TabsContent value="treatments" className="p-6 space-y-6 overflow-y-auto">
                    <div className="space-y-6">
+                     {/* AI Initial ER Treatment Recommendations */}
+                     <div className="bg-white rounded-xl border-2 border-emerald-300 shadow-sm overflow-hidden">
+                       <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-3 text-white flex items-center justify-between">
+                         <div>
+                           <h3 className="font-semibold flex items-center gap-2">
+                             <Activity className="w-5 h-5" />
+                             Initial ER Treatment Protocol
+                           </h3>
+                           <p className="text-emerald-50 text-xs mt-1">AI-generated evidence-based emergency interventions</p>
+                         </div>
+                       </div>
+                       <div className="p-4">
+                         {note.chief_complaint ? (
+                           <Button
+                             onClick={async () => {
+                               try {
+                                 const result = await base44.integrations.Core.InvokeLLM({
+                                   prompt: `Generate comprehensive Initial ER Treatment Protocol for the following patient presentation:
+
+                 CHIEF COMPLAINT: ${note.chief_complaint}
+                 HISTORY: ${note.history_of_present_illness || "Not documented"}
+                 VITAL SIGNS: ${note.vital_signs ? JSON.stringify(note.vital_signs) : "Not documented"}
+                 ASSESSMENT: ${note.assessment || "Not documented"}
+
+                 Provide immediate ER treatment recommendations including:
+                 1. IMMEDIATE INTERVENTIONS (within 5 minutes)
+                 - Critical stabilization measures
+                 - Oxygen therapy if needed
+                 - IV access and fluids
+                 - Monitoring requirements
+
+                 2. MEDICATIONS
+                 - Emergency medications with specific dosing
+                 - Route, dose, frequency
+                 - Clinical indication for each
+
+                 3. DIAGNOSTIC WORKUP
+                 - Urgent labs and tests
+                 - Imaging studies
+                 - Priority order
+
+                 4. MONITORING & REASSESSMENT
+                 - Vital signs frequency
+                 - Clinical parameters to track
+                 - Reassessment intervals
+
+                 5. DISPOSITION CONSIDERATIONS
+                 - Admission criteria
+                 - Observation vs discharge
+                 - Specialist consultation triggers
+
+                 Base recommendations on current emergency medicine guidelines and best practices.`,
+                                   add_context_from_internet: true,
+                                   response_json_schema: {
+                                     type: "object",
+                                     properties: {
+                                       immediate_interventions: {
+                                         type: "array",
+                                         items: {
+                                           type: "object",
+                                           properties: {
+                                             intervention: { type: "string" },
+                                             timing: { type: "string" },
+                                             rationale: { type: "string" }
+                                           }
+                                         }
+                                       },
+                                       emergency_medications: {
+                                         type: "array",
+                                         items: {
+                                           type: "object",
+                                           properties: {
+                                             medication: { type: "string" },
+                                             dose: { type: "string" },
+                                             route: { type: "string" },
+                                             indication: { type: "string" }
+                                           }
+                                         }
+                                       },
+                                       diagnostic_workup: {
+                                         type: "array",
+                                         items: {
+                                           type: "object",
+                                           properties: {
+                                             test: { type: "string" },
+                                             priority: { type: "string" },
+                                             rationale: { type: "string" }
+                                           }
+                                         }
+                                       },
+                                       monitoring: {
+                                         type: "object",
+                                         properties: {
+                                           vital_signs_frequency: { type: "string" },
+                                           parameters_to_track: { type: "array", items: { type: "string" } },
+                                           reassessment_interval: { type: "string" }
+                                         }
+                                       },
+                                       disposition: {
+                                         type: "object",
+                                         properties: {
+                                           admission_criteria: { type: "array", items: { type: "string" } },
+                                           observation_criteria: { type: "array", items: { type: "string" } },
+                                           consultation_triggers: { type: "array", items: { type: "string" } }
+                                         }
+                                       }
+                                     }
+                                   }
+                                 });
+
+                                 // Display the recommendations
+                                 const recommendationsDiv = document.getElementById('er-treatment-recommendations');
+                                 if (recommendationsDiv) {
+                                   recommendationsDiv.innerHTML = `
+                                     <div class="space-y-4 mt-4">
+                                       ${result.immediate_interventions?.length > 0 ? `
+                                         <div class="bg-red-50 border-2 border-red-200 rounded-lg p-4">
+                                           <h4 class="font-bold text-red-900 mb-3 flex items-center gap-2">
+                                             <span class="text-xl">🚨</span>
+                                             Immediate Interventions
+                                           </h4>
+                                           <div class="space-y-2">
+                                             ${result.immediate_interventions.map(item => `
+                                               <div class="bg-white rounded p-3 border border-red-100">
+                                                 <p class="font-semibold text-sm text-slate-900">${item.intervention}</p>
+                                                 <p class="text-xs text-red-700 mt-1"><strong>Timing:</strong> ${item.timing}</p>
+                                                 <p class="text-xs text-slate-600 mt-1">${item.rationale}</p>
+                                               </div>
+                                             `).join('')}
+                                           </div>
+                                         </div>
+                                       ` : ''}
+
+                                       ${result.emergency_medications?.length > 0 ? `
+                                         <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                                           <h4 class="font-bold text-blue-900 mb-3 flex items-center gap-2">
+                                             <span class="text-xl">💊</span>
+                                             Emergency Medications
+                                           </h4>
+                                           <div class="space-y-2">
+                                             ${result.emergency_medications.map(med => `
+                                               <div class="bg-white rounded p-3 border border-blue-100">
+                                                 <p class="font-semibold text-sm text-slate-900">${med.medication}</p>
+                                                 <div class="grid grid-cols-2 gap-2 mt-2">
+                                                   <p class="text-xs text-slate-600"><strong>Dose:</strong> ${med.dose}</p>
+                                                   <p class="text-xs text-slate-600"><strong>Route:</strong> ${med.route}</p>
+                                                 </div>
+                                                 <p class="text-xs text-blue-700 mt-1"><strong>Indication:</strong> ${med.indication}</p>
+                                               </div>
+                                             `).join('')}
+                                           </div>
+                                         </div>
+                                       ` : ''}
+
+                                       ${result.diagnostic_workup?.length > 0 ? `
+                                         <div class="bg-purple-50 border-2 border-purple-200 rounded-lg p-4">
+                                           <h4 class="font-bold text-purple-900 mb-3 flex items-center gap-2">
+                                             <span class="text-xl">🔬</span>
+                                             Diagnostic Workup
+                                           </h4>
+                                           <div class="space-y-2">
+                                             ${result.diagnostic_workup.map(test => `
+                                               <div class="bg-white rounded p-3 border border-purple-100">
+                                                 <div class="flex items-start justify-between">
+                                                   <p class="font-semibold text-sm text-slate-900">${test.test}</p>
+                                                   <span class="text-xs px-2 py-1 rounded ${
+                                                     test.priority?.toLowerCase() === 'stat' ? 'bg-red-100 text-red-700' :
+                                                     test.priority?.toLowerCase() === 'urgent' ? 'bg-orange-100 text-orange-700' :
+                                                     'bg-slate-100 text-slate-700'
+                                                   }">${test.priority}</span>
+                                                 </div>
+                                                 <p class="text-xs text-slate-600 mt-1">${test.rationale}</p>
+                                               </div>
+                                             `).join('')}
+                                           </div>
+                                         </div>
+                                       ` : ''}
+
+                                       ${result.monitoring ? `
+                                         <div class="bg-amber-50 border-2 border-amber-200 rounded-lg p-4">
+                                           <h4 class="font-bold text-amber-900 mb-3 flex items-center gap-2">
+                                             <span class="text-xl">📊</span>
+                                             Monitoring & Reassessment
+                                           </h4>
+                                           <div class="bg-white rounded p-3 border border-amber-100 space-y-2">
+                                             <p class="text-xs text-slate-700"><strong>Vital Signs:</strong> ${result.monitoring.vital_signs_frequency}</p>
+                                             <p class="text-xs text-slate-700"><strong>Reassessment:</strong> ${result.monitoring.reassessment_interval}</p>
+                                             ${result.monitoring.parameters_to_track?.length > 0 ? `
+                                               <div class="mt-2">
+                                                 <p class="text-xs font-semibold text-amber-900 mb-1">Parameters to Track:</p>
+                                                 <ul class="space-y-1">
+                                                   ${result.monitoring.parameters_to_track.map(param => `
+                                                     <li class="text-xs text-slate-600 flex items-center gap-1">
+                                                       <span>•</span> ${param}
+                                                     </li>
+                                                   `).join('')}
+                                                 </ul>
+                                               </div>
+                                             ` : ''}
+                                           </div>
+                                         </div>
+                                       ` : ''}
+
+                                       ${result.disposition ? `
+                                         <div class="bg-slate-50 border-2 border-slate-200 rounded-lg p-4">
+                                           <h4 class="font-bold text-slate-900 mb-3 flex items-center gap-2">
+                                             <span class="text-xl">🏥</span>
+                                             Disposition Considerations
+                                           </h4>
+                                           <div class="space-y-3">
+                                             ${result.disposition.admission_criteria?.length > 0 ? `
+                                               <div>
+                                                 <p class="text-xs font-semibold text-slate-700 mb-1">Admission Criteria:</p>
+                                                 <ul class="space-y-1">
+                                                   ${result.disposition.admission_criteria.map(criteria => `
+                                                     <li class="text-xs text-slate-600">• ${criteria}</li>
+                                                   `).join('')}
+                                                 </ul>
+                                               </div>
+                                             ` : ''}
+                                             ${result.disposition.consultation_triggers?.length > 0 ? `
+                                               <div>
+                                                 <p class="text-xs font-semibold text-slate-700 mb-1">Consultation Triggers:</p>
+                                                 <ul class="space-y-1">
+                                                   ${result.disposition.consultation_triggers.map(trigger => `
+                                                     <li class="text-xs text-slate-600">• ${trigger}</li>
+                                                   `).join('')}
+                                                 </ul>
+                                               </div>
+                                             ` : ''}
+                                           </div>
+                                         </div>
+                                       ` : ''}
+
+                                       <button onclick="
+                                         const protocol = ${JSON.stringify(result).replace(/"/g, '&quot;')};
+                                         let protocolText = '\\n\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\nINITIAL ER TREATMENT PROTOCOL\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n\\n';
+
+                                         if (protocol.immediate_interventions?.length > 0) {
+                                           protocolText += 'IMMEDIATE INTERVENTIONS:\\n';
+                                           protocol.immediate_interventions.forEach((item, i) => {
+                                             protocolText += \`  \${i + 1}. \${item.intervention} (\${item.timing})\\n     \${item.rationale}\\n\`;
+                                           });
+                                           protocolText += '\\n';
+                                         }
+
+                                         if (protocol.emergency_medications?.length > 0) {
+                                           protocolText += 'EMERGENCY MEDICATIONS:\\n';
+                                           protocol.emergency_medications.forEach((med, i) => {
+                                             protocolText += \`  \${i + 1}. \${med.medication}\\n     Dose: \${med.dose}\\n     Route: \${med.route}\\n     Indication: \${med.indication}\\n\`;
+                                           });
+                                           protocolText += '\\n';
+                                         }
+
+                                         if (protocol.diagnostic_workup?.length > 0) {
+                                           protocolText += 'DIAGNOSTIC WORKUP:\\n';
+                                           protocol.diagnostic_workup.forEach((test, i) => {
+                                             protocolText += \`  \${i + 1}. \${test.test} (\${test.priority})\\n     \${test.rationale}\\n\`;
+                                           });
+                                           protocolText += '\\n';
+                                         }
+
+                                         window.dispatchEvent(new CustomEvent('addERProtocolToPlan', { detail: protocolText }));
+                                       " class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2">
+                                         <span>✓</span>
+                                         Add Protocol to Treatment Plan
+                                       </button>
+                                     </div>
+                                   `;
+                                 }
+
+                                 toast.success("ER treatment protocol generated");
+                               } catch (error) {
+                                 console.error("Failed to generate ER treatment:", error);
+                                 toast.error("Failed to generate treatment recommendations");
+                               }
+                             }}
+                             className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold gap-2"
+                           >
+                             <Sparkles className="w-4 h-4" />
+                             Generate Initial ER Treatment Protocol
+                           </Button>
+                         ) : (
+                           <div className="text-center py-8 text-slate-500">
+                             <AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                             <p className="text-sm">Add a chief complaint to generate ER treatment recommendations</p>
+                           </div>
+                         )}
+                         <div id="er-treatment-recommendations"></div>
+                       </div>
+                     </div>
+
                      {/* Real-time Medication Safety Alerts */}
                      <ClinicalDecisionSupport
                        type="contraindications"

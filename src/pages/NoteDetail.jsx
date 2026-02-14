@@ -59,8 +59,9 @@ import AIDocumentationAssistant from "../components/ai/AIDocumentationAssistant"
 
 const TAB_ROWS = [
   [
+    { id: 'ai_assistant', label: 'AI Assistant', icon: Sparkles },
     { id: 'chief_complaint', label: 'Chief Complaint', icon: Activity },
-    { id: 'summary', label: 'Summary', icon: Sparkles },
+    { id: 'summary', label: 'Summary', icon: FileText },
     { id: 'clinical', label: 'Clinical Note', icon: FileText },
     { id: 'assessment_plan', label: 'Assessments', icon: Activity },
     { id: 'imaging', label: 'Result Analysis', icon: ImageIcon },
@@ -123,7 +124,7 @@ export default function NoteDetail() {
     return saved ? JSON.parse(saved) : TAB_CONFIGS.map(t => t.id);
   });
   const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const [activeTab, setActiveTab] = useState("chief_complaint");
+  const [activeTab, setActiveTab] = useState("ai_assistant");
 
   const handleNext = () => {
     const currentIndex = tabOrder.indexOf(activeTab);
@@ -1174,9 +1175,8 @@ Generated: ${new Date().toLocaleString()}
              </DragDropContext>
            <div className="flex-1 overflow-hidden">
 
-           {/* Chief Complaint Tab */}
-              <TabsContent value="chief_complaint" className="p-6 space-y-6 overflow-y-auto">
-                {/* AI Documentation Assistant */}
+           {/* AI Assistant Tab */}
+              <TabsContent value="ai_assistant" className="p-6 space-y-6 overflow-y-auto">
                 <AIDocumentationAssistant
                   note={note}
                   onUpdateNote={async (updates) => {
@@ -1185,6 +1185,16 @@ Generated: ${new Date().toLocaleString()}
                   }}
                 />
 
+                {/* Next Button */}
+                <div className="flex justify-end pt-4 border-t border-slate-200">
+                  <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                    Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                  </Button>
+                </div>
+              </TabsContent>
+
+           {/* Chief Complaint Tab */}
+              <TabsContent value="chief_complaint" className="p-6 space-y-6 overflow-y-auto">
                 {/* Chief Complaint Input */}
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-5">
                <label className="block text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">

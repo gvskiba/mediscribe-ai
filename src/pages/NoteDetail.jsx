@@ -2556,61 +2556,90 @@ Generated: ${new Date().toLocaleString()}
                    </TabsContent>
 
                    {/* Diagnoses Tab */}
-                     <TabsContent value="diagnoses" className="p-6 overflow-y-auto">
-                   <div className="max-w-5xl mx-auto space-y-6">
+                     <TabsContent value="diagnoses" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+                   <div className="max-w-6xl mx-auto space-y-8">
                      {/* Header Section */}
-                     <div className="flex items-center justify-between mb-6">
-                       <div>
-                         <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
-                           <Beaker className="w-7 h-7 text-purple-600" />
-                           Diagnoses & ICD-10 Coding
-                         </h2>
-                         <p className="text-sm text-slate-600 mt-1">AI-powered diagnostic support and medical coding</p>
+                     <div className="text-center mb-8">
+                       <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 mb-4 shadow-lg">
+                         <Beaker className="w-8 h-8 text-white" />
                        </div>
-                       <div className="flex gap-2">
-                         <Button
-                           variant="outline"
-                           onClick={() => setTemplateDialogOpen(true)}
-                           size="sm"
-                           className="gap-2 border-purple-300 text-purple-700 hover:bg-purple-50"
-                         >
-                           <Sparkles className="w-4 h-4" /> Save as Template
-                         </Button>
+                       <h2 className="text-3xl font-bold text-slate-900 mb-2">Diagnoses & ICD-10 Coding</h2>
+                       <p className="text-slate-600 max-w-2xl mx-auto">AI-powered diagnostic support with intelligent code suggestions and validation</p>
+                     </div>
+
+                     {/* AI Suggestion Cards - Side by Side */}
+                     <div className="grid md:grid-cols-2 gap-6">
+                       {/* Diagnostic Suggestions */}
+                       <div className="bg-white rounded-2xl border-2 border-purple-200 shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+                         <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-4 text-white">
+                           <h3 className="font-bold flex items-center gap-2">
+                             <Sparkles className="w-5 h-5" />
+                             AI Diagnostic Suggestions
+                           </h3>
+                           <p className="text-purple-100 text-xs mt-1">Real-time clinical decision support</p>
+                         </div>
+                         <div className="p-6">
+                           <ClinicalDecisionSupport
+                             type="diagnostic"
+                             note={note}
+                             onAddToNote={async (diagnosis) => {
+                               const updatedDiagnoses = [...(note.diagnoses || []), diagnosis];
+                               await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
+                               queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                             }}
+                           />
+                         </div>
+                       </div>
+
+                       {/* AI Recommendations */}
+                       <div className="bg-white rounded-2xl border-2 border-indigo-200 shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+                         <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-4 text-white">
+                           <h3 className="font-bold flex items-center gap-2">
+                             <Activity className="w-5 h-5" />
+                             Evidence-Based Recommendations
+                           </h3>
+                           <p className="text-indigo-100 text-xs mt-1">Clinical pattern recognition</p>
+                         </div>
+                         <div className="p-6">
+                           <DiagnosisRecommendations
+                             note={note}
+                             onAddDiagnoses={async (newDiagnoses) => {
+                               const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
+                               await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
+                               queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                             }}
+                           />
+                         </div>
                        </div>
                      </div>
 
-                     {/* AI Diagnostic Suggestions */}
-                     <ClinicalDecisionSupport
-                       type="diagnostic"
-                       note={note}
-                       onAddToNote={async (diagnosis) => {
-                         const updatedDiagnoses = [...(note.diagnoses || []), diagnosis];
-                         await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
-                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                       }}
-                     />
-
-                     {/* AI Diagnosis Recommendations */}
-                     <DiagnosisRecommendations
-                       note={note}
-                       onAddDiagnoses={async (newDiagnoses) => {
-                         const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
-                         await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
-                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                       }}
-                     />
-
-                     {/* Current Diagnoses Section */}
-                     <div className="bg-white rounded-xl border-2 border-slate-200 shadow-sm overflow-hidden">
-                       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b-2 border-blue-200">
-                         <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                           <Code className="w-5 h-5 text-blue-600" />
-                           Current Diagnoses ({note.diagnoses?.length || 0})
-                         </h3>
-                         <p className="text-xs text-slate-600 mt-1">ICD-10 coded diagnoses for this encounter</p>
+                     {/* Current Diagnoses - Enhanced Design */}
+                     <div className="bg-white rounded-2xl border-2 border-slate-200 shadow-xl overflow-hidden">
+                       <div className="bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-5 text-white">
+                         <div className="flex items-center justify-between">
+                           <div>
+                             <h3 className="font-bold text-lg flex items-center gap-2">
+                               <Code className="w-6 h-6" />
+                               Current Diagnoses
+                             </h3>
+                             <p className="text-blue-50 text-sm mt-1">
+                               {note.diagnoses?.length || 0} {note.diagnoses?.length === 1 ? 'diagnosis' : 'diagnoses'} documented
+                             </p>
+                           </div>
+                           <div className="flex items-center gap-2">
+                             <Button
+                               variant="outline"
+                               onClick={() => setTemplateDialogOpen(true)}
+                               size="sm"
+                               className="gap-2 bg-white/20 border-white/30 text-white hover:bg-white/30"
+                             >
+                               <Sparkles className="w-4 h-4" /> Template
+                             </Button>
+                           </div>
+                         </div>
                        </div>
 
-                       <div className="p-6">
+                       <div className="p-8">
                          {note.diagnoses && Array.isArray(note.diagnoses) && note.diagnoses.length > 0 ? (
                            <div className="space-y-3">
                              {note.diagnoses.map((diag, i) => {
@@ -2621,26 +2650,24 @@ Generated: ${new Date().toLocaleString()}
                                return (
                                  <motion.div
                                    key={i}
-                                   initial={{ opacity: 0, y: 10 }}
-                                   animate={{ opacity: 1, y: 0 }}
+                                   initial={{ opacity: 0, x: -20 }}
+                                   animate={{ opacity: 1, x: 0 }}
                                    transition={{ delay: i * 0.05 }}
-                                   className="group relative flex items-start gap-4 p-4 rounded-xl border-2 border-slate-200 bg-gradient-to-r from-white to-slate-50 hover:border-blue-300 hover:shadow-md transition-all"
+                                   className="group relative flex items-start gap-4 p-5 rounded-xl border-2 border-slate-200 bg-gradient-to-r from-white via-slate-50 to-white hover:border-blue-400 hover:shadow-lg transition-all duration-200"
                                  >
-                                   <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-bold flex-shrink-0 shadow-sm">
+                                   <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white font-bold shadow-md flex-shrink-0">
                                      {i + 1}
                                    </div>
-                                   <div className="flex-1 min-w-0">
+                                   <div className="flex-1 min-w-0 py-1">
                                      {code ? (
                                        <>
-                                         <div className="flex items-center gap-2 mb-1">
-                                           <Badge className="bg-blue-600 text-white font-mono text-xs px-2 py-0.5">
-                                             {code}
-                                           </Badge>
-                                         </div>
-                                         <p className="text-sm font-medium text-slate-900 leading-relaxed">{description}</p>
+                                         <Badge className="bg-gradient-to-r from-blue-600 to-blue-700 text-white font-mono text-sm px-3 py-1 mb-2 shadow-sm">
+                                           {code}
+                                         </Badge>
+                                         <p className="text-base font-semibold text-slate-900 leading-relaxed">{description}</p>
                                        </>
                                      ) : (
-                                       <p className="text-sm font-medium text-slate-900 leading-relaxed">{diag}</p>
+                                       <p className="text-base font-semibold text-slate-900 leading-relaxed">{diag}</p>
                                      )}
                                    </div>
                                    <Button
@@ -2652,36 +2679,36 @@ Generated: ${new Date().toLocaleString()}
                                        queryClient.invalidateQueries({ queryKey: ["note", noteId] });
                                        toast.success("Diagnosis removed");
                                      }}
-                                     className="opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:bg-red-50"
+                                     className="opacity-0 group-hover:opacity-100 transition-all text-red-600 hover:bg-red-50 hover:text-red-700"
                                    >
-                                     <X className="w-4 h-4" />
+                                     <X className="w-5 h-5" />
                                    </Button>
                                  </motion.div>
                                );
                              })}
                            </div>
                          ) : (
-                           <div className="text-center py-12">
-                             <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                               <Code className="w-8 h-8 text-slate-400" />
+                           <div className="text-center py-16">
+                             <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center mx-auto mb-4 shadow-inner">
+                               <Code className="w-10 h-10 text-slate-400" />
                              </div>
-                             <p className="text-sm font-semibold text-slate-600 mb-1">No diagnoses documented</p>
-                             <p className="text-xs text-slate-500">Use AI suggestions or search below to add diagnoses</p>
+                             <p className="text-lg font-semibold text-slate-700 mb-2">No diagnoses documented yet</p>
+                             <p className="text-slate-500 max-w-md mx-auto">Start by using AI suggestions above or search for ICD-10 codes below</p>
                            </div>
                          )}
                        </div>
                      </div>
 
-                     {/* ICD-10 Search & Mapping */}
-                     <div className="bg-white rounded-xl border-2 border-slate-200 shadow-sm overflow-hidden">
-                       <div className="bg-gradient-to-r from-indigo-50 to-purple-50 px-6 py-4 border-b-2 border-indigo-200">
-                         <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                           <Sparkles className="w-5 h-5 text-indigo-600" />
+                     {/* ICD-10 Code Search - Enhanced */}
+                     <div className="bg-white rounded-2xl border-2 border-slate-200 shadow-xl overflow-hidden">
+                       <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-5 text-white">
+                         <h3 className="font-bold text-lg flex items-center gap-2">
+                           <Sparkles className="w-6 h-6" />
                            ICD-10 Code Search & Mapper
                          </h3>
-                         <p className="text-xs text-slate-600 mt-1">Search for specific codes or generate from diagnoses</p>
+                         <p className="text-indigo-50 text-sm mt-1">Search thousands of codes or let AI suggest the best match</p>
                        </div>
-                       <div className="p-6">
+                       <div className="p-8">
                          <ICD10CodeSearch
                            suggestions={icd10Suggestions}
                            diagnoses={note.diagnoses}
@@ -2694,15 +2721,18 @@ Generated: ${new Date().toLocaleString()}
                        </div>
                      </div>
 
-                     {/* Export Actions */}
-                     <div className="bg-slate-50 rounded-xl border border-slate-200 p-4">
-                       <p className="text-xs font-semibold text-slate-600 mb-3">Export Options</p>
-                       <div className="flex gap-2">
+                     {/* Quick Actions Bar */}
+                     <div className="flex items-center gap-4 p-6 bg-gradient-to-r from-slate-50 to-white rounded-2xl border-2 border-slate-200">
+                       <div className="flex-1">
+                         <p className="text-sm font-semibold text-slate-700">Quick Actions</p>
+                         <p className="text-xs text-slate-500">Export or save your diagnoses</p>
+                       </div>
+                       <div className="flex gap-3">
                          <Button
                            variant="outline"
                            onClick={() => exportNote('pdf')}
                            disabled={exportingFormat === 'pdf'}
-                           className="flex-1 gap-2 border-slate-300 hover:bg-white"
+                           className="gap-2 border-slate-300 hover:bg-slate-50 hover:border-slate-400"
                          >
                            {exportingFormat === 'pdf' ? (
                              <Loader2 className="w-4 h-4 animate-spin" />
@@ -2715,7 +2745,7 @@ Generated: ${new Date().toLocaleString()}
                            variant="outline"
                            onClick={() => exportNote('text')}
                            disabled={exportingFormat === 'text'}
-                           className="flex-1 gap-2 border-slate-300 hover:bg-white"
+                           className="gap-2 border-slate-300 hover:bg-slate-50 hover:border-slate-400"
                          >
                            {exportingFormat === 'text' ? (
                              <Loader2 className="w-4 h-4 animate-spin" />
@@ -2729,8 +2759,8 @@ Generated: ${new Date().toLocaleString()}
 
                      {/* Next Button */}
                      <div className="flex justify-end pt-4">
-                       <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
-                         Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                       <Button onClick={handleNext} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg gap-2 px-6 py-3 text-base">
+                         Continue <ArrowLeft className="w-5 h-5 rotate-180" />
                        </Button>
                      </div>
                    </div>

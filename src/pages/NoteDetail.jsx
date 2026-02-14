@@ -2047,20 +2047,26 @@ Generated: ${new Date().toLocaleString()}
                        </TabsContent>
 
                  {/* Treatments Tab */}
-                 <TabsContent value="treatments" className="p-6 space-y-6 overflow-y-auto">
-                   <div className="space-y-6">
-                     {/* AI Initial ER Treatment Recommendations */}
-                     <div className="bg-white rounded-xl border-2 border-emerald-300 shadow-sm overflow-hidden">
-                       <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-3 text-white flex items-center justify-between">
-                         <div>
-                           <h3 className="font-semibold flex items-center gap-2">
-                             <Activity className="w-5 h-5" />
-                             Initial ER Treatment Protocol
-                           </h3>
-                           <p className="text-emerald-50 text-xs mt-1">AI-generated evidence-based emergency interventions</p>
-                         </div>
+                 <TabsContent value="treatments" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+                   <div className="max-w-6xl mx-auto space-y-8">
+                     {/* Header Section */}
+                     <div className="text-center mb-8">
+                       <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 mb-4 shadow-lg">
+                         <Pill className="w-8 h-8 text-white" />
                        </div>
-                       <div className="p-4">
+                       <h2 className="text-3xl font-bold text-slate-900 mb-2">Treatment & Medications</h2>
+                       <p className="text-slate-600 max-w-2xl mx-auto">Evidence-based treatment protocols and medication management</p>
+                     </div>
+                     {/* AI Initial ER Treatment Recommendations */}
+                     <div className="bg-white rounded-2xl border-2 border-emerald-200 shadow-xl overflow-hidden">
+                       <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-5 text-white">
+                         <h3 className="font-bold text-lg flex items-center gap-2">
+                           <Activity className="w-6 h-6" />
+                           Initial ER Treatment Protocol
+                         </h3>
+                         <p className="text-emerald-50 text-sm mt-1">AI-generated evidence-based emergency interventions</p>
+                       </div>
+                       <div className="p-8">
                          {note.chief_complaint ? (
                            <Button
                              onClick={async () => {
@@ -2332,153 +2338,233 @@ Generated: ${new Date().toLocaleString()}
                              Generate Initial ER Treatment Protocol
                            </Button>
                          ) : (
-                           <div className="text-center py-8 text-slate-500">
-                             <AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-                             <p className="text-sm">Add a chief complaint to generate ER treatment recommendations</p>
+                           <div className="text-center py-12">
+                             <div className="w-20 h-20 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                               <AlertCircle className="w-10 h-10 text-slate-400" />
+                             </div>
+                             <p className="text-slate-600 font-medium mb-1">Chief Complaint Required</p>
+                             <p className="text-sm text-slate-500">Add a chief complaint to generate ER treatment recommendations</p>
                            </div>
                          )}
                          <div id="er-treatment-recommendations"></div>
-                       </div>
-                     </div>
+                         </div>
+                         </div>
 
-                     {/* Real-time Medication Safety Alerts */}
-                     <ClinicalDecisionSupport
-                       type="contraindications"
-                       note={note}
-                       onAddToNote={async (warning) => {
-                         const updatedPlan = (note.plan || "") + "\n\n⚠️ MEDICATION ALERT: " + warning;
-                         await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
-                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                       }}
-                     />
+                         {/* Two Column Layout */}
+                         <div className="grid lg:grid-cols-2 gap-6">
+                         {/* Left Column - Medication Safety */}
+                         <div className="bg-white rounded-2xl border-2 border-red-200 shadow-xl overflow-hidden">
+                         <div className="bg-gradient-to-r from-red-500 to-orange-500 px-6 py-5 text-white">
+                           <h3 className="font-bold text-lg flex items-center gap-2">
+                             <AlertCircle className="w-6 h-6" />
+                             Medication Safety Alerts
+                           </h3>
+                           <p className="text-red-50 text-sm mt-1">Real-time contraindication screening</p>
+                         </div>
+                         <div className="p-6">
+                           <ClinicalDecisionSupport
+                             type="contraindications"
+                             note={note}
+                             onAddToNote={async (warning) => {
+                               const updatedPlan = (note.plan || "") + "\n\n⚠️ MEDICATION ALERT: " + warning;
+                               await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
+                               queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                             }}
+                           />
+                         </div>
+                         </div>
 
-                     {/* Treatment Plan Selector */}
-                     <div className="bg-white rounded-xl border-2 border-green-300 shadow-sm overflow-hidden">
-                       <div className="bg-green-50 px-4 py-3 border-b border-green-200 flex items-center gap-2">
-                         <FileText className="w-5 h-5 text-green-600" />
-                         <h3 className="font-semibold text-slate-900">Treatment Plan</h3>
-                       </div>
-                       <div className="p-4">
-                         <TreatmentPlanSelector
-                           plan={note.plan || ""}
-                           onAddToNote={async (selectedPlan) => {
-                             await base44.entities.ClinicalNote.update(noteId, { plan: selectedPlan });
-                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                             toast.success("Plan sections updated");
-                           }}
-                         />
-                       </div>
-                     </div>
+                         {/* Right Column - Treatment Plan Selector */}
+                         <div className="bg-white rounded-2xl border-2 border-green-200 shadow-xl overflow-hidden">
+                         <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-5 text-white">
+                           <h3 className="font-bold text-lg flex items-center gap-2">
+                             <FileText className="w-6 h-6" />
+                             Treatment Plan Builder
+                           </h3>
+                           <p className="text-green-50 text-sm mt-1">Structured treatment planning</p>
+                         </div>
+                         <div className="p-6">
+                           <TreatmentPlanSelector
+                             plan={note.plan || ""}
+                             onAddToNote={async (selectedPlan) => {
+                               await base44.entities.ClinicalNote.update(noteId, { plan: selectedPlan });
+                               queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                               toast.success("Plan sections updated");
+                             }}
+                           />
+                         </div>
+                         </div>
+                         </div>
 
-                     {/* Medications Box */}
-                     <div className="bg-white rounded-xl border-2 border-rose-300 shadow-sm overflow-hidden">
-                       <div className="bg-rose-50 px-4 py-3 border-b border-rose-200 flex items-center gap-2">
-                         <Pill className="w-5 h-5 text-rose-600" />
-                         <h3 className="font-semibold text-slate-900">Medications</h3>
-                       </div>
-                       <div className="p-4 space-y-4">
-                         <MedicationRecommendations
-                           note={note}
-                           onAddMedications={async (meds) => {
-                             const updatedMeds = [...(note.medications || []), ...meds];
-                             await base44.entities.ClinicalNote.update(noteId, { medications: updatedMeds });
-                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                           }}
-                         />
-                         <div className="border-t border-slate-200 pt-4">
+                         {/* Medications Section */}
+                         <div className="bg-white rounded-2xl border-2 border-blue-200 shadow-xl overflow-hidden">
+                         <div className="bg-gradient-to-r from-blue-500 to-indigo-500 px-6 py-5 text-white">
+                         <h3 className="font-bold text-lg flex items-center gap-2">
+                           <Pill className="w-6 h-6" />
+                           Current Medications
+                         </h3>
+                         <p className="text-blue-50 text-sm mt-1">
+                           {note.medications?.length || 0} {note.medications?.length === 1 ? 'medication' : 'medications'} prescribed
+                         </p>
+                         </div>
+                         <div className="p-8 space-y-6">
+                         {/* AI Recommendations */}
+                         <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border-2 border-indigo-200 p-6">
+                           <h4 className="text-sm font-bold text-indigo-900 mb-3 flex items-center gap-2">
+                             <Sparkles className="w-4 h-4" />
+                             AI Medication Recommendations
+                           </h4>
+                           <MedicationRecommendations
+                             note={note}
+                             onAddMedications={async (meds) => {
+                               const updatedMeds = [...(note.medications || []), ...meds];
+                               await base44.entities.ClinicalNote.update(noteId, { medications: updatedMeds });
+                               queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                             }}
+                           />
+                         </div>
+
+                         {/* Current Medications List */}
+                         <div>
+                           <h4 className="text-sm font-bold text-slate-900 mb-4">Prescribed Medications</h4>
                            {note.medications && note.medications.length > 0 ? (
-                             <div className="space-y-2">
+                             <div className="space-y-3">
                                {note.medications.map((med, idx) => (
-                                 <div key={idx} className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                                   <p className="text-sm text-slate-900">{med}</p>
-                                 </div>
+                                 <motion.div
+                                   key={idx}
+                                   initial={{ opacity: 0, x: -20 }}
+                                   animate={{ opacity: 1, x: 0 }}
+                                   transition={{ delay: idx * 0.05 }}
+                                   className="group flex items-start gap-4 p-4 rounded-xl border-2 border-slate-200 bg-gradient-to-r from-white to-blue-50 hover:border-blue-300 hover:shadow-md transition-all"
+                                 >
+                                   <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-bold flex-shrink-0 shadow-sm">
+                                     {idx + 1}
+                                   </div>
+                                   <div className="flex-1">
+                                     <p className="text-sm font-semibold text-slate-900 leading-relaxed">{med}</p>
+                                   </div>
+                                   <Button
+                                     variant="ghost"
+                                     size="sm"
+                                     onClick={async () => {
+                                       const updatedMeds = note.medications.filter((_, i) => i !== idx);
+                                       await base44.entities.ClinicalNote.update(noteId, { medications: updatedMeds });
+                                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                       toast.success("Medication removed");
+                                     }}
+                                     className="opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:bg-red-50"
+                                   >
+                                     <X className="w-4 h-4" />
+                                   </Button>
+                                 </motion.div>
                                ))}
                              </div>
                            ) : (
-                             <div className="bg-slate-50 border border-dashed border-slate-300 rounded-lg p-6 text-center">
-                               <Pill className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                               <p className="text-sm text-slate-500">No medications documented</p>
+                             <div className="text-center py-12 bg-slate-50 rounded-xl border-2 border-dashed border-slate-300">
+                               <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                                 <Pill className="w-8 h-8 text-slate-400" />
+                               </div>
+                               <p className="text-sm font-medium text-slate-600">No medications documented</p>
+                               <p className="text-xs text-slate-500 mt-1">Add medications using AI recommendations above</p>
                              </div>
                            )}
                          </div>
-                       </div>
-                     </div>
+                         </div>
+                         </div>
 
                      {note.medications && note.medications.length > 0 && (
                        <>
-                         {/* Drug Interactions */}
-                         <div>
-                           <div className="flex items-center justify-between mb-4">
-                             <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                               <AlertCircle className="w-4 h-4 text-red-600" />
+                         {/* Drug Interactions Analysis */}
+                         <div className="bg-white rounded-2xl border-2 border-orange-200 shadow-xl overflow-hidden">
+                           <div className="bg-gradient-to-r from-orange-500 to-red-500 px-6 py-5 text-white">
+                             <h3 className="font-bold text-lg flex items-center gap-2">
+                               <AlertCircle className="w-6 h-6" />
                                Drug-Drug Interactions
                              </h3>
+                             <p className="text-orange-50 text-sm mt-1">Automated safety screening</p>
                            </div>
 
-                           {loadingInteractions ? (
-                             <div className="flex items-center gap-3 text-slate-500 py-8">
-                               <Loader2 className="w-5 h-5 animate-spin" />
-                               <span className="text-sm">Analyzing medications...</span>
-                             </div>
-                           ) : drugInteractions.length > 0 ? (
-                             <div className="space-y-3">
-                               {drugInteractions.map((interaction, idx) => (
-                                 <div key={idx} className={`rounded-lg border p-4 ${
-                                   interaction.severity === 'severe' ? 'bg-red-50 border-red-200' :
-                                   interaction.severity === 'moderate' ? 'bg-yellow-50 border-yellow-200' :
-                                   'bg-blue-50 border-blue-200'
-                                 }`}>
-                                   <p className="font-semibold text-sm text-slate-900">{interaction.drug_pair}</p>
-                                   <p className={`text-xs font-medium mt-1 ${
-                                     interaction.severity === 'severe' ? 'text-red-700' :
-                                     interaction.severity === 'moderate' ? 'text-yellow-700' :
-                                     'text-blue-700'
-                                   }`}>Severity: {interaction.severity.toUpperCase()}</p>
-                                   <p className="text-xs text-slate-600 mt-2"><strong>Mechanism:</strong> {interaction.mechanism}</p>
-                                   <p className="text-xs text-slate-600 mt-1"><strong>Recommendation:</strong> {interaction.recommendation}</p>
+                           <div className="p-8">
+                             {loadingInteractions ? (
+                               <div className="flex flex-col items-center justify-center py-12">
+                                 <Loader2 className="w-12 h-12 animate-spin text-orange-500 mb-4" />
+                                 <p className="text-slate-600 font-medium">Analyzing medication interactions...</p>
+                               </div>
+                             ) : drugInteractions.length > 0 ? (
+                               <div className="space-y-4">
+                                 {drugInteractions.map((interaction, idx) => (
+                                   <motion.div
+                                     key={idx}
+                                     initial={{ opacity: 0, y: 10 }}
+                                     animate={{ opacity: 1, y: 0 }}
+                                     transition={{ delay: idx * 0.05 }}
+                                     className={`rounded-xl border-2 p-5 ${
+                                       interaction.severity === 'severe' ? 'bg-red-50 border-red-300' :
+                                       interaction.severity === 'moderate' ? 'bg-yellow-50 border-yellow-300' :
+                                       'bg-blue-50 border-blue-300'
+                                     }`}
+                                   >
+                                     <div className="flex items-start justify-between mb-3">
+                                       <p className="font-bold text-slate-900">{interaction.drug_pair}</p>
+                                       <Badge className={`${
+                                         interaction.severity === 'severe' ? 'bg-red-600' :
+                                         interaction.severity === 'moderate' ? 'bg-yellow-600' :
+                                         'bg-blue-600'
+                                       } text-white`}>
+                                         {interaction.severity.toUpperCase()}
+                                       </Badge>
+                                     </div>
+                                     <div className="space-y-2">
+                                       <p className="text-sm text-slate-700"><strong>Mechanism:</strong> {interaction.mechanism}</p>
+                                       <p className="text-sm text-slate-700"><strong>Recommendation:</strong> {interaction.recommendation}</p>
+                                     </div>
+                                   </motion.div>
+                                 ))}
+                                 <Button
+                                   onClick={async () => {
+                                     try {
+                                       const interactionText = drugInteractions.map((int, idx) => 
+                                         `${idx + 1}. ${int.drug_pair} (${int.severity.toUpperCase()})\n   Mechanism: ${int.mechanism}\n   Recommendation: ${int.recommendation}`
+                                       ).join('\n\n');
+
+                                       const updatedPlan = (note.plan || "") + "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nDRUG INTERACTION ALERTS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" + interactionText;
+                                       await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
+                                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                       toast.success("Drug interactions added to plan");
+                                     } catch (error) {
+                                       console.error("Failed to add interactions:", error);
+                                       toast.error("Failed to add drug interactions");
+                                     }
+                                   }}
+                                   className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white shadow-lg gap-2"
+                                 >
+                                   <Plus className="w-4 h-4" /> Add Interactions to Treatment Plan
+                                 </Button>
+                               </div>
+                             ) : (
+                               <div className="text-center py-12 bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border-2 border-emerald-200">
+                                 <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                                   <Check className="w-8 h-8 text-emerald-600" />
                                  </div>
-                               ))}
-                             </div>
-                           ) : (
-                             <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-6 text-center">
-                               <Check className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
-                               <p className="text-sm text-emerald-700 font-medium">No significant drug interactions detected</p>
-                             </div>
+                                 <p className="text-lg font-semibold text-emerald-900 mb-1">All Clear</p>
+                                 <p className="text-sm text-emerald-700">No significant drug interactions detected</p>
+                               </div>
                              )}
-                             </div>
+                           </div>
+                         </div>
 
-                             {drugInteractions.length > 0 && (
-                             <Button
-                             onClick={async () => {
-                               try {
-                                 const interactionText = drugInteractions.map((int, idx) => 
-                                   `${idx + 1}. ${int.drug_pair} (${int.severity.toUpperCase()})\n   Mechanism: ${int.mechanism}\n   Recommendation: ${int.recommendation}`
-                                 ).join('\n\n');
-
-                                 const updatedPlan = (note.plan || "") + "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nDRUG INTERACTION ALERTS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" + interactionText;
-                                 await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
-                                 queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                                 toast.success("Drug interactions added to plan");
-                               } catch (error) {
-                                 console.error("Failed to add interactions:", error);
-                                 toast.error("Failed to add drug interactions");
-                               }
-                             }}
-                             className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white gap-2 mt-4"
-                             >
-                             <Plus className="w-4 h-4" /> Add Drug Interactions to Plan
-                             </Button>
-                             )}
-
-                             {/* Treatment Plan from Plan Section */}
+                         {/* Current Treatment Plan */}
                          {note.plan && (
-                           <div>
-                             <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                               <Activity className="w-4 h-4 text-green-600" />
-                               Treatment Plan
-                             </h3>
-                             <div className="bg-white border-2 border-green-200 rounded-xl p-5">
-                               <div className="prose prose-sm max-w-none text-slate-700">
+                           <div className="bg-white rounded-2xl border-2 border-slate-200 shadow-xl overflow-hidden">
+                             <div className="bg-gradient-to-r from-slate-700 to-slate-800 px-6 py-5 text-white">
+                               <h3 className="font-bold text-lg flex items-center gap-2">
+                                 <FileText className="w-6 h-6" />
+                                 Current Treatment Plan
+                               </h3>
+                               <p className="text-slate-200 text-sm mt-1">Documented treatment approach</p>
+                             </div>
+                             <div className="p-8">
+                               <div className="prose prose-sm max-w-none text-slate-700 bg-slate-50 rounded-xl p-6 border border-slate-200">
                                  {note.plan.split('\n').map((para, i) => (
                                    <p key={i} className="mb-3 leading-relaxed">{para}</p>
                                  ))}
@@ -2487,16 +2573,16 @@ Generated: ${new Date().toLocaleString()}
                            </div>
                          )}
                        </>
-                       )}
-                       </div>
+                     )}
 
-                       {/* Next Button */}
-                       <div className="flex justify-end pt-4 border-t border-slate-200">
-                       <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
-                       Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                     {/* Next Button */}
+                     <div className="flex justify-end pt-4">
+                       <Button onClick={handleNext} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg gap-2 px-6 py-3 text-base">
+                         Continue <ArrowLeft className="w-5 h-5 rotate-180" />
                        </Button>
-                       </div>
-                       </TabsContent>
+                     </div>
+                     </div>
+                     </TabsContent>
 
                        {/* Final Impression Tab */}
                  <TabsContent value="final_impression" className="p-6 space-y-6 overflow-y-auto">

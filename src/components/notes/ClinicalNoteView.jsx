@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Edit2, Save, X, FileText } from "lucide-react";
+import { Edit2, Save, X, FileText, Sparkles, Loader2, Copy, Check } from "lucide-react";
 import { motion } from "framer-motion";
+import { base44 } from "@/api/base44Client";
+import { toast } from "sonner";
 
 const NoteSection = ({ title, value, field, onSave, color = "blue" }) => {
   const [editing, setEditing] = useState(false);
@@ -188,6 +190,10 @@ const ArraySection = ({ title, items, field, onSave, color = "blue" }) => {
 };
 
 export default function ClinicalNoteView({ note, onUpdate, noteTypes }) {
+  const [generatingConsolidated, setGeneratingConsolidated] = useState(false);
+  const [consolidatedNote, setConsolidatedNote] = useState(null);
+  const [copied, setCopied] = useState(false);
+
   const typeLabels = {
     progress_note: "Progress Note",
     h_and_p: "History & Physical",
@@ -196,8 +202,160 @@ export default function ClinicalNoteView({ note, onUpdate, noteTypes }) {
     procedure_note: "Procedure Note",
   };
 
+  const generateConsolidatedNote = async () => {
+    setGeneratingConsolidated(true);
+    try {
+      const clinicalNoteData = JSON.stringify(note, null, 2);
+      
+      const prompt = `You are an expert medical documentalist. Your task is to compile a comprehensive clinical note from the provided structured patient data. Ensure clarity, accuracy, and adherence to standard medical documentation practices.
+
+Here is the full clinical note data in JSON format:
+${clinicalNoteData}
+
+Please generate a single, well-structured clinical note using the following sections and order:
+
+1. **PATIENT DEMOGRAPHICS:**
+   - Patient Name: [patient_name]
+   - Date of Birth: [date_of_birth]
+   - Gender: [patient_gender]
+   - Patient ID: [patient_id]
+   - Date of Visit: [date_of_visit]
+   - Note Type: [note_type]
+   - Specialty: [specialty]
+
+2. **CHIEF COMPLAINT (CC):**
+   [chief_complaint]
+
+3. **HISTORY OF PRESENT ILLNESS (HPI):**
+   [history_of_present_illness]
+
+4. **REVIEW OF SYSTEMS (ROS):**
+   [review_of_systems - Format as bullet points if present]
+
+5. **PHYSICAL EXAMINATION (PE):**
+   [physical_exam - Format as bullet points if present]
+   
+   Vital Signs:
+   • Temperature: [vital_signs.temperature.value] [vital_signs.temperature.unit]
+   • Heart Rate: [vital_signs.heart_rate.value] [vital_signs.heart_rate.unit]
+   • Blood Pressure: [vital_signs.blood_pressure.systolic]/[vital_signs.blood_pressure.diastolic] [vital_signs.blood_pressure.unit]
+   • Respiratory Rate: [vital_signs.respiratory_rate.value] [vital_signs.respiratory_rate.unit]
+   • Oxygen Saturation: [vital_signs.oxygen_saturation.value] [vital_signs.oxygen_saturation.unit]
+   • Weight: [vital_signs.weight.value] [vital_signs.weight.unit]
+   • Height: [vital_signs.height.value] [vital_signs.height.unit]
+
+6. **MEDICAL DECISION MAKING:**
+   [Include medical decision making content if available in the note data]
+
+7. **ASSESSMENT:**
+   [assessment]
+
+8. **DIAGNOSES (with ICD-10 Codes):**
+   [List all items from the diagnoses array, one per line with bullet points]
+
+9. **PLAN:**
+   [plan]
+
+10. **CLINICAL IMPRESSION:**
+    [clinical_impression]
+
+11. **RESULT ANALYSIS:**
+    [Include any imaging, laboratory, or EKG analysis results if available in the note data]
+
+12. **FINAL IMPRESSION (with ICD-10 Codes):**
+    [Provide a synthesized final impression with relevant ICD-10 codes]
+
+13. **PATIENT EDUCATION:**
+    [Include patient education materials if available in the note data]
+
+FORMATTING INSTRUCTIONS:
+- If a field is empty or not available in the JSON, state "Not documented" or "None"
+- Format Review of Systems and Physical Exam findings as bullet points
+- Maintain a professional medical tone throughout
+- Ensure all sections are clearly delimited with bold headings
+- Use bullet points where appropriate for readability
+
+Generate the complete clinical note now.`;
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: prompt,
+        add_context_from_internet: false
+      });
+
+      setConsolidatedNote(result);
+      toast.success("Consolidated clinical note generated");
+    } catch (error) {
+      console.error("Failed to generate consolidated note:", error);
+      toast.error("Failed to generate consolidated note");
+    } finally {
+      setGeneratingConsolidated(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (consolidatedNote) {
+      navigator.clipboard.writeText(consolidatedNote);
+      setCopied(true);
+      toast.success("Copied to clipboard");
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Generate Consolidated Note Button */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-300 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-blue-600" />
+              Consolidated Clinical Note
+            </h3>
+            <p className="text-sm text-slate-600 mt-1">Generate a comprehensive, formatted clinical note from all tabs</p>
+          </div>
+          <Button
+            onClick={generateConsolidatedNote}
+            disabled={generatingConsolidated}
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white gap-2"
+          >
+            {generatingConsolidated ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
+            ) : (
+              <><Sparkles className="w-4 h-4" /> Generate Note</>
+            )}
+          </Button>
+        </div>
+
+        {consolidatedNote && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-4 bg-white rounded-lg border-2 border-blue-200 p-6"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="font-bold text-slate-900">Generated Clinical Note</h4>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={copyToClipboard}
+                className="gap-2"
+              >
+                {copied ? (
+                  <><Check className="w-4 h-4 text-green-600" /> Copied</>
+                ) : (
+                  <><Copy className="w-4 h-4" /> Copy</>
+                )}
+              </Button>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-4 max-h-[600px] overflow-y-auto">
+              <pre className="text-sm text-slate-900 whitespace-pre-wrap font-sans leading-relaxed">
+                {consolidatedNote}
+              </pre>
+            </div>
+          </motion.div>
+        )}
+      </div>
+
       {/* Note Type Selector */}
       <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border-2 border-indigo-300 p-5">
         <div className="flex items-center gap-3 mb-3">

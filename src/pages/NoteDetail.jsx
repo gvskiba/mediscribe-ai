@@ -25,7 +25,8 @@ import {
         ImageIcon,
         Beaker,
         Activity,
-        Pill
+        Pill,
+        X
       } from "lucide-react";
       import MedicationRecommendations from "../components/notes/MedicationRecommendations";
       import TreatmentPlanSelector from "../components/notes/TreatmentPlanSelector";

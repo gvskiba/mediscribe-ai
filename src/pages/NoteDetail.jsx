@@ -1290,17 +1290,6 @@ Generated: ${new Date().toLocaleString()}
                />
              </div>
 
-             {/* Real-time Diagnostic Suggestions */}
-             <ClinicalDecisionSupport
-               type="diagnostic"
-               note={note}
-               onAddToNote={async (diagnosis) => {
-                 const updatedDiagnoses = [...(note.diagnoses || []), diagnosis];
-                 await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
-                 queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-               }}
-             />
-             
              {/* Next Button */}
              <div className="flex justify-end pt-4 border-t border-slate-200">
                <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
@@ -2557,8 +2546,21 @@ Generated: ${new Date().toLocaleString()}
                    </TabsContent>
 
                    {/* Diagnoses Tab */}
-                 <TabsContent value="diagnoses" className="p-6 overflow-y-auto">
-             <div className="flex gap-3 mb-6">
+                     <TabsContent value="diagnoses" className="p-6 overflow-y-auto">
+                   {/* Real-time Diagnostic Suggestions */}
+                   <div className="mb-6">
+                   <ClinicalDecisionSupport
+                     type="diagnostic"
+                     note={note}
+                     onAddToNote={async (diagnosis) => {
+                       const updatedDiagnoses = [...(note.diagnoses || []), diagnosis];
+                       await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
+                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                     }}
+                   />
+                   </div>
+
+                   <div className="flex gap-3 mb-6">
                <Button
                  variant="outline"
                  onClick={() => setTemplateDialogOpen(true)}

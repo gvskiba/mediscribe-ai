@@ -58,6 +58,7 @@ import ClinicalNoteView from "../components/notes/ClinicalNoteView";
 import SmartTemplateApplicator from "../components/templates/SmartTemplateApplicator";
 import AIDocumentationAssistant from "../components/ai/AIDocumentationAssistant";
 import AIMDMAnalyzer from "../components/notes/AIMDMAnalyzer";
+import PhysicalExamEditor from "../components/notes/PhysicalExamEditor";
 
 const TAB_ROWS = [
   [
@@ -65,6 +66,7 @@ const TAB_ROWS = [
     { id: 'chief_complaint', label: 'Chief Complaint', icon: Activity },
     { id: 'summary', label: 'Summary', icon: FileText },
     { id: 'clinical', label: 'Clinical Note', icon: FileText },
+    { id: 'physical_exam', label: 'Physical Exam', icon: Activity },
     { id: 'assessment_plan', label: 'Assessments', icon: Activity },
     { id: 'imaging', label: 'Result Analysis', icon: ImageIcon },
     { id: 'diagnoses', label: 'Diagnoses', icon: Beaker },
@@ -1404,6 +1406,31 @@ Generated: ${new Date().toLocaleString()}
                  Next <ArrowLeft className="w-4 h-4 rotate-180" />
                </Button>
              </div>
+             </TabsContent>
+
+             {/* Physical Exam Tab */}
+             <TabsContent value="physical_exam" className="p-6 space-y-6 overflow-y-auto">
+               <PhysicalExamEditor
+                 examData={note.physical_exam}
+                 onUpdate={async (examData) => {
+                   await base44.entities.ClinicalNote.update(noteId, { physical_exam: examData });
+                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                   toast.success("Physical exam updated");
+                 }}
+                 onAddToNote={async (examText) => {
+                   const updatedNote = (note.physical_exam || "") + examText;
+                   await base44.entities.ClinicalNote.update(noteId, { physical_exam: updatedNote });
+                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                   toast.success("Physical exam findings added to clinical note");
+                 }}
+               />
+
+               {/* Next Button */}
+               <div className="flex justify-end pt-4 border-t border-slate-200">
+                 <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                   Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                 </Button>
+               </div>
              </TabsContent>
 
              {/* Clinical Note Tab */}

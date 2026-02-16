@@ -39,6 +39,12 @@ export default function Home() {
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-32">
         <div className="text-center space-y-8">
+          <img 
+            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69876015478a19e360c5e3ea/2b9f784ba_ChatGPTImageFeb16202605_16_02PM.png" 
+            alt="Notrya AI Logo" 
+            className="w-32 h-32 mx-auto"
+          />
+
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700">
             <Sparkles className="w-4 h-4" />
             <span className="text-sm font-semibold">AI-Powered Clinical Platform</span>

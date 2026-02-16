@@ -170,6 +170,7 @@ export default function NoteDetail() {
   const [loadingLabRecommendations, setLoadingLabRecommendations] = useState(false);
   const [imagingRecommendations, setImagingRecommendations] = useState([]);
   const [loadingImagingRecommendations, setLoadingImagingRecommendations] = useState(false);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [mediaRecorder, setMediaRecorder] = useState(null);

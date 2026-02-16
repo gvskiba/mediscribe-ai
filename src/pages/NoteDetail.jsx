@@ -32,7 +32,8 @@ import {
         ChevronUp,
         GripVertical,
         RotateCcw,
-        Settings
+        Settings,
+        ExternalLink
       } from "lucide-react";
       import MedicationRecommendations from "../components/notes/MedicationRecommendations";
       import TreatmentPlanSelector from "../components/notes/TreatmentPlanSelector";
@@ -2144,6 +2145,214 @@ Generated: ${new Date().toLocaleString()}
                  diagnoses={note.diagnoses || []}
                  medications={note.medications || []}
                />
+             </div>
+
+             {/* AI Institution Guidelines Search */}
+             <div className="bg-white rounded-2xl border-2 border-indigo-300 shadow-lg overflow-hidden">
+               <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-5 text-white">
+                 <h3 className="font-bold text-lg flex items-center gap-2">
+                   <BookOpen className="w-6 h-6" />
+                   Specialty Association Guidelines
+                 </h3>
+                 <p className="text-indigo-100 text-sm mt-1">Evidence-based guidelines from ACEP, AAFP, ACC/AHA, and other major organizations</p>
+               </div>
+               <div className="p-6 space-y-4">
+                 <Button
+                   onClick={async () => {
+                     if (!note.chief_complaint && (!note.diagnoses || note.diagnoses.length === 0)) {
+                       toast.error("Add a chief complaint or diagnosis first");
+                       return;
+                     }
+
+                     setLoadingGuidelines(true);
+                     setGuidelineRecommendations([]);
+                     
+                     try {
+                       const searchQuery = note.chief_complaint || note.diagnoses[0];
+                       
+                       const result = await base44.integrations.Core.InvokeLLM({
+                         prompt: `You are a medical research expert with access to the internet. Analyze and search for clinical guidelines from major medical specialty organizations for this clinical presentation.
+
+CLINICAL CONTEXT:
+Chief Complaint: ${note.chief_complaint || "N/A"}
+Diagnoses: ${note.diagnoses?.join(", ") || "N/A"}
+Assessment: ${note.assessment || "N/A"}
+
+REQUIRED TASKS:
+1. Search OpenEvidence.com for evidence-based guidelines on this condition
+2. Search the following medical specialty organizations for relevant clinical practice guidelines:
+   - ACEP (American College of Emergency Physicians) - emergency medicine
+   - AAFP (American Academy of Family Physicians) - primary care
+   - ACC/AHA (American College of Cardiology/American Heart Association) - cardiology
+   - ADA (American Diabetes Association) - diabetes/endocrine
+   - IDSA (Infectious Diseases Society of America) - infectious disease
+   - ATS/CHEST (American Thoracic Society/CHEST) - pulmonary
+   - AAN (American Academy of Neurology) - neurology
+   - AAP (American Academy of Pediatrics) - pediatrics
+   - ACOG (American College of Obstetricians and Gynecologists) - OB/GYN
+   - AGA (American Gastroenterological Association) - GI
+   - NICE (National Institute for Health and Care Excellence) - UK guidelines
+   - ESC (European Society of Cardiology) - European cardiology
+
+3. For EACH relevant guideline found, provide:
+   - organization: The medical association (use abbreviation)
+   - guideline_title: The full official title
+   - summary: 2-3 sentence clinical summary of key recommendations
+   - key_points: Array of 3-5 most important actionable recommendations
+   - url: Direct URL to the guideline (must be real, working links)
+   - year: Year of publication or last update
+   - relevance: Why this guideline applies to this case (1-2 sentences)
+
+Return 5-10 of the most relevant and current guidelines.`,
+                         add_context_from_internet: true,
+                         response_json_schema: {
+                           type: "object",
+                           properties: {
+                             guidelines: {
+                               type: "array",
+                               items: {
+                                 type: "object",
+                                 properties: {
+                                   organization: { type: "string" },
+                                   guideline_title: { type: "string" },
+                                   summary: { type: "string" },
+                                   key_points: { type: "array", items: { type: "string" } },
+                                   url: { type: "string" },
+                                   year: { type: "string" },
+                                   relevance: { type: "string" }
+                                 }
+                               }
+                             }
+                           }
+                         }
+                       });
+
+                       const guidelines = result.guidelines || [];
+                       setGuidelineRecommendations(guidelines.map(g => ({ ...g, isInstitutional: true })));
+                       toast.success(`Found ${guidelines.length} guidelines`);
+                     } catch (error) {
+                       console.error("Failed to fetch guidelines:", error);
+                       toast.error("Failed to fetch guidelines");
+                     } finally {
+                       setLoadingGuidelines(false);
+                     }
+                   }}
+                   disabled={loadingGuidelines || (!note.chief_complaint && (!note.diagnoses || note.diagnoses.length === 0))}
+                   className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white gap-2 shadow-lg py-6 text-base"
+                 >
+                   {loadingGuidelines ? (
+                     <><Loader2 className="w-5 h-5 animate-spin" /> Searching Guidelines...</>
+                   ) : (
+                     <><Sparkles className="w-5 h-5" /> Search Specialty Guidelines</>
+                   )}
+                 </Button>
+
+                 {/* Guidelines Results */}
+                 {guidelineRecommendations.filter(g => g.isInstitutional).length > 0 && (
+                   <div className="space-y-3 border-t border-slate-200 pt-4">
+                     <div className="flex items-center gap-2 mb-3">
+                       <Sparkles className="w-4 h-4 text-indigo-600" />
+                       <h4 className="text-sm font-bold text-slate-900">
+                         {guidelineRecommendations.filter(g => g.isInstitutional).length} Relevant Guidelines Found
+                       </h4>
+                     </div>
+                     {guidelineRecommendations.filter(g => g.isInstitutional).map((guideline, idx) => (
+                       <motion.div
+                         key={idx}
+                         initial={{ opacity: 0, y: 10 }}
+                         animate={{ opacity: 1, y: 0 }}
+                         transition={{ delay: idx * 0.05 }}
+                         className="bg-gradient-to-br from-slate-50 to-white rounded-lg border-2 border-slate-200 p-5 hover:border-indigo-300 hover:shadow-md transition-all"
+                       >
+                         <div className="flex items-start justify-between gap-3 mb-3">
+                           <div className="flex-1">
+                             <div className="flex items-center gap-2 mb-2">
+                               <Badge className="bg-indigo-600 text-white font-semibold">
+                                 {guideline.organization}
+                               </Badge>
+                               <Badge variant="outline" className="text-xs">
+                                 {guideline.year}
+                               </Badge>
+                             </div>
+                             <h5 className="font-bold text-slate-900 mb-2 text-base">
+                               {guideline.guideline_title}
+                             </h5>
+                             <p className="text-sm text-slate-700 mb-3">
+                               {guideline.summary}
+                             </p>
+                             
+                             {/* Relevance */}
+                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                               <p className="text-xs font-semibold text-blue-900 mb-1">Clinical Relevance:</p>
+                               <p className="text-xs text-blue-800">{guideline.relevance}</p>
+                             </div>
+
+                             {/* Key Points */}
+                             {guideline.key_points?.length > 0 && (
+                               <div className="space-y-1 mb-3">
+                                 <p className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Key Recommendations:</p>
+                                 {guideline.key_points.map((point, pidx) => (
+                                   <div key={pidx} className="flex items-start gap-2">
+                                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 mt-1.5 flex-shrink-0" />
+                                     <p className="text-sm text-slate-700">{point}</p>
+                                   </div>
+                                 ))}
+                               </div>
+                             )}
+                           </div>
+                         </div>
+                         
+                         <div className="flex gap-2">
+                           {guideline.url && (
+                             <a
+                               href={guideline.url}
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               className="inline-flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 font-semibold bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-lg transition-all"
+                             >
+                               <BookOpen className="w-4 h-4" />
+                               View Guideline
+                             </a>
+                           )}
+                           <Button
+                             size="sm"
+                             onClick={async () => {
+                               try {
+                                 let guidelineText = `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                                 guidelineText += `CLINICAL GUIDELINE: ${guideline.organization} - ${guideline.year}\n`;
+                                 guidelineText += `${guideline.guideline_title}\n`;
+                                 guidelineText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+                                 guidelineText += `${guideline.summary}\n\n`;
+                                 
+                                 if (guideline.key_points?.length > 0) {
+                                   guidelineText += `KEY RECOMMENDATIONS:\n`;
+                                   guideline.key_points.forEach((point, i) => {
+                                     guidelineText += `  ${i + 1}. ${point}\n`;
+                                   });
+                                   guidelineText += `\n`;
+                                 }
+                                 
+                                 guidelineText += `Reference: ${guideline.url}\n`;
+
+                                 const updatedPlan = (note.plan || "") + guidelineText;
+                                 await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
+                                 queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                 toast.success("Guideline added to treatment plan");
+                               } catch (error) {
+                                 console.error("Failed to add guideline:", error);
+                                 toast.error("Failed to add guideline");
+                               }
+                             }}
+                             className="gap-1.5 bg-purple-600 hover:bg-purple-700 text-white"
+                           >
+                             <Plus className="w-3.5 h-3.5" /> Add to Plan
+                           </Button>
+                         </div>
+                       </motion.div>
+                     ))}
+                   </div>
+                 )}
+               </div>
              </div>
 
              {note.status === "finalized" && (

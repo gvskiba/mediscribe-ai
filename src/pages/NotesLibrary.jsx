@@ -113,7 +113,9 @@ export default function NotesLibrary() {
 
   // Group notes by patient (after filtered is defined)
   const notesByPatient = filtered.reduce((acc, note) => {
-    const patientName = note.patient_name || "Unknown Patient";
+    const patientName = note.patient_name === "New Patient" 
+      ? (note.chief_complaint || "New Patient")
+      : (note.patient_name || "Unknown Patient");
     if (!acc[patientName]) acc[patientName] = [];
     acc[patientName].push(note);
     return acc;

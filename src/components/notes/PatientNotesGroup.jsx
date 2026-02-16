@@ -37,7 +37,9 @@ export default function PatientNotesGroup({ patientName, notes, selectedNotes, o
               <User className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h3 className="font-bold text-lg text-slate-900">{patientName}</h3>
+              <h3 className="font-bold text-lg text-slate-900">
+                {patientName === "New Patient" ? (notes[0]?.chief_complaint || "New Patient") : patientName}
+              </h3>
               <p className="text-sm text-slate-600">
                 {notes.length} encounter{notes.length > 1 ? "s" : ""}
                 {notes[0]?.patient_id && ` • MRN: ${notes[0].patient_id}`}

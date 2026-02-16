@@ -48,34 +48,51 @@ const NoteSection = ({ title, value, field, onSave, color = "blue" }) => {
     >
       <div className={`px-4 py-3 flex items-center justify-between ${headerColors[color]}`}>
         <h3 className="font-bold text-sm">{title}</h3>
-        {!editing ? (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setEditing(true)}
-            className="h-7 gap-1"
-          >
-            <Edit2 className="w-3 h-3" /> Edit
-          </Button>
-        ) : (
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              onClick={handleSave}
-              className="h-7 gap-1 bg-green-600 hover:bg-green-700 text-white"
-            >
-              <Save className="w-3 h-3" /> Save
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleCancel}
-              className="h-7"
-            >
-              <X className="w-3 h-3" />
-            </Button>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {!editing ? (
+            <>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setEditing(true)}
+                className="h-7 gap-1"
+              >
+                <Edit2 className="w-3 h-3" /> Edit
+              </Button>
+              {value && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={async () => {
+                    await onSave(field, "");
+                    setEditValue("");
+                  }}
+                  className="h-7 gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="w-3 h-3" /> Clear
+                </Button>
+              )}
+            </>
+          ) : (
+            <>
+              <Button
+                size="sm"
+                onClick={handleSave}
+                className="h-7 gap-1 bg-green-600 hover:bg-green-700 text-white"
+              >
+                <Save className="w-3 h-3" /> Save
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleCancel}
+                className="h-7"
+              >
+                <X className="w-3 h-3" />
+              </Button>
+            </>
+          )}
+        </div>
       </div>
       <div className="p-4">
         {editing ? (

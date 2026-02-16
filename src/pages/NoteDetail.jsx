@@ -1674,8 +1674,8 @@ Generated: ${new Date().toLocaleString()}
                            })}
                          </div>
                        )}
-                         </TabsList>
-                         </div>
+                       </TabsList>
+                       </div>
            <div className="flex-1 overflow-hidden">
 
            {/* HPI & Intake Tab */}

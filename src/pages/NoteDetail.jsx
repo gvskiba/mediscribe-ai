@@ -5182,11 +5182,34 @@ Return 5-10 of the most relevant and current guidelines.`,
                          Continue <ArrowLeft className="w-5 h-5 rotate-180" />
                        </Button>
                      </div>
-                   </div>
-                   </TabsContent>
-               </div>
-               </Tabs>
-       </motion.div>
+                     </div>
+                     </TabsContent>
+
+                     {/* Procedures Tab */}
+                     <TabsContent value="procedures" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+                     <div className="max-w-5xl mx-auto space-y-8">
+                     {/* Header */}
+                     <div className="text-center mb-8">
+                       <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 mb-4 shadow-lg">
+                         <Activity className="w-8 h-8 text-white" />
+                       </div>
+                       <h2 className="text-3xl font-bold text-slate-900 mb-2">Procedures</h2>
+                       <p className="text-slate-600 max-w-2xl mx-auto">AI-powered procedure recommendations, educational resources, and procedure logging</p>
+                     </div>
+
+                     <ProceduresPanel note={note} />
+                     </div>
+
+                     {/* Next Button */}
+                     <div className="flex justify-end pt-4 border-t border-slate-200">
+                     <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                       Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                     </Button>
+                     </div>
+                     </TabsContent>
+                     </div>
+                     </Tabs>
+                     </motion.div>
 
 
        </div>

@@ -67,6 +67,9 @@ import AIDocumentationAssistant from "../components/ai/AIDocumentationAssistant"
 import AIMDMAnalyzer from "../components/notes/AIMDMAnalyzer";
 import PhysicalExamEditor from "../components/notes/PhysicalExamEditor";
 import ReviewOfSystemsEditor from "../components/notes/ReviewOfSystemsEditor";
+import BMICalculator from "../components/calculators/BMICalculator";
+import CreatinineClearanceCalculator from "../components/calculators/CreatinineClearanceCalculator";
+import MedicationDosingLookup from "../components/calculators/MedicationDosingLookup";
 
 const TAB_GROUPS = [
   {

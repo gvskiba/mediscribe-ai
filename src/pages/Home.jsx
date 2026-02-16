@@ -20,7 +20,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img 
-              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69876015478a19e360c5e3ea/24bc9a4fc_ChatGPTImageFeb16202605_08_52PM.png" 
+              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69876015478a19e360c5e3ea/2b9f784ba_ChatGPTImageFeb16202605_16_02PM.png" 
               alt="Notrya AI" 
               className="w-10 h-10 object-contain"
             />
@@ -131,10 +131,10 @@ export default function Home() {
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
             <h3 className="text-3xl font-bold text-slate-900">
-              Why Choose MedScribe?
+              Why Choose Notrya AI?
             </h3>
             <p className="text-lg text-slate-600">
-              Built specifically for healthcare professionals, MedScribe combines cutting-edge AI with clinical expertise to deliver the most intelligent documentation assistant on the market.
+              Built specifically for healthcare professionals, Notrya AI combines cutting-edge AI with clinical expertise to deliver the most intelligent clinical assistant on the market.
             </p>
             <div className="space-y-4">
               {[
@@ -213,7 +213,7 @@ export default function Home() {
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <img 
-                  src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69876015478a19e360c5e3ea/24bc9a4fc_ChatGPTImageFeb16202605_08_52PM.png" 
+                  src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69876015478a19e360c5e3ea/2b9f784ba_ChatGPTImageFeb16202605_16_02PM.png" 
                   alt="Notrya AI" 
                   className="w-8 h-8 object-contain"
                 />

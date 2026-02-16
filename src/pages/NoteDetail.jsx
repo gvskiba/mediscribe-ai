@@ -170,6 +170,17 @@ export default function NoteDetail() {
     
     // Restore tab groups from localStorage but merge icons from TAB_GROUPS and migrate old tab IDs
     const savedGroups = JSON.parse(saved);
+    
+    // Check if saved groups have the laboratory tab, if not, reset to default
+    const hasLaboratoryTab = savedGroups.some(group => 
+      group.tabs.some(tab => tab.id === 'laboratory')
+    );
+    
+    if (!hasLaboratoryTab) {
+      localStorage.removeItem('noteDetailTabGroups');
+      return TAB_GROUPS;
+    }
+    
     return savedGroups.map(savedGroup => {
       const originalGroup = TAB_GROUPS.find(g => g.id === savedGroup.id);
       return {

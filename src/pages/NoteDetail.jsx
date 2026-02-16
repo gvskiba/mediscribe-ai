@@ -2872,6 +2872,8 @@ Return 5-10 of the most relevant and current guidelines.`,
                                        ))}
                                      </ul>
                                    </div>
+                                 )}
+
                                  <Button
                                    size="sm"
                                    onClick={async () => {
@@ -2885,11 +2887,10 @@ Return 5-10 of the most relevant and current guidelines.`,
                                        toast.error("Failed to add diagnosis");
                                      }
                                    }}
-                                   className="gap-1.5 bg-purple-600 hover:bg-purple-700 text-white"
+                                   className="gap-1.5 bg-purple-600 hover:bg-purple-700 text-white mt-3"
                                  >
                                    <Plus className="w-3.5 h-3.5" /> Add Diagnosis
                                  </Button>
-                                 )}
                                  </div>
                                  </motion.div>
                                  ))}

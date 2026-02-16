@@ -21,7 +21,11 @@ import {
   CheckCircle2,
   AlertCircle,
   FileText,
-  RefreshCw
+  RefreshCw,
+  Upload,
+  X as XIcon,
+  Code,
+  Paperclip
 } from "lucide-react";
 import { toast } from "sonner";
 import moment from "moment";
@@ -381,6 +385,17 @@ Provide recommendations in JSON format with: procedure_name, indication, clinica
                           </Badge>
                         </div>
                         <p className="text-sm text-slate-700 mb-1"><strong>Indication:</strong> {log.indication}</p>
+                        
+                        {log.icd10_codes && log.icd10_codes.length > 0 && (
+                          <div className="flex flex-wrap gap-1 my-2">
+                            {log.icd10_codes.map((code, idx) => (
+                              <Badge key={idx} variant="outline" className="text-xs bg-purple-50 text-purple-800 border-purple-300">
+                                {code}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+
                         <div className="flex items-center gap-4 text-xs text-slate-500">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
@@ -394,8 +409,26 @@ Provide recommendations in JSON format with: procedure_name, indication, clinica
                           )}
                           {log.operator && <span>By: {log.operator}</span>}
                         </div>
+                        
                         {log.findings && (
                           <p className="text-sm text-slate-600 mt-2"><strong>Findings:</strong> {log.findings}</p>
+                        )}
+                        
+                        {log.documentation_files && log.documentation_files.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {log.documentation_files.map((doc, didx) => (
+                              <a
+                                key={didx}
+                                href={doc.file_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded border border-blue-200"
+                              >
+                                <Paperclip className="w-3 h-3" />
+                                {doc.description}
+                              </a>
+                            ))}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -429,6 +462,7 @@ function LogProcedureDialog({ open, onOpenChange, note, selectedProcedure, onSav
   const [formData, setFormData] = useState({
     procedure_name: "",
     procedure_code: "",
+    icd10_codes: [],
     indication: "",
     date_performed: new Date().toISOString(),
     operator: "",
@@ -441,8 +475,13 @@ function LogProcedureDialog({ open, onOpenChange, note, selectedProcedure, onSav
     outcome: "successful",
     post_procedure_plan: "",
     consent_obtained: true,
-    status: "completed"
+    status: "completed",
+    documentation_files: []
   });
+  const [icd10Search, setIcd10Search] = useState("");
+  const [icd10Suggestions, setIcd10Suggestions] = useState([]);
+  const [loadingIcd10, setLoadingIcd10] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
 
   useEffect(() => {
     if (selectedProcedure) {
@@ -455,13 +494,94 @@ function LogProcedureDialog({ open, onOpenChange, note, selectedProcedure, onSav
     }
   }, [selectedProcedure]);
 
+  // Auto-suggest ICD-10 codes and CPT code when procedure name changes
+  useEffect(() => {
+    const getSuggestions = async () => {
+      if (formData.procedure_name && formData.procedure_name.length > 3) {
+        setLoadingIcd10(true);
+        try {
+          const result = await base44.integrations.Core.InvokeLLM({
+            prompt: `For the medical procedure "${formData.procedure_name}", provide:
+1. The appropriate CPT code
+2. Common ICD-10 diagnosis codes that would justify this procedure
+3. Brief clinical rationale for each ICD-10 code
+
+Return structured data.`,
+            add_context_from_internet: true,
+            response_json_schema: {
+              type: "object",
+              properties: {
+                cpt_code: { type: "string" },
+                icd10_suggestions: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      code: { type: "string" },
+                      description: { type: "string" },
+                      rationale: { type: "string" }
+                    }
+                  }
+                }
+              }
+            }
+          });
+
+          if (result.cpt_code && !formData.procedure_code) {
+            setFormData(prev => ({ ...prev, procedure_code: result.cpt_code }));
+          }
+          setIcd10Suggestions(result.icd10_suggestions || []);
+        } catch (error) {
+          console.error("Failed to get suggestions:", error);
+        } finally {
+          setLoadingIcd10(false);
+        }
+      }
+    };
+
+    const debounce = setTimeout(getSuggestions, 800);
+    return () => clearTimeout(debounce);
+  }, [formData.procedure_name]);
+
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setUploadingFiles(true);
+    try {
+      const uploadedFiles = await Promise.all(
+        files.map(async (file) => {
+          const { file_url } = await base44.integrations.Core.UploadFile({ file });
+          return {
+            file_url,
+            file_type: file.type,
+            description: file.name
+          };
+        })
+      );
+
+      setFormData(prev => ({
+        ...prev,
+        documentation_files: [...prev.documentation_files, ...uploadedFiles]
+      }));
+      toast.success(`${files.length} file(s) uploaded`);
+    } catch (error) {
+      console.error("Upload failed:", error);
+      toast.error("Failed to upload files");
+    } finally {
+      setUploadingFiles(false);
+    }
+  };
+
   const handleSubmit = () => {
     const data = {
       ...formData,
       note_id: note.id,
       patient_name: note.patient_name,
       patient_id: note.patient_id,
-      duration_minutes: formData.duration_minutes ? parseInt(formData.duration_minutes) : null
+      duration_minutes: formData.duration_minutes ? parseInt(formData.duration_minutes) : null,
+      icd10_codes: formData.icd10_codes,
+      documentation_files: formData.documentation_files
     };
     onSave(data);
   };
@@ -501,6 +621,200 @@ function LogProcedureDialog({ open, onOpenChange, note, selectedProcedure, onSav
               placeholder="Clinical indication for procedure"
               rows={2}
             />
+          </div>
+
+          {/* ICD-10 Codes Section */}
+          <div className="border-t pt-4">
+            <label className="text-sm font-medium text-slate-700 mb-2 block flex items-center gap-2">
+              <Code className="w-4 h-4 text-purple-600" />
+              ICD-10 Diagnosis Codes
+            </label>
+            
+            {/* Current ICD-10 Codes */}
+            {formData.icd10_codes.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {formData.icd10_codes.map((code, idx) => (
+                  <Badge key={idx} className="bg-purple-100 text-purple-800 gap-1">
+                    {code}
+                    <button
+                      onClick={() => {
+                        const updated = formData.icd10_codes.filter((_, i) => i !== idx);
+                        setFormData({ ...formData, icd10_codes: updated });
+                      }}
+                      className="ml-1 hover:bg-purple-200 rounded-full p-0.5"
+                    >
+                      <XIcon className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            {/* AI Suggestions */}
+            {loadingIcd10 && (
+              <div className="flex items-center gap-2 text-sm text-slate-500 mb-3">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Getting ICD-10 suggestions...</span>
+              </div>
+            )}
+
+            {icd10Suggestions.length > 0 && (
+              <div className="space-y-2 mb-3">
+                <p className="text-xs font-medium text-slate-600">Suggested codes for this procedure:</p>
+                {icd10Suggestions.map((suggestion, idx) => (
+                  <div key={idx} className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge className="bg-purple-600 text-white font-mono text-xs">
+                            {suggestion.code}
+                          </Badge>
+                        </div>
+                        <p className="text-sm font-medium text-slate-900">{suggestion.description}</p>
+                        <p className="text-xs text-slate-600 mt-1">{suggestion.rationale}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          if (!formData.icd10_codes.includes(`${suggestion.code} - ${suggestion.description}`)) {
+                            setFormData({
+                              ...formData,
+                              icd10_codes: [...formData.icd10_codes, `${suggestion.code} - ${suggestion.description}`]
+                            });
+                            toast.success("ICD-10 code added");
+                          }
+                        }}
+                        className="flex-shrink-0"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Manual ICD-10 Entry */}
+            <div className="flex gap-2">
+              <Input
+                placeholder="Search ICD-10 codes..."
+                value={icd10Search}
+                onChange={(e) => setIcd10Search(e.target.value)}
+                className="flex-1"
+              />
+              <Button
+                size="sm"
+                onClick={async () => {
+                  if (!icd10Search.trim()) return;
+                  
+                  setLoadingIcd10(true);
+                  try {
+                    const result = await base44.integrations.Core.InvokeLLM({
+                      prompt: `Search for ICD-10 codes related to: "${icd10Search}". Return the top 5 most relevant codes with full descriptions.`,
+                      add_context_from_internet: true,
+                      response_json_schema: {
+                        type: "object",
+                        properties: {
+                          codes: {
+                            type: "array",
+                            items: {
+                              type: "object",
+                              properties: {
+                                code: { type: "string" },
+                                description: { type: "string" }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    });
+
+                    setIcd10Suggestions(result.codes?.map(c => ({
+                      code: c.code,
+                      description: c.description,
+                      rationale: "Search result"
+                    })) || []);
+                  } catch (error) {
+                    toast.error("Search failed");
+                  } finally {
+                    setLoadingIcd10(false);
+                  }
+                }}
+                disabled={loadingIcd10}
+              >
+                <Search className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Documentation Upload Section */}
+          <div className="border-t pt-4">
+            <label className="text-sm font-medium text-slate-700 mb-2 block flex items-center gap-2">
+              <Paperclip className="w-4 h-4 text-blue-600" />
+              Procedure Documentation
+            </label>
+            
+            {formData.documentation_files.length > 0 && (
+              <div className="space-y-2 mb-3">
+                {formData.documentation_files.map((doc, idx) => (
+                  <div key={idx} className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg p-2">
+                    <Paperclip className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-slate-900 truncate">{doc.description}</p>
+                      <p className="text-xs text-slate-500">{doc.file_type}</p>
+                    </div>
+                    <a
+                      href={doc.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                    <button
+                      onClick={() => {
+                        const updated = formData.documentation_files.filter((_, i) => i !== idx);
+                        setFormData({ ...formData, documentation_files: updated });
+                      }}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <XIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <input
+                type="file"
+                multiple
+                accept="image/*,.pdf,.doc,.docx"
+                onChange={handleFileUpload}
+                disabled={uploadingFiles}
+                className="hidden"
+                id="procedure-file-upload"
+              />
+              <label
+                htmlFor="procedure-file-upload"
+                className="flex-1 cursor-pointer"
+              >
+                <div className="border-2 border-dashed border-slate-300 hover:border-blue-400 rounded-lg p-4 text-center transition-colors">
+                  {uploadingFiles ? (
+                    <div className="flex items-center justify-center gap-2 text-slate-500">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-sm">Uploading...</span>
+                    </div>
+                  ) : (
+                    <div>
+                      <Upload className="w-6 h-6 text-slate-400 mx-auto mb-1" />
+                      <p className="text-sm text-slate-600">Click to upload images, reports, or documents</p>
+                      <p className="text-xs text-slate-500 mt-1">Supports images, PDF, Word documents</p>
+                    </div>
+                  )}
+                </div>
+              </label>
+            </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">

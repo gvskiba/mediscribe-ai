@@ -227,6 +227,7 @@ export default function ClinicalNoteView({ note, onUpdate, noteTypes }) {
   const [consolidatedNote, setConsolidatedNote] = useState(null);
   const [copied, setCopied] = useState(false);
   const [isConsolidatedOpen, setIsConsolidatedOpen] = useState(true);
+  const [showAggregated, setShowAggregated] = useState(true);
 
   const typeLabels = {
     progress_note: "Progress Note",
@@ -337,11 +338,21 @@ Generate the complete clinical note now.`;
 
   return (
     <div className="space-y-6">
-      {/* Note Type Selector */}
+      {/* Header with Toggle */}
       <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border-2 border-indigo-300 p-5">
-        <div className="flex items-center gap-3 mb-3">
-          <FileText className="w-6 h-6 text-indigo-600" />
-          <h2 className="text-xl font-bold text-slate-900">Clinical Note</h2>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <FileText className="w-6 h-6 text-indigo-600" />
+            <h2 className="text-xl font-bold text-slate-900">Clinical Note</h2>
+          </div>
+          <Button
+            variant={showAggregated ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowAggregated(!showAggregated)}
+            className="gap-2"
+          >
+            {showAggregated ? "Show Sections" : "Show Aggregated"}
+          </Button>
         </div>
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-2">Note Type</label>
@@ -359,6 +370,191 @@ Generate the complete clinical note now.`;
           <p className="text-xs text-indigo-700 mt-2">
             Current: <strong>{typeLabels[note.note_type] || "Progress Note"}</strong>
           </p>
+        </div>
+      </div>
+
+      {/* Aggregated Clinical Note View */}
+      {showAggregated && (
+        <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
+          <div className="bg-gradient-to-r from-slate-700 to-slate-800 px-6 py-5 text-white">
+            <h3 className="font-bold text-lg flex items-center gap-2">
+              <FileText className="w-6 h-6" />
+              Complete Clinical Note
+            </h3>
+            <p className="text-slate-200 text-sm mt-1">All clinical data integrated from all tabs</p>
+          </div>
+          <div className="p-6 space-y-6 max-h-[800px] overflow-y-auto">
+            {/* Chief Complaint */}
+            {note.chief_complaint && (
+              <div>
+                <h4 className="text-sm font-bold text-blue-900 mb-2 pb-2 border-b-2 border-blue-200">CHIEF COMPLAINT</h4>
+                <p className="text-sm text-slate-700 leading-relaxed">{note.chief_complaint}</p>
+              </div>
+            )}
+
+            {/* History of Present Illness */}
+            {note.history_of_present_illness && (
+              <div>
+                <h4 className="text-sm font-bold text-purple-900 mb-2 pb-2 border-b-2 border-purple-200">HISTORY OF PRESENT ILLNESS</h4>
+                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{note.history_of_present_illness}</p>
+              </div>
+            )}
+
+            {/* Review of Systems */}
+            {note.review_of_systems && (
+              <div>
+                <h4 className="text-sm font-bold text-amber-900 mb-2 pb-2 border-b-2 border-amber-200">REVIEW OF SYSTEMS</h4>
+                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{note.review_of_systems}</p>
+              </div>
+            )}
+
+            {/* Physical Examination */}
+            {note.physical_exam && (
+              <div>
+                <h4 className="text-sm font-bold text-green-900 mb-2 pb-2 border-b-2 border-green-200">PHYSICAL EXAMINATION</h4>
+                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{note.physical_exam}</p>
+              </div>
+            )}
+
+            {/* Vital Signs */}
+            {note.vital_signs && Object.keys(note.vital_signs).length > 0 && (
+              <div>
+                <h4 className="text-sm font-bold text-emerald-900 mb-2 pb-2 border-b-2 border-emerald-200">VITAL SIGNS</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {note.vital_signs.temperature?.value && (
+                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                      <p className="text-xs text-slate-500">Temperature</p>
+                      <p className="text-sm font-semibold text-slate-900">{note.vital_signs.temperature.value}° {note.vital_signs.temperature.unit}</p>
+                    </div>
+                  )}
+                  {note.vital_signs.heart_rate?.value && (
+                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                      <p className="text-xs text-slate-500">Heart Rate</p>
+                      <p className="text-sm font-semibold text-slate-900">{note.vital_signs.heart_rate.value} bpm</p>
+                    </div>
+                  )}
+                  {note.vital_signs.blood_pressure?.systolic && (
+                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                      <p className="text-xs text-slate-500">Blood Pressure</p>
+                      <p className="text-sm font-semibold text-slate-900">{note.vital_signs.blood_pressure.systolic}/{note.vital_signs.blood_pressure.diastolic} mmHg</p>
+                    </div>
+                  )}
+                  {note.vital_signs.respiratory_rate?.value && (
+                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                      <p className="text-xs text-slate-500">Respiratory Rate</p>
+                      <p className="text-sm font-semibold text-slate-900">{note.vital_signs.respiratory_rate.value} /min</p>
+                    </div>
+                  )}
+                  {note.vital_signs.oxygen_saturation?.value && (
+                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                      <p className="text-xs text-slate-500">O2 Saturation</p>
+                      <p className="text-sm font-semibold text-slate-900">{note.vital_signs.oxygen_saturation.value}%</p>
+                    </div>
+                  )}
+                  {note.vital_signs.weight?.value && (
+                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                      <p className="text-xs text-slate-500">Weight</p>
+                      <p className="text-sm font-semibold text-slate-900">{note.vital_signs.weight.value} {note.vital_signs.weight.unit}</p>
+                    </div>
+                  )}
+                  {note.vital_signs.height?.value && (
+                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                      <p className="text-xs text-slate-500">Height</p>
+                      <p className="text-sm font-semibold text-slate-900">{note.vital_signs.height.value} {note.vital_signs.height.unit}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Assessment */}
+            {note.assessment && (
+              <div>
+                <h4 className="text-sm font-bold text-indigo-900 mb-2 pb-2 border-b-2 border-indigo-200">ASSESSMENT</h4>
+                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{note.assessment}</p>
+              </div>
+            )}
+
+            {/* Diagnoses */}
+            {note.diagnoses && note.diagnoses.length > 0 && (
+              <div>
+                <h4 className="text-sm font-bold text-blue-900 mb-2 pb-2 border-b-2 border-blue-200">DIAGNOSES</h4>
+                <ul className="space-y-2">
+                  {note.diagnoses.map((diag, idx) => (
+                    <li key={idx} className="text-sm text-slate-700 flex items-start gap-2 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                      <span className="text-blue-600 font-bold">{idx + 1}.</span>
+                      <span>{diag}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Treatment Plan */}
+            {note.plan && (
+              <div>
+                <h4 className="text-sm font-bold text-rose-900 mb-2 pb-2 border-b-2 border-rose-200">PLAN</h4>
+                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{note.plan}</p>
+              </div>
+            )}
+
+            {/* Medications */}
+            {note.medications && note.medications.length > 0 && (
+              <div>
+                <h4 className="text-sm font-bold text-green-900 mb-2 pb-2 border-b-2 border-green-200">MEDICATIONS</h4>
+                <ul className="space-y-2">
+                  {note.medications.map((med, idx) => (
+                    <li key={idx} className="text-sm text-slate-700 flex items-start gap-2 bg-green-50 p-3 rounded-lg border border-green-200">
+                      <span className="text-green-600 font-bold">{idx + 1}.</span>
+                      <span>{med}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Medical History */}
+            {note.medical_history && (
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 mb-2 pb-2 border-b-2 border-slate-200">MEDICAL HISTORY</h4>
+                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{note.medical_history}</p>
+              </div>
+            )}
+
+            {/* Allergies */}
+            {note.allergies && note.allergies.length > 0 && (
+              <div>
+                <h4 className="text-sm font-bold text-red-900 mb-2 pb-2 border-b-2 border-red-200">ALLERGIES</h4>
+                <ul className="space-y-2">
+                  {note.allergies.map((allergy, idx) => (
+                    <li key={idx} className="text-sm text-slate-700 flex items-start gap-2 bg-red-50 p-3 rounded-lg border border-red-200">
+                      <span className="text-red-600 font-bold">⚠️</span>
+                      <span>{allergy}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Clinical Impression */}
+            {note.clinical_impression && (
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 mb-2 pb-2 border-b-2 border-slate-200">FINAL CLINICAL IMPRESSION</h4>
+                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{note.clinical_impression}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Individual Editable Sections (when not showing aggregated) */}
+      {!showAggregated && (
+        <>
+      {/* Note Type Selector */}
+      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border-2 border-indigo-300 p-5">
+        <div className="flex items-center gap-3 mb-3">
+          <FileText className="w-6 h-6 text-indigo-600" />
+          <h2 className="text-xl font-bold text-slate-900">Edit Clinical Sections</h2>
         </div>
       </div>
 
@@ -454,6 +650,8 @@ Generate the complete clinical note now.`;
         onSave={onUpdate}
         color="slate"
       />
+        </>
+      )}
 
       {/* Generate Consolidated Note Button */}
       <Collapsible open={isConsolidatedOpen} onOpenChange={setIsConsolidatedOpen}>

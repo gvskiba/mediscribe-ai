@@ -227,9 +227,9 @@ export default function Home() {
                 alt="Notrya AI" 
                 className="w-8 h-8 object-contain"
               />
-              <span className="font-bold text-white">Notrya AI</span>
+              <span className="font-bold text-slate-900">Notrya AI</span>
             </div>
-            <p className="text-sm text-slate-400">&copy; 2024 Notrya AI. All rights reserved. HIPAA Compliant • SOC 2 Certified</p>
+            <p className="text-sm text-slate-600">&copy; 2024 Notrya AI. All rights reserved. HIPAA Compliant • SOC 2 Certified</p>
           </div>
         </div>
       </footer>

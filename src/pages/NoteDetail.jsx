@@ -296,6 +296,13 @@ export default function NoteDetail() {
     enabled: !!noteId,
   });
 
+  // Track current open note
+  useEffect(() => {
+    if (noteId) {
+      localStorage.setItem('currentOpenNote', noteId);
+    }
+  }, [noteId]);
+
   const { data: templates = [] } = useQuery({
     queryKey: ["noteTemplates"],
     queryFn: () => base44.entities.NoteTemplate.list()

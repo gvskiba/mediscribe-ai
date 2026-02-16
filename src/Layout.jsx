@@ -20,6 +20,7 @@ import GlobalSearchBar from "./components/search/GlobalSearchBar";
 import RecentNotesDropdown from "./components/notes/RecentNotesDropdown";
 
 import { Settings } from "lucide-react";
+import ReturnToNoteButton from "./components/notes/ReturnToNoteButton";
 
 const navSections = [
       {
@@ -127,6 +128,7 @@ export default function Layout({ children, currentPageName }) {
 
             {/* Actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
+              <ReturnToNoteButton currentPage={currentPageName} />
               <RecentNotesDropdown />
               <button
                 onClick={async () => {

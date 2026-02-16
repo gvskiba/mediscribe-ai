@@ -13,8 +13,8 @@ import {
 } from "lucide-react";
 
 export default function Home() {
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50 to-white">
+        return (
+          <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-slate-50">
       {/* Header */}
       <header className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-200 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">

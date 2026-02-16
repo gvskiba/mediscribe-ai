@@ -92,7 +92,7 @@ const TAB_GROUPS = [
     label: 'Analysis',
     color: 'emerald',
     tabs: [
-      { id: 'assessment_plan', label: 'Assessments', icon: Activity },
+      { id: 'initial_impression', label: 'Initial Impression', icon: Sparkles },
       { id: 'diagnoses', label: 'Diagnoses', icon: Beaker },
       { id: 'imaging', label: 'Result Analysis', icon: ImageIcon },
       { id: 'mdm', label: 'MDM', icon: AlertCircle },
@@ -2068,58 +2068,145 @@ Generated: ${new Date().toLocaleString()}
 
 
 
-                     {/* Assessments Tab */}
-                 <TabsContent value="assessment_plan" className="p-6 space-y-6 overflow-y-auto">
-                   <>
-                     {/* Real-time Treatment Pathway Recommendations */}
-                     <ClinicalDecisionSupport
-                       type="treatment_pathways"
-                       note={note}
-                       onAddToNote={async (pathwayText) => {
-                         const updatedPlan = (note.plan || "") + "\n\n" + pathwayText;
-                         await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
-                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                       }}
-                     />
+                     {/* Initial Impression Tab */}
+                     <TabsContent value="initial_impression" className="p-6 space-y-6 overflow-y-auto">
+                     <div className="max-w-4xl mx-auto space-y-6">
+                     {/* Header */}
+                     <div className="text-center mb-8">
+                       <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 mb-4 shadow-lg">
+                         <Sparkles className="w-8 h-8 text-white" />
+                       </div>
+                       <h2 className="text-3xl font-bold text-slate-900 mb-2">Initial Impression</h2>
+                       <p className="text-slate-600">AI-powered analysis of presenting symptoms and differential diagnoses</p>
+                     </div>
 
-                     {/* Differential Diagnosis */}
-                       <div>
-                         <div className="flex items-center justify-between mb-4">
-                           <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                             <Sparkles className="w-4 h-4 text-indigo-600" />
-                             Differential Diagnosis
-                           </h3>
-                         </div>
-
-                         {loadingDifferential ? (
-                           <div className="flex items-center gap-3 text-slate-500 py-8">
-                             <Loader2 className="w-5 h-5 animate-spin" />
-                             <span className="text-sm">Generating differential...</span>
+                     {/* Clinical Context Summary */}
+                     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 p-6">
+                       <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                         <Activity className="w-5 h-5 text-blue-600" />
+                         Clinical Context
+                       </h3>
+                       <div className="grid md:grid-cols-2 gap-4">
+                         {note.chief_complaint && (
+                           <div className="bg-white rounded-lg p-4 border border-blue-200">
+                             <p className="text-xs font-semibold text-blue-900 mb-2">Chief Complaint</p>
+                             <p className="text-sm text-slate-700">{note.chief_complaint}</p>
                            </div>
-                         ) : differentialDiagnosis.length > 0 ? (
-                           <div className="space-y-3">
-                             {differentialDiagnosis.map((diff, idx) => (
-                               <div key={idx} className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
-                                 <div className="flex items-start justify-between">
-                                   <div className="flex-1">
-                                     <p className="font-semibold text-sm text-slate-900">{diff.diagnosis}</p>
-                                     <div className="mt-2 flex items-center gap-2">
-                                       <span className="text-xs font-medium text-indigo-700">Likelihood:</span>
-                                       <div className="w-24 h-2 bg-indigo-200 rounded-full overflow-hidden">
-                                         <div className="h-full bg-indigo-600" style={{ width: `${(diff.likelihood_rank / 5) * 100}%` }} />
-                                       </div>
-                                       <span className="text-xs text-indigo-700 font-bold">{diff.likelihood_rank}/5</span>
+                         )}
+                         {note.vital_signs && Object.keys(note.vital_signs).length > 0 && (
+                           <div className="bg-white rounded-lg p-4 border border-blue-200">
+                             <p className="text-xs font-semibold text-blue-900 mb-2">Vital Signs</p>
+                             <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
+                               {note.vital_signs.temperature?.value && (
+                                 <div>Temp: {note.vital_signs.temperature.value}°{note.vital_signs.temperature.unit}</div>
+                               )}
+                               {note.vital_signs.heart_rate?.value && (
+                                 <div>HR: {note.vital_signs.heart_rate.value} bpm</div>
+                               )}
+                               {note.vital_signs.blood_pressure?.systolic && (
+                                 <div>BP: {note.vital_signs.blood_pressure.systolic}/{note.vital_signs.blood_pressure.diastolic}</div>
+                               )}
+                               {note.vital_signs.oxygen_saturation?.value && (
+                                 <div>SpO2: {note.vital_signs.oxygen_saturation.value}%</div>
+                               )}
+                             </div>
+                           </div>
+                         )}
+                       </div>
+                     </div>
+
+                     {/* Generate Differential Diagnosis */}
+                     <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-lg overflow-hidden">
+                       <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-5 text-white">
+                         <h3 className="font-bold text-lg flex items-center gap-2">
+                           <Sparkles className="w-6 h-6" />
+                           AI Differential Diagnosis Generator
+                         </h3>
+                         <p className="text-indigo-100 text-sm mt-1">Analyze presenting symptoms and generate ranked differential diagnoses</p>
+                       </div>
+                       <div className="p-6">
+                         {!note.chief_complaint ? (
+                           <div className="text-center py-12">
+                             <AlertCircle className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                             <p className="text-slate-600 font-medium">Chief Complaint Required</p>
+                             <p className="text-sm text-slate-500 mt-1">Add a chief complaint to generate differential diagnoses</p>
+                           </div>
+                         ) : (
+                           <Button
+                             onClick={generateDifferentialDiagnosis}
+                             disabled={loadingDifferential}
+                             className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white gap-2 shadow-lg py-6 text-base"
+                           >
+                             {loadingDifferential ? (
+                               <><Loader2 className="w-5 h-5 animate-spin" /> Generating Differential Diagnoses...</>
+                             ) : (
+                               <><Sparkles className="w-5 h-5" /> Generate Differential Diagnoses</>
+                             )}
+                           </Button>
+                         )}
+                       </div>
+                     </div>
+
+                     {/* Differential Diagnosis Results */}
+                     {differentialDiagnosis.length > 0 && (
+                       <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
+                         <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                           <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                             <Activity className="w-5 h-5 text-indigo-600" />
+                             Differential Diagnoses
+                           </h3>
+                           <Badge className="bg-indigo-100 text-indigo-800">
+                             {differentialDiagnosis.length} diagnoses
+                           </Badge>
+                         </div>
+                         <div className="p-6 space-y-4">
+                           {differentialDiagnosis.map((diff, idx) => (
+                             <motion.div
+                               key={idx}
+                               initial={{ opacity: 0, y: 20 }}
+                               animate={{ opacity: 1, y: 0 }}
+                               transition={{ delay: idx * 0.1 }}
+                               className="rounded-xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 p-5 hover:border-indigo-300 transition-all"
+                             >
+                               <div className="flex items-start justify-between mb-3">
+                                 <div className="flex-1">
+                                   <div className="flex items-center gap-3 mb-2">
+                                     <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 text-white font-bold shadow-md">
+                                       {idx + 1}
                                      </div>
+                                     <h4 className="text-lg font-bold text-slate-900">{diff.diagnosis}</h4>
+                                   </div>
+                                   <div className="flex items-center gap-3 ml-11">
+                                     <span className="text-xs font-semibold text-indigo-700">Likelihood:</span>
+                                     <div className="flex-1 max-w-xs h-3 bg-indigo-100 rounded-full overflow-hidden border border-indigo-200">
+                                       <div 
+                                         className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500" 
+                                         style={{ width: `${(diff.likelihood_rank / 5) * 100}%` }} 
+                                       />
+                                     </div>
+                                     <Badge className="bg-indigo-600 text-white font-bold">
+                                       {diff.likelihood_rank}/5
+                                     </Badge>
                                    </div>
                                  </div>
-                                 <p className="text-xs text-slate-600 mt-3"><strong>Reasoning:</strong> {diff.clinical_reasoning}</p>
+                               </div>
+
+                               <div className="ml-11 space-y-3">
+                                 <div className="bg-white rounded-lg p-4 border border-indigo-200">
+                                   <p className="text-xs font-bold text-slate-700 mb-2">Clinical Reasoning:</p>
+                                   <p className="text-sm text-slate-600 leading-relaxed">{diff.clinical_reasoning}</p>
+                                 </div>
+
                                  {diff.red_flags_to_monitor?.length > 0 && (
-                                   <div className="mt-2">
-                                     <p className="text-xs font-semibold text-red-700 mb-1">Red Flags to Monitor:</p>
-                                     <ul className="space-y-1">
+                                   <div className="bg-red-50 rounded-lg p-4 border-2 border-red-200">
+                                     <p className="text-xs font-bold text-red-900 mb-2 flex items-center gap-2">
+                                       <AlertCircle className="w-4 h-4" />
+                                       Red Flags to Monitor:
+                                     </p>
+                                     <ul className="space-y-1.5">
                                        {diff.red_flags_to_monitor.map((flag, i) => (
-                                         <li key={i} className="text-xs text-slate-600 flex gap-2">
-                                           <span>•</span>
+                                         <li key={i} className="text-sm text-red-800 flex items-start gap-2">
+                                           <span className="text-red-600 mt-0.5 font-bold">⚠️</span>
                                            <span>{flag}</span>
                                          </li>
                                        ))}
@@ -2127,13 +2214,9 @@ Generated: ${new Date().toLocaleString()}
                                    </div>
                                  )}
                                </div>
-                             ))}
-                           </div>
-                         ) : (
-                           <p className="text-sm text-slate-500 text-center py-8">No differential diagnosis generated</p>
-                         )}
+                             </motion.div>
+                           ))}
 
-                         {differentialDiagnosis.length > 0 && (
                            <Button
                              onClick={async () => {
                                try {
@@ -2141,7 +2224,7 @@ Generated: ${new Date().toLocaleString()}
                                    `${idx + 1}. ${diff.diagnosis} (Likelihood: ${diff.likelihood_rank}/5)\n   ${diff.clinical_reasoning}`
                                  ).join('\n\n');
 
-                                 const updatedAssessment = (note.assessment || "") + "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nDIFFERENTIAL DIAGNOSIS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" + diffText;
+                                 const updatedAssessment = (note.assessment || "") + "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nINITIAL IMPRESSION - DIFFERENTIAL DIAGNOSIS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" + diffText;
                                  await base44.entities.ClinicalNote.update(noteId, { assessment: updatedAssessment });
                                  queryClient.invalidateQueries({ queryKey: ["note", noteId] });
                                  toast.success("Differential diagnosis added to assessment");
@@ -2150,36 +2233,22 @@ Generated: ${new Date().toLocaleString()}
                                  toast.error("Failed to add differential diagnosis");
                                }
                              }}
-                             className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white gap-2"
+                             className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white gap-2 shadow-lg"
                            >
-                             <Plus className="w-4 h-4" /> Add Differential to Assessment
+                             <Plus className="w-4 h-4" /> Add to Clinical Assessment
                            </Button>
-                         )}
                          </div>
-
-                         {/* ICD-10 Code Mapper - Direct Search & Selection */}
-                       <div className="border-2 border-blue-300 bg-blue-50 rounded-xl p-5">
-                         <h3 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
-                           <Sparkles className="w-4 h-4" />
-                           Smart ICD-10 Code Mapper
-                         </h3>
-                         <p className="text-xs text-blue-800 mb-4">Select diagnoses to generate ranked ICD-10 codes with clinical reasoning</p>
-                         <DiagnosisICD10Matcher
-                           diagnoses={note.diagnoses || []}
-                           onCodesGenerated={async (codes) => {
-                             // Codes generated in the component
-                           }}
-                         />
                        </div>
-                       </>
+                     )}
+                     </div>
 
-                       {/* Next Button */}
-                       <div className="flex justify-end pt-4 border-t border-slate-200">
-                       <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
-                         Next <ArrowLeft className="w-4 h-4 rotate-180" />
-                       </Button>
-                       </div>
-                       </TabsContent>
+                     {/* Next Button */}
+                     <div className="flex justify-end pt-4 border-t border-slate-200">
+                     <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                       Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                     </Button>
+                     </div>
+                     </TabsContent>
 
                      {/* MDM Tab */}
                      <TabsContent value="mdm" className="p-6 space-y-6 overflow-y-auto">

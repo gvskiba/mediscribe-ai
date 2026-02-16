@@ -94,9 +94,11 @@ export default function Layout({ children, currentPageName }) {
           <div className="flex items-center justify-between gap-6">
             {/* Logo */}
             <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-200">
-                <Stethoscope className="w-5 h-5 text-white" />
-              </div>
+              <img 
+                src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69876015478a19e360c5e3ea/24bc9a4fc_ChatGPTImageFeb16202605_08_52PM.png" 
+                alt="Notrya AI" 
+                className="w-10 h-10 object-contain"
+              />
               <div>
                 <h1 className="text-base font-bold tracking-tight text-slate-900">Notrya AI</h1>
                 <p className="text-xs text-slate-600">Clinical AI Assistant</p>
@@ -159,9 +161,11 @@ export default function Layout({ children, currentPageName }) {
       <div className="lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-slate-200 text-slate-900 px-4 py-3 z-40 space-y-3" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-200">
-              <Stethoscope className="w-4 h-4 text-white" />
-            </div>
+            <img 
+              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69876015478a19e360c5e3ea/24bc9a4fc_ChatGPTImageFeb16202605_08_52PM.png" 
+              alt="Notrya AI" 
+              className="w-8 h-8 object-contain flex-shrink-0"
+            />
             <span className="font-bold text-sm truncate">Notrya AI</span>
           </div>
           <div className="flex items-center gap-2">

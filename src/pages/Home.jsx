@@ -19,9 +19,11 @@ export default function Home() {
       <header className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-200 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg">
-              <Stethoscope className="w-5 h-5 text-white" />
-            </div>
+            <img 
+              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69876015478a19e360c5e3ea/24bc9a4fc_ChatGPTImageFeb16202605_08_52PM.png" 
+              alt="Notrya AI" 
+              className="w-10 h-10 object-contain"
+            />
             <h1 className="text-xl font-bold text-slate-900">Notrya AI</h1>
           </div>
           <Button
@@ -210,9 +212,11 @@ export default function Home() {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                  <Stethoscope className="w-4 h-4 text-white" />
-                </div>
+                <img 
+                  src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69876015478a19e360c5e3ea/24bc9a4fc_ChatGPTImageFeb16202605_08_52PM.png" 
+                  alt="Notrya AI" 
+                  className="w-8 h-8 object-contain"
+                />
                 <span className="font-bold text-white">Notrya AI</span>
               </div>
               <p className="text-sm text-slate-400">

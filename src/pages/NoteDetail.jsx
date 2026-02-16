@@ -1784,18 +1784,49 @@ Generated: ${new Date().toLocaleString()}
                                          const Icon = tab.icon;
                                          const isActive = activeTab === tab.id;
                                          return (
-                                           <TabsTrigger 
-                                             key={tab.id}
-                                             value={tab.id} 
-                                             className={`w-full justify-start px-4 py-2.5 gap-3 font-medium text-sm transition-all duration-200 rounded-lg ${
-                                               isActive 
-                                                 ? `${activeColorClasses[group.color]} text-white shadow-md` 
-                                                 : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 hover:border-slate-300'
-                                             }`}
-                                           >
-                                             <Icon className="w-4 h-4 flex-shrink-0" />
-                                             <span className="text-left truncate">{tab.label}</span>
-                                           </TabsTrigger>
+                                           <div key={tab.id} className="group/tab">
+                                             <TabsTrigger 
+                                               value={tab.id} 
+                                               className={`w-full justify-start px-4 py-2.5 gap-3 font-medium text-sm transition-all duration-200 rounded-lg relative ${
+                                                 isActive 
+                                                   ? `${activeColorClasses[group.color]} text-white shadow-md` 
+                                                   : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 hover:border-slate-300'
+                                               }`}
+                                             >
+                                               <Icon className="w-4 h-4 flex-shrink-0" />
+                                               <span className="text-left truncate">{tab.label}</span>
+                                             </TabsTrigger>
+                                             <div className="absolute right-2 top-2.5 opacity-0 group-hover/tab:opacity-100 transition-opacity flex gap-1">
+                                               <button
+                                                 onClick={(e) => {
+                                                   e.stopPropagation();
+                                                   setEditingTabId(tab.id);
+                                                   setEditingTabName(tab.label);
+                                                 }}
+                                                 className="p-1 hover:bg-slate-200 rounded text-slate-600 hover:text-slate-900"
+                                                 title="Rename tab"
+                                               >
+                                                 <FileText className="w-3 h-3" />
+                                               </button>
+                                               {tab.id.startsWith('custom_') && (
+                                                 <button
+                                                   onClick={(e) => {
+                                                     e.stopPropagation();
+                                                     const allTabs = tabGroups.flatMap(g => g.tabs);
+                                                     if (allTabs.length === 1) {
+                                                       toast.error("Cannot delete the last tab");
+                                                       return;
+                                                     }
+                                                     handleDeleteTab(group.id, tab.id);
+                                                   }}
+                                                   className="p-1 hover:bg-red-100 rounded text-red-600 hover:text-red-800"
+                                                   title="Delete tab"
+                                                 >
+                                                   <X className="w-3 h-3" />
+                                                 </button>
+                                               )}
+                                             </div>
+                                           </div>
                                          );
                                        })}
                                      </motion.div>

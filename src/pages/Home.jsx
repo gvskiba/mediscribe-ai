@@ -161,7 +161,7 @@ export default function Home() {
               <h3 className="text-4xl font-bold text-slate-900">
                 Why Healthcare Professionals Choose Notrya AI
               </h3>
-              <p className="text-lg text-slate-300 leading-relaxed">
+              <p className="text-lg text-slate-700 leading-relaxed">
                 Built specifically for clinicians, combining cutting-edge AI with clinical expertise to deliver intelligent documentation assistance.
               </p>
               <ul className="space-y-3">
@@ -172,8 +172,8 @@ export default function Home() {
                   "Reduces cognitive burden",
                   "Improves documentation quality"
                 ].map((item, idx) => (
-                  <li key={idx} className="flex items-center gap-3 text-slate-200">
-                    <div className="w-2 h-2 bg-cyan-400 rounded-full flex-shrink-0" />
+                  <li key={idx} className="flex items-center gap-3 text-slate-700">
+                    <div className="w-2 h-2 bg-cyan-600 rounded-full flex-shrink-0" />
                     {item}
                   </li>
                 ))}

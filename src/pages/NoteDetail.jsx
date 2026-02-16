@@ -59,6 +59,7 @@ import SmartTemplateApplicator from "../components/templates/SmartTemplateApplic
 import AIDocumentationAssistant from "../components/ai/AIDocumentationAssistant";
 import AIMDMAnalyzer from "../components/notes/AIMDMAnalyzer";
 import PhysicalExamEditor from "../components/notes/PhysicalExamEditor";
+import ReviewOfSystemsEditor from "../components/notes/ReviewOfSystemsEditor";
 
 const TAB_ROWS = [
   [
@@ -67,6 +68,7 @@ const TAB_ROWS = [
     { id: 'summary', label: 'Summary', icon: FileText },
     { id: 'clinical', label: 'Clinical Note', icon: FileText },
     { id: 'physical_exam', label: 'Physical Exam', icon: Activity },
+    { id: 'review_of_systems', label: 'Review of Systems', icon: Activity },
     { id: 'assessment_plan', label: 'Assessments', icon: Activity },
     { id: 'imaging', label: 'Result Analysis', icon: ImageIcon },
     { id: 'diagnoses', label: 'Diagnoses', icon: Beaker },
@@ -1422,6 +1424,31 @@ Generated: ${new Date().toLocaleString()}
                    await base44.entities.ClinicalNote.update(noteId, { physical_exam: updatedNote });
                    queryClient.invalidateQueries({ queryKey: ["note", noteId] });
                    toast.success("Physical exam findings added to clinical note");
+                 }}
+               />
+
+               {/* Next Button */}
+               <div className="flex justify-end pt-4 border-t border-slate-200">
+                 <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                   Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                 </Button>
+               </div>
+             </TabsContent>
+
+             {/* Review of Systems Tab */}
+             <TabsContent value="review_of_systems" className="p-6 space-y-6 overflow-y-auto">
+               <ReviewOfSystemsEditor
+                 rosData={note.review_of_systems}
+                 onUpdate={async (rosData) => {
+                   await base44.entities.ClinicalNote.update(noteId, { review_of_systems: rosData });
+                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                   toast.success("Review of systems updated");
+                 }}
+                 onAddToNote={async (rosText) => {
+                   const updatedNote = (note.review_of_systems || "") + rosText;
+                   await base44.entities.ClinicalNote.update(noteId, { review_of_systems: updatedNote });
+                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                   toast.success("Review of systems findings added to clinical note");
                  }}
                />
 

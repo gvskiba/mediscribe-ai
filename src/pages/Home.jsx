@@ -22,7 +22,7 @@ export default function Home() {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg">
               <Stethoscope className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-slate-900">MedScribe</h1>
+            <h1 className="text-xl font-bold text-slate-900">Notrya AI</h1>
           </div>
           <Button
             onClick={() => base44.auth.redirectToLogin()}
@@ -39,18 +39,18 @@ export default function Home() {
         <div className="text-center space-y-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700">
             <Sparkles className="w-4 h-4" />
-            <span className="text-sm font-semibold">AI-Powered Clinical Documentation</span>
+            <span className="text-sm font-semibold">AI-Powered Clinical Platform</span>
           </div>
 
           <h2 className="text-5xl sm:text-6xl font-bold tracking-tight text-slate-900 leading-tight">
-            Clinical Documentation
+            Clinical Intelligence
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-800">
-              Made Intelligent
+              Reimagined
             </span>
           </h2>
 
           <p className="text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            MedScribe is your AI-powered clinical assistant designed to streamline medical documentation, provide evidence-based recommendations, and enhance patient care through intelligent analysis.
+            Notrya AI is your intelligent clinical assistant designed to streamline medical documentation, provide evidence-based recommendations, and enhance patient care through advanced AI analysis.
           </p>
 
           <Button
@@ -191,7 +191,7 @@ export default function Home() {
             Ready to Transform Your Documentation?
           </h3>
           <p className="text-xl text-blue-100 max-w-2xl mx-auto">
-            Join healthcare professionals already using MedScribe to revolutionize their clinical documentation process.
+            Join healthcare professionals already using Notrya AI to revolutionize their clinical practice.
           </p>
           <Button
             onClick={() => base44.auth.redirectToLogin()}
@@ -213,10 +213,10 @@ export default function Home() {
                 <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
                   <Stethoscope className="w-4 h-4 text-white" />
                 </div>
-                <span className="font-bold text-white">MedScribe</span>
+                <span className="font-bold text-white">Notrya AI</span>
               </div>
               <p className="text-sm text-slate-400">
-                Clinical AI Assistant for modern healthcare professionals
+                Intelligent clinical platform for modern healthcare professionals
               </p>
             </div>
             <div>
@@ -245,7 +245,7 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t border-slate-800 pt-8 flex items-center justify-between text-sm text-slate-400">
-            <p>&copy; 2024 MedScribe. All rights reserved.</p>
+            <p>&copy; 2024 Notrya AI. All rights reserved.</p>
             <p>HIPAA Compliant • SOC 2 Certified</p>
           </div>
         </div>

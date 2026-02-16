@@ -98,7 +98,7 @@ export default function Layout({ children, currentPageName }) {
                 <Stethoscope className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-base font-bold tracking-tight text-slate-900">MedScribe</h1>
+                <h1 className="text-base font-bold tracking-tight text-slate-900">Notrya AI</h1>
                 <p className="text-xs text-slate-600">Clinical AI Assistant</p>
               </div>
             </div>
@@ -162,7 +162,7 @@ export default function Layout({ children, currentPageName }) {
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-200">
               <Stethoscope className="w-4 h-4 text-white" />
             </div>
-            <span className="font-bold text-sm truncate">MedScribe</span>
+            <span className="font-bold text-sm truncate">Notrya AI</span>
           </div>
           <div className="flex items-center gap-2">
             <button

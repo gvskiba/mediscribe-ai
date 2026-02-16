@@ -23,11 +23,11 @@ export default function Home() {
               alt="Notrya AI" 
               className="w-10 h-10 object-contain"
             />
-            <h1 className="text-xl font-bold text-white">Notrya AI</h1>
+            <h1 className="text-xl font-bold text-slate-900">Notrya AI</h1>
           </div>
           <Button
             onClick={() => base44.auth.redirectToLogin()}
-            className="bg-cyan-500 hover:bg-cyan-600 text-slate-900 font-semibold gap-2"
+            className="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold gap-2"
           >
             Sign In
             <ArrowRight className="w-4 h-4" />

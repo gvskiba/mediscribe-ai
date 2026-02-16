@@ -1634,7 +1634,6 @@ Generated: ${new Date().toLocaleString()}
                              </div>
                            </div>
                            )}
-                           </>
                            ) : (
                          <div className="space-y-0">
                            {tabGroups.map((group) => {

@@ -168,6 +168,7 @@ export default function NoteDetail() {
   const [recordingTime, setRecordingTime] = useState(0);
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [analyzingRawData, setAnalyzingRawData] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
   const [exportingFormat, setExportingFormat] = useState(null);
   const [extractingData, setExtractingData] = useState(false);
   const [linkingGuidelines, setLinkingGuidelines] = useState(false);
@@ -1150,6 +1151,8 @@ Generated: ${new Date().toLocaleString()}
               }}
               onBlur={async (e) => {
                 await base44.entities.ClinicalNote.update(noteId, { patient_name: e.target.value });
+                setLastSaved(new Date().toISOString());
+                toast.success("Note saved at " + format(new Date(), "h:mm:ss a"));
               }}
               className="text-3xl font-bold text-slate-900 bg-transparent border-b-2 border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none transition-colors px-1 -ml-1"
             />
@@ -1676,6 +1679,8 @@ Generated: ${new Date().toLocaleString()}
                      }}
                      onBlur={async (e) => {
                        await base44.entities.ClinicalNote.update(noteId, { raw_note: e.target.value });
+                       setLastSaved(new Date().toISOString());
+                       toast.success("Note saved at " + format(new Date(), "h:mm:ss a"));
                      }}
                      placeholder="Type or paste raw patient data, encounter notes, or transcription here..."
                      className="w-full min-h-[300px] bg-slate-50 text-slate-900 font-mono text-sm"
@@ -1876,6 +1881,8 @@ Generated: ${new Date().toLocaleString()}
                  }}
                  onBlur={async (e) => {
                    await base44.entities.ClinicalNote.update(noteId, { chief_complaint: e.target.value });
+                   setLastSaved(new Date().toISOString());
+                   toast.success("Note saved at " + format(new Date(), "h:mm:ss a"));
                  }}
                  placeholder="Enter the patient's chief complaint (e.g., 'Chest pain for 2 hours', 'Persistent cough for 1 week')..."
                  className="w-full px-4 py-3 rounded-lg border-2 border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all text-slate-900 placeholder:text-slate-400 resize-none"

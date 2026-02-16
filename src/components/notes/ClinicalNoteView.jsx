@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { format } from "date-fns";
 
 const NoteSection = ({ title, value, field, onSave, color = "blue" }) => {
   const [editing, setEditing] = useState(false);
@@ -15,6 +16,7 @@ const NoteSection = ({ title, value, field, onSave, color = "blue" }) => {
   const handleSave = async () => {
     await onSave(field, editValue);
     setEditing(false);
+    toast.success("Saved at " + format(new Date(), "h:mm:ss a"));
   };
 
   const handleCancel = () => {
@@ -124,6 +126,7 @@ const ArraySection = ({ title, items, field, onSave, color = "blue" }) => {
     const itemsArray = editValue.split("\n").filter(item => item.trim());
     await onSave(field, itemsArray);
     setEditing(false);
+    toast.success("Saved at " + format(new Date(), "h:mm:ss a"));
   };
 
   const handleCancel = () => {

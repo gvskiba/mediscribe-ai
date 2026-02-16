@@ -59,7 +59,7 @@ export default function Home() {
               <h2 className="text-3xl font-bold text-slate-900">
                 Transform Your Clinical Documentation
               </h2>
-              <p className="text-lg text-slate-300 leading-relaxed">
+              <p className="text-lg text-slate-700 leading-relaxed">
                 Your intelligent assistant for streamlined medical notes, evidence-based recommendations, and enhanced patient care through advanced AI.
               </p>
             </div>
@@ -72,8 +72,8 @@ export default function Home() {
                 "HIPAA-compliant & secure"
               ].map((feature, idx) => (
                 <div key={idx} className="flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-1" />
-                  <p className="text-slate-200">{feature}</p>
+                  <CheckCircle2 className="w-5 h-5 text-cyan-600 flex-shrink-0 mt-1" />
+                  <p className="text-slate-700">{feature}</p>
                 </div>
               ))}
             </div>

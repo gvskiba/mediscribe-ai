@@ -3395,57 +3395,285 @@ Generated: ${new Date().toLocaleString()}
                      </TabsContent>
 
                        {/* Final Impression Tab */}
-                 <TabsContent value="final_impression" className="p-6 space-y-6 overflow-y-auto">
-                   <div className="bg-white rounded-xl border-2 border-slate-300 shadow-sm overflow-hidden">
-                     <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center gap-2">
-                       <FileText className="w-5 h-5 text-slate-600" />
-                       <h3 className="font-semibold text-slate-900">Final Impression</h3>
-                     </div>
-                     <div className="p-4">
-                       <EditableSection
-                         icon={Sparkles}
-                         title=""
-                         color="slate"
-                         value={note.clinical_impression || ""}
-                         field="clinical_impression"
-                         type="textarea"
-                         onUpdate={async (field, value) => {
-                           await base44.entities.ClinicalNote.update(noteId, { [field]: value });
-                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                         }}
-                         onReanalyze={async (field) => {
-                           if (!note?.assessment || !note?.diagnoses) return null;
-                           const result = await base44.integrations.Core.InvokeLLM({
-                             prompt: `Generate a comprehensive clinical impression/final diagnosis based on the following clinical information:
+                       <TabsContent value="final_impression" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+                       <div className="max-w-5xl mx-auto space-y-8">
+                       {/* Header Section */}
+                       <div className="text-center mb-8">
+                       <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 mb-4 shadow-lg">
+                         <FileText className="w-8 h-8 text-white" />
+                       </div>
+                       <h2 className="text-3xl font-bold text-slate-900 mb-2">Final Clinical Impression</h2>
+                       <p className="text-slate-600 max-w-2xl mx-auto">Comprehensive AI analysis synthesizing all clinical findings</p>
+                       </div>
 
-                     ASSESSMENT: ${note.assessment}
-                     DIAGNOSES: ${note.diagnoses?.join(", ") || "None"}
-                     PLAN: ${note.plan || "None"}
+                       {/* Generate Final Impression */}
+                       <div className="bg-white rounded-xl border-2 border-blue-300 shadow-lg overflow-hidden">
+                       <div className="bg-gradient-to-r from-blue-500 to-indigo-500 px-6 py-5 text-white">
+                         <h3 className="font-bold text-lg flex items-center gap-2">
+                           <Sparkles className="w-6 h-6" />
+                           AI Final Impression Generator
+                         </h3>
+                         <p className="text-blue-100 text-sm mt-1">Synthesizes all clinical data, lab results, and imaging findings</p>
+                       </div>
+                       <div className="p-6">
+                         {!note.chief_complaint && !note.assessment ? (
+                           <div className="text-center py-12">
+                             <AlertCircle className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                             <p className="text-slate-600 font-medium">Clinical Data Required</p>
+                             <p className="text-sm text-slate-500 mt-1">Complete the clinical note sections to generate final impression</p>
+                           </div>
+                         ) : (
+                           <Button
+                             onClick={async () => {
+                               setExtractingData(true);
+                               try {
+                                 const result = await base44.integrations.Core.InvokeLLM({
+                                   prompt: `Generate a comprehensive Final Clinical Impression based on ALL available clinical data:
 
-                     Create a concise final impression that synthesizes the key clinical findings and primary diagnoses.`,
-                             add_context_from_internet: false
-                           });
-                           await base44.entities.ClinicalNote.update(noteId, { [field]: result });
-                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                           return result;
-                         }}
-                         hideBorder={true}
-                         noteContext={{
-                           assessment: note.assessment,
-                           diagnoses: note.diagnoses,
-                           plan: note.plan
-                         }}
-                       />
-                     </div>
-                     </div>
+                       PATIENT INFORMATION:
+                       - Name: ${note.patient_name}
+                       - Age: ${note.patient_age || "Not specified"}
+                       - Gender: ${note.patient_gender || "Not specified"}
 
-                     {/* Next Button */}
-                     <div className="flex justify-end pt-4 border-t border-slate-200">
-                     <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                       CHIEF COMPLAINT:
+                       ${note.chief_complaint || "Not documented"}
+
+                       HISTORY OF PRESENT ILLNESS:
+                       ${note.history_of_present_illness || "Not documented"}
+
+                       REVIEW OF SYSTEMS:
+                       ${note.review_of_systems || "Not documented"}
+
+                       PHYSICAL EXAMINATION:
+                       ${note.physical_exam || "Not documented"}
+
+                       VITAL SIGNS:
+                       ${note.vital_signs ? JSON.stringify(note.vital_signs, null, 2) : "Not documented"}
+
+                       ASSESSMENT:
+                       ${note.assessment || "Not documented"}
+
+                       DIFFERENTIAL DIAGNOSES:
+                       ${differentialDiagnosis.map(d => `${d.diagnosis} (Likelihood: ${d.likelihood_rank}/5) - ${d.clinical_reasoning}`).join("\n") || "Not documented"}
+
+                       LABORATORY FINDINGS:
+                       ${labRecommendations.length > 0 ? labRecommendations.map(lab => `${lab.test_name} (${lab.category}) - ${lab.clinical_indication}`).join("\n") : "No lab recommendations generated"}
+
+                       IMAGING STUDIES:
+                       ${imagingRecommendations.length > 0 ? imagingRecommendations.map(img => `${img.study_name} (${img.modality}) - ${img.clinical_indication}`).join("\n") : "No imaging recommendations generated"}
+
+                       CURRENT DIAGNOSES:
+                       ${note.diagnoses?.join(", ") || "Not documented"}
+
+                       TREATMENT PLAN:
+                       ${note.plan || "Not documented"}
+
+                       Generate a comprehensive final clinical impression that includes:
+
+                       1. **Summary Statement**: One-paragraph synthesis of the clinical presentation and key findings
+
+                       2. **Primary Diagnoses with ICD-10 Codes**: List the most likely diagnoses with specific ICD-10 codes based on the clinical data. Include code and full description.
+
+                       3. **Supporting Evidence**: Key clinical findings, lab results, and imaging that support each diagnosis
+
+                       4. **Clinical Significance**: Brief explanation of the implications and severity
+
+                       5. **Recommended Follow-up**: Key follow-up actions, monitoring, or specialist referrals needed
+
+                       Format as clear, professional medical documentation.`,
+                                   add_context_from_internet: true,
+                                   response_json_schema: {
+                                     type: "object",
+                                     properties: {
+                                       summary_statement: { type: "string" },
+                                       primary_diagnoses: {
+                                         type: "array",
+                                         items: {
+                                           type: "object",
+                                           properties: {
+                                             diagnosis: { type: "string" },
+                                             icd10_code: { type: "string" },
+                                             icd10_description: { type: "string" },
+                                             supporting_evidence: { type: "array", items: { type: "string" } },
+                                             clinical_significance: { type: "string" }
+                                           }
+                                         }
+                                       },
+                                       recommended_followup: { type: "array", items: { type: "string" } }
+                                     }
+                                   }
+                                 });
+
+                                 // Store in a temporary state or display directly
+                                 const impressionText = `FINAL CLINICAL IMPRESSION
+
+                       SUMMARY:
+                       ${result.summary_statement}
+
+                       PRIMARY DIAGNOSES:
+                       ${result.primary_diagnoses.map((dx, i) => `
+                       ${i + 1}. ${dx.diagnosis}
+                       ICD-10: ${dx.icd10_code} - ${dx.icd10_description}
+
+                       Supporting Evidence:
+                       ${dx.supporting_evidence.map(ev => `   • ${ev}`).join('\n')}
+
+                       Clinical Significance:
+                       ${dx.clinical_significance}
+                       `).join('\n')}
+
+                       RECOMMENDED FOLLOW-UP:
+                       ${result.recommended_followup.map((f, i) => `${i + 1}. ${f}`).join('\n')}`;
+
+                                 await base44.entities.ClinicalNote.update(noteId, { 
+                                   clinical_impression: impressionText,
+                                   diagnoses: result.primary_diagnoses.map(dx => `${dx.icd10_code} - ${dx.icd10_description}`)
+                                 });
+                                 queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                 toast.success("Final impression generated and added to note");
+                               } catch (error) {
+                                 console.error("Failed to generate final impression:", error);
+                                 toast.error("Failed to generate final impression");
+                               } finally {
+                                 setExtractingData(false);
+                               }
+                             }}
+                             disabled={extractingData}
+                             className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white gap-2 shadow-lg py-6 text-base"
+                           >
+                             {extractingData ? (
+                               <><Loader2 className="w-5 h-5 animate-spin" /> Generating Final Impression...</>
+                             ) : (
+                               <><Sparkles className="w-5 h-5" /> Generate Comprehensive Final Impression</>
+                             )}
+                           </Button>
+                         )}
+                       </div>
+                       </div>
+
+                       {/* Display Final Impression */}
+                       {note.clinical_impression && (
+                       <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
+                         <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                           <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                             <FileText className="w-5 h-5 text-blue-600" />
+                             Final Clinical Impression
+                           </h3>
+                           <Button
+                             variant="outline"
+                             size="sm"
+                             onClick={async () => {
+                               await base44.entities.ClinicalNote.update(noteId, { clinical_impression: "" });
+                               queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                               toast.success("Final impression cleared");
+                             }}
+                             className="gap-2 text-slate-600 hover:text-slate-900"
+                           >
+                             <X className="w-4 h-4" /> Clear
+                           </Button>
+                         </div>
+                         <div className="p-6">
+                           <div className="bg-slate-50 rounded-lg p-6 border border-slate-200">
+                             <pre className="text-sm text-slate-900 whitespace-pre-wrap font-sans leading-relaxed">
+                               {note.clinical_impression}
+                             </pre>
+                           </div>
+
+                           <div className="mt-6 grid grid-cols-2 gap-4">
+                             <Button
+                               onClick={async () => {
+                                 try {
+                                   // Copy to clipboard
+                                   await navigator.clipboard.writeText(note.clinical_impression);
+                                   toast.success("Final impression copied to clipboard");
+                                 } catch (error) {
+                                   console.error("Failed to copy:", error);
+                                   toast.error("Failed to copy to clipboard");
+                                 }
+                               }}
+                               variant="outline"
+                               className="gap-2"
+                             >
+                               <FileCode className="w-4 h-4" /> Copy to Clipboard
+                             </Button>
+
+                             <Button
+                               onClick={async () => {
+                                 try {
+                                   const fullNote = `${note.summary || ""}\n\n${note.assessment || ""}\n\n${note.clinical_impression}`;
+                                   await base44.entities.ClinicalNote.update(noteId, { 
+                                     assessment: fullNote 
+                                   });
+                                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                   toast.success("Final impression added to clinical note assessment");
+                                 } catch (error) {
+                                   console.error("Failed to add to note:", error);
+                                   toast.error("Failed to add to clinical note");
+                                 }
+                               }}
+                               className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white gap-2"
+                             >
+                               <Plus className="w-4 h-4" /> Add to Clinical Note
+                             </Button>
+                           </div>
+                         </div>
+                       </div>
+                       )}
+
+                       {/* Current Diagnoses with ICD-10 */}
+                       {note.diagnoses && note.diagnoses.length > 0 && (
+                       <div className="bg-white rounded-xl border-2 border-green-200 shadow-lg overflow-hidden">
+                         <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-4 text-white">
+                           <h3 className="font-bold text-lg flex items-center gap-2">
+                             <Code className="w-5 h-5" />
+                             Final Diagnoses with ICD-10 Codes
+                           </h3>
+                           <p className="text-green-50 text-sm mt-1">{note.diagnoses.length} {note.diagnoses.length === 1 ? 'diagnosis' : 'diagnoses'} documented</p>
+                         </div>
+                         <div className="p-6 space-y-3">
+                           {note.diagnoses.map((diag, idx) => {
+                             const icd10Match = diag.match(/^([A-Z0-9.]+)\s*-\s*(.+)$/);
+                             const code = icd10Match ? icd10Match[1] : null;
+                             const description = icd10Match ? icd10Match[2] : diag;
+
+                             return (
+                               <motion.div
+                                 key={idx}
+                                 initial={{ opacity: 0, x: -20 }}
+                                 animate={{ opacity: 1, x: 0 }}
+                                 transition={{ delay: idx * 0.05 }}
+                                 className="flex items-start gap-4 p-5 rounded-xl border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50"
+                               >
+                                 <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 text-white font-bold shadow-md flex-shrink-0">
+                                   {idx + 1}
+                                 </div>
+                                 <div className="flex-1">
+                                   {code ? (
+                                     <>
+                                       <Badge className="bg-gradient-to-r from-green-600 to-emerald-600 text-white font-mono text-sm px-3 py-1 mb-2 shadow-sm">
+                                         {code}
+                                       </Badge>
+                                       <p className="text-base font-semibold text-slate-900 leading-relaxed">{description}</p>
+                                     </>
+                                   ) : (
+                                     <p className="text-base font-semibold text-slate-900 leading-relaxed">{diag}</p>
+                                   )}
+                                 </div>
+                               </motion.div>
+                             );
+                           })}
+                         </div>
+                       </div>
+                       )}
+                       </div>
+
+                       {/* Next Button */}
+                       <div className="flex justify-end pt-4 border-t border-slate-200">
+                       <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
                        Next <ArrowLeft className="w-4 h-4 rotate-180" />
-                     </Button>
-                     </div>
-                     </TabsContent>
+                       </Button>
+                       </div>
+                       </TabsContent>
 
                      {/* Finalize Note Tab */}
                  <TabsContent value="finalize" className="p-6 space-y-6 overflow-y-auto">

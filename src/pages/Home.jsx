@@ -144,7 +144,7 @@ export default function Home() {
                 <h4 className="text-xl font-semibold text-slate-900 mb-3">
                   {feature.title}
                 </h4>
-                <p className="text-slate-300">
+                <p className="text-slate-600">
                   {feature.description}
                 </p>
               </div>

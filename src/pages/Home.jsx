@@ -180,34 +180,34 @@ export default function Home() {
               </ul>
             </div>
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl opacity-10 blur-2xl"></div>
-              <div className="relative bg-slate-800/50 rounded-2xl p-8 border border-cyan-500/30 backdrop-blur">
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-2xl opacity-5 blur-2xl"></div>
+              <div className="relative bg-white rounded-2xl p-8 border border-cyan-300 backdrop-blur">
                 <div className="space-y-4">
-                  <div className="flex items-center gap-4 pb-4 border-b border-slate-700">
-                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center flex-shrink-0">
+                  <div className="flex items-center gap-4 pb-4 border-b border-slate-200">
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-600 to-blue-600 flex items-center justify-center flex-shrink-0">
                       <Zap className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <p className="font-semibold text-white">60% Faster</p>
-                      <p className="text-sm text-slate-400">Clinical documentation</p>
+                      <p className="font-semibold text-slate-900">60% Faster</p>
+                      <p className="text-sm text-slate-600">Clinical documentation</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 pb-4 border-b border-slate-700">
-                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center flex-shrink-0">
+                  <div className="flex items-center gap-4 pb-4 border-b border-slate-200">
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-600 to-blue-600 flex items-center justify-center flex-shrink-0">
                       <Shield className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <p className="font-semibold text-white">Secure & Compliant</p>
-                      <p className="text-sm text-slate-400">Enterprise-grade security</p>
+                      <p className="font-semibold text-slate-900">Secure & Compliant</p>
+                      <p className="text-sm text-slate-600">Enterprise-grade security</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center flex-shrink-0">
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-600 to-blue-600 flex items-center justify-center flex-shrink-0">
                       <Sparkles className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <p className="font-semibold text-white">AI-Powered</p>
-                      <p className="text-sm text-slate-400">Latest AI technology</p>
+                      <p className="font-semibold text-slate-900">AI-Powered</p>
+                      <p className="text-sm text-slate-600">Latest AI technology</p>
                     </div>
                   </div>
                 </div>

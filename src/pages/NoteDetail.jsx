@@ -26,7 +26,9 @@ import {
         Beaker,
         Activity,
         Pill,
-        X
+        X,
+        ChevronDown,
+        ChevronUp
       } from "lucide-react";
       import MedicationRecommendations from "../components/notes/MedicationRecommendations";
       import TreatmentPlanSelector from "../components/notes/TreatmentPlanSelector";
@@ -61,31 +63,62 @@ import AIMDMAnalyzer from "../components/notes/AIMDMAnalyzer";
 import PhysicalExamEditor from "../components/notes/PhysicalExamEditor";
 import ReviewOfSystemsEditor from "../components/notes/ReviewOfSystemsEditor";
 
-const TAB_ROWS = [
-  [
-    { id: 'ai_assistant', label: 'AI Assistant', icon: Sparkles },
-    { id: 'chief_complaint', label: 'Chief Complaint', icon: Activity },
-    { id: 'summary', label: 'Summary', icon: FileText },
-    { id: 'clinical', label: 'Clinical Note', icon: FileText },
-    { id: 'physical_exam', label: 'Physical Exam', icon: Activity },
-    { id: 'review_of_systems', label: 'Review of Systems', icon: Activity },
-    { id: 'assessment_plan', label: 'Assessments', icon: Activity },
-    { id: 'imaging', label: 'Result Analysis', icon: ImageIcon },
-    { id: 'diagnoses', label: 'Diagnoses', icon: Beaker },
-  ],
-  [
-    { id: 'plan', label: 'Plan', icon: FileText },
-    { id: 'final_impression', label: 'Final Impression', icon: FileText },
-    { id: 'mdm', label: 'MDM', icon: AlertCircle },
-    { id: 'treatments', label: 'Treatment', icon: Pill },
-    { id: 'guidelines', label: 'Guidelines', icon: Code },
-    { id: 'research', label: 'Research', icon: BookOpen },
-    { id: 'finalize', label: 'Finalize', icon: Check },
-    { id: 'patient_education', label: 'Patient Education', icon: BookOpen },
+const TAB_GROUPS = [
+  {
+    id: 'primary',
+    label: 'Primary',
+    color: 'blue',
+    tabs: [
+      { id: 'ai_assistant', label: 'AI Assistant', icon: Sparkles },
+      { id: 'chief_complaint', label: 'Chief Complaint', icon: Activity },
+      { id: 'summary', label: 'Summary', icon: FileText },
     ]
-    ];
+  },
+  {
+    id: 'documentation',
+    label: 'Documentation',
+    color: 'purple',
+    tabs: [
+      { id: 'clinical', label: 'Clinical Note', icon: FileText },
+      { id: 'review_of_systems', label: 'Review of Systems', icon: Activity },
+      { id: 'physical_exam', label: 'Physical Exam', icon: Activity },
+    ]
+  },
+  {
+    id: 'analysis',
+    label: 'Analysis',
+    color: 'emerald',
+    tabs: [
+      { id: 'assessment_plan', label: 'Assessments', icon: Activity },
+      { id: 'diagnoses', label: 'Diagnoses', icon: Beaker },
+      { id: 'imaging', label: 'Result Analysis', icon: ImageIcon },
+      { id: 'mdm', label: 'MDM', icon: AlertCircle },
+    ]
+  },
+  {
+    id: 'treatment',
+    label: 'Treatment',
+    color: 'rose',
+    tabs: [
+      { id: 'plan', label: 'Plan', icon: FileText },
+      { id: 'treatments', label: 'Medications', icon: Pill },
+      { id: 'guidelines', label: 'Guidelines', icon: Code },
+    ]
+  },
+  {
+    id: 'resources',
+    label: 'Resources',
+    color: 'amber',
+    tabs: [
+      { id: 'research', label: 'Research', icon: BookOpen },
+      { id: 'patient_education', label: 'Patient Education', icon: BookOpen },
+      { id: 'final_impression', label: 'Final Impression', icon: FileText },
+      { id: 'finalize', label: 'Finalize', icon: Check },
+    ]
+  }
+];
 
-const TAB_CONFIGS = TAB_ROWS.flat();
+const TAB_CONFIGS = TAB_GROUPS.flatMap(group => group.tabs);
 
 const statusColors = {
   draft: "bg-amber-50 text-amber-700 border-amber-200",
@@ -129,6 +162,7 @@ export default function NoteDetail() {
     const saved = localStorage.getItem('noteDetailTabOrder');
     return saved ? JSON.parse(saved) : TAB_CONFIGS.map(t => t.id);
   });
+  const [collapsedGroups, setCollapsedGroups] = useState(new Set());
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [activeTab, setActiveTab] = useState("ai_assistant");
 
@@ -1149,53 +1183,88 @@ Generated: ${new Date().toLocaleString()}
        <motion.div
          initial={{ opacity: 0, y: 12 }}
          animate={{ opacity: 1, y: 0 }}
-         className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
+         className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden"
        >
          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex items-start">
-             <DragDropContext onDragEnd={handleDragEnd}>
-               <div className="w-64 bg-slate-50 border-r border-slate-200 flex-shrink-0 sticky top-8 self-start" style={{ maxHeight: 'calc(100vh - 4rem)' }}>
-                 <Droppable droppableId="tabs-list" type="TAB">
-                   {(provided, snapshot) => (
-                     <TabsList 
-                       ref={provided.innerRef}
-                       {...provided.droppableProps}
-                       className="w-full h-full flex flex-col items-stretch gap-1 bg-transparent p-3 overflow-y-auto" 
-                       style={{ maxHeight: 'calc(100vh - 4rem)', backgroundColor: snapshot.isDraggingOver ? '#f1f5f9' : undefined }}
-                     >
-                       {tabOrder.map((tabId, index) => {
-                         const tab = TAB_CONFIGS.find(t => t.id === tabId);
-                         if (!tab) return null;
-                         const Icon = tab.icon;
+               <div className="w-72 bg-gradient-to-b from-slate-50 to-white border-r border-slate-200 flex-shrink-0 sticky top-8 self-start overflow-y-auto" style={{ maxHeight: 'calc(100vh - 4rem)' }}>
+                     <TabsList className="w-full h-full flex flex-col items-stretch gap-0 bg-transparent p-4">
+                       {TAB_GROUPS.map((group) => {
+                         const isCollapsed = collapsedGroups.has(group.id);
+                         const groupColorClasses = {
+                           blue: 'bg-blue-50 border-blue-200 text-blue-900',
+                           purple: 'bg-purple-50 border-purple-200 text-purple-900',
+                           emerald: 'bg-emerald-50 border-emerald-200 text-emerald-900',
+                           rose: 'bg-rose-50 border-rose-200 text-rose-900',
+                           amber: 'bg-amber-50 border-amber-200 text-amber-900',
+                         };
+                         const activeColorClasses = {
+                           blue: 'bg-gradient-to-r from-blue-600 to-blue-700 shadow-blue-200',
+                           purple: 'bg-gradient-to-r from-purple-600 to-purple-700 shadow-purple-200',
+                           emerald: 'bg-gradient-to-r from-emerald-600 to-emerald-700 shadow-emerald-200',
+                           rose: 'bg-gradient-to-r from-rose-600 to-rose-700 shadow-rose-200',
+                           amber: 'bg-gradient-to-r from-amber-600 to-amber-700 shadow-amber-200',
+                         };
+
                          return (
-                           <Draggable key={tab.id} draggableId={tab.id} index={index}>
-                             {(provided, snapshot) => (
-                               <div
-                                 ref={provided.innerRef}
-                                 {...provided.draggableProps}
-                                 {...provided.dragHandleProps}
-                                 style={{
-                                   ...provided.draggableProps.style,
-                                   opacity: snapshot.isDragging ? 0.5 : 1
-                                 }}
-                               >
-                                 <TabsTrigger 
-                                   value={tab.id} 
-                                   className="justify-start px-4 py-3 gap-3 font-medium text-sm data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-transparent data-[state=inactive]:text-slate-700 hover:bg-slate-100 data-[state=active]:hover:bg-blue-700 transition-all duration-200 rounded-lg w-full cursor-move"
+                           <div key={group.id} className="mb-4">
+                             {/* Group Header */}
+                             <button
+                               onClick={() => {
+                                 setCollapsedGroups(prev => {
+                                   const newSet = new Set(prev);
+                                   if (newSet.has(group.id)) {
+                                     newSet.delete(group.id);
+                                   } else {
+                                     newSet.add(group.id);
+                                   }
+                                   return newSet;
+                                 });
+                               }}
+                               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border ${groupColorClasses[group.color]} mb-2 hover:opacity-80 transition-all`}
+                             >
+                               <span className="text-xs font-bold uppercase tracking-wider">{group.label}</span>
+                               {isCollapsed ? (
+                                 <ChevronDown className="w-4 h-4" />
+                               ) : (
+                                 <ChevronUp className="w-4 h-4" />
+                               )}
+                             </button>
+
+                             {/* Group Tabs */}
+                             <AnimatePresence>
+                               {!isCollapsed && (
+                                 <motion.div
+                                   initial={{ opacity: 0, height: 0 }}
+                                   animate={{ opacity: 1, height: "auto" }}
+                                   exit={{ opacity: 0, height: 0 }}
+                                   className="space-y-1"
                                  >
-                                   {Icon && <Icon className="w-4 h-4" />}
-                                   <span className="text-left">{tab.label}</span>
-                                 </TabsTrigger>
-                               </div>
-                             )}
-                           </Draggable>
+                                   {group.tabs.map((tab) => {
+                                     const Icon = tab.icon;
+                                     const isActive = activeTab === tab.id;
+                                     return (
+                                       <TabsTrigger 
+                                         key={tab.id}
+                                         value={tab.id} 
+                                         className={`w-full justify-start px-4 py-2.5 gap-3 font-medium text-sm transition-all duration-200 rounded-lg ${
+                                           isActive 
+                                             ? `${activeColorClasses[group.color]} text-white shadow-md` 
+                                             : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 hover:border-slate-300'
+                                         }`}
+                                       >
+                                         <Icon className="w-4 h-4 flex-shrink-0" />
+                                         <span className="text-left truncate">{tab.label}</span>
+                                       </TabsTrigger>
+                                     );
+                                   })}
+                                 </motion.div>
+                               )}
+                             </AnimatePresence>
+                           </div>
                          );
                        })}
-                       {provided.placeholder}
                      </TabsList>
-                   )}
-                 </Droppable>
                </div>
-             </DragDropContext>
            <div className="flex-1 overflow-hidden">
 
            {/* AI Assistant Tab */}

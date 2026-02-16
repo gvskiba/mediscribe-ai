@@ -136,12 +136,12 @@ export default function Home() {
             return (
               <div
                 key={idx}
-                className="bg-gradient-to-br from-slate-800 to-slate-700 rounded-2xl p-8 border border-cyan-500/20 hover:border-cyan-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/20"
+                className="bg-white rounded-2xl p-8 border border-cyan-200 hover:border-cyan-400 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-200"
               >
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center mb-4">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-600 to-blue-600 flex items-center justify-center mb-4">
                   <Icon className="w-7 h-7 text-white" />
                 </div>
-                <h4 className="text-xl font-semibold text-white mb-3">
+                <h4 className="text-xl font-semibold text-slate-900 mb-3">
                   {feature.title}
                 </h4>
                 <p className="text-slate-300">

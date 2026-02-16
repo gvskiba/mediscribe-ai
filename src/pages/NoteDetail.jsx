@@ -73,6 +73,7 @@ const TAB_GROUPS = [
     color: 'blue',
     tabs: [
       { id: 'ai_assistant', label: 'AI Assistant', icon: Sparkles },
+      { id: 'hpi_intake', label: 'HPI & Intake', icon: Activity },
       { id: 'chief_complaint', label: 'Chief Complaint', icon: Activity },
       { id: 'summary', label: 'Summary', icon: FileText },
     ]
@@ -162,6 +163,10 @@ export default function NoteDetail() {
   const [loadingLabRecommendations, setLoadingLabRecommendations] = useState(false);
   const [imagingRecommendations, setImagingRecommendations] = useState([]);
   const [loadingImagingRecommendations, setLoadingImagingRecommendations] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [analyzingRawData, setAnalyzingRawData] = useState(false);
   const [exportingFormat, setExportingFormat] = useState(null);
   const [extractingData, setExtractingData] = useState(false);
   const [linkingGuidelines, setLinkingGuidelines] = useState(false);
@@ -181,8 +186,11 @@ export default function NoteDetail() {
     const hasImagingTab = savedGroups.some(group => 
       group.tabs.some(tab => tab.id === 'imaging_recommendations')
     );
+    const hasHPITab = savedGroups.some(group => 
+      group.tabs.some(tab => tab.id === 'hpi_intake')
+    );
     
-    if (!hasLaboratoryTab || !hasImagingTab) {
+    if (!hasLaboratoryTab || !hasImagingTab || !hasHPITab) {
       localStorage.removeItem('noteDetailTabGroups');
       return TAB_GROUPS;
     }
@@ -1508,8 +1516,331 @@ Generated: ${new Date().toLocaleString()}
                          </div>
            <div className="flex-1 overflow-hidden">
 
+           {/* HPI & Intake Tab */}
+           <TabsContent value="hpi_intake" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+             <div className="max-w-5xl mx-auto space-y-8">
+               {/* Header */}
+               <div className="text-center mb-8">
+                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 mb-4 shadow-lg">
+                   <Activity className="w-8 h-8 text-white" />
+                 </div>
+                 <h2 className="text-3xl font-bold text-slate-900 mb-2">HPI & Patient Intake</h2>
+                 <p className="text-slate-600 max-w-2xl mx-auto">Voice transcription and AI analysis of patient data</p>
+               </div>
+
+               {/* Voice Recording Section */}
+               <div className="bg-white rounded-xl border-2 border-blue-300 shadow-lg overflow-hidden">
+                 <div className="bg-gradient-to-r from-blue-500 to-indigo-500 px-6 py-5 text-white">
+                   <h3 className="font-bold text-lg flex items-center gap-2">
+                     <Activity className="w-6 h-6" />
+                     Voice Transcription
+                   </h3>
+                   <p className="text-blue-100 text-sm mt-1">Record patient encounter or dictate notes</p>
+                 </div>
+                 <div className="p-6">
+                   <div className="flex items-center justify-center gap-4 mb-4">
+                     <Button
+                       onClick={async () => {
+                         if (isRecording) {
+                           // Stop recording
+                           if (mediaRecorder) {
+                             mediaRecorder.stop();
+                             setIsRecording(false);
+                             setRecordingTime(0);
+                           }
+                         } else {
+                           // Start recording
+                           try {
+                             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                             const recorder = new MediaRecorder(stream);
+                             const audioChunks = [];
+
+                             recorder.ondataavailable = (event) => {
+                               audioChunks.push(event.data);
+                             };
+
+                             recorder.onstop = async () => {
+                               const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                               const audioFile = new File([audioBlob], 'recording.wav', { type: 'audio/wav' });
+
+                               // Upload and transcribe
+                               toast.info("Transcribing audio...");
+                               try {
+                                 const { file_url } = await base44.integrations.Core.UploadFile({ file: audioFile });
+                                 const transcription = await base44.integrations.Core.InvokeLLM({
+                                   prompt: "Transcribe this medical audio recording accurately. Include all patient statements, symptoms, and medical details.",
+                                   file_urls: [file_url]
+                                 });
+
+                                 const updatedRawNote = (note.raw_note || "") + "\n\n" + transcription;
+                                 await base44.entities.ClinicalNote.update(noteId, { raw_note: updatedRawNote });
+                                 queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                 toast.success("Audio transcribed and added to raw notes");
+                               } catch (error) {
+                                 console.error("Transcription failed:", error);
+                                 toast.error("Failed to transcribe audio");
+                               }
+
+                               stream.getTracks().forEach(track => track.stop());
+                             };
+
+                             recorder.start();
+                             setMediaRecorder(recorder);
+                             setIsRecording(true);
+
+                             // Start timer
+                             const interval = setInterval(() => {
+                               setRecordingTime(prev => prev + 1);
+                             }, 1000);
+
+                             recorder.onstop = async () => {
+                               clearInterval(interval);
+                               const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                               const audioFile = new File([audioBlob], 'recording.wav', { type: 'audio/wav' });
+
+                               toast.info("Transcribing audio...");
+                               try {
+                                 const { file_url } = await base44.integrations.Core.UploadFile({ file: audioFile });
+                                 const transcription = await base44.integrations.Core.InvokeLLM({
+                                   prompt: "Transcribe this medical audio recording accurately. Include all patient statements, symptoms, and medical details.",
+                                   file_urls: [file_url]
+                                 });
+
+                                 const updatedRawNote = (note.raw_note || "") + "\n\n" + transcription;
+                                 await base44.entities.ClinicalNote.update(noteId, { raw_note: updatedRawNote });
+                                 queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                 toast.success("Audio transcribed and added to raw notes");
+                               } catch (error) {
+                                 console.error("Transcription failed:", error);
+                                 toast.error("Failed to transcribe audio");
+                               }
+
+                               stream.getTracks().forEach(track => track.stop());
+                             };
+                           } catch (error) {
+                             console.error("Failed to access microphone:", error);
+                             toast.error("Failed to access microphone");
+                           }
+                         }
+                       }}
+                       className={`gap-2 shadow-lg py-6 text-base ${
+                         isRecording 
+                           ? 'bg-red-600 hover:bg-red-700 text-white' 
+                           : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white'
+                       }`}
+                     >
+                       {isRecording ? (
+                         <><X className="w-5 h-5" /> Stop Recording ({Math.floor(recordingTime / 60)}:{String(recordingTime % 60).padStart(2, '0')})</>
+                       ) : (
+                         <><Activity className="w-5 h-5" /> Start Voice Recording</>
+                       )}
+                     </Button>
+                   </div>
+                   {isRecording && (
+                     <div className="flex items-center justify-center gap-2 text-red-600 animate-pulse">
+                       <div className="w-3 h-3 rounded-full bg-red-600"></div>
+                       <span className="text-sm font-medium">Recording in progress...</span>
+                     </div>
+                   )}
+                 </div>
+               </div>
+
+               {/* Raw Patient Data */}
+               <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
+                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                   <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                     <FileText className="w-5 h-5 text-slate-600" />
+                     Raw Patient Data / Notes
+                   </h3>
+                   <Button
+                     variant="outline"
+                     size="sm"
+                     onClick={async () => {
+                       await navigator.clipboard.writeText(note.raw_note || "");
+                       toast.success("Copied to clipboard");
+                     }}
+                     className="gap-2"
+                   >
+                     <FileCode className="w-4 h-4" /> Copy
+                   </Button>
+                 </div>
+                 <div className="p-6">
+                   <Textarea
+                     value={note.raw_note || ""}
+                     onChange={(e) => {
+                       queryClient.setQueryData(["note", noteId], (old) => ({
+                         ...old,
+                         raw_note: e.target.value
+                       }));
+                     }}
+                     onBlur={async (e) => {
+                       await base44.entities.ClinicalNote.update(noteId, { raw_note: e.target.value });
+                     }}
+                     placeholder="Type or paste raw patient data, encounter notes, or transcription here..."
+                     className="w-full min-h-[300px] bg-slate-50 text-slate-900 font-mono text-sm"
+                   />
+                   <div className="flex gap-3 mt-4">
+                     <Button
+                       onClick={async () => {
+                         const updatedNote = (note.history_of_present_illness || "") + "\n\n" + note.raw_note;
+                         await base44.entities.ClinicalNote.update(noteId, { history_of_present_illness: updatedNote });
+                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                         toast.success("Raw data added to Clinical Note");
+                       }}
+                       variant="outline"
+                       className="flex-1 gap-2"
+                     >
+                       <Plus className="w-4 h-4" /> Add to Clinical Note
+                     </Button>
+                   </div>
+                 </div>
+               </div>
+
+               {/* AI Analysis */}
+               <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-lg overflow-hidden">
+                 <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-5 text-white">
+                   <h3 className="font-bold text-lg flex items-center gap-2">
+                     <Sparkles className="w-6 h-6" />
+                     AI Initial Impression Analysis
+                   </h3>
+                   <p className="text-indigo-100 text-sm mt-1">Generate structured clinical data from raw notes</p>
+                 </div>
+                 <div className="p-6">
+                   <Button
+                     onClick={async () => {
+                       if (!note.raw_note) {
+                         toast.error("Please enter raw patient data first");
+                         return;
+                       }
+
+                       setAnalyzingRawData(true);
+                       try {
+                         const result = await base44.integrations.Core.InvokeLLM({
+                           prompt: `Analyze this raw patient encounter data and extract structured clinical information:
+
+           RAW PATIENT DATA:
+           ${note.raw_note}
+
+           Extract and structure the following:
+           1. Chief Complaint - primary reason for visit
+           2. History of Present Illness - detailed OLDCARTS analysis
+           3. Review of Systems - systematic review
+           4. Initial Assessment - preliminary clinical impression
+           5. Suggested Diagnoses - potential diagnoses to consider
+           6. Recommended Tests - suggested labs, imaging, etc.
+
+           Provide comprehensive, clinically accurate analysis.`,
+                           add_context_from_internet: false,
+                           response_json_schema: {
+                             type: "object",
+                             properties: {
+                               chief_complaint: { type: "string" },
+                               history_of_present_illness: { type: "string" },
+                               review_of_systems: { type: "string" },
+                               initial_assessment: { type: "string" },
+                               suggested_diagnoses: { type: "array", items: { type: "string" } },
+                               recommended_tests: { type: "array", items: { type: "string" } }
+                             }
+                           }
+                         });
+
+                         // Update note with extracted data
+                         await base44.entities.ClinicalNote.update(noteId, {
+                           chief_complaint: result.chief_complaint,
+                           history_of_present_illness: result.history_of_present_illness,
+                           review_of_systems: result.review_of_systems,
+                           assessment: result.initial_assessment
+                         });
+
+                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+
+                         // Show results
+                         const analysisDiv = document.getElementById('analysis-results');
+                         if (analysisDiv) {
+                           analysisDiv.innerHTML = `
+                             <div class="space-y-4 mt-6">
+                               <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                                 <h4 class="font-bold text-blue-900 mb-2">Chief Complaint</h4>
+                                 <p class="text-sm text-slate-700">${result.chief_complaint}</p>
+                               </div>
+
+                               <div class="bg-purple-50 border-2 border-purple-200 rounded-lg p-4">
+                                 <h4 class="font-bold text-purple-900 mb-2">History of Present Illness</h4>
+                                 <p class="text-sm text-slate-700 whitespace-pre-wrap">${result.history_of_present_illness}</p>
+                               </div>
+
+                               <div class="bg-amber-50 border-2 border-amber-200 rounded-lg p-4">
+                                 <h4 class="font-bold text-amber-900 mb-2">Review of Systems</h4>
+                                 <p class="text-sm text-slate-700 whitespace-pre-wrap">${result.review_of_systems}</p>
+                               </div>
+
+                               <div class="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+                                 <h4 class="font-bold text-green-900 mb-2">Initial Assessment</h4>
+                                 <p class="text-sm text-slate-700 whitespace-pre-wrap">${result.initial_assessment}</p>
+                               </div>
+
+                               ${result.suggested_diagnoses?.length > 0 ? `
+                                 <div class="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-4">
+                                   <h4 class="font-bold text-indigo-900 mb-2">Suggested Diagnoses</h4>
+                                   <ul class="space-y-1">
+                                     ${result.suggested_diagnoses.map(dx => `
+                                       <li class="text-sm text-slate-700 flex items-center gap-2">
+                                         <span class="text-indigo-600">•</span> ${dx}
+                                       </li>
+                                     `).join('')}
+                                   </ul>
+                                 </div>
+                               ` : ''}
+
+                               ${result.recommended_tests?.length > 0 ? `
+                                 <div class="bg-teal-50 border-2 border-teal-200 rounded-lg p-4">
+                                   <h4 class="font-bold text-teal-900 mb-2">Recommended Tests</h4>
+                                   <ul class="space-y-1">
+                                     ${result.recommended_tests.map(test => `
+                                       <li class="text-sm text-slate-700 flex items-center gap-2">
+                                         <span class="text-teal-600">•</span> ${test}
+                                       </li>
+                                     `).join('')}
+                                   </ul>
+                                 </div>
+                               ` : ''}
+                             </div>
+                           `;
+                         }
+
+                         toast.success("Analysis complete - data integrated into all tabs");
+                       } catch (error) {
+                         console.error("Analysis failed:", error);
+                         toast.error("Failed to analyze patient data");
+                       } finally {
+                         setAnalyzingRawData(false);
+                       }
+                     }}
+                     disabled={analyzingRawData || !note.raw_note}
+                     className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white gap-2 shadow-lg py-6 text-base"
+                   >
+                     {analyzingRawData ? (
+                       <><Loader2 className="w-5 h-5 animate-spin" /> Analyzing Patient Data...</>
+                     ) : (
+                       <><Sparkles className="w-5 h-5" /> Analyze & Extract Clinical Data</>
+                     )}
+                   </Button>
+
+                   <div id="analysis-results"></div>
+                 </div>
+               </div>
+             </div>
+
+             {/* Next Button */}
+             <div className="flex justify-end pt-4 border-t border-slate-200">
+               <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                 Next <ArrowLeft className="w-4 h-4 rotate-180" />
+               </Button>
+             </div>
+           </TabsContent>
+
            {/* AI Assistant Tab */}
-              <TabsContent value="ai_assistant" className="p-6 space-y-6 overflow-y-auto">
+             <TabsContent value="ai_assistant" className="p-6 space-y-6 overflow-y-auto">
                 <AIDocumentationAssistant
                   note={note}
                   onUpdateNote={async (updates) => {

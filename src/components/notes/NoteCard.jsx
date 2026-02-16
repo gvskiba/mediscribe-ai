@@ -4,7 +4,7 @@ import { createPageUrl } from "../../utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FileText, Calendar, ChevronRight, Eye, User, Stethoscope, Archive } from "lucide-react";
+import { FileText, Calendar, ChevronRight, Eye, User, Stethoscope, Archive, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 
 const statusColors = {
@@ -21,7 +21,7 @@ const typeLabels = {
   procedure_note: "Procedure",
 };
 
-export default function NoteCard({ note, selected, onSelect, onPreview, layoutMode = "list" }) {
+export default function NoteCard({ note, selected, onSelect, onPreview, onDelete, layoutMode = "list" }) {
   if (layoutMode === "grid") {
     return (
       <Link to={createPageUrl(`NoteDetail?id=${note.id}`)}>
@@ -172,18 +172,34 @@ export default function NoteCard({ note, selected, onSelect, onPreview, layoutMo
         <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" />
       </Link>
 
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onPreview(note);
-        }}
-        className="opacity-0 group-hover:opacity-100 transition-opacity rounded-lg hover:bg-blue-50"
-      >
-        <Eye className="w-4 h-4 text-blue-600" />
-      </Button>
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onPreview(note);
+          }}
+          className="rounded-lg hover:bg-blue-50"
+        >
+          <Eye className="w-4 h-4 text-blue-600" />
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (confirm(`Delete note for ${note.patient_name}? This cannot be undone.`)) {
+              onDelete(note.id);
+            }
+          }}
+          className="rounded-lg hover:bg-red-50"
+        >
+          <Trash2 className="w-4 h-4 text-red-600" />
+        </Button>
+      </div>
     </div>
   );
 }

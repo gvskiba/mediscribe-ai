@@ -70,6 +70,16 @@ export default function NotesLibrary() {
     },
   });
 
+  const deleteSingleNoteMutation = useMutation({
+    mutationFn: async (id) => {
+      await base44.entities.ClinicalNote.delete(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      toast.success("Note deleted");
+    },
+  });
+
   const uniquePatients = [...new Set(notes.map(n => n.patient_name).filter(Boolean))].sort();
 
   const getDateRangeFilter = (note) => {
@@ -373,6 +383,7 @@ export default function NotesLibrary() {
                   selected={selectedNotes.includes(note.id)}
                   onSelect={handleToggleNote}
                   onPreview={setPreviewNote}
+                  onDelete={(id) => deleteSingleNoteMutation.mutate(id)}
                   layoutMode="list"
                 />
               </motion.div>

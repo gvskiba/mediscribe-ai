@@ -22,7 +22,7 @@ const typeLabels = {
   procedure_note: "Procedure",
 };
 
-export default function PatientNotesGroup({ patientName, notes, selectedNotes, onToggleNote, onPreview }) {
+export default function PatientNotesGroup({ patientName, notes, selectedNotes, onToggleNote, onPreview, onDelete }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}

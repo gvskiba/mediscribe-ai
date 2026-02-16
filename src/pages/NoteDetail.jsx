@@ -69,57 +69,57 @@ import ReviewOfSystemsEditor from "../components/notes/ReviewOfSystemsEditor";
 
 const TAB_GROUPS = [
   {
-    id: 'primary',
-    label: 'Primary',
+    id: 'history',
+    label: 'History',
     color: 'blue',
     tabs: [
-      { id: 'ai_assistant', label: 'AI Assistant', icon: Sparkles },
       { id: 'hpi_intake', label: 'HPI & Intake', icon: Activity },
       { id: 'chief_complaint', label: 'Chief Complaint', icon: Activity },
-      { id: 'summary', label: 'Summary', icon: FileText },
+      { id: 'review_of_systems', label: 'Review of Systems', icon: Activity },
     ]
   },
   {
-    id: 'documentation',
-    label: 'Documentation',
+    id: 'examination',
+    label: 'Physical Exam',
     color: 'purple',
     tabs: [
-      { id: 'clinical', label: 'Clinical Note', icon: FileText },
-      { id: 'review_of_systems', label: 'Review of Systems', icon: Activity },
       { id: 'physical_exam', label: 'Physical Exam', icon: Activity },
     ]
   },
   {
-    id: 'analysis',
-    label: 'Analysis',
+    id: 'assessment',
+    label: 'Assessment',
     color: 'emerald',
     tabs: [
       { id: 'initial_impression', label: 'Initial Impression', icon: Sparkles },
-      { id: 'diagnoses', label: 'Diagnoses', icon: Beaker },
-      { id: 'imaging', label: 'Result Analysis', icon: ImageIcon },
-      { id: 'mdm', label: 'MDM', icon: AlertCircle },
-    ]
-  },
-  {
-    id: 'treatment',
-    label: 'Treatment',
-    color: 'rose',
-    tabs: [
-      { id: 'plan', label: 'Plan', icon: FileText },
-      { id: 'treatments', label: 'Medications', icon: Pill },
       { id: 'laboratory', label: 'Laboratory', icon: Beaker },
       { id: 'imaging_recommendations', label: 'Imaging', icon: ImageIcon },
-      { id: 'guidelines', label: 'Guidelines', icon: Code },
+      { id: 'imaging', label: 'Result Analysis', icon: ImageIcon },
+      { id: 'mdm', label: 'MDM', icon: AlertCircle },
+      { id: 'diagnoses', label: 'Diagnoses', icon: Code },
     ]
   },
   {
-    id: 'resources',
-    label: 'Resources',
+    id: 'plan',
+    label: 'Plan',
+    color: 'rose',
+    tabs: [
+      { id: 'plan', label: 'Treatment Plan', icon: FileText },
+      { id: 'treatments', label: 'Medications', icon: Pill },
+      { id: 'guidelines', label: 'Guidelines', icon: BookOpen },
+    ]
+  },
+  {
+    id: 'finalization',
+    label: 'Finalization',
     color: 'amber',
     tabs: [
-      { id: 'research', label: 'Research', icon: BookOpen },
-      { id: 'patient_education', label: 'Patient Education', icon: BookOpen },
       { id: 'final_impression', label: 'Final Impression', icon: FileText },
+      { id: 'clinical', label: 'Clinical Note', icon: FileText },
+      { id: 'summary', label: 'Summary', icon: FileText },
+      { id: 'patient_education', label: 'Patient Education', icon: BookOpen },
+      { id: 'research', label: 'Research', icon: BookOpen },
+      { id: 'ai_assistant', label: 'AI Assistant', icon: Sparkles },
       { id: 'finalize', label: 'Finalize', icon: Check },
     ]
   }

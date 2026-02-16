@@ -163,7 +163,23 @@ export default function NoteDetail() {
   const [noteData, setNoteData] = useState(null);
   const [tabGroups, setTabGroups] = useState(() => {
     const saved = localStorage.getItem('noteDetailTabGroups');
-    return saved ? JSON.parse(saved) : TAB_GROUPS;
+    if (!saved) return TAB_GROUPS;
+    
+    // Restore tab groups from localStorage but merge icons from TAB_GROUPS
+    const savedGroups = JSON.parse(saved);
+    return savedGroups.map(savedGroup => {
+      const originalGroup = TAB_GROUPS.find(g => g.id === savedGroup.id);
+      return {
+        ...savedGroup,
+        tabs: savedGroup.tabs.map(savedTab => {
+          const originalTab = originalGroup?.tabs.find(t => t.id === savedTab.id);
+          return {
+            ...savedTab,
+            icon: originalTab?.icon || Sparkles
+          };
+        })
+      };
+    });
   });
   const [collapsedGroups, setCollapsedGroups] = useState(new Set());
   const [customizing, setCustomizing] = useState(false);

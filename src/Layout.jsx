@@ -113,14 +113,14 @@ export default function Layout({ children, currentPageName }) {
                 <Link
                   key={item.page}
                   to={createPageUrl(item.page)}
-                  className={`nav-link flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`nav-link group flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                     currentPageName === item.page ?
                     "active text-blue-600 bg-blue-50" :
                     "text-slate-600 hover:text-slate-900"
                   }`}
                 >
-                  <item.icon className="w-4 h-4" />
-                  <span>{item.name}</span>
+                  <item.icon className="w-5 h-5" />
+                  <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 whitespace-nowrap">{item.name}</span>
                 </Link>
               ))}
             </nav>

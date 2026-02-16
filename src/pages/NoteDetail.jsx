@@ -1492,30 +1492,99 @@ Generated: ${new Date().toLocaleString()}
                                                                opacity: snapshot.isDragging ? 0.5 : 1
                                                              }}
                                                            >
-                                                             <TabsTrigger 
-                                                               value={tab.id} 
-                                                               className={`w-full justify-start px-4 py-2.5 gap-3 font-medium text-sm transition-all duration-200 rounded-lg ${
-                                                                 isActive 
-                                                                   ? `${activeColorClasses[group.color]} text-white shadow-md` 
-                                                                   : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 hover:border-slate-300'
-                                                               }`}
-                                                             >
-                                                               <div {...provided.dragHandleProps} className="cursor-move">
-                                                                 <GripVertical className="w-4 h-4 flex-shrink-0" />
+                                                             <div className="flex items-center gap-2 group/tab">
+                                                               <TabsTrigger 
+                                                                 value={tab.id} 
+                                                                 className={`flex-1 justify-start px-4 py-2.5 gap-3 font-medium text-sm transition-all duration-200 rounded-lg ${
+                                                                   isActive 
+                                                                     ? `${activeColorClasses[group.color]} text-white shadow-md` 
+                                                                     : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 hover:border-slate-300'
+                                                                 }`}
+                                                               >
+                                                                 <div {...provided.dragHandleProps} className="cursor-move">
+                                                                   <GripVertical className="w-4 h-4 flex-shrink-0" />
+                                                                 </div>
+                                                                 <Icon className="w-4 h-4 flex-shrink-0" />
+                                                                 {editingTabId === tab.id ? (
+                                                                   <input
+                                                                     autoFocus
+                                                                     type="text"
+                                                                     value={editingTabName}
+                                                                     onChange={(e) => setEditingTabName(e.target.value)}
+                                                                     onKeyDown={(e) => {
+                                                                       e.stopPropagation();
+                                                                       if (e.key === 'Enter') {
+                                                                         handleRenameTab(tab.id, editingTabName);
+                                                                       } else if (e.key === 'Escape') {
+                                                                         setEditingTabId(null);
+                                                                       }
+                                                                     }}
+                                                                     onClick={(e) => e.stopPropagation()}
+                                                                     onBlur={() => {
+                                                                       if (editingTabName.trim()) {
+                                                                         handleRenameTab(tab.id, editingTabName);
+                                                                       } else {
+                                                                         setEditingTabId(null);
+                                                                       }
+                                                                     }}
+                                                                     className={`flex-1 bg-transparent border-b ${isActive ? 'border-white text-white' : 'border-slate-400 text-slate-900'} placeholder-white/50 focus:outline-none px-1`}
+                                                                     placeholder="Tab name"
+                                                                   />
+                                                                 ) : (
+                                                                   <span 
+                                                                     className="text-left truncate flex-1"
+                                                                     onDoubleClick={() => {
+                                                                       setEditingTabId(tab.id);
+                                                                       setEditingTabName(tab.label);
+                                                                     }}
+                                                                   >
+                                                                     {tab.label}
+                                                                   </span>
+                                                                 )}
+                                                               </TabsTrigger>
+                                                               <div className="opacity-0 group-hover/tab:opacity-100 transition-opacity flex gap-1 pr-1">
+                                                                 <button
+                                                                   onClick={(e) => {
+                                                                     e.stopPropagation();
+                                                                     setEditingTabId(tab.id);
+                                                                     setEditingTabName(tab.label);
+                                                                   }}
+                                                                   className="p-1 hover:bg-slate-200 rounded text-slate-600 hover:text-slate-900"
+                                                                   title="Rename tab"
+                                                                 >
+                                                                   <FileText className="w-3 h-3" />
+                                                                 </button>
+                                                                 {tab.id.startsWith('custom_') && (
+                                                                   <button
+                                                                     onClick={(e) => {
+                                                                       e.stopPropagation();
+                                                                       handleDeleteTab(group.id, tab.id);
+                                                                     }}
+                                                                     className="p-1 hover:bg-red-100 rounded text-red-600 hover:text-red-800"
+                                                                     title="Delete tab"
+                                                                   >
+                                                                     <X className="w-3 h-3" />
+                                                                   </button>
+                                                                 )}
                                                                </div>
-                                                               <Icon className="w-4 h-4 flex-shrink-0" />
-                                                               <span className="text-left truncate">{tab.label}</span>
-                                                             </TabsTrigger>
-                                                           </div>
-                                                         )}
-                                                       </Draggable>
-                                                     );
-                                                   })}
-                                                   {provided.placeholder}
-                                                 </div>
-                                               )}
-                                             </Droppable>
-                                           )}
+                                                             </div>
+                                                             </div>
+                                                             )}
+                                                             </Draggable>
+                                                             );
+                                                             })}
+                                                             {provided.placeholder}
+                                                             <button
+                                                             onClick={() => handleCreateTab(group.id)}
+                                                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg border border-dashed border-slate-300 hover:border-slate-400 transition-all"
+                                                             >
+                                                             <Plus className="w-4 h-4" />
+                                                             <span>Add Tab</span>
+                                                             </button>
+                                                             </div>
+                                                             )}
+                                                             </Droppable>
+                                                             )}
                                          </div>
                                        )}
                                      </Draggable>
@@ -1525,8 +1594,48 @@ Generated: ${new Date().toLocaleString()}
                                </div>
                              )}
                            </Droppable>
-                         </DragDropContext>
-                       ) : (
+                           </DragDropContext>
+
+                           {/* Create Tab Dialog */}
+                           {showCreateTabDialog && (
+                           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                             <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+                               <h3 className="text-lg font-bold text-slate-900 mb-4">Create New Tab</h3>
+                               <div className="space-y-4">
+                                 <div>
+                                   <label className="block text-sm font-medium text-slate-700 mb-2">Tab Name</label>
+                                   <Input
+                                     autoFocus
+                                     value={newTabName}
+                                     onChange={(e) => setNewTabName(e.target.value)}
+                                     onKeyDown={(e) => {
+                                       if (e.key === 'Enter') handleSaveNewTab();
+                                       if (e.key === 'Escape') setShowCreateTabDialog(false);
+                                     }}
+                                     placeholder="Enter tab name..."
+                                     className="w-full"
+                                   />
+                                 </div>
+                                 <div className="flex gap-3 justify-end">
+                                   <Button
+                                     variant="outline"
+                                     onClick={() => setShowCreateTabDialog(false)}
+                                   >
+                                     Cancel
+                                   </Button>
+                                   <Button
+                                     onClick={handleSaveNewTab}
+                                     className="bg-blue-600 hover:bg-blue-700 text-white"
+                                   >
+                                     Create Tab
+                                   </Button>
+                                 </div>
+                               </div>
+                             </div>
+                           </div>
+                           )}
+                           </>
+                           ) : (
                          <div className="space-y-0">
                            {tabGroups.map((group) => {
                              const isCollapsed = collapsedGroups.has(group.id);
@@ -5275,7 +5384,7 @@ Return 5-10 of the most relevant and current guidelines.`,
                        <p className="text-slate-600 max-w-2xl mx-auto">AI-powered procedure recommendations, educational resources, and procedure logging</p>
                      </div>
 
-                     <ProceduresPanel note={note} />
+                     <ProceduresPanel note={note} noteId={noteId} />
                      </div>
 
                      {/* Next Button */}
@@ -5285,6 +5394,39 @@ Return 5-10 of the most relevant and current guidelines.`,
                      </Button>
                      </div>
                      </TabsContent>
+
+                     {/* Custom Tabs Content */}
+                     {tabGroups.flatMap(g => g.tabs).filter(t => t.id.startsWith('custom_')).map(tab => (
+                       <TabsContent key={tab.id} value={tab.id} className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+                         <div className="max-w-5xl mx-auto space-y-8">
+                           <div className="text-center mb-8">
+                             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-500 to-slate-600 mb-4 shadow-lg">
+                               <Plus className="w-8 h-8 text-white" />
+                             </div>
+                             <h2 className="text-3xl font-bold text-slate-900 mb-2">{tab.label}</h2>
+                             <p className="text-slate-600 max-w-2xl mx-auto">Custom section for your clinical documentation</p>
+                           </div>
+
+                           <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
+                             <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
+                               <h3 className="text-lg font-bold text-slate-900">Notes</h3>
+                             </div>
+                             <div className="p-6">
+                               <Textarea
+                                 placeholder={`Add notes for ${tab.label}...`}
+                                 className="w-full min-h-[400px] bg-slate-50"
+                               />
+                             </div>
+                           </div>
+                         </div>
+
+                         <div className="flex justify-end pt-4 border-t border-slate-200">
+                           <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                             Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                           </Button>
+                         </div>
+                       </TabsContent>
+                     ))}
                      </div>
                      </Tabs>
                      </motion.div>

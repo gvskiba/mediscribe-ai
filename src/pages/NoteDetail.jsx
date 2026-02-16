@@ -105,6 +105,7 @@ const TAB_GROUPS = [
     tabs: [
       { id: 'plan', label: 'Plan', icon: FileText },
       { id: 'treatments', label: 'Medications', icon: Pill },
+      { id: 'laboratory', label: 'Laboratory', icon: Beaker },
       { id: 'guidelines', label: 'Guidelines', icon: Code },
     ]
   },
@@ -156,6 +157,8 @@ export default function NoteDetail() {
   const [loadingDifferential, setLoadingDifferential] = useState(false);
   const [patientEducation, setPatientEducation] = useState(null);
   const [generatingEducation, setGeneratingEducation] = useState(false);
+  const [labRecommendations, setLabRecommendations] = useState([]);
+  const [loadingLabRecommendations, setLoadingLabRecommendations] = useState(false);
   const [exportingFormat, setExportingFormat] = useState(null);
   const [extractingData, setExtractingData] = useState(false);
   const [linkingGuidelines, setLinkingGuidelines] = useState(false);
@@ -2957,6 +2960,210 @@ Generated: ${new Date().toLocaleString()}
                        </Button>
                      </div>
                      </div>
+                     </TabsContent>
+
+                     {/* Laboratory Tab */}
+                     <TabsContent value="laboratory" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+                       <div className="max-w-5xl mx-auto space-y-8">
+                         {/* Header Section */}
+                         <div className="text-center mb-8">
+                           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 mb-4 shadow-lg">
+                             <Beaker className="w-8 h-8 text-white" />
+                           </div>
+                           <h2 className="text-3xl font-bold text-slate-900 mb-2">Laboratory Workup</h2>
+                           <p className="text-slate-600 max-w-2xl mx-auto">AI-generated lab recommendations based on clinical presentation</p>
+                         </div>
+
+                         {/* Generate Lab Recommendations */}
+                         <div className="bg-white rounded-xl border-2 border-teal-300 shadow-lg overflow-hidden">
+                           <div className="bg-gradient-to-r from-teal-500 to-cyan-500 px-6 py-5 text-white">
+                             <h3 className="font-bold text-lg flex items-center gap-2">
+                               <Sparkles className="w-6 h-6" />
+                               AI Lab Recommendations
+                             </h3>
+                             <p className="text-teal-100 text-sm mt-1">Evidence-based laboratory testing based on clinical context</p>
+                           </div>
+                           <div className="p-6">
+                             {!note.chief_complaint && !note.diagnoses?.length ? (
+                               <div className="text-center py-12">
+                                 <AlertCircle className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                                 <p className="text-slate-600 font-medium">Clinical Information Required</p>
+                                 <p className="text-sm text-slate-500 mt-1">Add a chief complaint or differential diagnoses to generate lab recommendations</p>
+                               </div>
+                             ) : (
+                               <Button
+                                 onClick={async () => {
+                                   setLoadingLabRecommendations(true);
+                                   try {
+                                     const result = await base44.integrations.Core.InvokeLLM({
+                                       prompt: `Generate comprehensive laboratory test recommendations based on this clinical presentation:
+
+                     CHIEF COMPLAINT: ${note.chief_complaint || "N/A"}
+
+                     DIFFERENTIAL DIAGNOSES: ${differentialDiagnosis.map(d => d.diagnosis).join(", ") || "N/A"}
+
+                     CURRENT DIAGNOSES: ${note.diagnoses?.join(", ") || "N/A"}
+
+                     HISTORY: ${note.history_of_present_illness || "N/A"}
+
+                     VITAL SIGNS: ${note.vital_signs ? JSON.stringify(note.vital_signs) : "N/A"}
+
+                     Provide specific laboratory testing recommendations including:
+                     1. Test name (e.g., "Complete Blood Count", "Basic Metabolic Panel")
+                     2. Category (routine, urgent, stat)
+                     3. Clinical indication - why this test is needed
+                     4. Expected findings - what you're looking for
+                     5. Timing - when should this be done
+                     6. Follow-up considerations
+
+                     Order tests by priority and clinical relevance.`,
+                                       add_context_from_internet: true,
+                                       response_json_schema: {
+                                         type: "object",
+                                         properties: {
+                                           lab_recommendations: {
+                                             type: "array",
+                                             items: {
+                                               type: "object",
+                                               properties: {
+                                                 test_name: { type: "string" },
+                                                 category: { type: "string", enum: ["routine", "urgent", "stat"] },
+                                                 clinical_indication: { type: "string" },
+                                                 expected_findings: { type: "string" },
+                                                 timing: { type: "string" },
+                                                 follow_up: { type: "string" }
+                                               }
+                                             }
+                                           }
+                                         }
+                                       }
+                                     });
+
+                                     setLabRecommendations(result.lab_recommendations || []);
+                                     toast.success("Lab recommendations generated");
+                                   } catch (error) {
+                                     console.error("Failed to generate lab recommendations:", error);
+                                     toast.error("Failed to generate lab recommendations");
+                                   } finally {
+                                     setLoadingLabRecommendations(false);
+                                   }
+                                 }}
+                                 disabled={loadingLabRecommendations}
+                                 className="w-full bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white gap-2 shadow-lg py-6 text-base"
+                               >
+                                 {loadingLabRecommendations ? (
+                                   <><Loader2 className="w-5 h-5 animate-spin" /> Generating Lab Recommendations...</>
+                                 ) : (
+                                   <><Sparkles className="w-5 h-5" /> Generate Lab Recommendations</>
+                                 )}
+                               </Button>
+                             )}
+                           </div>
+                         </div>
+
+                         {/* Lab Recommendations Results */}
+                         {labRecommendations.length > 0 && (
+                           <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
+                             <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                               <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                 <Beaker className="w-5 h-5 text-teal-600" />
+                                 Recommended Laboratory Tests
+                               </h3>
+                               <Badge className="bg-teal-100 text-teal-800">
+                                 {labRecommendations.length} tests
+                               </Badge>
+                             </div>
+                             <div className="p-6 space-y-4">
+                               {labRecommendations.map((lab, idx) => (
+                                 <motion.div
+                                   key={idx}
+                                   initial={{ opacity: 0, y: 20 }}
+                                   animate={{ opacity: 1, y: 0 }}
+                                   transition={{ delay: idx * 0.1 }}
+                                   className="rounded-xl border-2 border-teal-200 bg-gradient-to-br from-teal-50 to-cyan-50 p-5 hover:border-teal-300 transition-all"
+                                 >
+                                   <div className="flex items-start justify-between mb-3">
+                                     <div className="flex-1">
+                                       <div className="flex items-center gap-3 mb-2">
+                                         <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-teal-600 to-cyan-600 text-white font-bold shadow-md">
+                                           {idx + 1}
+                                         </div>
+                                         <h4 className="text-lg font-bold text-slate-900">{lab.test_name}</h4>
+                                       </div>
+                                       <div className="flex items-center gap-2 ml-11">
+                                         <Badge className={`${
+                                           lab.category === 'stat' ? 'bg-red-600' :
+                                           lab.category === 'urgent' ? 'bg-orange-600' :
+                                           'bg-blue-600'
+                                         } text-white`}>
+                                           {lab.category?.toUpperCase()}
+                                         </Badge>
+                                         <span className="text-xs text-slate-600">{lab.timing}</span>
+                                       </div>
+                                     </div>
+                                   </div>
+
+                                   <div className="ml-11 space-y-3">
+                                     <div className="bg-white rounded-lg p-4 border border-teal-200">
+                                       <p className="text-xs font-bold text-slate-700 mb-2">Clinical Indication:</p>
+                                       <p className="text-sm text-slate-600 leading-relaxed">{lab.clinical_indication}</p>
+                                     </div>
+
+                                     <div className="bg-white rounded-lg p-4 border border-teal-200">
+                                       <p className="text-xs font-bold text-slate-700 mb-2">Expected Findings:</p>
+                                       <p className="text-sm text-slate-600 leading-relaxed">{lab.expected_findings}</p>
+                                     </div>
+
+                                     {lab.follow_up && (
+                                       <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                                         <p className="text-xs font-bold text-blue-900 mb-2">Follow-up:</p>
+                                         <p className="text-sm text-blue-800 leading-relaxed">{lab.follow_up}</p>
+                                       </div>
+                                     )}
+                                   </div>
+                                 </motion.div>
+                               ))}
+
+                               <Button
+                                 onClick={async () => {
+                                   try {
+                                     let labText = '\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nLABORATORY WORKUP\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+
+                                     labRecommendations.forEach((lab, idx) => {
+                                       labText += `${idx + 1}. ${lab.test_name} (${lab.category?.toUpperCase()})\n`;
+                                       labText += `   Indication: ${lab.clinical_indication}\n`;
+                                       labText += `   Timing: ${lab.timing}\n`;
+                                       labText += `   Expected Findings: ${lab.expected_findings}\n`;
+                                       if (lab.follow_up) {
+                                         labText += `   Follow-up: ${lab.follow_up}\n`;
+                                       }
+                                       labText += '\n';
+                                     });
+
+                                     const updatedPlan = (note.plan || "") + labText;
+                                     await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
+                                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                     toast.success("Lab recommendations added to treatment plan");
+                                   } catch (error) {
+                                     console.error("Failed to add labs to plan:", error);
+                                     toast.error("Failed to add lab recommendations");
+                                   }
+                                 }}
+                                 className="w-full bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white gap-2 shadow-lg"
+                               >
+                                 <Plus className="w-4 h-4" /> Add to Treatment Plan
+                               </Button>
+                             </div>
+                           </div>
+                         )}
+                       </div>
+
+                       {/* Next Button */}
+                       <div className="flex justify-end pt-4">
+                         <Button onClick={handleNext} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg gap-2 px-6 py-3 text-base">
+                           Continue <ArrowLeft className="w-5 h-5 rotate-180" />
+                         </Button>
+                       </div>
                      </TabsContent>
 
                        {/* Final Impression Tab */}

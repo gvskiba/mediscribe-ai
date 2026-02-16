@@ -30,7 +30,7 @@ import {
 import { toast } from "sonner";
 import moment from "moment";
 
-export default function ProceduresPanel({ note }) {
+export default function ProceduresPanel({ note, noteId }) {
   const [activeTab, setActiveTab] = useState("recommendations");
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [recommendations, setRecommendations] = useState([]);

@@ -307,26 +307,11 @@ export default function NoteDetail() {
     onSave: async (data) => {
       if (noteId) {
         await base44.entities.ClinicalNote.update(noteId, data);
-        // Create revision on auto-save
-        const revisions = await base44.entities.NoteRevision.list();
-        const noteRevisions = revisions.filter(r => r.note_id === noteId);
-        const nextRevision = (noteRevisions.length || 0) + 1;
-        await base44.entities.NoteRevision.create({
-          note_id: noteId,
-          revision_number: nextRevision,
-          chief_complaint: data.chief_complaint,
-          history_of_present_illness: data.history_of_present_illness,
-          assessment: data.assessment,
-          plan: data.plan,
-          diagnoses: data.diagnoses,
-          medications: data.medications,
-          change_summary: "Auto-save",
-          revision_date: new Date().toISOString(),
-        });
+        toast.success("Auto-saved at " + format(new Date(), "h:mm:ss a"));
       }
     },
     interval: 30000,
-    enabled: false,
+    enabled: true,
   });
 
   const finalizeMutation = useMutation({

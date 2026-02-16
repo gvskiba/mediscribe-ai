@@ -2872,31 +2872,48 @@ Return 5-10 of the most relevant and current guidelines.`,
                                        ))}
                                      </ul>
                                    </div>
+                                 <Button
+                                   size="sm"
+                                   onClick={async () => {
+                                     try {
+                                       const updatedDiagnoses = [...(note.diagnoses || []), diff.diagnosis];
+                                       await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
+                                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                       toast.success("Diagnosis added");
+                                     } catch (error) {
+                                       console.error("Failed to add diagnosis:", error);
+                                       toast.error("Failed to add diagnosis");
+                                     }
+                                   }}
+                                   className="gap-1.5 bg-purple-600 hover:bg-purple-700 text-white"
+                                 >
+                                   <Plus className="w-3.5 h-3.5" /> Add Diagnosis
+                                 </Button>
                                  )}
-                               </div>
-                             </motion.div>
-                           ))}
+                                 </div>
+                                 </motion.div>
+                                 ))}
 
-                           <Button
-                             onClick={async () => {
-                               try {
+                                 <Button
+                                 onClick={async () => {
+                                 try {
                                  const diffText = differentialDiagnosis.map((diff, idx) => 
-                                   `${idx + 1}. ${diff.diagnosis} (Likelihood: ${diff.likelihood_rank}/5)\n   ${diff.clinical_reasoning}`
+                                 `${idx + 1}. ${diff.diagnosis} (Likelihood: ${diff.likelihood_rank}/5)\n   ${diff.clinical_reasoning}`
                                  ).join('\n\n');
 
                                  const updatedAssessment = (note.assessment || "") + "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nINITIAL IMPRESSION - DIFFERENTIAL DIAGNOSIS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" + diffText;
                                  await base44.entities.ClinicalNote.update(noteId, { assessment: updatedAssessment });
                                  queryClient.invalidateQueries({ queryKey: ["note", noteId] });
                                  toast.success("Differential diagnosis added to assessment");
-                               } catch (error) {
+                                 } catch (error) {
                                  console.error("Failed to add differential:", error);
                                  toast.error("Failed to add differential diagnosis");
-                               }
-                             }}
-                             className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white gap-2 shadow-lg"
-                           >
-                             <Plus className="w-4 h-4" /> Add to Clinical Assessment
-                           </Button>
+                                 }
+                                 }}
+                                 className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white gap-2 shadow-lg"
+                                 >
+                                 <Plus className="w-4 h-4" /> Add All to Assessment
+                                 </Button>
                          </div>
                        </div>
                      )}

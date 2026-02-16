@@ -27,6 +27,8 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import MedicationDosingLookup from "../components/calculators/MedicationDosingLookup";
+import AddToNoteDialog from "../components/calculators/AddToNoteDialog";
+import { FileText } from "lucide-react";
 
 // Built-in calculators library
 const CALCULATOR_LIBRARY = [
@@ -57,6 +59,7 @@ export default function Calculators() {
   const [aiRecommendations, setAiRecommendations] = useState([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
+  const [addToNoteDialog, setAddToNoteDialog] = useState({ open: false, data: null });
 
   const { data: favorites = [] } = useQuery({
     queryKey: ["calculator-favorites"],
@@ -342,7 +345,7 @@ Prioritize calculators that directly aid in diagnosis, risk stratification, or t
                   >
                     <Star className={`w-5 h-5 ${isFavorite(calc.id) ? 'fill-amber-500' : ''}`} />
                   </Button>
-                  <BMICalculator />
+                  <BMICalculator onAddToNote={(data) => setAddToNoteDialog({ open: true, data })} />
                 </div>
               ))}
               {filteredCalculators.filter(c => c.component === "CreatinineClearanceCalculator").map(calc => (
@@ -355,7 +358,7 @@ Prioritize calculators that directly aid in diagnosis, risk stratification, or t
                   >
                     <Star className={`w-5 h-5 ${isFavorite(calc.id) ? 'fill-amber-500' : ''}`} />
                   </Button>
-                  <CreatinineClearanceCalculator />
+                  <CreatinineClearanceCalculator onAddToNote={(data) => setAddToNoteDialog({ open: true, data })} />
                 </div>
               ))}
             </div>
@@ -412,11 +415,18 @@ Prioritize calculators that directly aid in diagnosis, risk stratification, or t
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Add to Note Dialog */}
+      <AddToNoteDialog
+        open={addToNoteDialog.open}
+        onClose={() => setAddToNoteDialog({ open: false, data: null })}
+        calculatorData={addToNoteDialog.data}
+      />
     </div>
   );
 }
 
-function BMICalculator() {
+function BMICalculator({ onAddToNote }) {
   const [height, setHeight] = useState("");
   const [weight, setWeight] = useState("");
   const [unit, setUnit] = useState("metric");
@@ -510,13 +520,27 @@ function BMICalculator() {
             <p>• Overweight: 25 - 29.9</p>
             <p>• Obese: ≥ 30</p>
           </div>
+          <Button
+            onClick={() => onAddToNote({
+              name: "BMI Calculator",
+              inputs: { height: `${height} ${unit === 'metric' ? 'cm' : 'inches'}`, weight: `${weight} ${unit === 'metric' ? 'kg' : 'lbs'}` },
+              result: `BMI: ${bmi.value}`,
+              interpretation: `Category: ${bmi.category}`,
+              category: "General",
+              url: "https://www.mdcalc.com/calc/29/body-mass-index-bmi"
+            })}
+            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white gap-2 mt-3"
+          >
+            <FileText className="w-4 h-4" />
+            Add to Clinical Note
+          </Button>
         </div>
       )}
     </Card>
   );
 }
 
-function CreatinineClearanceCalculator() {
+function CreatinineClearanceCalculator({ onAddToNote }) {
   const [age, setAge] = useState("");
   const [weight, setWeight] = useState("");
   const [creatinine, setCreatinine] = useState("");
@@ -621,6 +645,20 @@ function CreatinineClearanceCalculator() {
           <p className="text-sm text-slate-600 font-medium">mL/min</p>
           <p className={`text-lg font-semibold ${result.color}`}>{result.category}</p>
           <p className="text-xs text-slate-500 mt-3">Cockcroft-Gault formula</p>
+          <Button
+            onClick={() => onAddToNote({
+              name: "Creatinine Clearance (Cockcroft-Gault)",
+              inputs: { age: `${age} years`, weight: `${weight} kg`, creatinine: `${creatinine} mg/dL`, sex },
+              result: `CrCl: ${result.value} mL/min`,
+              interpretation: `${result.category}. Note: Use ideal body weight for obese patients. Consider eGFR for more accurate assessment.`,
+              category: "Nephrology",
+              url: "https://www.mdcalc.com/calc/43/creatinine-clearance-cockcroft-gault-equation"
+            })}
+            className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white gap-2 mt-3"
+          >
+            <FileText className="w-4 h-4" />
+            Add to Clinical Note
+          </Button>
         </div>
       )}
 

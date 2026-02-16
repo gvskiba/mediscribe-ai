@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BookOpen, Search, Loader2, Sparkles, Filter, ArrowLeftRight, ChevronDown } from "lucide-react";
+import { BookOpen, Search, Loader2, Sparkles, Filter, ArrowLeftRight, ChevronDown, Building2, Globe, ExternalLink } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 export default function Guidelines() {
@@ -34,12 +34,103 @@ export default function Guidelines() {
   const [selectedQuery, setSelectedQuery] = useState(null);
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [resultsCollapsed, setResultsCollapsed] = useState(false);
+  const [chiefComplaintInput, setChiefComplaintInput] = useState("");
+  const [loadingInstitutionGuidelines, setLoadingInstitutionGuidelines] = useState(false);
+  const [institutionGuidelines, setInstitutionGuidelines] = useState([]);
+  const [institutionSearchTerm, setInstitutionSearchTerm] = useState("");
   const queryClient = useQueryClient();
+
+  // Medical institutions and associations
+  const MEDICAL_INSTITUTIONS = [
+    { name: "American College of Emergency Physicians", abbrev: "ACEP", url: "https://www.acep.org/clinical---practice-management/clinical-policies/" },
+    { name: "American Academy of Family Physicians", abbrev: "AAFP", url: "https://www.aafp.org/family-physician/patient-care/clinical-recommendations.html" },
+    { name: "American College of Cardiology", abbrev: "ACC", url: "https://www.acc.org/guidelines" },
+    { name: "American Heart Association", abbrev: "AHA", url: "https://professional.heart.org/en/guidelines-and-statements" },
+    { name: "American Diabetes Association", abbrev: "ADA", url: "https://diabetesjournals.org/care/issue" },
+    { name: "Infectious Diseases Society of America", abbrev: "IDSA", url: "https://www.idsociety.org/practice-guideline" },
+    { name: "American Thoracic Society", abbrev: "ATS", url: "https://www.thoracic.org/statements/" },
+    { name: "American College of Chest Physicians", abbrev: "CHEST", url: "https://www.chestnet.org/Guidelines-and-Topic-Collections" },
+    { name: "American Academy of Neurology", abbrev: "AAN", url: "https://www.aan.com/Guidelines/" },
+    { name: "American Academy of Pediatrics", abbrev: "AAP", url: "https://publications.aap.org/pediatrics/pages/clinical-practice-guidelines" },
+    { name: "American College of Obstetricians and Gynecologists", abbrev: "ACOG", url: "https://www.acog.org/clinical" },
+    { name: "American Gastroenterological Association", abbrev: "AGA", url: "https://gastro.org/practice-guidance/guidelines/" },
+    { name: "National Institute for Health and Care Excellence", abbrev: "NICE", url: "https://www.nice.org.uk/guidance" },
+    { name: "European Society of Cardiology", abbrev: "ESC", url: "https://www.escardio.org/Guidelines" },
+  ];
 
   const { data: pastQueries = [], isLoading: queriesLoading } = useQuery({
     queryKey: ["queries"],
     queryFn: () => base44.entities.GuidelineQuery.list("-created_date", 50),
   });
+
+  const getInstitutionGuidelines = async () => {
+    if (!chiefComplaintInput.trim()) return;
+
+    setLoadingInstitutionGuidelines(true);
+    setInstitutionGuidelines([]);
+    
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a medical research expert with access to the internet. Analyze and search for clinical guidelines from major medical specialty organizations and associations for this chief complaint.
+
+CHIEF COMPLAINT: ${chiefComplaintInput}
+
+REQUIRED TASKS:
+1. Search OpenEvidence.com for evidence-based guidelines on this chief complaint
+2. Search the following medical specialty organizations for relevant clinical practice guidelines:
+   - ACEP (American College of Emergency Physicians) - emergency medicine guidelines
+   - AAFP (American Academy of Family Physicians) - primary care guidelines  
+   - ACC/AHA (American College of Cardiology/American Heart Association) - cardiac guidelines
+   - ADA (American Diabetes Association) - diabetes/endocrine guidelines
+   - IDSA (Infectious Diseases Society of America) - infectious disease guidelines
+   - ATS/CHEST (American Thoracic Society/CHEST) - pulmonary guidelines
+   - AAN (American Academy of Neurology) - neurology guidelines
+   - AAP (American Academy of Pediatrics) - pediatric guidelines
+   - ACOG (American College of Obstetricians and Gynecologists) - OB/GYN guidelines
+   - AGA (American Gastroenterological Association) - GI guidelines
+   - NICE (National Institute for Health and Care Excellence) - UK guidelines
+   - ESC (European Society of Cardiology) - European cardiac guidelines
+
+3. For EACH relevant guideline found, provide:
+   - organization: The medical association/organization (use abbreviation)
+   - guideline_title: The full official guideline title
+   - summary: A 2-3 sentence clinical summary of key recommendations
+   - key_points: Array of 3-5 most important clinical action items or recommendations
+   - url: The direct URL to the guideline document (CRITICAL - must be real, working links)
+   - year: Year of publication or last update
+   - relevance: Explain why this guideline is relevant to the chief complaint (1-2 sentences)
+
+Return 5-10 of the most relevant and current guidelines from these specialty organizations.`,
+        add_context_from_internet: true,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            guidelines: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  organization: { type: "string" },
+                  guideline_title: { type: "string" },
+                  summary: { type: "string" },
+                  key_points: { type: "array", items: { type: "string" } },
+                  url: { type: "string" },
+                  year: { type: "string" },
+                  relevance: { type: "string" }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      setInstitutionGuidelines(result.guidelines || []);
+    } catch (error) {
+      console.error("Failed to fetch institution guidelines:", error);
+    } finally {
+      setLoadingInstitutionGuidelines(false);
+    }
+  };
 
   const handleSubmit = async (question, attachedFiles = []) => {
     setIsLoading(true);
@@ -58,22 +149,28 @@ export default function Guidelines() {
 Question: ${question}${contextSection}
 
 CRITICAL INSTRUCTIONS FOR SEARCHING EXTERNAL DATABASES:
-1. **FIRST**, search OpenEvidence.com directly for this clinical question - it's a comprehensive medical evidence database with up-to-date guidelines
-2. Search PubMed/MEDLINE for recent meta-analyses and systematic reviews
-3. Access current practice guidelines from major medical societies
+1. **FIRST**, search OpenEvidence.com (https://www.openevidence.com) directly for this clinical question - it's a comprehensive medical evidence database with up-to-date guidelines and AI-synthesized evidence
+2. Search specialty medical association guidelines (ACEP, AAFP, ACC/AHA, ADA, IDSA, ATS/CHEST, AAN, AAP, ACOG, AGA, NICE, ESC)
+3. Search PubMed/MEDLINE for recent meta-analyses and systematic reviews
 4. Check UpToDate and DynaMed for clinical decision support
 
 REQUIRED SOURCE DATABASES (search ALL that are relevant):
-- OpenEvidence (https://www.openevidence.com) - PRIMARY SOURCE for evidence synthesis
+- **OpenEvidence** (https://www.openevidence.com) - PRIMARY SOURCE for evidence synthesis
+- **Specialty Association Guidelines**:
+  * ACEP (emergency medicine) - https://www.acep.org/clinical---practice-management/clinical-policies/
+  * AAFP (family medicine) - https://www.aafp.org/family-physician/patient-care/clinical-recommendations.html
+  * ACC/AHA (cardiology) - https://www.acc.org/guidelines
+  * ADA (diabetes/endocrine) - https://diabetesjournals.org/care/issue
+  * IDSA (infectious disease) - https://www.idsociety.org/practice-guideline
+  * ATS/CHEST (pulmonary) - https://www.thoracic.org/statements/
+  * AAN (neurology) - https://www.aan.com/Guidelines/
+  * AAP (pediatrics) - https://publications.aap.org/pediatrics/pages/clinical-practice-guidelines
+  * ACOG (OB/GYN) - https://www.acog.org/clinical
+  * AGA (gastroenterology) - https://gastro.org/practice-guidance/guidelines/
+  * NICE (UK guidelines) - https://www.nice.org.uk/guidance
+  * ESC (European cardiology) - https://www.escardio.org/Guidelines
 - PubMed Central / MEDLINE
 - Cochrane Library (systematic reviews)
-- Professional Society Guidelines:
-  * ACC/AHA (cardiology) - https://www.acc.org/guidelines
-  * ADA (diabetes) - https://diabetesjournals.org/care/issue
-  * IDSA (infectious disease) - https://www.idsociety.org/practice-guideline
-  * ATS/CHEST (pulmonary)
-  * ESC (European cardiology)
-  * NICE (UK guidelines) - https://www.nice.org.uk
 - UpToDate clinical topics
 
 OUTPUT REQUIREMENTS:
@@ -83,16 +180,17 @@ OUTPUT REQUIREMENTS:
 4. **Format**: Use markdown headers for clear organization
 
 5. **Sources**: For EACH source, provide:
-   - Full citation with year
-   - Direct URL/DOI when available (especially OpenEvidence links)
+   - Full citation with year and organization
+   - Direct URL/DOI (CRITICAL - must include working links, especially OpenEvidence and specialty association links)
    - Specific section/page referenced
    
 Example source format:
 "2024 ACC/AHA Heart Failure Guidelines (Class I, Level A) - https://www.acc.org/guidelines/hf-2024"
 "OpenEvidence: Management of Atrial Fibrillation - https://www.openevidence.com/topics/atrial-fibrillation"
+"ACEP Clinical Policy: Initial Approach to Chest Pain - https://www.acep.org/clinical/chest-pain-policy"
 
 6. **Confidence Assessment**:
-   - High: Multiple concordant high-quality RCTs, current guidelines, strong evidence
+   - High: Multiple concordant high-quality RCTs, current guidelines from major associations, strong evidence
    - Moderate: Some RCT evidence, guidelines exist but evolving, moderate-quality evidence
    - Low: Limited evidence, case series, expert opinion, conflicting studies
 
@@ -474,6 +572,13 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
     }
   }, [viewMode, filteredQueries, latestAnswer, selectedQuery, generatingSummaries]);
 
+  const filteredInstitutions = institutionSearchTerm 
+    ? MEDICAL_INSTITUTIONS.filter(inst => 
+        inst.name.toLowerCase().includes(institutionSearchTerm.toLowerCase()) ||
+        inst.abbrev.toLowerCase().includes(institutionSearchTerm.toLowerCase())
+      )
+    : MEDICAL_INSTITUTIONS;
+
   const statsData = [
     { label: "Total Queries", value: pastQueries.length, icon: BookOpen, color: "blue" },
     { label: "High Confidence", value: pastQueries.filter(q => q.confidence_level === "high").length, icon: Sparkles, color: "emerald" },
@@ -584,6 +689,142 @@ Return indices of ALL semantically related queries, ranked by relevance (most re
 
       {viewMode === "search" && (
         <>
+          {/* AI Institution Guidelines Search */}
+          <div className="bg-white rounded-2xl border-2 border-indigo-300 shadow-lg overflow-hidden">
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-5 text-white">
+              <h3 className="font-bold text-lg flex items-center gap-2">
+                <Building2 className="w-6 h-6" />
+                AI-Powered Specialty Association Guidelines
+              </h3>
+              <p className="text-indigo-100 text-sm mt-1">Search guidelines from ACEP, AAFP, ACC/AHA, and other major medical organizations</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex gap-3">
+                <Input
+                  placeholder="Enter chief complaint (e.g., 'Acute MI', 'Pneumonia', 'Stroke')..."
+                  value={chiefComplaintInput}
+                  onChange={(e) => setChiefComplaintInput(e.target.value)}
+                  className="flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      getInstitutionGuidelines();
+                    }
+                  }}
+                />
+                <Button
+                  onClick={getInstitutionGuidelines}
+                  disabled={loadingInstitutionGuidelines || !chiefComplaintInput}
+                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white gap-2 px-6"
+                >
+                  {loadingInstitutionGuidelines ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Searching...</>
+                  ) : (
+                    <><Globe className="w-4 h-4" /> Search Guidelines</>
+                  )}
+                </Button>
+              </div>
+
+              {/* Institution Search */}
+              <div className="border-t border-slate-200 pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Search className="w-4 h-4 text-slate-500" />
+                  <Input
+                    placeholder="Search institutions (e.g., 'ACEP', 'Cardiology')..."
+                    value={institutionSearchTerm}
+                    onChange={(e) => setInstitutionSearchTerm(e.target.value)}
+                    className="flex-1 h-9 text-sm"
+                  />
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+                  {filteredInstitutions.map((inst) => (
+                    <a
+                      key={inst.abbrev}
+                      href={inst.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all text-xs group"
+                    >
+                      <Building2 className="w-3 h-3 text-slate-400 group-hover:text-indigo-600" />
+                      <span className="font-semibold text-slate-900">{inst.abbrev}</span>
+                      <ExternalLink className="w-3 h-3 text-slate-400 ml-auto" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+
+              {/* AI-Generated Guidelines Results */}
+              {institutionGuidelines.length > 0 && (
+                <div className="space-y-3 border-t border-slate-200 pt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="w-4 h-4 text-indigo-600" />
+                    <h4 className="text-sm font-bold text-slate-900">
+                      AI Found {institutionGuidelines.length} Relevant Guidelines for: {chiefComplaintInput}
+                    </h4>
+                  </div>
+                  {institutionGuidelines.map((guideline, idx) => (
+                    <motion.div
+                      key={idx}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                      className="bg-gradient-to-br from-slate-50 to-white rounded-lg border-2 border-slate-200 p-5 hover:border-indigo-300 hover:shadow-md transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge className="bg-indigo-600 text-white font-semibold">
+                              {guideline.organization}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {guideline.year}
+                            </Badge>
+                          </div>
+                          <h5 className="font-bold text-slate-900 mb-2 text-base">
+                            {guideline.guideline_title}
+                          </h5>
+                          <p className="text-sm text-slate-700 mb-3">
+                            {guideline.summary}
+                          </p>
+                          
+                          {/* Relevance */}
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                            <p className="text-xs font-semibold text-blue-900 mb-1">Why this guideline is relevant:</p>
+                            <p className="text-xs text-blue-800">{guideline.relevance}</p>
+                          </div>
+
+                          {/* Key Points */}
+                          {guideline.key_points?.length > 0 && (
+                            <div className="space-y-1 mb-3">
+                              <p className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Key Recommendations:</p>
+                              {guideline.key_points.map((point, pidx) => (
+                                <div key={pidx} className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 mt-1.5 flex-shrink-0" />
+                                  <p className="text-sm text-slate-700">{point}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {guideline.url && (
+                        <a
+                          href={guideline.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 font-semibold bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-lg transition-all"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          View Full Guideline
+                        </a>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
           <PersonalizedRecommendations />
           <GuidelineSearchBar onSubmit={handleSubmit} isLoading={isLoading} />
         </>

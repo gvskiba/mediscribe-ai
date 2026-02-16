@@ -318,40 +318,7 @@ export default function NotesLibrary() {
                 selected={selectedNotes.includes(note.id)}
                 onSelect={handleToggleNote}
                 onPreview={setPreviewNote}
-                layoutMode="grid"
-              />
-            </motion.div>
-          ))}
-        </div>
-      ) : viewMode === "by-patient" ? (
-        /* BY PATIENT VIEW */
-        <div className="space-y-4">
-          {Object.entries(notesByPatient).map(([patientName, patientNotes]) => (
-            <PatientNotesGroup
-              key={patientName}
-              patientName={patientName}
-              notes={patientNotes}
-              selectedNotes={selectedNotes}
-              onToggleNote={handleToggleNote}
-              onPreview={setPreviewNote}
-            />
-          ))}
-        </div>
-      ) : layoutMode === "grid" ? (
-        /* GRID VIEW */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((note, i) => (
-            <motion.div
-              key={note.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: i * 0.03 }}
-            >
-              <NoteCard
-                note={note}
-                selected={selectedNotes.includes(note.id)}
-                onSelect={handleToggleNote}
-                onPreview={setPreviewNote}
+                onDelete={(id) => deleteSingleNoteMutation.mutate(id)}
                 layoutMode="grid"
               />
             </motion.div>

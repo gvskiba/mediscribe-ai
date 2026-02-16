@@ -240,6 +240,11 @@ export default function NoteDetail() {
   const [newTabName, setNewTabName] = useState("");
   const [editingTabId, setEditingTabId] = useState(null);
   const [editingTabName, setEditingTabName] = useState("");
+  const [editingGroupId, setEditingGroupId] = useState(null);
+  const [editingGroupName, setEditingGroupName] = useState("");
+  const [showCreateGroupDialog, setShowCreateGroupDialog] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupColor, setNewGroupColor] = useState("blue");
 
   const handleNext = () => {
     const allTabs = tabGroups.flatMap(g => g.tabs.map(t => t.id));
@@ -372,6 +377,58 @@ export default function NoteDetail() {
     setTabGroups(newGroups);
     localStorage.setItem('noteDetailTabGroups', JSON.stringify(newGroups));
     toast.success("Tab deleted successfully");
+  };
+
+  const handleRenameGroup = (groupId, newName) => {
+    if (!newName.trim()) {
+      toast.error("Group name is required");
+      return;
+    }
+
+    const newGroups = tabGroups.map(group =>
+      group.id === groupId ? { ...group, label: newName } : group
+    );
+
+    setTabGroups(newGroups);
+    localStorage.setItem('noteDetailTabGroups', JSON.stringify(newGroups));
+    setEditingGroupId(null);
+    setEditingGroupName("");
+    toast.success("Group renamed successfully");
+  };
+
+  const handleDeleteGroup = (groupId) => {
+    if (tabGroups.length <= 1) {
+      toast.error("Cannot delete the last group");
+      return;
+    }
+
+    const newGroups = tabGroups.filter(group => group.id !== groupId);
+    setTabGroups(newGroups);
+    localStorage.setItem('noteDetailTabGroups', JSON.stringify(newGroups));
+    toast.success("Group deleted successfully");
+  };
+
+  const handleCreateGroup = () => {
+    if (!newGroupName.trim()) {
+      toast.error("Group name is required");
+      return;
+    }
+
+    const groupId = `custom_group_${Date.now()}`;
+    const newGroup = {
+      id: groupId,
+      label: newGroupName,
+      color: newGroupColor,
+      tabs: []
+    };
+
+    const newGroups = [...tabGroups, newGroup];
+    setTabGroups(newGroups);
+    localStorage.setItem('noteDetailTabGroups', JSON.stringify(newGroups));
+    setShowCreateGroupDialog(false);
+    setNewGroupName("");
+    setNewGroupColor("blue");
+    toast.success("Group created successfully");
   };
 
   const { data: note, isLoading } = useQuery({
@@ -1439,7 +1496,7 @@ Generated: ${new Date().toLocaleString()}
                                            }}
                                          >
                                            {/* Group Header */}
-                                           <div className={`w-full flex items-center px-3 py-2 rounded-lg border ${groupColorClasses[group.color]} mb-2`}>
+                                           <div className={`w-full flex items-center px-3 py-2 rounded-lg border ${groupColorClasses[group.color]} mb-2 group/groupheader`}>
                                              <div {...provided.dragHandleProps} className="mr-2 cursor-move">
                                                <GripVertical className="w-4 h-4 text-slate-400" />
                                              </div>
@@ -1455,15 +1512,80 @@ Generated: ${new Date().toLocaleString()}
                                                    return newSet;
                                                  });
                                                }}
-                                               className="flex-1 flex items-center justify-between hover:opacity-80 transition-all"
+                                               className="flex-1 flex items-center justify-between hover:opacity-80 transition-all min-w-0"
                                              >
-                                               <span className="text-xs font-bold uppercase tracking-wider">{group.label}</span>
-                                               {isCollapsed ? (
-                                                 <ChevronDown className="w-4 h-4" />
+                                               {editingGroupId === group.id ? (
+                                                 <input
+                                                   autoFocus
+                                                   type="text"
+                                                   value={editingGroupName}
+                                                   onChange={(e) => setEditingGroupName(e.target.value)}
+                                                   onKeyDown={(e) => {
+                                                     e.stopPropagation();
+                                                     if (e.key === 'Enter') {
+                                                       handleRenameGroup(group.id, editingGroupName);
+                                                     } else if (e.key === 'Escape') {
+                                                       setEditingGroupId(null);
+                                                     }
+                                                   }}
+                                                   onClick={(e) => e.stopPropagation()}
+                                                   onBlur={() => {
+                                                     if (editingGroupName.trim()) {
+                                                       handleRenameGroup(group.id, editingGroupName);
+                                                     } else {
+                                                       setEditingGroupId(null);
+                                                     }
+                                                   }}
+                                                   className="flex-1 bg-transparent border-b border-slate-600 focus:outline-none px-1 text-xs font-bold uppercase tracking-wider"
+                                                   placeholder="Group name"
+                                                 />
                                                ) : (
-                                                 <ChevronUp className="w-4 h-4" />
+                                                 <span 
+                                                   className="text-xs font-bold uppercase tracking-wider truncate"
+                                                   onDoubleClick={(e) => {
+                                                     e.stopPropagation();
+                                                     setEditingGroupId(group.id);
+                                                     setEditingGroupName(group.label);
+                                                   }}
+                                                 >
+                                                   {group.label}
+                                                 </span>
                                                )}
+                                               <div className="flex items-center gap-1">
+                                                 {isCollapsed ? (
+                                                   <ChevronDown className="w-4 h-4" />
+                                                 ) : (
+                                                   <ChevronUp className="w-4 h-4" />
+                                                 )}
+                                               </div>
                                              </button>
+                                             <div className="opacity-0 group-hover/groupheader:opacity-100 transition-opacity flex gap-1 ml-2">
+                                               <button
+                                                 onClick={(e) => {
+                                                   e.stopPropagation();
+                                                   setEditingGroupId(group.id);
+                                                   setEditingGroupName(group.label);
+                                                 }}
+                                                 className="p-1 hover:bg-slate-200 rounded text-slate-600 hover:text-slate-900"
+                                                 title="Rename group"
+                                               >
+                                                 <FileText className="w-3 h-3" />
+                                               </button>
+                                               {group.id.startsWith('custom_group_') && (
+                                                 <button
+                                                   onClick={(e) => {
+                                                     e.stopPropagation();
+                                                     if (confirm(`Delete "${group.label}" group and all its tabs?`)) {
+                                                       handleDeleteGroup(group.id);
+                                                     }
+                                                   }}
+                                                   className="p-1 hover:bg-red-100 rounded text-red-600 hover:text-red-800"
+                                                   title="Delete group"
+                                                 >
+                                                   <X className="w-3 h-3" />
+                                                 </button>
+                                               )}
+                                             </div>
                                            </div>
 
                                            {/* Group Tabs */}
@@ -1592,10 +1714,19 @@ Generated: ${new Date().toLocaleString()}
                                    );
                                  })}
                                  {provided.placeholder}
-                               </div>
-                             )}
-                           </Droppable>
-                           </DragDropContext>
+
+                                 {/* Add Group Button */}
+                                 <button
+                                   onClick={() => setShowCreateGroupDialog(true)}
+                                   className="w-full flex items-center gap-2 px-4 py-3 mt-4 text-sm text-slate-600 hover:bg-slate-100 rounded-lg border-2 border-dashed border-slate-300 hover:border-slate-400 transition-all font-medium"
+                                 >
+                                   <Plus className="w-4 h-4" />
+                                   <span>Add Group</span>
+                                 </button>
+                                 </div>
+                                 )}
+                                 </Droppable>
+                                 </DragDropContext>
                            ) : (
                          <div className="space-y-0">
                            {tabGroups.map((group) => {
@@ -1679,41 +1810,104 @@ Generated: ${new Date().toLocaleString()}
 
                        {/* Create Tab Dialog */}
                        {showCreateTabDialog && (
-                       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                         <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
-                           <h3 className="text-lg font-bold text-slate-900 mb-4">Create New Tab</h3>
-                           <div className="space-y-4">
-                             <div>
-                               <label className="block text-sm font-medium text-slate-700 mb-2">Tab Name</label>
-                               <Input
-                                 autoFocus
-                                 value={newTabName}
-                                 onChange={(e) => setNewTabName(e.target.value)}
-                                 onKeyDown={(e) => {
-                                   if (e.key === 'Enter') handleSaveNewTab();
-                                   if (e.key === 'Escape') setShowCreateTabDialog(false);
-                                 }}
-                                 placeholder="Enter tab name..."
-                                 className="w-full"
-                               />
-                             </div>
-                             <div className="flex gap-3 justify-end">
-                               <Button
-                                 variant="outline"
-                                 onClick={() => setShowCreateTabDialog(false)}
-                               >
-                                 Cancel
-                               </Button>
-                               <Button
-                                 onClick={handleSaveNewTab}
-                                 className="bg-blue-600 hover:bg-blue-700 text-white"
-                               >
-                                 Create Tab
-                               </Button>
+                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                           <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+                             <h3 className="text-lg font-bold text-slate-900 mb-4">Create New Tab</h3>
+                             <div className="space-y-4">
+                               <div>
+                                 <label className="block text-sm font-medium text-slate-700 mb-2">Tab Name</label>
+                                 <Input
+                                   autoFocus
+                                   value={newTabName}
+                                   onChange={(e) => setNewTabName(e.target.value)}
+                                   onKeyDown={(e) => {
+                                     if (e.key === 'Enter') handleSaveNewTab();
+                                     if (e.key === 'Escape') setShowCreateTabDialog(false);
+                                   }}
+                                   placeholder="Enter tab name..."
+                                   className="w-full"
+                                 />
+                               </div>
+                               <div className="flex gap-3 justify-end">
+                                 <Button
+                                   variant="outline"
+                                   onClick={() => setShowCreateTabDialog(false)}
+                                 >
+                                   Cancel
+                                 </Button>
+                                 <Button
+                                   onClick={handleSaveNewTab}
+                                   className="bg-blue-600 hover:bg-blue-700 text-white"
+                                 >
+                                   Create Tab
+                                 </Button>
+                               </div>
                              </div>
                            </div>
                          </div>
-                       </div>
+                       )}
+
+                       {/* Create Group Dialog */}
+                       {showCreateGroupDialog && (
+                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                           <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+                             <h3 className="text-lg font-bold text-slate-900 mb-4">Create New Group</h3>
+                             <div className="space-y-4">
+                               <div>
+                                 <label className="block text-sm font-medium text-slate-700 mb-2">Group Name</label>
+                                 <Input
+                                   autoFocus
+                                   value={newGroupName}
+                                   onChange={(e) => setNewGroupName(e.target.value)}
+                                   onKeyDown={(e) => {
+                                     if (e.key === 'Enter') handleCreateGroup();
+                                     if (e.key === 'Escape') setShowCreateGroupDialog(false);
+                                   }}
+                                   placeholder="Enter group name..."
+                                   className="w-full"
+                                 />
+                               </div>
+                               <div>
+                                 <label className="block text-sm font-medium text-slate-700 mb-2">Color Theme</label>
+                                 <div className="grid grid-cols-5 gap-2">
+                                   {['blue', 'purple', 'emerald', 'rose', 'amber'].map(color => (
+                                     <button
+                                       key={color}
+                                       onClick={() => setNewGroupColor(color)}
+                                       className={`w-full h-10 rounded-lg border-2 transition-all ${
+                                         newGroupColor === color ? 'border-slate-900 scale-110' : 'border-slate-300'
+                                       } ${
+                                         color === 'blue' ? 'bg-blue-500' :
+                                         color === 'purple' ? 'bg-purple-500' :
+                                         color === 'emerald' ? 'bg-emerald-500' :
+                                         color === 'rose' ? 'bg-rose-500' :
+                                         'bg-amber-500'
+                                       }`}
+                                     />
+                                   ))}
+                                 </div>
+                               </div>
+                               <div className="flex gap-3 justify-end">
+                                 <Button
+                                   variant="outline"
+                                   onClick={() => {
+                                     setShowCreateGroupDialog(false);
+                                     setNewGroupName("");
+                                     setNewGroupColor("blue");
+                                   }}
+                                 >
+                                   Cancel
+                                 </Button>
+                                 <Button
+                                   onClick={handleCreateGroup}
+                                   className="bg-blue-600 hover:bg-blue-700 text-white"
+                                 >
+                                   Create Group
+                                 </Button>
+                               </div>
+                             </div>
+                           </div>
+                         </div>
                        )}
                        </div>
 

@@ -46,17 +46,17 @@ export default function Home() {
               className="w-80 h-80 drop-shadow-2xl"
             />
             <div>
-              <h1 className="text-6xl sm:text-7xl font-bold text-white mb-4 leading-tight">
+              <h1 className="text-6xl sm:text-7xl font-bold text-slate-900 mb-4 leading-tight">
                 Notrya AI
               </h1>
-              <p className="text-2xl text-cyan-400 font-semibold">Clinical Intelligence Reimagined</p>
+              <p className="text-2xl text-cyan-600 font-semibold">Clinical Intelligence Reimagined</p>
             </div>
           </div>
 
           {/* Right: CTA and Description */}
-          <div className="space-y-8 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 rounded-3xl p-10 border border-cyan-500/20 backdrop-blur">
+          <div className="space-y-8 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-3xl p-10 border border-cyan-200 backdrop-blur">
             <div className="space-y-4">
-              <h2 className="text-3xl font-bold text-white">
+              <h2 className="text-3xl font-bold text-slate-900">
                 Transform Your Clinical Documentation
               </h2>
               <p className="text-lg text-slate-300 leading-relaxed">

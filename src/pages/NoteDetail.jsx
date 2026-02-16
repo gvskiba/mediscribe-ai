@@ -165,16 +165,26 @@ export default function NoteDetail() {
     const saved = localStorage.getItem('noteDetailTabGroups');
     if (!saved) return TAB_GROUPS;
     
-    // Restore tab groups from localStorage but merge icons from TAB_GROUPS
+    // Restore tab groups from localStorage but merge icons from TAB_GROUPS and migrate old tab IDs
     const savedGroups = JSON.parse(saved);
     return savedGroups.map(savedGroup => {
       const originalGroup = TAB_GROUPS.find(g => g.id === savedGroup.id);
       return {
         ...savedGroup,
         tabs: savedGroup.tabs.map(savedTab => {
-          const originalTab = originalGroup?.tabs.find(t => t.id === savedTab.id);
+          // Migrate old tab IDs to new ones
+          let tabId = savedTab.id;
+          let tabLabel = savedTab.label;
+          if (savedTab.id === 'assessment_plan') {
+            tabId = 'initial_impression';
+            tabLabel = 'Initial Impression';
+          }
+          
+          const originalTab = originalGroup?.tabs.find(t => t.id === tabId);
           return {
             ...savedTab,
+            id: tabId,
+            label: tabLabel,
             icon: originalTab?.icon || Sparkles
           };
         })

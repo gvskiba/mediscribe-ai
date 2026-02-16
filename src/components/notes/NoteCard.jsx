@@ -43,7 +43,7 @@ export default function NoteCard({ note, selected, onSelect, onPreview, onDelete
           <div className="mb-4">
             <h3 className="font-bold text-slate-900 mb-1 flex items-center gap-2">
               <User className="w-4 h-4 text-blue-600" />
-              {note.patient_name}
+              {note.patient_name === "New Patient" ? (note.chief_complaint || "New Patient") : (note.patient_name || "Unknown Patient")}
             </h3>
             {note.patient_id && (
               <p className="text-xs text-slate-500">MRN: {note.patient_id}</p>
@@ -109,7 +109,9 @@ export default function NoteCard({ note, selected, onSelect, onPreview, onDelete
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-2">
-            <h3 className="font-bold text-lg text-slate-900">{note.patient_name}</h3>
+            <h3 className="font-bold text-lg text-slate-900">
+              {note.patient_name === "New Patient" ? (note.chief_complaint || "New Patient") : (note.patient_name || "Unknown Patient")}
+            </h3>
             {note.patient_id && (
               <span className="text-sm text-slate-400 font-mono">#{note.patient_id}</span>
             )}
@@ -198,7 +200,8 @@ export default function NoteCard({ note, selected, onSelect, onPreview, onDelete
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            if (confirm(`Delete note for ${note.patient_name}? This cannot be undone.`)) {
+            const displayName = note.patient_name === "New Patient" ? (note.chief_complaint || "New Patient") : note.patient_name;
+            if (confirm(`Delete note for ${displayName}? This cannot be undone.`)) {
               onDelete(note.id);
             }
           }}

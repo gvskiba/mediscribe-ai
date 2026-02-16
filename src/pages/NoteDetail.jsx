@@ -28,7 +28,10 @@ import {
         Pill,
         X,
         ChevronDown,
-        ChevronUp
+        ChevronUp,
+        GripVertical,
+        RotateCcw,
+        Settings
       } from "lucide-react";
       import MedicationRecommendations from "../components/notes/MedicationRecommendations";
       import TreatmentPlanSelector from "../components/notes/TreatmentPlanSelector";
@@ -158,31 +161,73 @@ export default function NoteDetail() {
   const [linkingGuidelines, setLinkingGuidelines] = useState(false);
   const [showGuidelinePrompt, setShowGuidelinePrompt] = useState(false);
   const [noteData, setNoteData] = useState(null);
-  const [tabOrder, setTabOrder] = useState(() => {
-    const saved = localStorage.getItem('noteDetailTabOrder');
-    return saved ? JSON.parse(saved) : TAB_CONFIGS.map(t => t.id);
+  const [tabGroups, setTabGroups] = useState(() => {
+    const saved = localStorage.getItem('noteDetailTabGroups');
+    return saved ? JSON.parse(saved) : TAB_GROUPS;
   });
   const [collapsedGroups, setCollapsedGroups] = useState(new Set());
+  const [customizing, setCustomizing] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [activeTab, setActiveTab] = useState("ai_assistant");
 
   const handleNext = () => {
-    const currentIndex = tabOrder.indexOf(activeTab);
-    if (currentIndex < tabOrder.length - 1) {
-      setActiveTab(tabOrder[currentIndex + 1]);
+    const allTabs = tabGroups.flatMap(g => g.tabs.map(t => t.id));
+    const currentIndex = allTabs.indexOf(activeTab);
+    if (currentIndex < allTabs.length - 1) {
+      setActiveTab(allTabs[currentIndex + 1]);
     }
   };
 
   const handleDragEnd = (result) => {
-    const { source, destination } = result;
-    if (!destination || source.index === destination.index) return;
+    const { source, destination, type } = result;
+    if (!destination) return;
 
-    const newOrder = Array.from(tabOrder);
-    const [removed] = newOrder.splice(source.index, 1);
-    newOrder.splice(destination.index, 0, removed);
+    if (type === 'GROUP') {
+      const newGroups = Array.from(tabGroups);
+      const [removed] = newGroups.splice(source.index, 1);
+      newGroups.splice(destination.index, 0, removed);
+      setTabGroups(newGroups);
+      localStorage.setItem('noteDetailTabGroups', JSON.stringify(newGroups));
+      return;
+    }
 
-    setTabOrder(newOrder);
-    localStorage.setItem('noteDetailTabOrder', JSON.stringify(newOrder));
+    const sourceGroup = tabGroups.find(g => g.id === source.droppableId);
+    const destGroup = tabGroups.find(g => g.id === destination.droppableId);
+
+    if (!sourceGroup || !destGroup) return;
+
+    if (source.droppableId === destination.droppableId) {
+      const newTabs = Array.from(sourceGroup.tabs);
+      const [removed] = newTabs.splice(source.index, 1);
+      newTabs.splice(destination.index, 0, removed);
+
+      const newGroups = tabGroups.map(g =>
+        g.id === sourceGroup.id ? { ...g, tabs: newTabs } : g
+      );
+
+      setTabGroups(newGroups);
+      localStorage.setItem('noteDetailTabGroups', JSON.stringify(newGroups));
+    } else {
+      const sourceTabs = Array.from(sourceGroup.tabs);
+      const destTabs = Array.from(destGroup.tabs);
+      const [removed] = sourceTabs.splice(source.index, 1);
+      destTabs.splice(destination.index, 0, removed);
+
+      const newGroups = tabGroups.map(g => {
+        if (g.id === sourceGroup.id) return { ...g, tabs: sourceTabs };
+        if (g.id === destGroup.id) return { ...g, tabs: destTabs };
+        return g;
+      });
+
+      setTabGroups(newGroups);
+      localStorage.setItem('noteDetailTabGroups', JSON.stringify(newGroups));
+    }
+  };
+
+  const resetTabLayout = () => {
+    setTabGroups(TAB_GROUPS);
+    localStorage.removeItem('noteDetailTabGroups');
+    toast.success('Tab layout reset to default');
   };
 
   const { data: note, isLoading } = useQuery({
@@ -1188,7 +1233,34 @@ Generated: ${new Date().toLocaleString()}
          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex items-start">
                <div className="w-72 bg-gradient-to-b from-slate-50 to-white border-r border-slate-200 flex-shrink-0 sticky top-8 self-start overflow-y-auto" style={{ maxHeight: 'calc(100vh - 4rem)' }}>
                      <TabsList className="w-full h-full flex flex-col items-stretch gap-0 bg-transparent p-4">
-                       {TAB_GROUPS.map((group) => {
+                       {/* Customize Button */}
+                       <div className="flex gap-2 mb-4">
+                         <Button
+                           variant={customizing ? "default" : "outline"}
+                           size="sm"
+                           onClick={() => setCustomizing(!customizing)}
+                           className="flex-1 gap-2"
+                         >
+                           <Settings className="w-4 h-4" />
+                           {customizing ? 'Done' : 'Customize'}
+                         </Button>
+                         {customizing && (
+                           <Button
+                             variant="outline"
+                             size="sm"
+                             onClick={resetTabLayout}
+                             className="gap-2"
+                           >
+                             <RotateCcw className="w-4 h-4" />
+                           </Button>
+                         )}
+                       </div>
+
+                       <DragDropContext onDragEnd={handleDragEnd}>
+                       <Droppable droppableId="groups" type="GROUP" isDropDisabled={!customizing}>
+                         {(provided) => (
+                           <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-0">
+                       {tabGroups.map((group, groupIndex) => {
                          const isCollapsed = collapsedGroups.has(group.id);
                          const groupColorClasses = {
                            blue: 'bg-blue-50 border-blue-200 text-blue-900',
@@ -1206,65 +1278,117 @@ Generated: ${new Date().toLocaleString()}
                          };
 
                          return (
-                           <div key={group.id} className="mb-4">
-                             {/* Group Header */}
-                             <button
-                               onClick={() => {
-                                 setCollapsedGroups(prev => {
-                                   const newSet = new Set(prev);
-                                   if (newSet.has(group.id)) {
-                                     newSet.delete(group.id);
-                                   } else {
-                                     newSet.add(group.id);
-                                   }
-                                   return newSet;
-                                 });
-                               }}
-                               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border ${groupColorClasses[group.color]} mb-2 hover:opacity-80 transition-all`}
-                             >
-                               <span className="text-xs font-bold uppercase tracking-wider">{group.label}</span>
-                               {isCollapsed ? (
-                                 <ChevronDown className="w-4 h-4" />
-                               ) : (
-                                 <ChevronUp className="w-4 h-4" />
-                               )}
-                             </button>
+                          <Draggable key={group.id} draggableId={group.id} index={groupIndex} isDragDisabled={!customizing}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className="mb-4"
+                                style={{
+                                  ...provided.draggableProps.style,
+                                  opacity: snapshot.isDragging ? 0.5 : 1
+                                }}
+                              >
+                                {/* Group Header */}
+                                <div className={`w-full flex items-center px-3 py-2 rounded-lg border ${groupColorClasses[group.color]} mb-2`}>
+                                  {customizing && (
+                                    <div {...provided.dragHandleProps} className="mr-2 cursor-move">
+                                      <GripVertical className="w-4 h-4 text-slate-400" />
+                                    </div>
+                                  )}
+                                  <button
+                                    onClick={() => {
+                                      setCollapsedGroups(prev => {
+                                        const newSet = new Set(prev);
+                                        if (newSet.has(group.id)) {
+                                          newSet.delete(group.id);
+                                        } else {
+                                          newSet.add(group.id);
+                                        }
+                                        return newSet;
+                                      });
+                                    }}
+                                    className="flex-1 flex items-center justify-between hover:opacity-80 transition-all"
+                                  >
+                                    <span className="text-xs font-bold uppercase tracking-wider">{group.label}</span>
+                                    {isCollapsed ? (
+                                      <ChevronDown className="w-4 h-4" />
+                                    ) : (
+                                      <ChevronUp className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                </div>
 
-                             {/* Group Tabs */}
-                             <AnimatePresence>
-                               {!isCollapsed && (
-                                 <motion.div
-                                   initial={{ opacity: 0, height: 0 }}
-                                   animate={{ opacity: 1, height: "auto" }}
-                                   exit={{ opacity: 0, height: 0 }}
-                                   className="space-y-1"
-                                 >
-                                   {group.tabs.map((tab) => {
-                                     const Icon = tab.icon;
-                                     const isActive = activeTab === tab.id;
-                                     return (
-                                       <TabsTrigger 
-                                         key={tab.id}
-                                         value={tab.id} 
-                                         className={`w-full justify-start px-4 py-2.5 gap-3 font-medium text-sm transition-all duration-200 rounded-lg ${
-                                           isActive 
-                                             ? `${activeColorClasses[group.color]} text-white shadow-md` 
-                                             : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 hover:border-slate-300'
-                                         }`}
-                                       >
-                                         <Icon className="w-4 h-4 flex-shrink-0" />
-                                         <span className="text-left truncate">{tab.label}</span>
-                                       </TabsTrigger>
-                                     );
-                                   })}
-                                 </motion.div>
-                               )}
-                             </AnimatePresence>
-                           </div>
+                                {/* Group Tabs */}
+                                <AnimatePresence>
+                                  {!isCollapsed && (
+                                    <Droppable droppableId={group.id} type="TAB" isDropDisabled={!customizing}>
+                                      {(provided, snapshot) => (
+                                        <motion.div
+                                          ref={provided.innerRef}
+                                          {...provided.droppableProps}
+                                          initial={{ opacity: 0, height: 0 }}
+                                          animate={{ opacity: 1, height: "auto" }}
+                                          exit={{ opacity: 0, height: 0 }}
+                                          className="space-y-1"
+                                          style={{
+                                            backgroundColor: snapshot.isDraggingOver ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
+                                            transition: 'background-color 0.2s'
+                                          }}
+                                        >
+                                          {group.tabs.map((tab, tabIndex) => {
+                                            const Icon = tab.icon;
+                                            const isActive = activeTab === tab.id;
+                                            return (
+                                              <Draggable key={tab.id} draggableId={tab.id} index={tabIndex} isDragDisabled={!customizing}>
+                                                {(provided, snapshot) => (
+                                                  <div
+                                                    ref={provided.innerRef}
+                                                    {...provided.draggableProps}
+                                                    style={{
+                                                      ...provided.draggableProps.style,
+                                                      opacity: snapshot.isDragging ? 0.5 : 1
+                                                    }}
+                                                  >
+                                                    <TabsTrigger 
+                                                      value={tab.id} 
+                                                      className={`w-full justify-start px-4 py-2.5 gap-3 font-medium text-sm transition-all duration-200 rounded-lg ${
+                                                        isActive 
+                                                          ? `${activeColorClasses[group.color]} text-white shadow-md` 
+                                                          : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 hover:border-slate-300'
+                                                      }`}
+                                                    >
+                                                      {customizing && (
+                                                        <div {...provided.dragHandleProps} className="cursor-move">
+                                                          <GripVertical className="w-4 h-4 flex-shrink-0" />
+                                                        </div>
+                                                      )}
+                                                      <Icon className="w-4 h-4 flex-shrink-0" />
+                                                      <span className="text-left truncate">{tab.label}</span>
+                                                    </TabsTrigger>
+                                                  </div>
+                                                )}
+                                              </Draggable>
+                                            );
+                                          })}
+                                          {provided.placeholder}
+                                        </motion.div>
+                                      )}
+                                    </Droppable>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            )}
+                          </Draggable>
                          );
-                       })}
-                     </TabsList>
-               </div>
+                         })}
+                         {provided.placeholder}
+                         </div>
+                         )}
+                         </Droppable>
+                         </DragDropContext>
+                         </TabsList>
+                         </div>
            <div className="flex-1 overflow-hidden">
 
            {/* AI Assistant Tab */}

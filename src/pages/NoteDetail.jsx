@@ -70,6 +70,7 @@ import ReviewOfSystemsEditor from "../components/notes/ReviewOfSystemsEditor";
 import BMICalculator from "../components/calculators/BMICalculator";
 import CreatinineClearanceCalculator from "../components/calculators/CreatinineClearanceCalculator";
 import MedicationDosingLookup from "../components/calculators/MedicationDosingLookup";
+import ProceduresPanel from "../components/procedures/ProceduresPanel";
 
 const TAB_GROUPS = [
   {
@@ -112,6 +113,7 @@ const TAB_GROUPS = [
     tabs: [
       { id: 'plan', label: 'Treatment Plan', icon: FileText },
       { id: 'treatments', label: 'Medications', icon: Pill },
+      { id: 'procedures', label: 'Procedures', icon: Activity },
       { id: 'guidelines', label: 'Guidelines', icon: BookOpen },
     ]
   },

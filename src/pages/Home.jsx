@@ -155,10 +155,10 @@ export default function Home() {
 
       {/* Why Choose Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="bg-gradient-to-r from-cyan-600/20 to-blue-600/20 rounded-3xl p-12 border border-cyan-500/30 backdrop-blur">
+        <div className="bg-gradient-to-r from-cyan-100 to-blue-100 rounded-3xl p-12 border border-cyan-300 backdrop-blur">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
-              <h3 className="text-4xl font-bold text-white">
+              <h3 className="text-4xl font-bold text-slate-900">
                 Why Healthcare Professionals Choose Notrya AI
               </h3>
               <p className="text-lg text-slate-300 leading-relaxed">

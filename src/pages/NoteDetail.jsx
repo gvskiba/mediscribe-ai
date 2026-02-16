@@ -57,6 +57,7 @@ import AITreatmentPlanAnalyzer from "../components/notes/AITreatmentPlanAnalyzer
 import ClinicalNoteView from "../components/notes/ClinicalNoteView";
 import SmartTemplateApplicator from "../components/templates/SmartTemplateApplicator";
 import AIDocumentationAssistant from "../components/ai/AIDocumentationAssistant";
+import AIMDMAnalyzer from "../components/notes/AIMDMAnalyzer";
 
 const TAB_ROWS = [
   [
@@ -1938,16 +1939,18 @@ Generated: ${new Date().toLocaleString()}
                      </TabsContent>
 
                      {/* MDM Tab */}
-                 <TabsContent value="mdm" className="p-6 space-y-6 overflow-y-auto">
-                   <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-sm overflow-hidden">
-                     <div className="bg-indigo-50 px-4 py-3 border-b border-indigo-200 flex items-center gap-2">
-                       <AlertCircle className="w-5 h-5 text-indigo-600" />
-                       <h3 className="font-semibold text-slate-900">Medical Decision Making</h3>
-                     </div>
-                     <div className="p-4">
-                       <p className="text-sm text-slate-500">MDM content will be available here</p>
-                     </div>
-                     </div>
+                     <TabsContent value="mdm" className="p-6 space-y-6 overflow-y-auto">
+                     <AIMDMAnalyzer
+                     note={note}
+                     onAddToNote={async (mdmText) => {
+                       const updatedNote = {
+                         medical_history: (note.medical_history || "") + mdmText
+                       };
+                       await base44.entities.ClinicalNote.update(noteId, updatedNote);
+                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                       toast.success("Medical Decision Making added to clinical note");
+                     }}
+                     />
 
                      {/* Next Button */}
                      <div className="flex justify-end pt-4 border-t border-slate-200">

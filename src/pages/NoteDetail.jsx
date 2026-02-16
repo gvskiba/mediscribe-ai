@@ -1543,19 +1543,19 @@ Generated: ${new Date().toLocaleString()}
                                                                    </span>
                                                                  )}
                                                                </TabsTrigger>
-                                                               <div className="opacity-0 group-hover/tab:opacity-100 transition-opacity flex gap-1 pr-1">
-                                                                 <button
-                                                                   onClick={(e) => {
-                                                                     e.stopPropagation();
-                                                                     setEditingTabId(tab.id);
-                                                                     setEditingTabName(tab.label);
-                                                                   }}
-                                                                   className="p-1 hover:bg-slate-200 rounded text-slate-600 hover:text-slate-900"
-                                                                   title="Rename tab"
-                                                                 >
-                                                                   <FileText className="w-3 h-3" />
-                                                                 </button>
-                                                                 {tab.id.startsWith('custom_') && (
+                                                               {tab.id.startsWith('custom_') && (
+                                                                 <div className="opacity-0 group-hover/tab:opacity-100 transition-opacity flex gap-1 pr-1">
+                                                                   <button
+                                                                     onClick={(e) => {
+                                                                       e.stopPropagation();
+                                                                       setEditingTabId(tab.id);
+                                                                       setEditingTabName(tab.label);
+                                                                     }}
+                                                                     className="p-1 hover:bg-slate-200 rounded text-slate-600 hover:text-slate-900"
+                                                                     title="Rename tab"
+                                                                   >
+                                                                     <FileText className="w-3 h-3" />
+                                                                   </button>
                                                                    <button
                                                                      onClick={(e) => {
                                                                        e.stopPropagation();
@@ -1566,8 +1566,8 @@ Generated: ${new Date().toLocaleString()}
                                                                    >
                                                                      <X className="w-3 h-3" />
                                                                    </button>
-                                                                 )}
-                                                               </div>
+                                                                 </div>
+                                                               )}
                                                                </div>
                                                                </div>
                                                                )}

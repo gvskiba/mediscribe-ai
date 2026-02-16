@@ -197,6 +197,11 @@ export default function Home() {
       {/* CTA Section */}
       <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center space-y-8">
+          <img 
+            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69876015478a19e360c5e3ea/2b9f784ba_ChatGPTImageFeb16202605_16_02PM.png" 
+            alt="Notrya AI" 
+            className="w-16 h-16 mx-auto opacity-90"
+          />
           <h3 className="text-4xl font-bold">
             Ready to Transform Your Documentation?
           </h3>

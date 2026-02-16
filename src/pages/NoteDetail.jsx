@@ -1951,19 +1951,15 @@ Generated: ${new Date().toLocaleString()}
                            }}
                          />
                        </div>
+                       </>
 
-
-                     </>
-                     )}
-
-                     {/* Next Button */}
-                     <div className="flex justify-end pt-4 border-t border-slate-200">
-                     <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
-                       Next <ArrowLeft className="w-4 h-4 rotate-180" />
-                     </Button>
-                     </div>
-
-                     </TabsContent>
+                       {/* Next Button */}
+                       <div className="flex justify-end pt-4 border-t border-slate-200">
+                       <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                         Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                       </Button>
+                       </div>
+                       </TabsContent>
 
                      {/* MDM Tab */}
                      <TabsContent value="mdm" className="p-6 space-y-6 overflow-y-auto">

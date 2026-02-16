@@ -17,7 +17,12 @@ import {
   Activity,
   Stethoscope,
   AlertCircle,
-  TrendingUp
+  TrendingUp,
+  Grid3x3,
+  Droplet,
+  Brain,
+  Baby,
+  Apple
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -146,6 +151,19 @@ Prioritize calculators that directly aid in diagnosis, risk stratification, or t
   const isFavorite = (calcId) => favorites.some(f => f.calculator_id === calcId);
 
   const categories = ["all", ...new Set(CALCULATOR_LIBRARY.map(c => c.category))];
+
+  const categoryIcons = {
+    all: Grid3x3,
+    favorites: Star,
+    General: Activity,
+    Nephrology: Droplet,
+    Cardiology: Heart,
+    Pulmonology: Activity,
+    Neurology: Brain,
+    Pediatrics: Baby,
+    Gastroenterology: Apple,
+    "Critical Care": AlertCircle
+  };
 
   return (
     <div className="space-y-6">
@@ -290,17 +308,24 @@ Prioritize calculators that directly aid in diagnosis, risk stratification, or t
 
       {/* Category Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-slate-100 p-1 rounded-xl border border-slate-200">
-          <TabsTrigger value="all" className="rounded-lg">All Calculators</TabsTrigger>
-          <TabsTrigger value="favorites" className="rounded-lg gap-2">
-            <Star className="w-4 h-4" />
-            Favorites
+        <TabsList className="bg-slate-100 p-1 rounded-xl border border-slate-200 flex-wrap">
+          <TabsTrigger value="all" className="rounded-lg group flex items-center gap-2">
+            <Grid3x3 className="w-4 h-4" />
+            <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 whitespace-nowrap">All Calculators</span>
           </TabsTrigger>
-          {categories.filter(c => c !== "all").map(category => (
-            <TabsTrigger key={category} value={category} className="rounded-lg">
-              {category}
-            </TabsTrigger>
-          ))}
+          <TabsTrigger value="favorites" className="rounded-lg group flex items-center gap-2">
+            <Star className="w-4 h-4" />
+            <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 whitespace-nowrap">Favorites</span>
+          </TabsTrigger>
+          {categories.filter(c => c !== "all").map(category => {
+            const Icon = categoryIcons[category] || Activity;
+            return (
+              <TabsTrigger key={category} value={category} className="rounded-lg group flex items-center gap-2">
+                <Icon className="w-4 h-4" />
+                <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 whitespace-nowrap">{category}</span>
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-6">

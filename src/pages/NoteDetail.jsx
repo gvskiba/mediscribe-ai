@@ -1124,7 +1124,7 @@ Generated: ${new Date().toLocaleString()}
       >
         {/* Patient Info */}
         <div className="mb-6">
-          <div className="flex items-center gap-3 mb-3 flex-wrap">
+          <div className="mb-3">
             <input
               type="text"
               value={note.patient_name === "New Patient" ? (note.chief_complaint || "New Patient") : note.patient_name}
@@ -1139,8 +1139,18 @@ Generated: ${new Date().toLocaleString()}
                 setLastSaved(new Date().toISOString());
                 toast.success("Note saved at " + format(new Date(), "h:mm:ss a"));
               }}
-              className="text-3xl font-bold text-slate-900 bg-transparent border-b-2 border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none transition-colors px-1 -ml-1"
+              className="text-3xl font-bold text-slate-900 bg-transparent border-b-2 border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none transition-colors px-1 -ml-1 w-full"
             />
+            <div className="flex items-center gap-4 mt-2 text-sm text-slate-600">
+              <span className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-slate-400" />
+                {note.date_of_visit ? format(new Date(note.date_of_visit), "MMM d, yyyy") : format(new Date(), "MMM d, yyyy")}
+              </span>
+              <span className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-slate-400" />
+                {note.time_of_visit || format(new Date(), "h:mm a")}
+              </span>
+            </div>
           </div>
 
           {note.chief_complaint && (

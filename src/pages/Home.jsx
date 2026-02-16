@@ -38,35 +38,30 @@ export default function Home() {
 
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-32">
-        <div className="text-center space-y-8">
-          <img 
-            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69876015478a19e360c5e3ea/2b9f784ba_ChatGPTImageFeb16202605_16_02PM.png" 
-            alt="Notrya AI Logo" 
-            className="w-56 h-56 mx-auto"
-          />
-
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700">
-            <Sparkles className="w-4 h-4" />
-            <span className="text-sm font-semibold">AI-Powered Clinical Platform</span>
+        <div className="text-center space-y-10">
+          {/* Logo with Branding */}
+          <div className="space-y-4">
+            <img 
+              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69876015478a19e360c5e3ea/2b9f784ba_ChatGPTImageFeb16202605_16_02PM.png" 
+              alt="Notrya AI Logo" 
+              className="w-64 h-64 mx-auto drop-shadow-lg"
+            />
+            <div>
+              <h1 className="text-5xl sm:text-7xl font-bold text-slate-900">Notrya AI</h1>
+              <p className="text-xl text-slate-500 mt-2 tracking-wide">Medical notes. Instantly complete.</p>
+            </div>
           </div>
 
-          <h2 className="text-5xl sm:text-6xl font-bold tracking-tight text-slate-900 leading-tight">
-            Clinical Intelligence
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-800">
-              Reimagined
-            </span>
-          </h2>
-
-          <p className="text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            Notrya AI is your intelligent clinical assistant designed to streamline medical documentation, provide evidence-based recommendations, and enhance patient care through advanced AI analysis.
+          <p className="text-2xl text-slate-700 max-w-3xl mx-auto leading-relaxed font-semibold">
+            Your intelligent clinical assistant for modern healthcare—streamline documentation, unlock evidence-based insights, and focus on patient care.
           </p>
 
           <Button
             onClick={() => base44.auth.redirectToLogin()}
             size="lg"
-            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white gap-2 shadow-lg px-8 py-6 text-lg"
+            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white gap-2 shadow-xl px-10 py-7 text-lg font-semibold"
           >
-            Get Started
+            Start Free
             <ArrowRight className="w-5 h-5" />
           </Button>
         </div>

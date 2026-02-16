@@ -80,9 +80,10 @@ export default function NoteCard({ note, selected, onSelect, onPreview, onDelete
           </div>
 
           <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-xs text-slate-400">
-              {format(new Date(note.created_date), "MMM d")}
-            </span>
+            <div className="text-xs text-slate-500">
+              <p className="font-medium">Created</p>
+              <p className="text-slate-400">{format(new Date(note.created_date), "MMM d, yyyy h:mm a")}</p>
+            </div>
             <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
           </div>
         </div>
@@ -167,6 +168,12 @@ export default function NoteCard({ note, selected, onSelect, onPreview, onDelete
               )}
             </div>
           )}
+          
+          <div className="mt-3 pt-3 border-t border-slate-100">
+            <p className="text-xs text-slate-400">
+              Created {format(new Date(note.created_date), "MMM d, yyyy 'at' h:mm a")}
+            </p>
+          </div>
         </div>
         
         <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" />

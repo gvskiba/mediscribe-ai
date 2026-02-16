@@ -122,6 +122,10 @@ export default function PatientNotesGroup({ patientName, notes, selectedNotes, o
                     )}
                   </div>
                 )}
+                
+                <p className="text-xs text-slate-400 mt-2">
+                  Created {format(new Date(note.created_date), "MMM d, yyyy 'at' h:mm a")}
+                </p>
               </div>
               
               <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" />

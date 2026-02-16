@@ -234,6 +234,11 @@ export default function NoteDetail() {
   const [customizing, setCustomizing] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [activeTab, setActiveTab] = useState("ai_assistant");
+  const [showCreateTabDialog, setShowCreateTabDialog] = useState(false);
+  const [selectedGroupForNewTab, setSelectedGroupForNewTab] = useState(null);
+  const [newTabName, setNewTabName] = useState("");
+  const [editingTabId, setEditingTabId] = useState(null);
+  const [editingTabName, setEditingTabName] = useState("");
 
   const handleNext = () => {
     const allTabs = tabGroups.flatMap(g => g.tabs.map(t => t.id));
@@ -293,6 +298,79 @@ export default function NoteDetail() {
     setTabGroups(TAB_GROUPS);
     localStorage.removeItem('noteDetailTabGroups');
     toast.success('Tab layout reset to default');
+  };
+
+  const handleCreateTab = (groupId) => {
+    setSelectedGroupForNewTab(groupId);
+    setNewTabName("");
+    setShowCreateTabDialog(true);
+  };
+
+  const handleSaveNewTab = () => {
+    if (!newTabName.trim() || !selectedGroupForNewTab) {
+      toast.error("Tab name is required");
+      return;
+    }
+
+    const tabId = `custom_${selectedGroupForNewTab}_${Date.now()}`;
+    const newGroups = tabGroups.map(group => {
+      if (group.id === selectedGroupForNewTab) {
+        return {
+          ...group,
+          tabs: [
+            ...group.tabs,
+            {
+              id: tabId,
+              label: newTabName,
+              icon: Plus
+            }
+          ]
+        };
+      }
+      return group;
+    });
+
+    setTabGroups(newGroups);
+    localStorage.setItem('noteDetailTabGroups', JSON.stringify(newGroups));
+    setShowCreateTabDialog(false);
+    setNewTabName("");
+    toast.success("Tab created successfully");
+  };
+
+  const handleRenameTab = (tabId, newName) => {
+    if (!newName.trim()) {
+      toast.error("Tab name is required");
+      return;
+    }
+
+    const newGroups = tabGroups.map(group => ({
+      ...group,
+      tabs: group.tabs.map(tab =>
+        tab.id === tabId ? { ...tab, label: newName } : tab
+      )
+    }));
+
+    setTabGroups(newGroups);
+    localStorage.setItem('noteDetailTabGroups', JSON.stringify(newGroups));
+    setEditingTabId(null);
+    setEditingTabName("");
+    toast.success("Tab renamed successfully");
+  };
+
+  const handleDeleteTab = (groupId, tabId) => {
+    const newGroups = tabGroups.map(group => {
+      if (group.id === groupId) {
+        return {
+          ...group,
+          tabs: group.tabs.filter(tab => tab.id !== tabId)
+        };
+      }
+      return group;
+    });
+
+    setTabGroups(newGroups);
+    localStorage.setItem('noteDetailTabGroups', JSON.stringify(newGroups));
+    toast.success("Tab deleted successfully");
   };
 
   const { data: note, isLoading } = useQuery({

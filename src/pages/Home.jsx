@@ -69,9 +69,16 @@ export default function Home() {
 
       {/* Features Grid */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <h3 className="text-3xl font-bold text-slate-900 text-center mb-16">
-          Powerful Features for Modern Medicine
-        </h3>
+        <div className="text-center mb-16">
+          <img 
+            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69876015478a19e360c5e3ea/2b9f784ba_ChatGPTImageFeb16202605_16_02PM.png" 
+            alt="Notrya AI" 
+            className="w-20 h-20 mx-auto mb-4"
+          />
+          <h3 className="text-3xl font-bold text-slate-900">
+            Powerful Features for Modern Medicine
+          </h3>
+        </div>
 
         <div className="grid md:grid-cols-3 gap-8">
           {[

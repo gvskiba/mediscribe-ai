@@ -94,6 +94,7 @@ const TAB_GROUPS = [
     tabs: [
       { id: 'analysis', label: 'Analysis', icon: Sparkles },
       { id: 'initial_impression', label: 'Initial Impression', icon: Sparkles },
+      { id: 'calculators', label: 'Calculators', icon: Activity },
       { id: 'laboratory', label: 'Laboratory', icon: Beaker },
       { id: 'imaging_recommendations', label: 'Imaging', icon: ImageIcon },
       { id: 'imaging', label: 'Result Analysis', icon: ImageIcon },
@@ -3156,6 +3157,194 @@ Return 5-10 of the most relevant and current guidelines.`,
                        Next <ArrowLeft className="w-4 h-4 rotate-180" />
                      </Button>
                      </div>
+                     </TabsContent>
+
+                     {/* Calculators Tab */}
+                     <TabsContent value="calculators" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+                       <div className="max-w-5xl mx-auto space-y-8">
+                         {/* Header */}
+                         <div className="text-center mb-8">
+                           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 mb-4 shadow-lg">
+                             <Activity className="w-8 h-8 text-white" />
+                           </div>
+                           <h2 className="text-3xl font-bold text-slate-900 mb-2">Medical Calculators</h2>
+                           <p className="text-slate-600 max-w-2xl mx-auto">Evidence-based clinical decision tools integrated with your note</p>
+                         </div>
+
+                         {/* Quick Access Calculators */}
+                         <div className="grid md:grid-cols-2 gap-6">
+                           {/* BMI Calculator */}
+                           <div className="bg-white rounded-xl border-2 border-green-300 shadow-lg overflow-hidden">
+                             <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-4 text-white">
+                               <h3 className="font-bold flex items-center gap-2">
+                                 <Activity className="w-5 h-5" />
+                                 BMI Calculator
+                               </h3>
+                             </div>
+                             <div className="p-6">
+                               <BMICalculator 
+                                 onAddToNote={async (data) => {
+                                   const mdmText = `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nCALCULATOR: ${data.name}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nInputs: ${JSON.stringify(data.inputs)}\n\nResult: ${data.result}\n\nInterpretation: ${data.interpretation}\n\nReference: ${data.url}\n`;
+                                   await base44.entities.ClinicalNote.update(noteId, { 
+                                     mdm: (note.mdm || "") + mdmText 
+                                   });
+                                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                   toast.success("Calculator result added to MDM");
+                                 }} 
+                               />
+                             </div>
+                           </div>
+
+                           {/* Creatinine Clearance Calculator */}
+                           <div className="bg-white rounded-xl border-2 border-purple-300 shadow-lg overflow-hidden">
+                             <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-4 text-white">
+                               <h3 className="font-bold flex items-center gap-2">
+                                 <Activity className="w-5 h-5" />
+                                 Creatinine Clearance
+                               </h3>
+                             </div>
+                             <div className="p-6">
+                               <CreatinineClearanceCalculator 
+                                 onAddToNote={async (data) => {
+                                   const mdmText = `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nCALCULATOR: ${data.name}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nInputs: ${JSON.stringify(data.inputs)}\n\nResult: ${data.result}\n\nInterpretation: ${data.interpretation}\n\nReference: ${data.url}\n`;
+                                   await base44.entities.ClinicalNote.update(noteId, { 
+                                     mdm: (note.mdm || "") + mdmText 
+                                   });
+                                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                   toast.success("Calculator result added to MDM");
+                                 }} 
+                               />
+                             </div>
+                           </div>
+                         </div>
+
+                         {/* AI Calculator Recommendations */}
+                         <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-lg overflow-hidden">
+                           <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-5 text-white">
+                             <h3 className="font-bold text-lg flex items-center gap-2">
+                               <Sparkles className="w-6 h-6" />
+                               AI Recommended Calculators
+                             </h3>
+                             <p className="text-indigo-100 text-sm mt-1">Get personalized calculator suggestions based on this clinical note</p>
+                           </div>
+                           <div className="p-6">
+                             <Button
+                               onClick={async () => {
+                                 setLoadingRecommendations(true);
+                                 try {
+                                   const result = await base44.integrations.Core.InvokeLLM({
+                                     prompt: `Based on this clinical presentation, recommend the most relevant medical calculators:
+
+                     CHIEF COMPLAINT: ${note.chief_complaint || "N/A"}
+                     DIAGNOSES: ${note.diagnoses?.join(", ") || "N/A"}
+                     ASSESSMENT: ${note.assessment || "N/A"}
+                     VITAL SIGNS: ${note.vital_signs ? JSON.stringify(note.vital_signs) : "N/A"}
+
+                     Recommend 5-8 specific medical calculators from MDCalc that would be most clinically useful. For each:
+                     1. calculator_name: Full official name
+                     2. category: Medical specialty
+                     3. clinical_use: Why this is relevant (1-2 sentences)
+                     4. priority: high, medium, or low
+                     5. mdcalc_id: The MDCalc ID (from URL path)`,
+                                     add_context_from_internet: true,
+                                     response_json_schema: {
+                                       type: "object",
+                                       properties: {
+                                         recommendations: {
+                                           type: "array",
+                                           items: {
+                                             type: "object",
+                                             properties: {
+                                               calculator_name: { type: "string" },
+                                               category: { type: "string" },
+                                               clinical_use: { type: "string" },
+                                               priority: { type: "string", enum: ["high", "medium", "low"] },
+                                               mdcalc_id: { type: "string" }
+                                             }
+                                           }
+                                         }
+                                       }
+                                     }
+                                   });
+
+                                   const recommendationsDiv = document.getElementById('calculator-recommendations');
+                                   if (recommendationsDiv && result.recommendations) {
+                                     recommendationsDiv.innerHTML = `
+                                       <div class="space-y-3 mt-6">
+                                         ${result.recommendations.map((rec, idx) => `
+                                           <div class="rounded-lg border-2 p-4 ${
+                                             rec.priority === 'high' ? 'bg-red-50 border-red-300' :
+                                             rec.priority === 'medium' ? 'bg-amber-50 border-amber-300' :
+                                             'bg-blue-50 border-blue-300'
+                                           }">
+                                             <div class="flex items-start justify-between gap-3">
+                                               <div class="flex-1">
+                                                 <div class="flex items-center gap-2 mb-2">
+                                                   <span class="inline-flex px-2 py-1 rounded text-xs font-bold ${
+                                                     rec.priority === 'high' ? 'bg-red-600 text-white' :
+                                                     rec.priority === 'medium' ? 'bg-amber-600 text-white' :
+                                                     'bg-blue-600 text-white'
+                                                   }">${rec.priority.toUpperCase()}</span>
+                                                   <span class="text-xs text-slate-600">${rec.category}</span>
+                                                 </div>
+                                                 <h5 class="font-bold text-slate-900 mb-2">${rec.calculator_name}</h5>
+                                                 <p class="text-sm text-slate-700 mb-3">${rec.clinical_use}</p>
+                                                 ${rec.mdcalc_id ? `
+                                                   <a href="https://www.mdcalc.com/calc/${rec.mdcalc_id}" target="_blank" rel="noopener noreferrer" 
+                                                      class="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+                                                     Open Calculator →
+                                                   </a>
+                                                 ` : ''}
+                                               </div>
+                                             </div>
+                                           </div>
+                                         `).join('')}
+                                       </div>
+                                     `;
+                                   }
+                                   toast.success("Calculator recommendations generated");
+                                 } catch (error) {
+                                   console.error("Failed to get recommendations:", error);
+                                   toast.error("Failed to generate recommendations");
+                                 } finally {
+                                   setLoadingRecommendations(false);
+                                 }
+                               }}
+                               disabled={loadingRecommendations || !note.chief_complaint}
+                               className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white gap-2 shadow-lg py-6 text-base"
+                             >
+                               {loadingRecommendations ? (
+                                 <><Loader2 className="w-5 h-5 animate-spin" /> Getting Recommendations...</>
+                               ) : (
+                                 <><Sparkles className="w-5 h-5" /> Get Calculator Recommendations</>
+                               )}
+                             </Button>
+
+                             <div id="calculator-recommendations"></div>
+                           </div>
+                         </div>
+
+                         {/* Medication Dosing Lookup */}
+                         <div className="bg-white rounded-xl border-2 border-blue-300 shadow-lg overflow-hidden">
+                           <div className="bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-5 text-white">
+                             <h3 className="font-bold text-lg flex items-center gap-2">
+                               <Pill className="w-6 h-6" />
+                               Medication Dosing Lookup
+                             </h3>
+                             <p className="text-blue-100 text-sm mt-1">Quick reference for medication dosing and administration</p>
+                           </div>
+                           <div className="p-6">
+                             <MedicationDosingLookup />
+                           </div>
+                         </div>
+                       </div>
+
+                       {/* Next Button */}
+                       <div className="flex justify-end pt-4 border-t border-slate-200">
+                         <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                           Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                         </Button>
+                       </div>
                      </TabsContent>
 
                      {/* MDM Tab */}

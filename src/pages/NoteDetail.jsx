@@ -1127,7 +1127,7 @@ Generated: ${new Date().toLocaleString()}
           <div className="flex items-center gap-3 mb-3 flex-wrap">
             <input
               type="text"
-              value={note.patient_name}
+              value={note.patient_name === "New Patient" ? (note.chief_complaint || "New Patient") : note.patient_name}
               onChange={(e) => {
                 queryClient.setQueryData(["note", noteId], (old) => ({
                   ...old,

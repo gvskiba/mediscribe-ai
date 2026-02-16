@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 import {
   Sparkles,
   Shield,
@@ -12,6 +14,18 @@ import {
 } from "lucide-react";
 
 export default function Home() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const isAuthenticated = await base44.auth.isAuthenticated();
+      if (isAuthenticated) {
+        navigate(createPageUrl("Dashboard"));
+      }
+    };
+    checkAuth();
+  }, [navigate]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-blue-50 to-white">
       {/* Header */}

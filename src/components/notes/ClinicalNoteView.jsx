@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Edit2, Save, X, FileText, Sparkles, Loader2, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { Edit2, Save, X, FileText, Sparkles, Loader2, Copy, Check, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
@@ -133,14 +133,29 @@ const ArraySection = ({ title, items, field, onSave, color = "blue" }) => {
       <div className={`px-4 py-3 flex items-center justify-between ${headerColors[color]}`}>
         <h3 className="font-bold text-sm">{title}</h3>
         {!editing ? (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setEditing(true)}
-            className="h-7 gap-1"
-          >
-            <Edit2 className="w-3 h-3" /> Edit
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setEditing(true)}
+              className="h-7 gap-1"
+            >
+              <Edit2 className="w-3 h-3" /> Edit
+            </Button>
+            {items && items.length > 0 && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={async () => {
+                  await onSave(field, []);
+                  setEditValue("");
+                }}
+                className="h-7 gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <Trash2 className="w-3 h-3" /> Clear
+              </Button>
+            )}
+          </div>
         ) : (
           <div className="flex items-center gap-2">
             <Button

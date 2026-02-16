@@ -17,6 +17,7 @@ import {
 "lucide-react";
 import { base44 } from "@/api/base44Client";
 import GlobalSearchBar from "./components/search/GlobalSearchBar";
+import RecentNotesDropdown from "./components/notes/RecentNotesDropdown";
 
 import { Settings } from "lucide-react";
 
@@ -126,6 +127,7 @@ export default function Layout({ children, currentPageName }) {
 
             {/* Actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
+              <RecentNotesDropdown />
               <button
                 onClick={async () => {
                   const newNote = await base44.entities.ClinicalNote.create({

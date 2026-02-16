@@ -1567,11 +1567,11 @@ Generated: ${new Date().toLocaleString()}
                                                                    </button>
                                                                  )}
                                                                </div>
-                                                             </div>
-                                                             </div>
-                                                             )}
-                                                             </Draggable>
-                                                             );
+                                                               </div>
+                                                               </div>
+                                                               )}
+                                                               </Draggable>
+                                                               );
                                                              })}
                                                              {provided.placeholder}
                                                              <button

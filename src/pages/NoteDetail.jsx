@@ -34,7 +34,7 @@ import {
       import TreatmentPlanSelector from "../components/notes/TreatmentPlanSelector";
       import EditableSection from "../components/notes/EditableSection";
 import { format } from "date-fns";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import StructuredNotePreview from "../components/notes/StructuredNotePreview";
 import PatientSummary from "../components/notes/PatientSummary";

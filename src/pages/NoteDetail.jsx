@@ -184,53 +184,7 @@ export default function NoteDetail() {
   const [linkingGuidelines, setLinkingGuidelines] = useState(false);
   const [showGuidelinePrompt, setShowGuidelinePrompt] = useState(false);
   const [noteData, setNoteData] = useState(null);
-  const [tabGroups, setTabGroups] = useState(() => {
-    const saved = localStorage.getItem('noteDetailTabGroups');
-    if (!saved) return TAB_GROUPS;
-    
-    // Restore tab groups from localStorage but merge icons from TAB_GROUPS and migrate old tab IDs
-    const savedGroups = JSON.parse(saved);
-    
-    // Check if saved groups have the new tabs, if not, reset to default
-    const hasLaboratoryTab = savedGroups.some(group => 
-      group.tabs.some(tab => tab.id === 'laboratory')
-    );
-    const hasImagingTab = savedGroups.some(group => 
-      group.tabs.some(tab => tab.id === 'imaging_recommendations')
-    );
-    const hasHPITab = savedGroups.some(group => 
-      group.tabs.some(tab => tab.id === 'hpi_intake')
-    );
-    
-    if (!hasLaboratoryTab || !hasImagingTab || !hasHPITab) {
-      localStorage.removeItem('noteDetailTabGroups');
-      return TAB_GROUPS;
-    }
-    
-    return savedGroups.map(savedGroup => {
-      const originalGroup = TAB_GROUPS.find(g => g.id === savedGroup.id);
-      return {
-        ...savedGroup,
-        tabs: savedGroup.tabs.map(savedTab => {
-          // Migrate old tab IDs to new ones
-          let tabId = savedTab.id;
-          let tabLabel = savedTab.label;
-          if (savedTab.id === 'assessment_plan') {
-            tabId = 'initial_impression';
-            tabLabel = 'Initial Impression';
-          }
-          
-          const originalTab = originalGroup?.tabs.find(t => t.id === tabId);
-          return {
-            ...savedTab,
-            id: tabId,
-            label: tabLabel,
-            icon: originalTab?.icon || Sparkles
-          };
-        })
-      };
-    });
-  });
+  const [tabGroups, setTabGroups] = useState(TAB_GROUPS);
   const [collapsedGroups, setCollapsedGroups] = useState(new Set());
   const [customizing, setCustomizing] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -312,123 +266,141 @@ export default function NoteDetail() {
     setShowCreateTabDialog(true);
   };
 
-  const handleSaveNewTab = () => {
+  const handleSaveNewTab = async () => {
     if (!newTabName.trim() || !selectedGroupForNewTab) {
       toast.error("Tab name is required");
       return;
     }
 
     const tabId = `custom_${selectedGroupForNewTab}_${Date.now()}`;
-    const newGroups = tabGroups.map(group => {
-      if (group.id === selectedGroupForNewTab) {
-        return {
-          ...group,
-          tabs: [
-            ...group.tabs,
-            {
-              id: tabId,
-              label: newTabName,
-              icon: Plus
-            }
-          ]
-        };
+    
+    try {
+      const dbGroups = await base44.entities.TabGroup.filter({ group_id: selectedGroupForNewTab });
+      if (dbGroups.length > 0) {
+        const updatedTabs = [
+          ...dbGroups[0].tabs,
+          { id: tabId, label: newTabName }
+        ];
+        await base44.entities.TabGroup.update(dbGroups[0].id, { tabs: updatedTabs });
+        queryClient.invalidateQueries({ queryKey: ["customTabGroups"] });
       }
-      return group;
-    });
-
-    setTabGroups(newGroups);
-    localStorage.setItem('noteDetailTabGroups', JSON.stringify(newGroups));
-    setShowCreateTabDialog(false);
-    setNewTabName("");
-    toast.success("Tab created successfully");
+      setShowCreateTabDialog(false);
+      setNewTabName("");
+      toast.success("Tab created successfully");
+    } catch (error) {
+      console.error("Failed to create tab:", error);
+      toast.error("Failed to create tab");
+    }
   };
 
-  const handleRenameTab = (tabId, newName) => {
+  const handleRenameTab = async (tabId, newName) => {
     if (!newName.trim()) {
       toast.error("Tab name is required");
       return;
     }
 
-    const newGroups = tabGroups.map(group => ({
-      ...group,
-      tabs: group.tabs.map(tab =>
-        tab.id === tabId ? { ...tab, label: newName } : tab
-      )
-    }));
-
-    setTabGroups(newGroups);
-    localStorage.setItem('noteDetailTabGroups', JSON.stringify(newGroups));
-    setEditingTabId(null);
-    setEditingTabName("");
-    toast.success("Tab renamed successfully");
-  };
-
-  const handleDeleteTab = (groupId, tabId) => {
-    const newGroups = tabGroups.map(group => {
-      if (group.id === groupId) {
-        return {
-          ...group,
-          tabs: group.tabs.filter(tab => tab.id !== tabId)
-        };
+    try {
+      // Find which group contains this tab
+      for (const group of customTabGroups) {
+        const tabIndex = group.tabs.findIndex(t => t.id === tabId);
+        if (tabIndex !== -1) {
+          const updatedTabs = [...group.tabs];
+          updatedTabs[tabIndex] = { ...updatedTabs[tabIndex], label: newName };
+          await base44.entities.TabGroup.update(group.id, { tabs: updatedTabs });
+          queryClient.invalidateQueries({ queryKey: ["customTabGroups"] });
+          break;
+        }
       }
-      return group;
-    });
-
-    setTabGroups(newGroups);
-    localStorage.setItem('noteDetailTabGroups', JSON.stringify(newGroups));
-    toast.success("Tab deleted successfully");
+      setEditingTabId(null);
+      setEditingTabName("");
+      toast.success("Tab renamed successfully");
+    } catch (error) {
+      console.error("Failed to rename tab:", error);
+      toast.error("Failed to rename tab");
+    }
   };
 
-  const handleRenameGroup = (groupId, newName) => {
+  const handleDeleteTab = async (groupId, tabId) => {
+    try {
+      const dbGroups = await base44.entities.TabGroup.filter({ group_id: groupId });
+      if (dbGroups.length > 0) {
+        const updatedTabs = dbGroups[0].tabs.filter(tab => tab.id !== tabId);
+        await base44.entities.TabGroup.update(dbGroups[0].id, { tabs: updatedTabs });
+        queryClient.invalidateQueries({ queryKey: ["customTabGroups"] });
+      }
+      toast.success("Tab deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete tab:", error);
+      toast.error("Failed to delete tab");
+    }
+  };
+
+  const handleRenameGroup = async (groupId, newName) => {
     if (!newName.trim()) {
       toast.error("Group name is required");
       return;
     }
 
-    const newGroups = tabGroups.map(group =>
-      group.id === groupId ? { ...group, label: newName } : group
-    );
-
-    setTabGroups(newGroups);
-    localStorage.setItem('noteDetailTabGroups', JSON.stringify(newGroups));
-    setEditingGroupId(null);
-    setEditingGroupName("");
-    toast.success("Group renamed successfully");
+    try {
+      const dbGroups = await base44.entities.TabGroup.filter({ group_id: groupId });
+      if (dbGroups.length > 0) {
+        await base44.entities.TabGroup.update(dbGroups[0].id, { label: newName });
+        queryClient.invalidateQueries({ queryKey: ["customTabGroups"] });
+      }
+      setEditingGroupId(null);
+      setEditingGroupName("");
+      toast.success("Group renamed successfully");
+    } catch (error) {
+      console.error("Failed to rename group:", error);
+      toast.error("Failed to rename group");
+    }
   };
 
-  const handleDeleteGroup = (groupId) => {
+  const handleDeleteGroup = async (groupId) => {
     if (tabGroups.length <= 1) {
       toast.error("Cannot delete the last group");
       return;
     }
 
-    const newGroups = tabGroups.filter(group => group.id !== groupId);
-    setTabGroups(newGroups);
-    localStorage.setItem('noteDetailTabGroups', JSON.stringify(newGroups));
-    toast.success("Group deleted successfully");
+    try {
+      const dbGroups = await base44.entities.TabGroup.filter({ group_id: groupId });
+      if (dbGroups.length > 0) {
+        await base44.entities.TabGroup.delete(dbGroups[0].id);
+        queryClient.invalidateQueries({ queryKey: ["customTabGroups"] });
+      }
+      toast.success("Group deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete group:", error);
+      toast.error("Failed to delete group");
+    }
   };
 
-  const handleCreateGroup = () => {
+  const handleCreateGroup = async () => {
     if (!newGroupName.trim()) {
       toast.error("Group name is required");
       return;
     }
 
     const groupId = `custom_group_${Date.now()}`;
-    const newGroup = {
-      id: groupId,
-      label: newGroupName,
-      color: newGroupColor,
-      tabs: []
-    };
+    
+    try {
+      await base44.entities.TabGroup.create({
+        group_id: groupId,
+        label: newGroupName,
+        color: newGroupColor,
+        tabs: [],
+        order: tabGroups.length
+      });
 
-    const newGroups = [...tabGroups, newGroup];
-    setTabGroups(newGroups);
-    localStorage.setItem('noteDetailTabGroups', JSON.stringify(newGroups));
-    setShowCreateGroupDialog(false);
-    setNewGroupName("");
-    setNewGroupColor("blue");
-    toast.success("Group created successfully");
+      queryClient.invalidateQueries({ queryKey: ["customTabGroups"] });
+      setShowCreateGroupDialog(false);
+      setNewGroupName("");
+      setNewGroupColor("blue");
+      toast.success("Group created successfully");
+    } catch (error) {
+      console.error("Failed to create group:", error);
+      toast.error("Failed to create group");
+    }
   };
 
   const { data: note, isLoading } = useQuery({
@@ -450,6 +422,34 @@ export default function NoteDetail() {
     queryKey: ["noteTemplates"],
     queryFn: () => base44.entities.NoteTemplate.list()
   });
+
+  // Load custom tab groups from database
+  const { data: customTabGroups = [] } = useQuery({
+    queryKey: ["customTabGroups"],
+    queryFn: async () => {
+      const groups = await base44.entities.TabGroup.list();
+      return groups.sort((a, b) => a.order - b.order);
+    }
+  });
+
+  // Merge default and custom groups
+  useEffect(() => {
+    if (customTabGroups.length > 0) {
+      const mergedGroups = [
+        ...TAB_GROUPS,
+        ...customTabGroups.map(g => ({
+          id: g.group_id,
+          label: g.label,
+          color: g.color,
+          tabs: g.tabs.map(t => ({
+            ...t,
+            icon: Plus
+          }))
+        }))
+      ];
+      setTabGroups(mergedGroups);
+    }
+  }, [customTabGroups]);
 
   // Auto-save functionality
   const { isSaving } = useAutoSave({

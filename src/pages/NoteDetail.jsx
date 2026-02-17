@@ -217,10 +217,11 @@ export default function NoteDetail() {
     if (!destination) return;
 
     if (type === 'GROUP') {
-      // Reorder groups in database
+      // Reorder groups locally first
       const newGroups = Array.from(tabGroups);
       const [removed] = newGroups.splice(source.index, 1);
       newGroups.splice(destination.index, 0, removed);
+      setTabGroups(newGroups);
       
       // Update order in database for custom groups
       try {
@@ -236,6 +237,7 @@ export default function NoteDetail() {
         queryClient.invalidateQueries({ queryKey: ["customTabGroups"] });
       } catch (error) {
         console.error("Failed to reorder groups:", error);
+        toast.error("Failed to reorder groups");
       }
       return;
     }
@@ -252,6 +254,12 @@ export default function NoteDetail() {
         const [removed] = newTabs.splice(source.index, 1);
         newTabs.splice(destination.index, 0, removed);
 
+        // Update local state immediately
+        const updatedGroups = tabGroups.map(g => 
+          g.id === sourceGroup.id ? { ...g, tabs: newTabs } : g
+        );
+        setTabGroups(updatedGroups);
+
         if (sourceGroup.id.startsWith('custom_group_')) {
           const dbGroups = await base44.entities.TabGroup.filter({ group_id: sourceGroup.id });
           if (dbGroups.length > 0) {
@@ -264,6 +272,14 @@ export default function NoteDetail() {
         const destTabs = Array.from(destGroup.tabs);
         const [removed] = sourceTabs.splice(source.index, 1);
         destTabs.splice(destination.index, 0, removed);
+
+        // Update local state immediately
+        const updatedGroups = tabGroups.map(g => {
+          if (g.id === sourceGroup.id) return { ...g, tabs: sourceTabs };
+          if (g.id === destGroup.id) return { ...g, tabs: destTabs };
+          return g;
+        });
+        setTabGroups(updatedGroups);
 
         if (sourceGroup.id.startsWith('custom_group_')) {
           const dbGroups = await base44.entities.TabGroup.filter({ group_id: sourceGroup.id });
@@ -281,6 +297,7 @@ export default function NoteDetail() {
       }
     } catch (error) {
       console.error("Failed to update tabs:", error);
+      toast.error("Failed to update tab order");
     }
   };
 

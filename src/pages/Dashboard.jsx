@@ -10,6 +10,9 @@ import RecentNotesWidget from "../components/dashboard/RecentNotesWidget";
 import RecentGuidelinesWidget from "../components/dashboard/RecentGuidelinesWidget";
 import QuickStatsWidget from "../components/dashboard/QuickStatsWidget";
 import ClockWidget from "../components/dashboard/ClockWidget";
+import CalendarWidget from "../components/dashboard/CalendarWidget";
+import TaskListWidget from "../components/dashboard/TaskListWidget";
+import ProgressTrackerWidget from "../components/dashboard/ProgressTrackerWidget";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
@@ -57,7 +60,10 @@ const availableWidgets = [
   { id: "clock", name: "Clock", component: "Clock" },
   { id: "recentnotes", name: "Recent Notes", component: "RecentNotes" },
   { id: "recentguidelines", name: "Recent Guidelines", component: "RecentGuidelines" },
-  { id: "news", name: "Medical News", component: "MedicalNews" }
+  { id: "news", name: "Medical News", component: "MedicalNews" },
+  { id: "calendar", name: "Calendar", component: "Calendar" },
+  { id: "tasklist", name: "Task List", component: "TaskList" },
+  { id: "progress", name: "Progress Tracker", component: "ProgressTracker" }
 ];
 
 export default function Dashboard() {
@@ -317,6 +323,12 @@ export default function Dashboard() {
                   {widgetId === "news" && (
                     <MedicalNewsSection compact />
                   )}
+
+                  {widgetId === "calendar" && <CalendarWidget />}
+
+                  {widgetId === "tasklist" && <TaskListWidget />}
+
+                  {widgetId === "progress" && <ProgressTrackerWidget />}
                 </div>
                         </motion.div>
                       )}

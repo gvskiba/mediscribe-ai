@@ -52,7 +52,6 @@ import Dashboard from './pages/Dashboard';
 import GuidelineDetail from './pages/GuidelineDetail';
 import Guidelines from './pages/Guidelines';
 import Home from './pages/Home';
-import MedicalScribe from './pages/MedicalScribe';
 import NewNote from './pages/NewNote';
 import NoteDetail from './pages/NoteDetail';
 import NoteTemplates from './pages/NoteTemplates';
@@ -71,7 +70,6 @@ export const PAGES = {
     "GuidelineDetail": GuidelineDetail,
     "Guidelines": Guidelines,
     "Home": Home,
-    "MedicalScribe": MedicalScribe,
     "NewNote": NewNote,
     "NoteDetail": NoteDetail,
     "NoteTemplates": NoteTemplates,
@@ -84,7 +82,7 @@ export const PAGES = {
 }
 
 export const pagesConfig = {
-    mainPage: "Home",
+    mainPage: "Dashboard",
     Pages: PAGES,
     Layout: __Layout,
 };

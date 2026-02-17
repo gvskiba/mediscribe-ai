@@ -71,11 +71,22 @@ export default function Dashboard() {
   const [activeWidgets, setActiveWidgets] = useState([]);
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
   const [layout, setLayout] = useState("2x2");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Load user preferences on mount
+  // Check authentication and load user preferences on mount
   React.useEffect(() => {
     const loadPreferences = async () => {
       try {
+        const authenticated = await base44.auth.isAuthenticated();
+        
+        if (!authenticated) {
+          // Redirect to login if not authenticated
+          base44.auth.redirectToLogin(window.location.pathname);
+          return;
+        }
+        
+        setIsAuthenticated(true);
         const user = await base44.auth.me();
         const prefs = user?.preferences || {
           dashboard_layout: "2x2",
@@ -85,14 +96,10 @@ export default function Dashboard() {
         setLayout(prefs.dashboard_layout);
         setActiveWidgets(prefs.active_widgets || ["quicklinks", "recentnotes"]);
       } catch (error) {
-        // User not authenticated, use default preferences
-        const defaultPrefs = {
-          dashboard_layout: "2x2",
-          active_widgets: ["quicklinks", "recentnotes"]
-        };
-        setUserPreferences(defaultPrefs);
-        setLayout(defaultPrefs.dashboard_layout);
-        setActiveWidgets(defaultPrefs.active_widgets);
+        // Redirect to login on error
+        base44.auth.redirectToLogin(window.location.pathname);
+      } finally {
+        setLoading(false);
       }
     };
     loadPreferences();
@@ -144,6 +151,21 @@ export default function Dashboard() {
     newWidgets.splice(destination.index, 0, removed);
     setActiveWidgets(newWidgets);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null; // Will redirect to login
+  }
 
   return (
     <div className="space-y-6">

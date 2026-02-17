@@ -89,10 +89,8 @@ export default function Dashboard() {
         setLayout(prefs.dashboard_layout);
         setActiveWidgets(prefs.active_widgets || ["quicklinks", "recentnotes"]);
       } catch (error) {
-        // Not authenticated - redirect to login with Dashboard as return URL
-        const currentUrl = window.location.origin + createPageUrl('Dashboard');
-        base44.auth.redirectToLogin(currentUrl);
-        return;
+        // Not authenticated
+        setIsAuthenticated(false);
       } finally {
         setLoading(false);
       }
@@ -146,12 +144,32 @@ export default function Dashboard() {
     setActiveWidgets(newWidgets);
   };
 
-  if (loading || !isAuthenticated) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-slate-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-slate-50 to-blue-50">
+        <div className="text-center max-w-md p-8 bg-white rounded-2xl shadow-lg border border-slate-200">
+          <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-4">
+            <Stethoscope className="w-8 h-8 text-blue-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Sign In Required</h2>
+          <p className="text-slate-600 mb-6">Please sign in to access your clinical dashboard and notes.</p>
+          <Button 
+            onClick={() => base44.auth.redirectToLogin()}
+            className="w-full bg-blue-600 hover:bg-blue-700"
+          >
+            Sign In to Continue
+          </Button>
         </div>
       </div>
     );

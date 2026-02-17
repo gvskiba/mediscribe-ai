@@ -24,6 +24,7 @@ import AISectionGenerator from "../components/templates/AISectionGenerator";
 import AIInstructionRefinement from "../components/templates/AIInstructionRefinement";
 import SectionOrganizationSuggestions from "../components/templates/SectionOrganizationSuggestions";
 import SectionContentGenerator from "../components/templates/SectionContentGenerator";
+import DynamicFieldManager from "../components/templates/DynamicFieldManager";
 import { toast } from "sonner";
 
 const noteTypes = [
@@ -64,6 +65,7 @@ export default function NoteTemplates() {
     specialty: "",
     category: "general",
     sections: [],
+    dynamic_fields: [],
     ai_instructions: "",
   });
 
@@ -205,6 +207,7 @@ export default function NoteTemplates() {
       specialty: "",
       category: "general",
       sections: [],
+      dynamic_fields: [],
       ai_instructions: "",
     });
     setEditingTemplate(null);
@@ -234,6 +237,7 @@ export default function NoteTemplates() {
       specialty: template.specialty || "",
       category: template.category || "general",
       sections: processedSections,
+      dynamic_fields: template.dynamic_fields || [],
       ai_instructions: template.ai_instructions || "",
     });
     setDialogOpen(true);
@@ -805,6 +809,14 @@ Return a JSON structure with:
                 </SelectContent>
               </Select>
             </div>
+            
+            <div className="border-t pt-4">
+              <DynamicFieldManager
+                fields={formData.dynamic_fields}
+                onChange={(fields) => setFormData({ ...formData, dynamic_fields: fields })}
+              />
+            </div>
+
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-sm font-medium text-slate-700">Note Sections</label>

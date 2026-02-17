@@ -13,6 +13,48 @@ export default function TemplateAutoFiller({
   const [filling, setFilling] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
 
+  const replacePlaceholders = (content, data, noteData, user) => {
+    if (!content) return content;
+
+    let result = content;
+    const dynamicFields = template.dynamic_fields || [];
+
+    dynamicFields.forEach(field => {
+      const regex = new RegExp(field.placeholder.replace(/[{}]/g, '\\$&'), 'g');
+      let value = field.default_value || field.placeholder;
+
+      try {
+        if (field.data_source === 'patient' && data) {
+          value = getNestedValue(data, field.data_path) || field.default_value || '';
+        } else if (field.data_source === 'note' && noteData) {
+          value = getNestedValue(noteData, field.data_path) || field.default_value || '';
+        } else if (field.data_source === 'user' && user) {
+          value = getNestedValue(user, field.data_path) || field.default_value || '';
+        }
+
+        // Format value
+        if (value && field.format === 'date') {
+          value = new Date(value).toLocaleDateString();
+        } else if (value && field.format === 'age' && data?.date_of_birth) {
+          const age = new Date().getFullYear() - new Date(data.date_of_birth).getFullYear();
+          value = age.toString();
+        } else if (Array.isArray(value)) {
+          value = value.join(', ');
+        }
+
+        result = result.replace(regex, value || field.default_value || '');
+      } catch (err) {
+        console.error(`Error replacing ${field.placeholder}:`, err);
+      }
+    });
+
+    return result;
+  };
+
+  const getNestedValue = (obj, path) => {
+    return path.split('.').reduce((acc, part) => acc?.[part], obj);
+  };
+
   const autoFillTemplate = async () => {
     if (!template?.sections || template.sections.length === 0) {
       toast.error("No sections to fill");
@@ -30,6 +72,7 @@ export default function TemplateAutoFiller({
     setProgress({ current: 0, total: enabledSections.length });
 
     const filledSections = {};
+    const user = await base44.auth.me().catch(() => null);
 
     try {
       for (let i = 0; i < enabledSections.length; i++) {
@@ -37,12 +80,19 @@ export default function TemplateAutoFiller({
         setProgress({ current: i + 1, total: enabledSections.length });
 
         try {
+          // First, replace placeholders in content template
+          let initialContent = "";
+          if (section.content_template) {
+            initialContent = replacePlaceholders(section.content_template, patientData, rawNote, user);
+          }
+
           const contextInfo = {
             patient: patientData,
             raw_note: rawNote,
             template_name: template.name,
             template_specialty: template.specialty,
-            note_type: template.note_type
+            note_type: template.note_type,
+            initial_content: initialContent
           };
 
           const result = await base44.integrations.Core.InvokeLLM({
@@ -55,6 +105,7 @@ AI Instructions: ${section.ai_instructions || "Follow standard clinical document
 Available Information:
 ${patientData ? `Patient Data:\n${JSON.stringify(patientData, null, 2)}\n` : ""}
 ${rawNote ? `Raw Clinical Note:\n${rawNote}\n` : ""}
+${initialContent ? `\nPre-filled Template Content:\n${initialContent}\n\nExpand on this content using the available information.` : ""}
 
 Based on the available information, extract and format the relevant content for this section. If the information is not available in the provided context, return an empty string or a placeholder indicating what information is needed.
 
@@ -77,11 +128,14 @@ Return only the extracted and formatted content for this specific section.`,
             }
           });
 
+          const finalContent = initialContent && !result.content ? initialContent : result.content;
+          
           filledSections[section.id || section.name] = {
             ...section,
-            generated_content: result.content,
+            generated_content: finalContent,
             confidence: result.confidence,
-            missing_info: result.missing_info || []
+            missing_info: result.missing_info || [],
+            has_placeholders: !!initialContent
           };
         } catch (error) {
           console.error(`Failed to fill section ${section.name}:`, error);

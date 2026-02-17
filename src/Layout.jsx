@@ -27,6 +27,7 @@ const navSections = [
         title: "Primary",
         items: [
           { name: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
+          { name: "AI Scribe", icon: Stethoscope, page: "MedicalScribe" },
           { name: "My Notes", icon: FileText, page: "NotesLibrary" },
         ]
       },

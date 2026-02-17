@@ -165,7 +165,10 @@ export default function Dashboard() {
           <h2 className="text-2xl font-bold text-slate-900 mb-2">Sign In Required</h2>
           <p className="text-slate-600 mb-6">Please sign in to access your clinical dashboard and notes.</p>
           <Button 
-            onClick={() => base44.auth.redirectToLogin()}
+            onClick={() => {
+              const returnUrl = window.location.href;
+              base44.auth.redirectToLogin(returnUrl);
+            }}
             className="w-full bg-blue-600 hover:bg-blue-700"
           >
             Sign In to Continue

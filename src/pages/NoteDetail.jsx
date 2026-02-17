@@ -62,6 +62,7 @@ import { useAutoSave } from "../components/utils/useAutoSave";
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import ClinicalDecisionSupport from "../components/notes/ClinicalDecisionSupport";
 import RichTextNoteEditor from "../components/notes/RichTextNoteEditor";
+import AIComprehensiveSummary from "../components/notes/AIComprehensiveSummary";
 import AITreatmentPlanAnalyzer from "../components/notes/AITreatmentPlanAnalyzer";
 import ClinicalNoteView from "../components/notes/ClinicalNoteView";
 import SmartTemplateApplicator from "../components/templates/SmartTemplateApplicator";
@@ -2278,15 +2279,24 @@ Generated: ${new Date().toLocaleString()}
 
            {/* Analysis Tab */}
            <TabsContent value="analysis" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
-             <div className="max-w-5xl mx-auto space-y-8">
-               {/* Header */}
-               <div className="text-center mb-8">
-                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 mb-4 shadow-lg">
-                   <Sparkles className="w-8 h-8 text-white" />
-                 </div>
-                 <h2 className="text-3xl font-bold text-slate-900 mb-2">AI Clinical Analysis</h2>
-                 <p className="text-slate-600 max-w-2xl mx-auto">Comprehensive AI-powered analysis of the clinical note</p>
-               </div>
+            <div className="max-w-5xl mx-auto space-y-8">
+              {/* Header */}
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 mb-4 shadow-lg">
+                  <Sparkles className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-3xl font-bold text-slate-900 mb-2">AI Clinical Analysis</h2>
+                <p className="text-slate-600 max-w-2xl mx-auto">Comprehensive AI-powered analysis of the clinical note</p>
+              </div>
+
+              {/* AI Comprehensive Summary */}
+              <AIComprehensiveSummary
+                note={note}
+                onApply={async (field, value) => {
+                  await base44.entities.ClinicalNote.update(noteId, { [field]: value });
+                  queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                }}
+              />
 
                {/* AI Comprehensive Analysis */}
                <div className="bg-white rounded-xl border-2 border-emerald-300 shadow-lg overflow-hidden">

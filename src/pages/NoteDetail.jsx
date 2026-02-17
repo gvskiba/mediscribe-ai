@@ -2727,7 +2727,8 @@ Format as clear, actionable clinical guidance.`,
                <PhysicalExamEditor
                  examData={note.physical_exam}
                  onUpdate={async (examData) => {
-                   await base44.entities.ClinicalNote.update(noteId, { physical_exam: examData });
+                   const examString = typeof examData === 'string' ? examData : JSON.stringify(examData);
+                   await base44.entities.ClinicalNote.update(noteId, { physical_exam: examString });
                    queryClient.invalidateQueries({ queryKey: ["note", noteId] });
                    toast.success("Physical exam updated");
                  }}
@@ -2752,7 +2753,8 @@ Format as clear, actionable clinical guidance.`,
                <ReviewOfSystemsEditor
                  rosData={note.review_of_systems}
                  onUpdate={async (rosData) => {
-                   await base44.entities.ClinicalNote.update(noteId, { review_of_systems: rosData });
+                   const rosString = typeof rosData === 'string' ? rosData : JSON.stringify(rosData);
+                   await base44.entities.ClinicalNote.update(noteId, { review_of_systems: rosString });
                    queryClient.invalidateQueries({ queryKey: ["note", noteId] });
                    toast.success("Review of systems updated");
                  }}

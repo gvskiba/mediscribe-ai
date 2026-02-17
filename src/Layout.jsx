@@ -10,9 +10,6 @@ import {
   X,
   LogOut,
   Activity,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Sparkles } from
 "lucide-react";
 import { base44 } from "@/api/base44Client";
@@ -143,7 +140,13 @@ export default function Layout({ children, currentPageName }) {
                 <FileText className="w-4 h-4" />
                 New Note
               </button>
-
+              <button
+                onClick={() => base44.auth.logout()}
+                className="text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg p-2 transition-all"
+                title="Sign Out"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>
@@ -198,10 +201,16 @@ export default function Layout({ children, currentPageName }) {
               >
                 <item.icon className="w-5 h-5" />
                 {item.name}
-              </Link>
-            ))}
-
-          </div>
+                </Link>
+                ))}
+                <button
+                onClick={() => base44.auth.logout()}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 w-full"
+                >
+                <LogOut className="w-5 h-5" />
+                Sign Out
+                </button>
+                </div>
         </div>
       }
 

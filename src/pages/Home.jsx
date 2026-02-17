@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { base44 } from "@/api/base44Client";
 import { createPageUrl } from "../utils";
 import {
   Stethoscope,
@@ -10,10 +11,32 @@ import {
   BarChart3,
   ArrowRight,
   CheckCircle2,
+  LogOut,
   LayoutDashboard
 } from "lucide-react";
 
 export default function Home() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+      } catch (error) {
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkAuth();
+  }, []);
+
+  const handleLogout = async () => {
+    await base44.auth.logout();
+    setUser(null);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50 to-white">
@@ -26,16 +49,38 @@ export default function Home() {
             </div>
             <h1 className="text-xl font-bold text-slate-900">Notrya AI</h1>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={() => window.location.href = createPageUrl('Dashboard')}
-              variant="outline"
-              className="gap-2"
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              Dashboard
-            </Button>
-          </div>
+          {!loading && (
+            <div className="flex items-center gap-2">
+              {user ? (
+                <>
+                  <Button
+                    onClick={() => window.location.href = createPageUrl('Dashboard')}
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    Dashboard
+                  </Button>
+                  <Button
+                    onClick={handleLogout}
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={() => base44.auth.redirectToLogin(window.location.origin + createPageUrl('Dashboard'))}
+                  className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                >
+                  Sign In
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+          )}
           </div>
       </header>
 
@@ -58,14 +103,25 @@ export default function Home() {
             Notrya AI is your intelligent clinical assistant designed to streamline medical documentation, provide evidence-based recommendations, and enhance patient care through advanced AI analysis.
           </p>
 
-          <Button
-            onClick={() => window.location.href = createPageUrl('Dashboard')}
-            size="lg"
-            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white gap-2 shadow-lg px-8 py-6 text-lg"
-          >
-            Get Started
-            <ArrowRight className="w-5 h-5" />
-          </Button>
+          {user ? (
+            <Button
+              onClick={() => window.location.href = createPageUrl('Dashboard')}
+              size="lg"
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white gap-2 shadow-lg px-8 py-6 text-lg"
+            >
+              Go to Dashboard
+              <ArrowRight className="w-5 h-5" />
+            </Button>
+          ) : (
+            <Button
+              onClick={() => base44.auth.redirectToLogin(window.location.origin + createPageUrl('Dashboard'))}
+              size="lg"
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white gap-2 shadow-lg px-8 py-6 text-lg"
+            >
+              Get Started
+              <ArrowRight className="w-5 h-5" />
+            </Button>
+          )}
         </div>
       </section>
 
@@ -198,14 +254,25 @@ export default function Home() {
           <p className="text-xl text-blue-100 max-w-2xl mx-auto">
             Join healthcare professionals already using Notrya AI to revolutionize their clinical practice.
           </p>
-          <Button
-            onClick={() => window.location.href = createPageUrl('Dashboard')}
-            size="lg"
-            className="bg-white hover:bg-slate-100 text-blue-600 hover:text-blue-700 gap-2 shadow-lg px-8 py-6 text-lg font-semibold"
-          >
-            Go to Dashboard
-            <ArrowRight className="w-5 h-5" />
-          </Button>
+          {user ? (
+            <Button
+              onClick={() => window.location.href = createPageUrl('Dashboard')}
+              size="lg"
+              className="bg-white hover:bg-slate-100 text-blue-600 hover:text-blue-700 gap-2 shadow-lg px-8 py-6 text-lg font-semibold"
+            >
+              Go to Dashboard
+              <ArrowRight className="w-5 h-5" />
+            </Button>
+          ) : (
+            <Button
+              onClick={() => base44.auth.redirectToLogin(window.location.origin + createPageUrl('Dashboard'))}
+              size="lg"
+              className="bg-white hover:bg-slate-100 text-blue-600 hover:text-blue-700 gap-2 shadow-lg px-8 py-6 text-lg font-semibold"
+            >
+              Sign In Now
+              <ArrowRight className="w-5 h-5" />
+            </Button>
+          )}
         </div>
       </section>
 

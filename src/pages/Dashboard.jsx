@@ -72,16 +72,12 @@ export default function Dashboard() {
   const [activeWidgets, setActiveWidgets] = useState([]);
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
   const [layout, setLayout] = useState("2x2");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
 
-  // Check authentication and load user preferences on mount
+  // Load user preferences on mount
   React.useEffect(() => {
     const loadPreferences = async () => {
       try {
         const user = await base44.auth.me();
-        setIsAuthenticated(true);
-        
         const prefs = user?.preferences || {
           dashboard_layout: "2x2",
           active_widgets: ["quicklinks", "recentnotes"]
@@ -90,10 +86,9 @@ export default function Dashboard() {
         setLayout(prefs.dashboard_layout);
         setActiveWidgets(prefs.active_widgets || ["quicklinks", "recentnotes"]);
       } catch (error) {
-        // Not authenticated
-        setIsAuthenticated(false);
-      } finally {
-        setLoading(false);
+        // Use defaults if no user
+        setLayout("2x2");
+        setActiveWidgets(["quicklinks", "recentnotes"]);
       }
     };
     loadPreferences();
@@ -123,13 +118,16 @@ export default function Dashboard() {
 
   const savePreferences = async () => {
     try {
-      await base44.auth.updateMe({
-        preferences: {
-          ...userPreferences,
-          dashboard_layout: layout,
-          active_widgets: activeWidgets
-        }
-      });
+      const user = await base44.auth.me();
+      if (user) {
+        await base44.auth.updateMe({
+          preferences: {
+            ...userPreferences,
+            dashboard_layout: layout,
+            active_widgets: activeWidgets
+          }
+        });
+      }
     } catch (error) {
       console.error("Failed to save preferences:", error);
     }
@@ -144,37 +142,6 @@ export default function Dashboard() {
     newWidgets.splice(destination.index, 0, removed);
     setActiveWidgets(newWidgets);
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-slate-50 to-blue-50">
-        <div className="text-center max-w-md p-8 bg-white rounded-2xl shadow-lg border border-slate-200">
-          <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-4">
-            <Stethoscope className="w-8 h-8 text-blue-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Sign In Required</h2>
-          <p className="text-slate-600 mb-6">Please sign in to access your clinical dashboard and notes.</p>
-          <Button 
-            onClick={() => base44.auth.redirectToLogin(window.location.origin + createPageUrl('Dashboard'))}
-            className="w-full bg-blue-600 hover:bg-blue-700"
-          >
-            Sign In to Continue
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

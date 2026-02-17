@@ -63,6 +63,7 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import ClinicalDecisionSupport from "../components/notes/ClinicalDecisionSupport";
 import RichTextNoteEditor from "../components/notes/RichTextNoteEditor";
 import AIComprehensiveSummary from "../components/notes/AIComprehensiveSummary";
+import ClinicalNotePreviewButton from "../components/notes/ClinicalNotePreviewButton";
 import AITreatmentPlanAnalyzer from "../components/notes/AITreatmentPlanAnalyzer";
 import ClinicalNoteView from "../components/notes/ClinicalNoteView";
 import SmartTemplateApplicator from "../components/templates/SmartTemplateApplicator";

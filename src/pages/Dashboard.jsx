@@ -79,25 +79,37 @@ export default function Dashboard() {
     const loadPreferences = async () => {
       try {
         const authenticated = await base44.auth.isAuthenticated();
+        setIsAuthenticated(authenticated);
         
-        if (!authenticated) {
-          // Redirect to login if not authenticated
-          base44.auth.redirectToLogin(window.location.pathname);
-          return;
+        if (authenticated) {
+          const user = await base44.auth.me();
+          const prefs = user?.preferences || {
+            dashboard_layout: "2x2",
+            active_widgets: ["quicklinks", "recentnotes"]
+          };
+          setUserPreferences(prefs);
+          setLayout(prefs.dashboard_layout);
+          setActiveWidgets(prefs.active_widgets || ["quicklinks", "recentnotes"]);
+        } else {
+          // Use default preferences for non-authenticated users
+          const defaultPrefs = {
+            dashboard_layout: "2x2",
+            active_widgets: ["quicklinks", "recentnotes"]
+          };
+          setUserPreferences(defaultPrefs);
+          setLayout(defaultPrefs.dashboard_layout);
+          setActiveWidgets(defaultPrefs.active_widgets);
         }
-        
-        setIsAuthenticated(true);
-        const user = await base44.auth.me();
-        const prefs = user?.preferences || {
+      } catch (error) {
+        // Use default preferences on error
+        setIsAuthenticated(false);
+        const defaultPrefs = {
           dashboard_layout: "2x2",
           active_widgets: ["quicklinks", "recentnotes"]
         };
-        setUserPreferences(prefs);
-        setLayout(prefs.dashboard_layout);
-        setActiveWidgets(prefs.active_widgets || ["quicklinks", "recentnotes"]);
-      } catch (error) {
-        // Redirect to login on error
-        base44.auth.redirectToLogin(window.location.pathname);
+        setUserPreferences(defaultPrefs);
+        setLayout(defaultPrefs.dashboard_layout);
+        setActiveWidgets(defaultPrefs.active_widgets);
       } finally {
         setLoading(false);
       }
@@ -128,6 +140,16 @@ export default function Dashboard() {
   };
 
   const savePreferences = async () => {
+    if (!isAuthenticated) {
+      // User not authenticated, just update local state
+      setUserPreferences({
+        ...userPreferences,
+        dashboard_layout: layout,
+        active_widgets: activeWidgets
+      });
+      return;
+    }
+    
     try {
       await base44.auth.updateMe({
         preferences: {
@@ -137,7 +159,6 @@ export default function Dashboard() {
         }
       });
     } catch (error) {
-      // User not authenticated, preferences won't be saved
       console.error("Failed to save preferences:", error);
     }
   };
@@ -161,10 +182,6 @@ export default function Dashboard() {
         </div>
       </div>
     );
-  }
-
-  if (!isAuthenticated) {
-    return null; // Will redirect to login
   }
 
   return (

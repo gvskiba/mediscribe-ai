@@ -64,6 +64,7 @@ import ClinicalDecisionSupport from "../components/notes/ClinicalDecisionSupport
 import RichTextNoteEditor from "../components/notes/RichTextNoteEditor";
 import AIComprehensiveSummary from "../components/notes/AIComprehensiveSummary";
 import ClinicalNotePreviewButton from "../components/notes/ClinicalNotePreviewButton";
+import TabDataPreview from "../components/notes/TabDataPreview";
 import AITreatmentPlanAnalyzer from "../components/notes/AITreatmentPlanAnalyzer";
 import ClinicalNoteView from "../components/notes/ClinicalNoteView";
 import SmartTemplateApplicator from "../components/templates/SmartTemplateApplicator";
@@ -2272,7 +2273,10 @@ Generated: ${new Date().toLocaleString()}
 
              {/* Next Button */}
              <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-               <ClinicalNotePreviewButton note={note} />
+               <div className="flex gap-2">
+                 <TabDataPreview tabId="hpi_intake" note={note} />
+                 <ClinicalNotePreviewButton note={note} />
+               </div>
                <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
                  Next <ArrowLeft className="w-4 h-4 rotate-180" />
                </Button>
@@ -2504,7 +2508,10 @@ Format as clear, actionable clinical guidance.`,
 
              {/* Next Button */}
              <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-               <ClinicalNotePreviewButton note={note} />
+               <div className="flex gap-2">
+                 <TabDataPreview tabId="analysis" note={note} />
+                 <ClinicalNotePreviewButton note={note} />
+               </div>
                <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
                  Next <ArrowLeft className="w-4 h-4 rotate-180" />
                </Button>
@@ -2523,7 +2530,10 @@ Format as clear, actionable clinical guidance.`,
 
                 {/* Next Button */}
                 <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                  <ClinicalNotePreviewButton note={note} />
+                  <div className="flex gap-2">
+                    <TabDataPreview tabId="ai_assistant" note={note} />
+                    <ClinicalNotePreviewButton note={note} />
+                  </div>
                   <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
                     Next <ArrowLeft className="w-4 h-4 rotate-180" />
                   </Button>
@@ -2641,7 +2651,10 @@ Format as clear, actionable clinical guidance.`,
 
              {/* Next Button */}
              <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-               <ClinicalNotePreviewButton note={note} />
+               <div className="flex gap-2">
+                 <TabDataPreview tabId="chief_complaint" note={note} />
+                 <ClinicalNotePreviewButton note={note} />
+               </div>
                <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
                  Next <ArrowLeft className="w-4 h-4 rotate-180" />
                </Button>
@@ -2747,7 +2760,10 @@ Format as clear, actionable clinical guidance.`,
 
                {/* Next Button */}
                <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                 <ClinicalNotePreviewButton note={note} />
+                 <div className="flex gap-2">
+                   <TabDataPreview tabId="physical_exam" note={note} />
+                   <ClinicalNotePreviewButton note={note} />
+                 </div>
                  <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
                    Next <ArrowLeft className="w-4 h-4 rotate-180" />
                  </Button>
@@ -2774,7 +2790,10 @@ Format as clear, actionable clinical guidance.`,
 
                {/* Next Button */}
                <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                 <ClinicalNotePreviewButton note={note} />
+                 <div className="flex gap-2">
+                   <TabDataPreview tabId="review_of_systems" note={note} />
+                   <ClinicalNotePreviewButton note={note} />
+                 </div>
                  <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
                    Next <ArrowLeft className="w-4 h-4 rotate-180" />
                  </Button>
@@ -3598,7 +3617,10 @@ Return 5-10 of the most relevant and current guidelines.`,
 
                      {/* Next Button */}
                      <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                       <ClinicalNotePreviewButton note={note} />
+                       <div className="flex gap-2">
+                         <TabDataPreview tabId="imaging" note={note} />
+                         <ClinicalNotePreviewButton note={note} />
+                       </div>
                        <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
                          Next <ArrowLeft className="w-4 h-4 rotate-180" />
                        </Button>
@@ -3809,7 +3831,10 @@ Return 5-10 of the most relevant and current guidelines.`,
 
                      {/* Next Button */}
                      <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                       <ClinicalNotePreviewButton note={note} />
+                       <div className="flex gap-2">
+                         <TabDataPreview tabId="calculators" note={note} />
+                         <ClinicalNotePreviewButton note={note} />
+                       </div>
                        <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
                          Next <ArrowLeft className="w-4 h-4 rotate-180" />
                        </Button>
@@ -4399,7 +4424,10 @@ Return 5-10 of the most relevant and current guidelines.`,
 
                      {/* Next Button */}
                      <div className="flex justify-between items-center pt-4">
-                       <ClinicalNotePreviewButton note={note} />
+                       <div className="flex gap-2">
+                         <TabDataPreview tabId="plan" note={note} />
+                         <ClinicalNotePreviewButton note={note} />
+                       </div>
                        <Button onClick={handleNext} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg gap-2 px-6 py-3 text-base">
                          Continue <ArrowLeft className="w-5 h-5 rotate-180" />
                        </Button>
@@ -4605,7 +4633,10 @@ Return 5-10 of the most relevant and current guidelines.`,
 
                        {/* Next Button */}
                        <div className="flex justify-between items-center pt-4">
-                         <ClinicalNotePreviewButton note={note} />
+                         <div className="flex gap-2">
+                           <TabDataPreview tabId="treatments" note={note} />
+                           <ClinicalNotePreviewButton note={note} />
+                         </div>
                          <Button onClick={handleNext} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg gap-2 px-6 py-3 text-base">
                            Continue <ArrowLeft className="w-5 h-5 rotate-180" />
                          </Button>
@@ -4817,7 +4848,10 @@ Return 5-10 of the most relevant and current guidelines.`,
 
                        {/* Next Button */}
                        <div className="flex justify-between items-center pt-4">
-                         <ClinicalNotePreviewButton note={note} />
+                         <div className="flex gap-2">
+                           <TabDataPreview tabId="laboratory" note={note} />
+                           <ClinicalNotePreviewButton note={note} />
+                         </div>
                          <Button onClick={handleNext} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg gap-2 px-6 py-3 text-base">
                            Continue <ArrowLeft className="w-5 h-5 rotate-180" />
                          </Button>
@@ -5099,7 +5133,10 @@ Return 5-10 of the most relevant and current guidelines.`,
 
                        {/* Next Button */}
                        <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                         <ClinicalNotePreviewButton note={note} />
+                         <div className="flex gap-2">
+                           <TabDataPreview tabId="final_impression" note={note} />
+                           <ClinicalNotePreviewButton note={note} />
+                         </div>
                          <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
                            Next <ArrowLeft className="w-4 h-4 rotate-180" />
                          </Button>
@@ -5192,7 +5229,10 @@ Return 5-10 of the most relevant and current guidelines.`,
 
                      {/* Next Button */}
                      <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                       <ClinicalNotePreviewButton note={note} />
+                       <div className="flex gap-2">
+                         <TabDataPreview tabId="mdm" note={note} />
+                         <ClinicalNotePreviewButton note={note} />
+                       </div>
                        <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
                          Next <ArrowLeft className="w-4 h-4 rotate-180" />
                        </Button>
@@ -5414,7 +5454,10 @@ Return 5-10 of the most relevant and current guidelines.`,
 
                    {/* Next Button */}
                    <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                     <ClinicalNotePreviewButton note={note} />
+                     <div className="flex gap-2">
+                       <TabDataPreview tabId="patient_education" note={note} />
+                       <ClinicalNotePreviewButton note={note} />
+                     </div>
                      <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
                        Next <ArrowLeft className="w-4 h-4 rotate-180" />
                      </Button>
@@ -5625,7 +5668,10 @@ Return 5-10 of the most relevant and current guidelines.`,
 
                      {/* Next Button */}
                      <div className="flex justify-between items-center pt-4">
-                       <ClinicalNotePreviewButton note={note} />
+                       <div className="flex gap-2">
+                         <TabDataPreview tabId="research" note={note} />
+                         <ClinicalNotePreviewButton note={note} />
+                       </div>
                        <Button onClick={handleNext} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg gap-2 px-6 py-3 text-base">
                          Continue <ArrowLeft className="w-5 h-5 rotate-180" />
                        </Button>
@@ -5650,7 +5696,10 @@ Return 5-10 of the most relevant and current guidelines.`,
 
                      {/* Next Button */}
                      <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                       <ClinicalNotePreviewButton note={note} />
+                       <div className="flex gap-2">
+                         <TabDataPreview tabId="procedures" note={note} />
+                         <ClinicalNotePreviewButton note={note} />
+                       </div>
                        <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
                          Next <ArrowLeft className="w-4 h-4 rotate-180" />
                        </Button>
@@ -5683,7 +5732,10 @@ Return 5-10 of the most relevant and current guidelines.`,
                          </div>
 
                          <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                           <ClinicalNotePreviewButton note={note} />
+                           <div className="flex gap-2">
+                             <TabDataPreview tabId={tab.id} note={note} />
+                             <ClinicalNotePreviewButton note={note} />
+                           </div>
                            <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
                              Next <ArrowLeft className="w-4 h-4 rotate-180" />
                            </Button>

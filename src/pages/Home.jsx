@@ -72,7 +72,7 @@ export default function Home() {
                 </>
               ) : (
                 <Button
-                  onClick={() => base44.auth.redirectToLogin()}
+                  onClick={() => window.location.href = createPageUrl('Dashboard')}
                   className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
                 >
                   Sign In
@@ -114,7 +114,7 @@ export default function Home() {
             </Button>
           ) : (
             <Button
-              onClick={() => base44.auth.redirectToLogin()}
+              onClick={() => window.location.href = createPageUrl('Dashboard')}
               size="lg"
               className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white gap-2 shadow-lg px-8 py-6 text-lg"
             >
@@ -265,7 +265,7 @@ export default function Home() {
             </Button>
           ) : (
             <Button
-              onClick={() => base44.auth.redirectToLogin()}
+              onClick={() => window.location.href = createPageUrl('Dashboard')}
               size="lg"
               className="bg-white hover:bg-slate-100 text-blue-600 hover:text-blue-700 gap-2 shadow-lg px-8 py-6 text-lg font-semibold"
             >

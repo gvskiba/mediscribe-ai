@@ -13,6 +13,7 @@ import ClockWidget from "../components/dashboard/ClockWidget";
 import CalendarWidget from "../components/dashboard/CalendarWidget";
 import TaskListWidget from "../components/dashboard/TaskListWidget";
 import ProgressTrackerWidget from "../components/dashboard/ProgressTrackerWidget";
+import QuickLinksWidget from "../components/dashboard/QuickLinksWidget";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
@@ -311,36 +312,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className="p-6">
-                  {widgetId === "quicklinks" && (
-                    <div className="space-y-4">
-                      <div className="flex flex-col gap-3">
-                        {quickLinks.map((link) => {
-                          const Icon = link.icon;
-                          return (
-                            <Link
-                              key={link.page}
-                              to={createPageUrl(link.page)}
-                              className="group h-full"
-                            >
-                              <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl border border-slate-200 p-5 hover:border-blue-400 hover:shadow-lg hover:from-blue-50 hover:to-blue-100 transition-all duration-300 h-full flex flex-col items-center text-center group-hover:-translate-y-1">
-                                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${link.gradient} flex items-center justify-center mb-3 shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300`}>
-                                  <Icon className="w-7 h-7 text-white" />
-                                </div>
-                                
-                                <h3 className="text-sm font-bold text-slate-900 mb-2 group-hover:text-blue-700 transition-colors">
-                                  {link.title}
-                                </h3>
-                                
-                                <p className="text-xs text-slate-500 leading-relaxed">
-                                  {link.description}
-                                </p>
-                              </div>
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                  {widgetId === "quicklinks" && <QuickLinksWidget />}
 
                   {widgetId === "stats" && <QuickStatsWidget />}
 

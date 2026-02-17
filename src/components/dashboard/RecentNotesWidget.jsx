@@ -83,7 +83,9 @@ export default function RecentNotesWidget() {
             </Card>
           </Link>
         </motion.div>
-      ))}
+          ))}
+        </div>
+      )}
     </div>
   );
 }

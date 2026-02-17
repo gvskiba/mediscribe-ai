@@ -61,6 +61,7 @@ import VitalSignsInput from "../components/notes/VitalSignsInput";
 import { useAutoSave } from "../components/utils/useAutoSave";
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import ClinicalDecisionSupport from "../components/notes/ClinicalDecisionSupport";
+import RichTextNoteEditor from "../components/notes/RichTextNoteEditor";
 import AITreatmentPlanAnalyzer from "../components/notes/AITreatmentPlanAnalyzer";
 import ClinicalNoteView from "../components/notes/ClinicalNoteView";
 import SmartTemplateApplicator from "../components/templates/SmartTemplateApplicator";
@@ -208,16 +209,31 @@ export default function NoteDetail() {
     }
   };
 
-  const handleDragEnd = (result) => {
+  const handleDragEnd = async (result) => {
     const { source, destination, type } = result;
     if (!destination) return;
 
     if (type === 'GROUP') {
+      // Reorder groups in database
       const newGroups = Array.from(tabGroups);
       const [removed] = newGroups.splice(source.index, 1);
       newGroups.splice(destination.index, 0, removed);
-      setTabGroups(newGroups);
-      localStorage.setItem('noteDetailTabGroups', JSON.stringify(newGroups));
+      
+      // Update order in database for custom groups
+      try {
+        for (let i = 0; i < newGroups.length; i++) {
+          const group = newGroups[i];
+          if (group.id.startsWith('custom_group_')) {
+            const dbGroups = await base44.entities.TabGroup.filter({ group_id: group.id });
+            if (dbGroups.length > 0) {
+              await base44.entities.TabGroup.update(dbGroups[0].id, { order: i });
+            }
+          }
+        }
+        queryClient.invalidateQueries({ queryKey: ["customTabGroups"] });
+      } catch (error) {
+        console.error("Failed to reorder groups:", error);
+      }
       return;
     }
 
@@ -226,38 +242,59 @@ export default function NoteDetail() {
 
     if (!sourceGroup || !destGroup) return;
 
-    if (source.droppableId === destination.droppableId) {
-      const newTabs = Array.from(sourceGroup.tabs);
-      const [removed] = newTabs.splice(source.index, 1);
-      newTabs.splice(destination.index, 0, removed);
+    // Handle tab reordering within same group or between groups
+    try {
+      if (source.droppableId === destination.droppableId) {
+        const newTabs = Array.from(sourceGroup.tabs);
+        const [removed] = newTabs.splice(source.index, 1);
+        newTabs.splice(destination.index, 0, removed);
 
-      const newGroups = tabGroups.map(g =>
-        g.id === sourceGroup.id ? { ...g, tabs: newTabs } : g
-      );
+        if (sourceGroup.id.startsWith('custom_group_')) {
+          const dbGroups = await base44.entities.TabGroup.filter({ group_id: sourceGroup.id });
+          if (dbGroups.length > 0) {
+            await base44.entities.TabGroup.update(dbGroups[0].id, { tabs: newTabs });
+            queryClient.invalidateQueries({ queryKey: ["customTabGroups"] });
+          }
+        }
+      } else {
+        const sourceTabs = Array.from(sourceGroup.tabs);
+        const destTabs = Array.from(destGroup.tabs);
+        const [removed] = sourceTabs.splice(source.index, 1);
+        destTabs.splice(destination.index, 0, removed);
 
-      setTabGroups(newGroups);
-      localStorage.setItem('noteDetailTabGroups', JSON.stringify(newGroups));
-    } else {
-      const sourceTabs = Array.from(sourceGroup.tabs);
-      const destTabs = Array.from(destGroup.tabs);
-      const [removed] = sourceTabs.splice(source.index, 1);
-      destTabs.splice(destination.index, 0, removed);
-
-      const newGroups = tabGroups.map(g => {
-        if (g.id === sourceGroup.id) return { ...g, tabs: sourceTabs };
-        if (g.id === destGroup.id) return { ...g, tabs: destTabs };
-        return g;
-      });
-
-      setTabGroups(newGroups);
-      localStorage.setItem('noteDetailTabGroups', JSON.stringify(newGroups));
+        if (sourceGroup.id.startsWith('custom_group_')) {
+          const dbGroups = await base44.entities.TabGroup.filter({ group_id: sourceGroup.id });
+          if (dbGroups.length > 0) {
+            await base44.entities.TabGroup.update(dbGroups[0].id, { tabs: sourceTabs });
+          }
+        }
+        if (destGroup.id.startsWith('custom_group_')) {
+          const dbGroups = await base44.entities.TabGroup.filter({ group_id: destGroup.id });
+          if (dbGroups.length > 0) {
+            await base44.entities.TabGroup.update(dbGroups[0].id, { tabs: destTabs });
+          }
+        }
+        queryClient.invalidateQueries({ queryKey: ["customTabGroups"] });
+      }
+    } catch (error) {
+      console.error("Failed to update tabs:", error);
     }
   };
 
-  const resetTabLayout = () => {
-    setTabGroups(TAB_GROUPS);
-    localStorage.removeItem('noteDetailTabGroups');
-    toast.success('Tab layout reset to default');
+  const resetTabLayout = async () => {
+    try {
+      // Delete all custom groups
+      const allCustomGroups = await base44.entities.TabGroup.list();
+      await Promise.all(
+        allCustomGroups.map(g => base44.entities.TabGroup.delete(g.id))
+      );
+      queryClient.invalidateQueries({ queryKey: ["customTabGroups"] });
+      setTabGroups(TAB_GROUPS);
+      toast.success('Tab layout reset to default');
+    } catch (error) {
+      console.error("Failed to reset layout:", error);
+      toast.error("Failed to reset layout");
+    }
   };
 
   const handleCreateTab = (groupId) => {
@@ -2063,21 +2100,21 @@ Generated: ${new Date().toLocaleString()}
                    </Button>
                  </div>
                  <div className="p-6">
-                   <Textarea
+                   <RichTextNoteEditor
                      value={note.raw_note || ""}
-                     onChange={(e) => {
+                     onChange={(content) => {
                        queryClient.setQueryData(["note", noteId], (old) => ({
                          ...old,
-                         raw_note: e.target.value
+                         raw_note: content
                        }));
                      }}
-                     onBlur={async (e) => {
-                       await base44.entities.ClinicalNote.update(noteId, { raw_note: e.target.value });
+                     onBlur={async () => {
+                       const currentNote = queryClient.getQueryData(["note", noteId]);
+                       await base44.entities.ClinicalNote.update(noteId, { raw_note: currentNote.raw_note });
                        setLastSaved(new Date().toISOString());
                        toast.success("Note saved at " + format(new Date(), "h:mm:ss a"));
                      }}
-                     placeholder="Type or paste raw patient data, encounter notes, or transcription here..."
-                     className="w-full min-h-[300px] bg-slate-50 text-slate-900 font-mono text-sm"
+                     placeholder="Type or paste raw patient data, encounter notes, or transcription here... Use the toolbar for formatting, code blocks, and images."
                    />
                    <div className="flex gap-3 mt-4">
                      <Button

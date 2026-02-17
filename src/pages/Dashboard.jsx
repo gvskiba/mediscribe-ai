@@ -69,14 +69,25 @@ export default function Dashboard() {
   // Load user preferences on mount
   React.useEffect(() => {
     const loadPreferences = async () => {
-      const user = await base44.auth.me();
-      const prefs = user?.preferences || {
-        dashboard_layout: "2x2",
-        active_widgets: ["quicklinks", "recentnotes"]
-      };
-      setUserPreferences(prefs);
-      setLayout(prefs.dashboard_layout);
-      setActiveWidgets(prefs.active_widgets || ["quicklinks", "recentnotes"]);
+      try {
+        const user = await base44.auth.me();
+        const prefs = user?.preferences || {
+          dashboard_layout: "2x2",
+          active_widgets: ["quicklinks", "recentnotes"]
+        };
+        setUserPreferences(prefs);
+        setLayout(prefs.dashboard_layout);
+        setActiveWidgets(prefs.active_widgets || ["quicklinks", "recentnotes"]);
+      } catch (error) {
+        // User not authenticated, use default preferences
+        const defaultPrefs = {
+          dashboard_layout: "2x2",
+          active_widgets: ["quicklinks", "recentnotes"]
+        };
+        setUserPreferences(defaultPrefs);
+        setLayout(defaultPrefs.dashboard_layout);
+        setActiveWidgets(defaultPrefs.active_widgets);
+      }
     };
     loadPreferences();
   }, []);
@@ -113,6 +124,7 @@ export default function Dashboard() {
         }
       });
     } catch (error) {
+      // User not authenticated, preferences won't be saved
       console.error("Failed to save preferences:", error);
     }
   };

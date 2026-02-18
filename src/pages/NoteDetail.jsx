@@ -249,24 +249,37 @@ export default function NoteDetail() {
 
     // Handle tab reordering within same group or between groups
     try {
+      const persistTabsForGroup = async (group, tabs) => {
+        const dbGroups = await base44.entities.TabGroup.filter({ group_id: group.id });
+        // Store only id+label (no React icon functions)
+        const tabsToStore = tabs.map(({ id, label }) => ({ id, label }));
+        if (dbGroups.length > 0) {
+          await base44.entities.TabGroup.update(dbGroups[0].id, { tabs: tabsToStore });
+        } else {
+          // Create a new record for default groups to persist their tab order
+          await base44.entities.TabGroup.create({
+            group_id: group.id,
+            label: group.label,
+            color: group.color,
+            tabs: tabsToStore,
+            order: tabGroups.findIndex(g => g.id === group.id)
+          });
+        }
+      };
+
       if (source.droppableId === destination.droppableId) {
         const newTabs = Array.from(sourceGroup.tabs);
         const [removed] = newTabs.splice(source.index, 1);
         newTabs.splice(destination.index, 0, removed);
 
         // Update local state immediately
-        const updatedGroups = tabGroups.map(g => 
+        const updatedGroups = tabGroups.map(g =>
           g.id === sourceGroup.id ? { ...g, tabs: newTabs } : g
         );
         setTabGroups(updatedGroups);
 
-        if (sourceGroup.id.startsWith('custom_group_')) {
-          const dbGroups = await base44.entities.TabGroup.filter({ group_id: sourceGroup.id });
-          if (dbGroups.length > 0) {
-            await base44.entities.TabGroup.update(dbGroups[0].id, { tabs: newTabs });
-            queryClient.invalidateQueries({ queryKey: ["customTabGroups"] });
-          }
-        }
+        await persistTabsForGroup(sourceGroup, newTabs);
+        queryClient.invalidateQueries({ queryKey: ["customTabGroups"] });
       } else {
         const sourceTabs = Array.from(sourceGroup.tabs);
         const destTabs = Array.from(destGroup.tabs);
@@ -281,18 +294,10 @@ export default function NoteDetail() {
         });
         setTabGroups(updatedGroups);
 
-        if (sourceGroup.id.startsWith('custom_group_')) {
-          const dbGroups = await base44.entities.TabGroup.filter({ group_id: sourceGroup.id });
-          if (dbGroups.length > 0) {
-            await base44.entities.TabGroup.update(dbGroups[0].id, { tabs: sourceTabs });
-          }
-        }
-        if (destGroup.id.startsWith('custom_group_')) {
-          const dbGroups = await base44.entities.TabGroup.filter({ group_id: destGroup.id });
-          if (dbGroups.length > 0) {
-            await base44.entities.TabGroup.update(dbGroups[0].id, { tabs: destTabs });
-          }
-        }
+        await Promise.all([
+          persistTabsForGroup(sourceGroup, sourceTabs),
+          persistTabsForGroup(destGroup, destTabs),
+        ]);
         queryClient.invalidateQueries({ queryKey: ["customTabGroups"] });
       }
     } catch (error) {

@@ -5479,7 +5479,6 @@ Return 5-10 of the most relevant and current guidelines.`,
                          </div>
                        </TabsContent>
                      ))}
-                     </div>
                      </Tabs>
                      </motion.div>
 

@@ -335,6 +335,8 @@ export default function Dashboard() {
                   {widgetId === "tasklist" && <TaskListWidget />}
 
                   {widgetId === "progress" && <ProgressTrackerWidget />}
+
+                  {widgetId === "workflow" && <WorkflowAutomationWidget />}
                 </div>
                         </motion.div>
                       )}

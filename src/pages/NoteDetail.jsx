@@ -206,9 +206,6 @@ export default function NoteDetail() {
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupColor, setNewGroupColor] = useState("blue");
 
-  // The displayed groups: use drag state when customizing, else computed merged groups
-  const displayedGroups = customizing ? tabGroups : mergedTabGroups;
-
   const handleNext = () => {
     const allTabs = displayedGroups.flatMap(g => g.tabs.map(t => t.id));
     const currentIndex = allTabs.indexOf(activeTab);

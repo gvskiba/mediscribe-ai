@@ -1574,8 +1574,31 @@ Generated: ${new Date().toLocaleString()}
                  })()}
 
                  {/* Row 2: Group tabs — main navigation */}
-                 <div className="flex items-center bg-white px-2">
-                   <div className="flex items-center flex-1 overflow-x-auto scrollbar-hide">
+                 <div className="flex items-center bg-white px-2 justify-center gap-4">
+                   {/* Customize button on left */}
+                   <div className="flex items-center gap-1 flex-shrink-0 py-1" style={{ pointerEvents: 'auto', zIndex: 10, position: 'relative' }}>
+                     <button
+                       type="button"
+                       onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setCustomizing(c => !c); }}
+                       title={customizing ? "Done" : "Customize"}
+                       className={`p-1.5 rounded-md transition-colors cursor-pointer ${customizing ? 'bg-blue-100 text-blue-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+                     >
+                       <Settings className="w-3.5 h-3.5" />
+                     </button>
+                     {customizing && (
+                       <button
+                         type="button"
+                         onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); resetTabLayout(); }}
+                         title="Reset"
+                         className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                       >
+                         <RotateCcw className="w-3.5 h-3.5" />
+                       </button>
+                     )}
+                   </div>
+
+                   {/* Centered group tabs */}
+                   <div className="flex items-center overflow-x-auto scrollbar-hide">
                      {tabGroups.map((group) => {
                        const accentDot = { blue:'bg-blue-500', purple:'bg-purple-500', emerald:'bg-emerald-500', rose:'bg-rose-500', amber:'bg-amber-500' };
                        const activeBorder = { blue:'border-blue-500', purple:'border-purple-500', emerald:'border-emerald-500', rose:'border-rose-500', amber:'border-amber-500' };
@@ -1597,26 +1620,6 @@ Generated: ${new Date().toLocaleString()}
                          </button>
                        );
                      })}
-                   </div>
-                   <div className="flex items-center gap-1 flex-shrink-0 border-l border-slate-100 pl-2 ml-1 py-1" style={{ pointerEvents: 'auto', zIndex: 10, position: 'relative' }}>
-                     <button
-                       type="button"
-                       onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setCustomizing(c => !c); }}
-                       title={customizing ? "Done" : "Customize"}
-                       className={`p-1.5 rounded-md transition-colors cursor-pointer ${customizing ? 'bg-blue-100 text-blue-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
-                     >
-                       <Settings className="w-3.5 h-3.5" />
-                     </button>
-                     {customizing && (
-                       <button
-                         type="button"
-                         onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); resetTabLayout(); }}
-                         title="Reset"
-                         className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
-                       >
-                         <RotateCcw className="w-3.5 h-3.5" />
-                       </button>
-                     )}
                    </div>
                  </div>
 

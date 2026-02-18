@@ -1640,7 +1640,7 @@ Generated: ${new Date().toLocaleString()}
                      </DragDropContext>
                    ) : (
                      <div className="space-y-1">
-                       {tabGroups.map((group) => {
+                       {displayedGroups.map((group) => {
                          const isCollapsed = collapsedGroups.has(group.id);
                          const accentColors = {
                            blue: 'bg-blue-500', purple: 'bg-purple-500',

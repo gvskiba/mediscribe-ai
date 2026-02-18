@@ -1557,185 +1557,40 @@ Generated: ${new Date().toLocaleString()}
 
                   {/* Tabs row - scrollable horizontal */}
                   <TabsList className="flex flex-row items-center bg-transparent px-2 py-1.5 gap-1 overflow-x-auto scrollbar-hide w-full">
-                   {customizing ? (
-                     <DragDropContext onDragEnd={handleDragEnd}>
-                       <Droppable droppableId="groups" type="GROUP">
-                         {(provided) => (
-                           <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-1">
-                             {tabGroups.map((group, groupIndex) => {
-                               const isCollapsed = collapsedGroups.has(group.id);
-                               const accentColors = {
-                                 blue: 'bg-blue-500', purple: 'bg-purple-500',
-                                 emerald: 'bg-emerald-500', rose: 'bg-rose-500', amber: 'bg-amber-500',
-                               };
-                               const activeTabBg = {
-                                 blue: 'bg-blue-600 text-white',
-                                 purple: 'bg-purple-600 text-white',
-                                 emerald: 'bg-emerald-600 text-white',
-                                 rose: 'bg-rose-600 text-white',
-                                 amber: 'bg-amber-600 text-white',
-                               };
-                               return (
-                                 <Draggable key={group.id} draggableId={group.id} index={groupIndex}>
-                                   {(provided, snapshot) => (
-                                     <div ref={provided.innerRef} {...provided.draggableProps} className="mb-1" style={{ ...provided.draggableProps.style, opacity: snapshot.isDragging ? 0.6 : 1 }}>
-                                       {/* Group header row */}
-                                       <div className="flex items-center gap-1.5 mb-1">
-                                         <div {...provided.dragHandleProps} className="cursor-grab text-slate-300 hover:text-slate-500">
-                                           <GripVertical className="w-3 h-3" />
-                                         </div>
-                                         <div className={`w-2 h-2 rounded-full flex-shrink-0 ${accentColors[group.color] || 'bg-slate-400'}`} />
-                                         {editingGroupId === group.id ? (
-                                           <input
-                                             autoFocus
-                                             value={editingGroupName}
-                                             onChange={(e) => setEditingGroupName(e.target.value)}
-                                             onKeyDown={(e) => { e.stopPropagation(); if (e.key==='Enter') handleRenameGroup(group.id, editingGroupName); if (e.key==='Escape') setEditingGroupId(null); }}
-                                             onClick={(e) => e.stopPropagation()}
-                                             onBlur={() => { if (editingGroupName.trim()) handleRenameGroup(group.id, editingGroupName); else setEditingGroupId(null); }}
-                                             className="flex-1 text-xs font-semibold text-slate-700 bg-white border border-blue-300 rounded px-1 focus:outline-none"
-                                           />
-                                         ) : (
-                                           <span
-                                             className="flex-1 text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-pointer truncate"
-                                             onDoubleClick={() => { setEditingGroupId(group.id); setEditingGroupName(group.label); }}
-                                           >
-                                             {group.label}
-                                           </span>
-                                         )}
-                                         <button onClick={() => setCollapsedGroups(prev => { const s = new Set(prev); s.has(group.id) ? s.delete(group.id) : s.add(group.id); return s; })} className="text-slate-400 hover:text-slate-600">
-                                           {isCollapsed ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
-                                         </button>
-                                         {group.id.startsWith('custom_group_') && (
-                                           <button onClick={(e) => { e.stopPropagation(); if (confirm(`Delete "${group.label}"?`)) handleDeleteGroup(group.id); }} className="text-slate-300 hover:text-red-500">
-                                             <X className="w-3 h-3" />
-                                           </button>
-                                         )}
-                                       </div>
-
-                                       {/* Tabs */}
-                                       {!isCollapsed && (
-                                         <Droppable droppableId={group.id} type="TAB">
-                                           {(provided, snapshot) => (
-                                             <div ref={provided.innerRef} {...provided.droppableProps} className="pl-3 space-y-0.5" style={{ backgroundColor: snapshot.isDraggingOver ? 'rgba(59,130,246,0.04)' : 'transparent' }}>
-                                               {group.tabs.map((tab, tabIndex) => {
-                                                 const isActive = activeTab === tab.id;
-                                                 return (
-                                                   <Draggable key={tab.id} draggableId={tab.id} index={tabIndex}>
-                                                     {(provided, snapshot) => (
-                                                       <div ref={provided.innerRef} {...provided.draggableProps} style={{ ...provided.draggableProps.style, opacity: snapshot.isDragging ? 0.5 : 1 }} className="flex items-center gap-1 group/tab">
-                                                         <div {...provided.dragHandleProps} className="text-slate-200 hover:text-slate-400 cursor-grab flex-shrink-0">
-                                                           <GripVertical className="w-3 h-3" />
-                                                         </div>
-                                                         <TabsTrigger
-                                                           value={tab.id}
-                                                           className={`flex-1 justify-start px-2.5 py-1.5 text-xs font-medium rounded-md transition-all text-left truncate ${isActive ? `${activeTabBg[group.color]} shadow-sm` : 'text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-sm'}`}
-                                                         >
-                                                           {editingTabId === tab.id ? (
-                                                             <input
-                                                               autoFocus
-                                                               value={editingTabName}
-                                                               onChange={(e) => setEditingTabName(e.target.value)}
-                                                               onKeyDown={(e) => { e.stopPropagation(); if (e.key==='Enter') handleRenameTab(tab.id, editingTabName); if (e.key==='Escape') setEditingTabId(null); }}
-                                                               onClick={(e) => e.stopPropagation()}
-                                                               onBlur={() => { if (editingTabName.trim()) handleRenameTab(tab.id, editingTabName); else setEditingTabId(null); }}
-                                                               className="bg-transparent border-b border-current focus:outline-none w-full"
-                                                             />
-                                                           ) : (
-                                                             <span onDoubleClick={() => { setEditingTabId(tab.id); setEditingTabName(tab.label); }}>{tab.label}</span>
-                                                           )}
-                                                         </TabsTrigger>
-                                                         {tab.id.startsWith('custom_') && (
-                                                           <button onClick={(e) => { e.stopPropagation(); handleDeleteTab(group.id, tab.id); }} className="opacity-0 group-hover/tab:opacity-100 text-slate-300 hover:text-red-500 flex-shrink-0">
-                                                             <X className="w-3 h-3" />
-                                                           </button>
-                                                         )}
-                                                       </div>
-                                                     )}
-                                                   </Draggable>
-                                                 );
-                                               })}
-                                               {provided.placeholder}
-                                               <button onClick={() => handleCreateTab(group.id)} className="w-full flex items-center gap-1.5 px-2.5 py-1 text-xs text-slate-400 hover:text-slate-600 rounded-md hover:bg-white transition-colors">
-                                                 <Plus className="w-3 h-3" /><span>Add tab</span>
-                                               </button>
-                                             </div>
-                                           )}
-                                         </Droppable>
-                                       )}
-                                     </div>
-                                   )}
-                                 </Draggable>
-                               );
-                             })}
-                             {provided.placeholder}
-                             <button onClick={() => setShowCreateGroupDialog(true)} className="w-full flex items-center gap-1.5 px-2 py-1.5 mt-2 text-xs text-slate-400 hover:text-slate-600 rounded-md border border-dashed border-slate-300 hover:border-slate-400 transition-colors">
-                               <Plus className="w-3 h-3" /><span>Add group</span>
-                             </button>
-                           </div>
-                         )}
-                       </Droppable>
-                     </DragDropContext>
-                   ) : (
-                     <div className="space-y-1">
-                       {tabGroups.map((group) => {
-                         const isCollapsed = collapsedGroups.has(group.id);
-                         const accentColors = {
-                           blue: 'bg-blue-500', purple: 'bg-purple-500',
-                           emerald: 'bg-emerald-500', rose: 'bg-rose-500', amber: 'bg-amber-500',
-                         };
-                         const activeTabBg = {
-                           blue: 'bg-blue-600 text-white',
-                           purple: 'bg-purple-600 text-white',
-                           emerald: 'bg-emerald-600 text-white',
-                           rose: 'bg-rose-600 text-white',
-                           amber: 'bg-amber-600 text-white',
-                         };
-                         return (
-                           <div key={group.id} className="mb-1">
-                             {/* Clean group header */}
-                             <button
-                               onClick={() => setCollapsedGroups(prev => { const s = new Set(prev); s.has(group.id) ? s.delete(group.id) : s.add(group.id); return s; })}
-                               className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 transition-colors group"
-                             >
-                               <div className={`w-2 h-2 rounded-full flex-shrink-0 ${accentColors[group.color] || 'bg-slate-400'}`} />
-                               <span className="flex-1 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{group.label}</span>
-                               {isCollapsed ? <ChevronDown className="w-3 h-3 text-slate-400" /> : <ChevronUp className="w-3 h-3 text-slate-400" />}
-                             </button>
-
-                             <AnimatePresence>
-                               {!isCollapsed && (
-                                 <motion.div
-                                   initial={{ opacity: 0, height: 0 }}
-                                   animate={{ opacity: 1, height: "auto" }}
-                                   exit={{ opacity: 0, height: 0 }}
-                                   className="pl-4 space-y-0.5 mt-0.5"
-                                 >
-                                   {group.tabs.map((tab) => {
-                                     const isActive = activeTab === tab.id;
-                                     return (
-                                       <TabsTrigger
-                                         key={tab.id}
-                                         value={tab.id}
-                                         className={`w-full justify-start px-2.5 py-1.5 text-xs font-medium rounded-md transition-all text-left truncate ${
-                                           isActive
-                                             ? `${activeTabBg[group.color]} shadow-sm`
-                                             : 'text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-sm'
-                                         }`}
-                                       >
-                                         {tab.label}
-                                       </TabsTrigger>
-                                     );
-                                   })}
-                                 </motion.div>
-                               )}
-                             </AnimatePresence>
-                           </div>
-                         );
-                       })}
-                     </div>
+                   {/* All tabs displayed horizontally, filtered by collapsed groups */}
+                   {tabGroups.map((group) => {
+                     const isCollapsed = collapsedGroups.has(group.id);
+                     if (isCollapsed) return null;
+                     const activeTabBg = {
+                       blue: 'bg-blue-600 text-white border-blue-600',
+                       purple: 'bg-purple-600 text-white border-purple-600',
+                       emerald: 'bg-emerald-600 text-white border-emerald-600',
+                       rose: 'bg-rose-600 text-white border-rose-600',
+                       amber: 'bg-amber-600 text-white border-amber-600',
+                     };
+                     return group.tabs.map((tab) => {
+                       const isActive = activeTab === tab.id;
+                       return (
+                         <TabsTrigger
+                           key={tab.id}
+                           value={tab.id}
+                           className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium rounded-full border transition-all whitespace-nowrap ${
+                             isActive
+                               ? `${activeTabBg[group.color]} shadow-sm`
+                               : 'text-slate-600 border-slate-200 hover:border-slate-400 hover:text-slate-900 bg-white'
+                           }`}
+                         >
+                           {tab.label}
+                         </TabsTrigger>
+                       );
+                     });
+                   })}
+                   {customizing && (
+                     <button onClick={() => setShowCreateGroupDialog(true)} className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 text-xs text-slate-400 hover:text-slate-600 rounded-full border border-dashed border-slate-300 hover:border-slate-400 transition-colors whitespace-nowrap">
+                       <Plus className="w-3 h-3" /><span>Add group</span>
+                     </button>
                    )}
-                 </TabsList>
+                   </TabsList>
 
                  {/* Dialogs */}
                  {showCreateTabDialog && (

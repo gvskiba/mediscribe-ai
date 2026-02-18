@@ -38,11 +38,11 @@ const navSections = [
         ]
       },
       {
-        title: "Settings",
-        items: [
-          { name: "Preferences", icon: Settings, page: "UserPreferences" },
-        ]
-      }
+          title: "Settings",
+          items: [
+            { name: "Customize", icon: Settings, page: "Customize" },
+          ]
+        }
     ];
 
 

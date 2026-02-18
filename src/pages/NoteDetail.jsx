@@ -1840,19 +1840,27 @@ Generated: ${new Date().toLocaleString()}
                      <FileText className="w-5 h-5 text-slate-600" />
                      Raw Patient Data / Notes
                    </h3>
-                   <Button
-                     variant="outline"
-                     size="sm"
-                     onClick={async () => {
-                       await navigator.clipboard.writeText(note.raw_note || "");
-                       toast.success("Copied to clipboard");
-                     }}
-                     className="gap-2"
-                   >
-                     <FileCode className="w-4 h-4" /> Copy
-                   </Button>
+                   <div className="flex items-center gap-2">
+                     <Button
+                       size="sm"
+                       variant="outline"
+                       onClick={async () => {
+                         await navigator.clipboard.writeText(note.raw_note || "");
+                         toast.success("Copied to clipboard");
+                       }}
+                       className="gap-2"
+                     >
+                       <FileCode className="w-4 h-4" /> Copy
+                     </Button>
+                   </div>
                  </div>
                  <div className="p-6">
+                   {isRecording && (
+                     <div className="flex items-center gap-2 text-red-600 animate-pulse mb-4 bg-red-50 rounded-lg p-3 border border-red-200">
+                       <div className="w-3 h-3 rounded-full bg-red-600"></div>
+                       <span className="text-sm font-medium">Recording in progress...</span>
+                     </div>
+                   )}
                    <RichTextNoteEditor
                      value={note.raw_note || ""}
                      onChange={(content) => {

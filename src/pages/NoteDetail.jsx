@@ -2487,11 +2487,7 @@ Format as clear, actionable clinical guidance.`,
                />
 
                {/* Next Button */}
-               <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                 <div className="flex gap-2">
-                   <TabDataPreview tabId="review_of_systems" note={note} />
-                   <ClinicalNotePreviewButton note={note} />
-                 </div>
+               <div className="flex justify-end pt-4 border-t border-slate-200">
                  <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
                    Next <ArrowLeft className="w-4 h-4 rotate-180" />
                  </Button>

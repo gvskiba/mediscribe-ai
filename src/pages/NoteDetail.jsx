@@ -1869,6 +1869,36 @@ Generated: ${new Date().toLocaleString()}
                  </div>
                </div>
 
+               {/* Chief Complaint Input */}
+               <div className="bg-white rounded-xl border-2 border-blue-300 shadow-lg overflow-hidden">
+                 <div className="bg-gradient-to-r from-blue-500 to-indigo-500 px-6 py-5 text-white">
+                   <h3 className="font-bold text-lg flex items-center gap-2">
+                     <Activity className="w-6 h-6" />
+                     Chief Complaint
+                   </h3>
+                   <p className="text-blue-100 text-sm mt-1">Primary reason for the patient's visit</p>
+                 </div>
+                 <div className="p-6">
+                   <textarea
+                     value={note.chief_complaint || ""}
+                     onChange={(e) => {
+                       queryClient.setQueryData(["note", noteId], (old) => ({
+                         ...old,
+                         chief_complaint: e.target.value
+                       }));
+                     }}
+                     onBlur={async (e) => {
+                       await base44.entities.ClinicalNote.update(noteId, { chief_complaint: e.target.value });
+                       setLastSaved(new Date().toISOString());
+                       toast.success("Note saved at " + format(new Date(), "h:mm:ss a"));
+                     }}
+                     placeholder="Enter the patient's chief complaint (e.g., 'Chest pain for 2 hours', 'Persistent cough for 1 week')..."
+                     className="w-full px-4 py-4 rounded-lg border-2 border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all text-base text-slate-900 placeholder:text-slate-400 resize-none"
+                     rows="5"
+                   />
+                 </div>
+               </div>
+
                {/* AI Analysis */}
                <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-lg overflow-hidden">
                  <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-5 text-white">

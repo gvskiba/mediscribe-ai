@@ -14,6 +14,7 @@ import CalendarWidget from "../components/dashboard/CalendarWidget";
 import TaskListWidget from "../components/dashboard/TaskListWidget";
 import ProgressTrackerWidget from "../components/dashboard/ProgressTrackerWidget";
 import QuickLinksWidget from "../components/dashboard/QuickLinksWidget";
+import WorkflowAutomationWidget from "../components/dashboard/WorkflowAutomationWidget";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 

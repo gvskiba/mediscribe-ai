@@ -9,6 +9,99 @@ import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from "date-fns";
 
+const AggregateSectionText = ({ title, field, value, borderColor, titleColor, onSave }) => {
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState(value || "");
+
+  if (!value && !editing) return null;
+
+  return (
+    <div>
+      <div className={`flex items-center justify-between pb-2 border-b-2 ${borderColor} mb-2`}>
+        <h4 className={`text-sm font-bold ${titleColor}`}>{title}</h4>
+        <div className="flex items-center gap-1">
+          {!editing ? (
+            <>
+              <Button size="sm" variant="ghost" onClick={() => { setEditValue(value || ""); setEditing(true); }} className="h-6 px-2 text-xs gap-1">
+                <Edit2 className="w-3 h-3" /> Edit
+              </Button>
+              {value && (
+                <Button size="sm" variant="ghost" onClick={async () => { await onSave(field, ""); }} className="h-6 px-2 text-xs gap-1 text-red-600 hover:text-red-700 hover:bg-red-50">
+                  <Trash2 className="w-3 h-3" /> Clear
+                </Button>
+              )}
+            </>
+          ) : (
+            <>
+              <Button size="sm" onClick={async () => { await onSave(field, editValue); setEditing(false); toast.success("Saved"); }} className="h-6 px-2 text-xs gap-1 bg-green-600 hover:bg-green-700 text-white">
+                <Save className="w-3 h-3" /> Save
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => { setEditValue(value || ""); setEditing(false); }} className="h-6 px-2 text-xs">
+                <X className="w-3 h-3" />
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+      {editing ? (
+        <Textarea value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-full min-h-[100px] bg-white text-sm" />
+      ) : (
+        <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{value}</p>
+      )}
+    </div>
+  );
+};
+
+const AggregateSectionArray = ({ title, field, items, borderColor, titleColor, itemBg, itemNumColor, onSave, isAllergy }) => {
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState(items?.join("\n") || "");
+
+  if ((!items || items.length === 0) && !editing) return null;
+
+  return (
+    <div>
+      <div className={`flex items-center justify-between pb-2 border-b-2 ${borderColor} mb-2`}>
+        <h4 className={`text-sm font-bold ${titleColor}`}>{title}</h4>
+        <div className="flex items-center gap-1">
+          {!editing ? (
+            <>
+              <Button size="sm" variant="ghost" onClick={() => { setEditValue(items?.join("\n") || ""); setEditing(true); }} className="h-6 px-2 text-xs gap-1">
+                <Edit2 className="w-3 h-3" /> Edit
+              </Button>
+              {items && items.length > 0 && (
+                <Button size="sm" variant="ghost" onClick={async () => { await onSave(field, []); setEditValue(""); }} className="h-6 px-2 text-xs gap-1 text-red-600 hover:text-red-700 hover:bg-red-50">
+                  <Trash2 className="w-3 h-3" /> Clear
+                </Button>
+              )}
+            </>
+          ) : (
+            <>
+              <Button size="sm" onClick={async () => { const arr = editValue.split("\n").filter(i => i.trim()); await onSave(field, arr); setEditing(false); toast.success("Saved"); }} className="h-6 px-2 text-xs gap-1 bg-green-600 hover:bg-green-700 text-white">
+                <Save className="w-3 h-3" /> Save
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => { setEditValue(items?.join("\n") || ""); setEditing(false); }} className="h-6 px-2 text-xs">
+                <X className="w-3 h-3" />
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+      {editing ? (
+        <Textarea value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-full min-h-[80px] bg-white text-sm" placeholder="Enter one item per line..." />
+      ) : (
+        <ul className="space-y-2">
+          {items.map((item, idx) => (
+            <li key={idx} className={`text-sm text-slate-700 flex items-start gap-2 p-3 rounded-lg border ${itemBg}`}>
+              <span className={`font-bold ${itemNumColor}`}>{isAllergy ? "⚠️" : `${idx + 1}.`}</span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
+
 const NoteSection = ({ title, value, field, onSave, color = "blue" }) => {
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(value || "");

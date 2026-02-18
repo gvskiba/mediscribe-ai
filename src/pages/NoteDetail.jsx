@@ -1523,483 +1523,220 @@ Generated: ${new Date().toLocaleString()}
          className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden"
        >
          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex items-start">
-               <div className="w-72 bg-gradient-to-b from-slate-50 to-white border-r border-slate-200 flex-shrink-0 sticky top-8 self-start overflow-y-auto" style={{ maxHeight: 'calc(100vh - 4rem)' }}>
-                     <TabsList className="w-full h-full flex flex-col items-stretch gap-0 bg-transparent p-4">
-                       {/* Customize Button */}
-                       <div className="flex gap-2 mb-4">
-                         <Button
-                           variant={customizing ? "default" : "outline"}
-                           size="sm"
-                           onClick={() => setCustomizing(!customizing)}
-                           className="flex-1 gap-2"
-                         >
-                           <Settings className="w-4 h-4" />
-                           {customizing ? 'Done' : 'Customize'}
-                         </Button>
-                         {customizing && (
-                           <Button
-                             variant="outline"
-                             size="sm"
-                             onClick={resetTabLayout}
-                             className="gap-2"
-                           >
-                             <RotateCcw className="w-4 h-4" />
-                           </Button>
-                         )}
-                       </div>
 
-                       {customizing ? (
-                         <DragDropContext onDragEnd={handleDragEnd}>
-                           <Droppable droppableId="groups" type="GROUP">
-                             {(provided) => (
-                               <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-0">
-                                 {tabGroups.map((group, groupIndex) => {
-                                   const isCollapsed = collapsedGroups.has(group.id);
-                                   const groupColorClasses = {
-                                     blue: 'bg-blue-50 border-blue-200 text-blue-900',
-                                     purple: 'bg-purple-50 border-purple-200 text-purple-900',
-                                     emerald: 'bg-emerald-50 border-emerald-200 text-emerald-900',
-                                     rose: 'bg-rose-50 border-rose-200 text-rose-900',
-                                     amber: 'bg-amber-50 border-amber-200 text-amber-900',
-                                   };
-                                   const activeColorClasses = {
-                                     blue: 'bg-gradient-to-r from-blue-600 to-blue-700 shadow-blue-200',
-                                     purple: 'bg-gradient-to-r from-purple-600 to-purple-700 shadow-purple-200',
-                                     emerald: 'bg-gradient-to-r from-emerald-600 to-emerald-700 shadow-emerald-200',
-                                     rose: 'bg-gradient-to-r from-rose-600 to-rose-700 shadow-rose-200',
-                                     amber: 'bg-gradient-to-r from-amber-600 to-amber-700 shadow-amber-200',
-                                   };
+               {/* ── Sidebar ── */}
+               <div className="w-64 flex-shrink-0 border-r border-slate-100 sticky top-20 self-start overflow-y-auto bg-slate-50/60" style={{ maxHeight: 'calc(100vh - 6rem)' }}>
+                 <TabsList className="w-full h-full flex flex-col items-stretch bg-transparent p-3 gap-0">
 
-                                   return (
-                                     <Draggable key={group.id} draggableId={group.id} index={groupIndex}>
-                                       {(provided, snapshot) => (
-                                         <div
-                                           ref={provided.innerRef}
-                                           {...provided.draggableProps}
-                                           className="mb-4"
-                                           style={{
-                                             ...provided.draggableProps.style,
-                                             opacity: snapshot.isDragging ? 0.5 : 1
-                                           }}
-                                         >
-                                           {/* Group Header */}
-                                           <div className={`w-full flex items-center px-3 py-2 rounded-lg border ${groupColorClasses[group.color]} mb-2 group/groupheader`}>
-                                             <div {...provided.dragHandleProps} className="mr-2 cursor-move">
-                                               <GripVertical className="w-4 h-4 text-slate-400" />
-                                             </div>
-                                             <button
-                                               onClick={() => {
-                                                 setCollapsedGroups(prev => {
-                                                   const newSet = new Set(prev);
-                                                   if (newSet.has(group.id)) {
-                                                     newSet.delete(group.id);
-                                                   } else {
-                                                     newSet.add(group.id);
-                                                   }
-                                                   return newSet;
-                                                 });
-                                               }}
-                                               className="flex-1 flex items-center justify-between hover:opacity-80 transition-all min-w-0"
-                                             >
-                                               {editingGroupId === group.id ? (
-                                                 <input
-                                                   autoFocus
-                                                   type="text"
-                                                   value={editingGroupName}
-                                                   onChange={(e) => setEditingGroupName(e.target.value)}
-                                                   onKeyDown={(e) => {
-                                                     e.stopPropagation();
-                                                     if (e.key === 'Enter') {
-                                                       handleRenameGroup(group.id, editingGroupName);
-                                                     } else if (e.key === 'Escape') {
-                                                       setEditingGroupId(null);
-                                                     }
-                                                   }}
-                                                   onClick={(e) => e.stopPropagation()}
-                                                   onBlur={() => {
-                                                     if (editingGroupName.trim()) {
-                                                       handleRenameGroup(group.id, editingGroupName);
-                                                     } else {
-                                                       setEditingGroupId(null);
-                                                     }
-                                                   }}
-                                                   className="flex-1 bg-transparent border-b border-slate-600 focus:outline-none px-1 text-xs font-bold uppercase tracking-wider"
-                                                   placeholder="Group name"
-                                                 />
-                                               ) : (
-                                                 <span 
-                                                   className="text-xs font-bold uppercase tracking-wider truncate"
-                                                   onDoubleClick={(e) => {
-                                                     e.stopPropagation();
-                                                     setEditingGroupId(group.id);
-                                                     setEditingGroupName(group.label);
-                                                   }}
-                                                 >
-                                                   {group.label}
-                                                 </span>
-                                               )}
-                                               <div className="flex items-center gap-1">
-                                                 {isCollapsed ? (
-                                                   <ChevronDown className="w-4 h-4" />
-                                                 ) : (
-                                                   <ChevronUp className="w-4 h-4" />
-                                                 )}
-                                               </div>
-                                             </button>
-                                             <div className="opacity-0 group-hover/groupheader:opacity-100 transition-opacity flex gap-1 ml-2">
-                                               <button
-                                                 onClick={(e) => {
-                                                   e.stopPropagation();
-                                                   setEditingGroupId(group.id);
-                                                   setEditingGroupName(group.label);
-                                                 }}
-                                                 className="p-1 hover:bg-slate-200 rounded text-slate-600 hover:text-slate-900"
-                                                 title="Rename group"
-                                               >
-                                                 <FileText className="w-3 h-3" />
-                                               </button>
-                                               {group.id.startsWith('custom_group_') && (
-                                                 <button
-                                                   onClick={(e) => {
-                                                     e.stopPropagation();
-                                                     if (confirm(`Delete "${group.label}" group and all its tabs?`)) {
-                                                       handleDeleteGroup(group.id);
-                                                     }
-                                                   }}
-                                                   className="p-1 hover:bg-red-100 rounded text-red-600 hover:text-red-800"
-                                                   title="Delete group"
-                                                 >
-                                                   <X className="w-3 h-3" />
-                                                 </button>
-                                               )}
-                                             </div>
-                                           </div>
+                   {/* Toolbar row */}
+                   <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-200">
+                     <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Sections</span>
+                     <div className="flex items-center gap-1">
+                       {customizing && (
+                         <button onClick={resetTabLayout} className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-all" title="Reset layout">
+                           <RotateCcw className="w-3.5 h-3.5" />
+                         </button>
+                       )}
+                       <button
+                         onClick={() => setCustomizing(!customizing)}
+                         className={`p-1.5 rounded-md transition-all ${customizing ? 'bg-blue-100 text-blue-600' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-200'}`}
+                         title="Customize layout"
+                       >
+                         <Settings className="w-3.5 h-3.5" />
+                       </button>
+                     </div>
+                   </div>
 
-                                           {/* Group Tabs */}
-                                           {!isCollapsed && (
-                                             <Droppable droppableId={group.id} type="TAB">
-                                               {(provided, snapshot) => (
-                                                 <div
-                                                   ref={provided.innerRef}
-                                                   {...provided.droppableProps}
-                                                   className="space-y-1"
-                                                   style={{
-                                                     backgroundColor: snapshot.isDraggingOver ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
-                                                     transition: 'background-color 0.2s'
-                                                   }}
-                                                 >
-                                                   {group.tabs.map((tab, tabIndex) => {
-                                                     const Icon = tab.icon;
-                                                     const isActive = activeTab === tab.id;
-                                                     return (
-                                                       <Draggable key={tab.id} draggableId={tab.id} index={tabIndex}>
-                                                         {(provided, snapshot) => (
-                                                           <div
-                                                             ref={provided.innerRef}
-                                                             {...provided.draggableProps}
-                                                             style={{
-                                                               ...provided.draggableProps.style,
-                                                               opacity: snapshot.isDragging ? 0.5 : 1
-                                                             }}
-                                                           >
-                                                             <div className="flex items-center gap-2 group/tab">
-                                                               <TabsTrigger 
-                                                                 value={tab.id} 
-                                                                 className={`flex-1 justify-start px-4 py-2.5 gap-3 font-medium text-sm transition-all duration-200 rounded-lg ${
-                                                                   isActive 
-                                                                     ? `${activeColorClasses[group.color]} text-white shadow-md` 
-                                                                     : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 hover:border-slate-300'
-                                                                 }`}
-                                                               >
-                                                                 <div {...provided.dragHandleProps} className="cursor-move">
-                                                                   <GripVertical className="w-4 h-4 flex-shrink-0" />
-                                                                 </div>
-                                                                 <Icon className="w-4 h-4 flex-shrink-0" />
-                                                                 {editingTabId === tab.id ? (
-                                                                   <input
-                                                                     autoFocus
-                                                                     type="text"
-                                                                     value={editingTabName}
-                                                                     onChange={(e) => setEditingTabName(e.target.value)}
-                                                                     onKeyDown={(e) => {
-                                                                       e.stopPropagation();
-                                                                       if (e.key === 'Enter') {
-                                                                         handleRenameTab(tab.id, editingTabName);
-                                                                       } else if (e.key === 'Escape') {
-                                                                         setEditingTabId(null);
-                                                                       }
-                                                                     }}
-                                                                     onClick={(e) => e.stopPropagation()}
-                                                                     onBlur={() => {
-                                                                       if (editingTabName.trim()) {
-                                                                         handleRenameTab(tab.id, editingTabName);
-                                                                       } else {
-                                                                         setEditingTabId(null);
-                                                                       }
-                                                                     }}
-                                                                     className={`flex-1 bg-transparent border-b ${isActive ? 'border-white text-white' : 'border-slate-400 text-slate-900'} placeholder-white/50 focus:outline-none px-1`}
-                                                                     placeholder="Tab name"
-                                                                   />
-                                                                 ) : (
-                                                                   <span 
-                                                                     className="text-left truncate flex-1"
-                                                                     onDoubleClick={() => {
-                                                                       setEditingTabId(tab.id);
-                                                                       setEditingTabName(tab.label);
-                                                                     }}
-                                                                   >
-                                                                     {tab.label}
-                                                                   </span>
-                                                                 )}
-                                                               </TabsTrigger>
-                                                               <div className="opacity-0 group-hover/tab:opacity-100 transition-opacity flex gap-1 pr-1">
-                                                                 <button
-                                                                   onClick={(e) => {
-                                                                     e.stopPropagation();
-                                                                     setEditingTabId(tab.id);
-                                                                     setEditingTabName(tab.label);
-                                                                   }}
-                                                                   className="p-1 hover:bg-slate-200 rounded text-slate-600 hover:text-slate-900"
-                                                                   title="Rename tab"
-                                                                 >
-                                                                   <FileText className="w-3 h-3" />
-                                                                 </button>
-                                                                 {tab.id.startsWith('custom_') && (
-                                                                   <button
-                                                                     onClick={(e) => {
-                                                                       e.stopPropagation();
-                                                                       handleDeleteTab(group.id, tab.id);
-                                                                     }}
-                                                                     className="p-1 hover:bg-red-100 rounded text-red-600 hover:text-red-800"
-                                                                     title="Delete tab"
-                                                                   >
-                                                                     <X className="w-3 h-3" />
-                                                                   </button>
-                                                                 )}
-                                                               </div>
-                                                               </div>
-                                                               </div>
-                                                               )}
-                                                               </Draggable>
-                                                               );
-                                                             })}
-                                                             {provided.placeholder}
-                                                             <button
-                                                             onClick={() => handleCreateTab(group.id)}
-                                                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg border border-dashed border-slate-300 hover:border-slate-400 transition-all"
-                                                             >
-                                                             <Plus className="w-4 h-4" />
-                                                             <span>Add Tab</span>
-                                                             </button>
-                                                             </div>
-                                                             )}
-                                                             </Droppable>
-                                                             )}
+                   {/* Groups + Tabs */}
+                   {customizing ? (
+                     <DragDropContext onDragEnd={handleDragEnd}>
+                       <Droppable droppableId="groups" type="GROUP">
+                         {(provided) => (
+                           <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-1">
+                             {tabGroups.map((group, groupIndex) => {
+                               const isCollapsed = collapsedGroups.has(group.id);
+                               const accentColor = { blue: '#2563eb', purple: '#7c3aed', emerald: '#059669', rose: '#e11d48', amber: '#d97706' }[group.color] || '#2563eb';
+                               const activeBg = { blue: 'bg-blue-600', purple: 'bg-purple-600', emerald: 'bg-emerald-600', rose: 'bg-rose-600', amber: 'bg-amber-600' }[group.color] || 'bg-blue-600';
+
+                               return (
+                                 <Draggable key={group.id} draggableId={group.id} index={groupIndex}>
+                                   {(provided, snapshot) => (
+                                     <div ref={provided.innerRef} {...provided.draggableProps} className="mb-1" style={{ ...provided.draggableProps.style, opacity: snapshot.isDragging ? 0.6 : 1 }}>
+                                       {/* Group label */}
+                                       <div className="flex items-center gap-1 px-2 py-1.5 rounded-lg group/gh" style={{ borderLeft: `3px solid ${accentColor}` }}>
+                                         <div {...provided.dragHandleProps} className="cursor-grab text-slate-300 hover:text-slate-500">
+                                           <GripVertical className="w-3.5 h-3.5" />
                                          </div>
+                                         <button
+                                           onClick={() => setCollapsedGroups(prev => { const s = new Set(prev); s.has(group.id) ? s.delete(group.id) : s.add(group.id); return s; })}
+                                           className="flex-1 flex items-center justify-between min-w-0"
+                                         >
+                                           {editingGroupId === group.id ? (
+                                             <input autoFocus type="text" value={editingGroupName}
+                                               onChange={e => setEditingGroupName(e.target.value)}
+                                               onKeyDown={e => { e.stopPropagation(); if (e.key === 'Enter') handleRenameGroup(group.id, editingGroupName); if (e.key === 'Escape') setEditingGroupId(null); }}
+                                               onClick={e => e.stopPropagation()}
+                                               onBlur={() => { editingGroupName.trim() ? handleRenameGroup(group.id, editingGroupName) : setEditingGroupId(null); }}
+                                               className="bg-transparent border-b border-slate-400 focus:outline-none text-xs font-semibold text-slate-700 w-full"
+                                             />
+                                           ) : (
+                                             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate" onDoubleClick={e => { e.stopPropagation(); setEditingGroupId(group.id); setEditingGroupName(group.label); }}>{group.label}</span>
+                                           )}
+                                           {isCollapsed ? <ChevronDown className="w-3 h-3 text-slate-400 flex-shrink-0" /> : <ChevronUp className="w-3 h-3 text-slate-400 flex-shrink-0" />}
+                                         </button>
+                                         <div className="opacity-0 group-hover/gh:opacity-100 flex gap-0.5 ml-1 transition-opacity">
+                                           <button onClick={e => { e.stopPropagation(); setEditingGroupId(group.id); setEditingGroupName(group.label); }} className="p-0.5 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-200"><FileText className="w-3 h-3" /></button>
+                                           {group.id.startsWith('custom_group_') && <button onClick={e => { e.stopPropagation(); if (confirm(`Delete "${group.label}"?`)) handleDeleteGroup(group.id); }} className="p-0.5 rounded text-red-400 hover:text-red-600 hover:bg-red-50"><X className="w-3 h-3" /></button>}
+                                         </div>
+                                       </div>
+
+                                       {/* Tabs */}
+                                       {!isCollapsed && (
+                                         <Droppable droppableId={group.id} type="TAB">
+                                           {(provided, snapshot) => (
+                                             <div ref={provided.innerRef} {...provided.droppableProps} className="ml-3 mt-0.5 space-y-0.5" style={{ background: snapshot.isDraggingOver ? 'rgba(59,130,246,0.04)' : 'transparent' }}>
+                                               {group.tabs.map((tab, tabIndex) => {
+                                                 const Icon = tab.icon || Plus;
+                                                 const isActive = activeTab === tab.id;
+                                                 return (
+                                                   <Draggable key={tab.id} draggableId={tab.id} index={tabIndex}>
+                                                     {(provided, snapshot) => (
+                                                       <div ref={provided.innerRef} {...provided.draggableProps} style={{ ...provided.draggableProps.style, opacity: snapshot.isDragging ? 0.5 : 1 }}>
+                                                         <div className="flex items-center gap-1 group/tab">
+                                                           <div {...provided.dragHandleProps} className="cursor-grab text-slate-300 hover:text-slate-500 flex-shrink-0"><GripVertical className="w-3 h-3" /></div>
+                                                           <TabsTrigger value={tab.id} className={`flex-1 justify-start px-2.5 py-2 gap-2 text-xs font-medium rounded-lg transition-all ${isActive ? `${activeBg} text-white shadow-sm` : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}>
+                                                             <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                                                             {editingTabId === tab.id ? (
+                                                               <input autoFocus type="text" value={editingTabName}
+                                                                 onChange={e => setEditingTabName(e.target.value)}
+                                                                 onKeyDown={e => { e.stopPropagation(); if (e.key === 'Enter') handleRenameTab(tab.id, editingTabName); if (e.key === 'Escape') setEditingTabId(null); }}
+                                                                 onClick={e => e.stopPropagation()}
+                                                                 onBlur={() => { editingTabName.trim() ? handleRenameTab(tab.id, editingTabName) : setEditingTabId(null); }}
+                                                                 className={`flex-1 bg-transparent border-b ${isActive ? 'border-white/50 text-white' : 'border-slate-400 text-slate-900'} focus:outline-none`}
+                                                               />
+                                                             ) : (
+                                                               <span className="truncate flex-1 text-left" onDoubleClick={() => { setEditingTabId(tab.id); setEditingTabName(tab.label); }}>{tab.label}</span>
+                                                             )}
+                                                           </TabsTrigger>
+                                                           <div className="opacity-0 group-hover/tab:opacity-100 flex gap-0.5 flex-shrink-0 transition-opacity">
+                                                             <button onClick={e => { e.stopPropagation(); setEditingTabId(tab.id); setEditingTabName(tab.label); }} className="p-0.5 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-200"><FileText className="w-2.5 h-2.5" /></button>
+                                                             {tab.id.startsWith('custom_') && <button onClick={e => { e.stopPropagation(); handleDeleteTab(group.id, tab.id); }} className="p-0.5 rounded text-red-400 hover:text-red-600 hover:bg-red-50"><X className="w-2.5 h-2.5" /></button>}
+                                                           </div>
+                                                         </div>
+                                                       </div>
+                                                     )}
+                                                   </Draggable>
+                                                 );
+                                               })}
+                                               {provided.placeholder}
+                                               <button onClick={() => handleCreateTab(group.id)} className="w-full flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg border border-dashed border-slate-200 hover:border-slate-300 transition-all mt-0.5">
+                                                 <Plus className="w-3 h-3" /> Add tab
+                                               </button>
+                                             </div>
+                                           )}
+                                         </Droppable>
                                        )}
-                                     </Draggable>
-                                   );
-                                 })}
-                                 {provided.placeholder}
-
-                                 {/* Add Group Button */}
-                                 <button
-                                   onClick={() => setShowCreateGroupDialog(true)}
-                                   className="w-full flex items-center gap-2 px-4 py-3 mt-4 text-sm text-slate-600 hover:bg-slate-100 rounded-lg border-2 border-dashed border-slate-300 hover:border-slate-400 transition-all font-medium"
-                                 >
-                                   <Plus className="w-4 h-4" />
-                                   <span>Add Group</span>
-                                 </button>
-                                 </div>
-                                 )}
-                                 </Droppable>
-                                 </DragDropContext>
-                           ) : (
-                         <div className="space-y-0">
-                           {tabGroups.map((group) => {
-                             const isCollapsed = collapsedGroups.has(group.id);
-                             const groupColorClasses = {
-                               blue: 'bg-blue-50 border-blue-200 text-blue-900',
-                               purple: 'bg-purple-50 border-purple-200 text-purple-900',
-                               emerald: 'bg-emerald-50 border-emerald-200 text-emerald-900',
-                               rose: 'bg-rose-50 border-rose-200 text-rose-900',
-                               amber: 'bg-amber-50 border-amber-200 text-amber-900',
-                             };
-                             const activeColorClasses = {
-                               blue: 'bg-gradient-to-r from-blue-600 to-blue-700 shadow-blue-200',
-                               purple: 'bg-gradient-to-r from-purple-600 to-purple-700 shadow-purple-200',
-                               emerald: 'bg-gradient-to-r from-emerald-600 to-emerald-700 shadow-emerald-200',
-                               rose: 'bg-gradient-to-r from-rose-600 to-rose-700 shadow-rose-200',
-                               amber: 'bg-gradient-to-r from-amber-600 to-amber-700 shadow-amber-200',
-                             };
-
-                             return (
-                               <div key={group.id} className="mb-4">
-                                 {/* Group Header */}
-                                 <button
-                                   onClick={() => {
-                                     setCollapsedGroups(prev => {
-                                       const newSet = new Set(prev);
-                                       if (newSet.has(group.id)) {
-                                         newSet.delete(group.id);
-                                       } else {
-                                         newSet.add(group.id);
-                                       }
-                                       return newSet;
-                                     });
-                                   }}
-                                   className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border ${groupColorClasses[group.color]} mb-2 hover:opacity-80 transition-all`}
-                                 >
-                                   <span className="text-xs font-bold uppercase tracking-wider">{group.label}</span>
-                                   {isCollapsed ? (
-                                     <ChevronDown className="w-4 h-4" />
-                                   ) : (
-                                     <ChevronUp className="w-4 h-4" />
+                                     </div>
                                    )}
-                                 </button>
-
-                                 {/* Group Tabs */}
-                                 <AnimatePresence>
-                                   {!isCollapsed && (
-                                     <motion.div
-                                       initial={{ opacity: 0, height: 0 }}
-                                       animate={{ opacity: 1, height: "auto" }}
-                                       exit={{ opacity: 0, height: 0 }}
-                                       className="space-y-1"
-                                     >
-                                       {group.tabs.map((tab) => {
-                                         const Icon = tab.icon;
-                                         const isActive = activeTab === tab.id;
-                                         return (
-                                           <div key={tab.id} className="group/tab relative">
-                                             <TabsTrigger 
-                                               value={tab.id} 
-                                               className={`w-full justify-start px-4 py-2.5 gap-3 font-medium text-sm transition-all duration-200 rounded-lg ${
-                                                 isActive 
-                                                   ? `${activeColorClasses[group.color]} text-white shadow-md` 
-                                                   : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 hover:border-slate-300'
-                                               }`}
-                                             >
-                                               <Icon className="w-4 h-4 flex-shrink-0" />
-                                               <span className="text-left truncate">{tab.label}</span>
-                                             </TabsTrigger>
-                                           </div>
-                                         );
-                                       })}
-                                     </motion.div>
-                                   )}
-                                 </AnimatePresence>
-                               </div>
-                             );
-                           })}
-                         </div>
-                       )}
-                       </TabsList>
-
-                       {/* Create Tab Dialog */}
-                       {showCreateTabDialog && (
-                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                           <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
-                             <h3 className="text-lg font-bold text-slate-900 mb-4">Create New Tab</h3>
-                             <div className="space-y-4">
-                               <div>
-                                 <label className="block text-sm font-medium text-slate-700 mb-2">Tab Name</label>
-                                 <Input
-                                   autoFocus
-                                   value={newTabName}
-                                   onChange={(e) => setNewTabName(e.target.value)}
-                                   onKeyDown={(e) => {
-                                     if (e.key === 'Enter') handleSaveNewTab();
-                                     if (e.key === 'Escape') setShowCreateTabDialog(false);
-                                   }}
-                                   placeholder="Enter tab name..."
-                                   className="w-full"
-                                 />
-                               </div>
-                               <div className="flex gap-3 justify-end">
-                                 <Button
-                                   variant="outline"
-                                   onClick={() => setShowCreateTabDialog(false)}
-                                 >
-                                   Cancel
-                                 </Button>
-                                 <Button
-                                   onClick={handleSaveNewTab}
-                                   className="bg-blue-600 hover:bg-blue-700 text-white"
-                                 >
-                                   Create Tab
-                                 </Button>
-                               </div>
-                             </div>
+                                 </Draggable>
+                               );
+                             })}
+                             {provided.placeholder}
+                             <button onClick={() => setShowCreateGroupDialog(true)} className="w-full flex items-center gap-1.5 px-3 py-2 mt-2 text-xs text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg border border-dashed border-slate-200 hover:border-slate-300 transition-all font-medium">
+                               <Plus className="w-3.5 h-3.5" /> Add group
+                             </button>
                            </div>
-                         </div>
-                       )}
+                         )}
+                       </Droppable>
+                     </DragDropContext>
+                   ) : (
+                     <div className="space-y-1">
+                       {tabGroups.map((group) => {
+                         const isCollapsed = collapsedGroups.has(group.id);
+                         const accentColor = { blue: '#2563eb', purple: '#7c3aed', emerald: '#059669', rose: '#e11d48', amber: '#d97706' }[group.color] || '#2563eb';
+                         const activeBg = { blue: 'bg-blue-600', purple: 'bg-purple-600', emerald: 'bg-emerald-600', rose: 'bg-rose-600', amber: 'bg-amber-600' }[group.color] || 'bg-blue-600';
 
-                       {/* Create Group Dialog */}
-                       {showCreateGroupDialog && (
-                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                           <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
-                             <h3 className="text-lg font-bold text-slate-900 mb-4">Create New Group</h3>
-                             <div className="space-y-4">
-                               <div>
-                                 <label className="block text-sm font-medium text-slate-700 mb-2">Group Name</label>
-                                 <Input
-                                   autoFocus
-                                   value={newGroupName}
-                                   onChange={(e) => setNewGroupName(e.target.value)}
-                                   onKeyDown={(e) => {
-                                     if (e.key === 'Enter') handleCreateGroup();
-                                     if (e.key === 'Escape') setShowCreateGroupDialog(false);
-                                   }}
-                                   placeholder="Enter group name..."
-                                   className="w-full"
-                                 />
-                               </div>
-                               <div>
-                                 <label className="block text-sm font-medium text-slate-700 mb-2">Color Theme</label>
-                                 <div className="grid grid-cols-5 gap-2">
-                                   {['blue', 'purple', 'emerald', 'rose', 'amber'].map(color => (
-                                     <button
-                                       key={color}
-                                       onClick={() => setNewGroupColor(color)}
-                                       className={`w-full h-10 rounded-lg border-2 transition-all ${
-                                         newGroupColor === color ? 'border-slate-900 scale-110' : 'border-slate-300'
-                                       } ${
-                                         color === 'blue' ? 'bg-blue-500' :
-                                         color === 'purple' ? 'bg-purple-500' :
-                                         color === 'emerald' ? 'bg-emerald-500' :
-                                         color === 'rose' ? 'bg-rose-500' :
-                                         'bg-amber-500'
-                                       }`}
-                                     />
-                                   ))}
-                                 </div>
-                               </div>
-                               <div className="flex gap-3 justify-end">
-                                 <Button
-                                   variant="outline"
-                                   onClick={() => {
-                                     setShowCreateGroupDialog(false);
-                                     setNewGroupName("");
-                                     setNewGroupColor("blue");
-                                   }}
-                                 >
-                                   Cancel
-                                 </Button>
-                                 <Button
-                                   onClick={handleCreateGroup}
-                                   className="bg-blue-600 hover:bg-blue-700 text-white"
-                                 >
-                                   Create Group
-                                 </Button>
-                               </div>
-                             </div>
+                         return (
+                           <div key={group.id} className="mb-1">
+                             {/* Group header */}
+                             <button
+                               onClick={() => setCollapsedGroups(prev => { const s = new Set(prev); s.has(group.id) ? s.delete(group.id) : s.add(group.id); return s; })}
+                               className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-all group"
+                               style={{ borderLeft: `3px solid ${accentColor}` }}
+                             >
+                               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{group.label}</span>
+                               {isCollapsed ? <ChevronDown className="w-3 h-3 text-slate-400" /> : <ChevronUp className="w-3 h-3 text-slate-400" />}
+                             </button>
+
+                             <AnimatePresence>
+                               {!isCollapsed && (
+                                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="ml-3 mt-0.5 space-y-0.5 overflow-hidden">
+                                   {group.tabs.map((tab) => {
+                                     const Icon = tab.icon || Plus;
+                                     const isActive = activeTab === tab.id;
+                                     return (
+                                       <TabsTrigger key={tab.id} value={tab.id}
+                                         className={`w-full justify-start px-2.5 py-2 gap-2 text-xs font-medium rounded-lg transition-all ${
+                                           isActive ? `${activeBg} text-white shadow-sm` : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                         }`}
+                                       >
+                                         <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                                         <span className="truncate text-left">{tab.label}</span>
+                                       </TabsTrigger>
+                                     );
+                                   })}
+                                 </motion.div>
+                               )}
+                             </AnimatePresence>
                            </div>
+                         );
+                       })}
+                     </div>
+                   )}
+                 </TabsList>
+
+                 {/* Create Tab Dialog */}
+                 {showCreateTabDialog && (
+                   <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                     <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+                       <h3 className="text-lg font-bold text-slate-900 mb-4">Create New Tab</h3>
+                       <div className="space-y-4">
+                         <Input autoFocus value={newTabName} onChange={e => setNewTabName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleSaveNewTab(); if (e.key === 'Escape') setShowCreateTabDialog(false); }} placeholder="Tab name..." className="w-full" />
+                         <div className="flex gap-3 justify-end">
+                           <Button variant="outline" onClick={() => setShowCreateTabDialog(false)}>Cancel</Button>
+                           <Button onClick={handleSaveNewTab} className="bg-blue-600 hover:bg-blue-700 text-white">Create</Button>
                          </div>
-                       )}
                        </div>
+                     </div>
+                   </div>
+                 )}
 
-                       <div className="flex-1 overflow-hidden">
+                 {/* Create Group Dialog */}
+                 {showCreateGroupDialog && (
+                   <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                     <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+                       <h3 className="text-lg font-bold text-slate-900 mb-4">Create New Group</h3>
+                       <div className="space-y-4">
+                         <Input autoFocus value={newGroupName} onChange={e => setNewGroupName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleCreateGroup(); if (e.key === 'Escape') setShowCreateGroupDialog(false); }} placeholder="Group name..." className="w-full" />
+                         <div>
+                           <label className="block text-sm font-medium text-slate-700 mb-2">Color</label>
+                           <div className="grid grid-cols-5 gap-2">
+                             {['blue','purple','emerald','rose','amber'].map(color => (
+                               <button key={color} onClick={() => setNewGroupColor(color)} className={`h-8 rounded-lg border-2 transition-all ${newGroupColor === color ? 'border-slate-900 scale-110' : 'border-transparent'} ${ {blue:'bg-blue-500',purple:'bg-purple-500',emerald:'bg-emerald-500',rose:'bg-rose-500',amber:'bg-amber-500'}[color] }`} />
+                             ))}
+                           </div>
+                         </div>
+                         <div className="flex gap-3 justify-end">
+                           <Button variant="outline" onClick={() => { setShowCreateGroupDialog(false); setNewGroupName(""); setNewGroupColor("blue"); }}>Cancel</Button>
+                           <Button onClick={handleCreateGroup} className="bg-blue-600 hover:bg-blue-700 text-white">Create</Button>
+                         </div>
+                       </div>
+                     </div>
+                   </div>
+                 )}
+               </div>
+
+               <div className="flex-1 overflow-hidden">
 
            {/* HPI & Intake Tab */}
            <TabsContent value="hpi_intake" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">

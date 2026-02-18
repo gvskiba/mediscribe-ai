@@ -2139,10 +2139,19 @@ Generated: ${new Date().toLocaleString()}
                    <div className="flex gap-3 mt-4">
                      <Button
                        onClick={async () => {
-                         const plainText = new DOMParser().parseFromString(note.raw_note || "", "text/html").body.innerText || "";
-                         const updatedNote = (note.history_of_present_illness || "") + "\n\n" + plainText;
-                         await base44.entities.ClinicalNote.update(noteId, { history_of_present_illness: updatedNote });
-                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                         const currentNote = queryClient.getQueryData(["note", noteId]);
+                         const currentRawNote = currentNote?.raw_note || "";
+                         const plainText = new DOMParser().parseFromString(currentRawNote, "text/html").body.innerText || "";
+                         const updatedHPI = (currentNote?.history_of_present_illness || "") + "\n\n" + plainText;
+                         // Save both raw_note (in case unsaved) and updated HPI together
+                         await base44.entities.ClinicalNote.update(noteId, { 
+                           raw_note: currentRawNote,
+                           history_of_present_illness: updatedHPI 
+                         });
+                         queryClient.setQueryData(["note", noteId], (old) => ({
+                           ...old,
+                           history_of_present_illness: updatedHPI
+                         }));
                          toast.success("Raw data added to Clinical Note");
                        }}
                        variant="outline"

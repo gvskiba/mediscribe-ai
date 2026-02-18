@@ -2973,19 +2973,6 @@ Generated: ${new Date().toLocaleString()}
                  </Button>
                </div>
              </TabsContent>
-
-
-             {/* Clinical Guidelines Panel */}
-             <div>
-               <SmartGuidelinePanel
-                 noteContent={note.raw_note}
-                 diagnoses={note.diagnoses || []}
-                 medications={note.medications || []}
-               />
-             </div>
-
-             {/* AI Institution Guidelines Search */}
-             <div className="bg-white rounded-2xl border-2 border-indigo-300 shadow-lg overflow-hidden">
                <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-5 text-white">
                  <h3 className="font-bold text-lg flex items-center gap-2">
                    <BookOpen className="w-6 h-6" />

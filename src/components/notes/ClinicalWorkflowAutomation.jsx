@@ -83,6 +83,7 @@ export default function ClinicalWorkflowAutomation({ note, noteId, onUpdateNote 
   const [expandedSection, setExpandedSection] = useState("actions");
   const [addedItems, setAddedItems] = useState(new Set());
   const [autoFilling, setAutoFilling] = useState(false);
+  const [reviewModal, setReviewModal] = useState(null); // { type, orders }
 
   const toggle = (section) => setExpandedSection(prev => prev === section ? null : section);
 

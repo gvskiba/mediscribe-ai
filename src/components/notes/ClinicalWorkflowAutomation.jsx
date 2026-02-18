@@ -5,9 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Loader2, CheckCircle2, Plus, ChevronDown, ChevronUp,
-  Beaker, ImageIcon, ClipboardList, Zap, RefreshCw, ArrowRight, X
+  Beaker, ImageIcon, ClipboardList, Zap, RefreshCw, ArrowRight, X, Eye
 } from "lucide-react";
 import { toast } from "sonner";
+import OrderReviewModal from "./OrderReviewModal";
 
 // ── Standard Lab Panels ──────────────────────────────────────────────────────
 const LAB_PANELS = [

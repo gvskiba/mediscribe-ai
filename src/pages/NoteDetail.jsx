@@ -1689,6 +1689,35 @@ Generated: ${new Date().toLocaleString()}
                  <p className="text-slate-600 max-w-2xl mx-auto">Voice transcription and AI analysis of patient data</p>
                </div>
 
+               {/* Raw Data Input Section */}
+               <div className="bg-white rounded-xl border-2 border-slate-300 shadow-lg overflow-hidden">
+                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
+                   <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                     <FileText className="w-5 h-5 text-slate-600" />
+                     Raw Data Input
+                   </h3>
+                 </div>
+                 <div className="p-6">
+                   <Textarea
+                     value={note.raw_note || ""}
+                     onChange={(e) => {
+                       queryClient.setQueryData(["note", noteId], (old) => ({
+                         ...old,
+                         raw_note: e.target.value
+                       }));
+                     }}
+                     onBlur={async () => {
+                       const currentNote = queryClient.getQueryData(["note", noteId]);
+                       await base44.entities.ClinicalNote.update(noteId, { raw_note: currentNote.raw_note });
+                       setLastSaved(new Date().toISOString());
+                       toast.success("Note saved at " + format(new Date(), "h:mm:ss a"));
+                     }}
+                     placeholder="Paste or type raw clinical data, patient information, or encounter notes..."
+                     className="min-h-[150px] text-base"
+                   />
+                 </div>
+               </div>
+
                {/* Voice Recording Section */}
                <div className="bg-white rounded-xl border-2 border-blue-300 shadow-lg overflow-hidden">
                  <div className="bg-gradient-to-r from-blue-500 to-indigo-500 px-6 py-5 text-white">

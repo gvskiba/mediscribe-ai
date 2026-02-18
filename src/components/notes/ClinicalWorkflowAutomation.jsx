@@ -535,7 +535,6 @@ Provide:
           )}
         </div>
       )}
-    </div>
 
       {/* Review Modal */}
       {reviewModal && (

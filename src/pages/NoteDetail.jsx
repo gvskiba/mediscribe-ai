@@ -2330,8 +2330,9 @@ Generated: ${new Date().toLocaleString()}
                              </div>
                              )}
                              </div>
-             {/* Next Button */}
-             <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+
+                             {/* Next Button */}
+                             <div className="flex justify-between items-center pt-4 border-t border-slate-200">
                <div className="flex gap-2">
                  <TabDataPreview tabId="differential" note={note} />
                  <ClinicalNotePreviewButton note={note} />

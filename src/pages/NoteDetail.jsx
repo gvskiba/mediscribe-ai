@@ -2206,11 +2206,91 @@ Generated: ${new Date().toLocaleString()}
                      </div>
                    ) : (
                      <Button
-                       onClick={async () => {
-                         setAnalyzingRawData(true);
-                       try {
-                         const result = await base44.integrations.Core.InvokeLLM({
-                           prompt: `Perform a comprehensive clinical analysis of this patient case:
+                       onClick={generateDifferentialDiagnosis}
+                       disabled={loadingDifferential}
+                       className="w-full bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white gap-2 shadow-lg py-6 text-base"
+                     >
+                       {loadingDifferential ? (
+                         <><Loader2 className="w-5 h-5 animate-spin" /> Generating Differential Diagnoses...</>
+                       ) : (
+                         <><Sparkles className="w-5 h-5" /> Generate Differential Diagnoses</>
+                       )}
+                     </Button>
+                   )}
+                   </div>
+                   </div>
+
+                   {/* Differential Diagnosis Results */}
+                   {differentialDiagnosis.length > 0 && (
+                   <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
+                   <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                     <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                       <Activity className="w-5 h-5 text-rose-600" />
+                       Differential Diagnoses
+                     </h3>
+                     <Badge className="bg-rose-100 text-rose-800">
+                       {differentialDiagnosis.length} diagnoses
+                     </Badge>
+                   </div>
+                   <div className="p-6 space-y-4">
+                     {differentialDiagnosis.map((diff, idx) => (
+                       <motion.div
+                         key={idx}
+                         initial={{ opacity: 0, y: 20 }}
+                         animate={{ opacity: 1, y: 0 }}
+                         className="rounded-xl border-2 border-rose-200 bg-gradient-to-br from-rose-50 to-pink-50 p-5">
+                         <div className="flex items-start justify-between mb-3">
+                           <div className="flex-1">
+                             <div className="flex items-center gap-3 mb-2">
+                               <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-rose-600 to-pink-600 text-white font-bold shadow-md">
+                                 {idx + 1}
+                               </div>
+                               <h4 className="text-lg font-bold text-slate-900">{diff.diagnosis}</h4>
+                             </div>
+                             <div className="flex items-center gap-3 ml-11">
+                               <span className="text-xs font-semibold text-rose-700">Likelihood:</span>
+                               <div className="flex-1 max-w-xs h-3 bg-rose-100 rounded-full overflow-hidden border border-rose-200">
+                                 <div 
+                                   className="h-full bg-gradient-to-r from-rose-500 to-pink-500 transition-all duration-500" 
+                                   style={{ width: `${(diff.likelihood_rank / 5) * 100}%` }} 
+                                 />
+                               </div>
+                               <Badge className="bg-rose-600 text-white font-bold">
+                                 {diff.likelihood_rank}/5
+                               </Badge>
+                             </div>
+                           </div>
+                         </div>
+
+                         <div className="ml-11 space-y-3">
+                           <div className="bg-white rounded-lg p-4 border border-rose-200">
+                             <p className="text-xs font-bold text-slate-700 mb-2">Clinical Reasoning:</p>
+                             <p className="text-sm text-slate-600 leading-relaxed">{diff.clinical_reasoning}</p>
+                           </div>
+
+                           {diff.red_flags_to_monitor?.length > 0 && (
+                             <div className="bg-red-50 rounded-lg p-4 border-2 border-red-200">
+                               <p className="text-xs font-bold text-red-900 mb-2 flex items-center gap-2">
+                                 <AlertCircle className="w-4 h-4" />
+                                 Red Flags to Monitor:
+                               </p>
+                               <ul className="space-y-1.5">
+                                 {diff.red_flags_to_monitor.map((flag, i) => (
+                                   <li key={i} className="text-sm text-red-800 flex items-start gap-2">
+                                     <span className="text-red-600 mt-0.5 font-bold">⚠️</span>
+                                     <span>{flag}</span>
+                                   </li>
+                                 ))}
+                               </ul>
+                             </div>
+                           )}
+
+                           <Button
+                             size="sm"
+                             onClick={async () => {
+                               try {
+                                 const result = await base44.integrations.Core.InvokeLLM({
+                                   prompt: `Perform a comprehensive clinical analysis of this patient case:
 
 PATIENT INFORMATION:
 Name: ${note.patient_name}

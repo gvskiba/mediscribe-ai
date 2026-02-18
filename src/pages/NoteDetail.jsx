@@ -2400,7 +2400,7 @@ Format as clear, actionable clinical guidance.`,
              {/* Next Button */}
              <div className="flex justify-between items-center pt-4 border-t border-slate-200">
                <div className="flex gap-2">
-                 <TabDataPreview tabId="analysis" note={note} />
+                 <TabDataPreview tabId="differential" note={note} />
                  <ClinicalNotePreviewButton note={note} />
                </div>
                <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
@@ -2409,27 +2409,318 @@ Format as clear, actionable clinical guidance.`,
              </div>
            </TabsContent>
 
-           {/* AI Assistant Tab */}
-             <TabsContent value="ai_assistant" className="p-6 space-y-6 overflow-y-auto">
-                <AIDocumentationAssistant
-                  note={note}
-                  onUpdateNote={async (updates) => {
-                    await base44.entities.ClinicalNote.update(noteId, updates);
-                    queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                  }}
-                />
+           {/* Labs & Imaging Tab */}
+             <TabsContent value="labs_imaging" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+               <div className="max-w-5xl mx-auto space-y-8">
+                 {/* Header */}
+                 <div className="text-center mb-8">
+                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 mb-4 shadow-lg">
+                     <Beaker className="w-8 h-8 text-white" />
+                   </div>
+                   <h2 className="text-3xl font-bold text-slate-900 mb-2">Labs & Imaging</h2>
+                   <p className="text-slate-600 max-w-2xl mx-auto">Upload and analyze laboratory results and imaging studies</p>
+                 </div>
 
-                {/* Next Button */}
-                <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                  <div className="flex gap-2">
-                    <TabDataPreview tabId="ai_assistant" note={note} />
-                    <ClinicalNotePreviewButton note={note} />
-                  </div>
-                  <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
-                    Next <ArrowLeft className="w-4 h-4 rotate-180" />
-                  </Button>
-                </div>
-              </TabsContent>
+                 {/* Imaging Analysis */}
+                 <ImagingAnalysis
+                   noteId={noteId}
+                   onAddToNote={async (imagingText, linkedFindings) => {
+                     const updates = { assessment: (note.assessment || "") + imagingText };
+                     if (linkedFindings && Object.keys(linkedFindings).length > 0) {
+                       Object.entries(linkedFindings).forEach(([findingKey, sections]) => {
+                         sections.forEach((sectionId) => {
+                           const fieldMap = { assessment: "assessment", plan: "plan", history_of_present_illness: "history_of_present_illness" };
+                           if (fieldMap[sectionId]) {
+                             const sectionText = `\n\n[Imaging Finding] ${imagingText.split("\n")[0]}`;
+                             updates[fieldMap[sectionId]] = (updates[fieldMap[sectionId]] || note[fieldMap[sectionId]] || "") + sectionText;
+                           }
+                         });
+                       });
+                     }
+                     await base44.entities.ClinicalNote.update(noteId, updates);
+                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                     toast.success("Imaging summary added to clinical note");
+                   }}
+                 />
+
+                 {/* Laboratory Analysis */}
+                 <LabsAnalysis
+                   noteId={noteId}
+                   onAddToNote={async (labsText) => {
+                     const updatedAssessment = (note.assessment || "") + labsText;
+                     await base44.entities.ClinicalNote.update(noteId, { assessment: updatedAssessment });
+                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                     toast.success("Lab summary added to clinical note");
+                   }}
+                 />
+
+                 {/* EKG Analysis */}
+                 <EKGAnalysis
+                   noteId={noteId}
+                   onAddToNote={async (ekgText) => {
+                     const updatedAssessment = (note.assessment || "") + ekgText;
+                     await base44.entities.ClinicalNote.update(noteId, { assessment: updatedAssessment });
+                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                     toast.success("EKG analysis added to clinical note");
+                   }}
+                 />
+               </div>
+
+               {/* Next Button */}
+               <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+                 <div className="flex gap-2">
+                   <TabDataPreview tabId="labs_imaging" note={note} />
+                   <ClinicalNotePreviewButton note={note} />
+                 </div>
+                 <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                   Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                 </Button>
+               </div>
+             </TabsContent>
+
+           {/* Treatment Plan Tab */}
+             <TabsContent value="treatment_plan" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+               <div className="max-w-5xl mx-auto space-y-8">
+                 {/* Header */}
+                 <div className="text-center mb-8">
+                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 mb-4 shadow-lg">
+                     <FileText className="w-8 h-8 text-white" />
+                   </div>
+                   <h2 className="text-3xl font-bold text-slate-900 mb-2">Treatment Plan</h2>
+                   <p className="text-slate-600 max-w-2xl mx-auto">Document comprehensive treatment approach and care plan</p>
+                 </div>
+
+                 {/* Treatment Plan Editor */}
+                 <div className="bg-white rounded-xl border-2 border-amber-300 shadow-lg overflow-hidden">
+                   <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-5 text-white">
+                     <h3 className="font-bold text-lg flex items-center gap-2">
+                       <FileText className="w-6 h-6" />
+                       Treatment Plan
+                     </h3>
+                     <p className="text-amber-100 text-sm mt-1">Document detailed treatment approach, follow-up, and patient instructions</p>
+                   </div>
+                   <div className="p-6">
+                     <Textarea
+                       value={note.plan || ""}
+                       onChange={(e) => {
+                         queryClient.setQueryData(["note", noteId], (old) => ({
+                           ...old,
+                           plan: e.target.value
+                         }));
+                       }}
+                       onBlur={async (e) => {
+                         await base44.entities.ClinicalNote.update(noteId, { plan: e.target.value });
+                         toast.success("Treatment plan saved");
+                       }}
+                       placeholder="Document treatment plan, follow-up instructions, patient education..."
+                       className="min-h-[400px] text-base"
+                     />
+                   </div>
+                 </div>
+
+                 {/* Workflow Automation */}
+                 <ClinicalWorkflowAutomation
+                   note={note}
+                   noteId={noteId}
+                   onUpdateNote={async (updates) => {
+                     await base44.entities.ClinicalNote.update(noteId, updates);
+                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                   }}
+                 />
+               </div>
+
+               {/* Next Button */}
+               <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+                 <div className="flex gap-2">
+                   <TabDataPreview tabId="treatment_plan" note={note} />
+                   <ClinicalNotePreviewButton note={note} />
+                 </div>
+                 <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                   Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                 </Button>
+               </div>
+             </TabsContent>
+
+           {/* Medications Tab */}
+             <TabsContent value="medications" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+               <div className="max-w-5xl mx-auto space-y-8">
+                 {/* Header */}
+                 <div className="text-center mb-8">
+                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-600 mb-4 shadow-lg">
+                     <Pill className="w-8 h-8 text-white" />
+                   </div>
+                   <h2 className="text-3xl font-bold text-slate-900 mb-2">Medications</h2>
+                   <p className="text-slate-600 max-w-2xl mx-auto">Manage prescribed medications and safety checks</p>
+                 </div>
+
+                 {/* AI Recommendations */}
+                 <div className="bg-white rounded-xl border-2 border-blue-300 shadow-lg overflow-hidden">
+                   <div className="bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-5 text-white">
+                     <h3 className="font-bold text-lg flex items-center gap-2">
+                       <Sparkles className="w-6 h-6" />
+                       AI Medication Recommendations
+                     </h3>
+                     <p className="text-blue-100 text-sm mt-1">Get evidence-based medication suggestions</p>
+                   </div>
+                   <div className="p-6">
+                     <MedicationRecommendations
+                       note={note}
+                       onAddMedications={async (meds) => {
+                         const updatedMeds = [...(note.medications || []), ...meds];
+                         await base44.entities.ClinicalNote.update(noteId, { medications: updatedMeds });
+                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                       }}
+                     />
+                   </div>
+                 </div>
+
+                 {/* Current Medications */}
+                 <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
+                   <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
+                     <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                       <Pill className="w-5 h-5 text-blue-600" />
+                       Current Medications ({note.medications?.length || 0})
+                     </h3>
+                   </div>
+                   <div className="p-6">
+                     {note.medications && note.medications.length > 0 ? (
+                       <div className="space-y-3">
+                         {note.medications.map((med, idx) => (
+                           <motion.div
+                             key={idx}
+                             initial={{ opacity: 0, x: -20 }}
+                             animate={{ opacity: 1, x: 0 }}
+                             className="group flex items-start gap-4 p-4 rounded-xl border-2 border-slate-200 bg-white hover:border-blue-300 hover:shadow-md transition-all"
+                           >
+                             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-bold flex-shrink-0 shadow-sm">
+                               {idx + 1}
+                             </div>
+                             <div className="flex-1">
+                               <p className="text-sm font-semibold text-slate-900">{med}</p>
+                             </div>
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={async () => {
+                                 const updatedMeds = note.medications.filter((_, i) => i !== idx);
+                                 await base44.entities.ClinicalNote.update(noteId, { medications: updatedMeds });
+                                 queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                 toast.success("Medication removed");
+                               }}
+                               className="opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:bg-red-50"
+                             >
+                               <X className="w-4 h-4" />
+                             </Button>
+                           </motion.div>
+                         ))}
+                       </div>
+                     ) : (
+                       <div className="text-center py-12 bg-slate-50 rounded-xl border-2 border-dashed border-slate-300">
+                         <Pill className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                         <p className="text-slate-600">No medications documented</p>
+                       </div>
+                     )}
+                   </div>
+                 </div>
+
+                 {/* Drug Interactions */}
+                 {note.medications && note.medications.length > 1 && (
+                   <div className="bg-white rounded-xl border-2 border-orange-300 shadow-lg overflow-hidden">
+                     <div className="bg-gradient-to-r from-orange-500 to-red-500 px-6 py-5 text-white">
+                       <h3 className="font-bold text-lg flex items-center gap-2">
+                         <AlertCircle className="w-6 h-6" />
+                         Drug Interaction Check
+                       </h3>
+                       <p className="text-orange-100 text-sm mt-1">AI-powered safety screening</p>
+                     </div>
+                     <div className="p-6">
+                       {!loadingInteractions && drugInteractions.length === 0 && (
+                         <Button
+                           onClick={analyzeDrugInteractions}
+                           className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white gap-2"
+                         >
+                           <Sparkles className="w-4 h-4" /> Check Drug Interactions
+                         </Button>
+                       )}
+                       {loadingInteractions && (
+                         <div className="flex items-center justify-center py-8">
+                           <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+                         </div>
+                       )}
+                       {drugInteractions.length > 0 && (
+                         <div className="space-y-3">
+                           {drugInteractions.map((interaction, idx) => (
+                             <div key={idx} className={`rounded-lg border-2 p-4 ${
+                               interaction.severity === 'severe' ? 'bg-red-50 border-red-300' :
+                               interaction.severity === 'moderate' ? 'bg-yellow-50 border-yellow-300' :
+                               'bg-blue-50 border-blue-300'
+                             }`}>
+                               <div className="flex items-start justify-between mb-2">
+                                 <p className="font-bold text-sm text-slate-900">{interaction.drug_pair}</p>
+                                 <Badge className={interaction.severity === 'severe' ? 'bg-red-600 text-white' : interaction.severity === 'moderate' ? 'bg-yellow-600 text-white' : 'bg-blue-600 text-white'}>
+                                   {interaction.severity.toUpperCase()}
+                                 </Badge>
+                               </div>
+                               <p className="text-xs text-slate-700 mt-2"><strong>Mechanism:</strong> {interaction.mechanism}</p>
+                               <p className="text-xs text-slate-700 mt-1"><strong>Recommendation:</strong> {interaction.recommendation}</p>
+                             </div>
+                           ))}
+                         </div>
+                       )}
+                     </div>
+                   </div>
+                 )}
+               </div>
+
+               {/* Next Button */}
+               <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+                 <div className="flex gap-2">
+                   <TabDataPreview tabId="medications" note={note} />
+                   <ClinicalNotePreviewButton note={note} />
+                 </div>
+                 <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                   Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                 </Button>
+               </div>
+             </TabsContent>
+
+           {/* Clinical Note Tab */}
+             <TabsContent value="clinical_note" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+               <div className="max-w-5xl mx-auto space-y-8">
+                 <SmartTemplateApplicator
+                   noteId={noteId}
+                   note={note}
+                   templates={templates}
+                   onTemplateApplied={() => {
+                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                   }}
+                 />
+
+                 <ClinicalNoteView
+                   note={note}
+                   onUpdate={async (field, value) => {
+                     await base44.entities.ClinicalNote.update(noteId, { [field]: value });
+                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                     toast.success("Updated successfully");
+                   }}
+                   noteTypes={templates}
+                 />
+               </div>
+
+               {/* Next Button */}
+               <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+                 <div className="flex gap-2">
+                   <TabDataPreview tabId="clinical_note" note={note} />
+                   <ClinicalNotePreviewButton note={note} />
+                 </div>
+                 <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                   Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                 </Button>
+               </div>
+             </TabsContent>
+
+           {/* Old tabs removed - replaced by sidebar */}
+
 
            {/* Chief Complaint Tab */}
               <TabsContent value="chief_complaint" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
@@ -2566,8 +2857,8 @@ Format as clear, actionable clinical guidance.`,
                 </div>
               </TabsContent>
 
-           {/* Summary Tab */}
-           <TabsContent value="summary" className="p-6 space-y-4 overflow-y-auto">
+           {/* Removed duplicate/old tabs - cleanup */}
+           <TabsContent value="summary" className="hidden">
              <div className="flex gap-3 mb-4">
                <NoteRevisionHistory
                  noteId={noteId}
@@ -2646,22 +2937,44 @@ Format as clear, actionable clinical guidance.`,
              </TabsContent>
 
              {/* Physical Exam Tab */}
-             <TabsContent value="physical_exam" className="p-6 space-y-6 overflow-y-auto">
-               <PhysicalExamEditor
-                 examData={note.physical_exam}
-                 onUpdate={async (examData) => {
-                   const examString = typeof examData === 'string' ? examData : JSON.stringify(examData);
-                   await base44.entities.ClinicalNote.update(noteId, { physical_exam: examString });
-                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                   toast.success("Physical exam updated");
-                 }}
-                 onAddToNote={async (examText) => {
-                   const updatedNote = (note.physical_exam || "") + examText;
-                   await base44.entities.ClinicalNote.update(noteId, { physical_exam: updatedNote });
-                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                   toast.success("Physical exam findings added to clinical note");
-                 }}
-               />
+             <TabsContent value="physical_exam" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+               <div className="max-w-5xl mx-auto space-y-8">
+                 {/* Header */}
+                 <div className="text-center mb-8">
+                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 mb-4 shadow-lg">
+                     <Activity className="w-8 h-8 text-white" />
+                   </div>
+                   <h2 className="text-3xl font-bold text-slate-900 mb-2">Physical Examination</h2>
+                   <p className="text-slate-600 max-w-2xl mx-auto">Document detailed physical examination findings</p>
+                 </div>
+
+                 <div className="bg-white rounded-xl border-2 border-emerald-300 shadow-lg overflow-hidden">
+                   <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-5 text-white">
+                     <h3 className="font-bold text-lg flex items-center gap-2">
+                       <Activity className="w-6 h-6" />
+                       Physical Exam Editor
+                     </h3>
+                     <p className="text-emerald-100 text-sm mt-1">Structured examination documentation</p>
+                   </div>
+                   <div className="p-6 space-y-6 overflow-y-auto">
+                     <PhysicalExamEditor
+                       examData={note.physical_exam}
+                       onUpdate={async (examData) => {
+                         const examString = typeof examData === 'string' ? examData : JSON.stringify(examData);
+                         await base44.entities.ClinicalNote.update(noteId, { physical_exam: examString });
+                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                         toast.success("Physical exam updated");
+                       }}
+                       onAddToNote={async (examText) => {
+                         const updatedNote = (note.physical_exam || "") + examText;
+                         await base44.entities.ClinicalNote.update(noteId, { physical_exam: updatedNote });
+                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                         toast.success("Physical exam findings added to clinical note");
+                       }}
+                     />
+                   </div>
+                 </div>
+               </div>
 
                {/* Next Button */}
                <div className="flex justify-between items-center pt-4 border-t border-slate-200">
@@ -2676,22 +2989,44 @@ Format as clear, actionable clinical guidance.`,
              </TabsContent>
 
              {/* Review of Systems Tab */}
-             <TabsContent value="review_of_systems" className="p-6 space-y-6 overflow-y-auto">
-               <ReviewOfSystemsEditor
-                 rosData={note.review_of_systems}
-                 onUpdate={async (rosData) => {
-                   const rosString = typeof rosData === 'string' ? rosData : JSON.stringify(rosData);
-                   await base44.entities.ClinicalNote.update(noteId, { review_of_systems: rosString });
-                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                   toast.success("Review of systems updated");
-                 }}
-                 onAddToNote={async (rosText) => {
-                   const updatedNote = (note.review_of_systems || "") + rosText;
-                   await base44.entities.ClinicalNote.update(noteId, { review_of_systems: updatedNote });
-                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                   toast.success("Review of systems findings added to clinical note");
-                 }}
-               />
+             <TabsContent value="review_of_systems" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+               <div className="max-w-5xl mx-auto space-y-8">
+                 {/* Header */}
+                 <div className="text-center mb-8">
+                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 mb-4 shadow-lg">
+                     <Activity className="w-8 h-8 text-white" />
+                   </div>
+                   <h2 className="text-3xl font-bold text-slate-900 mb-2">Review of Systems</h2>
+                   <p className="text-slate-600 max-w-2xl mx-auto">Systematic review of symptoms by body system</p>
+                 </div>
+
+                 <div className="bg-white rounded-xl border-2 border-purple-300 shadow-lg overflow-hidden">
+                   <div className="bg-gradient-to-r from-purple-500 to-indigo-500 px-6 py-5 text-white">
+                     <h3 className="font-bold text-lg flex items-center gap-2">
+                       <Activity className="w-6 h-6" />
+                       Review of Systems Editor
+                     </h3>
+                     <p className="text-purple-100 text-sm mt-1">Comprehensive system-based symptom review</p>
+                   </div>
+                   <div className="p-6 space-y-6 overflow-y-auto">
+                     <ReviewOfSystemsEditor
+                       rosData={note.review_of_systems}
+                       onUpdate={async (rosData) => {
+                         const rosString = typeof rosData === 'string' ? rosData : JSON.stringify(rosData);
+                         await base44.entities.ClinicalNote.update(noteId, { review_of_systems: rosString });
+                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                         toast.success("Review of systems updated");
+                       }}
+                       onAddToNote={async (rosText) => {
+                         const updatedNote = (note.review_of_systems || "") + rosText;
+                         await base44.entities.ClinicalNote.update(noteId, { review_of_systems: updatedNote });
+                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                         toast.success("Review of systems findings added to clinical note");
+                       }}
+                     />
+                   </div>
+                 </div>
+               </div>
 
                {/* Next Button */}
                <div className="flex justify-between items-center pt-4 border-t border-slate-200">
@@ -2705,39 +3040,7 @@ Format as clear, actionable clinical guidance.`,
                </div>
              </TabsContent>
 
-             {/* Clinical Note Tab */}
-             <TabsContent value="clinical" className="p-6 overflow-y-auto space-y-6">
-             {/* Smart Template Applicator */}
-             <SmartTemplateApplicator
-              noteId={noteId}
-              note={note}
-              templates={templates}
-              onTemplateApplied={() => {
-                queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-              }}
-             />
 
-             {/* Clinical Note View */}
-             <ClinicalNoteView
-              note={note}
-              onUpdate={async (field, value) => {
-                await base44.entities.ClinicalNote.update(noteId, { [field]: value });
-                queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                toast.success("Updated successfully");
-              }}
-              noteTypes={templates}
-             />
-
-                     {/* Next Button */}
-                     <div className="flex justify-end pt-4 border-t border-slate-200">
-                       <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
-                         Next <ArrowLeft className="w-4 h-4 rotate-180" />
-                       </Button>
-                     </div>
-                     </TabsContent>
-
-                     {/* Guidelines & Codes Tab */}
-           <TabsContent value="guidelines" className="p-6 space-y-6 overflow-y-auto">
              {/* Clinical Guidelines Panel */}
              <div>
                <SmartGuidelinePanel
@@ -3213,12 +3516,7 @@ Return 5-10 of the most relevant and current guidelines.`,
                      <p className="text-sm text-slate-500 text-center py-8">No guideline recommendations available</p>
                    )}
                  </div>
-                 </>
-                 )}
-                 </TabsContent>
 
-                 {/* Result Analysis Tab */}
-                 <TabsContent value="imaging" className="p-6 space-y-6 overflow-y-auto">
                    <div className="flex gap-3">
                      <Button
                        variant="outline"
@@ -3318,18 +3616,7 @@ Return 5-10 of the most relevant and current guidelines.`,
                      />
                      </div>
 
-                     {/* Next Button */}
-                     <div className="flex justify-end pt-4 border-t border-slate-200">
-                       <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
-                         Next <ArrowLeft className="w-4 h-4 rotate-180" />
-                       </Button>
-                     </div>
-                     </TabsContent>
 
-
-
-                     {/* Initial Impression Tab */}
-                     <TabsContent value="initial_impression" className="p-6 space-y-6 overflow-y-auto">
                      <div className="max-w-4xl mx-auto space-y-6">
                      {/* Header */}
                      <div className="text-center mb-8">
@@ -3395,7 +3682,7 @@ Return 5-10 of the most relevant and current guidelines.`,
                            <Button
                              onClick={generateDifferentialDiagnosis}
                              disabled={loadingDifferential}
-                             className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white gap-2 shadow-lg py-6 text-base"
+                             className="w-full bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white gap-2 shadow-lg py-6 text-base"
                            >
                              {loadingDifferential ? (
                                <><Loader2 className="w-5 h-5 animate-spin" /> Generating Differential Diagnoses...</>
@@ -3520,20 +3807,7 @@ Return 5-10 of the most relevant and current guidelines.`,
                      )}
                      </div>
 
-                     {/* Next Button */}
-                     <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                       <div className="flex gap-2">
-                         <TabDataPreview tabId="imaging" note={note} />
-                         <ClinicalNotePreviewButton note={note} />
-                       </div>
-                       <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
-                         Next <ArrowLeft className="w-4 h-4 rotate-180" />
-                       </Button>
-                     </div>
-                     </TabsContent>
 
-                     {/* Calculators Tab */}
-                     <TabsContent value="calculators" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
                        <div className="max-w-5xl mx-auto space-y-8">
                          {/* Header */}
                          <div className="text-center mb-8">
@@ -3712,113 +3986,9 @@ Return 5-10 of the most relevant and current guidelines.`,
                          </div>
                        </div>
 
-                       {/* Next Button */}
-                       <div className="flex justify-end pt-4 border-t border-slate-200">
-                         <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
-                           Next <ArrowLeft className="w-4 h-4 rotate-180" />
-                         </Button>
-                       </div>
-                     </TabsContent>
 
-                     {/* MDM Tab */}
-                     <TabsContent value="mdm" className="p-6 space-y-6 overflow-y-auto">
-                     <AIMDMAnalyzer
-                     note={note}
-                     onAddToNote={async (mdmText) => {
-                       const updatedNote = {
-                         medical_history: (note.medical_history || "") + mdmText
-                       };
-                       await base44.entities.ClinicalNote.update(noteId, updatedNote);
-                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                       toast.success("Medical Decision Making added to clinical note");
-                     }}
-                     />
 
-                     {/* Next Button */}
-                     <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                       <div className="flex gap-2">
-                         <TabDataPreview tabId="calculators" note={note} />
-                         <ClinicalNotePreviewButton note={note} />
-                       </div>
-                       <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
-                         Next <ArrowLeft className="w-4 h-4 rotate-180" />
-                       </Button>
-                     </div>
-                     </TabsContent>
 
-                     {/* Plan Tab */}
-                                     <TabsContent value="plan" className="p-6 space-y-6 overflow-y-auto">
-                                       {/* AI Treatment Plan Analyzer */}
-                                       <AITreatmentPlanAnalyzer
-                                         note={note}
-                                         onAddToPlan={async (planText) => {
-                                           const updatedPlan = (note.plan || "") + planText;
-                                           await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
-                                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                                         }}
-                                       />
-
-                                       {/* AI Guideline Suggestions */}
-                                       <AIGuidelineSuggestions
-                                         note={note}
-                                         onAddToPlan={async (text) => {
-                                           await base44.entities.ClinicalNote.update(noteId, { plan: (note.plan || "") + text });
-                                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                                         }}
-                                       />
-
-                                       {/* Workflow Automation */}
-                                       <ClinicalWorkflowAutomation
-                                         note={note}
-                                         noteId={noteId}
-                                         onUpdateNote={async (updates) => {
-                                           await base44.entities.ClinicalNote.update(noteId, updates);
-                                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                                         }}
-                                       />
-
-                       <>
-                     {/* Follow-up Tests */}
-                       <div>
-                         <div className="flex items-center justify-between mb-4">
-                           <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                             <Beaker className="w-4 h-4 text-emerald-600" />
-                             Suggested Follow-up Tests & Consultations
-                           </h3>
-                         </div>
-
-                         {loadingFollowUp ? (
-                           <div className="flex items-center gap-3 text-slate-500 py-8">
-                             <Loader2 className="w-5 h-5 animate-spin" />
-                             <span className="text-sm">Generating suggestions...</span>
-                           </div>
-                         ) : followUpTests.length > 0 ? (
-                           <div className="space-y-3">
-                             {followUpTests.map((test, idx) => (
-                               <div key={idx} className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-                                 <p className="font-semibold text-sm text-slate-900">{test.test_name}</p>
-                                 <div className="mt-2 flex gap-4 flex-wrap">
-                                   <span className={`text-xs px-2 py-1 rounded font-medium ${
-                                     test.type === 'lab' ? 'bg-blue-100 text-blue-700' :
-                                     test.type === 'imaging' ? 'bg-purple-100 text-purple-700' :
-                                     test.type === 'consult' ? 'bg-orange-100 text-orange-700' :
-                                     'bg-slate-100 text-slate-700'
-                                   }`}>{test.type.charAt(0).toUpperCase() + test.type.slice(1)}</span>
-                                   <span className="text-xs text-slate-600"><strong>Timing:</strong> {test.timing}</span>
-                                 </div>
-                                 <p className="text-xs text-slate-600 mt-3">{test.clinical_rationale}</p>
-                               </div>
-                             ))}
-                           </div>
-                         ) : (
-                           <p className="text-sm text-slate-500 text-center py-8">No follow-up tests suggested</p>
-                         )}
-                       </div>
-                       </>
-                       </TabsContent>
-
-                 {/* Treatments Tab */}
-                 <TabsContent value="treatments" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
                    <div className="max-w-6xl mx-auto space-y-8">
                      {/* Header Section */}
                      <div className="text-center mb-8">
@@ -4346,21 +4516,7 @@ Return 5-10 of the most relevant and current guidelines.`,
                        </>
                      )}
 
-                     {/* Next Button */}
-                     <div className="flex justify-between items-center pt-4">
-                       <div className="flex gap-2">
-                         <TabDataPreview tabId="plan" note={note} />
-                         <ClinicalNotePreviewButton note={note} />
-                       </div>
-                       <Button onClick={handleNext} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg gap-2 px-6 py-3 text-base">
-                         Continue <ArrowLeft className="w-5 h-5 rotate-180" />
-                       </Button>
-                     </div>
-                     </div>
-                     </TabsContent>
 
-                     {/* Laboratory Tab */}
-                     <TabsContent value="laboratory" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
                        <div className="max-w-5xl mx-auto space-y-8">
                          {/* Header Section */}
                          <div className="text-center mb-8">
@@ -4555,20 +4711,7 @@ Return 5-10 of the most relevant and current guidelines.`,
                          )}
                        </div>
 
-                       {/* Next Button */}
-                       <div className="flex justify-between items-center pt-4">
-                         <div className="flex gap-2">
-                           <TabDataPreview tabId="treatments" note={note} />
-                           <ClinicalNotePreviewButton note={note} />
-                         </div>
-                         <Button onClick={handleNext} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg gap-2 px-6 py-3 text-base">
-                           Continue <ArrowLeft className="w-5 h-5 rotate-180" />
-                         </Button>
-                       </div>
-                     </TabsContent>
 
-                     {/* Imaging Recommendations Tab */}
-                     <TabsContent value="imaging_recommendations" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
                        <div className="max-w-5xl mx-auto space-y-8">
                          {/* Header Section */}
                          <div className="text-center mb-8">
@@ -4770,20 +4913,7 @@ Return 5-10 of the most relevant and current guidelines.`,
                          )}
                        </div>
 
-                       {/* Next Button */}
-                       <div className="flex justify-between items-center pt-4">
-                         <div className="flex gap-2">
-                           <TabDataPreview tabId="laboratory" note={note} />
-                           <ClinicalNotePreviewButton note={note} />
-                         </div>
-                         <Button onClick={handleNext} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg gap-2 px-6 py-3 text-base">
-                           Continue <ArrowLeft className="w-5 h-5 rotate-180" />
-                         </Button>
-                       </div>
-                     </TabsContent>
 
-                       {/* Final Impression Tab */}
-                       <TabsContent value="final_impression" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
                        <div className="max-w-5xl mx-auto space-y-8">
                        {/* Header Section */}
                        <div className="text-center mb-8">
@@ -5055,46 +5185,88 @@ Return 5-10 of the most relevant and current guidelines.`,
                        )}
                        </div>
 
-                       {/* Next Button */}
-                       <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                         <div className="flex gap-2">
-                           <TabDataPreview tabId="final_impression" note={note} />
-                           <ClinicalNotePreviewButton note={note} />
-                         </div>
-                         <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
-                           Next <ArrowLeft className="w-4 h-4 rotate-180" />
-                         </Button>
-                       </div>
-                       </TabsContent>
-
-                     {/* Finalize Note Tab */}
-                 <TabsContent value="finalize" className="p-6 space-y-6 overflow-y-auto">
-                   <div className="max-w-2xl mx-auto space-y-6">
+                 {/* Finalize Tab */}
+                 <TabsContent value="finalize" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+                   <div className="max-w-5xl mx-auto space-y-8">
+                     {/* Header */}
                      <div className="text-center mb-8">
-                       <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
-                         <Check className="w-8 h-8 text-emerald-600" />
+                       <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 mb-4 shadow-lg">
+                         <Check className="w-8 h-8 text-white" />
                        </div>
-                       <h2 className="text-2xl font-bold text-slate-900 mb-2">Finalize Clinical Note</h2>
-                       <p className="text-slate-600">Review and finalize your clinical documentation</p>
+                       <h2 className="text-3xl font-bold text-slate-900 mb-2">Review & Export</h2>
+                       <p className="text-slate-600 max-w-2xl mx-auto">Final review, patient education, and export options</p>
                      </div>
 
-                     {/* Process Clinical Note Button */}
-                     <Button
-                       onClick={extractStructuredData}
-                       disabled={extractingData || !note.raw_note}
-                       className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white gap-2 shadow-lg rounded-xl py-6 text-base"
-                     >
-                       {extractingData ? (
-                         <><Loader2 className="w-5 h-5 animate-spin" /> Processing...</>
-                       ) : (
-                         <><Sparkles className="w-5 h-5" /> Process Clinical Note</>
-                       )}
-                     </Button>
+                     {/* Export Options */}
+                     <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-lg overflow-hidden">
+                       <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-5 text-white">
+                         <h3 className="font-bold text-lg flex items-center gap-2">
+                           <Download className="w-6 h-6" />
+                           Export Clinical Note
+                         </h3>
+                         <p className="text-indigo-100 text-sm mt-1">Download note in various formats</p>
+                       </div>
+                       <div className="p-6 flex gap-4">
+                         <Button
+                           onClick={() => exportNote('pdf')}
+                           disabled={exportingFormat === 'pdf'}
+                           className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white gap-2"
+                         >
+                           {exportingFormat === 'pdf' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                           Export PDF
+                         </Button>
+                         <Button
+                           onClick={() => exportNote('text')}
+                           disabled={exportingFormat === 'text'}
+                           variant="outline"
+                           className="flex-1 gap-2"
+                         >
+                           {exportingFormat === 'text' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                           Export Text
+                         </Button>
+                       </div>
+                     </div>
+
+                     {/* Patient Education */}
+                     <div className="bg-white rounded-xl border-2 border-green-300 shadow-lg overflow-hidden">
+                       <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-5 text-white">
+                         <h3 className="font-bold text-lg flex items-center gap-2">
+                           <BookOpen className="w-6 h-6" />
+                           Patient Education
+                         </h3>
+                         <p className="text-green-100 text-sm mt-1">Generate patient-friendly education materials</p>
+                       </div>
+                       <div className="p-6">
+                         {!patientEducation ? (
+                           <Button
+                             onClick={generatePatientEducation}
+                             disabled={generatingEducation || !note.diagnoses || note.diagnoses.length === 0}
+                             className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white gap-2"
+                           >
+                             {generatingEducation ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</> : <><Sparkles className="w-4 h-4" /> Generate Patient Education</>}
+                           </Button>
+                         ) : (
+                           <div className="space-y-4">
+                             <div className="flex gap-3">
+                               <Button onClick={() => downloadPatientEducation('pdf')} variant="outline" className="flex-1 gap-2">
+                                 <Download className="w-4 h-4" /> PDF
+                               </Button>
+                               <Button onClick={() => downloadPatientEducation('text')} variant="outline" className="flex-1 gap-2">
+                                 <Download className="w-4 h-4" /> Text
+                               </Button>
+                             </div>
+                             <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                               <p className="text-sm text-green-900 font-semibold">✓ Patient education materials ready</p>
+                             </div>
+                           </div>
+                         )}
+                       </div>
+                     </div>
 
                      <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
                        <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                         <AlertCircle className="w-5 h-5 text-blue-600" />
-                         Before Finalizing
+                         <Check className="w-5 h-5 text-blue-600" />
+                         Review Checklist
                        </h3>
                        <ul className="space-y-3 text-sm text-slate-700">
                          <li className="flex items-start gap-2">
@@ -5120,51 +5292,30 @@ Return 5-10 of the most relevant and current guidelines.`,
                        </ul>
                      </div>
 
-                     {note.status !== "finalized" && (
-                       <div className="bg-white border-2 border-slate-200 rounded-xl p-6">
-                         <h3 className="font-semibold text-slate-900 mb-4">Note Status</h3>
-                         <div className="grid grid-cols-2 gap-4 mb-6">
-                           <div>
-                             <p className="text-xs text-slate-500 mb-1">Current Status</p>
-                             <Badge className={statusColors[note.status] || statusColors.draft}>{note.status || "draft"}</Badge>
-                           </div>
-                           <div>
-                             <p className="text-xs text-slate-500 mb-1">Last Modified</p>
-                             <p className="text-sm text-slate-900">{note.updated_date ? format(new Date(note.updated_date), "MMM d, h:mm a") : "N/A"}</p>
-                           </div>
+                     {/* Note Status */}
+                     <div className="bg-white border-2 border-slate-200 rounded-xl p-6">
+                       <h3 className="font-semibold text-slate-900 mb-4">Note Status</h3>
+                       <div className="grid grid-cols-2 gap-4">
+                         <div>
+                           <p className="text-xs text-slate-500 mb-1">Current Status</p>
+                           <Badge className={statusColors[note.status] || statusColors.draft}>{note.status || "draft"}</Badge>
                          </div>
-
-                         <p className="text-sm text-slate-600 text-center mb-4">
-                           Click "Process Clinical Note" above to extract data and finalize
-                         </p>
+                         <div>
+                           <p className="text-xs text-slate-500 mb-1">Last Modified</p>
+                           <p className="text-sm text-slate-900">{note.updated_date ? format(new Date(note.updated_date), "MMM d, h:mm a") : "N/A"}</p>
+                         </div>
                        </div>
-                     )}
-
-                     <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-8 text-center">
-                       <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
-                         <Check className="w-10 h-10 text-emerald-600" />
-                       </div>
-                       <h3 className="text-xl font-bold text-slate-900 mb-2">Clinical Note</h3>
-                       <p className="text-slate-700 mb-4">
-                         Created on {note.created_date ? format(new Date(note.created_date), "MMMM d, yyyy 'at' h:mm a") : "N/A"}
-                       </p>
                      </div>
-                     </div>
+                   </div>
 
-                     {/* Next Button */}
-                     <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                       <div className="flex gap-2">
-                         <TabDataPreview tabId="mdm" note={note} />
-                         <ClinicalNotePreviewButton note={note} />
-                       </div>
-                       <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
-                         Next <ArrowLeft className="w-4 h-4 rotate-180" />
-                       </Button>
-                     </div>
-                     </TabsContent>
+                   {/* Next Button */}
+                   <div className="flex justify-end pt-4 border-t border-slate-200">
+                     <ClinicalNotePreviewButton note={note} />
+                   </div>
+                 </TabsContent>
 
-                     {/* Patient Education Tab */}
-                 <TabsContent value="patient_education" className="p-6 space-y-6 overflow-y-auto">
+                 {/* Old tabs hidden */}
+                 <TabsContent value="patient_education" className="hidden">
                    <div className="max-w-3xl mx-auto space-y-6">
                      {/* Generate Education Button */}
                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-5">
@@ -5346,46 +5497,8 @@ Return 5-10 of the most relevant and current guidelines.`,
                        </>
                        )}
 
-                       {!patientEducation && !generatingEducation && (
-                       <div className="text-center py-12">
-                       <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                       <p className="text-slate-500">Patient education will appear here after generation</p>
-                       </div>
-                       )}
-                       </div>
                        </TabsContent>
-
-                       {/* Research Tab */}
-                 <TabsContent value="research" className="p-6 overflow-y-auto">
-                   <MedicalLiteratureSearch
-                     noteContext={{
-                       chief_complaint: note.chief_complaint,
-                       diagnoses: note.diagnoses,
-                       assessment: note.assessment,
-                       plan: note.plan
-                     }}
-                     onAddToNote={async (citationText) => {
-                       try {
-                         const updatedPlan = (note.plan || "") + "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nREFERENCES\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" + citationText;
-                         await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
-                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                       } catch (error) {
-                         console.error("Failed to add citations:", error);
-                         toast.error("Failed to add citations to note");
-                       }
-                     }}
-                   />
-
-                   {/* Next Button */}
-                   <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                     <div className="flex gap-2">
-                       <TabDataPreview tabId="patient_education" note={note} />
-                       <ClinicalNotePreviewButton note={note} />
-                     </div>
-                     <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
-                       Next <ArrowLeft className="w-4 h-4 rotate-180" />
-                     </Button>
-                   </div>
+                 <TabsContent value="research" className="hidden">
                    </TabsContent>
 
                    {/* Diagnoses Tab */}
@@ -5672,6 +5785,18 @@ Return 5-10 of the most relevant and current guidelines.`,
 
 
        </div>
+
+       {/* AI Sidebar */}
+       <AISidebar
+         isOpen={aiSidebarOpen}
+         onClose={() => setAiSidebarOpen(false)}
+         note={note}
+         noteId={noteId}
+         onUpdateNote={async (updates) => {
+           await base44.entities.ClinicalNote.update(noteId, updates);
+           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+         }}
+       />
 
        {/* Create Template Dialog */}
       <CreateTemplateFromNote

@@ -1520,11 +1520,11 @@ Generated: ${new Date().toLocaleString()}
        <motion.div
          initial={{ opacity: 0, y: 12 }}
          animate={{ opacity: 1, y: 0 }}
-         className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden"
+         className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden pb-16"
        >
-         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex items-start">
-               {/* ── Sidebar Navigation ── */}
-               <div className="w-56 bg-slate-50 border-r border-slate-200 flex-shrink-0 sticky top-8 self-start overflow-y-auto flex flex-col" style={{ maxHeight: 'calc(100vh - 4rem)' }}>
+         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col">
+               {/* ── Bottom Navigation Bar ── */}
+               <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-lg z-50 flex flex-col" style={{ maxHeight: '50vh' }}>
                  {/* Sidebar header */}
                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Sections</span>

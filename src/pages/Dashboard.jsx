@@ -65,7 +65,8 @@ const availableWidgets = [
   { id: "news", name: "Medical News", component: "MedicalNews" },
   { id: "calendar", name: "Calendar", component: "Calendar" },
   { id: "tasklist", name: "Task List", component: "TaskList" },
-  { id: "progress", name: "Progress Tracker", component: "ProgressTracker" }
+  { id: "progress", name: "Progress Tracker", component: "ProgressTracker" },
+  { id: "workflow", name: "Workflow Automation", component: "WorkflowAutomation" }
 ];
 
 export default function Dashboard() {

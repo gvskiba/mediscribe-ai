@@ -77,6 +77,7 @@ import CreatinineClearanceCalculator from "../components/calculators/CreatinineC
 import MedicationDosingLookup from "../components/calculators/MedicationDosingLookup";
 import ProceduresPanel from "../components/procedures/ProceduresPanel";
 import ClinicalWorkflowAutomation from "../components/notes/ClinicalWorkflowAutomation";
+import AIGuidelineSuggestions from "../components/notes/AIGuidelineSuggestions";
 
 const TAB_GROUPS = [
   {

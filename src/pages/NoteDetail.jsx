@@ -5700,10 +5700,10 @@ Return 5-10 of the most relevant and current guidelines.`,
                            </Button>
                          </div>
                        </TabsContent>
-                     ))}
-                     </div>
-                     </Tabs>
-                     </motion.div>
+                       ))}
+                       </div>
+                       </Tabs>
+                       </motion.div>
 
 
        </div>

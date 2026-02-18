@@ -3910,6 +3910,15 @@ Return 5-10 of the most relevant and current guidelines.`,
                                          }}
                                        />
 
+                                       {/* AI Guideline Suggestions */}
+                                       <AIGuidelineSuggestions
+                                         note={note}
+                                         onAddToPlan={async (text) => {
+                                           await base44.entities.ClinicalNote.update(noteId, { plan: (note.plan || "") + text });
+                                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                         }}
+                                       />
+
                                        {/* Workflow Automation */}
                                        <ClinicalWorkflowAutomation
                                          note={note}

@@ -1500,7 +1500,7 @@ Generated: ${new Date().toLocaleString()}
                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Sections</span>
                    <div className="flex items-center gap-1">
                      <button
-                       onClick={() => setCustomizing(!customizing)}
+                      onClick={() => { if (!customizing) setTabGroups(mergedTabGroups); setCustomizing(!customizing); }}
                        title={customizing ? "Done customizing" : "Customize layout"}
                        className={`p-1.5 rounded-md transition-colors ${customizing ? 'bg-blue-100 text-blue-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200'}`}
                      >

@@ -5417,10 +5417,11 @@ Return 5-10 of the most relevant and current guidelines.`,
                        </div>
                        </>
                        )}
-
+                       </div>
                        </TabsContent>
-                 <TabsContent value="research" className="hidden">
-                   </TabsContent>
+
+                       <TabsContent value="research" className="hidden">
+                       </TabsContent>
 
                    {/* Diagnoses Tab */}
                      <TabsContent value="diagnoses" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">

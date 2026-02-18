@@ -1520,11 +1520,11 @@ Generated: ${new Date().toLocaleString()}
 
                  <TabsList className="flex-1 flex flex-col items-stretch bg-transparent p-2 gap-0">
                    {customizing ? (
-                     <DragDropContext onDragEnd={handleDragEnd}>
-                       <Droppable droppableId="groups" type="GROUP">
-                         {(provided) => (
-                           <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-1">
-                             {tabGroups.map((group, groupIndex) => {
+                    <DragDropContext onDragEnd={handleDragEnd}>
+                      <Droppable droppableId="groups" type="GROUP">
+                        {(provided) => (
+                          <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-1">
+                            {displayedGroups.map((group, groupIndex) => {
                                const isCollapsed = collapsedGroups.has(group.id);
                                const accentColors = {
                                  blue: 'bg-blue-500', purple: 'bg-purple-500',

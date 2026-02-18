@@ -4128,14 +4128,10 @@ Return 5-10 of the most relevant and current guidelines.`,
                      )}
 
                      {/* Next Button */}
-                     <div className="flex justify-between items-center pt-4">
-                       <div className="flex gap-2">
-                         <TabDataPreview tabId="plan" note={note} />
-                         <ClinicalNotePreviewButton note={note} />
-                       </div>
-                       <Button onClick={handleNext} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg gap-2 px-6 py-3 text-base">
-                         Continue <ArrowLeft className="w-5 h-5 rotate-180" />
-                       </Button>
+                     <div className="flex justify-end pt-4">
+                     <Button onClick={handleNext} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg gap-2 px-6 py-3 text-base">
+                       Continue <ArrowLeft className="w-5 h-5 rotate-180" />
+                     </Button>
                      </div>
                      </div>
                      </TabsContent>

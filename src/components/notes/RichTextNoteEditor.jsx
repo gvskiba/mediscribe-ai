@@ -43,7 +43,7 @@ export default function RichTextNoteEditor({ value, onChange, onBlur, placeholde
     };
   };
 
-  const modules = {
+  const modules = React.useMemo(() => ({
     toolbar: {
       container: [
         [{ header: [1, 2, 3, false] }],
@@ -62,16 +62,7 @@ export default function RichTextNoteEditor({ value, onChange, onBlur, placeholde
     clipboard: {
       matchVisual: false
     }
-  };
-
-  const formats = [
-    "header",
-    "bold", "italic", "underline", "strike",
-    "list", "bullet", "indent",
-    "blockquote", "code-block",
-    "link", "image",
-    "color", "background"
-  ];
+  }), []);
 
   return (
     <div className="rich-text-editor">

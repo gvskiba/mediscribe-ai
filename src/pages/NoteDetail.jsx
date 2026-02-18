@@ -1525,30 +1525,38 @@ Generated: ${new Date().toLocaleString()}
          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col">
                {/* ── Bottom Navigation Bar ── */}
                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-lg z-50 flex flex-col" style={{ maxHeight: '50vh' }}>
-                 {/* Sidebar header */}
-                 <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
-                   <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Sections</span>
-                   <div className="flex items-center gap-1">
-                     <button
-                       onClick={() => setCustomizing(!customizing)}
-                       title={customizing ? "Done customizing" : "Customize layout"}
-                       className={`p-1.5 rounded-md transition-colors ${customizing ? 'bg-blue-100 text-blue-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200'}`}
-                     >
-                       <Settings className="w-3.5 h-3.5" />
-                     </button>
-                     {customizing && (
-                       <button
-                         onClick={resetTabLayout}
-                         title="Reset to default"
-                         className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-colors"
-                       >
-                         <RotateCcw className="w-3.5 h-3.5" />
-                       </button>
-                     )}
-                   </div>
-                 </div>
+                 {/* Bottom bar header - group labels row */}
+                  <div className="flex items-center justify-between px-4 py-2 border-b border-slate-100">
+                    <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
+                      {tabGroups.map(group => {
+                        const accentColors = { blue:'bg-blue-500', purple:'bg-purple-500', emerald:'bg-emerald-500', rose:'bg-rose-500', amber:'bg-amber-500' };
+                        const hasActive = group.tabs.some(t => t.id === activeTab);
+                        return (
+                          <button
+                            key={group.id}
+                            onClick={() => setCollapsedGroups(prev => { const s = new Set(prev); s.has(group.id) ? s.delete(group.id) : s.add(group.id); return s; })}
+                            className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${hasActive ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+                          >
+                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${accentColors[group.color] || 'bg-slate-400'}`} />
+                            {group.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                      <button onClick={() => setCustomizing(!customizing)} title={customizing ? "Done" : "Customize"} className={`p-1.5 rounded-md transition-colors ${customizing ? 'bg-blue-100 text-blue-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200'}`}>
+                        <Settings className="w-3.5 h-3.5" />
+                      </button>
+                      {customizing && (
+                        <button onClick={resetTabLayout} title="Reset" className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-colors">
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
-                 <TabsList className="flex-1 flex flex-col items-stretch bg-transparent p-2 gap-0">
+                  {/* Tabs row - scrollable horizontal */}
+                  <TabsList className="flex flex-row items-center bg-transparent px-2 py-1.5 gap-1 overflow-x-auto scrollbar-hide w-full">
                    {customizing ? (
                      <DragDropContext onDragEnd={handleDragEnd}>
                        <Droppable droppableId="groups" type="GROUP">

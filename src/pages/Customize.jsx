@@ -284,6 +284,57 @@ export default function Customize() {
               </motion.div>
             )}
 
+            {/* NOTES CUSTOMIZATION */}
+            {activeSection === 'notes' && (
+              <motion.div key="notes-extend" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+                <Card title="Tab Groups & Customization" subtitle="Customize note-taking interface tabs and groups">
+                  <div className="space-y-6">
+                    <div>
+                      <p className="text-sm font-medium text-slate-700 mb-3">Tab Organization</p>
+                      <p className="text-sm text-slate-600 mb-4">You can customize how tabs appear in the clinical note editor. Changes are saved automatically in the Note Detail page when you click the customize button.</p>
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p className="text-sm text-blue-900"><strong>How to customize:</strong></p>
+                        <ul className="text-sm text-blue-800 mt-2 space-y-1 ml-4">
+                          <li>• Open any clinical note</li>
+                          <li>• Click the <strong>⚙️ Customize</strong> button in the bottom-right tab bar</li>
+                          <li>• Drag to reorder tab groups and tabs</li>
+                          <li>• Create new custom tabs in any group</li>
+                          <li>• Rename or delete custom groups</li>
+                          <li>• Click <strong>Done</strong> to save changes</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-slate-100 pt-4">
+                      <p className="text-sm font-medium text-slate-700 mb-3">Default Tab Groups</p>
+                      <div className="space-y-2">
+                        {[
+                          { name: 'History', color: 'blue', tabs: ['HPI & Intake', 'Chief Complaint', 'Review of Systems'] },
+                          { name: 'Physical Exam', color: 'purple', tabs: ['Physical Exam'] },
+                          { name: 'Assessment', color: 'emerald', tabs: ['Analysis', 'Calculators', 'Laboratory', 'Imaging', 'MDM', 'Diagnoses'] },
+                          { name: 'Plan', color: 'rose', tabs: ['Treatment Plan', 'Medications', 'Procedures', 'Guidelines'] },
+                          { name: 'Finalization', color: 'amber', tabs: ['Final Impression', 'Clinical Note', 'Summary', 'Patient Education', 'Research', 'AI Assistant'] },
+                        ].map((group, idx) => (
+                          <div key={idx} className="flex items-start gap-3 p-3 rounded-lg border border-slate-200 bg-slate-50">
+                            <div className={`w-3 h-3 rounded-full mt-1.5 flex-shrink-0 bg-${group.color}-500`} />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-slate-900">{group.name}</p>
+                              <p className="text-xs text-slate-500 mt-1">{group.tabs.join(', ')}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="border-t border-slate-100 pt-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
+                      <p className="text-sm font-medium text-amber-900">💡 Pro Tip</p>
+                      <p className="text-sm text-amber-800 mt-1">Create custom tab groups to organize notes by specialty, patient type, or workflow. Your customization is persistent and will apply to all new notes you create.</p>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+
             {/* Save */}
             {activeSection !== 'account' && (
               <div className="pt-2">

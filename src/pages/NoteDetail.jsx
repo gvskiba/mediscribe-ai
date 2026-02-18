@@ -491,21 +491,44 @@ export default function NoteDetail() {
 
   // Merge default and custom groups
   useEffect(() => {
-    if (customTabGroups.length > 0) {
-      const mergedGroups = [
-        ...TAB_GROUPS,
-        ...customTabGroups.map(g => ({
-          id: g.group_id,
-          label: g.label,
-          color: g.color,
-          tabs: g.tabs.map(t => ({
-            ...t,
-            icon: Plus
-          }))
-        }))
-      ];
-      setTabGroups(mergedGroups);
-    }
+    // Build a map of persisted tab layouts (keyed by group_id)
+    const persistedMap = {};
+    customTabGroups.forEach(g => {
+      persistedMap[g.group_id] = g;
+    });
+
+    // For each default group, use persisted tab order if available
+    const defaultGroupsMerged = TAB_GROUPS.map(g => {
+      const persisted = persistedMap[g.id];
+      if (persisted) {
+        // Reconstruct tabs: persisted defines order, but we keep original icon/label for default tabs
+        const tabById = Object.fromEntries(g.tabs.map(t => [t.id, t]));
+        const reorderedTabs = persisted.tabs.map(t => ({
+          ...tabById[t.id],
+          ...t,
+          icon: tabById[t.id]?.icon || Plus,
+          label: tabById[t.id]?.label || t.label,
+        }));
+        // Append any default tabs not in persisted (newly added defaults)
+        const persistedIds = new Set(persisted.tabs.map(t => t.id));
+        const extraTabs = g.tabs.filter(t => !persistedIds.has(t.id));
+        return { ...g, tabs: [...reorderedTabs, ...extraTabs] };
+      }
+      return g;
+    });
+
+    // Append purely custom groups
+    const defaultIds = new Set(TAB_GROUPS.map(g => g.id));
+    const customOnlyGroups = customTabGroups
+      .filter(g => !defaultIds.has(g.group_id))
+      .map(g => ({
+        id: g.group_id,
+        label: g.label,
+        color: g.color,
+        tabs: g.tabs.map(t => ({ ...t, icon: Plus }))
+      }));
+
+    setTabGroups([...defaultGroupsMerged, ...customOnlyGroups]);
   }, [customTabGroups]);
 
   // Auto-save functionality

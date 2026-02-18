@@ -477,10 +477,10 @@ Provide:
                       </div>
                     )}
                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">All Standard Studies</p>
-                    <div className="grid sm:grid-cols-2 gap-2">
-                      {IMAGING_ORDERS.filter(i => !recommendedImaging.find(r => r.id === i.id)).map(study => (
-                        <ImagingCard key={study.id} study={study} added={addedItems.has(study.id)} onAdd={() => addImagingToNote(study)} />
-                      ))}
+                     <div className="grid sm:grid-cols-2 gap-2">
+                       {IMAGING_ORDERS.filter(i => !recommendedImaging.find(r => r.id === i.id)).map(study => (
+                         <ImagingCard key={study.id} study={study} added={addedItems.has(study.id)} onAdd={() => addImagingToNote(study)} onReview={() => openImagingReview([study])} />
+                       ))}
                     </div>
                   </div>
                 </motion.div>

@@ -1880,27 +1880,6 @@ Generated: ${new Date().toLocaleString()}
                    <div className="flex gap-3 mt-4">
                      <Button
                        onClick={async () => {
-                         const currentNote = queryClient.getQueryData(["note", noteId]);
-                         const currentRawNote = currentNote?.raw_note || "";
-                         const plainText = new DOMParser().parseFromString(currentRawNote, "text/html").body.innerText || "";
-                         const updatedHPI = (currentNote?.history_of_present_illness || "") + "\n\n" + plainText;
-                         // Save both raw_note (in case unsaved) and updated HPI together
-                         await base44.entities.ClinicalNote.update(noteId, { 
-                           raw_note: currentRawNote,
-                           history_of_present_illness: updatedHPI 
-                         });
-                         queryClient.setQueryData(["note", noteId], (old) => ({
-                           ...old,
-                           history_of_present_illness: updatedHPI
-                         }));
-                         toast.success("Raw data added to Clinical Note");
-                       }}
-                       variant="outline"
-                       className="flex-1 gap-2"
-                     >
-                       <Plus className="w-4 h-4" /> Add to Clinical Note
-                     </Button>
-                   </div>
                  </div>
                </div>
 

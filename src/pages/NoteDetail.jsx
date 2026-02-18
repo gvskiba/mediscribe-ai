@@ -1525,20 +1525,22 @@ Generated: ${new Date().toLocaleString()}
        >
          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                {/* ── Header Navigation ── */}
-               <div className="bg-white border-b border-slate-200 px-4" onClick={() => openDropdown && setOpenDropdown(null)}>
-                 <TabsList className="flex items-center gap-0 bg-transparent h-auto py-0 w-full justify-start overflow-x-auto scrollbar-hide">
+               <div className="bg-white border-b border-slate-200 px-4 relative" onClick={() => openDropdown && setOpenDropdown(null)}>
+                 <div className="flex items-center gap-0 w-full overflow-x-auto scrollbar-hide">
                    {/* Clinical Note - Primary prominent tab */}
-                   <TabsTrigger
-                     value="clinical"
-                     className={`flex items-center gap-1.5 px-4 py-3 text-sm font-semibold border-b-2 rounded-none transition-all flex-shrink-0 ${
-                       activeTab === 'clinical'
-                         ? 'border-blue-600 text-blue-600 bg-blue-50/50'
-                         : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
-                     }`}
-                   >
-                     <FileText className="w-4 h-4" />
-                     Clinical Note
-                   </TabsTrigger>
+                   <TabsList className="bg-transparent h-auto p-0 flex items-center gap-0">
+                     <TabsTrigger
+                       value="clinical"
+                       className={`flex items-center gap-1.5 px-4 py-3 text-sm font-semibold border-b-2 rounded-none transition-all flex-shrink-0 ${
+                         activeTab === 'clinical'
+                           ? 'border-blue-600 text-blue-600 bg-blue-50/50'
+                           : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
+                       }`}
+                     >
+                       <FileText className="w-4 h-4" />
+                       Clinical Note
+                     </TabsTrigger>
+                   </TabsList>
 
                    <div className="w-px h-6 bg-slate-200 mx-1 flex-shrink-0" />
 
@@ -1579,26 +1581,28 @@ Generated: ${new Date().toLocaleString()}
                                animate={{ opacity: 1, y: 0, scale: 1 }}
                                exit={{ opacity: 0, y: -4, scale: 0.97 }}
                                transition={{ duration: 0.12 }}
-                               className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 min-w-[180px] py-1.5 overflow-hidden"
+                               className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-[100] min-w-[180px] py-1.5 overflow-hidden"
                                onClick={(e) => e.stopPropagation()}
                              >
                                <div className="px-3 py-1.5 mb-1 border-b border-slate-100">
                                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{group.label}</span>
                                </div>
-                               {groupTabs.map((tab) => (
-                                 <TabsTrigger
-                                   key={tab.id}
-                                   value={tab.id}
-                                   onClick={() => setOpenDropdown(null)}
-                                   className={`w-full justify-start px-3 py-2 text-sm rounded-none transition-all ${
-                                     activeTab === tab.id
-                                       ? `bg-slate-100 font-semibold ${accentText[group.color] || 'text-blue-600'}`
-                                       : 'text-slate-700 hover:bg-slate-50'
-                                   }`}
-                                 >
-                                   {tab.label}
-                                 </TabsTrigger>
-                               ))}
+                               <TabsList className="flex flex-col bg-transparent h-auto p-0 w-full">
+                                 {groupTabs.map((tab) => (
+                                   <TabsTrigger
+                                     key={tab.id}
+                                     value={tab.id}
+                                     onClick={() => setOpenDropdown(null)}
+                                     className={`w-full justify-start px-3 py-2 text-sm rounded-none transition-all ${
+                                       activeTab === tab.id
+                                         ? `bg-slate-100 font-semibold ${accentText[group.color] || 'text-blue-600'}`
+                                         : 'text-slate-700 hover:bg-slate-50'
+                                     }`}
+                                   >
+                                     {tab.label}
+                                   </TabsTrigger>
+                                 ))}
+                               </TabsList>
                              </motion.div>
                            )}
                          </AnimatePresence>
@@ -1612,7 +1616,7 @@ Generated: ${new Date().toLocaleString()}
                      <TabDataPreview tabId={activeTab} note={note} />
                      <ClinicalNotePreviewButton note={note} />
                    </div>
-                 </TabsList>
+                 </div>
                </div>
 
                {/* Dialogs */}

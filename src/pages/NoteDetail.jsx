@@ -2286,195 +2286,47 @@ Generated: ${new Date().toLocaleString()}
                            )}
 
                            <Button
-                             size="sm"
-                             onClick={async () => {
-                               try {
-                                 const result = await base44.integrations.Core.InvokeLLM({
-                                   prompt: `Perform a comprehensive clinical analysis of this patient case:
-
-PATIENT INFORMATION:
-Name: ${note.patient_name}
-Age: ${note.patient_age || "Not specified"}
-Gender: ${note.patient_gender || "Not specified"}
-
-CHIEF COMPLAINT:
-${note.chief_complaint || "Not documented"}
-
-HISTORY OF PRESENT ILLNESS:
-${note.history_of_present_illness || "Not documented"}
-
-VITAL SIGNS:
-${note.vital_signs ? JSON.stringify(note.vital_signs, null, 2) : "Not documented"}
-
-REVIEW OF SYSTEMS:
-${note.review_of_systems || "Not documented"}
-
-PHYSICAL EXAM:
-${note.physical_exam || "Not documented"}
-
-CURRENT ASSESSMENT:
-${note.assessment || "Not documented"}
-
-DIAGNOSES:
-${note.diagnoses?.join(", ") || "Not documented"}
-
-MEDICATIONS:
-${note.medications?.join(", ") || "Not documented"}
-
-TREATMENT PLAN:
-${note.plan || "Not documented"}
-
-Provide a comprehensive clinical analysis including:
-
-1. **Clinical Summary**: Brief overview of the case (2-3 sentences)
-
-2. **Key Findings**: Most important clinical findings from history, exam, and data
-
-3. **Diagnostic Certainty**: Assessment of diagnostic confidence and what additional information would be helpful
-
-4. **Risk Stratification**: Identify any high-risk features or red flags
-
-5. **Gaps in Documentation**: What information is missing or needs clarification
-
-6. **Recommended Next Steps**: Prioritized list of immediate actions needed
-
-7. **Clinical Pearls**: Evidence-based insights or considerations for this presentation
-
-Format as clear, actionable clinical guidance.`,
-                           add_context_from_internet: true,
-                           response_json_schema: {
-                             type: "object",
-                             properties: {
-                               clinical_summary: { type: "string" },
-                               key_findings: { type: "array", items: { type: "string" } },
-                               diagnostic_certainty: { type: "string" },
-                               risk_stratification: { type: "array", items: { type: "string" } },
-                               documentation_gaps: { type: "array", items: { type: "string" } },
-                               recommended_next_steps: { type: "array", items: { type: "string" } },
-                               clinical_pearls: { type: "array", items: { type: "string" } }
+                             const updatedDiagnoses = [...(note.diagnoses || []), diff.diagnosis];
+                             await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
+                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                             toast.success("Diagnosis added");
+                             } catch (error) {
+                             console.error("Failed to add diagnosis:", error);
+                             toast.error("Failed to add diagnosis");
                              }
-                           }
-                         });
-
-                         // Display the analysis
-                         const analysisDiv = document.getElementById('comprehensive-analysis');
-                         if (analysisDiv) {
-                           analysisDiv.innerHTML = `
-                             <div class="space-y-6 mt-6">
-                               <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6">
-                                 <h4 class="font-bold text-blue-900 mb-3 flex items-center gap-2 text-lg">
-                                   📋 Clinical Summary
-                                 </h4>
-                                 <p class="text-base text-slate-700 leading-relaxed">${result.clinical_summary}</p>
-                               </div>
-
-                               <div class="bg-white border-2 border-emerald-200 rounded-xl p-6">
-                                 <h4 class="font-bold text-emerald-900 mb-3 flex items-center gap-2 text-lg">
-                                   ✓ Key Findings
-                                 </h4>
-                                 <ul class="space-y-2">
-                                   ${result.key_findings.map(finding => `
-                                     <li class="text-sm text-slate-700 flex items-start gap-3">
-                                       <span class="text-emerald-600 font-bold mt-0.5">•</span>
-                                       <span>${finding}</span>
-                                     </li>
-                                   `).join('')}
-                                 </ul>
-                               </div>
-
-                               <div class="bg-purple-50 border-2 border-purple-200 rounded-xl p-6">
-                                 <h4 class="font-bold text-purple-900 mb-3 flex items-center gap-2 text-lg">
-                                   🎯 Diagnostic Certainty
-                                 </h4>
-                                 <p class="text-sm text-slate-700 leading-relaxed">${result.diagnostic_certainty}</p>
-                               </div>
-
-                               ${result.risk_stratification?.length > 0 ? `
-                                 <div class="bg-red-50 border-2 border-red-200 rounded-xl p-6">
-                                   <h4 class="font-bold text-red-900 mb-3 flex items-center gap-2 text-lg">
-                                     ⚠️ Risk Stratification
-                                   </h4>
-                                   <ul class="space-y-2">
-                                     ${result.risk_stratification.map(risk => `
-                                       <li class="text-sm text-red-800 flex items-start gap-3">
-                                         <span class="text-red-600 font-bold mt-0.5">⚠️</span>
-                                         <span>${risk}</span>
-                                       </li>
-                                     `).join('')}
-                                   </ul>
-                                 </div>
-                               ` : ''}
-
-                               ${result.documentation_gaps?.length > 0 ? `
-                                 <div class="bg-amber-50 border-2 border-amber-200 rounded-xl p-6">
-                                   <h4 class="font-bold text-amber-900 mb-3 flex items-center gap-2 text-lg">
-                                     📝 Documentation Gaps
-                                   </h4>
-                                   <ul class="space-y-2">
-                                     ${result.documentation_gaps.map(gap => `
-                                       <li class="text-sm text-amber-800 flex items-start gap-3">
-                                         <span class="text-amber-600 font-bold mt-0.5">•</span>
-                                         <span>${gap}</span>
-                                       </li>
-                                     `).join('')}
-                                   </ul>
-                                 </div>
-                               ` : ''}
-
-                               <div class="bg-gradient-to-r from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-xl p-6">
-                                 <h4 class="font-bold text-cyan-900 mb-3 flex items-center gap-2 text-lg">
-                                   🎯 Recommended Next Steps
-                                 </h4>
-                                 <ol class="space-y-2">
-                                   ${result.recommended_next_steps.map((step, i) => `
-                                     <li class="text-sm text-slate-700 flex items-start gap-3">
-                                       <span class="font-bold text-cyan-600 bg-cyan-100 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0">${i + 1}</span>
-                                       <span>${step}</span>
-                                     </li>
-                                   `).join('')}
-                                 </ol>
-                               </div>
-
-                               ${result.clinical_pearls?.length > 0 ? `
-                                 <div class="bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-xl p-6">
-                                   <h4 class="font-bold text-indigo-900 mb-3 flex items-center gap-2 text-lg">
-                                     💡 Clinical Pearls
-                                   </h4>
-                                   <ul class="space-y-2">
-                                     ${result.clinical_pearls.map(pearl => `
-                                       <li class="text-sm text-indigo-800 flex items-start gap-3">
-                                         <span class="text-indigo-600 font-bold mt-0.5">💡</span>
-                                         <span>${pearl}</span>
-                                       </li>
-                                     `).join('')}
-                                   </ul>
-                                 </div>
-                               ` : ''}
+                             }}
+                             className="gap-1.5 bg-rose-600 hover:bg-rose-700 text-white mt-3"
+                             >
+                             <Plus className="w-3.5 h-3.5" /> Add Diagnosis
+                             </Button>
                              </div>
-                           `;
-                         }
+                             </motion.div>
+                             ))}
 
-                         toast.success("Comprehensive analysis complete");
-                       } catch (error) {
-                         console.error("Analysis failed:", error);
-                         toast.error("Failed to analyze clinical note");
-                       } finally {
-                         setAnalyzingRawData(false);
-                       }
-                     }}
-                     disabled={analyzingRawData || !note.chief_complaint}
-                     className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white gap-2 shadow-lg py-6 text-base"
-                   >
-                     {analyzingRawData ? (
-                       <><Loader2 className="w-5 h-5 animate-spin" /> Analyzing...</>
-                     ) : (
-                       <><Sparkles className="w-5 h-5" /> Analyze Clinical Note</>
-                     )}
-                   </Button>
+                             <Button
+                             onClick={async () => {
+                             try {
+                             const diffText = differentialDiagnosis.map((diff, idx) => 
+                             `${idx + 1}. ${diff.diagnosis} (Likelihood: ${diff.likelihood_rank}/5)\n   ${diff.clinical_reasoning}`
+                             ).join('\n\n');
 
-                   <div id="comprehensive-analysis"></div>
-                 </div>
-               </div>
+                             const updatedAssessment = (note.assessment || "") + "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nDIFFERENTIAL DIAGNOSIS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" + diffText;
+                             await base44.entities.ClinicalNote.update(noteId, { assessment: updatedAssessment });
+                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                             toast.success("Differential diagnosis added to assessment");
+                             } catch (error) {
+                             console.error("Failed to add differential:", error);
+                             toast.error("Failed to add differential diagnosis");
+                             }
+                             }}
+                             className="w-full bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white gap-2 shadow-lg"
+                             >
+                             <Plus className="w-4 h-4" /> Add All to Assessment
+                             </Button>
+                             </div>
+                             </div>
+                             )}
+                             </div>
              </div>
 
              {/* Next Button */}

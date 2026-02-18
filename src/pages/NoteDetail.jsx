@@ -1660,7 +1660,7 @@ Generated: ${new Date().toLocaleString()}
                  </div>
                )}
 
-               <div className="overflow-hidden">
+               <div>
 
            {/* HPI & Intake Tab */}
            <TabsContent value="hpi_intake" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">

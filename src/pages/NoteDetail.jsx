@@ -1832,52 +1832,7 @@ Generated: ${new Date().toLocaleString()}
                  </div>
                </div>
 
-               {/* Raw Patient Data */}
-               <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
-                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-                   <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                     <FileText className="w-5 h-5 text-slate-600" />
-                     Raw Patient Data / Notes
-                   </h3>
-                   <div className="flex items-center gap-2">
-                     <Button
-                       size="sm"
-                       variant="outline"
-                       onClick={async () => {
-                         await navigator.clipboard.writeText(note.raw_note || "");
-                         toast.success("Copied to clipboard");
-                       }}
-                       className="gap-2"
-                     >
-                       <FileCode className="w-4 h-4" /> Copy
-                     </Button>
-                   </div>
-                 </div>
-                 <div className="p-6">
-                   {isRecording && (
-                     <div className="flex items-center gap-2 text-red-600 animate-pulse mb-4 bg-red-50 rounded-lg p-3 border border-red-200">
-                       <div className="w-3 h-3 rounded-full bg-red-600"></div>
-                       <span className="text-sm font-medium">Recording in progress...</span>
-                     </div>
-                   )}
-                   <RichTextNoteEditor
-                     value={note.raw_note || ""}
-                     onChange={(content) => {
-                       queryClient.setQueryData(["note", noteId], (old) => ({
-                         ...old,
-                         raw_note: content
-                       }));
-                     }}
-                     onBlur={async () => {
-                       const currentNote = queryClient.getQueryData(["note", noteId]);
-                       await base44.entities.ClinicalNote.update(noteId, { raw_note: currentNote.raw_note });
-                       setLastSaved(new Date().toISOString());
-                       toast.success("Note saved at " + format(new Date(), "h:mm:ss a"));
-                     }}
-                     placeholder="Type or paste raw patient data, encounter notes, or transcription here... Use the toolbar for formatting, code blocks, and images."
-                   />
-                   </div>
-                   </div>
+
 
                    {/* AI Analysis */}
                <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-lg overflow-hidden">

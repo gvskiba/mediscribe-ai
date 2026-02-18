@@ -536,10 +536,21 @@ Provide:
         </div>
       )}
     </div>
+
+      {/* Review Modal */}
+      {reviewModal && (
+        <OrderReviewModal
+          open={!!reviewModal}
+          onClose={() => setReviewModal(null)}
+          orders={reviewModal.orders}
+          type={reviewModal.type}
+          onConfirm={reviewModal.type === "lab" ? handleConfirmLabs : handleConfirmImaging}
+        />
+      )}
   );
 }
 
-function PanelCard({ panel, added, onAdd }) {
+function PanelCard({ panel, added, onAdd, onReview }) {
   const colors = {
     blue: "border-blue-200 hover:border-blue-400",
     indigo: "border-indigo-200 hover:border-indigo-400",

@@ -547,6 +547,7 @@ Provide:
           onConfirm={reviewModal.type === "lab" ? handleConfirmLabs : handleConfirmImaging}
         />
       )}
+    </div>
   );
 }
 

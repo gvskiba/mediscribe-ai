@@ -1685,21 +1685,48 @@ Generated: ${new Date().toLocaleString()}
                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 mb-4 shadow-lg">
                    <Activity className="w-8 h-8 text-white" />
                  </div>
-                 <h2 className="text-3xl font-bold text-slate-900 mb-2">HPI & Patient Intake</h2>
-                 <p className="text-slate-600 max-w-2xl mx-auto">Voice transcription and AI analysis of patient data</p>
+                 <h2 className="text-3xl font-bold text-slate-900 mb-2">Patient Intake</h2>
+                 <p className="text-slate-600 max-w-2xl mx-auto">Collect chief complaint and patient information</p>
                </div>
 
-               {/* Voice Recording Section */}
+               {/* Chief Complaint Input */}
                <div className="bg-white rounded-xl border-2 border-blue-300 shadow-lg overflow-hidden">
                  <div className="bg-gradient-to-r from-blue-500 to-indigo-500 px-6 py-5 text-white">
                    <h3 className="font-bold text-lg flex items-center gap-2">
                      <Activity className="w-6 h-6" />
-                     Voice Transcription
+                     Chief Complaint
                    </h3>
-                   <p className="text-blue-100 text-sm mt-1">Record patient encounter or dictate notes</p>
+                   <p className="text-blue-100 text-sm mt-1">Primary reason for the patient's visit</p>
                  </div>
                  <div className="p-6">
-                   <div className="flex items-center justify-center gap-4 mb-4">
+                   <textarea
+                     value={note.chief_complaint || ""}
+                     onChange={(e) => {
+                       queryClient.setQueryData(["note", noteId], (old) => ({
+                         ...old,
+                         chief_complaint: e.target.value
+                       }));
+                     }}
+                     onBlur={async (e) => {
+                       await base44.entities.ClinicalNote.update(noteId, { chief_complaint: e.target.value });
+                       setLastSaved(new Date().toISOString());
+                       toast.success("Note saved at " + format(new Date(), "h:mm:ss a"));
+                     }}
+                     placeholder="Enter the patient's chief complaint (e.g., 'Chest pain for 2 hours', 'Persistent cough for 1 week')..."
+                     className="w-full px-4 py-4 rounded-lg border-2 border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all text-base text-slate-900 placeholder:text-slate-400 resize-none"
+                     rows="5"
+                   />
+                 </div>
+               </div>
+
+               {/* Raw Patient Data */}
+               <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
+                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                   <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                     <FileText className="w-5 h-5 text-slate-600" />
+                     Raw Patient Data / Notes
+                   </h3>
+                   <div className="flex items-center gap-2">
                      <Button
                        onClick={async () => {
                          if (isRecording) {

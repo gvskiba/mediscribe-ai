@@ -1598,12 +1598,22 @@ Generated: ${new Date().toLocaleString()}
                        );
                      })}
                    </div>
-                   <div className="flex items-center gap-1 flex-shrink-0 border-l border-slate-100 pl-2 ml-1 py-1">
-                     <button onClick={() => setCustomizing(!customizing)} title={customizing ? "Done" : "Customize"} className={`p-1.5 rounded-md transition-colors ${customizing ? 'bg-blue-100 text-blue-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}>
+                   <div className="flex items-center gap-1 flex-shrink-0 border-l border-slate-100 pl-2 ml-1 py-1" style={{ pointerEvents: 'auto', zIndex: 10, position: 'relative' }}>
+                     <button
+                       type="button"
+                       onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setCustomizing(c => !c); }}
+                       title={customizing ? "Done" : "Customize"}
+                       className={`p-1.5 rounded-md transition-colors cursor-pointer ${customizing ? 'bg-blue-100 text-blue-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+                     >
                        <Settings className="w-3.5 h-3.5" />
                      </button>
                      {customizing && (
-                       <button onClick={resetTabLayout} title="Reset" className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+                       <button
+                         type="button"
+                         onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); resetTabLayout(); }}
+                         title="Reset"
+                         className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                       >
                          <RotateCcw className="w-3.5 h-3.5" />
                        </button>
                      )}

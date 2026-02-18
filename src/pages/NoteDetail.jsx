@@ -2139,7 +2139,8 @@ Generated: ${new Date().toLocaleString()}
                    <div className="flex gap-3 mt-4">
                      <Button
                        onClick={async () => {
-                         const updatedNote = (note.history_of_present_illness || "") + "\n\n" + note.raw_note;
+                         const plainText = new DOMParser().parseFromString(note.raw_note || "", "text/html").body.innerText || "";
+                         const updatedNote = (note.history_of_present_illness || "") + "\n\n" + plainText;
                          await base44.entities.ClinicalNote.update(noteId, { history_of_present_illness: updatedNote });
                          queryClient.invalidateQueries({ queryKey: ["note", noteId] });
                          toast.success("Raw data added to Clinical Note");

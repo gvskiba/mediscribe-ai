@@ -1492,7 +1492,7 @@ Generated: ${new Date().toLocaleString()}
          animate={{ opacity: 1, y: 0 }}
          className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden"
        >
-         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex items-start">
+         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-row items-start">
                {/* ── Sidebar Navigation ── */}
                <div className="w-56 bg-slate-50 border-r border-slate-200 flex-shrink-0 sticky top-8 self-start overflow-y-auto flex flex-col" style={{ maxHeight: 'calc(100vh - 4rem)' }}>
                  {/* Sidebar header */}

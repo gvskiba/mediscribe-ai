@@ -5529,7 +5529,7 @@ Return 5-10 of the most relevant and current guidelines.`,
                      </TabsContent>
 
                      {/* Custom Tabs Content */}
-                     {tabGroups.flatMap(g => g.tabs).filter(t => t.id.startsWith('custom_')).map(tab => (
+                     {displayedGroups.flatMap(g => g.tabs).filter(t => t.id.startsWith('custom_')).map(tab => (
                        <TabsContent key={tab.id} value={tab.id} className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
                          <div className="max-w-5xl mx-auto space-y-8">
                            <div className="text-center mb-8">

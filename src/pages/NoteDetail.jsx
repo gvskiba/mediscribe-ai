@@ -1541,7 +1541,7 @@ Generated: ${new Date().toLocaleString()}
                    };
                    if (!activeGroup) return null;
                    return (
-                     <TabsList className="flex flex-row items-center bg-slate-50 border-b border-slate-200 px-3 py-1.5 gap-1 overflow-x-auto scrollbar-hide w-full flex-shrink-0 h-auto">
+                     <TabsList className="flex flex-row items-center justify-center bg-slate-50 border-b border-slate-200 px-3 py-1.5 gap-1 overflow-x-auto scrollbar-hide w-full flex-shrink-0 h-auto">
                        {activeGroup.tabs.map((tab) => {
                          const isActive = activeTab === tab.id;
                          return (

@@ -386,40 +386,13 @@ Generate the complete clinical note now.`;
             </h3>
             <p className="text-slate-200 text-sm mt-1">All clinical data integrated from all tabs</p>
           </div>
-          <div className="p-6 space-y-6 max-h-[800px] overflow-y-auto">
-            {/* Chief Complaint */}
-            {note.chief_complaint && (
-              <div>
-                <h4 className="text-sm font-bold text-blue-900 mb-2 pb-2 border-b-2 border-blue-200">CHIEF COMPLAINT</h4>
-                <p className="text-sm text-slate-700 leading-relaxed">{note.chief_complaint}</p>
-              </div>
-            )}
+          <div className="p-6 space-y-4 max-h-[800px] overflow-y-auto">
+            <AggregateSectionText title="CHIEF COMPLAINT" field="chief_complaint" value={note.chief_complaint} borderColor="border-blue-200" titleColor="text-blue-900" onSave={onUpdate} />
+            <AggregateSectionText title="HISTORY OF PRESENT ILLNESS" field="history_of_present_illness" value={note.history_of_present_illness} borderColor="border-purple-200" titleColor="text-purple-900" onSave={onUpdate} />
+            <AggregateSectionText title="REVIEW OF SYSTEMS" field="review_of_systems" value={note.review_of_systems} borderColor="border-amber-200" titleColor="text-amber-900" onSave={onUpdate} />
+            <AggregateSectionText title="PHYSICAL EXAMINATION" field="physical_exam" value={note.physical_exam} borderColor="border-green-200" titleColor="text-green-900" onSave={onUpdate} />
 
-            {/* History of Present Illness */}
-            {note.history_of_present_illness && (
-              <div>
-                <h4 className="text-sm font-bold text-purple-900 mb-2 pb-2 border-b-2 border-purple-200">HISTORY OF PRESENT ILLNESS</h4>
-                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{note.history_of_present_illness}</p>
-              </div>
-            )}
-
-            {/* Review of Systems */}
-            {note.review_of_systems && (
-              <div>
-                <h4 className="text-sm font-bold text-amber-900 mb-2 pb-2 border-b-2 border-amber-200">REVIEW OF SYSTEMS</h4>
-                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{note.review_of_systems}</p>
-              </div>
-            )}
-
-            {/* Physical Examination */}
-            {note.physical_exam && (
-              <div>
-                <h4 className="text-sm font-bold text-green-900 mb-2 pb-2 border-b-2 border-green-200">PHYSICAL EXAMINATION</h4>
-                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{note.physical_exam}</p>
-              </div>
-            )}
-
-            {/* Vital Signs */}
+            {/* Vital Signs (read-only display) */}
             {note.vital_signs && Object.keys(note.vital_signs).length > 0 && (
               <div>
                 <h4 className="text-sm font-bold text-emerald-900 mb-2 pb-2 border-b-2 border-emerald-200">VITAL SIGNS</h4>
@@ -470,82 +443,13 @@ Generate the complete clinical note now.`;
               </div>
             )}
 
-            {/* Assessment */}
-            {note.assessment && (
-              <div>
-                <h4 className="text-sm font-bold text-indigo-900 mb-2 pb-2 border-b-2 border-indigo-200">ASSESSMENT</h4>
-                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{note.assessment}</p>
-              </div>
-            )}
-
-            {/* Diagnoses */}
-            {note.diagnoses && note.diagnoses.length > 0 && (
-              <div>
-                <h4 className="text-sm font-bold text-blue-900 mb-2 pb-2 border-b-2 border-blue-200">DIAGNOSES</h4>
-                <ul className="space-y-2">
-                  {note.diagnoses.map((diag, idx) => (
-                    <li key={idx} className="text-sm text-slate-700 flex items-start gap-2 bg-blue-50 p-3 rounded-lg border border-blue-200">
-                      <span className="text-blue-600 font-bold">{idx + 1}.</span>
-                      <span>{diag}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Treatment Plan */}
-            {note.plan && (
-              <div>
-                <h4 className="text-sm font-bold text-rose-900 mb-2 pb-2 border-b-2 border-rose-200">PLAN</h4>
-                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{note.plan}</p>
-              </div>
-            )}
-
-            {/* Medications */}
-            {note.medications && note.medications.length > 0 && (
-              <div>
-                <h4 className="text-sm font-bold text-green-900 mb-2 pb-2 border-b-2 border-green-200">MEDICATIONS</h4>
-                <ul className="space-y-2">
-                  {note.medications.map((med, idx) => (
-                    <li key={idx} className="text-sm text-slate-700 flex items-start gap-2 bg-green-50 p-3 rounded-lg border border-green-200">
-                      <span className="text-green-600 font-bold">{idx + 1}.</span>
-                      <span>{med}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Medical History */}
-            {note.medical_history && (
-              <div>
-                <h4 className="text-sm font-bold text-slate-900 mb-2 pb-2 border-b-2 border-slate-200">MEDICAL HISTORY</h4>
-                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{note.medical_history}</p>
-              </div>
-            )}
-
-            {/* Allergies */}
-            {note.allergies && note.allergies.length > 0 && (
-              <div>
-                <h4 className="text-sm font-bold text-red-900 mb-2 pb-2 border-b-2 border-red-200">ALLERGIES</h4>
-                <ul className="space-y-2">
-                  {note.allergies.map((allergy, idx) => (
-                    <li key={idx} className="text-sm text-slate-700 flex items-start gap-2 bg-red-50 p-3 rounded-lg border border-red-200">
-                      <span className="text-red-600 font-bold">⚠️</span>
-                      <span>{allergy}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Clinical Impression */}
-            {note.clinical_impression && (
-              <div>
-                <h4 className="text-sm font-bold text-slate-900 mb-2 pb-2 border-b-2 border-slate-200">FINAL CLINICAL IMPRESSION</h4>
-                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{note.clinical_impression}</p>
-              </div>
-            )}
+            <AggregateSectionText title="ASSESSMENT" field="assessment" value={note.assessment} borderColor="border-indigo-200" titleColor="text-indigo-900" onSave={onUpdate} />
+            <AggregateSectionArray title="DIAGNOSES" field="diagnoses" items={note.diagnoses} borderColor="border-blue-200" titleColor="text-blue-900" itemBg="bg-blue-50 border-blue-200" itemNumColor="text-blue-600" onSave={onUpdate} />
+            <AggregateSectionText title="PLAN" field="plan" value={note.plan} borderColor="border-rose-200" titleColor="text-rose-900" onSave={onUpdate} />
+            <AggregateSectionArray title="MEDICATIONS" field="medications" items={note.medications} borderColor="border-green-200" titleColor="text-green-900" itemBg="bg-green-50 border-green-200" itemNumColor="text-green-600" onSave={onUpdate} />
+            <AggregateSectionText title="MEDICAL HISTORY" field="medical_history" value={note.medical_history} borderColor="border-slate-200" titleColor="text-slate-900" onSave={onUpdate} />
+            <AggregateSectionArray title="ALLERGIES" field="allergies" items={note.allergies} borderColor="border-red-200" titleColor="text-red-900" itemBg="bg-red-50 border-red-200" itemNumColor="text-red-600" onSave={onUpdate} isAllergy />
+            <AggregateSectionText title="FINAL CLINICAL IMPRESSION" field="clinical_impression" value={note.clinical_impression} borderColor="border-slate-200" titleColor="text-slate-900" onSave={onUpdate} />
           </div>
         </div>
       )}

@@ -194,7 +194,8 @@ export default function NoteDetail() {
   const [collapsedGroups, setCollapsedGroups] = useState(new Set());
   const [customizing, setCustomizing] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const [activeTab, setActiveTab] = useState("ai_assistant");
+  const [activeTab, setActiveTab] = useState("clinical");
+  const [openDropdown, setOpenDropdown] = useState(null);
   const [showCreateTabDialog, setShowCreateTabDialog] = useState(false);
   const [selectedGroupForNewTab, setSelectedGroupForNewTab] = useState(null);
   const [newTabName, setNewTabName] = useState("");

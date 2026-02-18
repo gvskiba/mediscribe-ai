@@ -2286,19 +2286,22 @@ Generated: ${new Date().toLocaleString()}
                            )}
 
                            <Button
-                             const updatedDiagnoses = [...(note.diagnoses || []), diff.diagnosis];
-                             await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
-                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                             toast.success("Diagnosis added");
-                             } catch (error) {
-                             console.error("Failed to add diagnosis:", error);
-                             toast.error("Failed to add diagnosis");
-                             }
+                             size="sm"
+                             onClick={async () => {
+                               try {
+                                 const updatedDiagnoses = [...(note.diagnoses || []), diff.diagnosis];
+                                 await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
+                                 queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                 toast.success("Diagnosis added");
+                               } catch (error) {
+                                 console.error("Failed to add diagnosis:", error);
+                                 toast.error("Failed to add diagnosis");
+                               }
                              }}
                              className="gap-1.5 bg-rose-600 hover:bg-rose-700 text-white mt-3"
-                             >
+                           >
                              <Plus className="w-3.5 h-3.5" /> Add Diagnosis
-                             </Button>
+                           </Button>
                              </div>
                              </motion.div>
                              ))}

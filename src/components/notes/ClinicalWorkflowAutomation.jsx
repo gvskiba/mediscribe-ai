@@ -405,12 +405,21 @@ Provide:
                   <div className="px-6 pb-4">
                     {recommendedPanels.length > 0 && (
                       <div className="mb-4">
-                        <p className="text-xs font-bold text-teal-700 uppercase tracking-wide mb-2 flex items-center gap-1">
-                          <Sparkles className="w-3 h-3" /> AI Recommended
-                        </p>
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs font-bold text-teal-700 uppercase tracking-wide flex items-center gap-1">
+                            <Sparkles className="w-3 h-3" /> AI Recommended
+                          </p>
+                          <Button
+                            size="sm"
+                            onClick={() => openLabReview(recommendedPanels)}
+                            className="gap-1.5 bg-teal-600 hover:bg-teal-700 text-white h-7 text-xs px-3"
+                          >
+                            <Eye className="w-3 h-3" /> Review & Add All
+                          </Button>
+                        </div>
                         <div className="grid sm:grid-cols-2 gap-2">
                           {recommendedPanels.map(panel => (
-                            <PanelCard key={panel.id} panel={panel} added={addedItems.has(panel.id)} onAdd={() => addPanelToNote(panel)} />
+                            <PanelCard key={panel.id} panel={panel} added={addedItems.has(panel.id)} onAdd={() => addPanelToNote(panel)} onReview={() => openLabReview([panel])} />
                           ))}
                         </div>
                       </div>

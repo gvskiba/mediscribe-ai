@@ -190,7 +190,7 @@ export default function NoteDetail() {
   const [linkingGuidelines, setLinkingGuidelines] = useState(false);
   const [showGuidelinePrompt, setShowGuidelinePrompt] = useState(false);
   const [noteData, setNoteData] = useState(null);
-  const [tabGroups, setTabGroups] = useState(TAB_GROUPS); // only used during drag in customize mode
+  const [tabGroups, setTabGroups] = useState(TAB_GROUPS);
   const [collapsedGroups, setCollapsedGroups] = useState(new Set());
   const [customizing, setCustomizing] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -207,7 +207,7 @@ export default function NoteDetail() {
   const [newGroupColor, setNewGroupColor] = useState("blue");
 
   const handleNext = () => {
-    const allTabs = displayedGroups.flatMap(g => g.tabs.map(t => t.id));
+    const allTabs = tabGroups.flatMap(g => g.tabs.map(t => t.id));
     const currentIndex = allTabs.indexOf(activeTab);
     if (currentIndex < allTabs.length - 1) {
       setActiveTab(allTabs[currentIndex + 1]);
@@ -310,10 +310,13 @@ export default function NoteDetail() {
 
   const resetTabLayout = async () => {
     try {
+      // Delete all custom groups
       const allCustomGroups = await base44.entities.TabGroup.list();
-      await Promise.all(allCustomGroups.map(g => base44.entities.TabGroup.delete(g.id)));
+      await Promise.all(
+        allCustomGroups.map(g => base44.entities.TabGroup.delete(g.id))
+      );
       queryClient.invalidateQueries({ queryKey: ["customTabGroups"] });
-      setCustomizing(false);
+      setTabGroups(TAB_GROUPS);
       toast.success('Tab layout reset to default');
     } catch (error) {
       console.error("Failed to reset layout:", error);
@@ -494,19 +497,26 @@ export default function NoteDetail() {
   });
 
   // Merge default and custom groups
-  const mergedTabGroups = React.useMemo(() => {
+  useEffect(() => {
+    // Build a map of persisted tab layouts (keyed by group_id)
     const persistedMap = {};
-    customTabGroups.forEach(g => { persistedMap[g.group_id] = g; });
+    customTabGroups.forEach(g => {
+      persistedMap[g.group_id] = g;
+    });
 
+    // For each default group, use persisted tab order if available
     const defaultGroupsMerged = TAB_GROUPS.map(g => {
       const persisted = persistedMap[g.id];
       if (persisted) {
+        // Reconstruct tabs: persisted defines order, but we keep original icon/label for default tabs
         const tabById = Object.fromEntries(g.tabs.map(t => [t.id, t]));
         const reorderedTabs = persisted.tabs.map(t => ({
-          ...tabById[t.id], ...t,
+          ...tabById[t.id],
+          ...t,
           icon: tabById[t.id]?.icon || Plus,
           label: tabById[t.id]?.label || t.label,
         }));
+        // Append any default tabs not in persisted (newly added defaults)
         const persistedIds = new Set(persisted.tabs.map(t => t.id));
         const extraTabs = g.tabs.filter(t => !persistedIds.has(t.id));
         return { ...g, tabs: [...reorderedTabs, ...extraTabs] };
@@ -514,16 +524,19 @@ export default function NoteDetail() {
       return g;
     });
 
+    // Append purely custom groups
     const defaultIds = new Set(TAB_GROUPS.map(g => g.id));
     const customOnlyGroups = customTabGroups
       .filter(g => !defaultIds.has(g.group_id))
-      .map(g => ({ id: g.group_id, label: g.label, color: g.color, tabs: g.tabs.map(t => ({ ...t, icon: Plus })) }));
+      .map(g => ({
+        id: g.group_id,
+        label: g.label,
+        color: g.color,
+        tabs: g.tabs.map(t => ({ ...t, icon: Plus }))
+      }));
 
-    return [...defaultGroupsMerged, ...customOnlyGroups];
+    setTabGroups([...defaultGroupsMerged, ...customOnlyGroups]);
   }, [customTabGroups]);
-
-  // The displayed groups: use drag state when customizing, else computed merged groups
-  const displayedGroups = customizing ? tabGroups : mergedTabGroups;
 
   // Auto-save functionality
   const { isSaving } = useAutoSave({
@@ -594,10 +607,30 @@ export default function NoteDetail() {
   }, [note, noteId, queryClient]);
 
   useEffect(() => {
-    if (!note?.id) return;
-    generateSummary();
-    generateICD10Suggestions();
-  }, [note?.id]);
+    if (note) {
+      if (!patientSummary && !generatingSummary) {
+        generateSummary();
+      }
+      if (!icd10Suggestions.length && !loadingIcd10) {
+        generateICD10Suggestions();
+      }
+      if (!guidelineRecommendations.length && !loadingGuidelines) {
+        fetchGuidelineRecommendations();
+      }
+      if (!drugInteractions.length && !loadingInteractions && note.medications?.length > 0) {
+        analyzeDrugInteractions();
+      }
+      if (!followUpTests.length && !loadingFollowUp && note.diagnoses?.length > 0) {
+        suggestFollowUpTests();
+      }
+      if (!differentialDiagnosis.length && !loadingDifferential && note.chief_complaint) {
+        generateDifferentialDiagnosis();
+      }
+      if (!patientEducation && !generatingEducation && note.diagnoses?.length > 0 && note.status === "finalized") {
+        generatePatientEducation();
+      }
+    }
+  }, [note?.id, note?.status, patientSummary, generatingSummary, icd10Suggestions.length, loadingIcd10, guidelineRecommendations.length, loadingGuidelines, drugInteractions.length, loadingInteractions, followUpTests.length, loadingFollowUp, differentialDiagnosis.length, loadingDifferential, patientEducation, generatingEducation]);
 
   const generateSummary = async () => {
     if (!note) return;
@@ -1489,7 +1522,7 @@ Generated: ${new Date().toLocaleString()}
          animate={{ opacity: 1, y: 0 }}
          className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden"
        >
-         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-row items-start">
+         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex items-start">
                {/* ── Sidebar Navigation ── */}
                <div className="w-56 bg-slate-50 border-r border-slate-200 flex-shrink-0 sticky top-8 self-start overflow-y-auto flex flex-col" style={{ maxHeight: 'calc(100vh - 4rem)' }}>
                  {/* Sidebar header */}
@@ -1497,7 +1530,7 @@ Generated: ${new Date().toLocaleString()}
                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Sections</span>
                    <div className="flex items-center gap-1">
                      <button
-                      onClick={() => { if (!customizing) setTabGroups(mergedTabGroups); setCustomizing(!customizing); }}
+                       onClick={() => setCustomizing(!customizing)}
                        title={customizing ? "Done customizing" : "Customize layout"}
                        className={`p-1.5 rounded-md transition-colors ${customizing ? 'bg-blue-100 text-blue-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200'}`}
                      >
@@ -1517,11 +1550,11 @@ Generated: ${new Date().toLocaleString()}
 
                  <TabsList className="flex-1 flex flex-col items-stretch bg-transparent p-2 gap-0">
                    {customizing ? (
-                    <DragDropContext onDragEnd={handleDragEnd}>
-                      <Droppable droppableId="groups" type="GROUP">
-                        {(provided) => (
-                          <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-1">
-                            {displayedGroups.map((group, groupIndex) => {
+                     <DragDropContext onDragEnd={handleDragEnd}>
+                       <Droppable droppableId="groups" type="GROUP">
+                         {(provided) => (
+                           <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-1">
+                             {tabGroups.map((group, groupIndex) => {
                                const isCollapsed = collapsedGroups.has(group.id);
                                const accentColors = {
                                  blue: 'bg-blue-500', purple: 'bg-purple-500',
@@ -1637,7 +1670,7 @@ Generated: ${new Date().toLocaleString()}
                      </DragDropContext>
                    ) : (
                      <div className="space-y-1">
-                       {displayedGroups.map((group) => {
+                       {tabGroups.map((group) => {
                          const isCollapsed = collapsedGroups.has(group.id);
                          const accentColors = {
                            blue: 'bg-blue-500', purple: 'bg-purple-500',
@@ -5526,7 +5559,7 @@ Return 5-10 of the most relevant and current guidelines.`,
                      </TabsContent>
 
                      {/* Custom Tabs Content */}
-                     {displayedGroups.flatMap(g => g.tabs).filter(t => t.id.startsWith('custom_')).map(tab => (
+                     {tabGroups.flatMap(g => g.tabs).filter(t => t.id.startsWith('custom_')).map(tab => (
                        <TabsContent key={tab.id} value={tab.id} className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
                          <div className="max-w-5xl mx-auto space-y-8">
                            <div className="text-center mb-8">

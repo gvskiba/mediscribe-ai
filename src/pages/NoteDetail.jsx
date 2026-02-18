@@ -607,30 +607,10 @@ export default function NoteDetail() {
   }, [note, noteId, queryClient]);
 
   useEffect(() => {
-    if (note) {
-      if (!patientSummary && !generatingSummary) {
-        generateSummary();
-      }
-      if (!icd10Suggestions.length && !loadingIcd10) {
-        generateICD10Suggestions();
-      }
-      if (!guidelineRecommendations.length && !loadingGuidelines) {
-        fetchGuidelineRecommendations();
-      }
-      if (!drugInteractions.length && !loadingInteractions && note.medications?.length > 0) {
-        analyzeDrugInteractions();
-      }
-      if (!followUpTests.length && !loadingFollowUp && note.diagnoses?.length > 0) {
-        suggestFollowUpTests();
-      }
-      if (!differentialDiagnosis.length && !loadingDifferential && note.chief_complaint) {
-        generateDifferentialDiagnosis();
-      }
-      if (!patientEducation && !generatingEducation && note.diagnoses?.length > 0 && note.status === "finalized") {
-        generatePatientEducation();
-      }
-    }
-  }, [note?.id, note?.status, patientSummary, generatingSummary, icd10Suggestions.length, loadingIcd10, guidelineRecommendations.length, loadingGuidelines, drugInteractions.length, loadingInteractions, followUpTests.length, loadingFollowUp, differentialDiagnosis.length, loadingDifferential, patientEducation, generatingEducation]);
+    if (!note?.id) return;
+    generateSummary();
+    generateICD10Suggestions();
+  }, [note?.id]);
 
   const generateSummary = async () => {
     if (!note) return;

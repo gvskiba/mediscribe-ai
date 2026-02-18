@@ -2215,13 +2215,13 @@ Generated: ${new Date().toLocaleString()}
                        ) : (
                          <><Sparkles className="w-5 h-5" /> Generate Differential Diagnoses</>
                        )}
-                     </Button>
-                   )}
-                   </div>
-                   </div>
+                       </Button>
+                       )}
+                       </div>
+                       </div>
 
-                   {/* Differential Diagnosis Results */}
-                   {differentialDiagnosis.length > 0 && (
+                       {/* Differential Diagnosis Results */}
+                       {differentialDiagnosis.length > 0 && (
                    <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
                    <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
                      <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">

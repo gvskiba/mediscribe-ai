@@ -522,6 +522,9 @@ export default function NoteDetail() {
     return [...defaultGroupsMerged, ...customOnlyGroups];
   }, [customTabGroups]);
 
+  // The displayed groups: use drag state when customizing, else computed merged groups
+  const displayedGroups = customizing ? tabGroups : mergedTabGroups;
+
   // Auto-save functionality
   const { isSaving } = useAutoSave({
     data: noteData || note,

@@ -168,6 +168,54 @@ Provide:
     toast.success(`${panel.label} added to plan`);
   };
 
+  const openLabReview = (panels) => {
+    const orders = panels.map(p => ({
+      id: p.id, label: p.label,
+      detail: p.tests.slice(0, 3).join(", ") + (p.tests.length > 3 ? "..." : ""),
+    }));
+    setReviewModal({ type: "lab", orders, panels });
+  };
+
+  const openImagingReview = (studies) => {
+    const orders = studies.map(s => ({
+      id: s.id, label: s.label,
+      detail: `${s.modality} — ${s.body_part}`,
+    }));
+    setReviewModal({ type: "imaging", orders, studies });
+  };
+
+  const handleConfirmLabs = async (confirmedOrders, noteText) => {
+    let text = "\n\nLAB ORDERS:\n";
+    confirmedOrders.forEach(order => {
+      const panel = LAB_PANELS.find(p => p.id === order.id);
+      text += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nLAB ORDER: ${order.label}\n`;
+      if (panel) text += panel.tests.map(t => `• ${t}`).join("\n") + "\n";
+    });
+    if (noteText) text += `\nNote: ${noteText}\n`;
+    await onUpdateNote({ plan: (note.plan || "") + text });
+    setAddedItems(prev => {
+      const next = new Set(prev);
+      confirmedOrders.forEach(o => next.add(o.id));
+      return next;
+    });
+    toast.success(`${confirmedOrders.length} lab panel(s) added to plan`);
+  };
+
+  const handleConfirmImaging = async (confirmedOrders, noteText) => {
+    let text = "\n\nIMAGING ORDERS:\n";
+    confirmedOrders.forEach(order => {
+      text += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nIMAGING ORDER: ${order.label}\n${order.detail ? `${order.detail}\n` : ""}`;
+    });
+    if (noteText) text += `\nNote: ${noteText}\n`;
+    await onUpdateNote({ plan: (note.plan || "") + text });
+    setAddedItems(prev => {
+      const next = new Set(prev);
+      confirmedOrders.forEach(o => next.add(o.id));
+      return next;
+    });
+    toast.success(`${confirmedOrders.length} imaging order(s) added to plan`);
+  };
+
   const addImagingToNote = async (study) => {
     if (addedItems.has(study.id)) return;
     const text = `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nIMAGING ORDER: ${study.label}\nModality: ${study.modality} | Body Part: ${study.body_part}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;

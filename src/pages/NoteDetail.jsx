@@ -76,6 +76,7 @@ import BMICalculator from "../components/calculators/BMICalculator";
 import CreatinineClearanceCalculator from "../components/calculators/CreatinineClearanceCalculator";
 import MedicationDosingLookup from "../components/calculators/MedicationDosingLookup";
 import ProceduresPanel from "../components/procedures/ProceduresPanel";
+import ClinicalWorkflowAutomation from "../components/notes/ClinicalWorkflowAutomation";
 
 const TAB_GROUPS = [
   {

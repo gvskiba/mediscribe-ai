@@ -190,7 +190,7 @@ export default function NoteDetail() {
   const [linkingGuidelines, setLinkingGuidelines] = useState(false);
   const [showGuidelinePrompt, setShowGuidelinePrompt] = useState(false);
   const [noteData, setNoteData] = useState(null);
-  const [tabGroups, setTabGroups] = useState(TAB_GROUPS);
+  const [tabGroups, setTabGroups] = useState(TAB_GROUPS); // only used during drag in customize mode
   const [collapsedGroups, setCollapsedGroups] = useState(new Set());
   const [customizing, setCustomizing] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);

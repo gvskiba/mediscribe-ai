@@ -567,13 +567,22 @@ function PanelCard({ panel, added, onAdd, onReview }) {
         <p className="text-xs font-semibold text-slate-800 leading-tight">{panel.label}</p>
         <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{panel.tests.slice(0, 3).join(", ")}...</p>
       </div>
-      <button
-        onClick={onAdd}
-        disabled={added}
-        className={`flex-shrink-0 p-1.5 rounded-lg transition-all ${added ? "bg-emerald-100 text-emerald-600" : "bg-teal-100 text-teal-700 hover:bg-teal-200"}`}
-      >
-        {added ? <CheckCircle2 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-      </button>
+      <div className="flex items-center gap-1 flex-shrink-0">
+        <button
+          onClick={onReview}
+          className="p-1.5 rounded-lg transition-all bg-slate-100 text-slate-500 hover:bg-slate-200"
+          title="Review before adding"
+        >
+          <Eye className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={onAdd}
+          disabled={added}
+          className={`p-1.5 rounded-lg transition-all ${added ? "bg-emerald-100 text-emerald-600" : "bg-teal-100 text-teal-700 hover:bg-teal-200"}`}
+        >
+          {added ? <CheckCircle2 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+        </button>
+      </div>
     </div>
   );
 }

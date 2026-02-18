@@ -425,10 +425,10 @@ Provide:
                       </div>
                     )}
                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">All Standard Panels</p>
-                    <div className="grid sm:grid-cols-2 gap-2">
-                      {LAB_PANELS.filter(p => !recommendedPanels.find(r => r.id === p.id)).map(panel => (
-                        <PanelCard key={panel.id} panel={panel} added={addedItems.has(panel.id)} onAdd={() => addPanelToNote(panel)} />
-                      ))}
+                     <div className="grid sm:grid-cols-2 gap-2">
+                       {LAB_PANELS.filter(p => !recommendedPanels.find(r => r.id === p.id)).map(panel => (
+                         <PanelCard key={panel.id} panel={panel} added={addedItems.has(panel.id)} onAdd={() => addPanelToNote(panel)} onReview={() => openLabReview([panel])} />
+                       ))}
                     </div>
                   </div>
                 </motion.div>

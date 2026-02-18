@@ -3898,16 +3898,26 @@ Return 5-10 of the most relevant and current guidelines.`,
                      </TabsContent>
 
                      {/* Plan Tab */}
-                     <TabsContent value="plan" className="p-6 space-y-6 overflow-y-auto">
-                       {/* AI Treatment Plan Analyzer */}
-                       <AITreatmentPlanAnalyzer
-                         note={note}
-                         onAddToPlan={async (planText) => {
-                           const updatedPlan = (note.plan || "") + planText;
-                           await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
-                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                         }}
-                       />
+                                     <TabsContent value="plan" className="p-6 space-y-6 overflow-y-auto">
+                                       {/* AI Treatment Plan Analyzer */}
+                                       <AITreatmentPlanAnalyzer
+                                         note={note}
+                                         onAddToPlan={async (planText) => {
+                                           const updatedPlan = (note.plan || "") + planText;
+                                           await base44.entities.ClinicalNote.update(noteId, { plan: updatedPlan });
+                                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                         }}
+                                       />
+
+                                       {/* Workflow Automation */}
+                                       <ClinicalWorkflowAutomation
+                                         note={note}
+                                         noteId={noteId}
+                                         onUpdateNote={async (updates) => {
+                                           await base44.entities.ClinicalNote.update(noteId, updates);
+                                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                         }}
+                                       />
 
                        <>
                      {/* Follow-up Tests */}

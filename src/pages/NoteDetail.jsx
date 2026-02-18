@@ -78,64 +78,63 @@ import MedicationDosingLookup from "../components/calculators/MedicationDosingLo
 import ProceduresPanel from "../components/procedures/ProceduresPanel";
 import ClinicalWorkflowAutomation from "../components/notes/ClinicalWorkflowAutomation";
 import AIGuidelineSuggestions from "../components/notes/AIGuidelineSuggestions";
+import AISidebar from "../components/ai/AISidebar";
 
 const TAB_GROUPS = [
   {
-    id: 'history',
-    label: 'History',
+    id: 'patient',
+    label: 'Patient',
     color: 'blue',
     tabs: [
-      { id: 'hpi_intake', label: 'HPI & Intake', icon: Activity },
-      { id: 'chief_complaint', label: 'Chief Complaint', icon: Activity },
+      { id: 'patient_intake', label: 'Patient Intake', icon: Activity },
+    ]
+  },
+  {
+    id: 'history',
+    label: 'History',
+    color: 'purple',
+    tabs: [
+      { id: 'chief_complaint', label: 'Chief Complaint', icon: FileText },
+      { id: 'hpi', label: 'HPI', icon: Activity },
       { id: 'review_of_systems', label: 'Review of Systems', icon: Activity },
     ]
   },
   {
     id: 'examination',
-    label: 'Physical Exam',
-    color: 'purple',
+    label: 'Exam',
+    color: 'emerald',
     tabs: [
       { id: 'physical_exam', label: 'Physical Exam', icon: Activity },
+      { id: 'vital_signs', label: 'Vital Signs', icon: Activity },
     ]
   },
   {
     id: 'assessment',
     label: 'Assessment',
-    color: 'emerald',
+    color: 'rose',
     tabs: [
-      { id: 'analysis', label: 'Analysis', icon: Sparkles },
-      { id: 'initial_impression', label: 'Initial Impression', icon: Sparkles },
-      { id: 'calculators', label: 'Calculators', icon: Activity },
-      { id: 'laboratory', label: 'Laboratory', icon: Beaker },
-      { id: 'imaging_recommendations', label: 'Imaging', icon: ImageIcon },
-      { id: 'imaging', label: 'Result Analysis', icon: ImageIcon },
-      { id: 'mdm', label: 'MDM', icon: AlertCircle },
-      { id: 'diagnoses', label: 'Diagnoses', icon: Code },
+      { id: 'differential', label: 'Differential Dx', icon: Code },
+      { id: 'labs_imaging', label: 'Labs & Imaging', icon: Beaker },
+      { id: 'diagnoses', label: 'Final Diagnoses', icon: Code },
     ]
   },
   {
     id: 'plan',
     label: 'Plan',
-    color: 'rose',
+    color: 'amber',
     tabs: [
-      { id: 'plan', label: 'Treatment Plan', icon: FileText },
-      { id: 'treatments', label: 'Medications', icon: Pill },
+      { id: 'treatment_plan', label: 'Treatment Plan', icon: FileText },
+      { id: 'medications', label: 'Medications', icon: Pill },
       { id: 'procedures', label: 'Procedures', icon: Activity },
-      { id: 'guidelines', label: 'Guidelines', icon: BookOpen },
     ]
   },
   {
-    id: 'finalization',
-    label: 'Finalization',
-    color: 'amber',
+    id: 'finalize',
+    label: 'Finalize',
+    color: 'indigo',
     tabs: [
-      { id: 'final_impression', label: 'Final Impression', icon: FileText },
-      { id: 'clinical', label: 'Clinical Note', icon: FileText },
-      { id: 'summary', label: 'Summary', icon: FileText },
-      { id: 'patient_education', label: 'Patient Education', icon: BookOpen },
-      { id: 'research', label: 'Research', icon: BookOpen },
-      { id: 'ai_assistant', label: 'AI Assistant', icon: Sparkles },
-      { id: 'finalize', label: 'Finalize', icon: Check },
+      { id: 'clinical_note', label: 'Clinical Note', icon: FileText },
+      { id: 'finalize', label: 'Review & Export', icon: Check },
     ]
   }
 ];
@@ -194,7 +193,8 @@ export default function NoteDetail() {
   const [collapsedGroups, setCollapsedGroups] = useState(new Set());
   const [customizing, setCustomizing] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const [activeTab, setActiveTab] = useState("ai_assistant");
+  const [activeTab, setActiveTab] = useState("patient_intake");
+  const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
   const [showCreateTabDialog, setShowCreateTabDialog] = useState(false);
   const [selectedGroupForNewTab, setSelectedGroupForNewTab] = useState(null);
   const [newTabName, setNewTabName] = useState("");
@@ -1427,9 +1427,15 @@ Generated: ${new Date().toLocaleString()}
 
         {/* Quick Actions */}
         <div className="border-t border-slate-200 pt-6 flex gap-3">
-          <Button 
-            onClick={async () => {
-              setExtractingData(true);
+         <Button
+           onClick={() => setAiSidebarOpen(true)}
+           className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl gap-2 shadow-lg shadow-purple-500/30 font-semibold transition-all"
+         >
+           <Sparkles className="w-4 h-4" /> AI Assistant
+         </Button>
+         <Button 
+           onClick={async () => {
+             setExtractingData(true);
               try {
                 // Collect all available data from the note
                 const contextData = {
@@ -1508,12 +1514,12 @@ Generated: ${new Date().toLocaleString()}
               });
               window.location.href = createPageUrl(`NoteDetail?id=${newNote.id}`);
             }}
-            className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl gap-2 shadow-lg shadow-blue-500/30 font-semibold transition-all"
+            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl gap-2 shadow-lg shadow-blue-500/30 font-semibold transition-all"
           >
             <Plus className="w-4 h-4" /> New Note
           </Button>
-          <Link to={createPageUrl("NotesLibrary")} className="flex-1">
-            <Button variant="outline" className="w-full rounded-xl gap-2 border-slate-300 hover:bg-slate-50">
+          <Link to={createPageUrl("NotesLibrary")}>
+            <Button variant="outline" className="rounded-xl gap-2 border-slate-300 hover:bg-slate-50">
               <FileText className="w-4 h-4" /> All Notes
             </Button>
           </Link>
@@ -1671,8 +1677,8 @@ Generated: ${new Date().toLocaleString()}
 
                         <div className="flex-1 overflow-hidden min-h-0">
 
-           {/* HPI & Intake Tab */}
-           <TabsContent value="hpi_intake" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+                        {/* Patient Intake Tab */}
+                        <TabsContent value="patient_intake" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
              <div className="max-w-5xl mx-auto space-y-8">
                {/* Header */}
                <div className="text-center mb-8">
@@ -2001,7 +2007,7 @@ Generated: ${new Date().toLocaleString()}
              {/* Next Button */}
              <div className="flex justify-between items-center pt-4 border-t border-slate-200">
                <div className="flex gap-2">
-                 <TabDataPreview tabId="hpi_intake" note={note} />
+                 <TabDataPreview tabId="patient_intake" note={note} />
                  <ClinicalNotePreviewButton note={note} />
                </div>
                <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
@@ -2010,40 +2016,198 @@ Generated: ${new Date().toLocaleString()}
              </div>
              </TabsContent>
 
-             {/* Analysis Tab */}
-           <TabsContent value="analysis" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+             {/* HPI Tab */}
+           <TabsContent value="hpi" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
             <div className="max-w-5xl mx-auto space-y-8">
               {/* Header */}
               <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 mb-4 shadow-lg">
-                  <Sparkles className="w-8 h-8 text-white" />
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 mb-4 shadow-lg">
+                  <Activity className="w-8 h-8 text-white" />
                 </div>
-                <h2 className="text-3xl font-bold text-slate-900 mb-2">AI Clinical Analysis</h2>
-                <p className="text-slate-600 max-w-2xl mx-auto">Comprehensive AI-powered analysis of the clinical note</p>
+                <h2 className="text-3xl font-bold text-slate-900 mb-2">History of Present Illness</h2>
+                <p className="text-slate-600 max-w-2xl mx-auto">Detailed documentation of the current illness</p>
               </div>
 
-              {/* AI Comprehensive Summary */}
-              <AIComprehensiveSummary
-                note={note}
-                onApply={async (field, value) => {
-                  await base44.entities.ClinicalNote.update(noteId, { [field]: value });
-                  queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                }}
-              />
+              {/* HPI Editor */}
+              <div className="bg-white rounded-xl border-2 border-purple-300 shadow-lg overflow-hidden">
+                 <div className="bg-gradient-to-r from-purple-500 to-indigo-500 px-6 py-5 text-white">
+                   <h3 className="font-bold text-lg flex items-center gap-2">
+                     <Activity className="w-6 h-6" />
+                     History of Present Illness
+                   </h3>
+                   <p className="text-purple-100 text-sm mt-1">Document OLDCARTS: Onset, Location, Duration, Character, Aggravating/Alleviating factors, Radiation, Timing, Severity</p>
+                 </div>
+                 <div className="p-6">
+                   <Textarea
+                     value={note.history_of_present_illness || ""}
+                     onChange={(e) => {
+                       queryClient.setQueryData(["note", noteId], (old) => ({
+                         ...old,
+                         history_of_present_illness: e.target.value
+                       }));
+                     }}
+                     onBlur={async (e) => {
+                       await base44.entities.ClinicalNote.update(noteId, { history_of_present_illness: e.target.value });
+                       toast.success("HPI saved");
+                     }}
+                     placeholder="Document the detailed history of present illness using OLDCARTS framework..."
+                     className="min-h-[300px] text-base"
+                   />
+                 </div>
+               </div>
 
-               {/* AI Comprehensive Analysis */}
+               {/* Medical History */}
+               <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
+                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
+                   <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                     <FileText className="w-5 h-5 text-slate-600" />
+                     Past Medical History
+                   </h3>
+                 </div>
+                 <div className="p-6">
+                   <Textarea
+                     value={note.medical_history || ""}
+                     onChange={(e) => {
+                       queryClient.setQueryData(["note", noteId], (old) => ({
+                         ...old,
+                         medical_history: e.target.value
+                       }));
+                     }}
+                     onBlur={async (e) => {
+                       await base44.entities.ClinicalNote.update(noteId, { medical_history: e.target.value });
+                       toast.success("Medical history saved");
+                     }}
+                     placeholder="Document past medical history, chronic conditions, surgeries..."
+                     className="min-h-[200px] text-base"
+                   />
+                 </div>
+               </div>
+             </div>
+
+             {/* Next Button */}
+             <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+               <div className="flex gap-2">
+                 <TabDataPreview tabId="hpi" note={note} />
+                 <ClinicalNotePreviewButton note={note} />
+               </div>
+               <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                 Next <ArrowLeft className="w-4 h-4 rotate-180" />
+               </Button>
+             </div>
+           </TabsContent>
+
+           {/* Vital Signs Tab */}
+           <TabsContent value="vital_signs" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+             <div className="max-w-4xl mx-auto space-y-8">
+               {/* Header */}
+               <div className="text-center mb-8">
+                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 mb-4 shadow-lg">
+                   <Activity className="w-8 h-8 text-white" />
+                 </div>
+                 <h2 className="text-3xl font-bold text-slate-900 mb-2">Vital Signs</h2>
+                 <p className="text-slate-600 max-w-2xl mx-auto">Record patient vital signs and measurements</p>
+               </div>
+
+               {/* Vital Signs Input */}
                <div className="bg-white rounded-xl border-2 border-emerald-300 shadow-lg overflow-hidden">
                  <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-5 text-white">
                    <h3 className="font-bold text-lg flex items-center gap-2">
-                     <Sparkles className="w-6 h-6" />
-                     Generate Comprehensive Analysis
+                     <Activity className="w-6 h-6" />
+                     Vital Signs
                    </h3>
-                   <p className="text-emerald-100 text-sm mt-1">AI reviews all sections and provides clinical insights</p>
+                   <p className="text-emerald-100 text-sm mt-1">Temperature, BP, HR, RR, O2 Sat, Height, Weight</p>
                  </div>
                  <div className="p-6">
-                   <Button
-                     onClick={async () => {
-                       setAnalyzingRawData(true);
+                   <VitalSignsInput
+                     vitalSigns={note.vital_signs || {}}
+                     onChange={async (newVitalSigns) => {
+                       await base44.entities.ClinicalNote.update(noteId, { vital_signs: newVitalSigns });
+                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                     }}
+                   />
+                 </div>
+               </div>
+             </div>
+
+             {/* Next Button */}
+             <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+               <div className="flex gap-2">
+                 <TabDataPreview tabId="vital_signs" note={note} />
+                 <ClinicalNotePreviewButton note={note} />
+               </div>
+               <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                 Next <ArrowLeft className="w-4 h-4 rotate-180" />
+               </Button>
+             </div>
+           </TabsContent>
+
+           {/* Differential Diagnosis Tab */}
+           <TabsContent value="differential" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+             <div className="max-w-5xl mx-auto space-y-8">
+               {/* Header */}
+               <div className="text-center mb-8">
+                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 mb-4 shadow-lg">
+                   <Code className="w-8 h-8 text-white" />
+                 </div>
+                 <h2 className="text-3xl font-bold text-slate-900 mb-2">Differential Diagnosis</h2>
+                 <p className="text-slate-600 max-w-2xl mx-auto">AI-powered differential diagnosis generator</p>
+               </div>
+
+               {/* Clinical Context */}
+               {note.chief_complaint && (
+                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 p-6">
+                   <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                     <Activity className="w-5 h-5 text-blue-600" />
+                     Clinical Context
+                   </h3>
+                   <div className="grid md:grid-cols-2 gap-4">
+                     <div className="bg-white rounded-lg p-4 border border-blue-200">
+                       <p className="text-xs font-semibold text-blue-900 mb-2">Chief Complaint</p>
+                       <p className="text-sm text-slate-700">{note.chief_complaint}</p>
+                     </div>
+                     {note.vital_signs && Object.keys(note.vital_signs).length > 0 && (
+                       <div className="bg-white rounded-lg p-4 border border-blue-200">
+                         <p className="text-xs font-semibold text-blue-900 mb-2">Vital Signs</p>
+                         <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
+                           {note.vital_signs.temperature?.value && (
+                             <div>Temp: {note.vital_signs.temperature.value}°{note.vital_signs.temperature.unit}</div>
+                           )}
+                           {note.vital_signs.heart_rate?.value && (
+                             <div>HR: {note.vital_signs.heart_rate.value} bpm</div>
+                           )}
+                           {note.vital_signs.blood_pressure?.systolic && (
+                             <div>BP: {note.vital_signs.blood_pressure.systolic}/{note.vital_signs.blood_pressure.diastolic}</div>
+                           )}
+                           {note.vital_signs.oxygen_saturation?.value && (
+                             <div>SpO2: {note.vital_signs.oxygen_saturation.value}%</div>
+                           )}
+                         </div>
+                       </div>
+                     )}
+                   </div>
+                 </div>
+               )}
+
+               {/* Generate Button */}
+               <div className="bg-white rounded-xl border-2 border-rose-300 shadow-lg overflow-hidden">
+                 <div className="bg-gradient-to-r from-rose-500 to-pink-500 px-6 py-5 text-white">
+                   <h3 className="font-bold text-lg flex items-center gap-2">
+                     <Sparkles className="w-6 h-6" />
+                     AI Differential Diagnosis Generator
+                   </h3>
+                   <p className="text-rose-100 text-sm mt-1">Analyze symptoms and generate ranked differential diagnoses</p>
+                 </div>
+                 <div className="p-6">
+                   {!note.chief_complaint ? (
+                     <div className="text-center py-12">
+                       <AlertCircle className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                       <p className="text-slate-600 font-medium">Chief Complaint Required</p>
+                       <p className="text-sm text-slate-500 mt-1">Add a chief complaint to generate differential diagnoses</p>
+                     </div>
+                   ) : (
+                     <Button
+                       onClick={async () => {
+                         setAnalyzingRawData(true);
                        try {
                          const result = await base44.integrations.Core.InvokeLLM({
                            prompt: `Perform a comprehensive clinical analysis of this patient case:

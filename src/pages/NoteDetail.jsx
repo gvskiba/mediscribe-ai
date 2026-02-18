@@ -2327,8 +2327,6 @@ Generated: ${new Date().toLocaleString()}
                              </div>
                              )}
                              </div>
-             </div>
-
              {/* Next Button */}
              <div className="flex justify-between items-center pt-4 border-t border-slate-200">
                <div className="flex gap-2">
@@ -2339,7 +2337,7 @@ Generated: ${new Date().toLocaleString()}
                  Next <ArrowLeft className="w-4 h-4 rotate-180" />
                </Button>
              </div>
-           </TabsContent>
+             </TabsContent>
 
            {/* Labs & Imaging Tab */}
              <TabsContent value="labs_imaging" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">

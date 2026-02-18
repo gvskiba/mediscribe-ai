@@ -313,13 +313,10 @@ export default function NoteDetail() {
 
   const resetTabLayout = async () => {
     try {
-      // Delete all custom groups
       const allCustomGroups = await base44.entities.TabGroup.list();
-      await Promise.all(
-        allCustomGroups.map(g => base44.entities.TabGroup.delete(g.id))
-      );
+      await Promise.all(allCustomGroups.map(g => base44.entities.TabGroup.delete(g.id)));
       queryClient.invalidateQueries({ queryKey: ["customTabGroups"] });
-      setTabGroups(TAB_GROUPS);
+      setCustomizing(false);
       toast.success('Tab layout reset to default');
     } catch (error) {
       console.error("Failed to reset layout:", error);

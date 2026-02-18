@@ -261,10 +261,11 @@ export default function ReviewOfSystemsEditor({ rosData, onUpdate, onAddToNote }
       </AnimatePresence>
 
       {/* ROS Sections */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         {sections.filter(s => s.enabled).map((section, idx) => {
           const Icon = section.icon;
           const isExpanded = expandedSections.has(section.id);
+          const isNormal = section.content === section.defaultText;
           
           return (
             <motion.div
@@ -274,58 +275,66 @@ export default function ReviewOfSystemsEditor({ rosData, onUpdate, onAddToNote }
               transition={{ delay: idx * 0.03 }}
               className="bg-white rounded-xl border-2 border-slate-200 overflow-hidden hover:border-amber-300 transition-all"
             >
-              <div 
-                className="bg-slate-50 px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors"
-                onClick={() => toggleSection(section.id)}
-              >
-                <div className="flex items-center gap-2">
-                  <Icon className="w-5 h-5 text-amber-600" />
-                  <h4 className="font-semibold text-slate-900">{section.label}</h4>
-                  {!isExpanded && section.content && (
-                    <Badge variant="outline" className="text-xs">
-                      {section.content.length > 50 ? section.content.substring(0, 50) + "..." : section.content}
-                    </Badge>
-                  )}
-                </div>
-                {isExpanded ? (
-                  <ChevronUp className="w-5 h-5 text-slate-400" />
-                ) : (
-                  <ChevronDown className="w-5 h-5 text-slate-400" />
-                )}
-              </div>
-              
-              <AnimatePresence>
-                {isExpanded && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="p-4"
+              <div className="px-4 py-3 flex items-center gap-3">
+                {/* Icon + Label */}
+                <Icon className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <h4 className="font-semibold text-slate-900 w-32 flex-shrink-0 text-sm">{section.label}</h4>
+
+                {/* Quick Normal/Abnormal toggles */}
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button
+                    onClick={() => handleUpdateSection(section.id, section.defaultText || "")}
+                    className={`px-2 py-1 rounded text-xs font-medium transition-all border ${
+                      isNormal && section.content
+                        ? "bg-green-100 border-green-400 text-green-800"
+                        : "bg-white border-slate-200 text-slate-500 hover:border-green-300 hover:text-green-700"
+                    }`}
+                    title="Mark as normal"
                   >
+                    Normal
+                  </button>
+                  <button
+                    onClick={() => { handleUpdateSection(section.id, ""); toggleSection(section.id); }}
+                    className={`px-2 py-1 rounded text-xs font-medium transition-all border ${
+                      section.content && !isNormal
+                        ? "bg-rose-100 border-rose-400 text-rose-800"
+                        : "bg-white border-slate-200 text-slate-500 hover:border-rose-300 hover:text-rose-700"
+                    }`}
+                    title="Mark as abnormal / type custom finding"
+                  >
+                    Abnormal
+                  </button>
+                </div>
+
+                {/* Inline content preview / editor */}
+                <div className="flex-1 min-w-0">
+                  {isExpanded ? (
                     <Textarea
                       value={section.content || ""}
                       onChange={(e) => handleUpdateSection(section.id, e.target.value)}
-                      placeholder={`Enter ${section.label.toLowerCase()} findings...`}
-                      className="w-full min-h-[100px] bg-white border-2 border-slate-200 focus:border-amber-500 focus:ring-amber-100"
+                      placeholder={`Describe ${section.label.toLowerCase()} findings...`}
+                      className="w-full min-h-[70px] text-sm bg-white border-2 border-amber-300 focus:border-amber-500 focus:ring-amber-100"
+                      autoFocus
                     />
-                    <div className="mt-2 flex justify-between items-center">
-                      <span className="text-xs text-slate-500">
-                        {section.content?.length || 0} characters
-                      </span>
-                      {section.content !== section.defaultText && section.defaultText && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleUpdateSection(section.id, section.defaultText)}
-                          className="text-xs text-slate-600 hover:text-slate-900"
-                        >
-                          Reset to default
-                        </Button>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                  ) : (
+                    <span
+                      className="text-sm text-slate-600 truncate block cursor-text hover:text-slate-900"
+                      title={section.content}
+                      onClick={() => toggleSection(section.id)}
+                    >
+                      {section.content || <span className="italic text-slate-400">Click to add findings...</span>}
+                    </span>
+                  )}
+                </div>
+
+                {/* Expand/collapse */}
+                <button
+                  onClick={() => toggleSection(section.id)}
+                  className="flex-shrink-0 text-slate-400 hover:text-slate-600"
+                >
+                  {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
+              </div>
             </motion.div>
           );
         })}

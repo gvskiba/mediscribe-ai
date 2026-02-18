@@ -457,12 +457,21 @@ Provide:
                   <div className="px-6 pb-4">
                     {recommendedImaging.length > 0 && (
                       <div className="mb-4">
-                        <p className="text-xs font-bold text-purple-700 uppercase tracking-wide mb-2 flex items-center gap-1">
-                          <Sparkles className="w-3 h-3" /> AI Recommended
-                        </p>
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs font-bold text-purple-700 uppercase tracking-wide flex items-center gap-1">
+                            <Sparkles className="w-3 h-3" /> AI Recommended
+                          </p>
+                          <Button
+                            size="sm"
+                            onClick={() => openImagingReview(recommendedImaging)}
+                            className="gap-1.5 bg-purple-600 hover:bg-purple-700 text-white h-7 text-xs px-3"
+                          >
+                            <Eye className="w-3 h-3" /> Review & Add All
+                          </Button>
+                        </div>
                         <div className="grid sm:grid-cols-2 gap-2">
                           {recommendedImaging.map(study => (
-                            <ImagingCard key={study.id} study={study} added={addedItems.has(study.id)} onAdd={() => addImagingToNote(study)} />
+                            <ImagingCard key={study.id} study={study} added={addedItems.has(study.id)} onAdd={() => addImagingToNote(study)} onReview={() => openImagingReview([study])} />
                           ))}
                         </div>
                       </div>

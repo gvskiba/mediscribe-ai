@@ -4,6 +4,15 @@ import "react-quill/dist/quill.snow.css";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
+const formats = [
+  "header",
+  "bold", "italic", "underline", "strike",
+  "list", "bullet", "indent",
+  "blockquote", "code-block",
+  "link", "image",
+  "color", "background"
+];
+
 export default function RichTextNoteEditor({ value, onChange, onBlur, placeholder }) {
   const quillRef = useRef(null);
 

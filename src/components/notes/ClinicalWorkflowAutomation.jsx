@@ -587,7 +587,7 @@ function PanelCard({ panel, added, onAdd, onReview }) {
   );
 }
 
-function ImagingCard({ study, added, onAdd }) {
+function ImagingCard({ study, added, onAdd, onReview }) {
   const modalityColor = {
     "X-ray": "text-blue-600", "CT": "text-orange-600", "MRI": "text-purple-600", "Ultrasound": "text-teal-600"
   };

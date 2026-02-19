@@ -389,13 +389,13 @@ Provide:
                     <p className="text-xs font-bold text-purple-900 flex items-center gap-1">
                       <Beaker className="w-3 h-3" /> Labs/Imaging
                     </p>
-                    {aiRanking?.imaging_labs_rationale && (
+                    {aiRanking?.imaging_labs_rationale !== undefined && (
                       <Badge variant="secondary" className={`text-xs ${
-                        aiRanking.imaging_labs_rationale === "HIGH" ? "bg-red-100 text-red-700" :
-                        aiRanking.imaging_labs_rationale === "MEDIUM" ? "bg-yellow-100 text-yellow-700" :
+                        aiRanking.imaging_labs_rationale >= 75 ? "bg-red-100 text-red-700" :
+                        aiRanking.imaging_labs_rationale >= 50 ? "bg-yellow-100 text-yellow-700" :
                         "bg-green-100 text-green-700"
                       }`}>
-                        {aiRanking.imaging_labs_rationale}
+                        {aiRanking.imaging_labs_rationale}%
                       </Badge>
                     )}
                   </div>

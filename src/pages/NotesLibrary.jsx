@@ -46,6 +46,9 @@ export default function NotesLibrary() {
       setSelectedNotes([]);
       toast.success("Notes deleted successfully");
     },
+    onError: (error) => {
+      toast.error(`Failed to delete notes: ${error.message || 'Rate limited or network error'}`);
+    }
   });
 
   const bulkArchiveMutation = useMutation({

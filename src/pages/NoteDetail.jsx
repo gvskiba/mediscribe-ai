@@ -228,6 +228,8 @@ export default function NoteDetail() {
   const [rosNormal, setRosNormal] = useState(false);
   const [loadingDischargeSummary, setLoadingDischargeSummary] = useState(false);
   const [autosaveEnabled, setAutosaveEnabled] = useState(false);
+  const [vitalSignsAnalysis, setVitalSignsAnalysis] = useState(null);
+  const [loadingVitalAnalysis, setLoadingVitalAnalysis] = useState(false);
 
   const handleNext = () => {
     const allTabs = tabGroups.flatMap(g => g.tabs.map(t => t.id));

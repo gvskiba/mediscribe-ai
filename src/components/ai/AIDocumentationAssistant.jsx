@@ -344,135 +344,36 @@ Base recommendations on current clinical guidelines.`,
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-4 mb-6">
-          <TabsTrigger value="generate" className="gap-2">
-            <FileText className="w-4 h-4" /> Generate Note
-          </TabsTrigger>
-          <TabsTrigger value="summarize" className="gap-2">
-            <ClipboardList className="w-4 h-4" /> Summarize
-          </TabsTrigger>
-          <TabsTrigger value="icd10" className="gap-2">
-            <Code className="w-4 h-4" /> ICD-10
-          </TabsTrigger>
-          <TabsTrigger value="treatment" className="gap-2">
-            <Pill className="w-4 h-4" /> Treatment
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Generate Structured Note */}
-        <TabsContent value="generate" className="space-y-4">
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Raw Patient Data / Voice Transcript
-            </label>
-            <Textarea
-              value={rawInput}
-              onChange={(e) => setRawInput(e.target.value)}
-              placeholder="Paste raw clinical data, voice recording transcript, or unstructured notes here..."
-              rows={6}
-              className="font-mono text-sm"
-            />
-          </div>
-          <Button
-            onClick={generateStructuredNote}
-            disabled={processing || !rawInput.trim()}
-            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white gap-2 py-6"
-          >
-            {processing ? (
-              <><Loader2 className="w-5 h-5 animate-spin" /> Generating Structured Note...</>
-            ) : (
-              <><Sparkles className="w-5 h-5" /> Generate Complete Clinical Note</>
-            )}
-          </Button>
-
-          {generatedContent && activeTab === "generate" && (
-            <GeneratedNoteDisplay content={generatedContent} onApply={applyToNote} onCopy={copyToClipboard} copied={copied} />
+      {/* Generate Structured Note */}
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-2">
+            Raw Patient Data / Voice Transcript
+          </label>
+          <Textarea
+            value={rawInput}
+            onChange={(e) => setRawInput(e.target.value)}
+            placeholder="Paste raw clinical data, voice recording transcript, or unstructured notes here..."
+            rows={6}
+            className="font-mono text-sm"
+          />
+        </div>
+        <Button
+          onClick={generateStructuredNote}
+          disabled={processing || !rawInput.trim()}
+          className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white gap-2 py-6"
+        >
+          {processing ? (
+            <><Loader2 className="w-5 h-5 animate-spin" /> Generating Structured Note...</>
+          ) : (
+            <><Sparkles className="w-5 h-5" /> Generate Complete Clinical Note</>
           )}
-        </TabsContent>
+        </Button>
 
-        {/* Summarize Patient History */}
-        <TabsContent value="summarize" className="space-y-4">
-          <div className="bg-white rounded-lg border border-slate-200 p-4">
-            <p className="text-sm text-slate-700 mb-3">
-              Generate a concise summary of patient's medical history, chronic conditions, medications, and risk factors.
-            </p>
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div>
-                <span className="font-semibold text-slate-900">Diagnoses:</span>
-                <span className="text-slate-600 ml-2">{note.diagnoses?.length || 0} conditions</span>
-              </div>
-              <div>
-                <span className="font-semibold text-slate-900">Medications:</span>
-                <span className="text-slate-600 ml-2">{note.medications?.length || 0} medications</span>
-              </div>
-            </div>
-          </div>
-          <Button
-            onClick={summarizeHistory}
-            disabled={processing}
-            className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white gap-2 py-6"
-          >
-            {processing ? (
-              <><Loader2 className="w-5 h-5 animate-spin" /> Summarizing...</>
-            ) : (
-              <><ClipboardList className="w-5 h-5" /> Generate Patient Summary</>
-            )}
-          </Button>
-
-          {generatedContent && activeTab === "summarize" && (
-            <PatientSummaryDisplay content={generatedContent} onCopy={copyToClipboard} copied={copied} />
-          )}
-        </TabsContent>
-
-        {/* ICD-10 Code Suggestions */}
-        <TabsContent value="icd10" className="space-y-4">
-          <div className="bg-white rounded-lg border border-slate-200 p-4">
-            <p className="text-sm text-slate-700">
-              AI will analyze diagnoses and assessment to suggest specific ICD-10 codes with rationale.
-            </p>
-          </div>
-          <Button
-            onClick={suggestICD10}
-            disabled={processing || (!note.assessment && !note.diagnoses?.length)}
-            className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white gap-2 py-6"
-          >
-            {processing ? (
-              <><Loader2 className="w-5 h-5 animate-spin" /> Analyzing...</>
-            ) : (
-              <><Code className="w-5 h-5" /> Suggest ICD-10 Codes</>
-            )}
-          </Button>
-
-          {generatedContent && activeTab === "icd10" && (
-            <ICD10CodesDisplay content={generatedContent} onApply={applyToNote} />
-          )}
-        </TabsContent>
-
-        {/* Treatment Plan Auto-completion */}
-        <TabsContent value="treatment" className="space-y-4">
-          <div className="bg-white rounded-lg border border-slate-200 p-4">
-            <p className="text-sm text-slate-700">
-              Generate evidence-based treatment plan with medications, dosing, tests, and follow-up recommendations.
-            </p>
-          </div>
-          <Button
-            onClick={autocompleteTreatmentPlan}
-            disabled={processing || (!note.assessment && !note.diagnoses?.length)}
-            className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white gap-2 py-6"
-          >
-            {processing ? (
-              <><Loader2 className="w-5 h-5 animate-spin" /> Generating Plan...</>
-            ) : (
-              <><Pill className="w-5 h-5" /> Generate Treatment Plan</>
-            )}
-          </Button>
-
-          {generatedContent && activeTab === "treatment" && (
-            <TreatmentPlanDisplay content={generatedContent} onApply={applyToNote} onCopy={copyToClipboard} copied={copied} />
-          )}
-        </TabsContent>
-      </Tabs>
+        {generatedContent && (
+          <GeneratedNoteDisplay content={generatedContent} onApply={applyToNote} onCopy={copyToClipboard} copied={copied} />
+        )}
+      </div>
     </div>
   );
 }

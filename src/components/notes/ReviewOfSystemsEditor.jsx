@@ -166,6 +166,9 @@ export default function ReviewOfSystemsEditor({ rosData, onUpdate, onAddToNote }
           <Button size="sm" variant="outline" onClick={() => setAddingSection(true)} className="border-purple-200 text-purple-700 hover:bg-purple-50 gap-1">
             <Plus className="w-3.5 h-3.5" /> Add Section
           </Button>
+          <Button size="sm" variant="outline" onClick={saveDefaults} disabled={savingSaving} className="border-blue-200 text-blue-700 hover:bg-blue-50 gap-1">
+            <Save className="w-3.5 h-3.5" /> {savingSaving ? "Saving..." : "Save as Default"}
+          </Button>
           <Button size="sm" onClick={handleAddToNote} disabled={assessed.length === 0} className="bg-purple-600 hover:bg-purple-700 text-white gap-1.5">
             <Check className="w-3.5 h-3.5" /> Add to Note
           </Button>

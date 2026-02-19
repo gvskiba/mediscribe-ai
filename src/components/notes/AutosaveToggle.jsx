@@ -7,7 +7,7 @@ export default function AutosaveToggle({ enabled, onChange }) {
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="fixed bottom-32 left-5 z-40 bg-white rounded-full shadow-xl border border-slate-200 p-1 flex items-center"
+      className="fixed top-24 right-6 z-40 bg-white rounded-full shadow-xl border border-slate-200 p-1 flex items-center lg:top-28"
     >
       <button
         onClick={() => onChange(true)}

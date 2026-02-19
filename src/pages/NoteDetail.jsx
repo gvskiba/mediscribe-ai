@@ -3210,6 +3210,7 @@ Generated: ${new Date().toLocaleString()}
          onClose={() => setAiSidebarOpen(false)}
          note={note}
          noteId={noteId}
+         activeTab={activeTab}
          onUpdateNote={async (updates) => {
            await base44.entities.ClinicalNote.update(noteId, updates);
            queryClient.invalidateQueries({ queryKey: ["note", noteId] });

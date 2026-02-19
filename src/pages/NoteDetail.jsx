@@ -2960,51 +2960,51 @@ Generated: ${new Date().toLocaleString()}
                                  onClick={async () => {
                                    try {
                                      setLoadingDischargeSummary(true);
-                                     const response = await base44.integrations.Core.InvokeLLM({
+                                     const result = await base44.integrations.Core.InvokeLLM({
                                        prompt: `Based on the following clinical note, generate detailed discharge instructions for the patient. Include medication instructions, activity restrictions, follow-up care, warning signs, and lifestyle modifications.
 
-                             PATIENT: ${note.patient_name}
-                             DIAGNOSES: ${note.diagnoses?.join(", ") || "N/A"}
-                             ASSESSMENT: ${note.assessment || "N/A"}
-                             MEDICATIONS: ${note.medications?.join(", ") || "None"}
-                             PLAN: ${note.plan || "N/A"}
-                             DISPOSITION: ${note.disposition_plan || "N/A"}
+                                 PATIENT: ${note.patient_name}
+                                 DIAGNOSES: ${note.diagnoses?.join(", ") || "N/A"}
+                                 ASSESSMENT: ${note.assessment || "N/A"}
+                                 MEDICATIONS: ${note.medications?.join(", ") || "None"}
+                                 PLAN: ${note.plan || "N/A"}
+                                 DISPOSITION: ${note.disposition_plan || "N/A"}
 
-                             Format the response as a professional discharge summary with clear sections and actionable instructions.`,
+                                 Format the response as a professional discharge summary with clear sections and actionable instructions.`,
                                        add_context_from_internet: false
                                      });
 
                                      const dischargeSummaryText = `DISCHARGE SUMMARY & INSTRUCTIONS
 
-                             Patient: ${note.patient_name}
-                             MRN: ${note.patient_id || "N/A"}
-                             Date of Visit: ${note.date_of_visit || "N/A"}
+                                 Patient: ${note.patient_name}
+                                 MRN: ${note.patient_id || "N/A"}
+                                 Date of Visit: ${note.date_of_visit || "N/A"}
 
-                             CHIEF COMPLAINT:
-                             ${note.chief_complaint || "N/A"}
+                                 CHIEF COMPLAINT:
+                                 ${note.chief_complaint || "N/A"}
 
-                             DIAGNOSES:
-                             ${note.diagnoses?.join("\n• ") ? "• " + note.diagnoses.join("\n• ") : "N/A"}
+                                 DIAGNOSES:
+                                 ${note.diagnoses?.join("\n• ") ? "• " + note.diagnoses.join("\n• ") : "N/A"}
 
-                             HOSPITAL COURSE & FINDINGS:
-                             ${note.assessment || "N/A"}
+                                 HOSPITAL COURSE & FINDINGS:
+                                 ${note.assessment || "N/A"}
 
-                             DISCHARGE MEDICATIONS:
-                             ${note.medications?.length ? note.medications.map(m => "• " + m).join("\n") : "No new medications"}
+                                 DISCHARGE MEDICATIONS:
+                                 ${note.medications?.length ? note.medications.map(m => "• " + m).join("\n") : "No new medications"}
 
-                             ═════════════════════════════════════════
+                                 ═════════════════════════════════════════
 
-                             DISCHARGE INSTRUCTIONS:
+                                 DISCHARGE INSTRUCTIONS:
 
-                             ${response}
+                                 ${result}
 
-                             ═════════════════════════════════════════
+                                 ═════════════════════════════════════════
 
-                             FOLLOW-UP CARE:
-                             ${note.plan || "Patient instructed to follow up as needed"}
+                                 FOLLOW-UP CARE:
+                                 ${note.plan || "Patient instructed to follow up as needed"}
 
-                             DISPOSITION:
-                             ${note.disposition_plan || "Patient discharged in stable condition"}`;
+                                 DISPOSITION:
+                                 ${note.disposition_plan || "Patient discharged in stable condition"}`;
 
                                      await base44.entities.ClinicalNote.update(noteId, { 
                                        discharge_summary: dischargeSummaryText

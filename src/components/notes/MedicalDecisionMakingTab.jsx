@@ -103,8 +103,8 @@ Provide:
       setAiAnalysis(res);
       toast.success("MDM analysis generated");
       
-      // Auto-rank by acuity
-      rankByAcuity(res);
+      // Auto-rank by likelihood
+      rankByLikelihood(res);
     } catch (error) {
       console.error("Failed to generate MDM analysis:", error);
       toast.error("Failed to generate MDM analysis");

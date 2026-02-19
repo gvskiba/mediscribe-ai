@@ -92,12 +92,6 @@ const TAB_GROUPS = [
     ]
   },
   {
-    id: 'history',
-    label: 'History',
-    color: 'purple',
-    tabs: [],
-  },
-  {
     id: 'examination',
     label: 'Objective',
     color: 'emerald',

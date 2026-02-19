@@ -9,7 +9,8 @@ export default function DraggableNotificationButtons() {
   const [currentNoteId, setCurrentNoteId] = useState(null);
   const [prefs, setPrefs] = useState(null);
   const [isDragging, setIsDragging] = useState(null);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     const savedNoteId = localStorage.getItem("currentOpenNote");
@@ -19,7 +20,7 @@ export default function DraggableNotificationButtons() {
     base44.auth.me().then(u => {
       setPrefs({
         fab_enabled: true,
-        fab_position: { x: 20, y: 80 },
+        fab_position: { left: window.innerWidth - 100, top: window.innerHeight - 200 },
         fab_color_arrow: "blue",
         fab_color_plus: "green",
         fab_size: "large",

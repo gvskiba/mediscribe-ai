@@ -39,11 +39,11 @@ export default function AISidebar({ isOpen, onClose, note, noteId, onUpdateNote 
 
           {/* Sidebar */}
           <motion.div
-            initial={{ x: "100%" }}
+            initial={{ x: "-100%" }}
             animate={{ x: 0 }}
-            exit={{ x: "100%" }}
+            exit={{ x: "-100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 bottom-0 w-full md:w-[600px] lg:w-[700px] bg-white shadow-2xl z-50 flex flex-col"
+            className="fixed left-0 top-0 bottom-0 w-full md:w-[600px] lg:w-[700px] bg-white shadow-2xl z-50 flex flex-col"
           >
             {/* Header */}
             <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-5 flex items-center justify-between text-white flex-shrink-0">

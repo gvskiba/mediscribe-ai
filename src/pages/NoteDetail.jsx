@@ -1663,487 +1663,206 @@ Generated: ${new Date().toLocaleString()}
 
                         <div className="flex-1 overflow-hidden min-h-0">
 
-                        {/* Patient Intake Tab */}
-                        <TabsContent value="patient_intake" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
-             <div className="max-w-5xl mx-auto space-y-8">
-               {/* Header */}
-               <div className="text-center mb-8">
-                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 mb-4 shadow-lg">
-                   <Activity className="w-8 h-8 text-white" />
-                 </div>
-                 <h2 className="text-3xl font-bold text-slate-900 mb-2">Patient Intake</h2>
-                 <p className="text-slate-600 max-w-2xl mx-auto">Collect chief complaint and patient information</p>
-               </div>
+                        {/* Subjective Tab — combined Patient Intake + HPI */}
+                        <TabsContent value="patient_intake" className="overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+                          <div className="max-w-5xl mx-auto px-8 py-6 space-y-6">
 
-               {/* Chief Complaint Input */}
-               <div className="bg-white rounded-xl border-2 border-blue-300 shadow-lg overflow-hidden">
-                 <div className="bg-gradient-to-r from-blue-500 to-indigo-500 px-6 py-5 text-white">
-                   <div className="flex items-center justify-between">
-                     <div>
-                       <h3 className="font-bold text-lg flex items-center gap-2">
-                         <Activity className="w-6 h-6" />
-                         Chief Complaint
-                       </h3>
-                       <p className="text-blue-100 text-sm mt-1">Primary reason for the patient's visit</p>
-                     </div>
-                     <InlineSectionAI
-                       type="chief_complaint"
-                       note={note}
-                       onApply={async (val) => {
-                         await base44.entities.ClinicalNote.update(noteId, { chief_complaint: val });
-                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                       }}
-                     />
-                   </div>
-                 </div>
-                 <div className="p-6">
-                   <textarea
-                     value={note.chief_complaint || ""}
-                     onChange={(e) => {
-                       queryClient.setQueryData(["note", noteId], (old) => ({
-                         ...old,
-                         chief_complaint: e.target.value
-                       }));
-                     }}
-                     onBlur={async (e) => {
-                       await base44.entities.ClinicalNote.update(noteId, { chief_complaint: e.target.value });
-                       setLastSaved(new Date().toISOString());
-                       toast.success("Note saved at " + format(new Date(), "h:mm:ss a"));
-                     }}
-                     placeholder="Enter the patient's chief complaint (e.g., 'Chest pain for 2 hours', 'Persistent cough for 1 week')..."
-                     className="w-full px-4 py-4 rounded-lg border-2 border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all text-base text-slate-900 placeholder:text-slate-400 resize-none"
-                     rows="5"
-                   />
-                 </div>
-               </div>
+                            {/* Page Header */}
+                            <div className="flex items-center gap-4 pb-2 border-b border-slate-200">
+                              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md flex-shrink-0">
+                                <FileText className="w-6 h-6 text-white" />
+                              </div>
+                              <div>
+                                <h2 className="text-2xl font-bold text-slate-900">Subjective</h2>
+                                <p className="text-sm text-slate-500">Chief complaint, raw notes, HPI, and medical history</p>
+                              </div>
+                              <div className="ml-auto">
+                                <Button
+                                  onClick={async () => {
+                                    if (!note.raw_note) { toast.error("Please enter raw patient data first"); return; }
+                                    setAnalyzingRawData(true);
+                                    try {
+                                      const result = await base44.integrations.Core.InvokeLLM({
+                                        prompt: `Analyze this raw patient encounter data and extract structured clinical information:\n\nRAW PATIENT DATA:\n${note.raw_note}\n\nExtract: chief_complaint, history_of_present_illness (OLDCARTS), review_of_systems, initial_assessment, suggested_diagnoses, recommended_tests.`,
+                                        add_context_from_internet: false,
+                                        response_json_schema: {
+                                          type: "object",
+                                          properties: {
+                                            chief_complaint: { type: "string" },
+                                            history_of_present_illness: { type: "string" },
+                                            review_of_systems: { type: "string" },
+                                            initial_assessment: { type: "string" },
+                                            suggested_diagnoses: { type: "array", items: { type: "string" } },
+                                            recommended_tests: { type: "array", items: { type: "string" } }
+                                          }
+                                        }
+                                      });
+                                      await base44.entities.ClinicalNote.update(noteId, {
+                                        chief_complaint: result.chief_complaint,
+                                        history_of_present_illness: result.history_of_present_illness,
+                                        review_of_systems: result.review_of_systems,
+                                        assessment: result.initial_assessment
+                                      });
+                                      queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                      toast.success("AI analysis complete — fields populated");
+                                    } catch (error) {
+                                      toast.error("Failed to analyze patient data");
+                                    } finally {
+                                      setAnalyzingRawData(false);
+                                    }
+                                  }}
+                                  disabled={analyzingRawData || !note.raw_note}
+                                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white gap-2 shadow-md"
+                                >
+                                  {analyzingRawData ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</> : <><Sparkles className="w-4 h-4" /> AI Auto-Fill</>}
+                                </Button>
+                              </div>
+                            </div>
 
-               {/* Raw Patient Data */}
-               <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
-                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-                   <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                     <FileText className="w-5 h-5 text-slate-600" />
-                     Raw Patient Data / Notes
-                   </h3>
-                   <div className="flex items-center gap-2">
-                     <Button
-                       onClick={async () => {
-                         if (isRecording) {
-                           // Stop recording
-                           if (mediaRecorder) {
-                             mediaRecorder.stop();
-                             setIsRecording(false);
-                             setRecordingTime(0);
-                           }
-                         } else {
-                           // Start recording
-                           try {
-                             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                             const recorder = new MediaRecorder(stream);
-                             const audioChunks = [];
+                            {/* Two-column top row: Chief Complaint + Raw Notes */}
+                            <div className="grid lg:grid-cols-2 gap-6">
 
-                             recorder.ondataavailable = (event) => {
-                               audioChunks.push(event.data);
-                             };
+                              {/* Chief Complaint */}
+                              <div className="bg-white rounded-2xl border border-blue-200 shadow-sm overflow-hidden">
+                                <div className="bg-gradient-to-r from-blue-500 to-indigo-500 px-5 py-4 flex items-center justify-between text-white">
+                                  <div>
+                                    <p className="text-xs font-semibold uppercase tracking-widest text-blue-100">Section 1</p>
+                                    <h3 className="font-bold text-base">Chief Complaint</h3>
+                                  </div>
+                                  <InlineSectionAI type="chief_complaint" note={note} onApply={async (val) => { await base44.entities.ClinicalNote.update(noteId, { chief_complaint: val }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
+                                </div>
+                                <div className="p-5">
+                                  <textarea
+                                    value={note.chief_complaint || ""}
+                                    onChange={(e) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, chief_complaint: e.target.value }))}
+                                    onBlur={async (e) => { await base44.entities.ClinicalNote.update(noteId, { chief_complaint: e.target.value }); toast.success("Saved"); }}
+                                    placeholder="Primary reason for visit (e.g., 'Chest pain for 2 hours')..."
+                                    className="w-full px-4 py-3 rounded-xl border border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm text-slate-900 placeholder:text-slate-400 resize-none"
+                                    rows="5"
+                                  />
+                                </div>
+                              </div>
 
-                             recorder.onstop = async () => {
-                               const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                               const audioFile = new File([audioBlob], 'recording.wav', { type: 'audio/wav' });
+                              {/* Raw Notes */}
+                              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                                <div className="bg-slate-700 px-5 py-4 flex items-center justify-between text-white">
+                                  <div>
+                                    <p className="text-xs font-semibold uppercase tracking-widest text-slate-300">Section 2</p>
+                                    <h3 className="font-bold text-base">Raw Notes / Transcription</h3>
+                                  </div>
+                                  <Button
+                                    onClick={async () => {
+                                      if (isRecording) {
+                                        if (mediaRecorder) { mediaRecorder.stop(); setIsRecording(false); setRecordingTime(0); }
+                                      } else {
+                                        try {
+                                          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                                          const recorder = new MediaRecorder(stream);
+                                          const audioChunks = [];
+                                          recorder.ondataavailable = (e) => audioChunks.push(e.data);
+                                          const interval = setInterval(() => setRecordingTime(prev => prev + 1), 1000);
+                                          recorder.onstop = async () => {
+                                            clearInterval(interval);
+                                            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                                            const audioFile = new File([audioBlob], 'recording.wav', { type: 'audio/wav' });
+                                            toast.info("Transcribing...");
+                                            try {
+                                              const { file_url } = await base44.integrations.Core.UploadFile({ file: audioFile });
+                                              const transcription = await base44.integrations.Core.InvokeLLM({ prompt: "Transcribe this medical audio recording accurately.", file_urls: [file_url] });
+                                              const updated = (note.raw_note || "") + "\n\n" + transcription;
+                                              await base44.entities.ClinicalNote.update(noteId, { raw_note: updated });
+                                              queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                              toast.success("Audio transcribed");
+                                            } catch { toast.error("Transcription failed"); }
+                                            stream.getTracks().forEach(t => t.stop());
+                                          };
+                                          recorder.start();
+                                          setMediaRecorder(recorder);
+                                          setIsRecording(true);
+                                        } catch { toast.error("Microphone access denied"); }
+                                      }
+                                    }}
+                                    size="sm"
+                                    className={`rounded-full w-9 h-9 p-0 flex items-center justify-center border-2 transition-all ${isRecording ? 'bg-red-600 hover:bg-red-700 border-red-400 animate-pulse' : 'bg-white/20 hover:bg-white/30 border-white/30'}`}
+                                    title={isRecording ? "Stop Recording" : "Start Voice Recording"}
+                                  >
+                                    {isRecording ? <X className="w-4 h-4 text-white" /> : <Activity className="w-4 h-4 text-white" />}
+                                  </Button>
+                                </div>
+                                {isRecording && (
+                                  <div className="flex items-center gap-2 text-red-600 px-5 py-2 bg-red-50 border-b border-red-100">
+                                    <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+                                    <span className="text-xs font-medium">Recording — {Math.floor(recordingTime / 60)}:{String(recordingTime % 60).padStart(2, '0')}</span>
+                                  </div>
+                                )}
+                                <div className="p-5">
+                                  <RichTextNoteEditor
+                                    value={note.raw_note || ""}
+                                    onChange={(content) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, raw_note: content }))}
+                                    onBlur={async () => {
+                                      const currentNote = queryClient.getQueryData(["note", noteId]);
+                                      await base44.entities.ClinicalNote.update(noteId, { raw_note: currentNote.raw_note });
+                                      toast.success("Saved");
+                                    }}
+                                    placeholder="Paste or type raw encounter notes, transcription..."
+                                  />
+                                </div>
+                              </div>
+                            </div>
 
-                               // Upload and transcribe
-                               toast.info("Transcribing audio...");
-                               try {
-                                 const { file_url } = await base44.integrations.Core.UploadFile({ file: audioFile });
-                                 const transcription = await base44.integrations.Core.InvokeLLM({
-                                   prompt: "Transcribe this medical audio recording accurately. Include all patient statements, symptoms, and medical details.",
-                                   file_urls: [file_url]
-                                 });
+                            {/* HPI */}
+                            <div className="bg-white rounded-2xl border border-purple-200 shadow-sm overflow-hidden">
+                              <div className="bg-gradient-to-r from-purple-500 to-indigo-500 px-5 py-4 flex items-center justify-between text-white">
+                                <div>
+                                  <p className="text-xs font-semibold uppercase tracking-widest text-purple-100">Section 3</p>
+                                  <h3 className="font-bold text-base">History of Present Illness</h3>
+                                  <p className="text-purple-100 text-xs mt-0.5">OLDCARTS: Onset · Location · Duration · Character · Aggravating/Alleviating · Radiation · Timing · Severity</p>
+                                </div>
+                                <InlineSectionAI type="hpi" note={note} onApply={async (val) => { await base44.entities.ClinicalNote.update(noteId, { history_of_present_illness: val }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
+                              </div>
+                              <div className="p-5">
+                                <Textarea
+                                  value={note.history_of_present_illness || ""}
+                                  onChange={(e) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, history_of_present_illness: e.target.value }))}
+                                  onBlur={async (e) => { await base44.entities.ClinicalNote.update(noteId, { history_of_present_illness: e.target.value }); toast.success("HPI saved"); }}
+                                  placeholder="Document HPI using the OLDCARTS framework..."
+                                  className="min-h-[220px] text-sm"
+                                />
+                              </div>
+                            </div>
 
-                                 const updatedRawNote = (note.raw_note || "") + "\n\n" + transcription;
-                                 await base44.entities.ClinicalNote.update(noteId, { raw_note: updatedRawNote });
-                                 queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                                 toast.success("Audio transcribed and added to raw notes");
-                               } catch (error) {
-                                 console.error("Transcription failed:", error);
-                                 toast.error("Failed to transcribe audio");
-                               }
+                            {/* Past Medical History */}
+                            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                              <div className="bg-slate-50 px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+                                <div>
+                                  <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Section 4</p>
+                                  <h3 className="font-bold text-slate-800 text-base">Past Medical History</h3>
+                                </div>
+                                <InlineSectionAI type="medical_history" note={note} onApply={async (val) => { await base44.entities.ClinicalNote.update(noteId, { medical_history: val }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
+                              </div>
+                              <div className="p-5">
+                                <Textarea
+                                  value={note.medical_history || ""}
+                                  onChange={(e) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, medical_history: e.target.value }))}
+                                  onBlur={async (e) => { await base44.entities.ClinicalNote.update(noteId, { medical_history: e.target.value }); toast.success("Medical history saved"); }}
+                                  placeholder="Past medical history, chronic conditions, prior surgeries..."
+                                  className="min-h-[160px] text-sm"
+                                />
+                              </div>
+                            </div>
 
-                               stream.getTracks().forEach(track => track.stop());
-                             };
-
-                             recorder.start();
-                             setMediaRecorder(recorder);
-                             setIsRecording(true);
-
-                             // Start timer
-                             const interval = setInterval(() => {
-                               setRecordingTime(prev => prev + 1);
-                             }, 1000);
-
-                             recorder.onstop = async () => {
-                               clearInterval(interval);
-                               const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                               const audioFile = new File([audioBlob], 'recording.wav', { type: 'audio/wav' });
-
-                               toast.info("Transcribing audio...");
-                               try {
-                                 const { file_url } = await base44.integrations.Core.UploadFile({ file: audioFile });
-                                 const transcription = await base44.integrations.Core.InvokeLLM({
-                                   prompt: "Transcribe this medical audio recording accurately. Include all patient statements, symptoms, and medical details.",
-                                   file_urls: [file_url]
-                                 });
-
-                                 const updatedRawNote = (note.raw_note || "") + "\n\n" + transcription;
-                                 await base44.entities.ClinicalNote.update(noteId, { raw_note: updatedRawNote });
-                                 queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                                 toast.success("Audio transcribed and added to raw notes");
-                               } catch (error) {
-                                 console.error("Transcription failed:", error);
-                                 toast.error("Failed to transcribe audio");
-                               }
-
-                               stream.getTracks().forEach(track => track.stop());
-                             };
-                           } catch (error) {
-                             console.error("Failed to access microphone:", error);
-                             toast.error("Failed to access microphone");
-                           }
-                         }
-                       }}
-                       className={`rounded-full w-14 h-14 flex items-center justify-center shadow-xl border-4 transition-all ${
-                         isRecording 
-                           ? 'bg-red-600 hover:bg-red-700 border-red-300 animate-pulse' 
-                           : 'bg-gradient-to-br from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-blue-200'
-                       }`}
-                       title={isRecording ? `Stop Recording (${Math.floor(recordingTime / 60)}:${String(recordingTime % 60).padStart(2, '0')})` : "Start Voice Recording"}
-                       >
-                       {isRecording ? (
-                         <X className="w-6 h-6 text-white" />
-                       ) : (
-                         <Activity className="w-6 h-6 text-white" />
-                       )}
-                       </Button>
-                   </div>
-                   {isRecording && (
-                     <div className="flex items-center justify-center gap-2 text-red-600 animate-pulse">
-                       <div className="w-3 h-3 rounded-full bg-red-600"></div>
-                       <span className="text-sm font-medium">Recording in progress...</span>
-                     </div>
-                   )}
-                   </div>
-                   {/* Text Editor */}
-                   <div className="p-6">
-                   {isRecording && (
-                     <div className="flex items-center gap-2 text-red-600 animate-pulse mb-4 bg-red-50 rounded-lg p-3 border border-red-200">
-                       <div className="w-3 h-3 rounded-full bg-red-600"></div>
-                       <span className="text-sm font-medium">Recording in progress...</span>
-                     </div>
-                   )}
-                   <RichTextNoteEditor
-                     value={note.raw_note || ""}
-                     onChange={(content) => {
-                       queryClient.setQueryData(["note", noteId], (old) => ({
-                         ...old,
-                         raw_note: content
-                       }));
-                     }}
-                     onBlur={async () => {
-                       const currentNote = queryClient.getQueryData(["note", noteId]);
-                       await base44.entities.ClinicalNote.update(noteId, { raw_note: currentNote.raw_note });
-                       setLastSaved(new Date().toISOString());
-                       toast.success("Note saved at " + format(new Date(), "h:mm:ss a"));
-                     }}
-                     placeholder="Type or paste raw patient data, encounter notes, or transcription here..."
-                   />
-                   </div>
-                   </div>
-
-                   {/* AI Analysis */}
-               <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-lg overflow-hidden">
-                 <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-5 text-white">
-                   <h3 className="font-bold text-lg flex items-center gap-2">
-                     <Sparkles className="w-6 h-6" />
-                     AI Initial Impression Analysis
-                   </h3>
-                   <p className="text-indigo-100 text-sm mt-1">Generate structured clinical data from raw notes</p>
-                 </div>
-                 <div className="p-6">
-                   <Button
-                     onClick={async () => {
-                       if (!note.raw_note) {
-                         toast.error("Please enter raw patient data first");
-                         return;
-                       }
-
-                       setAnalyzingRawData(true);
-                       try {
-                         const result = await base44.integrations.Core.InvokeLLM({
-                           prompt: `Analyze this raw patient encounter data and extract structured clinical information:
-
-           RAW PATIENT DATA:
-           ${note.raw_note}
-
-           Extract and structure the following:
-           1. Chief Complaint - primary reason for visit
-           2. History of Present Illness - detailed OLDCARTS analysis
-           3. Review of Systems - systematic review
-           4. Initial Assessment - preliminary clinical impression
-           5. Suggested Diagnoses - potential diagnoses to consider
-           6. Recommended Tests - suggested labs, imaging, etc.
-
-           Provide comprehensive, clinically accurate analysis.`,
-                           add_context_from_internet: false,
-                           response_json_schema: {
-                             type: "object",
-                             properties: {
-                               chief_complaint: { type: "string" },
-                               history_of_present_illness: { type: "string" },
-                               review_of_systems: { type: "string" },
-                               initial_assessment: { type: "string" },
-                               suggested_diagnoses: { type: "array", items: { type: "string" } },
-                               recommended_tests: { type: "array", items: { type: "string" } }
-                             }
-                           }
-                         });
-
-                         // Update note with extracted data
-                         await base44.entities.ClinicalNote.update(noteId, {
-                           chief_complaint: result.chief_complaint,
-                           history_of_present_illness: result.history_of_present_illness,
-                           review_of_systems: result.review_of_systems,
-                           assessment: result.initial_assessment
-                         });
-
-                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-
-                         // Show results
-                         const analysisDiv = document.getElementById('analysis-results');
-                         if (analysisDiv) {
-                           analysisDiv.innerHTML = `
-                             <div class="space-y-4 mt-6">
-                               <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-                                 <h4 class="font-bold text-blue-900 mb-2">Chief Complaint</h4>
-                                 <p class="text-sm text-slate-700">${result.chief_complaint}</p>
-                               </div>
-
-                               <div class="bg-purple-50 border-2 border-purple-200 rounded-lg p-4">
-                                 <h4 class="font-bold text-purple-900 mb-2">History of Present Illness</h4>
-                                 <p class="text-sm text-slate-700 whitespace-pre-wrap">${result.history_of_present_illness}</p>
-                               </div>
-
-                               <div class="bg-amber-50 border-2 border-amber-200 rounded-lg p-4">
-                                 <h4 class="font-bold text-amber-900 mb-2">Review of Systems</h4>
-                                 <p class="text-sm text-slate-700 whitespace-pre-wrap">${result.review_of_systems}</p>
-                               </div>
-
-                               <div class="bg-green-50 border-2 border-green-200 rounded-lg p-4">
-                                 <h4 class="font-bold text-green-900 mb-2">Initial Assessment</h4>
-                                 <p class="text-sm text-slate-700 whitespace-pre-wrap">${result.initial_assessment}</p>
-                               </div>
-
-                               ${result.suggested_diagnoses?.length > 0 ? `
-                                 <div class="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-4">
-                                   <h4 class="font-bold text-indigo-900 mb-2">Suggested Diagnoses</h4>
-                                   <ul class="space-y-1">
-                                     ${result.suggested_diagnoses.map(dx => `
-                                       <li class="text-sm text-slate-700 flex items-center gap-2">
-                                         <span class="text-indigo-600">•</span> ${dx}
-                                       </li>
-                                     `).join('')}
-                                   </ul>
-                                 </div>
-                               ` : ''}
-
-                               ${result.recommended_tests?.length > 0 ? `
-                                 <div class="bg-teal-50 border-2 border-teal-200 rounded-lg p-4">
-                                   <h4 class="font-bold text-teal-900 mb-2">Recommended Tests</h4>
-                                   <ul class="space-y-1">
-                                     ${result.recommended_tests.map(test => `
-                                       <li class="text-sm text-slate-700 flex items-center gap-2">
-                                         <span class="text-teal-600">•</span> ${test}
-                                       </li>
-                                     `).join('')}
-                                   </ul>
-                                 </div>
-                               ` : ''}
-                             </div>
-                           `;
-                         }
-
-                         toast.success("Analysis complete - data integrated into all tabs");
-                       } catch (error) {
-                         console.error("Analysis failed:", error);
-                         toast.error("Failed to analyze patient data");
-                       } finally {
-                         setAnalyzingRawData(false);
-                       }
-                     }}
-                     disabled={analyzingRawData || !note.raw_note}
-                     className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white gap-2 shadow-lg py-6 text-base"
-                   >
-                     {analyzingRawData ? (
-                       <><Loader2 className="w-5 h-5 animate-spin" /> Analyzing Patient Data...</>
-                     ) : (
-                       <><Sparkles className="w-5 h-5" /> Analyze & Extract Clinical Data</>
-                     )}
-                   </Button>
-
-                   <div id="analysis-results"></div>
-                 </div>
-               </div>
-             </div>
-
-             {/* Next Button */}
-             <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-               <div className="flex gap-2">
-                 <TabDataPreview tabId="patient_intake" note={note} />
-                 <ClinicalNotePreviewButton note={note} />
-               </div>
-               <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
-                 Next <ArrowLeft className="w-4 h-4 rotate-180" />
-               </Button>
-             </div>
-             </TabsContent>
-
-             {/* HPI Tab */}
-           <TabsContent value="hpi" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
-            <div className="max-w-5xl mx-auto space-y-8">
-              {/* Header */}
-              <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 mb-4 shadow-lg">
-                  <Activity className="w-8 h-8 text-white" />
-                </div>
-                <h2 className="text-3xl font-bold text-slate-900 mb-2">History of Present Illness</h2>
-                <p className="text-slate-600 max-w-2xl mx-auto">Detailed documentation of the current illness</p>
-              </div>
-
-              {/* Chief Complaint Card */}
-              <div className="bg-white rounded-xl border-2 border-blue-300 shadow-lg overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-500 to-indigo-500 px-6 py-5 text-white">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-bold text-lg flex items-center gap-2">
-                        <Activity className="w-6 h-6" />
-                        Chief Complaint
-                      </h3>
-                      <p className="text-blue-100 text-sm mt-1">Primary reason for the patient's visit</p>
-                    </div>
-                    <InlineSectionAI
-                      type="chief_complaint"
-                      note={note}
-                      onApply={async (val) => {
-                        await base44.entities.ClinicalNote.update(noteId, { chief_complaint: val });
-                        queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                      }}
-                    />
-                  </div>
-                </div>
-                <div className="p-6">
-                  <textarea
-                    value={note.chief_complaint || ""}
-                    onChange={(e) => {
-                      queryClient.setQueryData(["note", noteId], (old) => ({
-                        ...old,
-                        chief_complaint: e.target.value
-                      }));
-                    }}
-                    onBlur={async (e) => {
-                      await base44.entities.ClinicalNote.update(noteId, { chief_complaint: e.target.value });
-                      toast.success("Chief complaint saved");
-                    }}
-                    placeholder="Enter the patient's chief complaint (e.g., 'Chest pain for 2 hours', 'Persistent cough for 1 week')..."
-                    className="w-full px-4 py-4 rounded-lg border-2 border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all text-base text-slate-900 placeholder:text-slate-400 resize-none"
-                    rows="3"
-                  />
-                </div>
-              </div>
-
-              {/* HPI Editor */}
-               <div className="bg-white rounded-xl border-2 border-purple-300 shadow-lg overflow-hidden">
-                 <div className="bg-gradient-to-r from-purple-500 to-indigo-500 px-6 py-5 text-white">
-                   <div className="flex items-center justify-between">
-                     <div>
-                       <h3 className="font-bold text-lg flex items-center gap-2">
-                         <Activity className="w-6 h-6" />
-                         History of Present Illness
-                       </h3>
-                       <p className="text-purple-100 text-sm mt-1">Document OLDCARTS: Onset, Location, Duration, Character, Aggravating/Alleviating factors, Radiation, Timing, Severity</p>
-                     </div>
-                     <InlineSectionAI
-                       type="hpi"
-                       note={note}
-                       onApply={async (val) => {
-                         await base44.entities.ClinicalNote.update(noteId, { history_of_present_illness: val });
-                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                       }}
-                     />
-                   </div>
-                 </div>
-                 <div className="p-6">
-                   <Textarea
-                     value={note.history_of_present_illness || ""}
-                     onChange={(e) => {
-                       queryClient.setQueryData(["note", noteId], (old) => ({
-                         ...old,
-                         history_of_present_illness: e.target.value
-                       }));
-                     }}
-                     onBlur={async (e) => {
-                       await base44.entities.ClinicalNote.update(noteId, { history_of_present_illness: e.target.value });
-                       toast.success("HPI saved");
-                     }}
-                     placeholder="Document the detailed history of present illness using OLDCARTS framework..."
-                     className="min-h-[300px] text-base"
-                   />
-                 </div>
-               </div>
-
-               {/* Medical History */}
-               <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
-                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-                   <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                     <FileText className="w-5 h-5 text-slate-600" />
-                     Past Medical History
-                   </h3>
-                   <InlineSectionAI
-                     type="medical_history"
-                     note={note}
-                     onApply={async (val) => {
-                       await base44.entities.ClinicalNote.update(noteId, { medical_history: val });
-                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                     }}
-                   />
-                 </div>
-                 <div className="p-6">
-                   <Textarea
-                     value={note.medical_history || ""}
-                     onChange={(e) => {
-                       queryClient.setQueryData(["note", noteId], (old) => ({
-                         ...old,
-                         medical_history: e.target.value
-                       }));
-                     }}
-                     onBlur={async (e) => {
-                       await base44.entities.ClinicalNote.update(noteId, { medical_history: e.target.value });
-                       toast.success("Medical history saved");
-                     }}
-                     placeholder="Document past medical history, chronic conditions, surgeries..."
-                     className="min-h-[200px] text-base"
-                   />
-                 </div>
-               </div>
-             </div>
-
-             {/* Next Button */}
-             <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-               <div className="flex gap-2">
-                 <TabDataPreview tabId="hpi" note={note} />
-                 <ClinicalNotePreviewButton note={note} />
-               </div>
-               <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
-                 Next <ArrowLeft className="w-4 h-4 rotate-180" />
-               </Button>
-             </div>
-           </TabsContent>
+                            {/* Footer */}
+                            <div className="flex justify-between items-center pt-2 border-t border-slate-200">
+                              <div className="flex gap-2">
+                                <TabDataPreview tabId="patient_intake" note={note} />
+                                <ClinicalNotePreviewButton note={note} />
+                              </div>
+                              <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                                Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                              </Button>
+                            </div>
+                          </div>
+                        </TabsContent>
 
            {/* Vital Signs Tab */}
            <TabsContent value="vital_signs" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">

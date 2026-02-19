@@ -399,18 +399,45 @@ Return a JSON with each section and its acuity ranking.`,
                       </Badge>
                     )}
                   </div>
-                  <p className="text-xs text-slate-700 line-clamp-3 mb-2">{aiAnalysis.imaging_labs_rationale}</p>
-                  <Button
-                    onClick={async () => {
-                      await onUpdateNote({ mdm: `## Imaging/Labs Rationale\n${aiAnalysis.imaging_labs_rationale}` });
-                      toast.success("Added to clinical note");
-                    }}
-                    size="sm"
-                    variant="outline"
-                    className="w-full gap-1"
-                  >
-                    <Plus className="w-3 h-3" /> Add to Note
-                  </Button>
+                  {editingSection === "imaging_labs_rationale" ? (
+                    <Textarea
+                      value={editedContent.imaging_labs_rationale || aiAnalysis.imaging_labs_rationale}
+                      onChange={(e) => setEditedContent({...editedContent, imaging_labs_rationale: e.target.value})}
+                      className="mb-2 text-xs"
+                    />
+                  ) : (
+                    <p className="text-xs text-slate-700 line-clamp-3 mb-2">{editedContent.imaging_labs_rationale || aiAnalysis.imaging_labs_rationale}</p>
+                  )}
+                  <div className="flex gap-2">
+                    {editingSection === "imaging_labs_rationale" ? (
+                      <>
+                        <Button onClick={() => setEditingSection(null)} size="sm" variant="outline" className="flex-1">Done</Button>
+                        <Button
+                          onClick={async () => {
+                            await onUpdateNote({ mdm: `## Imaging/Labs Rationale\n${editedContent.imaging_labs_rationale || aiAnalysis.imaging_labs_rationale}` });
+                            toast.success("Added to clinical note");
+                            setEditingSection(null);
+                          }}
+                          size="sm" className="flex-1 bg-purple-600 hover:bg-purple-700 text-white gap-1"
+                        >
+                          <Plus className="w-3 h-3" /> Add
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button onClick={() => {setEditingSection("imaging_labs_rationale"); setEditedContent({...editedContent, imaging_labs_rationale: aiAnalysis.imaging_labs_rationale});}} size="sm" variant="outline" className="flex-1">Edit</Button>
+                        <Button
+                          onClick={async () => {
+                            await onUpdateNote({ mdm: `## Imaging/Labs Rationale\n${editedContent.imaging_labs_rationale || aiAnalysis.imaging_labs_rationale}` });
+                            toast.success("Added to clinical note");
+                          }}
+                          size="sm" className="flex-1 bg-purple-600 hover:bg-purple-700 text-white gap-1"
+                        >
+                          <Plus className="w-3 h-3" /> Add
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Treatment Reasoning */}

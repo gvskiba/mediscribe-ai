@@ -3,8 +3,10 @@ import { base44 } from '@/api/base44Client';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Save, Check, Palette, LayoutDashboard, Bell, User, Sliders, Monitor, Grid3X3, Clock } from 'lucide-react';
+import { Save, Check, Palette, LayoutDashboard, Bell, User, Sliders, Monitor, Grid3X3, Clock, FileText, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '../utils';
 
 const SECTIONS = [
   { id: 'appearance', label: 'Appearance', icon: Palette },

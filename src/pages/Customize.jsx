@@ -87,9 +87,20 @@ export default function Customize() {
   return (
     <div className="max-w-5xl mx-auto">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 mb-1">Customize</h1>
-          <p className="text-slate-500">Personalize your Notrya AI experience</p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 mb-1">Customize</h1>
+            <p className="text-slate-500">Personalize your Notrya AI experience</p>
+          </div>
+          {openNoteId && (
+            <Link to={createPageUrl(`NoteDetail?id=${openNoteId}`)}>
+              <Button variant="outline" className="gap-2 border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-400 shadow-sm">
+                <FileText className="w-4 h-4" />
+                Return to Open Note
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          )}
         </div>
 
         <div className="flex gap-6">

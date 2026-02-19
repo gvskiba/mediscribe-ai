@@ -386,43 +386,70 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
                 </div>
               </motion.div>
 
-              {/* Risk Assessment Card */}
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-                <div className={`rounded-xl p-4 border shadow-sm hover:shadow-md transition-shadow h-full ${aiInsights?.risk_level === "high" ? "bg-red-50 border-red-300" : aiInsights?.risk_level === "moderate" ? "bg-yellow-50 border-yellow-300" : "bg-green-50 border-green-300"}`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-orange-600" /> AI Risk
-                    </h3>
-                    <Button
-                      size="sm"
-                      onClick={generateAiInsights}
-                      disabled={loadingInsights}
-                      variant="ghost"
-                      className="h-6 w-6 p-0"
-                    >
-                      {loadingInsights ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                    </Button>
-                  </div>
-                  {loadingInsights && !aiInsights ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
-                  ) : aiInsights ? (
-                    <div className="space-y-2">
-                      <Badge className={getRiskBadgeColor(aiInsights.risk_level)}>
-                        {aiInsights.risk_level.toUpperCase()}
-                      </Badge>
+            </div>
+
+            {/* AI Risk Assessment - Full Width Section */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+              <div className={`rounded-xl p-6 border shadow-sm ${aiInsights?.risk_level === "high" ? "bg-red-50 border-red-300" : aiInsights?.risk_level === "moderate" ? "bg-yellow-50 border-yellow-300" : "bg-green-50 border-green-300"}`}>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-orange-600" /> AI Risk Assessment
+                  </h3>
+                  <Button
+                    size="sm"
+                    onClick={generateAiInsights}
+                    disabled={loadingInsights}
+                    className="gap-2"
+                  >
+                    {loadingInsights ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    {loadingInsights ? "Analyzing" : "Analyze"}
+                  </Button>
+                </div>
+                {loadingInsights && !aiInsights ? (
+                  <Loader2 className="w-6 h-6 animate-spin text-slate-500" />
+                ) : aiInsights ? (
+                  <div className="space-y-3">
+                    <Badge className={`${getRiskBadgeColor(aiInsights.risk_level)} text-base`}>
+                      {aiInsights.risk_level.toUpperCase()}
+                    </Badge>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {aiInsights.abnormal_vitals?.length > 0 && (
                         <div>
-                          <p className="text-xs font-bold text-slate-700">⚠️ Abnormal Vitals</p>
-                          <p className="text-xs text-slate-600">{aiInsights.abnormal_vitals[0]}</p>
+                          <p className="text-sm font-bold text-slate-800 mb-2">⚠️ Abnormal Vitals</p>
+                          <ul className="space-y-1">
+                            {aiInsights.abnormal_vitals.slice(0, 2).map((vital, idx) => (
+                              <li key={idx} className="text-sm text-slate-700">• {vital}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {aiInsights.urgent_actions?.length > 0 && (
+                        <div>
+                          <p className="text-sm font-bold text-slate-800 mb-2">📋 Urgent Actions</p>
+                          <ul className="space-y-1">
+                            {aiInsights.urgent_actions.slice(0, 2).map((action, idx) => (
+                              <li key={idx} className="text-sm text-slate-700">• {action}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {aiInsights.drug_concerns?.length > 0 && (
+                        <div>
+                          <p className="text-sm font-bold text-slate-800 mb-2">💊 Drug Concerns</p>
+                          <ul className="space-y-1">
+                            {aiInsights.drug_concerns.slice(0, 2).map((concern, idx) => (
+                              <li key={idx} className="text-sm text-slate-700">• {concern}</li>
+                            ))}
+                          </ul>
                         </div>
                       )}
                     </div>
-                  ) : (
-                    <p className="text-xs text-slate-600">Click to analyze</p>
-                  )}
-                </div>
-              </motion.div>
-            </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-600">Click the Analyze button to generate AI risk assessment</p>
+                )}
+              </div>
+            </motion.div>
           </div>
         </Card>
       </motion.div>

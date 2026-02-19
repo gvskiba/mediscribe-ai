@@ -466,17 +466,7 @@ Base recommendations on current clinical guidelines.`,
          )}
        </div>
 
-      <Button
-        onClick={generateStructuredNote}
-        disabled={processing || !rawInput.trim()}
-        className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white gap-2"
-      >
-        {processing ? (
-          <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
-        ) : (
-          <><Sparkles className="w-4 h-4" /> Generate Complete Clinical Note</>
-        )}
-      </Button>
+
 
         {grammarSuggestions && grammarSuggestions.has_errors && (
         <div className="p-4 rounded-lg bg-amber-50 border border-amber-200">

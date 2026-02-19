@@ -219,32 +219,32 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
         </div>
       </motion.div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Left Column: Vitals & Medications */}
-        <div className="space-y-6">
-        {/* Vital Signs */}
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className="border-emerald-200 overflow-hidden">
-            <div className="bg-emerald-500 px-4 py-3 text-white">
-              <h3 className="font-semibold text-sm flex items-center gap-2">
-                <Activity className="w-4 h-4" /> Vital Signs
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+        <Card className="border border-slate-200 overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 text-white">
+            <h2 className="text-lg font-bold">Clinical Overview</h2>
+          </div>
+
+          <div className="p-6 space-y-6">
+            {/* Vital Signs */}
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-emerald-600" /> Vital Signs
               </h3>
-            </div>
-            <div className="p-4">
               {latestNote.vital_signs && Object.keys(latestNote.vital_signs).length > 0 ? (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {Object.entries(latestNote.vital_signs)
                     .filter(([_, v]) => v && v.value)
                     .map(([key, vital]) => {
                       const vitalStatus = getVitalStatus(key, vital.value);
                       const displayKey = key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
                       return (
-                        <div key={key} className={`rounded p-3 ${vitalStatus.color} border ${
+                        <div key={key} className={`rounded p-2 ${vitalStatus.color} border ${
                           vitalStatus.status === "normal" ? "border-green-300" :
                           vitalStatus.status === "abnormal" ? "border-red-300" : "border-yellow-300"
                         }`}>
                           <p className="text-xs font-semibold text-slate-600">{displayKey}</p>
-                          <p className="text-xl font-bold text-slate-900 mt-0.5">
+                          <p className="text-lg font-bold text-slate-900 mt-0.5">
                             {key === "blood_pressure" && vital.systolic
                               ? `${vital.systolic}/${vital.diastolic}`
                               : vital.value}
@@ -255,107 +255,91 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
                     })}
                 </div>
               ) : (
-                <p className="text-slate-500 text-center py-6 text-sm">No vital signs</p>
+                <p className="text-slate-500 text-sm">No vital signs recorded</p>
               )}
             </div>
-          </Card>
-        </motion.div>
 
-        {/* Medications */}
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className="border-blue-200 overflow-hidden">
-            <div className="bg-blue-500 px-4 py-3 text-white">
-              <h3 className="font-semibold text-sm flex items-center gap-2">
-                <Pill className="w-4 h-4" /> Medications ({latestNote.medications?.length || 0})
+            <div className="border-t border-slate-200" />
+
+            {/* Medications */}
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                <Pill className="w-4 h-4 text-blue-600" /> Medications ({latestNote.medications?.length || 0})
               </h3>
-            </div>
-            <div className="p-4">
               {latestNote.medications && latestNote.medications.length > 0 ? (
-                <div className="space-y-2">
-                  {latestNote.medications.slice(0, 5).map((med, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-sm">
-                      <span className="font-bold text-blue-600 flex-shrink-0">{idx + 1}.</span>
+                <div className="grid md:grid-cols-2 gap-3">
+                  {latestNote.medications.slice(0, 6).map((med, idx) => (
+                    <div key={idx} className="flex gap-2 text-sm bg-blue-50 border border-blue-200 rounded p-2">
+                      <span className="font-bold text-blue-600 flex-shrink-0 text-xs">{idx + 1}.</span>
                       <p className="text-slate-700">{med}</p>
                     </div>
                   ))}
-                  {latestNote.medications.length > 5 && (
-                    <p className="text-xs text-slate-500 pt-2">+{latestNote.medications.length - 5} more</p>
-                  )}
                 </div>
               ) : (
-                <p className="text-slate-500 text-center py-6 text-sm">No medications</p>
+                <p className="text-slate-500 text-sm">No medications recorded</p>
+              )}
+              {latestNote.medications && latestNote.medications.length > 6 && (
+                <p className="text-xs text-slate-500 mt-2">+{latestNote.medications.length - 6} more</p>
               )}
             </div>
-          </Card>
-        </motion.div>
-        </div>
-      </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Diagnoses */}
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className="border-purple-200 overflow-hidden">
-            <div className="bg-purple-500 px-4 py-3 text-white">
-              <h3 className="font-semibold text-sm flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" /> Diagnoses ({latestNote.diagnoses?.length || 0})
+            <div className="border-t border-slate-200" />
+
+            {/* Diagnoses */}
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-purple-600" /> Diagnoses ({latestNote.diagnoses?.length || 0})
               </h3>
-            </div>
-            <div className="p-4">
               {latestNote.diagnoses && latestNote.diagnoses.length > 0 ? (
-                <div className="space-y-2">
-                  {latestNote.diagnoses.slice(0, 4).map((diag, idx) => (
-                    <div key={idx} className="text-xs bg-purple-50 border border-purple-200 rounded p-2 text-slate-700">
+                <div className="flex flex-wrap gap-2">
+                  {latestNote.diagnoses.slice(0, 6).map((diag, idx) => (
+                    <div key={idx} className="text-xs bg-purple-100 border border-purple-300 rounded-full px-3 py-1 text-slate-800">
                       {diag}
                     </div>
                   ))}
-                  {latestNote.diagnoses.length > 4 && (
-                    <p className="text-xs text-slate-500 pt-1">+{latestNote.diagnoses.length - 4} more</p>
+                  {latestNote.diagnoses.length > 6 && (
+                    <div className="text-xs text-slate-500 py-1">+{latestNote.diagnoses.length - 6} more</div>
                   )}
                 </div>
               ) : (
-                <p className="text-slate-500 text-center py-6 text-sm">No diagnoses</p>
+                <p className="text-slate-500 text-sm">No diagnoses recorded</p>
               )}
             </div>
-          </Card>
-        </motion.div>
 
-        {/* AI Risk Assessment */}
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className={`border overflow-hidden ${aiInsights ? getRiskColor(aiInsights.risk_level) : "border-slate-200 bg-slate-50"}`}>
-            <div className="bg-orange-500 px-4 py-3 text-white">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-sm flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" /> AI Risk Assessment
+            <div className="border-t border-slate-200" />
+
+            {/* AI Risk Assessment */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-orange-600" /> AI Risk Assessment
                 </h3>
                 <Button
                   size="sm"
                   onClick={generateAiInsights}
                   disabled={loadingInsights}
-                  variant="ghost"
-                  className="h-6 px-2 bg-white/20 hover:bg-white/30 text-white text-xs gap-1"
+                  variant="outline"
+                  className="h-7 text-xs gap-1"
                 >
                   {loadingInsights ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                  {loadingInsights ? "Analyzing" : "Analyze"}
                 </Button>
               </div>
-            </div>
-            <div className="p-4 space-y-3">
               {loadingInsights && !aiInsights ? (
-                <div className="flex items-center justify-center py-6">
-                  <Loader2 className="w-5 h-5 animate-spin text-orange-500" />
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="w-4 h-4 animate-spin text-orange-500" />
                 </div>
               ) : aiInsights ? (
-                <>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-slate-700">Risk:</span>
+                <div className={`rounded-lg p-3 border ${aiInsights.risk_level === "high" ? "bg-red-50 border-red-300" : aiInsights.risk_level === "moderate" ? "bg-yellow-50 border-yellow-300" : "bg-green-50 border-green-300"}`}>
+                  <div className="flex items-center gap-2 mb-2">
                     <Badge className={getRiskBadgeColor(aiInsights.risk_level)}>
                       {aiInsights.risk_level.toUpperCase()}
                     </Badge>
                   </div>
-
                   {aiInsights.urgent_actions && aiInsights.urgent_actions.length > 0 && (
-                    <div>
+                    <div className="mb-2">
                       <p className="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3 text-red-600" /> Actions
+                        <AlertCircle className="w-3 h-3" /> Actions
                       </p>
                       <ul className="space-y-0.5">
                         {aiInsights.urgent_actions.slice(0, 2).map((action, idx) => (
@@ -364,10 +348,9 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
                       </ul>
                     </div>
                   )}
-
                   {aiInsights.abnormal_vitals && aiInsights.abnormal_vitals.length > 0 && (
                     <div>
-                      <p className="text-xs font-bold text-slate-700 mb-1">⚠️ Abnormal</p>
+                      <p className="text-xs font-bold text-slate-700 mb-1">⚠️ Abnormal Vitals</p>
                       <ul className="space-y-0.5">
                         {aiInsights.abnormal_vitals.slice(0, 2).map((vital, idx) => (
                           <li key={idx} className="text-xs text-slate-600">• {vital}</li>
@@ -375,19 +358,19 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
                       </ul>
                     </div>
                   )}
-                </>
+                </div>
               ) : (
                 <button
                   onClick={generateAiInsights}
-                  className="text-xs text-slate-600 hover:text-slate-900 w-full py-3"
+                  className="text-xs text-slate-600 hover:text-slate-900 w-full py-2"
                 >
                   Generate AI insights
                 </button>
               )}
             </div>
-          </Card>
-        </motion.div>
-      </div>
+          </div>
+        </Card>
+      </motion.div>
     </div>
   );
 }

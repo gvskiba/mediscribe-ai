@@ -255,78 +255,21 @@ Return:
                   )}
 
               {/* Problem Summary */}
-              <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
-                <div className="flex items-start justify-between mb-2">
-                  <p className="text-xs font-bold text-indigo-900">Problem Summary</p>
-                  {aiRanking?.problem_summary !== undefined && (
-                    <Badge variant="secondary" className={`text-xs ${
-                      aiRanking.problem_summary >= 75 ? "bg-red-100 text-red-700" :
-                      aiRanking.problem_summary >= 50 ? "bg-yellow-100 text-yellow-700" :
-                      "bg-green-100 text-green-700"
-                    }`}>
-                      {aiRanking.problem_summary}%
-                    </Badge>
-                  )}
-                </div>
-                {editingSection === "problem_summary" ? (
-                  <Textarea
-                    value={editedContent.problem_summary || aiAnalysis.problem_summary}
-                    onChange={(e) => setEditedContent({...editedContent, problem_summary: e.target.value})}
-                    className="mb-2 text-xs"
-                  />
-                ) : (
-                  <p className="text-sm text-slate-700 leading-relaxed mb-3">{editedContent.problem_summary || aiAnalysis.problem_summary}</p>
-                )}
-                <div className="flex gap-2">
-                  {editingSection === "problem_summary" ? (
-                    <>
-                      <Button
-                        onClick={() => setEditingSection(null)}
-                        size="sm"
-                        variant="outline"
-                        className="flex-1"
-                      >
-                        Done Editing
-                      </Button>
-                      <Button
-                        onClick={async () => {
-                          await onUpdateNote({ mdm: `## Problem Summary\n${editedContent.problem_summary || aiAnalysis.problem_summary}` });
-                          toast.success("Added to clinical note");
-                          setEditingSection(null);
-                        }}
-                        size="sm"
-                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
-                      >
-                        <Plus className="w-3 h-3" /> Add to Note
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button
-                        onClick={() => {
-                          setEditingSection("problem_summary");
-                          setEditedContent({...editedContent, problem_summary: aiAnalysis.problem_summary});
-                        }}
-                        size="sm"
-                        variant="outline"
-                        className="flex-1"
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        onClick={async () => {
-                          await onUpdateNote({ mdm: `## Problem Summary\n${editedContent.problem_summary || aiAnalysis.problem_summary}` });
-                          toast.success("Added to clinical note");
-                        }}
-                        size="sm"
-                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
-                      >
-                        <Plus className="w-3 h-3" /> Add
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
+              <MDMSectionRenderer
+                sectionKey="problem_summary"
+                title="Problem Summary"
+                content={editedContent.problem_summary || aiAnalysis.problem_summary}
+                likelihood={aiRanking?.problem_summary}
+                color="indigo"
+                isEditing={editingSection === "problem_summary"}
+                editValue={editedContent.problem_summary}
+                onEditChange={(updated) => setEditedContent({...editedContent, problem_summary: updated})}
+                onAdd={async (content) => {
+                  const text = Array.isArray(content) ? content.join("\n• ") : content;
+                  await onUpdateNote({ mdm: `## Problem Summary\n• ${text}` });
+                  toast.success("Added to clinical note");
+                }}
+              />
 
               <div className="grid md:grid-cols-2 gap-3">
                 {/* Differential Reasoning */}

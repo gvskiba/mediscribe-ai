@@ -850,8 +850,41 @@ const PANEL_MAP = {
   research: ResearchPanel,
 };
 
-export default function AISidebar({ isOpen, onClose, note, noteId, onUpdateNote }) {
+export default function AISidebar({ isOpen, onClose, note, noteId, activeTab: externalActiveTab, onUpdateNote }) {
   const [activeTab, setActiveTab] = useState("analyze");
+  
+  // Tab mapping: map note tabs to AI sidebar tabs
+  const TAB_MAPPING = {
+    // Subjective/History
+    patient_intake: "summarize",
+    
+    // Objective exams
+    review_of_systems: "ros",
+    physical_exam: "analyze",
+    vital_signs: "analyze",
+    
+    // Assessment
+    differential: "analyze",
+    labs_imaging: "research",
+    diagnoses: "icd10",
+    
+    // Plan
+    treatment_plan: "treatment",
+    medications: "treatment",
+    procedures: "guidelines",
+    
+    // Finalize
+    clinical_note: "consolidated",
+    finalize: "analyze"
+  };
+  
+  // Auto-switch AI tab based on current note tab
+  React.useEffect(() => {
+    if (externalActiveTab && TAB_MAPPING[externalActiveTab]) {
+      setActiveTab(TAB_MAPPING[externalActiveTab]);
+    }
+  }, [externalActiveTab]);
+
   const ActivePanel = PANEL_MAP[activeTab];
   const activeTabDef = TABS.find(t => t.id === activeTab);
   const c = COLOR[activeTabDef?.color || "blue"];

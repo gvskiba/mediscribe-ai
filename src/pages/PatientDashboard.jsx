@@ -391,7 +391,7 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
             {/* AI Risk Assessment - Full Width Section */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
               <div className={`rounded-xl p-6 border shadow-sm ${aiInsights?.risk_level === "high" ? "bg-red-50 border-red-300" : aiInsights?.risk_level === "moderate" ? "bg-yellow-50 border-yellow-300" : "bg-green-50 border-green-300"}`}>
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4 gap-4">
                   <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-orange-600" /> AI Risk Assessment
                   </h3>
@@ -399,7 +399,7 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
                     size="sm"
                     onClick={generateAiInsights}
                     disabled={loadingInsights}
-                    className="gap-2"
+                    className="gap-2 flex-shrink-0"
                   >
                     {loadingInsights ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                     {loadingInsights ? "Analyzing" : "Analyze"}

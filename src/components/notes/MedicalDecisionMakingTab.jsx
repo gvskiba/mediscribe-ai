@@ -76,26 +76,26 @@ export default function MedicalDecisionMakingTab({ note, onUpdateNote, noteId })
       ].filter(Boolean).join("\n\n");
 
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are an expert clinician. Provide a comprehensive Medical Decision Making (MDM) analysis with detailed clinical reasoning.
+        prompt: `You are an expert clinician. Provide a comprehensive Medical Decision Making (MDM) analysis with detailed clinical reasoning. Return each section as an array of bullet points.
 
 ${context}
 
-Provide:
-1. Problem Summary - Concise synthesis of key clinical issues
-2. Differential Diagnosis Reasoning - Clinical reasoning for ranked differentials
-3. Imaging/Labs Rationale - Evidence-based justification for recommended tests
-4. Treatment Reasoning - Clinical rationale for proposed treatment plan
-5. Risk Assessment - Key risks and safety considerations
-6. Follow-up Strategy - Specific follow-up plan with timing and monitoring`,
+Return:
+1. Problem Summary - Array of key clinical synthesis points
+2. Differential Diagnosis Reasoning - Array of differentials with reasoning
+3. Imaging/Labs Rationale - Array of tests and their justifications
+4. Treatment Reasoning - Array of treatment plans/rationale
+5. Risk Assessment - Array of identified risks
+6. Follow-up Strategy - Array of follow-up items with timing`,
         response_json_schema: {
           type: "object",
           properties: {
-            problem_summary: { type: "string" },
-            differential_reasoning: { type: "string" },
-            imaging_labs_rationale: { type: "string" },
-            treatment_reasoning: { type: "string" },
-            risk_assessment: { type: "string" },
-            follow_up_strategy: { type: "string" },
+            problem_summary: { type: "array", items: { type: "string" } },
+            differential_reasoning: { type: "array", items: { type: "string" } },
+            imaging_labs_rationale: { type: "array", items: { type: "string" } },
+            treatment_reasoning: { type: "array", items: { type: "string" } },
+            risk_assessment: { type: "array", items: { type: "string" } },
+            follow_up_strategy: { type: "array", items: { type: "string" } },
           },
         },
       });

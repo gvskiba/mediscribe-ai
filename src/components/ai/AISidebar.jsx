@@ -687,10 +687,18 @@ function ResearchPanel({ note, onUpdateNote }) {
   );
 }
 
+// ── Panel: Q&A ─────────────────────────────────────────────────────────────────
+function QAPanel({ note, onUpdateNote }) {
+  return (
+    <NoteQuestionAnswering note={note} onAddToNote={onUpdateNote} />
+  );
+}
+
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 const PANEL_MAP = {
   analyze: AnalyzePanel,
   summarize: SummarizePanel,
+  qa: QAPanel,
   icd10: ICD10Panel,
   treatment: TreatmentPanel,
   diagnosis: DiagnosisPanel,

@@ -1427,12 +1427,6 @@ Generated: ${new Date().toLocaleString()}
 
         {/* Quick Actions */}
         <div className="border-t border-slate-200 pt-6 flex gap-3">
-         <Button
-           onClick={() => setAiSidebarOpen(true)}
-           className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl gap-2 shadow-lg shadow-purple-500/30 font-semibold transition-all"
-         >
-           <Sparkles className="w-4 h-4" /> AI Assistant
-         </Button>
          <Button 
            onClick={async () => {
              setExtractingData(true);

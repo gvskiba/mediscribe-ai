@@ -269,6 +269,22 @@ export default function EditableSection({
                   <FileText className="w-3.5 h-3.5 text-blue-500" />
                 </Button>
               )}
+              {(type === "textarea" || type === "text") && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={handleGrammarCheck}
+                  disabled={isCheckingGrammar}
+                  title="Check grammar & spelling"
+                >
+                  {isCheckingGrammar ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-500" />
+                  ) : (
+                    <CheckSquare className="w-3.5 h-3.5 text-emerald-500" />
+                  )}
+                </Button>
+              )}
               {onReanalyze && (
                 <Button
                   variant="ghost"

@@ -24,6 +24,7 @@ const TABS = [
   { id: "guidelines", label: "Guidelines", icon: BookOpen,      color: "amber" },
   { id: "mdm",        label: "MDM",        icon: FileText,      color: "rose" },
   { id: "ros",        label: "ROS",        icon: Activity,      color: "teal" },
+  { id: "research",   label: "Research",   icon: BookOpen,      color: "indigo" },
 ];
 
 const COLOR = {

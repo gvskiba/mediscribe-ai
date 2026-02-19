@@ -330,6 +330,15 @@ export default function PhysicalExamEditor({ examData, onUpdate, onAddToNote }) 
                 >
                   {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
+
+                {/* Delete */}
+                <button
+                  onClick={() => removeCustomSection(section.id)}
+                  className="flex-shrink-0 text-slate-300 hover:text-red-500 transition-colors"
+                  title="Remove section"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
             </motion.div>
           );

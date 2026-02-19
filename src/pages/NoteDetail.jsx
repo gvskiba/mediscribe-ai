@@ -2396,35 +2396,24 @@ Generated: ${new Date().toLocaleString()}
                    }}
                    noteTypes={templates}
                  />
-               </div>
 
-               <ClinicalNoteView
-                 note={note}
-                 onUpdate={async (field, value) => {
-                   await base44.entities.ClinicalNote.update(noteId, { [field]: value });
-                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                   toast.success("Updated successfully");
-                 }}
-                 noteTypes={templates}
-               />
-
-               {/* Complete Clinical Note Generator */}
-               <div className="bg-white rounded-xl border-2 border-purple-300 shadow-lg overflow-hidden">
-                 <div className="bg-gradient-to-r from-purple-500 to-indigo-500 px-6 py-5 text-white">
-                   <h3 className="font-bold text-lg flex items-center gap-2">
-                     <Sparkles className="w-6 h-6" />
-                     Generate Complete Clinical Note
-                   </h3>
-                   <p className="text-purple-100 text-sm mt-1">Generate a full clinical note from raw data</p>
+                 {/* Complete Clinical Note Generator */}
+                 <div className="bg-white rounded-xl border-2 border-purple-300 shadow-lg overflow-hidden">
+                   <div className="bg-gradient-to-r from-purple-500 to-indigo-500 px-6 py-5 text-white">
+                     <h3 className="font-bold text-lg flex items-center gap-2">
+                       <Sparkles className="w-6 h-6" />
+                       Generate Complete Clinical Note
+                     </h3>
+                     <p className="text-purple-100 text-sm mt-1">Generate a full clinical note from raw data</p>
+                   </div>
+                   <div className="p-6">
+                     <AIDocumentationAssistant note={note} onUpdateNote={async (updates) => {
+                       await base44.entities.ClinicalNote.update(noteId, updates);
+                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                     }} />
+                   </div>
                  </div>
-                 <div className="p-6">
-                   <AIDocumentationAssistant note={note} onUpdateNote={async (updates) => {
-                     await base44.entities.ClinicalNote.update(noteId, updates);
-                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                   }} />
                  </div>
-               </div>
-               </div>
 
                {/* Next Button */}
                <div className="flex justify-between items-center pt-4 border-t border-slate-200">

@@ -2773,11 +2773,23 @@ Generated: ${new Date().toLocaleString()}
 
                  <div className="bg-white rounded-xl border-2 border-emerald-300 shadow-lg overflow-hidden">
                    <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-5 text-white">
-                     <h3 className="font-bold text-lg flex items-center gap-2">
-                       <Activity className="w-6 h-6" />
-                       Physical Exam Editor
-                     </h3>
-                     <p className="text-emerald-100 text-sm mt-1">Structured examination documentation</p>
+                     <div className="flex items-center justify-between">
+                       <div>
+                         <h3 className="font-bold text-lg flex items-center gap-2">
+                           <Activity className="w-6 h-6" />
+                           Physical Exam Editor
+                         </h3>
+                         <p className="text-emerald-100 text-sm mt-1">Structured examination documentation</p>
+                       </div>
+                       <InlineSectionAI
+                         type="physical_exam"
+                         note={note}
+                         onApply={async (val) => {
+                           await base44.entities.ClinicalNote.update(noteId, { physical_exam: val });
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                         }}
+                       />
+                     </div>
                    </div>
                    <div className="p-6 space-y-6 overflow-y-auto">
                      <PhysicalExamEditor

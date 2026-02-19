@@ -100,11 +100,49 @@ Provide:
 
       setAiAnalysis(res);
       toast.success("MDM analysis generated");
+      
+      // Auto-rank by acuity
+      rankByAcuity(res);
     } catch (error) {
       console.error("Failed to generate MDM analysis:", error);
       toast.error("Failed to generate MDM analysis");
     } finally {
       setLoadingAI(false);
+    }
+  };
+
+  // Rank reasoning by acuity
+  const rankByAcuity = async (analysis) => {
+    setLoadingRank(true);
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `Analyze the following clinical reasoning sections and rank them by acuity level (HIGH, MEDIUM, LOW).
+        
+Problem Summary: ${analysis.problem_summary}
+Differential Diagnosis Reasoning: ${analysis.differential_reasoning}
+Imaging/Labs Rationale: ${analysis.imaging_labs_rationale}
+Treatment Reasoning: ${analysis.treatment_reasoning}
+Risk Assessment: ${analysis.risk_assessment}
+Follow-up Strategy: ${analysis.follow_up_strategy}
+
+Return a JSON with each section and its acuity ranking.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            problem_summary: { type: "string", enum: ["HIGH", "MEDIUM", "LOW"] },
+            differential_reasoning: { type: "string", enum: ["HIGH", "MEDIUM", "LOW"] },
+            imaging_labs_rationale: { type: "string", enum: ["HIGH", "MEDIUM", "LOW"] },
+            treatment_reasoning: { type: "string", enum: ["HIGH", "MEDIUM", "LOW"] },
+            risk_assessment: { type: "string", enum: ["HIGH", "MEDIUM", "LOW"] },
+            follow_up_strategy: { type: "string", enum: ["HIGH", "MEDIUM", "LOW"] },
+          },
+        },
+      });
+      setAiRanking(res);
+    } catch (error) {
+      console.error("Failed to rank by acuity:", error);
+    } finally {
+      setLoadingRank(false);
     }
   };
 

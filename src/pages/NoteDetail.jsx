@@ -1672,17 +1672,23 @@ Generated: ${new Date().toLocaleString()}
                               </div>
                             </div>
 
-                            {/* AI Documentation Assistant */}
-                            <div className="bg-white rounded-xl border border-purple-200 shadow-sm overflow-hidden">
-                              <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-500 text-white">
+                            {/* Raw Input */}
+                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                              <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-slate-500 to-slate-600 text-white">
                                 <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center text-xs font-bold">2</div>
-                                <span className="text-sm font-semibold">AI Documentation Assistant</span>
+                                <span className="text-sm font-semibold">Raw Note Input</span>
                               </div>
                               <div className="p-4">
-                                <AIDocumentationAssistant note={note} onUpdateNote={async (updates) => {
-                                  await base44.entities.ClinicalNote.update(noteId, updates);
-                                  queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                                }} />
+                                <Textarea
+                                  value={note.raw_note || ""}
+                                  onChange={(e) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, raw_note: e.target.value }))}
+                                  onBlur={async (e) => {
+                                    await base44.entities.ClinicalNote.update(noteId, { raw_note: e.target.value });
+                                    toast.success("Raw note saved");
+                                  }}
+                                  placeholder="Paste raw clinical data, voice transcripts, or unstructured notes here..."
+                                  className="min-h-[200px] text-base"
+                                />
                               </div>
                             </div>
 

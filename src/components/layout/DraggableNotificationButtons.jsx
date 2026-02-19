@@ -58,7 +58,6 @@ export default function DraggableNotificationButtons() {
     e.preventDefault();
     setIsDragging(buttonType);
     setDragStart({ x: e.clientX, y: e.clientY });
-    setDragOffset({ x: 0, y: 0 });
   };
 
   const handleMouseMove = (e) => {
@@ -67,20 +66,23 @@ export default function DraggableNotificationButtons() {
     const deltaX = e.clientX - dragStart.x;
     const deltaY = e.clientY - dragStart.y;
     
-    const newLeft = Math.max(0, Math.min(window.innerWidth - 80, prefs.fab_position.left + deltaX));
-    const newTop = Math.max(0, Math.min(window.innerHeight - 80, prefs.fab_position.top + deltaY));
+    const posKey = isDragging === 'arrow' ? 'fab_position_arrow' : 'fab_position_plus';
+    const currentPos = prefs[posKey];
     
-    setDragOffset({ x: deltaX, y: deltaY });
+    const newLeft = Math.max(0, Math.min(window.innerWidth - 56, currentPos.left + deltaX));
+    const newTop = Math.max(0, Math.min(window.innerHeight - 56, currentPos.top + deltaY));
+    
     setPrefs(p => ({
       ...p,
-      fab_position: { left: newLeft, top: newTop }
+      [posKey]: { left: newLeft, top: newTop }
     }));
+    
+    setDragStart({ x: e.clientX, y: e.clientY });
   };
 
   const handleMouseUp = async () => {
     if (isDragging && prefs) {
       setIsDragging(null);
-      setDragOffset({ x: 0, y: 0 });
       await base44.auth.updateMe({ preferences: prefs });
     }
   };
@@ -94,7 +96,7 @@ export default function DraggableNotificationButtons() {
         window.removeEventListener("mouseup", handleMouseUp);
       };
     }
-  }, [isDragging, dragStart, prefs]);
+  }, [isDragging]);
 
   if (!prefs || !prefs.fab_enabled) return null;
 

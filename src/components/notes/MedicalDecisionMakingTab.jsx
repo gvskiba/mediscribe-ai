@@ -246,12 +246,12 @@ Provide:
           ) : (
             <div className="space-y-3">
               {loadingRank && (
-                <div className="text-center py-2">
-                  <p className="text-xs text-indigo-600 flex items-center justify-center gap-2">
-                    <Loader2 className="w-3 h-3 animate-spin" /> Ranking by acuity...
-                  </p>
-                </div>
-              )}
+                    <div className="text-center py-2">
+                      <p className="text-xs text-indigo-600 flex items-center justify-center gap-2">
+                        <Loader2 className="w-3 h-3 animate-spin" /> Ranking by likelihood...
+                      </p>
+                    </div>
+                  )}
 
               {/* Problem Summary */}
               <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">

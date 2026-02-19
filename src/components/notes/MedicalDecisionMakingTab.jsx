@@ -272,282 +272,85 @@ Return:
               />
 
               <div className="grid md:grid-cols-2 gap-3">
-                {/* Differential Reasoning */}
-                <div className="bg-cyan-50 rounded-lg p-4 border border-cyan-200">
-                  <div className="flex items-start justify-between mb-2">
-                    <p className="text-xs font-bold text-cyan-900">Differential Diagnosis</p>
-                    {aiRanking?.differential_reasoning !== undefined && (
-                      <Badge variant="secondary" className={`text-xs ${
-                        aiRanking.differential_reasoning >= 75 ? "bg-red-100 text-red-700" :
-                        aiRanking.differential_reasoning >= 50 ? "bg-yellow-100 text-yellow-700" :
-                        "bg-green-100 text-green-700"
-                      }`}>
-                        {aiRanking.differential_reasoning}%
-                      </Badge>
-                    )}
-                  </div>
-                  {editingSection === "differential_reasoning" ? (
-                    <Textarea
-                      value={editedContent.differential_reasoning || aiAnalysis.differential_reasoning}
-                      onChange={(e) => setEditedContent({...editedContent, differential_reasoning: e.target.value})}
-                      className="mb-2 text-xs"
-                    />
-                  ) : (
-                    <p className="text-xs text-slate-700 line-clamp-3 mb-2">{editedContent.differential_reasoning || aiAnalysis.differential_reasoning}</p>
-                  )}
-                  <div className="flex gap-2">
-                    {editingSection === "differential_reasoning" ? (
-                      <>
-                        <Button onClick={() => setEditingSection(null)} size="sm" variant="outline" className="flex-1">Done</Button>
-                        <Button
-                          onClick={async () => {
-                            await onUpdateNote({ mdm: `## Differential Diagnosis Reasoning\n${editedContent.differential_reasoning || aiAnalysis.differential_reasoning}` });
-                            toast.success("Added to clinical note");
-                            setEditingSection(null);
-                          }}
-                          size="sm" className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white gap-1"
-                        >
-                          <Plus className="w-3 h-3" /> Add
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button onClick={() => {setEditingSection("differential_reasoning"); setEditedContent({...editedContent, differential_reasoning: aiAnalysis.differential_reasoning});}} size="sm" variant="outline" className="flex-1">Edit</Button>
-                        <Button
-                          onClick={async () => {
-                            await onUpdateNote({ mdm: `## Differential Diagnosis Reasoning\n${editedContent.differential_reasoning || aiAnalysis.differential_reasoning}` });
-                            toast.success("Added to clinical note");
-                          }}
-                          size="sm" className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white gap-1"
-                        >
-                          <Plus className="w-3 h-3" /> Add
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
+                <MDMSectionRenderer
+                  sectionKey="differential_reasoning"
+                  title="Differential Diagnosis"
+                  content={editedContent.differential_reasoning || aiAnalysis.differential_reasoning}
+                  likelihood={aiRanking?.differential_reasoning}
+                  color="cyan"
+                  isEditing={editingSection === "differential_reasoning"}
+                  editValue={editedContent.differential_reasoning}
+                  onEditChange={(updated) => setEditedContent({...editedContent, differential_reasoning: updated})}
+                  onAdd={async (content) => {
+                    const text = Array.isArray(content) ? content.join("\n• ") : content;
+                    await onUpdateNote({ mdm: `## Differential Diagnosis Reasoning\n• ${text}` });
+                    toast.success("Added to clinical note");
+                  }}
+                />
 
-                {/* Labs/Imaging */}
-                <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                  <div className="flex items-start justify-between mb-2">
-                    <p className="text-xs font-bold text-purple-900 flex items-center gap-1">
-                      <Beaker className="w-3 h-3" /> Labs/Imaging
-                    </p>
-                    {aiRanking?.imaging_labs_rationale !== undefined && (
-                      <Badge variant="secondary" className={`text-xs ${
-                        aiRanking.imaging_labs_rationale >= 75 ? "bg-red-100 text-red-700" :
-                        aiRanking.imaging_labs_rationale >= 50 ? "bg-yellow-100 text-yellow-700" :
-                        "bg-green-100 text-green-700"
-                      }`}>
-                        {aiRanking.imaging_labs_rationale}%
-                      </Badge>
-                    )}
-                  </div>
-                  {editingSection === "imaging_labs_rationale" ? (
-                    <Textarea
-                      value={editedContent.imaging_labs_rationale || aiAnalysis.imaging_labs_rationale}
-                      onChange={(e) => setEditedContent({...editedContent, imaging_labs_rationale: e.target.value})}
-                      className="mb-2 text-xs"
-                    />
-                  ) : (
-                    <p className="text-xs text-slate-700 line-clamp-3 mb-2">{editedContent.imaging_labs_rationale || aiAnalysis.imaging_labs_rationale}</p>
-                  )}
-                  <div className="flex gap-2">
-                    {editingSection === "imaging_labs_rationale" ? (
-                      <>
-                        <Button onClick={() => setEditingSection(null)} size="sm" variant="outline" className="flex-1">Done</Button>
-                        <Button
-                          onClick={async () => {
-                            await onUpdateNote({ mdm: `## Imaging/Labs Rationale\n${editedContent.imaging_labs_rationale || aiAnalysis.imaging_labs_rationale}` });
-                            toast.success("Added to clinical note");
-                            setEditingSection(null);
-                          }}
-                          size="sm" className="flex-1 bg-purple-600 hover:bg-purple-700 text-white gap-1"
-                        >
-                          <Plus className="w-3 h-3" /> Add
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button onClick={() => {setEditingSection("imaging_labs_rationale"); setEditedContent({...editedContent, imaging_labs_rationale: aiAnalysis.imaging_labs_rationale});}} size="sm" variant="outline" className="flex-1">Edit</Button>
-                        <Button
-                          onClick={async () => {
-                            await onUpdateNote({ mdm: `## Imaging/Labs Rationale\n${editedContent.imaging_labs_rationale || aiAnalysis.imaging_labs_rationale}` });
-                            toast.success("Added to clinical note");
-                          }}
-                          size="sm" className="flex-1 bg-purple-600 hover:bg-purple-700 text-white gap-1"
-                        >
-                          <Plus className="w-3 h-3" /> Add
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
+                <MDMSectionRenderer
+                  sectionKey="imaging_labs_rationale"
+                  title="Labs/Imaging"
+                  content={editedContent.imaging_labs_rationale || aiAnalysis.imaging_labs_rationale}
+                  likelihood={aiRanking?.imaging_labs_rationale}
+                  color="purple"
+                  isEditing={editingSection === "imaging_labs_rationale"}
+                  editValue={editedContent.imaging_labs_rationale}
+                  onEditChange={(updated) => setEditedContent({...editedContent, imaging_labs_rationale: updated})}
+                  onAdd={async (content) => {
+                    const text = Array.isArray(content) ? content.join("\n• ") : content;
+                    await onUpdateNote({ mdm: `## Imaging/Labs Rationale\n• ${text}` });
+                    toast.success("Added to clinical note");
+                  }}
+                />
 
-                {/* Treatment Reasoning */}
-                <div className="bg-pink-50 rounded-lg p-4 border border-pink-200">
-                  <div className="flex items-start justify-between mb-2">
-                    <p className="text-xs font-bold text-pink-900">Treatment Reasoning</p>
-                    {aiRanking?.treatment_reasoning !== undefined && (
-                      <Badge variant="secondary" className={`text-xs ${
-                        aiRanking.treatment_reasoning >= 75 ? "bg-red-100 text-red-700" :
-                        aiRanking.treatment_reasoning >= 50 ? "bg-yellow-100 text-yellow-700" :
-                        "bg-green-100 text-green-700"
-                      }`}>
-                        {aiRanking.treatment_reasoning}%
-                      </Badge>
-                    )}
-                  </div>
-                  {editingSection === "treatment_reasoning" ? (
-                    <Textarea
-                      value={editedContent.treatment_reasoning || aiAnalysis.treatment_reasoning}
-                      onChange={(e) => setEditedContent({...editedContent, treatment_reasoning: e.target.value})}
-                      className="mb-2 text-xs"
-                    />
-                  ) : (
-                    <p className="text-xs text-slate-700 line-clamp-3 mb-2">{editedContent.treatment_reasoning || aiAnalysis.treatment_reasoning}</p>
-                  )}
-                  <div className="flex gap-2">
-                    {editingSection === "treatment_reasoning" ? (
-                      <>
-                        <Button onClick={() => setEditingSection(null)} size="sm" variant="outline" className="flex-1">Done</Button>
-                        <Button
-                          onClick={async () => {
-                            await onUpdateNote({ mdm: `## Treatment Reasoning\n${editedContent.treatment_reasoning || aiAnalysis.treatment_reasoning}` });
-                            toast.success("Added to clinical note");
-                            setEditingSection(null);
-                          }}
-                          size="sm" className="flex-1 bg-pink-600 hover:bg-pink-700 text-white gap-1"
-                        >
-                          <Plus className="w-3 h-3" /> Add
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button onClick={() => {setEditingSection("treatment_reasoning"); setEditedContent({...editedContent, treatment_reasoning: aiAnalysis.treatment_reasoning});}} size="sm" variant="outline" className="flex-1">Edit</Button>
-                        <Button
-                          onClick={async () => {
-                            await onUpdateNote({ mdm: `## Treatment Reasoning\n${editedContent.treatment_reasoning || aiAnalysis.treatment_reasoning}` });
-                            toast.success("Added to clinical note");
-                          }}
-                          size="sm" className="flex-1 bg-pink-600 hover:bg-pink-700 text-white gap-1"
-                        >
-                          <Plus className="w-3 h-3" /> Add
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
+                <MDMSectionRenderer
+                  sectionKey="treatment_reasoning"
+                  title="Treatment Reasoning"
+                  content={editedContent.treatment_reasoning || aiAnalysis.treatment_reasoning}
+                  likelihood={aiRanking?.treatment_reasoning}
+                  color="pink"
+                  isEditing={editingSection === "treatment_reasoning"}
+                  editValue={editedContent.treatment_reasoning}
+                  onEditChange={(updated) => setEditedContent({...editedContent, treatment_reasoning: updated})}
+                  onAdd={async (content) => {
+                    const text = Array.isArray(content) ? content.join("\n• ") : content;
+                    await onUpdateNote({ mdm: `## Treatment Reasoning\n• ${text}` });
+                    toast.success("Added to clinical note");
+                  }}
+                />
 
-                {/* Risk Assessment */}
-                <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
-                  <div className="flex items-start justify-between mb-2">
-                    <p className="text-xs font-bold text-orange-900">Risk Assessment</p>
-                    {aiRanking?.risk_assessment !== undefined && (
-                      <Badge variant="secondary" className={`text-xs ${
-                        aiRanking.risk_assessment >= 75 ? "bg-red-100 text-red-700" :
-                        aiRanking.risk_assessment >= 50 ? "bg-yellow-100 text-yellow-700" :
-                        "bg-green-100 text-green-700"
-                      }`}>
-                        {aiRanking.risk_assessment}%
-                      </Badge>
-                    )}
-                  </div>
-                  {editingSection === "risk_assessment" ? (
-                    <Textarea
-                      value={editedContent.risk_assessment || aiAnalysis.risk_assessment}
-                      onChange={(e) => setEditedContent({...editedContent, risk_assessment: e.target.value})}
-                      className="mb-2 text-xs"
-                    />
-                  ) : (
-                    <p className="text-xs text-slate-700 line-clamp-3 mb-2">{editedContent.risk_assessment || aiAnalysis.risk_assessment}</p>
-                  )}
-                  <div className="flex gap-2">
-                    {editingSection === "risk_assessment" ? (
-                      <>
-                        <Button onClick={() => setEditingSection(null)} size="sm" variant="outline" className="flex-1">Done</Button>
-                        <Button
-                          onClick={async () => {
-                            await onUpdateNote({ mdm: `## Risk Assessment\n${editedContent.risk_assessment || aiAnalysis.risk_assessment}` });
-                            toast.success("Added to clinical note");
-                            setEditingSection(null);
-                          }}
-                          size="sm" className="flex-1 bg-orange-600 hover:bg-orange-700 text-white gap-1"
-                        >
-                          <Plus className="w-3 h-3" /> Add
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button onClick={() => {setEditingSection("risk_assessment"); setEditedContent({...editedContent, risk_assessment: aiAnalysis.risk_assessment});}} size="sm" variant="outline" className="flex-1">Edit</Button>
-                        <Button
-                          onClick={async () => {
-                            await onUpdateNote({ mdm: `## Risk Assessment\n${editedContent.risk_assessment || aiAnalysis.risk_assessment}` });
-                            toast.success("Added to clinical note");
-                          }}
-                          size="sm" className="flex-1 bg-orange-600 hover:bg-orange-700 text-white gap-1"
-                        >
-                          <Plus className="w-3 h-3" /> Add
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
+                <MDMSectionRenderer
+                  sectionKey="risk_assessment"
+                  title="Risk Assessment"
+                  content={editedContent.risk_assessment || aiAnalysis.risk_assessment}
+                  likelihood={aiRanking?.risk_assessment}
+                  color="orange"
+                  isEditing={editingSection === "risk_assessment"}
+                  editValue={editedContent.risk_assessment}
+                  onEditChange={(updated) => setEditedContent({...editedContent, risk_assessment: updated})}
+                  onAdd={async (content) => {
+                    const text = Array.isArray(content) ? content.join("\n• ") : content;
+                    await onUpdateNote({ mdm: `## Risk Assessment\n• ${text}` });
+                    toast.success("Added to clinical note");
+                  }}
+                />
 
-                {/* Follow-up Strategy */}
-                <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
-                  <div className="flex items-start justify-between mb-2">
-                    <p className="text-xs font-bold text-emerald-900">Follow-up Strategy</p>
-                    {aiRanking?.follow_up_strategy !== undefined && (
-                      <Badge variant="secondary" className={`text-xs ${
-                        aiRanking.follow_up_strategy >= 75 ? "bg-red-100 text-red-700" :
-                        aiRanking.follow_up_strategy >= 50 ? "bg-yellow-100 text-yellow-700" :
-                        "bg-green-100 text-green-700"
-                      }`}>
-                        {aiRanking.follow_up_strategy}%
-                      </Badge>
-                    )}
-                  </div>
-                  {editingSection === "follow_up_strategy" ? (
-                    <Textarea
-                      value={editedContent.follow_up_strategy || aiAnalysis.follow_up_strategy}
-                      onChange={(e) => setEditedContent({...editedContent, follow_up_strategy: e.target.value})}
-                      className="mb-2 text-xs"
-                    />
-                  ) : (
-                    <p className="text-xs text-slate-700 line-clamp-3 mb-2">{editedContent.follow_up_strategy || aiAnalysis.follow_up_strategy}</p>
-                  )}
-                  <div className="flex gap-2">
-                    {editingSection === "follow_up_strategy" ? (
-                      <>
-                        <Button onClick={() => setEditingSection(null)} size="sm" variant="outline" className="flex-1">Done</Button>
-                        <Button
-                          onClick={async () => {
-                            await onUpdateNote({ mdm: `## Follow-up Strategy\n${editedContent.follow_up_strategy || aiAnalysis.follow_up_strategy}` });
-                            toast.success("Added to clinical note");
-                            setEditingSection(null);
-                          }}
-                          size="sm" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
-                        >
-                          <Plus className="w-3 h-3" /> Add
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button onClick={() => {setEditingSection("follow_up_strategy"); setEditedContent({...editedContent, follow_up_strategy: aiAnalysis.follow_up_strategy});}} size="sm" variant="outline" className="flex-1">Edit</Button>
-                        <Button
-                          onClick={async () => {
-                            await onUpdateNote({ mdm: `## Follow-up Strategy\n${editedContent.follow_up_strategy || aiAnalysis.follow_up_strategy}` });
-                            toast.success("Added to clinical note");
-                          }}
-                          size="sm" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
-                        >
-                          <Plus className="w-3 h-3" /> Add
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
+                <MDMSectionRenderer
+                  sectionKey="follow_up_strategy"
+                  title="Follow-up Strategy"
+                  content={editedContent.follow_up_strategy || aiAnalysis.follow_up_strategy}
+                  likelihood={aiRanking?.follow_up_strategy}
+                  color="emerald"
+                  isEditing={editingSection === "follow_up_strategy"}
+                  editValue={editedContent.follow_up_strategy}
+                  onEditChange={(updated) => setEditedContent({...editedContent, follow_up_strategy: updated})}
+                  onAdd={async (content) => {
+                    const text = Array.isArray(content) ? content.join("\n• ") : content;
+                    await onUpdateNote({ mdm: `## Follow-up Strategy\n• ${text}` });
+                    toast.success("Added to clinical note");
+                  }}
+                />
               </div>
 
               <Button

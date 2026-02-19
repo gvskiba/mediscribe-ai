@@ -1740,24 +1740,17 @@ Generated: ${new Date().toLocaleString()}
                               </div>
                             </div>
 
-                            {/* HPI */}
+                            {/* AI Documentation Assistant */}
                             <div className="bg-white rounded-2xl border border-purple-200 shadow-sm overflow-hidden">
-                              <div className="bg-gradient-to-r from-purple-500 to-indigo-500 px-5 py-4 flex items-center justify-between text-white">
-                                <div>
-                                  <p className="text-xs font-semibold uppercase tracking-widest text-purple-100">Section 3</p>
-                                  <h3 className="font-bold text-base">History of Present Illness</h3>
-                                  <p className="text-purple-100 text-xs mt-0.5">OLDCARTS: Onset · Location · Duration · Character · Aggravating/Alleviating · Radiation · Timing · Severity</p>
-                                </div>
-                                <InlineSectionAI type="hpi" note={note} onApply={async (val) => { await base44.entities.ClinicalNote.update(noteId, { history_of_present_illness: val }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
+                              <div className="bg-gradient-to-r from-purple-500 to-indigo-500 px-5 py-4 text-white">
+                                <p className="text-xs font-semibold uppercase tracking-widest text-purple-100">Section 3</p>
+                                <h3 className="font-bold text-base">AI Documentation Assistant</h3>
                               </div>
                               <div className="p-5">
-                                <Textarea
-                                  value={note.history_of_present_illness || ""}
-                                  onChange={(e) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, history_of_present_illness: e.target.value }))}
-                                  onBlur={async (e) => { await base44.entities.ClinicalNote.update(noteId, { history_of_present_illness: e.target.value }); toast.success("HPI saved"); }}
-                                  placeholder="Document HPI using the OLDCARTS framework..."
-                                  className="min-h-[220px] text-sm"
-                                />
+                                <AIDocumentationAssistant note={note} onUpdateNote={async (updates) => {
+                                  await base44.entities.ClinicalNote.update(noteId, updates);
+                                  queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                }} />
                               </div>
                             </div>
 

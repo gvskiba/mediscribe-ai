@@ -3068,6 +3068,7 @@ Generated: ${new Date().toLocaleString()}
 
                          {/* Disposition Planner */}
                          <DispositionPlanner
+                           note={note}
                            onSave={async (dispositionData) => {
                              try {
                                const dispositionText = `

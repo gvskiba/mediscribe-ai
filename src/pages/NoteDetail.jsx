@@ -2449,11 +2449,23 @@ Generated: ${new Date().toLocaleString()}
                  {/* Treatment Plan Editor */}
                  <div className="bg-white rounded-xl border-2 border-amber-300 shadow-lg overflow-hidden">
                    <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-5 text-white">
-                     <h3 className="font-bold text-lg flex items-center gap-2">
-                       <FileText className="w-6 h-6" />
-                       Treatment Plan
-                     </h3>
-                     <p className="text-amber-100 text-sm mt-1">Document detailed treatment approach, follow-up, and patient instructions</p>
+                     <div className="flex items-center justify-between">
+                       <div>
+                         <h3 className="font-bold text-lg flex items-center gap-2">
+                           <FileText className="w-6 h-6" />
+                           Treatment Plan
+                         </h3>
+                         <p className="text-amber-100 text-sm mt-1">Document detailed treatment approach, follow-up, and patient instructions</p>
+                       </div>
+                       <InlineSectionAI
+                         type="plan"
+                         note={note}
+                         onApply={async (val) => {
+                           await base44.entities.ClinicalNote.update(noteId, { plan: val });
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                         }}
+                       />
+                     </div>
                    </div>
                    <div className="p-6">
                      <Textarea

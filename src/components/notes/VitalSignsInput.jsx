@@ -16,9 +16,6 @@ export default function VitalSignsInput({ vitalSigns, onChange, onSave, readOnly
       }
     };
     setValues(newValues);
-    if (onChange) {
-      onChange(newValues);
-    }
   };
 
   const vitalSignConfig = [

@@ -53,6 +53,11 @@ export default function Customize() {
         notifications_email: true,
         notifications_inapp: true,
         notify_on_save: false,
+        fab_enabled: true,
+        fab_position: { x: 20, y: 80 },
+        fab_color_arrow: 'blue',
+        fab_color_plus: 'green',
+        fab_size: 'large',
         ...(u?.preferences || {})
       });
     }).finally(() => setLoading(false));

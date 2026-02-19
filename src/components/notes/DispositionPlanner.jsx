@@ -295,6 +295,88 @@ Provide a professional, evidence-based recommendation.`,
         </div>
       )}
 
+      {/* AI Recommendation */}
+      <div className="bg-white rounded-xl border-2 border-indigo-200 shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-4 text-white">
+          <h3 className="font-semibold flex items-center gap-2">
+            <Sparkles className="w-5 h-5" />
+            AI Disposition Recommendation
+          </h3>
+          <p className="text-indigo-100 text-xs mt-1">Analyze the clinical note and get AI-powered recommendations</p>
+        </div>
+        <div className="p-6 space-y-4">
+          <Button
+            onClick={generateAiRecommendation}
+            disabled={loadingRecommendation || !note}
+            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white gap-2"
+          >
+            {loadingRecommendation ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</>
+            ) : (
+              <><Sparkles className="w-4 h-4" /> Generate Recommendation</>
+            )}
+          </Button>
+
+          {aiRecommendation && (
+            <div className="space-y-4 mt-4 pt-4 border-t border-indigo-200">
+              <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
+                <p className="text-xs font-semibold text-indigo-900 mb-2">Recommended Disposition Type</p>
+                <Badge className="bg-indigo-600 text-white text-sm py-1 px-3 capitalize">
+                  {aiRecommendation.recommended_disposition}
+                </Badge>
+              </div>
+
+              <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                <p className="text-xs font-semibold text-purple-900 mb-2">Recommended Location</p>
+                <p className="text-sm text-purple-800">{aiRecommendation.recommended_location}</p>
+              </div>
+
+              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                <p className="text-xs font-semibold text-slate-900 mb-2">Clinical Reasoning</p>
+                <p className="text-sm text-slate-700 leading-relaxed">{aiRecommendation.clinical_reasoning}</p>
+              </div>
+
+              {aiRecommendation.key_factors?.length > 0 && (
+                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <p className="text-xs font-semibold text-blue-900 mb-2">Key Clinical Factors</p>
+                  <ul className="space-y-1">
+                    {aiRecommendation.key_factors.map((factor, idx) => (
+                      <li key={idx} className="text-sm text-blue-800 flex items-start gap-2">
+                        <span className="text-blue-600 mt-0.5">•</span>
+                        <span>{factor}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {aiRecommendation.special_considerations?.length > 0 && (
+                <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+                  <p className="text-xs font-semibold text-orange-900 mb-2">Special Considerations</p>
+                  <ul className="space-y-1">
+                    {aiRecommendation.special_considerations.map((consideration, idx) => (
+                      <li key={idx} className="text-sm text-orange-800 flex items-start gap-2">
+                        <span className="text-orange-600 mt-0.5">⚠️</span>
+                        <span>{consideration}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <Button
+                onClick={() => setDispositionType(aiRecommendation.recommended_disposition)}
+                size="sm"
+                variant="outline"
+                className="w-full gap-2 border-indigo-300 text-indigo-600 hover:bg-indigo-50"
+              >
+                <Check className="w-4 h-4" /> Apply Recommendation
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Additional Notes */}
       <div className="bg-white rounded-xl border-2 border-slate-200 shadow-sm overflow-hidden">
         <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">

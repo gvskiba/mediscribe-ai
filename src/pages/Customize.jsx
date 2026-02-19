@@ -54,7 +54,7 @@ export default function Customize() {
         notifications_inapp: true,
         notify_on_save: false,
         fab_enabled: true,
-        fab_position: { x: 20, y: 80 },
+        fab_position: { left: window.innerWidth - 100, top: window.innerHeight - 200 },
         fab_color_arrow: 'blue',
         fab_color_plus: 'green',
         fab_size: 'large',

@@ -81,6 +81,7 @@ import AIGuidelineSuggestions from "../components/notes/AIGuidelineSuggestions";
 import AISidebar from "../components/ai/AISidebar";
 import InlineSectionAI from "../components/ai/InlineSectionAI";
 import NoteTypeAndTemplateSelector from "../components/notes/NoteTypeAndTemplateSelector";
+import MedicalDecisionMakingTab from "../components/notes/MedicalDecisionMakingTab";
 
 const TAB_GROUPS = [
   {

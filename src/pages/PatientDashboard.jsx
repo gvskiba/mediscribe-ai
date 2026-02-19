@@ -288,6 +288,7 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
             </div>
           </Card>
         </motion.div>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">

@@ -15,8 +15,8 @@ import {
   Clock,
   Sparkles,
   Microscope,
-  Radio,
-} from "lucide-react";
+  Radio } from
+"lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -33,10 +33,10 @@ export default function PatientDashboard() {
     queryKey: ["patientDashboardNotes"],
     queryFn: async () => {
       const allNotes = await base44.entities.ClinicalNote.list();
-      return allNotes.sort((a, b) => 
-        new Date(b.created_date) - new Date(a.created_date)
+      return allNotes.sort((a, b) =>
+      new Date(b.created_date) - new Date(a.created_date)
       );
-    },
+    }
   });
 
   const latestNote = notes[0];
@@ -58,10 +58,10 @@ PATIENT: ${latestNote.patient_name}
 AGE: ${latestNote.patient_age || "Unknown"}
 
 VITAL SIGNS:
-${latestNote.vital_signs ? Object.entries(latestNote.vital_signs)
-  .filter(([_, v]) => v && v.value)
-  .map(([k, v]) => `- ${k}: ${v.value} ${v.unit || ""}`)
-  .join("\n") : "Not recorded"}
+${latestNote.vital_signs ? Object.entries(latestNote.vital_signs).
+      filter(([_, v]) => v && v.value).
+      map(([k, v]) => `- ${k}: ${v.value} ${v.unit || ""}`).
+      join("\n") : "Not recorded"}
 
 DIAGNOSES:
 ${latestNote.diagnoses?.join(", ") || "None"}
@@ -90,37 +90,37 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
         response_json_schema: {
           type: "object",
           properties: {
-            risk_level: { 
-              type: "string", 
+            risk_level: {
+              type: "string",
               enum: ["low", "moderate", "high"],
               description: "Overall patient risk level"
             },
-            abnormal_vitals: { 
-              type: "array", 
+            abnormal_vitals: {
+              type: "array",
               items: { type: "string" },
               description: "List of abnormal vital findings"
             },
-            drug_concerns: { 
-              type: "array", 
+            drug_concerns: {
+              type: "array",
               items: { type: "string" },
               description: "Medication interactions or concerns"
             },
-            high_risk_diagnoses: { 
-              type: "array", 
+            high_risk_diagnoses: {
+              type: "array",
               items: { type: "string" },
               description: "Diagnoses requiring close monitoring"
             },
-            urgent_actions: { 
-              type: "array", 
+            urgent_actions: {
+              type: "array",
               items: { type: "string" },
               description: "Urgent follow-up items"
             },
-            summary: { 
+            summary: {
               type: "string",
               description: "Brief clinical summary"
             }
-          },
-        },
+          }
+        }
       });
 
       setAiInsights(result);
@@ -136,8 +136,8 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
+      </div>);
+
   }
 
   if (!latestNote) {
@@ -149,19 +149,19 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
         <Link to={createPageUrl("NotesLibrary")}>
           <Button className="bg-blue-600 hover:bg-blue-700">Go to Notes</Button>
         </Link>
-      </div>
-    );
+      </div>);
+
   }
 
   const getVitalStatus = (key, value, unit) => {
     if (!value) return { status: "unknown", color: "bg-slate-100" };
-    
+
     const ranges = {
       temperature: { normal: [97, 99], unit: "°F" },
       heart_rate: { normal: [60, 100], unit: "bpm" },
       blood_pressure: { systolic: [90, 120], diastolic: [60, 80] },
       respiratory_rate: { normal: [12, 20], unit: "breaths/min" },
-      oxygen_saturation: { normal: [95, 100], unit: "%" },
+      oxygen_saturation: { normal: [95, 100], unit: "%" }
     };
 
     if (key === "blood_pressure" && value.systolic && value.diastolic) {
@@ -208,9 +208,9 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
             <div className="flex gap-4 mt-1 text-xs text-slate-600">
               {latestNote.patient_id && <span>MRN: {latestNote.patient_id}</span>}
               {latestNote.patient_age && <span>Age: {latestNote.patient_age}</span>}
-              {latestNote.date_of_visit && (
-                <span>{format(new Date(latestNote.date_of_visit), "MMM d, yyyy")}</span>
-              )}
+              {latestNote.date_of_visit &&
+              <span>{format(new Date(latestNote.date_of_visit), "MMM d, yyyy")}</span>
+              }
             </div>
           </div>
           <div className="flex gap-2">
@@ -252,32 +252,32 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
                   <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
                     <Activity className="w-4 h-4 text-emerald-600" /> Vital Signs
                   </h3>
-                  {latestNote.vital_signs && Object.keys(latestNote.vital_signs).length > 0 ? (
-                    <div className="grid grid-cols-2 gap-2">
-                      {Object.entries(latestNote.vital_signs)
-                        .filter(([_, v]) => v && v.value)
-                        .map(([key, vital]) => {
-                          const vitalStatus = getVitalStatus(key, vital.value);
-                          const displayKey = key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-                          return (
-                            <div key={key} className={`rounded p-2 ${vitalStatus.color} border ${
-                              vitalStatus.status === "normal" ? "border-green-300" :
-                              vitalStatus.status === "abnormal" ? "border-red-300" : "border-yellow-300"
-                            }`}>
+                  {latestNote.vital_signs && Object.keys(latestNote.vital_signs).length > 0 ?
+                  <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(latestNote.vital_signs).
+                    filter(([_, v]) => v && v.value).
+                    map(([key, vital]) => {
+                      const vitalStatus = getVitalStatus(key, vital.value);
+                      const displayKey = key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+                      return (
+                        <div key={key} className={`rounded p-2 ${vitalStatus.color} border ${
+                        vitalStatus.status === "normal" ? "border-green-300" :
+                        vitalStatus.status === "abnormal" ? "border-red-300" : "border-yellow-300"}`
+                        }>
                               <p className="text-xs font-semibold text-slate-600">{displayKey}</p>
                               <p className="text-lg font-bold text-slate-900 mt-1">
-                                {key === "blood_pressure" && vital.systolic
-                                  ? `${vital.systolic}/${vital.diastolic}`
-                                  : vital.value}
+                                {key === "blood_pressure" && vital.systolic ?
+                            `${vital.systolic}/${vital.diastolic}` :
+                            vital.value}
                               </p>
                               <p className="text-xs text-slate-500">{vital.unit || ""}</p>
-                            </div>
-                          );
-                        })}
-                    </div>
-                  ) : (
-                    <p className="text-slate-500 text-sm">No vital signs</p>
-                  )}
+                            </div>);
+
+                    })}
+                    </div> :
+
+                  <p className="text-slate-500 text-sm">No vital signs</p>
+                  }
                 </div>
               </motion.div>
 
@@ -287,20 +287,20 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
                   <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
                     <Pill className="w-4 h-4 text-blue-600" /> Medications
                   </h3>
-                  {latestNote.medications && latestNote.medications.length > 0 ? (
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {latestNote.medications.slice(0, 4).map((med, idx) => (
-                        <div key={idx} className="text-xs bg-blue-50 border border-blue-200 rounded p-2">
+                  {latestNote.medications && latestNote.medications.length > 0 ?
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {latestNote.medications.slice(0, 4).map((med, idx) =>
+                    <div key={idx} className="text-xs bg-blue-50 border border-blue-200 rounded p-2">
                           <p className="text-slate-700 font-medium">{med}</p>
                         </div>
-                      ))}
-                      {latestNote.medications.length > 4 && (
-                        <p className="text-xs text-slate-500 font-medium">+{latestNote.medications.length - 4} more</p>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-slate-500 text-sm">No medications</p>
-                  )}
+                    )}
+                      {latestNote.medications.length > 4 &&
+                    <p className="text-xs text-slate-500 font-medium">+{latestNote.medications.length - 4} more</p>
+                    }
+                    </div> :
+
+                  <p className="text-slate-500 text-sm">No medications</p>
+                  }
                 </div>
               </motion.div>
 
@@ -310,32 +310,32 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
                   <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
                     <Microscope className="w-4 h-4 text-red-600" /> Lab Results
                   </h3>
-                  {latestNote.lab_findings && latestNote.lab_findings.length > 0 ? (
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {latestNote.lab_findings.slice(0, 4).map((lab, idx) => (
-                        <div key={idx} className="text-xs bg-red-50 border border-red-200 rounded p-2">
+                  {latestNote.lab_findings && latestNote.lab_findings.length > 0 ?
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {latestNote.lab_findings.slice(0, 4).map((lab, idx) =>
+                    <div key={idx} className="text-xs bg-red-50 border border-red-200 rounded p-2">
                           <p className="font-semibold text-slate-900">{lab.test_name}</p>
                           <div className="flex justify-between items-center gap-1 mt-1">
                             <span className="text-slate-700">{lab.result} {lab.unit || ""}</span>
-                            {lab.status && (
-                              <Badge className={`text-xs ${
-                                lab.status === "critical" ? "bg-red-600 text-white" :
-                                lab.status === "abnormal" ? "bg-yellow-600 text-white" :
-                                "bg-green-600 text-white"
-                              }`}>
+                            {lab.status &&
+                        <Badge className={`text-xs ${
+                        lab.status === "critical" ? "bg-red-600 text-white" :
+                        lab.status === "abnormal" ? "bg-yellow-600 text-white" :
+                        "bg-green-600 text-white"}`
+                        }>
                                 {lab.status}
                               </Badge>
-                            )}
+                        }
                           </div>
                         </div>
-                      ))}
-                      {latestNote.lab_findings.length > 4 && (
-                        <p className="text-xs text-slate-500 font-medium">+{latestNote.lab_findings.length - 4} more</p>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-slate-500 text-sm">No lab findings</p>
-                  )}
+                    )}
+                      {latestNote.lab_findings.length > 4 &&
+                    <p className="text-xs text-slate-500 font-medium">+{latestNote.lab_findings.length - 4} more</p>
+                    }
+                    </div> :
+
+                  <p className="text-slate-500 text-sm">No lab findings</p>
+                  }
                 </div>
               </motion.div>
 
@@ -345,21 +345,21 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
                   <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
                     <Radio className="w-4 h-4 text-cyan-600" /> Imaging
                   </h3>
-                  {latestNote.imaging_findings && latestNote.imaging_findings.length > 0 ? (
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {latestNote.imaging_findings.slice(0, 3).map((imaging, idx) => (
-                        <div key={idx} className="text-xs bg-cyan-50 border border-cyan-200 rounded p-2">
+                  {latestNote.imaging_findings && latestNote.imaging_findings.length > 0 ?
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {latestNote.imaging_findings.slice(0, 3).map((imaging, idx) =>
+                    <div key={idx} className="text-xs bg-cyan-50 border border-cyan-200 rounded p-2">
                           <p className="font-semibold text-slate-900">{imaging.study_type}</p>
                           <p className="text-slate-600">{imaging.location}</p>
                         </div>
-                      ))}
-                      {latestNote.imaging_findings.length > 3 && (
-                        <p className="text-xs text-slate-500 font-medium">+{latestNote.imaging_findings.length - 3} more</p>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-slate-500 text-sm">No imaging</p>
-                  )}
+                    )}
+                      {latestNote.imaging_findings.length > 3 &&
+                    <p className="text-xs text-slate-500 font-medium">+{latestNote.imaging_findings.length - 3} more</p>
+                    }
+                    </div> :
+
+                  <p className="text-slate-500 text-sm">No imaging</p>
+                  }
                 </div>
               </motion.div>
 
@@ -369,20 +369,20 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
                   <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-purple-600" /> Diagnoses
                   </h3>
-                  {latestNote.diagnoses && latestNote.diagnoses.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {latestNote.diagnoses.slice(0, 5).map((diag, idx) => (
-                        <div key={idx} className="text-xs bg-purple-100 border border-purple-300 rounded-full px-2.5 py-1 text-slate-800">
+                  {latestNote.diagnoses && latestNote.diagnoses.length > 0 ?
+                  <div className="flex flex-wrap gap-2">
+                      {latestNote.diagnoses.slice(0, 5).map((diag, idx) =>
+                    <div key={idx} className="text-xs bg-purple-100 border border-purple-300 rounded-full px-2.5 py-1 text-slate-800">
                           {diag.length > 16 ? diag.substring(0, 13) + "..." : diag}
                         </div>
-                      ))}
-                      {latestNote.diagnoses.length > 5 && (
-                        <span className="text-xs text-slate-500 py-1">+{latestNote.diagnoses.length - 5}</span>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-slate-500 text-sm">No diagnoses</p>
-                  )}
+                    )}
+                      {latestNote.diagnoses.length > 5 &&
+                    <span className="text-xs text-slate-500 py-1">+{latestNote.diagnoses.length - 5}</span>
+                    }
+                    </div> :
+
+                  <p className="text-slate-500 text-sm">No diagnoses</p>
+                  }
                 </div>
               </motion.div>
 
@@ -398,61 +398,61 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
                   <Button
                     size="sm"
                     onClick={generateAiInsights}
-                    disabled={loadingInsights}
-                    className="gap-2 flex-shrink-0"
-                  >
+                    disabled={loadingInsights} className="bg-blue-600 text-slate-50 px-3 text-xs font-medium rounded-md inline-flex items-center justify-center whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 shadow hover:bg-primary/90 h-8 gap-2 flex-shrink-0">
+
+
                     {loadingInsights ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                     {loadingInsights ? "Analyzing" : "Analyze"}
                   </Button>
                 </div>
-                {loadingInsights && !aiInsights ? (
-                  <Loader2 className="w-6 h-6 animate-spin text-slate-500" />
-                ) : aiInsights ? (
-                  <div className="space-y-3">
+                {loadingInsights && !aiInsights ?
+                <Loader2 className="w-6 h-6 animate-spin text-slate-500" /> :
+                aiInsights ?
+                <div className="space-y-3">
                     <Badge className={`${getRiskBadgeColor(aiInsights.risk_level)} text-base`}>
                       {aiInsights.risk_level.toUpperCase()}
                     </Badge>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {aiInsights.abnormal_vitals?.length > 0 && (
-                        <div>
+                      {aiInsights.abnormal_vitals?.length > 0 &&
+                    <div>
                           <p className="text-sm font-bold text-slate-800 mb-2">⚠️ Abnormal Vitals</p>
                           <ul className="space-y-1">
-                            {aiInsights.abnormal_vitals.slice(0, 2).map((vital, idx) => (
-                              <li key={idx} className="text-sm text-slate-700">• {vital}</li>
-                            ))}
+                            {aiInsights.abnormal_vitals.slice(0, 2).map((vital, idx) =>
+                        <li key={idx} className="text-sm text-slate-700">• {vital}</li>
+                        )}
                           </ul>
                         </div>
-                      )}
-                      {aiInsights.urgent_actions?.length > 0 && (
-                        <div>
+                    }
+                      {aiInsights.urgent_actions?.length > 0 &&
+                    <div>
                           <p className="text-sm font-bold text-slate-800 mb-2">📋 Urgent Actions</p>
                           <ul className="space-y-1">
-                            {aiInsights.urgent_actions.slice(0, 2).map((action, idx) => (
-                              <li key={idx} className="text-sm text-slate-700">• {action}</li>
-                            ))}
+                            {aiInsights.urgent_actions.slice(0, 2).map((action, idx) =>
+                        <li key={idx} className="text-sm text-slate-700">• {action}</li>
+                        )}
                           </ul>
                         </div>
-                      )}
-                      {aiInsights.drug_concerns?.length > 0 && (
-                        <div>
+                    }
+                      {aiInsights.drug_concerns?.length > 0 &&
+                    <div>
                           <p className="text-sm font-bold text-slate-800 mb-2">💊 Drug Concerns</p>
                           <ul className="space-y-1">
-                            {aiInsights.drug_concerns.slice(0, 2).map((concern, idx) => (
-                              <li key={idx} className="text-sm text-slate-700">• {concern}</li>
-                            ))}
+                            {aiInsights.drug_concerns.slice(0, 2).map((concern, idx) =>
+                        <li key={idx} className="text-sm text-slate-700">• {concern}</li>
+                        )}
                           </ul>
                         </div>
-                      )}
+                    }
                     </div>
-                  </div>
-                ) : (
-                  <p className="text-sm text-slate-600">Click the Analyze button to generate AI risk assessment</p>
-                )}
+                  </div> :
+
+                <p className="text-sm text-slate-600">Click the Analyze button to generate AI risk assessment</p>
+                }
               </div>
             </motion.div>
           </div>
         </Card>
       </motion.div>
-    </div>
-  );
+    </div>);
+
 }

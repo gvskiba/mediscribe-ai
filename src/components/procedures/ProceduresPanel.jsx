@@ -747,13 +747,11 @@ Return structured data.`,
                       >
                         <Plus className="w-3 h-3" />
                       </Button>
-                    </div>
-                    </div>
-                    </div>
-                    </div>
-                    ))}
-                    </div>
-                    )}
+                      </div>
+                      </div>
+                      ))}
+                      </div>
+                      )}
 
             {/* Manual ICD-10 Entry */}
             <div className="flex gap-2">

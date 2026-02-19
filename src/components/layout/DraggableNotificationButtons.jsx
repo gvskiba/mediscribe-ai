@@ -128,6 +128,9 @@ export default function DraggableNotificationButtons() {
 
   return (
     <div className="fixed z-40 pointer-events-none">
+      <style>{`
+        .fab-button { pointer-events: auto; }
+      `}</style>
       {/* Return to Note Button */}
       {currentNoteId && (
         <motion.button

@@ -10,6 +10,7 @@ import { createPageUrl } from '../utils';
 
 const SECTIONS = [
   { id: 'appearance', label: 'Appearance', icon: Palette },
+  { id: 'fab', label: 'Action Buttons', icon: Palette },
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'notes', label: 'Notes & Editor', icon: Sliders },
   { id: 'notifications', label: 'Notifications', icon: Bell },

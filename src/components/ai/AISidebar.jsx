@@ -111,7 +111,7 @@ const DEFAULT_CONFIG = {
   subtitle: "Intelligent clinical tools",
   gradient: "from-purple-600 to-indigo-600",
   icon: Sparkles,
-  panels: ["documentation", "analysis", "diagnosis", "treatment", "guidelines", "mdm"],
+  panels: ["analysis", "diagnosis", "treatment", "guidelines", "mdm"],
 };
 
 function PanelSection({ type, note, onUpdateNote }) {

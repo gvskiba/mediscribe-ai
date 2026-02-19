@@ -35,7 +35,8 @@ import {
         RotateCcw,
         Settings,
         ExternalLink,
-        Brain
+        Brain,
+        Menu
       } from "lucide-react";
       import MedicationRecommendations from "../components/notes/MedicationRecommendations";
       import TreatmentPlanSelector from "../components/notes/TreatmentPlanSelector";

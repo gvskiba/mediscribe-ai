@@ -118,6 +118,7 @@ const TAB_GROUPS = [
     color: 'amber',
     tabs: [
       { id: 'treatment_plan', label: 'Treatment Plan', icon: FileText },
+      { id: 'mdm', label: 'MDM', icon: Brain },
       { id: 'medications', label: 'Medications', icon: Pill },
       { id: 'procedures', label: 'Procedures', icon: Activity },
     ]

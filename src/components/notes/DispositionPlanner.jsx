@@ -55,7 +55,7 @@ const TRANSFER_METHODS = [
   { value: "family", label: "Family Transport" },
 ];
 
-export default function DispositionPlanner({ onSave }) {
+export default function DispositionPlanner({ onSave, note }) {
   const [dispositionType, setDispositionType] = useState("discharge");
   const [location, setLocation] = useState("home");
   const [acceptingProvider, setAcceptingProvider] = useState("");
@@ -63,6 +63,8 @@ export default function DispositionPlanner({ onSave }) {
   const [transferMethod, setTransferMethod] = useState("ambulance");
   const [additionalNotes, setAdditionalNotes] = useState("");
   const [contactInfo, setContactInfo] = useState("");
+  const [aiRecommendation, setAiRecommendation] = useState(null);
+  const [loadingRecommendation, setLoadingRecommendation] = useState(false);
 
   const selectedDisposition = DISPOSITION_TYPES.find(d => d.value === dispositionType);
   const availableLocations = LOCATIONS[dispositionType] || [];

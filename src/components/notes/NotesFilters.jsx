@@ -55,44 +55,48 @@ export default function NotesFilters({
           </div>
           
           {/* View & Layout Toggles */}
-          <div className="flex gap-2">
-            <div className="bg-slate-100 rounded-xl p-1 flex gap-1">
-              <Button
-                variant={viewMode === "all" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => onViewModeChange("all")}
-                className="rounded-lg gap-2 h-9"
-              >
-                <FileText className="w-4 h-4" /> All
-              </Button>
-              <Button
-                variant={viewMode === "by-patient" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => onViewModeChange("by-patient")}
-                className="rounded-lg gap-2 h-9"
-              >
-                <User className="w-4 h-4" /> Patients
-              </Button>
-            </div>
-            
-            <div className="bg-slate-100 rounded-xl p-1 flex gap-1">
-              <Button
-                variant={layoutMode === "list" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => onLayoutModeChange("list")}
-                className="rounded-lg h-9 w-9 p-0"
-              >
-                <List className="w-4 h-4" />
-              </Button>
-              <Button
-                variant={layoutMode === "grid" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => onLayoutModeChange("grid")}
-                className="rounded-lg h-9 w-9 p-0"
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </Button>
-            </div>
+           <div className="flex gap-1">
+             <div className="flex gap-1">
+               <Button
+                 variant={viewMode === "all" ? "default" : "ghost"}
+                 size="sm"
+                 onClick={() => onViewModeChange("all")}
+                 className="rounded-lg h-8 w-8 p-0 group relative"
+               >
+                 <FileText className="w-4 h-4" />
+                 <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 bg-slate-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">All</span>
+               </Button>
+               <Button
+                 variant={viewMode === "by-patient" ? "default" : "ghost"}
+                 size="sm"
+                 onClick={() => onViewModeChange("by-patient")}
+                 className="rounded-lg h-8 w-8 p-0 group relative"
+               >
+                 <User className="w-4 h-4" />
+                 <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 bg-slate-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Patients</span>
+               </Button>
+             </div>
+
+             <div className="border-l border-slate-300 pl-1 flex gap-1">
+               <Button
+                 variant={layoutMode === "list" ? "default" : "ghost"}
+                 size="sm"
+                 onClick={() => onLayoutModeChange("list")}
+                 className="rounded-lg h-8 w-8 p-0 group relative"
+               >
+                 <List className="w-4 h-4" />
+                 <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 bg-slate-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">List</span>
+               </Button>
+               <Button
+                 variant={layoutMode === "grid" ? "default" : "ghost"}
+                 size="sm"
+                 onClick={() => onLayoutModeChange("grid")}
+                 className="rounded-lg h-8 w-8 p-0 group relative"
+               >
+                 <LayoutGrid className="w-4 h-4" />
+                 <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 bg-slate-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Grid</span>
+               </Button>
+             </div>
             
             <Button
               variant={showFilters ? "default" : "outline"}

@@ -2084,7 +2084,7 @@ Generated: ${new Date().toLocaleString()}
                                h3: ({ children }) => <h3 className="text-base font-bold mt-2 mb-1">{children}</h3>,
                                ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
                                ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
-                               li: ({ children }) => <li className="ml-4">{children}</li>,
+                               li: ({ children }) => <li className="block">{children}</li>,
                                strong: ({ children }) => <strong className="font-bold">{children}</strong>,
                                em: ({ children }) => <em className="italic">{children}</em>,
                              }}

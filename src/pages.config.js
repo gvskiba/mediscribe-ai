@@ -63,6 +63,7 @@ import Snippets from './pages/Snippets';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import PatientDashboard from './pages/PatientDashboard';
+import PatientHistory from './pages/PatientHistory';
 import __Layout from './Layout.jsx';
 
 
@@ -83,6 +84,7 @@ export const PAGES = {
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
     "PatientDashboard": PatientDashboard,
+    "PatientHistory": PatientHistory,
 }
 
 export const pagesConfig = {

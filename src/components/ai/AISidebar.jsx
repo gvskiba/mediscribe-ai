@@ -452,24 +452,31 @@ export default function AISidebar({ isOpen, onClose, note, noteId, onUpdateNote 
               </Button>
             </div>
 
-            {/* Tab Grid — all tabs visible, no scrolling */}
-            <div className="grid grid-cols-4 gap-1.5 p-3 bg-slate-50 border-b border-slate-200 flex-shrink-0">
+            {/* Tab Grid — icon only, label on hover */}
+            <div className="flex items-center justify-around px-4 py-3 bg-slate-50 border-b border-slate-200 flex-shrink-0">
               {TABS.map((t) => {
                 const isActive = activeTab === t.id;
                 const tc = COLOR[t.color];
                 return (
-                  <button
-                    key={t.id}
-                    onClick={() => setActiveTab(t.id)}
-                    className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border-2 transition-all ${
-                      isActive
-                        ? `${tc.badge} ${tc.border} shadow-sm`
-                        : "bg-white border-transparent text-slate-400 hover:text-slate-600 hover:bg-white hover:border-slate-200"
-                    }`}
-                  >
-                    <t.icon className={`w-4 h-4 ${isActive ? tc.text : ""}`} />
-                    <span className={`text-xs font-semibold leading-tight ${isActive ? tc.text : "text-slate-500"}`}>{t.label}</span>
-                  </button>
+                  <div key={t.id} className="relative group flex items-center justify-center">
+                    <button
+                      onClick={() => setActiveTab(t.id)}
+                      className={`w-9 h-9 rounded-xl border-2 flex items-center justify-center transition-all ${
+                        isActive
+                          ? `${tc.badge} ${tc.border} shadow-sm`
+                          : "bg-white border-transparent hover:border-slate-200"
+                      }`}
+                    >
+                      <t.icon className={`w-4 h-4 ${isActive ? tc.text : "text-slate-400 group-hover:text-slate-600"}`} />
+                    </button>
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                      <div className={`${tc.badge} ${tc.border} border text-xs font-semibold px-2 py-1 rounded-lg whitespace-nowrap shadow-md ${tc.text}`}>
+                        {t.label}
+                      </div>
+                      <div className={`w-2 h-2 ${tc.badge} border-r border-b ${tc.border} rotate-45 mx-auto -mt-1`} />
+                    </div>
+                  </div>
                 );
               })}
             </div>

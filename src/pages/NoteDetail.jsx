@@ -1783,17 +1783,22 @@ Generated: ${new Date().toLocaleString()}
                        queryClient.invalidateQueries({ queryKey: ["note", noteId] });
                      }}
                      onSave={async (newVitalSigns) => {
-                       // Add to history with timestamp
-                       const newEntry = {
-                         vitals: newVitalSigns,
-                         timestamp: new Date().toISOString()
-                       };
-                       setVitalSignsHistory(prev => [newEntry, ...prev]);
+                       try {
+                         // Add to history with timestamp
+                         const newEntry = {
+                           vitals: newVitalSigns,
+                           timestamp: new Date().toISOString()
+                         };
+                         setVitalSignsHistory(prev => [newEntry, ...prev]);
 
-                       // Update note with vitals
-                       await base44.entities.ClinicalNote.update(noteId, { vital_signs: newVitalSigns });
-                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                       toast.success("Vital signs saved with timestamp");
+                         // Update note with vitals
+                         await base44.entities.ClinicalNote.update(noteId, { vital_signs: newVitalSigns });
+                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                         toast.success("Vital signs saved with timestamp");
+                       } catch (error) {
+                         console.error("Failed to save vital signs:", error);
+                         toast.error("Failed to save vital signs");
+                       }
                      }}
                    />
                  </div>

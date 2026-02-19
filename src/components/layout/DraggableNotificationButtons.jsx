@@ -138,8 +138,10 @@ export default function DraggableNotificationButtons() {
           onClick={handleReturnToNote}
           whileHover={{ scale: isDragging ? 1 : 1.08 }}
           whileTap={{ scale: 0.95 }}
-          className={`${sizes.container} rounded-full bg-white shadow-xl border-2 border-transparent flex items-center justify-center transition-all ${isDragging === 'arrow' ? 'cursor-grab' : 'cursor-pointer'}`}
+          className={`fab-button fixed ${sizes.container} rounded-full bg-white shadow-xl border-2 border-transparent flex items-center justify-center transition-all ${isDragging === 'arrow' ? 'cursor-grabbing' : 'cursor-grab'}`}
           style={{
+            left: `${prefs.fab_position_arrow.left}px`,
+            top: `${prefs.fab_position_arrow.top}px`,
             background: "white",
             boxShadow: colorShadows[prefs.fab_color_arrow] + ", 0 1.5px 6px 0 rgba(99,102,241,0.15)",
           }}

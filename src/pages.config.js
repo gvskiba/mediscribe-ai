@@ -54,7 +54,6 @@ import GuidelineDetail from './pages/GuidelineDetail';
 import Guidelines from './pages/Guidelines';
 import Home from './pages/Home';
 import NewNote from './pages/NewNote';
-import NoteDetail from './pages/NoteDetail';
 import NoteTemplates from './pages/NoteTemplates';
 import NotesLibrary from './pages/NotesLibrary';
 import Search from './pages/Search';
@@ -64,6 +63,7 @@ import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import PatientDashboard from './pages/PatientDashboard';
 import PatientHistory from './pages/PatientHistory';
+import NoteDetail from './pages/NoteDetail';
 import __Layout from './Layout.jsx';
 
 
@@ -75,7 +75,6 @@ export const PAGES = {
     "Guidelines": Guidelines,
     "Home": Home,
     "NewNote": NewNote,
-    "NoteDetail": NoteDetail,
     "NoteTemplates": NoteTemplates,
     "NotesLibrary": NotesLibrary,
     "Search": Search,
@@ -85,6 +84,7 @@ export const PAGES = {
     "UserPreferences": UserPreferences,
     "PatientDashboard": PatientDashboard,
     "PatientHistory": PatientHistory,
+    "NoteDetail": NoteDetail,
 }
 
 export const pagesConfig = {

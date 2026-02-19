@@ -97,6 +97,7 @@ const TAB_GROUPS = [
     tabs: [
       { id: 'patient_intake', label: 'Subjective', icon: Activity },
       { id: 'vital_signs', label: 'Vital Signs', icon: Activity },
+      { id: 'review_of_systems', label: 'Review of Systems', icon: Activity },
     ]
   },
   {
@@ -104,7 +105,6 @@ const TAB_GROUPS = [
     label: 'Objective',
     color: 'emerald',
     tabs: [
-      { id: 'review_of_systems', label: 'Review of Systems', icon: Activity },
       { id: 'physical_exam', label: 'Physical Exam', icon: Activity },
     ]
   },

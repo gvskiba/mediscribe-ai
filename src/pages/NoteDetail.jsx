@@ -2072,11 +2072,19 @@ Generated: ${new Date().toLocaleString()}
 
                {/* Medical History */}
                <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
-                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
+                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                      <FileText className="w-5 h-5 text-slate-600" />
                      Past Medical History
                    </h3>
+                   <InlineSectionAI
+                     type="medical_history"
+                     note={note}
+                     onApply={async (val) => {
+                       await base44.entities.ClinicalNote.update(noteId, { medical_history: val });
+                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                     }}
+                   />
                  </div>
                  <div className="p-6">
                    <Textarea

@@ -1773,21 +1773,36 @@ Generated: ${new Date().toLocaleString()}
                          try {
                            const vitalsSummary = Object.entries(note.vital_signs)
                              .filter(([_, v]) => v && v.value)
-                             .map(([key, v]) => `${key}: ${v.value} ${v.unit || ''}`)
+                             .map(([key, v]) => {
+                               const displayKey = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                               return `- ${displayKey}: ${v.value} ${v.unit || ''}`;
+                             })
                              .join('\n');
 
                            const result = await base44.integrations.Core.InvokeLLM({
-                             prompt: `Analyze these vital signs and identify which are NORMAL and which are ABNORMAL. Consider patient context if available (age: ${note.patient_age || 'unknown'}).
+                             prompt: `You are a clinical expert. Analyze these vital signs and classify each as NORMAL or ABNORMAL based on standard adult reference ranges.
 
-               VITAL SIGNS:
-               ${vitalsSummary}
+                     PATIENT INFORMATION:
+                     Age: ${note.patient_age || 'Adult (assumed)'}
 
-               For each vital sign, provide:
-               1. Whether it's NORMAL or ABNORMAL
-               2. Reference range for comparison
-               3. Brief clinical significance if abnormal
+                     VITAL SIGNS RECORDED:
+                     ${vitalsSummary}
 
-               Format as a structured analysis.`,
+                     REFERENCE RANGES FOR ADULTS:
+                     - Temperature: 97-99°F (36.1-37.2°C)
+                     - Heart Rate: 60-100 bpm
+                     - Blood Pressure: <120/80 mmHg (normal), 120-139/80-89 (elevated), ≥140/90 (high)
+                     - Respiratory Rate: 12-20 breaths/min
+                     - Oxygen Saturation: ≥95%
+                     - Weight: Variable (note recent changes)
+                     - Height: Variable by individual
+
+                     For EACH vital sign provided, determine:
+                     1. Is it NORMAL or ABNORMAL?
+                     2. What is the normal reference range?
+                     3. If abnormal, what is the clinical significance?
+
+                     Be specific and clear about each value.`,
                              response_json_schema: {
                                type: "object",
                                properties: {

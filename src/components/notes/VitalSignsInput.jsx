@@ -124,7 +124,7 @@ export default function VitalSignsInput({ vitalSigns, onChange, onSave, readOnly
       </div>
 
       {/* Vital Signs Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-2">
         {vitalSignConfig.map(({ field, label, icon: Icon, color }) => {
           const isSelected = selectedVital === field;
           const colors = colorMap[color];
@@ -136,27 +136,27 @@ export default function VitalSignsInput({ vitalSigns, onChange, onSave, readOnly
           return (
             <motion.button
               key={field}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setSelectedVital(isSelected ? null : field)}
-              className={`relative p-4 rounded-xl border-2 transition-all text-left ${
+              className={`relative p-2.5 rounded-lg border-2 transition-all text-center ${
                 isSelected
-                  ? `${colors.card} border-blue-500 shadow-md`
+                  ? `${colors.card} border-blue-500 shadow-sm`
                   : `border-slate-200 bg-white hover:bg-slate-50`
               }`}
             >
               {/* Selection indicator dot */}
               {isSelected && (
-                <div className={`absolute top-2 right-2 w-3 h-3 rounded-full ${colors.dot}`} />
+                <div className={`absolute -top-1.5 -right-1.5 w-2.5 h-2.5 rounded-full ${colors.dot} border border-white`} />
               )}
               
-              <Icon className={`w-6 h-6 mb-2 ${isSelected ? colors.icon : "text-slate-400"}`} />
-              <p className={`font-semibold text-sm ${isSelected ? "text-slate-900" : "text-slate-700"}`}>
+              <Icon className={`w-5 h-5 mx-auto mb-1 ${isSelected ? colors.icon : "text-slate-400"}`} />
+              <p className={`font-semibold text-xs leading-tight ${isSelected ? "text-slate-900" : "text-slate-700"}`}>
                 {label}
               </p>
               
               {hasValue && (
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 mt-0.5 leading-tight truncate">
                   {data.value ? `${data.value}${data.unit ? ` ${data.unit}` : ""}` : "Pending"}
                 </p>
               )}

@@ -82,6 +82,22 @@ export default function ReviewOfSystemsEditor({ rosData, onUpdate, onAddToNote }
     save(updated);
   };
 
+  const addCustomSection = () => {
+    if (!newSectionLabel.trim()) return;
+    const id = `custom_${Date.now()}`;
+    const updated = [...sections, { id, label: newSectionLabel.trim(), icon: Activity, color: "slate", normal: "", status: "not_assessed", notes: "", isCustom: true }];
+    setSections(updated);
+    setNewSectionLabel("");
+    setAddingSection(false);
+    save(updated);
+  };
+
+  const deleteSection = (id) => {
+    const updated = sections.filter(s => s.id !== id);
+    setSections(updated);
+    save(updated);
+  };
+
   const handleAddToNote = () => {
     let text = "\n\nREVIEW OF SYSTEMS\n" + "─".repeat(40) + "\n";
     sections.filter(s => s.status !== "not_assessed").forEach(s => {

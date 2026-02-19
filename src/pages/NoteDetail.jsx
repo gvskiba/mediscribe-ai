@@ -2193,12 +2193,52 @@ Generated: ${new Date().toLocaleString()}
            {/* Clinical Note Tab */}
              <TabsContent value="clinical_note" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
                <div className="max-w-5xl mx-auto space-y-8">
-                 <SmartTemplateApplicator
-                   noteId={noteId}
+                 <NoteTypeAndTemplateSelector
                    note={note}
                    templates={templates}
-                   onTemplateApplied={() => {
+                   selectedTemplate={selectedTemplate}
+                   onNoteTypeChange={async (noteType) => {
+                     await base44.entities.ClinicalNote.update(noteId, { note_type: noteType });
                      queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                     toast.success("Note type updated");
+                   }}
+                   onTemplateSelect={setSelectedTemplate}
+                   onApplyTemplate={async (templateId) => {
+                     const selected = templates.find(t => t.id === templateId);
+                     if (selected) {
+                       try {
+                         // Apply template sections to note
+                         const updates = {
+                           note_type: selected.note_type || note.note_type,
+                         };
+
+                         if (selected.sections) {
+                           selected.sections.forEach(section => {
+                             if (section.content_template) {
+                               const fieldMap = {
+                                 "chief_complaint": "chief_complaint",
+                                 "hpi": "history_of_present_illness",
+                                 "ros": "review_of_systems",
+                                 "physical_exam": "physical_exam",
+                                 "assessment": "assessment",
+                                 "plan": "plan"
+                               };
+                               const field = fieldMap[section.id];
+                               if (field) {
+                                 updates[field] = section.content_template;
+                               }
+                             }
+                           });
+                         }
+
+                         await base44.entities.ClinicalNote.update(noteId, updates);
+                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                         toast.success("Template applied successfully");
+                       } catch (error) {
+                         console.error("Failed to apply template:", error);
+                         toast.error("Failed to apply template");
+                       }
+                     }
                    }}
                  />
 

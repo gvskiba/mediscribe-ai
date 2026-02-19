@@ -60,6 +60,7 @@ export default function DraggableNotificationButtons() {
     e.stopPropagation();
     setIsDragging(buttonType);
     setDragStart({ x: e.clientX, y: e.clientY });
+    setWasDragged(false);
   };
 
   const handleMouseMove = (e) => {

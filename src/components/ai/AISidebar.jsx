@@ -413,6 +413,7 @@ const PANEL_MAP = {
   diagnosis: DiagnosisPanel,
   guidelines: GuidelinesPanel,
   mdm: MDMPanel,
+  ros: ROSPanel,
 };
 
 export default function AISidebar({ isOpen, onClose, note, noteId, onUpdateNote }) {

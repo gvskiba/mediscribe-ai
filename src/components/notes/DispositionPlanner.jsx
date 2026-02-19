@@ -76,6 +76,72 @@ export default function DispositionPlanner({ onSave, note }) {
     }
   }, [dispositionType, availableLocations]);
 
+  const generateAiRecommendation = async () => {
+    if (!note) return;
+    setLoadingRecommendation(true);
+
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Analyze this clinical note and recommend the most appropriate patient disposition (discharge, hospital admission, transfer to facility, or observation). 
+
+PATIENT INFO:
+Name: ${note.patient_name}
+Age: ${note.patient_age || "Unknown"}
+
+CLINICAL DATA:
+Chief Complaint: ${note.chief_complaint || "N/A"}
+Assessment: ${note.assessment || "N/A"}
+Diagnoses: ${note.diagnoses?.join(", ") || "N/A"}
+Medications: ${note.medications?.join(", ") || "None"}
+Plan: ${note.plan || "N/A"}
+Vital Signs Status: ${note.vital_signs ? "Recorded" : "Not recorded"}
+
+Based on the clinical presentation, acuity level, diagnoses, and treatment plan, recommend:
+1. The disposition type (discharge, admission, transfer, or observation)
+2. The location/unit if applicable
+3. Clear clinical reasoning for the recommendation
+4. Any special considerations or precautions
+
+Provide a professional, evidence-based recommendation.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            recommended_disposition: {
+              type: "string",
+              enum: ["discharge", "admission", "transfer", "observation"],
+              description: "Recommended disposition type"
+            },
+            recommended_location: {
+              type: "string",
+              description: "Specific location or unit (e.g., ICU, medical-surgical floor, home with services)"
+            },
+            clinical_reasoning: {
+              type: "string",
+              description: "Detailed explanation of the recommendation based on clinical findings"
+            },
+            key_factors: {
+              type: "array",
+              items: { type: "string" },
+              description: "Key clinical factors driving the recommendation"
+            },
+            special_considerations: {
+              type: "array",
+              items: { type: "string" },
+              description: "Any special precautions or considerations"
+            }
+          }
+        }
+      });
+
+      setAiRecommendation(result);
+    } catch (error) {
+      console.error("Failed to generate AI recommendation:", error);
+      toast.error("Failed to generate AI recommendation");
+    } finally {
+      setLoadingRecommendation(false);
+    }
+  };
+
   const handleSave = () => {
     const dispositionData = {
       disposition_type: dispositionType,

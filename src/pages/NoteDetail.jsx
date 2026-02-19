@@ -84,6 +84,7 @@ import AISidebar from "../components/ai/AISidebar";
 import InlineSectionAI from "../components/ai/InlineSectionAI";
 import NoteTypeAndTemplateSelector from "../components/notes/NoteTypeAndTemplateSelector";
 import MedicalDecisionMakingTab from "../components/notes/MedicalDecisionMakingTab";
+import VitalSignsPasteAnalyzer from "../components/notes/VitalSignsPasteAnalyzer";
 
 const TAB_GROUPS = [
   {
@@ -92,6 +93,7 @@ const TAB_GROUPS = [
     color: 'blue',
     tabs: [
       { id: 'patient_intake', label: 'Subjective', icon: Activity },
+      { id: 'vital_signs', label: 'Vital Signs', icon: Activity },
     ]
   },
   {
@@ -101,7 +103,6 @@ const TAB_GROUPS = [
     tabs: [
       { id: 'review_of_systems', label: 'Review of Systems', icon: Activity },
       { id: 'physical_exam', label: 'Physical Exam', icon: Activity },
-      { id: 'vital_signs', label: 'Vital Signs', icon: Activity },
     ]
   },
   {
@@ -1675,7 +1676,7 @@ Generated: ${new Date().toLocaleString()}
                           </div>
                         </TabsContent>
 
-           {/* Vital Signs Tab */}
+           {/* Vital Signs Tab (moved to Patient) */}
            <TabsContent value="vital_signs" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
              <div className="max-w-4xl mx-auto space-y-8">
                {/* Header */}
@@ -1687,14 +1688,31 @@ Generated: ${new Date().toLocaleString()}
                  <p className="text-slate-600 max-w-2xl mx-auto">Record patient vital signs and measurements</p>
                </div>
 
+               {/* Paste Analyzer */}
+               <VitalSignsPasteAnalyzer
+                 onApplyVitals={async (vitals) => {
+                   const vitalSigns = {
+                     temperature: vitals.temperature,
+                     heart_rate: vitals.heart_rate,
+                     blood_pressure: vitals.blood_pressure,
+                     respiratory_rate: vitals.respiratory_rate,
+                     oxygen_saturation: vitals.oxygen_saturation,
+                     height: vitals.height,
+                     weight: vitals.weight
+                   };
+                   await base44.entities.ClinicalNote.update(noteId, { vital_signs: vitalSigns });
+                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                 }}
+               />
+
                {/* Vital Signs Input */}
                <div className="bg-white rounded-xl border-2 border-emerald-300 shadow-lg overflow-hidden">
                  <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-5 text-white">
                    <h3 className="font-bold text-lg flex items-center gap-2">
                      <Activity className="w-6 h-6" />
-                     Vital Signs
+                     Vital Signs Form
                    </h3>
-                   <p className="text-emerald-100 text-sm mt-1">Temperature, BP, HR, RR, O2 Sat, Height, Weight</p>
+                   <p className="text-emerald-100 text-sm mt-1">Manually enter or edit vital signs</p>
                  </div>
                  <div className="p-6">
                    <VitalSignsInput

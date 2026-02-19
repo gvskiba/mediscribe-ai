@@ -222,44 +222,44 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Left Column: Vitals & Medications */}
         <div className="space-y-6">
-          {/* Vital Signs */}
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-            <Card className="border-emerald-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-4 text-white">
-                <h3 className="font-bold text-lg flex items-center gap-2">
-                  <Activity className="w-5 h-5" /> Latest Vital Signs
-                </h3>
-              </div>
-              <div className="p-6">
-                {latestNote.vital_signs && Object.keys(latestNote.vital_signs).length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {Object.entries(latestNote.vital_signs)
-                      .filter(([_, v]) => v && v.value)
-                      .map(([key, vital]) => {
-                        const vitalStatus = getVitalStatus(key, vital.value);
-                        const displayKey = key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-                        return (
-                          <div key={key} className={`rounded-lg p-4 ${vitalStatus.color} border-2 ${
-                            vitalStatus.status === "normal" ? "border-green-300" :
-                            vitalStatus.status === "abnormal" ? "border-red-300" : "border-yellow-300"
-                          }`}>
-                            <p className="text-xs font-semibold text-slate-600 mb-1">{displayKey}</p>
-                            <p className="text-2xl font-bold text-slate-900">
-                              {key === "blood_pressure" && vital.systolic
-                                ? `${vital.systolic}/${vital.diastolic}`
-                                : vital.value}
-                            </p>
-                            <p className="text-xs text-slate-500 mt-1">{vital.unit || ""}</p>
-                          </div>
-                        );
-                      })}
-                  </div>
-                ) : (
-                  <p className="text-slate-500 text-center py-8">No vital signs recorded</p>
-                )}
-              </div>
-            </Card>
-          </motion.div>
+        {/* Vital Signs */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="border-emerald-200 overflow-hidden">
+            <div className="bg-emerald-500 px-4 py-3 text-white">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <Activity className="w-4 h-4" /> Vital Signs
+              </h3>
+            </div>
+            <div className="p-4">
+              {latestNote.vital_signs && Object.keys(latestNote.vital_signs).length > 0 ? (
+                <div className="grid grid-cols-2 gap-3">
+                  {Object.entries(latestNote.vital_signs)
+                    .filter(([_, v]) => v && v.value)
+                    .map(([key, vital]) => {
+                      const vitalStatus = getVitalStatus(key, vital.value);
+                      const displayKey = key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+                      return (
+                        <div key={key} className={`rounded p-3 ${vitalStatus.color} border ${
+                          vitalStatus.status === "normal" ? "border-green-300" :
+                          vitalStatus.status === "abnormal" ? "border-red-300" : "border-yellow-300"
+                        }`}>
+                          <p className="text-xs font-semibold text-slate-600">{displayKey}</p>
+                          <p className="text-xl font-bold text-slate-900 mt-0.5">
+                            {key === "blood_pressure" && vital.systolic
+                              ? `${vital.systolic}/${vital.diastolic}`
+                              : vital.value}
+                          </p>
+                          <p className="text-xs text-slate-500">{vital.unit || ""}</p>
+                        </div>
+                      );
+                    })}
+                </div>
+              ) : (
+                <p className="text-slate-500 text-center py-6 text-sm">No vital signs</p>
+              )}
+            </div>
+          </Card>
+        </motion.div>
 
           {/* Medications */}
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>

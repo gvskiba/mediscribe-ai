@@ -2042,21 +2042,36 @@ Generated: ${new Date().toLocaleString()}
                          className="min-h-[400px] text-base flex-1"
                        />
                      </div>
-                     <Button
-                       onClick={async () => {
-                         try {
-                           await base44.entities.ClinicalNote.update(noteId, { plan: note.plan });
-                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                           toast.success("Treatment plan added to clinical note");
-                         } catch (error) {
-                           console.error("Failed to add treatment plan:", error);
-                           toast.error("Failed to add treatment plan");
-                         }
-                       }}
-                       className="bg-amber-600 hover:bg-amber-700 text-white gap-2"
-                     >
-                       <Check className="w-4 h-4" /> Add to Note
-                     </Button>
+                     <div className="flex gap-2">
+                       <Button
+                         onClick={async () => {
+                           try {
+                             await base44.entities.ClinicalNote.update(noteId, { plan: note.plan });
+                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                             toast.success("Treatment plan added to clinical note");
+                           } catch (error) {
+                             console.error("Failed to add treatment plan:", error);
+                             toast.error("Failed to add treatment plan");
+                           }
+                         }}
+                         className="bg-amber-600 hover:bg-amber-700 text-white gap-2"
+                       >
+                         <Check className="w-4 h-4" /> Add to Note
+                       </Button>
+                       <Button
+                         onClick={() => {
+                           queryClient.setQueryData(["note", noteId], (old) => ({
+                             ...old,
+                             plan: ""
+                           }));
+                           toast.success("Treatment plan cleared");
+                         }}
+                         variant="outline"
+                         className="gap-2 text-slate-600 hover:bg-red-50"
+                       >
+                         <X className="w-4 h-4" /> Clear
+                       </Button>
+                     </div>
                      {note.plan && (
                        <div className="bg-slate-50 rounded-xl border-2 border-slate-200 p-6">
                          <h4 className="text-sm font-semibold text-slate-700 mb-4">Preview</h4>

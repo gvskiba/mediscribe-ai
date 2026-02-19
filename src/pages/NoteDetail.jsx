@@ -480,6 +480,19 @@ export default function NoteDetail() {
     }
   }, [noteId]);
 
+  // Update button states when note loads
+  useEffect(() => {
+    if (note) {
+      setPhysicalExamNormal(
+        note.physical_exam === "No abnormalities noted. All systems within normal limits on examination."
+      );
+      setRosNormal(
+        note.review_of_systems?.includes("REVIEW OF SYSTEMS:") && 
+        note.review_of_systems?.includes("Denies fever, chills, weight loss")
+      );
+    }
+  }, [note?.id]);
+
   const { data: templates = [] } = useQuery({
     queryKey: ["noteTemplates"],
     queryFn: () => base44.entities.NoteTemplate.list()

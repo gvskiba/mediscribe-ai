@@ -2,122 +2,37 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Sparkles, X, FileText, Activity, Code, Pill, BookOpen, AlertCircle, Brain, Beaker, Stethoscope, ClipboardList, Check, Loader2, Copy
+  Sparkles, X, ClipboardList, Code, Pill, Brain, BookOpen, AlertCircle,
+  Loader2, Check, ChevronRight, Activity, FileText
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
-import AIComprehensiveSummary from "../notes/AIComprehensiveSummary";
 import AIMDMAnalyzer from "../notes/AIMDMAnalyzer";
-import AITreatmentPlanAnalyzer from "../notes/AITreatmentPlanAnalyzer";
 import AIGuidelineSuggestions from "../notes/AIGuidelineSuggestions";
 import ClinicalDecisionSupport from "../notes/ClinicalDecisionSupport";
+import AIComprehensiveSummary from "../notes/AIComprehensiveSummary";
 
-// Map each note tab to an AI panel config
-const TAB_AI_CONFIGS = {
-  patient_intake: {
-    title: "Patient Intake AI",
-    subtitle: "AI assistance for intake & chief complaint",
-    gradient: "from-blue-600 to-indigo-600",
-    icon: Activity,
-    panels: ["extract"],
-  },
-  hpi: {
-    title: "HPI AI Assistant",
-    subtitle: "Generate & refine history of present illness",
-    gradient: "from-purple-600 to-indigo-600",
-    icon: FileText,
-    panels: ["analysis"],
-  },
-  review_of_systems: {
-    title: "Review of Systems AI",
-    subtitle: "AI-generated system-based symptom review",
-    gradient: "from-purple-600 to-indigo-600",
-    icon: ClipboardList,
-    panels: ["analysis"],
-  },
-  physical_exam: {
-    title: "Physical Exam AI",
-    subtitle: "AI-assisted exam documentation",
-    gradient: "from-emerald-600 to-teal-600",
-    icon: Stethoscope,
-    panels: ["analysis"],
-  },
-  vital_signs: {
-    title: "Vital Signs AI",
-    subtitle: "Interpret and contextualize vitals",
-    gradient: "from-emerald-600 to-teal-600",
-    icon: Activity,
-    panels: ["analysis"],
-  },
-  differential: {
-    title: "Differential Dx AI",
-    subtitle: "AI diagnostic decision support",
-    gradient: "from-rose-600 to-pink-600",
-    icon: Brain,
-    panels: ["diagnosis"],
-  },
-  labs_imaging: {
-    title: "Labs & Imaging AI",
-    subtitle: "Interpret results & suggest workup",
-    gradient: "from-teal-600 to-cyan-600",
-    icon: Beaker,
-    panels: ["analysis", "guidelines"],
-  },
-  diagnoses: {
-    title: "Diagnosis AI",
-    subtitle: "AI coding & diagnostic recommendations",
-    gradient: "from-indigo-600 to-purple-600",
-    icon: Code,
-    panels: ["diagnosis", "guidelines"],
-  },
-  treatment_plan: {
-    title: "Treatment Plan AI",
-    subtitle: "Evidence-based treatment recommendations",
-    gradient: "from-amber-600 to-orange-600",
-    icon: Pill,
-    panels: ["treatment", "guidelines"],
-  },
-  medications: {
-    title: "Medication AI",
-    subtitle: "Drug interactions & dosing guidance",
-    gradient: "from-blue-600 to-cyan-600",
-    icon: Pill,
-    panels: ["treatment", "diagnosis"],
-  },
-  procedures: {
-    title: "Procedures AI",
-    subtitle: "Procedure recommendations & documentation",
-    gradient: "from-rose-600 to-pink-600",
-    icon: Activity,
-    panels: ["treatment"],
-  },
-  clinical_note: {
-    title: "Clinical Note AI",
-    subtitle: "Full note review & MDM support",
-    gradient: "from-slate-600 to-slate-700",
-    icon: FileText,
-    panels: ["analysis", "mdm"],
-  },
-  finalize: {
-    title: "Finalize AI",
-    subtitle: "Comprehensive review & quality check",
-    gradient: "from-indigo-600 to-purple-600",
-    icon: Sparkles,
-    panels: ["analysis", "mdm", "guidelines"],
-  },
+// ── Tab definitions ───────────────────────────────────────────────────────────
+const TABS = [
+  { id: "summarize",  label: "Summarize",  icon: ClipboardList, color: "blue" },
+  { id: "icd10",      label: "ICD-10",     icon: Code,          color: "emerald" },
+  { id: "treatment",  label: "Treatment",  icon: Pill,          color: "orange" },
+  { id: "diagnosis",  label: "Diagnosis",  icon: Brain,         color: "purple" },
+  { id: "guidelines", label: "Guidelines", icon: BookOpen,      color: "amber" },
+  { id: "mdm",        label: "MDM",        icon: FileText,      color: "rose" },
+];
+
+const COLOR = {
+  blue:    { btn: "bg-blue-600 hover:bg-blue-700",    badge: "bg-blue-100 text-blue-700",    border: "border-blue-200",    text: "text-blue-700",    dot: "bg-blue-500" },
+  emerald: { btn: "bg-emerald-600 hover:bg-emerald-700", badge: "bg-emerald-100 text-emerald-700", border: "border-emerald-200", text: "text-emerald-700", dot: "bg-emerald-500" },
+  orange:  { btn: "bg-orange-600 hover:bg-orange-700",  badge: "bg-orange-100 text-orange-700",  border: "border-orange-200",  text: "text-orange-700",  dot: "bg-orange-500" },
+  purple:  { btn: "bg-purple-600 hover:bg-purple-700",  badge: "bg-purple-100 text-purple-700",  border: "border-purple-200",  text: "text-purple-700",  dot: "bg-purple-500" },
+  amber:   { btn: "bg-amber-600 hover:bg-amber-700",    badge: "bg-amber-100 text-amber-700",    border: "border-amber-200",   text: "text-amber-700",   dot: "bg-amber-500" },
+  rose:    { btn: "bg-rose-600 hover:bg-rose-700",      badge: "bg-rose-100 text-rose-700",      border: "border-rose-200",    text: "text-rose-700",    dot: "bg-rose-500" },
 };
 
-const DEFAULT_CONFIG = {
-  title: "AI Assistance Hub",
-  subtitle: "Intelligent clinical tools",
-  gradient: "from-purple-600 to-indigo-600",
-  icon: Sparkles,
-  panels: ["summarize", "icd10", "treatmentAI", "analysis", "diagnosis", "treatment", "guidelines", "mdm"],
-};
-
-// ── Inline panels for Summarize, ICD-10, Treatment ──────────────────────────
-
+// ── Panel: Summarize ──────────────────────────────────────────────────────────
 function SummarizePanel({ note, onUpdateNote }) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
@@ -126,7 +41,7 @@ function SummarizePanel({ note, onUpdateNote }) {
     setLoading(true);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `Create a concise, actionable summary of this patient's medical history.\n\nPATIENT: ${note.patient_name}\nDIAGNOSES: ${(note.diagnoses || []).join(", ") || "None"}\nMEDICATIONS: ${(note.medications || []).join(", ") || "None"}\nALLERGIES: ${(note.allergies || []).join(", ") || "None"}\nMEDICAL HISTORY: ${note.medical_history || "None"}\n\nProvide: summary, key_conditions, active_medications, risk_factors, recommendations`,
+        prompt: `Create a concise clinical summary.\n\nPATIENT: ${note.patient_name}\nCHIEF COMPLAINT: ${note.chief_complaint || "N/A"}\nDIAGNOSES: ${(note.diagnoses || []).join(", ") || "None"}\nMEDICATIONS: ${(note.medications || []).join(", ") || "None"}\nALLERGIES: ${(note.allergies || []).join(", ") || "None"}\nMEDICAL HISTORY: ${note.medical_history || "None"}`,
         response_json_schema: {
           type: "object",
           properties: {
@@ -139,85 +54,101 @@ function SummarizePanel({ note, onUpdateNote }) {
         }
       });
       setResult(res);
-      toast.success("Summary generated");
     } catch { toast.error("Failed to summarize"); }
     finally { setLoading(false); }
   };
 
+  const addToNote = async () => {
+    if (!result) return;
+    const text = `\n\nPATIENT SUMMARY\n${result.summary}\n\nKey Conditions: ${result.key_conditions?.join(", ")}\nRisk Factors: ${result.risk_factors?.join(", ")}\nRecommendations:\n${result.recommendations?.map(r => `• ${r}`).join("\n")}`;
+    await onUpdateNote({ summary: result.summary });
+    toast.success("Summary added to note");
+  };
+
   return (
-    <div className="space-y-3">
-      <Button onClick={run} disabled={loading} className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white gap-2">
-        {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Summarizing...</> : <><ClipboardList className="w-4 h-4" /> Generate Patient Summary</>}
+    <div className="space-y-4">
+      <Button onClick={run} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2">
+        {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</> : <><Sparkles className="w-4 h-4" /> Generate Summary</>}
       </Button>
       {result && (
-        <div className="bg-white rounded-xl border border-blue-200 p-4 space-y-3 text-sm">
-          <p className="text-slate-700 leading-relaxed">{result.summary}</p>
-          {[["Key Conditions", result.key_conditions], ["Medications", result.active_medications], ["Risk Factors", result.risk_factors], ["Recommendations", result.recommendations]].map(([label, items]) =>
-            items?.length > 0 && (
-              <div key={label}>
-                <p className="text-xs font-bold text-blue-900 uppercase mb-1">{label}</p>
-                <ul className="space-y-0.5">{items.map((item, i) => <li key={i} className="text-slate-600 flex gap-2"><span>•</span><span>{item}</span></li>)}</ul>
-              </div>
-            )
-          )}
+        <div className="space-y-3">
+          <div className="bg-blue-50 rounded-xl border border-blue-200 p-4 text-sm space-y-3">
+            <p className="text-slate-700 leading-relaxed">{result.summary}</p>
+            {[["Key Conditions", result.key_conditions], ["Risk Factors", result.risk_factors], ["Recommendations", result.recommendations]].map(([label, items]) =>
+              items?.length > 0 && (
+                <div key={label}>
+                  <p className="text-xs font-bold text-blue-900 uppercase tracking-wide mb-1">{label}</p>
+                  <ul className="space-y-1">{items.map((item, i) => <li key={i} className="text-slate-600 flex gap-2 text-xs"><span className="text-blue-400 mt-0.5">•</span><span>{item}</span></li>)}</ul>
+                </div>
+              )
+            )}
+          </div>
+          <Button onClick={addToNote} className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2">
+            <Check className="w-4 h-4" /> Add to Note
+          </Button>
         </div>
       )}
     </div>
   );
 }
 
+// ── Panel: ICD-10 ─────────────────────────────────────────────────────────────
 function ICD10Panel({ note, onUpdateNote }) {
   const [loading, setLoading] = useState(false);
   const [codes, setCodes] = useState(null);
 
   const run = async () => {
-    if (!note.assessment && !note.diagnoses?.length) { toast.error("No diagnoses or assessment available"); return; }
+    if (!note.assessment && !note.diagnoses?.length && !note.chief_complaint) {
+      toast.error("Add a chief complaint or assessment first"); return;
+    }
     setLoading(true);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `Suggest accurate ICD-10 codes.\n\nCHIEF COMPLAINT: ${note.chief_complaint || "N/A"}\nASSESSMENT: ${note.assessment || "N/A"}\nDIAGNOSES: ${(note.diagnoses || []).join(", ") || "N/A"}\n\nReturn most specific 5-7 character codes with confidence and rationale.`,
+        prompt: `Suggest specific ICD-10 codes.\n\nCHIEF COMPLAINT: ${note.chief_complaint || "N/A"}\nASSESSMENT: ${note.assessment || "N/A"}\nDIAGNOSES: ${(note.diagnoses || []).join(", ") || "N/A"}`,
         add_context_from_internet: true,
         response_json_schema: {
           type: "object",
           properties: {
-            codes: { type: "array", items: { type: "object", properties: { code: { type: "string" }, description: { type: "string" }, diagnosis: { type: "string" }, confidence: { type: "string", enum: ["high", "moderate", "low"] }, rationale: { type: "string" } } } }
+            codes: { type: "array", items: { type: "object", properties: {
+              code: { type: "string" }, description: { type: "string" },
+              confidence: { type: "string", enum: ["high", "moderate", "low"] }, rationale: { type: "string" }
+            }}}
           }
         }
       });
       setCodes(res.codes || []);
-      toast.success("ICD-10 codes suggested");
     } catch { toast.error("Failed to suggest codes"); }
     finally { setLoading(false); }
   };
 
-  const apply = async () => {
-    if (!codes) return;
+  const addToNote = async () => {
+    if (!codes?.length) return;
     const icd10Diagnoses = codes.map(c => `${c.code} - ${c.description}`);
     await onUpdateNote({ diagnoses: [...(note.diagnoses || []), ...icd10Diagnoses] });
-    toast.success("ICD-10 codes added to note");
+    toast.success("Codes added to note");
     setCodes(null);
   };
 
+  const confColor = (c) => c === 'high' ? 'bg-green-100 text-green-700' : c === 'moderate' ? 'bg-yellow-100 text-yellow-700' : 'bg-orange-100 text-orange-700';
+
   return (
-    <div className="space-y-3">
-      <Button onClick={run} disabled={loading} className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white gap-2">
+    <div className="space-y-4">
+      <Button onClick={run} disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
         {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</> : <><Code className="w-4 h-4" /> Suggest ICD-10 Codes</>}
       </Button>
       {codes && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {codes.map((code, i) => (
-            <div key={i} className="bg-emerald-50 rounded-lg border border-emerald-200 p-3">
-              <div className="flex items-start justify-between mb-1">
-                <p className="font-bold text-emerald-900">{code.code}</p>
-                <Badge className={code.confidence === 'high' ? 'bg-green-100 text-green-700' : code.confidence === 'moderate' ? 'bg-yellow-100 text-yellow-700' : 'bg-orange-100 text-orange-700'}>
-                  {code.confidence}
-                </Badge>
+            <div key={i} className="bg-emerald-50 rounded-xl border border-emerald-200 p-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-bold text-emerald-900 font-mono">{code.code}</span>
+                <Badge className={confColor(code.confidence)}>{code.confidence}</Badge>
               </div>
-              <p className="text-sm font-semibold text-slate-900">{code.description}</p>
-              <p className="text-xs text-slate-600 mt-1">{code.rationale}</p>
+              <p className="text-sm font-medium text-slate-800">{code.description}</p>
+              <p className="text-xs text-slate-500 mt-1">{code.rationale}</p>
             </div>
           ))}
-          <Button onClick={apply} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
+          <Button onClick={addToNote} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
             <Check className="w-4 h-4" /> Add Codes to Note
           </Button>
         </div>
@@ -226,16 +157,17 @@ function ICD10Panel({ note, onUpdateNote }) {
   );
 }
 
-function TreatmentAIPanel({ note, onUpdateNote }) {
+// ── Panel: Treatment ──────────────────────────────────────────────────────────
+function TreatmentPanel({ note, onUpdateNote }) {
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState(null);
 
   const run = async () => {
-    if (!note.assessment && !note.diagnoses?.length) { toast.error("No diagnoses or assessment available"); return; }
+    if (!note.assessment && !note.diagnoses?.length) { toast.error("Add diagnoses or assessment first"); return; }
     setLoading(true);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate evidence-based treatment plan.\n\nPATIENT: ${note.patient_name}\nDIAGNOSES: ${(note.diagnoses || []).join(", ") || "N/A"}\nASSESSMENT: ${note.assessment || "N/A"}\nALLERGIES: ${(note.allergies || []).join(", ") || "None"}\nCURRENT MEDS: ${(note.medications || []).join(", ") || "None"}\n\nInclude medications with dosing, diagnostic tests, referrals, follow-up, red flags.`,
+        prompt: `Evidence-based treatment plan.\n\nPATIENT: ${note.patient_name}\nDIAGNOSES: ${(note.diagnoses || []).join(", ") || "N/A"}\nASSESSMENT: ${note.assessment || "N/A"}\nALLERGIES: ${(note.allergies || []).join(", ") || "None"}\nCURRENT MEDS: ${(note.medications || []).join(", ") || "None"}`,
         add_context_from_internet: true,
         response_json_schema: {
           type: "object",
@@ -249,48 +181,56 @@ function TreatmentAIPanel({ note, onUpdateNote }) {
         }
       });
       setPlan(res);
-      toast.success("Treatment plan generated");
     } catch { toast.error("Failed to generate plan"); }
     finally { setLoading(false); }
   };
 
-  const apply = async () => {
+  const addToNote = async () => {
     if (!plan) return;
-    let text = "\n\nAI-GENERATED TREATMENT PLAN\n";
-    if (plan.medications?.length) {
-      text += "\nMEDICATIONS:\n" + plan.medications.map(m => `  • ${m.name} — ${m.dosing} (${m.indication})`).join('\n');
-    }
-    if (plan.diagnostic_tests?.length) text += "\n\nDIAGNOSTIC TESTS:\n" + plan.diagnostic_tests.map(t => `  • ${t}`).join('\n');
-    if (plan.referrals?.length) text += "\n\nREFERRALS:\n" + plan.referrals.map(r => `  • ${r}`).join('\n');
-    if (plan.follow_up) text += `\n\nFOLLOW-UP: ${plan.follow_up}`;
-    const newMeds = (plan.medications || []).map(m => `${m.name} ${m.dosing} - ${m.indication}`);
+    let text = "\n\nTREATMENT PLAN\n";
+    if (plan.medications?.length) text += "\nMedications:\n" + plan.medications.map(m => `• ${m.name} — ${m.dosing} (${m.indication})`).join('\n');
+    if (plan.diagnostic_tests?.length) text += "\n\nDiagnostic Tests:\n" + plan.diagnostic_tests.map(t => `• ${t}`).join('\n');
+    if (plan.referrals?.length) text += "\n\nReferrals:\n" + plan.referrals.map(r => `• ${r}`).join('\n');
+    if (plan.follow_up) text += `\n\nFollow-up: ${plan.follow_up}`;
+    const newMeds = (plan.medications || []).map(m => `${m.name} ${m.dosing}`);
     await onUpdateNote({ plan: (note.plan || "") + text, medications: [...(note.medications || []), ...newMeds] });
-    toast.success("Treatment plan applied to note");
+    toast.success("Treatment plan added to note");
     setPlan(null);
   };
 
   return (
-    <div className="space-y-3">
-      <Button onClick={run} disabled={loading} className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white gap-2">
+    <div className="space-y-4">
+      <Button onClick={run} disabled={loading} className="w-full bg-orange-600 hover:bg-orange-700 text-white gap-2">
         {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</> : <><Pill className="w-4 h-4" /> Generate Treatment Plan</>}
       </Button>
       {plan && (
-        <div className="bg-white rounded-xl border border-orange-200 p-4 space-y-3 text-sm">
+        <div className="space-y-3">
           {plan.medications?.length > 0 && (
-            <div>
-              <p className="text-xs font-bold text-orange-900 uppercase mb-2">Medications</p>
+            <div className="bg-orange-50 rounded-xl border border-orange-200 p-3">
+              <p className="text-xs font-bold text-orange-900 uppercase tracking-wide mb-2">Medications</p>
               {plan.medications.map((m, i) => (
-                <div key={i} className="bg-orange-50 rounded-lg p-2 mb-1">
-                  <p className="font-semibold text-slate-900">{m.name}</p>
-                  <p className="text-xs text-slate-600">{m.dosing} · {m.indication} · {m.duration}</p>
+                <div key={i} className="mb-2 last:mb-0">
+                  <p className="text-sm font-semibold text-slate-900">{m.name}</p>
+                  <p className="text-xs text-slate-500">{m.dosing} · {m.duration}</p>
                 </div>
               ))}
             </div>
           )}
-          {plan.diagnostic_tests?.length > 0 && <div><p className="text-xs font-bold text-orange-900 uppercase mb-1">Tests</p><ul>{plan.diagnostic_tests.map((t,i) => <li key={i} className="text-slate-600 text-xs flex gap-1"><span>•</span><span>{t}</span></li>)}</ul></div>}
-          {plan.follow_up && <p className="text-xs text-slate-600"><strong>Follow-up:</strong> {plan.follow_up}</p>}
-          <Button onClick={apply} className="w-full bg-orange-600 hover:bg-orange-700 text-white gap-2">
-            <Check className="w-4 h-4" /> Apply to Note
+          {plan.diagnostic_tests?.length > 0 && (
+            <div className="bg-slate-50 rounded-xl border border-slate-200 p-3">
+              <p className="text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">Tests</p>
+              {plan.diagnostic_tests.map((t, i) => <p key={i} className="text-xs text-slate-600 flex gap-1"><span>•</span>{t}</p>)}
+            </div>
+          )}
+          {plan.red_flags?.length > 0 && (
+            <div className="bg-red-50 rounded-xl border border-red-200 p-3">
+              <p className="text-xs font-bold text-red-800 uppercase tracking-wide mb-2 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Red Flags</p>
+              {plan.red_flags.map((f, i) => <p key={i} className="text-xs text-red-700 flex gap-1"><span>⚠</span>{f}</p>)}
+            </div>
+          )}
+          {plan.follow_up && <p className="text-xs text-slate-600 bg-slate-50 rounded-lg p-2 border border-slate-200"><strong>Follow-up:</strong> {plan.follow_up}</p>}
+          <Button onClick={addToNote} className="w-full bg-orange-600 hover:bg-orange-700 text-white gap-2">
+            <Check className="w-4 h-4" /> Add to Note
           </Button>
         </div>
       )}
@@ -298,217 +238,141 @@ function TreatmentAIPanel({ note, onUpdateNote }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
-function PanelSection({ type, note, onUpdateNote }) {
-  if (type === "documentation") {
-    return (
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 mb-1">
-          <FileText className="w-4 h-4 text-purple-600" />
-          <h4 className="font-semibold text-slate-800 text-sm">Documentation Assistant</h4>
-        </div>
-        <AIDocumentationAssistant note={note} onUpdateNote={onUpdateNote} />
-      </div>
-    );
-  }
-
-  if (type === "analysis") {
-    return (
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 mb-1">
-          <Brain className="w-4 h-4 text-indigo-600" />
-          <h4 className="font-semibold text-slate-800 text-sm">Comprehensive Analysis</h4>
-        </div>
-        <AIComprehensiveSummary note={note} onApply={onUpdateNote} />
-      </div>
-    );
-  }
-
-  if (type === "diagnosis") {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 mb-1">
-          <Activity className="w-4 h-4 text-blue-600" />
-          <h4 className="font-semibold text-slate-800 text-sm">Diagnostic Support</h4>
-        </div>
-        <div className="bg-blue-50 rounded-xl border border-blue-200 p-4">
-          <p className="text-xs font-bold text-blue-900 mb-3">AI Suggestions</p>
-          <ClinicalDecisionSupport
-            type="diagnostic"
-            note={note}
-            onAddToNote={async (diagnosis) => {
-              const updatedDiagnoses = [...(note.diagnoses || []), diagnosis];
-              await onUpdateNote({ diagnoses: updatedDiagnoses });
-            }}
-          />
-        </div>
-        <div className="bg-red-50 rounded-xl border border-red-200 p-4">
-          <p className="text-xs font-bold text-red-900 mb-3 flex items-center gap-1">
-            <AlertCircle className="w-3.5 h-3.5" /> Safety Alerts
-          </p>
-          <ClinicalDecisionSupport
-            type="contraindications"
-            note={note}
-            onAddToNote={async (warning) => {
-              await onUpdateNote({ plan: (note.plan || "") + "\n\n⚠️ ALERT: " + warning });
-            }}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  if (type === "treatment") {
-    return (
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 mb-1">
-          <Pill className="w-4 h-4 text-emerald-600" />
-          <h4 className="font-semibold text-slate-800 text-sm">Treatment Planner</h4>
-        </div>
-        <AITreatmentPlanAnalyzer
+// ── Panel: Diagnosis ──────────────────────────────────────────────────────────
+function DiagnosisPanel({ note, onUpdateNote }) {
+  return (
+    <div className="space-y-4">
+      <div className="bg-purple-50 rounded-xl border border-purple-200 p-3">
+        <p className="text-xs font-bold text-purple-900 uppercase tracking-wide mb-2">AI Suggestions</p>
+        <ClinicalDecisionSupport
+          type="diagnostic"
           note={note}
-          onAddToPlan={async (planText) => {
-            await onUpdateNote({ plan: (note.plan || "") + planText });
+          onAddToNote={async (diagnosis) => {
+            await onUpdateNote({ diagnoses: [...(note.diagnoses || []), diagnosis] });
+            toast.success("Diagnosis added to note");
           }}
         />
       </div>
-    );
-  }
-
-  if (type === "guidelines") {
-    return (
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 mb-1">
-          <BookOpen className="w-4 h-4 text-amber-600" />
-          <h4 className="font-semibold text-slate-800 text-sm">Evidence-Based Guidelines</h4>
-        </div>
-        <AIGuidelineSuggestions
+      <div className="bg-red-50 rounded-xl border border-red-200 p-3">
+        <p className="text-xs font-bold text-red-900 uppercase tracking-wide mb-2 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Safety Alerts</p>
+        <ClinicalDecisionSupport
+          type="contraindications"
           note={note}
-          onAddToPlan={async (text) => {
-            await onUpdateNote({ plan: (note.plan || "") + text });
+          onAddToNote={async (warning) => {
+            await onUpdateNote({ plan: (note.plan || "") + "\n\n⚠️ ALERT: " + warning });
+            toast.success("Alert added to note");
           }}
         />
       </div>
-    );
-  }
-
-  if (type === "mdm") {
-    return (
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 mb-1">
-          <Code className="w-4 h-4 text-rose-600" />
-          <h4 className="font-semibold text-slate-800 text-sm">Medical Decision Making</h4>
-        </div>
-        <AIMDMAnalyzer
-          note={note}
-          onAddToNote={async (mdmText) => {
-            await onUpdateNote({ mdm: (note.mdm || "") + mdmText });
-          }}
-        />
-      </div>
-    );
-  }
-
-  if (type === "summarize") {
-    return (
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 mb-1">
-          <ClipboardList className="w-4 h-4 text-blue-600" />
-          <h4 className="font-semibold text-slate-800 text-sm">Summarize Patient History</h4>
-        </div>
-        <SummarizePanel note={note} onUpdateNote={onUpdateNote} />
-      </div>
-    );
-  }
-
-  if (type === "icd10") {
-    return (
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 mb-1">
-          <Code className="w-4 h-4 text-emerald-600" />
-          <h4 className="font-semibold text-slate-800 text-sm">ICD-10 Code Suggestions</h4>
-        </div>
-        <ICD10Panel note={note} onUpdateNote={onUpdateNote} />
-      </div>
-    );
-  }
-
-  if (type === "treatmentAI") {
-    return (
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 mb-1">
-          <Pill className="w-4 h-4 text-orange-600" />
-          <h4 className="font-semibold text-slate-800 text-sm">Treatment Plan Generator</h4>
-        </div>
-        <TreatmentAIPanel note={note} onUpdateNote={onUpdateNote} />
-      </div>
-    );
-  }
-
-  return null;
+    </div>
+  );
 }
 
-export default function AISidebar({ isOpen, onClose, note, noteId, onUpdateNote, activeTab }) {
-  const config = DEFAULT_CONFIG;
-  const Icon = config.icon;
+// ── Panel: Guidelines ─────────────────────────────────────────────────────────
+function GuidelinesPanel({ note, onUpdateNote }) {
+  return (
+    <AIGuidelineSuggestions
+      note={note}
+      onAddToPlan={async (text) => {
+        await onUpdateNote({ plan: (note.plan || "") + text });
+        toast.success("Guideline added to note");
+      }}
+    />
+  );
+}
+
+// ── Panel: MDM ────────────────────────────────────────────────────────────────
+function MDMPanel({ note, onUpdateNote }) {
+  return (
+    <AIMDMAnalyzer
+      note={note}
+      onAddToNote={async (mdmText) => {
+        await onUpdateNote({ mdm: (note.mdm || "") + mdmText });
+        toast.success("MDM added to note");
+      }}
+    />
+  );
+}
+
+// ── Sidebar ───────────────────────────────────────────────────────────────────
+const PANEL_MAP = {
+  summarize: SummarizePanel,
+  icd10: ICD10Panel,
+  treatment: TreatmentPanel,
+  diagnosis: DiagnosisPanel,
+  guidelines: GuidelinesPanel,
+  mdm: MDMPanel,
+};
+
+export default function AISidebar({ isOpen, onClose, note, noteId, onUpdateNote }) {
+  const [activeTab, setActiveTab] = useState("summarize");
+  const ActivePanel = PANEL_MAP[activeTab];
+  const tab = TABS.find(t => t.id === activeTab);
+  const c = COLOR[tab?.color || "blue"];
 
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={onClose}
             className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
           />
-
-          {/* Sidebar */}
           <motion.div
-            initial={{ x: "-100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "-100%" }}
+            initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed left-0 top-0 bottom-0 w-full md:w-[560px] bg-white shadow-2xl z-50 flex flex-col"
+            className="fixed left-0 top-0 bottom-0 w-full md:w-[480px] bg-white shadow-2xl z-50 flex flex-col"
           >
-            {/* Header — matches current tab color */}
-            <div className={`bg-gradient-to-r ${config.gradient} px-6 py-5 flex items-center justify-between text-white flex-shrink-0`}>
+            {/* Header */}
+            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-5 py-4 flex items-center justify-between text-white flex-shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
-                  <Icon className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold">{config.title}</h2>
-                  <p className="text-white/70 text-xs mt-0.5">{config.subtitle}</p>
+                  <h2 className="text-base font-bold">AI Assistance Hub</h2>
+                  <p className="text-white/70 text-xs">Intelligent clinical tools</p>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onClose}
-                className="text-white hover:bg-white/20 rounded-lg"
-              >
+              <Button variant="ghost" size="icon" onClick={onClose} className="text-white hover:bg-white/20 rounded-lg">
                 <X className="w-5 h-5" />
               </Button>
             </div>
 
-            {/* Content — stacked panels for the active tab */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-6">
-              {config.panels.map((panelType) => (
-                <div
-                  key={panelType}
-                  className="bg-slate-50 rounded-2xl border border-slate-200 p-4"
+            {/* Tab Bar */}
+            <div className="flex overflow-x-auto border-b border-slate-200 bg-white flex-shrink-0 scrollbar-hide">
+              {TABS.map((t) => {
+                const isActive = activeTab === t.id;
+                const tc = COLOR[t.color];
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setActiveTab(t.id)}
+                    className={`flex flex-col items-center gap-1 px-4 py-3 border-b-2 transition-all whitespace-nowrap flex-shrink-0 ${
+                      isActive ? `border-current ${tc.text}` : "border-transparent text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    <t.icon className="w-4 h-4" />
+                    <span className="text-xs font-semibold">{t.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Active Panel */}
+            <div className="flex-1 overflow-y-auto p-5">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.15 }}
                 >
-                  <PanelSection
-                    type={panelType}
-                    note={note}
-                    onUpdateNote={onUpdateNote}
-                  />
-                </div>
-              ))}
+                  {ActivePanel && <ActivePanel note={note} onUpdateNote={onUpdateNote} />}
+                </motion.div>
+              </AnimatePresence>
             </div>
           </motion.div>
         </>

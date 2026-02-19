@@ -43,6 +43,7 @@ import {
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
 import StructuredNotePreview from "../components/notes/StructuredNotePreview";
 import PatientSummary from "../components/notes/PatientSummary";
 import EditableSummaryGenerator from "../components/notes/EditableSummaryGenerator";

@@ -174,7 +174,7 @@ export default function VitalSignsInput({ vitalSigns, onChange, onSave, readOnly
           className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200 p-5"
         >
           <div className="flex items-center gap-3 mb-4">
-            <activeVital.icon.render className={`w-5 h-5 ${colorMap[activeVital.color].icon}`} />
+            <activeVital.icon className={`w-5 h-5 ${colorMap[activeVital.color].icon}`} />
             <h4 className="text-base font-bold text-slate-900">{activeVital.label}</h4>
           </div>
 

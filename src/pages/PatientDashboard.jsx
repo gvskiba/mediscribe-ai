@@ -294,6 +294,70 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
 
             <div className="border-t border-slate-200" />
 
+            {/* Lab Findings */}
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                <Microscope className="w-4 h-4 text-red-600" /> Lab Findings ({latestNote.lab_findings?.length || 0})
+              </h3>
+              {latestNote.lab_findings && latestNote.lab_findings.length > 0 ? (
+                <div className="space-y-2">
+                  {latestNote.lab_findings.slice(0, 5).map((lab, idx) => (
+                    <div key={idx} className="text-sm bg-red-50 border border-red-200 rounded p-2">
+                      <p className="font-semibold text-slate-900">{lab.test_name}</p>
+                      <div className="flex justify-between items-center gap-2 mt-1">
+                        <span className="text-xs text-slate-700">
+                          {lab.result} {lab.unit ? `${lab.unit}` : ""}
+                        </span>
+                        {lab.status && (
+                          <Badge className={`text-xs ${
+                            lab.status === "critical" ? "bg-red-600 text-white" :
+                            lab.status === "abnormal" ? "bg-yellow-600 text-white" :
+                            "bg-green-600 text-white"
+                          }`}>
+                            {lab.status}
+                          </Badge>
+                        )}
+                      </div>
+                      {lab.reference_range && (
+                        <p className="text-xs text-slate-500 mt-1">Ref: {lab.reference_range}</p>
+                      )}
+                    </div>
+                  ))}
+                  {latestNote.lab_findings.length > 5 && (
+                    <p className="text-xs text-slate-500 mt-2">+{latestNote.lab_findings.length - 5} more</p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-slate-500 text-sm">No lab findings recorded</p>
+              )}
+            </div>
+
+            <div className="border-t border-slate-200" />
+
+            {/* Imaging Findings */}
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                <Radio className="w-4 h-4 text-cyan-600" /> Imaging Findings ({latestNote.imaging_findings?.length || 0})
+              </h3>
+              {latestNote.imaging_findings && latestNote.imaging_findings.length > 0 ? (
+                <div className="space-y-2">
+                  {latestNote.imaging_findings.map((imaging, idx) => (
+                    <div key={idx} className="text-sm bg-cyan-50 border border-cyan-200 rounded p-2">
+                      <p className="font-semibold text-slate-900">{imaging.study_type} - {imaging.location}</p>
+                      <p className="text-xs text-slate-700 mt-1">{imaging.findings}</p>
+                      {imaging.impression && (
+                        <p className="text-xs text-slate-600 italic mt-1">Impression: {imaging.impression}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-slate-500 text-sm">No imaging findings recorded</p>
+              )}
+            </div>
+
+            <div className="border-t border-slate-200" />
+
             {/* Diagnoses */}
             <div>
               <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">

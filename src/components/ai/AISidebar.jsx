@@ -14,6 +14,7 @@ import AIGuidelineSuggestions from "../notes/AIGuidelineSuggestions";
 import ClinicalDecisionSupport from "../notes/ClinicalDecisionSupport";
 import AIComprehensiveSummary from "../notes/AIComprehensiveSummary";
 import MedicalLiteratureSearch from "../research/MedicalLiteratureSearch";
+import NoteQuestionAnswering from "./NoteQuestionAnswering";
 
 // ── Tab definitions ───────────────────────────────────────────────────────────
 const TABS = [

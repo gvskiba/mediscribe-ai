@@ -374,6 +374,13 @@ PLAN: ${note.plan || "N/A"}`,
 function ICD10Panel({ note, onUpdateNote }) {
   const [loading, setLoading] = useState(false);
   const [codes, setCodes] = useState(null);
+  const [showContext, setShowContext] = useState(false);
+  const [contextInput, setContextInput] = useState({
+    patientHistory: "",
+    vitalSignsSummary: "",
+    physicalExamFindings: "",
+    additionalNotes: ""
+  });
 
   const run = async () => {
     if (!note.assessment && !note.diagnoses?.length && !note.chief_complaint) {
@@ -381,20 +388,50 @@ function ICD10Panel({ note, onUpdateNote }) {
     }
     setLoading(true);
     try {
+      // Build comprehensive clinical context
+      const baseContext = [
+        note.chief_complaint && `Chief Complaint: ${note.chief_complaint}`,
+        note.assessment && `Assessment: ${note.assessment}`,
+        note.diagnoses?.length && `Current Diagnoses: ${note.diagnoses.join(", ")}`,
+        note.medical_history && `Medical History: ${note.medical_history}`,
+        note.medications?.length && `Medications: ${note.medications.join(", ")}`,
+        note.allergies?.length && `Allergies: ${note.allergies.join(", ")}`,
+      ].filter(Boolean).join("\n");
+
+      const additionalContext = [
+        contextInput.patientHistory && `Patient History Context: ${contextInput.patientHistory}`,
+        contextInput.vitalSignsSummary && `Vital Signs Summary: ${contextInput.vitalSignsSummary}`,
+        contextInput.physicalExamFindings && `Physical Exam Findings: ${contextInput.physicalExamFindings}`,
+        contextInput.additionalNotes && `Additional Clinical Notes: ${contextInput.additionalNotes}`,
+      ].filter(Boolean).join("\n");
+
+      const fullContext = [baseContext, additionalContext].filter(Boolean).join("\n\n");
+
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `Suggest specific ICD-10 codes.\n\nCHIEF COMPLAINT: ${note.chief_complaint || "N/A"}\nASSESSMENT: ${note.assessment || "N/A"}\nDIAGNOSES: ${(note.diagnoses || []).join(", ") || "N/A"}`,
+        prompt: `You are an expert medical coder. Based on the following comprehensive clinical context, suggest the most appropriate and specific ICD-10 codes. Prioritize codes that best capture the documented conditions and findings.
+
+${fullContext}
+
+For each suggested code:
+- Provide the exact ICD-10 code (with appropriate specificity and laterality where applicable)
+- Include the official description
+- Assign a confidence level based on how well the documentation supports this code
+- Provide a detailed rationale explaining why this code is appropriate and what specific clinical findings support it`,
         add_context_from_internet: true,
         response_json_schema: {
           type: "object",
           properties: {
             codes: { type: "array", items: { type: "object", properties: {
               code: { type: "string" }, description: { type: "string" },
-              confidence: { type: "string", enum: ["high", "moderate", "low"] }, rationale: { type: "string" }
+              confidence: { type: "string", enum: ["high", "moderate", "low"] }, 
+              rationale: { type: "string" },
+              clinical_support: { type: "string" }
             }}}
           }
         }
       });
       setCodes(res.codes || []);
+      setShowContext(false);
     } catch { toast.error("Failed to suggest codes"); }
     finally { setLoading(false); }
   };
@@ -407,23 +444,82 @@ function ICD10Panel({ note, onUpdateNote }) {
     setCodes(null);
   };
 
-  const confColor = (c) => c === 'high' ? 'bg-green-100 text-green-700' : c === 'moderate' ? 'bg-yellow-100 text-yellow-700' : 'bg-orange-100 text-orange-700';
+  const confColor = (c) => c === 'high' ? 'bg-green-100 text-green-700 border-green-200' : c === 'moderate' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 'bg-orange-100 text-orange-700 border-orange-200';
 
   return (
     <div className="space-y-4">
+      <Button 
+        onClick={() => setShowContext(!showContext)} 
+        variant="outline"
+        className="w-full gap-2 text-xs"
+      >
+        {showContext ? "Hide" : "Add"} Clinical Context
+      </Button>
+
+      {showContext && (
+        <div className="space-y-3 bg-emerald-50 rounded-xl border border-emerald-200 p-3">
+          <div>
+            <label className="text-xs font-bold text-emerald-900 block mb-1">Patient History</label>
+            <textarea
+              value={contextInput.patientHistory}
+              onChange={(e) => setContextInput({...contextInput, patientHistory: e.target.value})}
+              placeholder="e.g., Recent infection, family history of diabetes..."
+              className="w-full text-xs border border-emerald-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              rows="2"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-emerald-900 block mb-1">Vital Signs Summary</label>
+            <textarea
+              value={contextInput.vitalSignsSummary}
+              onChange={(e) => setContextInput({...contextInput, vitalSignsSummary: e.target.value})}
+              placeholder="e.g., BP elevated at 150/95, HR 110, temp 38.5°C..."
+              className="w-full text-xs border border-emerald-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              rows="2"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-emerald-900 block mb-1">Physical Exam Findings</label>
+            <textarea
+              value={contextInput.physicalExamFindings}
+              onChange={(e) => setContextInput({...contextInput, physicalExamFindings: e.target.value})}
+              placeholder="e.g., Crackles in bilateral lung bases, edema in lower extremities..."
+              className="w-full text-xs border border-emerald-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              rows="2"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-emerald-900 block mb-1">Additional Notes</label>
+            <textarea
+              value={contextInput.additionalNotes}
+              onChange={(e) => setContextInput({...contextInput, additionalNotes: e.target.value})}
+              placeholder="Any other clinical context..."
+              className="w-full text-xs border border-emerald-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              rows="1"
+            />
+          </div>
+        </div>
+      )}
+
       <Button onClick={run} disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
         {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</> : <><Code className="w-4 h-4" /> Suggest ICD-10 Codes</>}
       </Button>
+
       {codes && (
         <div className="space-y-3">
           {codes.map((code, i) => (
-            <div key={i} className="bg-emerald-50 rounded-xl border border-emerald-200 p-3">
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-bold text-emerald-900 font-mono">{code.code}</span>
-                <Badge className={confColor(code.confidence)}>{code.confidence}</Badge>
+            <div key={i} className="bg-emerald-50 rounded-xl border border-emerald-200 p-3 space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-bold text-emerald-900 font-mono text-sm">{code.code}</span>
+                <Badge className={`text-xs border ${confColor(code.confidence)}`}>
+                  {code.confidence.charAt(0).toUpperCase() + code.confidence.slice(1)} Confidence
+                </Badge>
               </div>
               <p className="text-sm font-medium text-slate-800">{code.description}</p>
-              <p className="text-xs text-slate-500 mt-1">{code.rationale}</p>
+              <div className="text-xs text-slate-600 space-y-1">
+                <p><strong>Rationale:</strong> {code.rationale}</p>
+                {code.clinical_support && <p><strong>Clinical Support:</strong> {code.clinical_support}</p>}
+              </div>
             </div>
           ))}
           <Button onClick={addToNote} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white gap-2">

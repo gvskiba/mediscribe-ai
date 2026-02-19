@@ -180,7 +180,7 @@ export default function DraggableNotificationButtons() {
       <motion.button
         onMouseDown={(e) => handleMouseDown(e, 'plus')}
         onClick={(e) => {
-          if (isDragging === 'plus') {
+          if (wasDragged) {
             e.preventDefault();
             return;
           }

@@ -19,6 +19,7 @@ import MedicalLiteratureSearch from "../research/MedicalLiteratureSearch";
 const TABS = [
   { id: "analyze",    label: "Analyze",    icon: ScanSearch,    color: "violet" },
   { id: "summarize",  label: "Summarize",  icon: ClipboardList, color: "blue" },
+  { id: "qa",         label: "Q&A",        icon: Brain,         color: "indigo" },
   { id: "icd10",      label: "ICD-10",     icon: Code,          color: "emerald" },
   { id: "treatment",  label: "Treatment",  icon: Pill,          color: "orange" },
   { id: "diagnosis",  label: "Diagnosis",  icon: Brain,         color: "purple" },

@@ -352,6 +352,61 @@ Provide recommendations in JSON format with: procedure_name, indication, clinica
           </Card>
         </TabsContent>
 
+        {/* Procedure Note Tab */}
+        <TabsContent value="procedure_note" className="space-y-4">
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <FileText className="w-5 h-5 text-blue-600" />
+              <h3 className="text-lg font-semibold">Create Procedure Note</h3>
+            </div>
+
+            {createdNote ? (
+              <div className="space-y-4">
+                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className="font-bold text-slate-900">Procedure Note Created</p>
+                      <p className="text-sm text-slate-600 mt-1">Your note is ready to be added to this clinical visit</p>
+                    </div>
+                  </div>
+                </div>
+
+                <Textarea
+                  value={createdNote}
+                  readOnly
+                  className="min-h-[300px] text-sm bg-slate-50"
+                />
+
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => {
+                      navigator.clipboard.writeText(createdNote);
+                      toast.success("Procedure note copied to clipboard");
+                    }}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                  >
+                    <Plus className="w-4 h-4" /> Copy to Clipboard
+                  </Button>
+                  <Button
+                    onClick={() => setCreatedNote(null)}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Create Another
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <ProcedureNoteCreator
+                onSuccess={(note) => {
+                  setCreatedNote(note);
+                  toast.success("Procedure note generated");
+                }}
+              />
+            )}
+          </Card>
+        </TabsContent>
+
         {/* Procedure Log Tab */}
         <TabsContent value="logs" className="space-y-4">
           <Card className="p-6">

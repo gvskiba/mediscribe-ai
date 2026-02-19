@@ -88,6 +88,7 @@ const TAB_GROUPS = [
     color: 'blue',
     tabs: [
       { id: 'patient_intake', label: 'Patient Intake', icon: Activity },
+      { id: 'hpi', label: 'HPI', icon: Activity },
     ]
   },
   {
@@ -96,7 +97,6 @@ const TAB_GROUPS = [
     color: 'purple',
     tabs: [
       { id: 'review_of_systems', label: 'Review of Systems', icon: Activity },
-      { id: 'hpi', label: 'HPI', icon: Activity },
     ]
   },
   {

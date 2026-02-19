@@ -2033,11 +2033,23 @@ Generated: ${new Date().toLocaleString()}
               {/* HPI Editor */}
               <div className="bg-white rounded-xl border-2 border-purple-300 shadow-lg overflow-hidden">
                  <div className="bg-gradient-to-r from-purple-500 to-indigo-500 px-6 py-5 text-white">
-                   <h3 className="font-bold text-lg flex items-center gap-2">
-                     <Activity className="w-6 h-6" />
-                     History of Present Illness
-                   </h3>
-                   <p className="text-purple-100 text-sm mt-1">Document OLDCARTS: Onset, Location, Duration, Character, Aggravating/Alleviating factors, Radiation, Timing, Severity</p>
+                   <div className="flex items-center justify-between">
+                     <div>
+                       <h3 className="font-bold text-lg flex items-center gap-2">
+                         <Activity className="w-6 h-6" />
+                         History of Present Illness
+                       </h3>
+                       <p className="text-purple-100 text-sm mt-1">Document OLDCARTS: Onset, Location, Duration, Character, Aggravating/Alleviating factors, Radiation, Timing, Severity</p>
+                     </div>
+                     <InlineSectionAI
+                       type="hpi"
+                       note={note}
+                       onApply={async (val) => {
+                         await base44.entities.ClinicalNote.update(noteId, { history_of_present_illness: val });
+                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                       }}
+                     />
+                   </div>
                  </div>
                  <div className="p-6">
                    <Textarea

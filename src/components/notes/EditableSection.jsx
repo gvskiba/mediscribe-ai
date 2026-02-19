@@ -24,13 +24,15 @@ export default function EditableSection({
   noteContext = {}
 }) {
   const [editValue, setEditValue] = useState(value === "Not extracted" ? "" : value);
-   const [isReanalyzing, setIsReanalyzing] = useState(false);
-   const [snippetPickerOpen, setSnippetPickerOpen] = useState(false);
-   const [showSuggestions, setShowSuggestions] = useState(false);
-   const [useRichText, setUseRichText] = useState(false);
-   const [showStructuredList, setShowStructuredList] = useState(false);
-   const textareaRef = useRef(null);
-   const selectionRef = useRef({ start: 0, end: 0 });
+    const [isReanalyzing, setIsReanalyzing] = useState(false);
+    const [snippetPickerOpen, setSnippetPickerOpen] = useState(false);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [useRichText, setUseRichText] = useState(false);
+    const [showStructuredList, setShowStructuredList] = useState(false);
+    const [isCheckingGrammar, setIsCheckingGrammar] = useState(false);
+    const [grammarSuggestions, setGrammarSuggestions] = useState(null);
+    const textareaRef = useRef(null);
+    const selectionRef = useRef({ start: 0, end: 0 });
 
   useEffect(() => {
     setEditValue(value === "Not extracted" ? "" : value);

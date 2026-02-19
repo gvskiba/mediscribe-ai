@@ -22,13 +22,14 @@ import ReturnToNoteButton from "./components/notes/ReturnToNoteButton";
 import DraggableNotificationButtons from "./components/layout/DraggableNotificationButtons";
 
 const navSections = [
-      {
-        title: "Primary",
-        items: [
-          { name: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
-          { name: "My Notes", icon: FileText, page: "NotesLibrary" },
-        ]
-      },
+            {
+              title: "Primary",
+              items: [
+                { name: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
+                { name: "Patient Dashboard", icon: Activity, page: "PatientDashboard" },
+                { name: "My Notes", icon: FileText, page: "NotesLibrary" },
+              ]
+            },
       {
         title: "Resources",
         items: [

@@ -15,6 +15,8 @@ export default function AIDocumentationAssistant({ note, onUpdateNote }) {
   const [generatedContent, setGeneratedContent] = useState(null);
   const [copied, setCopied] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isCheckingGrammar, setIsCheckingGrammar] = useState(false);
+  const [grammarSuggestions, setGrammarSuggestions] = useState(null);
   const recognitionRef = useRef(null);
 
   const startDictation = () => {

@@ -126,7 +126,6 @@ const TAB_GROUPS = [
     label: 'Finalize',
     color: 'indigo',
     tabs: [
-      { id: 'clinical_note', label: 'Clinical Note', icon: FileText },
       { id: 'finalize', label: 'Review & Export', icon: Check },
     ]
   }

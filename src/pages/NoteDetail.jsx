@@ -95,15 +95,14 @@ const TAB_GROUPS = [
     id: 'history',
     label: 'History',
     color: 'purple',
-    tabs: [
-      { id: 'review_of_systems', label: 'Review of Systems', icon: Activity },
-    ]
+    tabs: [],
   },
   {
     id: 'examination',
-    label: 'Exam',
+    label: 'Objective',
     color: 'emerald',
     tabs: [
+      { id: 'review_of_systems', label: 'Review of Systems', icon: Activity },
       { id: 'physical_exam', label: 'Physical Exam', icon: Activity },
       { id: 'vital_signs', label: 'Vital Signs', icon: Activity },
     ]

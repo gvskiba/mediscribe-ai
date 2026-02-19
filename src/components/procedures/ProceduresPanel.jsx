@@ -31,6 +31,8 @@ import {
 import { toast } from "sonner";
 import moment from "moment";
 import ProcedureNoteCreator from "./ProcedureNoteCreator";
+import TemplateSelector from "./TemplateSelector";
+import ProcedureTemplateManager from "./ProcedureTemplateManager";
 
 export default function ProceduresPanel({ note, noteId }) {
   const [activeTab, setActiveTab] = useState("recommendations");
@@ -632,6 +634,22 @@ Return structured data.`,
     }
   };
 
+  const applyTemplate = (template) => {
+    setFormData((prev) => ({
+      ...prev,
+      procedure_name: template.procedure_name || prev.procedure_name,
+      procedure_code: template.procedure_code || prev.procedure_code,
+      technique: template.technique || prev.technique,
+      findings: template.findings || prev.findings,
+      post_procedure_plan: template.post_procedure_plan || prev.post_procedure_plan,
+      common_complications: template.common_complications || prev.common_complications,
+      icd10_codes: template.icd10_codes?.length ? template.icd10_codes : prev.icd10_codes,
+      location: template.location || prev.location,
+      anesthesia_type: template.anesthesia_type || prev.anesthesia_type,
+      duration_minutes: template.estimated_duration ? String(template.estimated_duration) : prev.duration_minutes
+    }));
+  };
+
   const handleSubmit = () => {
     const data = {
       ...formData,
@@ -653,6 +671,11 @@ Return structured data.`,
         </DialogHeader>
 
         <div className="space-y-4">
+          <div className="flex gap-2">
+            <TemplateSelector onApplyTemplate={applyTemplate} isLoading={isSaving} />
+            <ProcedureTemplateManager />
+          </div>
+
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1 block">Procedure Name *</label>

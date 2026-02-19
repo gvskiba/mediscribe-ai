@@ -221,8 +221,8 @@ export default function Layout({ children, currentPageName }) {
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
           {children}
         </div>
-        {/* Notification Buttons */}
-        <NotificationButtons />
+        {/* Draggable Notification Buttons */}
+        <DraggableNotificationButtons />
       </main>
     </div>);
 

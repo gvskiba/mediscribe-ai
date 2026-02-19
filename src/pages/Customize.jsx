@@ -415,7 +415,26 @@ export default function Customize() {
             )}
 
             {/* Save */}
-            {activeSection !== 'account' && (
+            {activeSection !== 'account' && activeSection !== 'fab' && (
+              <div className="pt-2">
+                <Button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="gap-2 bg-blue-600 hover:bg-blue-700 text-white px-8"
+                >
+                  {isSaving ? (
+                    <><div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" /> Saving...</>
+                  ) : saved ? (
+                    <><Check className="w-4 h-4" /> Saved!</>
+                  ) : (
+                    <><Save className="w-4 h-4" /> Save Changes</>
+                  )}
+                </Button>
+              </div>
+            )}
+
+            {/* Save for FAB */}
+            {activeSection === 'fab' && (
               <div className="pt-2">
                 <Button
                   onClick={handleSave}

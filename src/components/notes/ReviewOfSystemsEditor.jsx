@@ -248,7 +248,26 @@ export default function ReviewOfSystemsEditor({ rosData, onUpdate, onAddToNote }
                 {/* Findings preview / input for normal */}
                 <div className="flex-1 min-w-0">
                   {section.status === "normal" ? (
-                    <span className="text-xs text-green-700 truncate block">{section.normal}</span>
+                    editingNormalId === section.id ? (
+                      <input
+                        type="text"
+                        value={section.normal}
+                        onChange={(e) => updateNormalText(section.id, e.target.value)}
+                        onBlur={() => setEditingNormalId(null)}
+                        onKeyDown={(e) => { if (e.key === "Enter") setEditingNormalId(null); }}
+                        placeholder={`Edit normal findings...`}
+                        className="w-full text-xs text-green-700 bg-transparent border-0 outline-none focus:ring-2 focus:ring-green-300 p-0"
+                        autoFocus
+                      />
+                    ) : (
+                      <span 
+                        onClick={() => setEditingNormalId(section.id)}
+                        className="text-xs text-green-700 truncate block cursor-edit hover:underline"
+                        title="Click to edit"
+                      >
+                        {section.normal}
+                      </span>
+                    )
                   ) : section.status === "abnormal" ? (
                     <input
                       type="text"

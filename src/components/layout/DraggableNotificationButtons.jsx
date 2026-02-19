@@ -97,7 +97,7 @@ export default function DraggableNotificationButtons() {
         window.removeEventListener("mouseup", handleMouseUp);
       };
     }
-  }, [isDragging]);
+  }, [isDragging, dragStart, prefs]);
 
   if (!prefs || !prefs.fab_enabled) return null;
 

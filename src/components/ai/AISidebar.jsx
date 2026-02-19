@@ -32,14 +32,14 @@ const TAB_AI_CONFIGS = {
     subtitle: "AI-generated system-based symptom review",
     gradient: "from-purple-600 to-indigo-600",
     icon: ClipboardList,
-    panels: ["documentation"],
+    panels: ["analysis"],
   },
   physical_exam: {
     title: "Physical Exam AI",
     subtitle: "AI-assisted exam documentation",
     gradient: "from-emerald-600 to-teal-600",
     icon: Stethoscope,
-    panels: ["documentation"],
+    panels: ["analysis"],
   },
   vital_signs: {
     title: "Vital Signs AI",

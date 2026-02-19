@@ -226,6 +226,15 @@ export default function ReviewOfSystemsEditor({ rosData, onUpdate, onAddToNote }
                     <span className="text-xs text-slate-400 italic">Not assessed</span>
                   )}
                 </div>
+
+                {/* Delete button */}
+                <button
+                  onClick={() => deleteSection(section.id)}
+                  className="flex-shrink-0 text-slate-300 hover:text-red-500 transition-colors ml-1"
+                  title="Remove section"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
             </motion.div>
           );

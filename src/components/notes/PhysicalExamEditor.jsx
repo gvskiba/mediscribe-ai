@@ -125,8 +125,7 @@ export default function PhysicalExamEditor({ examData, onUpdate, onAddToNote }) 
   };
 
   const formatForNote = () => {
-    let examText = "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
-    examText += "PHYSICAL EXAMINATION\n";
+    let examText = "\n\nPHYSICAL EXAMINATION\n";
     examText += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
     
     sections.filter(s => s.enabled && s.content).forEach(section => {

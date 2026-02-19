@@ -95,8 +95,8 @@ const TAB_GROUPS = [
     label: 'History',
     color: 'purple',
     tabs: [
-      { id: 'hpi', label: 'HPI', icon: Activity },
       { id: 'review_of_systems', label: 'Review of Systems', icon: Activity },
+      { id: 'hpi', label: 'HPI', icon: Activity },
     ]
   },
   {

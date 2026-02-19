@@ -13,6 +13,7 @@ import AIMDMAnalyzer from "../notes/AIMDMAnalyzer";
 import AIGuidelineSuggestions from "../notes/AIGuidelineSuggestions";
 import ClinicalDecisionSupport from "../notes/ClinicalDecisionSupport";
 import AIComprehensiveSummary from "../notes/AIComprehensiveSummary";
+import MedicalLiteratureSearch from "../research/MedicalLiteratureSearch";
 
 // ── Tab definitions ───────────────────────────────────────────────────────────
 const TABS = [

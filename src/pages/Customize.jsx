@@ -304,6 +304,65 @@ export default function Customize() {
               </motion.div>
             )}
 
+            {/* FAB CUSTOMIZATION */}
+            {activeSection === 'fab' && (
+              <motion.div key="fab" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+                <Card title="Action Buttons" subtitle="Customize the floating action buttons">
+                  <div className="space-y-4">
+                    <Toggle label="Show Action Buttons" desc="Display the floating action buttons in the bottom-right corner" checked={prefs.fab_enabled} onChange={v => set('fab_enabled', v)} />
+                    
+                    <div className="border-t border-slate-100 pt-4">
+                      <p className="text-sm font-semibold text-slate-900 mb-3">Button Colors</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs font-medium text-slate-700 mb-2">Return to Note (↑)</p>
+                          <div className="flex gap-1.5 flex-wrap">
+                            {['blue', 'purple', 'indigo', 'red'].map(c => (
+                              <button
+                                key={c}
+                                onClick={() => set('fab_color_arrow', c)}
+                                className={`w-8 h-8 rounded-full border-2 transition-all ${prefs.fab_color_arrow === c ? 'border-slate-700 scale-110' : 'border-slate-200'}`}
+                                style={{ background: ['blue', 'purple', 'indigo', 'red'].includes(c) ? { blue: '#3b82f6', purple: '#a855f7', indigo: '#818cf8', red: '#ef4444' }[c] : '#ddd' }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-slate-700 mb-2">Create Note (+)</p>
+                          <div className="flex gap-1.5 flex-wrap">
+                            {['green', 'orange', 'purple', 'indigo'].map(c => (
+                              <button
+                                key={c}
+                                onClick={() => set('fab_color_plus', c)}
+                                className={`w-8 h-8 rounded-full border-2 transition-all ${prefs.fab_color_plus === c ? 'border-slate-700 scale-110' : 'border-slate-200'}`}
+                                style={{ background: { green: '#22c55e', orange: '#f97316', purple: '#a855f7', indigo: '#818cf8' }[c] || '#ddd' }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-slate-100 pt-4">
+                      <p className="text-sm font-semibold text-slate-900 mb-3">Button Size</p>
+                      <div className="flex gap-2">
+                        {['small', 'medium', 'large'].map(s => (
+                          <OptionButton key={s} value={s} active={prefs.fab_size === s} onClick={() => set('fab_size', s)}>
+                            {s.charAt(0).toUpperCase() + s.slice(1)}
+                          </OptionButton>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <p className="text-xs font-semibold text-blue-900">💡 Tip</p>
+                      <p className="text-xs text-blue-800 mt-1">You can drag the action buttons to any position on the screen while using the app. The position will be remembered automatically.</p>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+
             {/* NOTES CUSTOMIZATION */}
             {activeSection === 'notes' && (
               <motion.div key="notes-extend" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">

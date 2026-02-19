@@ -88,6 +88,28 @@ export default function ReviewOfSystemsEditor({ rosData, onUpdate, onAddToNote }
     save(updated);
   };
 
+  const updateNormalText = (id, newNormal) => {
+    const updated = sections.map(s => 
+      s.id === id ? { ...s, normal: newNormal } : s
+    );
+    setSections(updated);
+  };
+
+  const saveDefaults = async () => {
+    setSavingDefaults(true);
+    try {
+      const defaultsObj = {};
+      sections.forEach(s => {
+        defaultsObj[s.id] = s.normal;
+      });
+      await base44.auth.updateMe({ ros_defaults: defaultsObj });
+      toast.success("ROS defaults saved");
+    } catch (error) {
+      toast.error("Failed to save defaults");
+    }
+    setSavingDefaults(false);
+  };
+
   const addCustomSection = () => {
     if (!newSectionLabel.trim()) return;
     const id = `custom_${Date.now()}`;

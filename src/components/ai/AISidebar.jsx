@@ -283,6 +283,115 @@ function GuidelinesPanel({ note, onUpdateNote }) {
   );
 }
 
+// ── Panel: ROS ────────────────────────────────────────────────────────────────
+const ROS_SYSTEMS = [
+  "Constitutional", "Eyes", "ENT", "Cardiovascular", "Respiratory",
+  "Gastrointestinal", "Genitourinary", "Musculoskeletal", "Neurological",
+  "Psychiatric", "Endocrine", "Hematologic", "Integumentary"
+];
+
+function ROSPanel({ note, onUpdateNote }) {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const run = async () => {
+    const context = [
+      note.chief_complaint && `Chief Complaint: ${note.chief_complaint}`,
+      note.history_of_present_illness && `HPI: ${note.history_of_present_illness}`,
+      note.assessment && `Assessment: ${note.assessment}`,
+      note.diagnoses?.length && `Diagnoses: ${note.diagnoses.join(", ")}`,
+      note.raw_note && `Raw Notes: ${note.raw_note}`,
+    ].filter(Boolean).join("\n");
+
+    if (!context) {
+      toast.error("Add a chief complaint or some clinical context first");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are an expert clinician. Based on the following clinical context, generate a complete, clinically accurate Review of Systems (ROS). For each system, determine if findings are normal or abnormal based on the clinical context. Use standard clinical language.
+
+CLINICAL CONTEXT:
+${context}
+
+Generate a ROS for all 13 standard systems. For each system:
+- If related to the chief complaint or diagnosis, reflect appropriate abnormal findings
+- For unrelated systems, document negative/normal findings consistent with the presentation
+- Use formal clinical documentation language`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            constitutional:   { type: "object", properties: { status: { type: "string", enum: ["normal", "abnormal"] }, findings: { type: "string" } } },
+            eyes:             { type: "object", properties: { status: { type: "string", enum: ["normal", "abnormal"] }, findings: { type: "string" } } },
+            ent:              { type: "object", properties: { status: { type: "string", enum: ["normal", "abnormal"] }, findings: { type: "string" } } },
+            cardiovascular:   { type: "object", properties: { status: { type: "string", enum: ["normal", "abnormal"] }, findings: { type: "string" } } },
+            respiratory:      { type: "object", properties: { status: { type: "string", enum: ["normal", "abnormal"] }, findings: { type: "string" } } },
+            gastrointestinal: { type: "object", properties: { status: { type: "string", enum: ["normal", "abnormal"] }, findings: { type: "string" } } },
+            genitourinary:    { type: "object", properties: { status: { type: "string", enum: ["normal", "abnormal"] }, findings: { type: "string" } } },
+            musculoskeletal:  { type: "object", properties: { status: { type: "string", enum: ["normal", "abnormal"] }, findings: { type: "string" } } },
+            neurological:     { type: "object", properties: { status: { type: "string", enum: ["normal", "abnormal"] }, findings: { type: "string" } } },
+            psychiatric:      { type: "object", properties: { status: { type: "string", enum: ["normal", "abnormal"] }, findings: { type: "string" } } },
+            endocrine:        { type: "object", properties: { status: { type: "string", enum: ["normal", "abnormal"] }, findings: { type: "string" } } },
+            hematologic:      { type: "object", properties: { status: { type: "string", enum: ["normal", "abnormal"] }, findings: { type: "string" } } },
+            integumentary:    { type: "object", properties: { status: { type: "string", enum: ["normal", "abnormal"] }, findings: { type: "string" } } },
+          }
+        }
+      });
+      setResult(res);
+    } catch {
+      toast.error("Failed to generate ROS");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addToNote = async () => {
+    if (!result) return;
+    // Build the rosData object expected by ReviewOfSystemsEditor
+    const rosObj = {};
+    Object.entries(result).forEach(([key, val]) => {
+      if (val?.findings) rosObj[key] = val.findings;
+    });
+    await onUpdateNote({ review_of_systems: JSON.stringify(rosObj) });
+    toast.success("ROS added to note");
+  };
+
+  const statusColors = { normal: "bg-green-100 text-green-700", abnormal: "bg-rose-100 text-rose-700" };
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-teal-50 border border-teal-200 rounded-xl p-3 text-xs text-teal-800">
+        AI will analyze your clinical context (chief complaint, HPI, diagnoses) and generate a complete ROS consistent with the presentation.
+      </div>
+      <Button onClick={run} disabled={loading} className="w-full bg-teal-600 hover:bg-teal-700 text-white gap-2">
+        {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating ROS...</> : <><Stethoscope className="w-4 h-4" /> Generate AI ROS</>}
+      </Button>
+      {result && (
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            {Object.entries(result).map(([key, val]) => (
+              <div key={key} className="flex items-start gap-2 bg-white rounded-lg border border-slate-100 px-3 py-2">
+                <span className={`text-xs font-bold px-1.5 py-0.5 rounded flex-shrink-0 mt-0.5 ${statusColors[val.status] || "bg-slate-100 text-slate-600"}`}>
+                  {val.status === "normal" ? "N" : "ABN"}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-slate-700 capitalize">{key.replace(/_/g, " ")}</p>
+                  <p className="text-xs text-slate-500 leading-relaxed">{val.findings}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <Button onClick={addToNote} className="w-full bg-teal-600 hover:bg-teal-700 text-white gap-2">
+            <Check className="w-4 h-4" /> Apply to ROS Tab
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Panel: MDM ────────────────────────────────────────────────────────────────
 function MDMPanel({ note, onUpdateNote }) {
   return (

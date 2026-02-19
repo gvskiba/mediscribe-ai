@@ -2403,9 +2403,14 @@ Generated: ${new Date().toLocaleString()}
                      <Button
                        size="sm"
                        onClick={async () => {
-                         await base44.entities.ClinicalNote.update(noteId, { physical_exam: "No abnormalities noted. All systems within normal limits on examination." });
-                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                         toast.success("Physical exam set to normal");
+                         try {
+                           await base44.entities.ClinicalNote.update(noteId, { physical_exam: "No abnormalities noted. All systems within normal limits on examination." });
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                           toast.success("Physical exam set to normal");
+                         } catch (error) {
+                           console.error("Error updating physical exam:", error);
+                           toast.error("Failed to update physical exam");
+                         }
                        }}
                        className="bg-white/20 hover:bg-white/30 border-white/30 border text-white gap-2"
                      >

@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import ReactMarkdown from "react-markdown";
 import { Check } from "lucide-react";
+import MDMSectionRenderer from "./MDMSectionRenderer";
 
 export default function MedicalDecisionMakingTab({ note, onUpdateNote, noteId }) {
   const [mdmSections, setMdmSections] = useState(() => {

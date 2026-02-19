@@ -3325,6 +3325,42 @@ Generated: ${new Date().toLocaleString()}
                        </div>
                      </TabsContent>
 
+                     {/* AI Analysis Tab */}
+                     <TabsContent value="ai_analysis" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+                       <div className="max-w-5xl mx-auto space-y-8">
+                         <div className="text-center mb-8">
+                           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 mb-4 shadow-lg">
+                             <Brain className="w-8 h-8 text-white" />
+                           </div>
+                           <h2 className="text-3xl font-bold text-slate-900 mb-2">AI Analysis</h2>
+                           <p className="text-slate-600 max-w-2xl mx-auto">Comprehensive AI-powered analysis and insights</p>
+                         </div>
+
+                         <AISidebar
+                           isOpen={true}
+                           onClose={() => {}}
+                           note={note}
+                           noteId={noteId}
+                           activeTab={activeTab}
+                           onUpdateNote={async (updates) => {
+                             await base44.entities.ClinicalNote.update(noteId, updates);
+                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                           }}
+                         />
+                       </div>
+
+                       {/* Next Button */}
+                       <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+                         <div className="flex gap-2">
+                           <TabDataPreview tabId="ai_analysis" note={note} />
+                           <ClinicalNotePreviewButton note={note} />
+                         </div>
+                         <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                           Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                         </Button>
+                       </div>
+                     </TabsContent>
+
                      {/* Custom Tabs Content */}
                      {tabGroups.flatMap(g => g.tabs).filter(t => t.id.startsWith('custom_')).map(tab => (
                        <TabsContent key={tab.id} value={tab.id} className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">

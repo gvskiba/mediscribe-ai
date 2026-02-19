@@ -650,75 +650,7 @@ Generate the complete clinical note now.`;
         </>
       )}
 
-      {/* Generate Consolidated Note Button */}
-      <Collapsible open={isConsolidatedOpen} onOpenChange={setIsConsolidatedOpen}>
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-300 p-5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-blue-600" />
-                  Consolidated Clinical Note
-                </h3>
-                {consolidatedNote && (
-                  <CollapsibleTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                      {isConsolidatedOpen ? (
-                        <ChevronUp className="w-4 h-4" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </CollapsibleTrigger>
-                )}
-              </div>
-              <p className="text-sm text-slate-600 mt-1">Generate a comprehensive, formatted clinical note from all tabs</p>
-            </div>
-            <Button
-              onClick={generateConsolidatedNote}
-              disabled={generatingConsolidated}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white gap-2"
-            >
-              {generatingConsolidated ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
-              ) : (
-                <><Sparkles className="w-4 h-4" /> Generate Note</>
-              )}
-            </Button>
-          </div>
 
-          {consolidatedNote && (
-            <CollapsibleContent>
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-4 bg-white rounded-lg border-2 border-blue-200 p-6"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-bold text-slate-900">Generated Clinical Note</h4>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={copyToClipboard}
-                    className="gap-2"
-                  >
-                    {copied ? (
-                      <><Check className="w-4 h-4 text-green-600" /> Copied</>
-                    ) : (
-                      <><Copy className="w-4 h-4" /> Copy</>
-                    )}
-                  </Button>
-                </div>
-                <div className="bg-slate-50 rounded-lg p-4 max-h-[600px] overflow-y-auto">
-                  <pre className="text-sm text-slate-900 whitespace-pre-wrap font-sans leading-relaxed">
-                    {consolidatedNote}
-                  </pre>
-                </div>
-              </motion.div>
-            </CollapsibleContent>
-          )}
-        </div>
-      </Collapsible>
     </div>
   );
 }

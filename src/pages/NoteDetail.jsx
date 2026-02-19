@@ -134,6 +134,15 @@ const TAB_GROUPS = [
       { id: 'clinical_note', label: 'Clinical Note', icon: FileText },
       { id: 'finalize', label: 'Review & Export', icon: Check },
     ]
+  },
+  {
+    id: 'disposition',
+    label: 'Disposition',
+    color: 'purple',
+    tabs: [
+      { id: 'disposition_plan', label: 'Disposition', icon: FileText },
+      { id: 'patient_education', label: 'Patient Education', icon: BookOpen },
+    ]
   }
 ];
 
@@ -2847,6 +2856,218 @@ Generated: ${new Date().toLocaleString()}
                        </Button>
                      </div>
                      </div>
+                     </TabsContent>
+
+                     {/* Disposition Tab */}
+                     <TabsContent value="disposition_plan" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+                       <div className="max-w-5xl mx-auto space-y-8">
+                         {/* Header */}
+                         <div className="text-center mb-8">
+                           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 mb-4 shadow-lg">
+                             <FileText className="w-8 h-8 text-white" />
+                           </div>
+                           <h2 className="text-3xl font-bold text-slate-900 mb-2">Disposition Plan</h2>
+                           <p className="text-slate-600 max-w-2xl mx-auto">Document patient disposition, follow-up care, and discharge instructions</p>
+                         </div>
+
+                         {/* Disposition Content */}
+                         <div className="bg-white rounded-xl border-2 border-purple-300 shadow-lg overflow-hidden">
+                           <div className="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-5 text-white">
+                             <h3 className="font-bold text-lg flex items-center gap-2">
+                               <FileText className="w-6 h-6" />
+                               Disposition Details
+                             </h3>
+                             <p className="text-purple-100 text-sm mt-1">Patient disposition, location, and follow-up instructions</p>
+                           </div>
+                           <div className="p-6 space-y-6">
+                             <Textarea
+                               value={note.disposition_plan || ""}
+                               onChange={(e) => {
+                                 queryClient.setQueryData(["note", noteId], (old) => ({
+                                   ...old,
+                                   disposition_plan: e.target.value
+                                 }));
+                               }}
+                               onBlur={async (e) => {
+                                 await base44.entities.ClinicalNote.update(noteId, { disposition_plan: e.target.value });
+                                 toast.success("Disposition plan saved");
+                               }}
+                               placeholder="Document patient disposition (admission, discharge home, transfer, etc.), follow-up appointments, discharge instructions, and patient education..."
+                               className="min-h-[400px] text-base"
+                             />
+                             <Button
+                               onClick={async () => {
+                                 try {
+                                   await base44.entities.ClinicalNote.update(noteId, { disposition_plan: note.disposition_plan });
+                                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                   toast.success("Disposition plan saved");
+                                 } catch (error) {
+                                   console.error("Failed to save disposition plan:", error);
+                                   toast.error("Failed to save disposition plan");
+                                 }
+                               }}
+                               className="bg-purple-600 hover:bg-purple-700 text-white gap-2"
+                             >
+                               <Check className="w-4 h-4" /> Save
+                             </Button>
+                           </div>
+                         </div>
+                       </div>
+
+                       {/* Next Button */}
+                       <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+                         <div className="flex gap-2">
+                           <TabDataPreview tabId="disposition_plan" note={note} />
+                           <ClinicalNotePreviewButton note={note} />
+                         </div>
+                         <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                           Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                         </Button>
+                       </div>
+                     </TabsContent>
+
+                     {/* Patient Education Tab */}
+                     <TabsContent value="patient_education" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+                       <div className="max-w-5xl mx-auto space-y-8">
+                         {/* Header */}
+                         <div className="text-center mb-8">
+                           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-600 mb-4 shadow-lg">
+                             <BookOpen className="w-8 h-8 text-white" />
+                           </div>
+                           <h2 className="text-3xl font-bold text-slate-900 mb-2">Patient Education</h2>
+                           <p className="text-slate-600 max-w-2xl mx-auto">Generate and manage patient education materials</p>
+                         </div>
+
+                         {/* Generate Button */}
+                         <div className="bg-white rounded-xl border-2 border-blue-300 shadow-lg overflow-hidden">
+                           <div className="bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-5 text-white">
+                             <h3 className="font-bold text-lg flex items-center gap-2">
+                               <Sparkles className="w-6 h-6" />
+                               Generate Patient Education
+                             </h3>
+                             <p className="text-blue-100 text-sm mt-1">Create easy-to-understand materials for patients</p>
+                           </div>
+                           <div className="p-6">
+                             <Button
+                               onClick={generatePatientEducation}
+                               disabled={generatingEducation || !note.diagnoses?.length}
+                               className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white gap-2 py-6 text-base"
+                             >
+                               {generatingEducation ? (
+                                 <><Loader2 className="w-5 h-5 animate-spin" /> Generating...</>
+                               ) : (
+                                 <><Sparkles className="w-5 h-5" /> Generate Education Materials</>
+                               )}
+                             </Button>
+                             {!note.diagnoses?.length && (
+                               <p className="text-sm text-slate-500 text-center mt-3">Add diagnoses to generate patient education</p>
+                             )}
+                           </div>
+                         </div>
+
+                         {/* Education Materials */}
+                         {patientEducation && patientEducation.length > 0 && (
+                           <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
+                             <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                               <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                 <BookOpen className="w-5 h-5 text-blue-600" />
+                                 Patient Education Materials
+                               </h3>
+                               <Button
+                                 onClick={() => downloadPatientEducation('txt')}
+                                 variant="outline"
+                                 size="sm"
+                                 className="gap-2"
+                               >
+                                 <Download className="w-4 h-4" /> Download
+                               </Button>
+                             </div>
+                             <div className="p-6 space-y-6">
+                               {patientEducation.map((material, idx) => (
+                                 <motion.div
+                                   key={idx}
+                                   initial={{ opacity: 0, y: 20 }}
+                                   animate={{ opacity: 1, y: 0 }}
+                                   className="rounded-xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50 p-6"
+                                 >
+                                   <h4 className="text-lg font-bold text-slate-900 mb-4">{material.diagnosis}</h4>
+
+                                   <div className="space-y-4">
+                                     {material.what_is_it && (
+                                       <div>
+                                         <p className="font-semibold text-slate-800 mb-2">What Is It?</p>
+                                         <p className="text-slate-700 text-sm leading-relaxed">{material.what_is_it}</p>
+                                       </div>
+                                     )}
+
+                                     {material.symptoms_to_watch?.length > 0 && (
+                                       <div>
+                                         <p className="font-semibold text-slate-800 mb-2">Symptoms to Watch For</p>
+                                         <ul className="list-disc list-inside space-y-1">
+                                           {material.symptoms_to_watch.map((s, i) => (
+                                             <li key={i} className="text-slate-700 text-sm">{s}</li>
+                                           ))}
+                                         </ul>
+                                       </div>
+                                     )}
+
+                                     {material.self_care?.length > 0 && (
+                                       <div>
+                                         <p className="font-semibold text-slate-800 mb-2">What You Can Do</p>
+                                         <ul className="list-disc list-inside space-y-1">
+                                           {material.self_care.map((c, i) => (
+                                             <li key={i} className="text-slate-700 text-sm">{c}</li>
+                                           ))}
+                                         </ul>
+                                       </div>
+                                     )}
+
+                                     {material.when_to_seek_help?.length > 0 && (
+                                       <div className="bg-red-50 rounded-lg p-4 border-2 border-red-200">
+                                         <p className="font-semibold text-red-900 mb-2">⚠️ When to Seek Help</p>
+                                         <ul className="list-disc list-inside space-y-1">
+                                           {material.when_to_seek_help.map((h, i) => (
+                                             <li key={i} className="text-red-800 text-sm">{h}</li>
+                                           ))}
+                                         </ul>
+                                       </div>
+                                     )}
+
+                                     {material.questions_for_doctor?.length > 0 && (
+                                       <div>
+                                         <p className="font-semibold text-slate-800 mb-2">Questions for Your Doctor</p>
+                                         <ul className="list-disc list-inside space-y-1">
+                                           {material.questions_for_doctor.map((q, i) => (
+                                             <li key={i} className="text-slate-700 text-sm">{q}</li>
+                                           ))}
+                                         </ul>
+                                       </div>
+                                     )}
+
+                                     {material.follow_up && (
+                                       <div>
+                                         <p className="font-semibold text-slate-800 mb-2">Follow-up</p>
+                                         <p className="text-slate-700 text-sm">{material.follow_up}</p>
+                                       </div>
+                                     )}
+                                   </div>
+                                 </motion.div>
+                               ))}
+                             </div>
+                           </div>
+                         )}
+                       </div>
+
+                       {/* Next Button */}
+                       <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+                         <div className="flex gap-2">
+                           <TabDataPreview tabId="patient_education" note={note} />
+                           <ClinicalNotePreviewButton note={note} />
+                         </div>
+                         <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                           Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                         </Button>
+                       </div>
                      </TabsContent>
 
                      {/* Procedures Tab */}

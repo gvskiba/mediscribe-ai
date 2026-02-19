@@ -476,11 +476,24 @@ Base recommendations on current clinical guidelines.`,
             <><CheckSquare className="w-4 h-4" /> Check Grammar</>
           )}
         </Button>
-      </div>
+        </div>
 
-      {generatedContent && (
+        {grammarSuggestions && grammarSuggestions.has_errors && (
+        <div className="p-4 rounded-lg bg-amber-50 border border-amber-200">
+          <p className="text-xs font-semibold text-amber-900 mb-2">Grammar & Spelling Issues:</p>
+          {grammarSuggestions.errors.map((error, i) => (
+            <div key={i} className="text-xs text-amber-800 mb-2 last:mb-0">
+              <span className="font-medium">{error.issue}</span>
+              <br />
+              <span className="text-amber-700">Suggestion: {error.suggestion}</span>
+            </div>
+          ))}
+        </div>
+        )}
+
+        {generatedContent && (
         <GeneratedNoteDisplay content={generatedContent} onApply={applyToNote} onCopy={copyToClipboard} copied={copied} />
-      )}
+        )}
     </div>
   );
 }

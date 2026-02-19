@@ -3009,7 +3009,8 @@ Generated: ${new Date().toLocaleString()}
                                      await base44.entities.ClinicalNote.update(noteId, { 
                                        discharge_summary: dischargeSummaryText
                                      });
-                                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                     await queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                     await new Promise(r => setTimeout(r, 300));
                                      toast.success("AI discharge instructions generated");
                                    } catch (error) {
                                      console.error("Failed to generate discharge instructions:", error);

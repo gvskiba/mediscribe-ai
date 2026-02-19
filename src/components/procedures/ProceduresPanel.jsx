@@ -200,7 +200,6 @@ Provide recommendations in JSON format with: procedure_name, indication, clinica
                   </>
                 )}
               </Button>
-              </Button>
             </div>
 
             {loadingRecommendations ? (
@@ -452,9 +451,9 @@ Provide recommendations in JSON format with: procedure_name, indication, clinica
                               <Badge key={idx} variant="outline" className="text-xs bg-purple-50 text-purple-800 border-purple-300">
                                 {code}
                               </Badge>
-                            ))}
-                          </div>
-                        )}
+                              ))}
+                              </div>
+                              )}
 
                         <div className="flex items-center gap-4 text-xs text-slate-500">
                           <span className="flex items-center gap-1">
@@ -751,6 +750,7 @@ Return structured data.`,
                     </div>
                     </div>
                     </div>
+                    </div>
                     ))}
                     </div>
                     )}
@@ -769,7 +769,7 @@ Return structured data.`,
                    if (!icd10Search.trim()) return;
 
                    setLoadingIcd10(true);
-                  try {
+                   try {
                     const result = await base44.integrations.Core.InvokeLLM({
                       prompt: `Search for ICD-10 codes related to: "${icd10Search}". Return the top 5 most relevant codes with full descriptions.`,
                       add_context_from_internet: true,
@@ -801,11 +801,11 @@ Return structured data.`,
                     setLoadingIcd10(false);
                   }
                 }}
-                disabled={loadingIcd10}>
-
+                disabled={loadingIcd10}
+                >
                 <Search className="w-4 h-4" />
-              </Button>
-            </div>
+                </Button>
+                </div>
           </div>
 
           {/* Documentation Upload Section */}
@@ -873,9 +873,9 @@ Return structured data.`,
                       <p className="text-xs text-slate-500 mt-1">Supports images, PDF, Word documents</p>
                     </div>
                   )}
-                </div>
-                </label>
-            </div>
+                  </div>
+                  </label>
+                  </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
@@ -885,17 +885,17 @@ Return structured data.`,
                 value={formData.operator}
                 onChange={(e) => setFormData({ ...formData, operator: e.target.value })}
                 placeholder="Physician name"
-              />
-              </div>
+                />
+                </div>
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1 block">Duration (minutes)</label>
               <Input
-                type="number"
-                 value={formData.duration_minutes}
-                 onChange={(e) => setFormData({ ...formData, duration_minutes: e.target.value })}
-                 placeholder="30"
-                />
-                </div>
+               type="number"
+               value={formData.duration_minutes}
+               onChange={(e) => setFormData({ ...formData, duration_minutes: e.target.value })}
+               placeholder="30"
+              />
+              </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
@@ -933,32 +933,32 @@ Return structured data.`,
           <div>
             <label className="text-sm font-medium text-slate-700 mb-1 block">Technique</label>
             <Textarea
-              value={formData.technique}
-              onChange={(e) => setFormData({ ...formData, technique: e.target.value })}
-              placeholder="Brief description of technique"
-              rows={2}
-              />
-              </div>
+             value={formData.technique}
+             onChange={(e) => setFormData({ ...formData, technique: e.target.value })}
+             placeholder="Brief description of technique"
+             rows={2}
+            />
+            </div>
 
           <div>
             <label className="text-sm font-medium text-slate-700 mb-1 block">Findings</label>
             <Textarea
-              value={formData.findings}
-              onChange={(e) => setFormData({ ...formData, findings: e.target.value })}
-              placeholder="Procedure findings"
-              rows={2}
-              />
-              </div>
+             value={formData.findings}
+             onChange={(e) => setFormData({ ...formData, findings: e.target.value })}
+             placeholder="Procedure findings"
+             rows={2}
+            />
+            </div>
 
           <div>
             <label className="text-sm font-medium text-slate-700 mb-1 block">Complications</label>
             <Textarea
-              value={formData.complications}
-              onChange={(e) => setFormData({ ...formData, complications: e.target.value })}
-              placeholder="Any complications (leave blank if none)"
-              rows={2}
-              />
-              </div>
+             value={formData.complications}
+             onChange={(e) => setFormData({ ...formData, complications: e.target.value })}
+             placeholder="Any complications (leave blank if none)"
+             rows={2}
+            />
+            </div>
 
           <div>
             <label className="text-sm font-medium text-slate-700 mb-1 block">Outcome</label>
@@ -977,12 +977,12 @@ Return structured data.`,
           <div>
             <label className="text-sm font-medium text-slate-700 mb-1 block">Post-Procedure Plan</label>
             <Textarea
-              value={formData.post_procedure_plan}
-              onChange={(e) => setFormData({ ...formData, post_procedure_plan: e.target.value })}
-              placeholder="Post-procedure care instructions"
-              rows={2}
-              />
-              </div>
+             value={formData.post_procedure_plan}
+             onChange={(e) => setFormData({ ...formData, post_procedure_plan: e.target.value })}
+             placeholder="Post-procedure care instructions"
+             rows={2}
+            />
+            </div>
 
           <div className="flex items-center gap-2">
             <input
@@ -1002,12 +1002,12 @@ Return structured data.`,
               onClick={handleSubmit}
               disabled={isSaving || !formData.procedure_name || !formData.indication}
               className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
-              >
+            >
               {isSaving ? "Saving..." : "Save Procedure"}
-              </Button>
-          </div>
-        </div>
-        </DialogContent>
-        </Dialog>
-        );
-        }
+            </Button>
+            </div>
+            </div>
+            </DialogContent>
+            </Dialog>
+            );
+            }

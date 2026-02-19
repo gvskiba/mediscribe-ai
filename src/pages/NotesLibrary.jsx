@@ -212,13 +212,19 @@ export default function NotesLibrary() {
                   Patients: {uniquePatients.length}
                 </span>
               </Button>
+              <Link to={createPageUrl("NewNote")}>
+                <Button
+                  size="sm"
+                  className="rounded-lg h-10 w-10 p-0 group relative bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Plus className="w-5 h-5" />
+                  <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 bg-slate-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    Create Note
+                  </span>
+                </Button>
+              </Link>
             </div>
           </div>
-          <Link to={createPageUrl("NewNote")}>
-            <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl gap-2 shadow-lg shadow-blue-500/30 px-6 py-6 text-base font-semibold transition-all hover:scale-105">
-              <Plus className="w-5 h-5" /> Create New Note
-            </Button>
-          </Link>
         </div>
       </div>
 

@@ -378,49 +378,52 @@ Base recommendations on current clinical guidelines.`,
   };
 
   return (
-    <div className="bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 rounded-2xl border-2 border-purple-300 p-6 shadow-xl">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <Wand2 className="w-7 h-7 text-purple-600" />
-            AI Documentation Assistant
-          </h2>
-          <p className="text-sm text-slate-600 mt-1">
-            Comprehensive AI-powered clinical documentation tools
-          </p>
-        </div>
-      </div>
-
-      {/* Generate Structured Note */}
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-2">
-            Raw Patient Data / Voice Transcript
-          </label>
-          <Textarea
-            value={rawInput}
-            onChange={(e) => setRawInput(e.target.value)}
-            placeholder="Paste raw clinical data, voice recording transcript, or unstructured notes here..."
-            rows={6}
-            className="font-mono text-sm"
-          />
-        </div>
-        <Button
-          onClick={generateStructuredNote}
-          disabled={processing || !rawInput.trim()}
-          className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white gap-2 py-6"
+    <div className="space-y-3">
+      {/* Input area with dictation */}
+      <div className="relative">
+        <Textarea
+          value={rawInput}
+          onChange={(e) => setRawInput(e.target.value)}
+          placeholder="Paste or dictate raw clinical data, voice transcript, or unstructured notes here..."
+          rows={5}
+          className={`text-sm pr-12 ${isRecording ? "border-red-400 ring-2 ring-red-100" : ""}`}
+        />
+        {/* Mic button */}
+        <button
+          type="button"
+          onClick={isRecording ? stopDictation : startDictation}
+          className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow ${
+            isRecording
+              ? "bg-red-500 hover:bg-red-600 text-white animate-pulse"
+              : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+          }`}
+          title={isRecording ? "Stop dictation" : "Start dictation"}
         >
-          {processing ? (
-            <><Loader2 className="w-5 h-5 animate-spin" /> Generating Structured Note...</>
-          ) : (
-            <><Sparkles className="w-5 h-5" /> Generate Complete Clinical Note</>
-          )}
-        </Button>
-
-        {generatedContent && (
-          <GeneratedNoteDisplay content={generatedContent} onApply={applyToNote} onCopy={copyToClipboard} copied={copied} />
+          {isRecording ? <Square className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+        </button>
+        {isRecording && (
+          <div className="absolute bottom-2 right-2 flex items-center gap-1 text-xs text-red-600 font-medium pointer-events-none">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+            Recording
+          </div>
         )}
       </div>
+
+      <Button
+        onClick={generateStructuredNote}
+        disabled={processing || !rawInput.trim()}
+        className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white gap-2"
+      >
+        {processing ? (
+          <><Loader2 className="w-4 h-4 animate-spin" /> Generating Structured Note...</>
+        ) : (
+          <><Sparkles className="w-4 h-4" /> Generate Complete Clinical Note</>
+        )}
+      </Button>
+
+      {generatedContent && (
+        <GeneratedNoteDisplay content={generatedContent} onApply={applyToNote} onCopy={copyToClipboard} copied={copied} />
+      )}
     </div>
   );
 }

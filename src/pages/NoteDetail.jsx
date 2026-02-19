@@ -1609,46 +1609,74 @@ Generated: ${new Date().toLocaleString()}
                                 <h2 className="text-lg font-bold text-slate-900">Subjective</h2>
                                 <p className="text-xs text-slate-500">Chief complaint, history, and AI documentation</p>
                               </div>
-                              <Button
-                                onClick={async () => {
-                                  if (!note.raw_note && !note.chief_complaint) { toast.error("Please enter some patient data first"); return; }
-                                  setAnalyzingRawData(true);
-                                  try {
-                                    const result = await base44.integrations.Core.InvokeLLM({
-                                      prompt: `Analyze this raw patient encounter data and extract structured clinical information:\n\nRAW PATIENT DATA:\n${note.raw_note || note.chief_complaint}\n\nExtract: chief_complaint, history_of_present_illness (OLDCARTS), review_of_systems, initial_assessment, suggested_diagnoses, recommended_tests.`,
-                                      add_context_from_internet: false,
-                                      response_json_schema: {
-                                        type: "object",
-                                        properties: {
-                                          chief_complaint: { type: "string" },
-                                          history_of_present_illness: { type: "string" },
-                                          review_of_systems: { type: "string" },
-                                          initial_assessment: { type: "string" },
-                                          suggested_diagnoses: { type: "array", items: { type: "string" } },
-                                          recommended_tests: { type: "array", items: { type: "string" } }
+                              <div className="flex gap-2">
+                                {/* Full Note Analysis Button */}
+                                <Button
+                                  onClick={async () => {
+                                    if (!note.raw_note && !note.chief_complaint) { toast.error("Please enter some patient data first"); return; }
+                                    setAnalyzingRawData(true);
+                                    try {
+                                      const response = await base44.functions.invoke('analyzeAndStructureNote', {
+                                        noteId: noteId
+                                      });
+                                      queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                      toast.success(`Analysis complete! ${response.data.extracted.fields_populated} fields populated`);
+                                    } catch (error) {
+                                      console.error("Failed to analyze:", error);
+                                      toast.error("Failed to analyze note");
+                                    } finally {
+                                      setAnalyzingRawData(false);
+                                    }
+                                  }}
+                                  disabled={analyzingRawData}
+                                  size="sm"
+                                  className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white gap-2"
+                                >
+                                  {analyzingRawData ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Analyzing...</> : <><Sparkles className="w-3.5 h-3.5" /> AI Structure Note</>}
+                                </Button>
+                                {/* Basic Analysis Button */}
+                                <Button
+                                  onClick={async () => {
+                                    if (!note.raw_note && !note.chief_complaint) { toast.error("Please enter some patient data first"); return; }
+                                    setAnalyzingRawData(true);
+                                    try {
+                                      const result = await base44.integrations.Core.InvokeLLM({
+                                        prompt: `Analyze this raw patient encounter data and extract structured clinical information:\n\nRAW PATIENT DATA:\n${note.raw_note || note.chief_complaint}\n\nExtract: chief_complaint, history_of_present_illness (OLDCARTS), review_of_systems, initial_assessment, suggested_diagnoses, recommended_tests.`,
+                                        add_context_from_internet: false,
+                                        response_json_schema: {
+                                          type: "object",
+                                          properties: {
+                                            chief_complaint: { type: "string" },
+                                            history_of_present_illness: { type: "string" },
+                                            review_of_systems: { type: "string" },
+                                            initial_assessment: { type: "string" },
+                                            suggested_diagnoses: { type: "array", items: { type: "string" } },
+                                            recommended_tests: { type: "array", items: { type: "string" } }
+                                          }
                                         }
-                                      }
-                                    });
-                                    await base44.entities.ClinicalNote.update(noteId, {
-                                      chief_complaint: result.chief_complaint,
-                                      history_of_present_illness: result.history_of_present_illness,
-                                      review_of_systems: result.review_of_systems,
-                                      assessment: result.initial_assessment
-                                    });
-                                    queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                                    toast.success("AI analysis complete — fields populated");
-                                  } catch (error) {
-                                    toast.error("Failed to analyze patient data");
-                                  } finally {
-                                    setAnalyzingRawData(false);
-                                  }
-                                }}
-                                disabled={analyzingRawData}
-                                size="sm"
-                                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white gap-2"
-                              >
-                                {analyzingRawData ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Analyzing...</> : <><Sparkles className="w-3.5 h-3.5" /> AI Auto-Fill</>}
-                              </Button>
+                                      });
+                                      await base44.entities.ClinicalNote.update(noteId, {
+                                        chief_complaint: result.chief_complaint,
+                                        history_of_present_illness: result.history_of_present_illness,
+                                        review_of_systems: result.review_of_systems,
+                                        assessment: result.initial_assessment
+                                      });
+                                      queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                      toast.success("AI analysis complete — fields populated");
+                                    } catch (error) {
+                                      toast.error("Failed to analyze patient data");
+                                    } finally {
+                                      setAnalyzingRawData(false);
+                                    }
+                                  }}
+                                  disabled={analyzingRawData}
+                                  size="sm"
+                                  variant="outline"
+                                  className="gap-2"
+                                >
+                                  {analyzingRawData ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Analyzing...</> : <><Sparkles className="w-3.5 h-3.5" /> Quick Fill</>}
+                                </Button>
+                              </div>
                             </div>
 
                             {/* Chief Complaint — compact single-line */}

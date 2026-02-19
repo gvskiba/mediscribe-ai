@@ -18,6 +18,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import ReactMarkdown from "react-markdown";
+import { Check } from "lucide-react";
 
 export default function MedicalDecisionMakingTab({ note, onUpdateNote, noteId }) {
   const [mdmSections, setMdmSections] = useState(() => {

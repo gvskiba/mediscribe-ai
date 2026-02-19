@@ -233,20 +233,20 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
         <Card className="border border-slate-200 overflow-hidden">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 text-white flex items-center justify-between">
             <h2 className="text-lg font-bold">Clinical Overview</h2>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <Link to={createPageUrl("Dashboard")}>
-                <Button size="sm" variant="secondary" className="gap-1 text-xs">
-                  <LayoutDashboard className="w-4 h-4" /> Dashboard
-                </Button>
+                <button className="hover:bg-white/20 rounded-lg p-2 transition-colors" title="Dashboard">
+                  <LayoutDashboard className="w-5 h-5" />
+                </button>
               </Link>
               <Link to={createPageUrl(`NoteDetail?id=${latestNote.id}`)}>
-                <Button size="sm" variant="secondary" className="gap-1 text-xs">
-                  <FileText className="w-4 h-4" /> Open Note
-                </Button>
+                <button className="hover:bg-white/20 rounded-lg p-2 transition-colors" title="Open Note">
+                  <FileText className="w-5 h-5" />
+                </button>
               </Link>
-              <Button 
-                size="sm" 
-                className="gap-1 text-xs bg-white text-blue-600 hover:bg-slate-100"
+              <button 
+                className="hover:bg-white/20 rounded-lg p-2 transition-colors"
+                title="New Note"
                 onClick={async () => {
                   const newNote = await base44.entities.ClinicalNote.create({
                     raw_note: "",
@@ -256,8 +256,8 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
                   window.location.href = createPageUrl(`NoteDetail?id=${newNote.id}`);
                 }}
               >
-                <FileText className="w-4 h-4" /> New Note
-              </Button>
+                <FileText className="w-5 h-5" />
+              </button>
             </div>
           </div>
 

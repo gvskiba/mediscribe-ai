@@ -17,6 +17,7 @@ export default function DraggableNotificationButtons() {
   });
   const [isDragging, setIsDragging] = useState(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [wasDragged, setWasDragged] = useState(false);
 
   useEffect(() => {
     const savedNoteId = localStorage.getItem("currentOpenNote");

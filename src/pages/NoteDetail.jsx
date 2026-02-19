@@ -2958,37 +2958,19 @@ Generated: ${new Date().toLocaleString()}
                                      add_context_from_internet: false
                                    });
 
-                                   const dischargeSummaryText = `DISCHARGE SUMMARY & INSTRUCTIONS
+                                   const dischargeSummaryText = `DISCHARGE INSTRUCTIONS
 
-                                 Patient: ${note.patient_name}
-                                 MRN: ${note.patient_id || "N/A"}
-                                 Date of Visit: ${note.date_of_visit || "N/A"}
+                                   DIAGNOSES:
+                                   ${note.diagnoses?.join("\n• ") ? "• " + note.diagnoses.join("\n• ") : "N/A"}
 
-                                 CHIEF COMPLAINT:
-                                 ${note.chief_complaint || "N/A"}
+                                   MEDICATIONS:
+                                   ${note.medications?.length ? note.medications.map(m => "• " + m).join("\n") : "No new medications"}
 
-                                 DIAGNOSES:
-                                 ${note.diagnoses?.join("\n• ") ? "• " + note.diagnoses.join("\n• ") : "N/A"}
+                                   INSTRUCTIONS:
+                                   ${result}
 
-                                 HOSPITAL COURSE & FINDINGS:
-                                 ${note.assessment || "N/A"}
-
-                                 DISCHARGE MEDICATIONS:
-                                 ${note.medications?.length ? note.medications.map(m => "• " + m).join("\n") : "No new medications"}
-
-                                 ═════════════════════════════════════════
-
-                                 DISCHARGE INSTRUCTIONS:
-
-                                 ${result}
-
-                                 ═════════════════════════════════════════
-
-                                 FOLLOW-UP CARE:
-                                 ${note.plan || "Patient instructed to follow up as needed"}
-
-                                 DISPOSITION:
-                                 ${note.disposition_plan || "Patient discharged in stable condition"}`;
+                                   FOLLOW-UP:
+                                   ${note.plan || "Follow up as needed"}`;
 
                                    queryClient.setQueryData(["note", noteId], (old) => ({
                                      ...old,

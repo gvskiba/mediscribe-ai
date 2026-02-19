@@ -26,8 +26,8 @@ import {
   X as XIcon,
   Code,
   Paperclip,
-  Loader2 } from
-"lucide-react";
+  Loader2
+} from "lucide-react";
 import { toast } from "sonner";
 import moment from "moment";
 import ProcedureNoteCreator from "./ProcedureNoteCreator";
@@ -186,32 +186,33 @@ Provide recommendations in JSON format with: procedure_name, indication, clinica
               <Button
                 onClick={getRecommendations}
                 disabled={loadingRecommendations}
-                className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800">
-
-                {loadingRecommendations ?
-                <>
+                className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
+              >
+                {loadingRecommendations ? (
+                  <>
                     <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                     Analyzing...
-                  </> :
-
-                <>
+                  </>
+                ) : (
+                  <>
                     <Sparkles className="w-4 h-4 mr-2" />
                     Generate Recommendations
                   </>
-                }
+                )}
+              </Button>
               </Button>
             </div>
 
-            {loadingRecommendations ?
-            <div className="space-y-3">
-                {[1, 2, 3].map((i) =>
-              <Skeleton key={i} className="h-32 w-full" />
-              )}
-              </div> :
-            recommendations.length > 0 ?
-            <div className="space-y-3">
-                {recommendations.map((rec, idx) =>
-              <Card key={idx} className="p-4 border-l-4 border-l-purple-500">
+            {loadingRecommendations ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-32 w-full" />
+                ))}
+              </div>
+            ) : recommendations.length > 0 ? (
+              <div className="space-y-3">
+                {recommendations.map((rec, idx) => (
+                  <Card key={idx} className="p-4 border-l-4 border-l-purple-500">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -232,26 +233,26 @@ Provide recommendations in JSON format with: procedure_name, indication, clinica
                         </div>
                       </div>
                       <Button
-                    size="sm"
-                    onClick={() => {
-                      setSelectedProcedure(rec);
-                      setLogDialogOpen(true);
-                    }}
-                    className="ml-4">
-
+                        size="sm"
+                        onClick={() => {
+                          setSelectedProcedure(rec);
+                          setLogDialogOpen(true);
+                        }}
+                        className="ml-4"
+                      >
                         <Plus className="w-4 h-4 mr-1" />
                         Log
                       </Button>
                     </div>
                   </Card>
-              )}
-              </div> :
-
-            <div className="text-center py-12 text-slate-500">
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-slate-500">
                 <Sparkles className="w-12 h-12 mx-auto mb-3 text-slate-400" />
                 <p>Click "Generate Recommendations" to get AI-powered procedure suggestions</p>
               </div>
-            }
+            )}
           </Card>
         </TabsContent>
 
@@ -269,26 +270,26 @@ Provide recommendations in JSON format with: procedure_name, indication, clinica
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                className="flex-1" />
-
+                className="flex-1"
+              />
               <Button onClick={handleSearch} disabled={loadingSearch}>
                 <Search className="w-4 h-4 mr-2" />
                 Search
               </Button>
             </div>
 
-            {loadingSearch ?
-            <div className="space-y-4">
+            {loadingSearch ? (
+              <div className="space-y-4">
                 <Skeleton className="h-48 w-full" />
-              </div> :
-            searchResults.length > 0 ?
-            <div className="space-y-4">
-                {searchResults.map((result, idx) =>
-              <Card key={idx} className="p-4">
+              </div>
+            ) : searchResults.length > 0 ? (
+              <div className="space-y-4">
+                {searchResults.map((result, idx) => (
+                  <Card key={idx} className="p-4">
                     <h4 className="font-semibold text-lg text-slate-900 mb-2">{result.procedure_name}</h4>
-                    {result.cpt_code &&
-                <Badge variant="outline" className="mb-2">CPT: {result.cpt_code}</Badge>
-                }
+                    {result.cpt_code && (
+                      <Badge variant="outline" className="mb-2">CPT: {result.cpt_code}</Badge>
+                    )}
                     <p className="text-sm text-slate-700 mb-3">{result.description}</p>
                     
                     <div className="grid md:grid-cols-2 gap-3 mb-4">
@@ -302,53 +303,53 @@ Provide recommendations in JSON format with: procedure_name, indication, clinica
                       </div>
                     </div>
 
-                    {result.educational_resources && result.educational_resources.length > 0 &&
-                <div className="border-t pt-3">
+                    {result.educational_resources && result.educational_resources.length > 0 && (
+                      <div className="border-t pt-3">
                         <p className="text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
                           <Youtube className="w-4 h-4 text-red-600" />
                           Educational Resources
                         </p>
                         <div className="space-y-2">
-                          {result.educational_resources.map((resource, ridx) =>
-                    <a
-                      key={ridx}
-                      href={resource.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 hover:underline">
-
+                          {result.educational_resources.map((resource, ridx) => (
+                            <a
+                              key={ridx}
+                              href={resource.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 hover:underline"
+                            >
                               <ExternalLink className="w-3 h-3" />
                               {resource.title} ({resource.source})
                             </a>
-                    )}
+                          ))}
                         </div>
                       </div>
-                }
+                    )}
 
                     <Button
-                  size="sm"
-                  onClick={() => {
-                    setSelectedProcedure({
-                      procedure_name: result.procedure_name,
-                      indication: result.indications,
-                      procedure_code: result.cpt_code
-                    });
-                    setLogDialogOpen(true);
-                  }} className="bg-blue-600 text-slate-50 mt-3 px-3 text-xs font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 shadow hover:bg-primary/90 h-8">
-
-
+                      size="sm"
+                      onClick={() => {
+                        setSelectedProcedure({
+                          procedure_name: result.procedure_name,
+                          indication: result.indications,
+                          procedure_code: result.cpt_code
+                        });
+                        setLogDialogOpen(true);
+                      }}
+                      className="mt-3"
+                    >
                       <Plus className="w-4 h-4 mr-1" />
                       Log This Procedure
                     </Button>
                   </Card>
-              )}
-              </div> :
-            searchQuery && !loadingSearch ?
-            <div className="text-center py-12 text-slate-500">
+                ))}
+              </div>
+            ) : searchQuery && !loadingSearch ? (
+              <div className="text-center py-12 text-slate-500">
                 <Search className="w-12 h-12 mx-auto mb-3 text-slate-400" />
                 <p>No results found. Try a different search term.</p>
-              </div> :
-            null}
+              </div>
+            ) : null}
           </Card>
         </TabsContent>
 
@@ -360,8 +361,8 @@ Provide recommendations in JSON format with: procedure_name, indication, clinica
               <h3 className="text-lg font-semibold">Create Procedure Note</h3>
             </div>
 
-            {createdNote ?
-            <div className="space-y-4">
+            {createdNote ? (
+              <div className="space-y-4">
                 <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                   <div className="flex items-start justify-between mb-3">
                     <div>
@@ -372,38 +373,38 @@ Provide recommendations in JSON format with: procedure_name, indication, clinica
                 </div>
 
                 <Textarea
-                value={createdNote}
-                readOnly
-                className="min-h-[300px] text-sm bg-slate-50" />
-
+                  value={createdNote}
+                  readOnly
+                  className="min-h-[300px] text-sm bg-slate-50"
+                />
 
                 <div className="flex gap-2">
                   <Button
-                  onClick={() => {
-                    navigator.clipboard.writeText(createdNote);
-                    toast.success("Procedure note copied to clipboard");
-                  }}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white gap-2">
-
+                    onClick={() => {
+                      navigator.clipboard.writeText(createdNote);
+                      toast.success("Procedure note copied to clipboard");
+                    }}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                  >
                     <Plus className="w-4 h-4" /> Copy to Clipboard
                   </Button>
                   <Button
-                  onClick={() => setCreatedNote(null)}
-                  variant="outline"
-                  className="flex-1">
-
+                    onClick={() => setCreatedNote(null)}
+                    variant="outline"
+                    className="flex-1"
+                  >
                     Create Another
                   </Button>
                 </div>
-              </div> :
-
-            <ProcedureNoteCreator
-              onSuccess={(note) => {
-                setCreatedNote(note);
-                toast.success("Procedure note generated");
-              }} />
-
-            }
+              </div>
+            ) : (
+              <ProcedureNoteCreator
+                onSuccess={(note) => {
+                  setCreatedNote(note);
+                  toast.success("Procedure note generated");
+                }}
+              />
+            )}
           </Card>
         </TabsContent>
 
@@ -424,16 +425,16 @@ Provide recommendations in JSON format with: procedure_name, indication, clinica
               </Button>
             </div>
 
-            {logsLoading ?
-            <div className="space-y-3">
-                {[1, 2].map((i) =>
-              <Skeleton key={i} className="h-24 w-full" />
-              )}
-              </div> :
-            procedureLogs.length > 0 ?
-            <div className="space-y-3">
-                {procedureLogs.map((log) =>
-              <Card key={log.id} className="p-4 border-l-4 border-l-green-500">
+            {logsLoading ? (
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
+                  <Skeleton key={i} className="h-24 w-full" />
+                ))}
+              </div>
+            ) : procedureLogs.length > 0 ? (
+              <div className="space-y-3">
+                {procedureLogs.map((log) => (
+                  <Card key={log.id} className="p-4 border-l-4 border-l-green-500">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -445,61 +446,61 @@ Provide recommendations in JSON format with: procedure_name, indication, clinica
                         </div>
                         <p className="text-sm text-slate-700 mb-1"><strong>Indication:</strong> {log.indication}</p>
                         
-                        {log.icd10_codes && log.icd10_codes.length > 0 &&
-                    <div className="flex flex-wrap gap-1 my-2">
-                            {log.icd10_codes.map((code, idx) =>
-                      <Badge key={idx} variant="outline" className="text-xs bg-purple-50 text-purple-800 border-purple-300">
+                        {log.icd10_codes && log.icd10_codes.length > 0 && (
+                          <div className="flex flex-wrap gap-1 my-2">
+                            {log.icd10_codes.map((code, idx) => (
+                              <Badge key={idx} variant="outline" className="text-xs bg-purple-50 text-purple-800 border-purple-300">
                                 {code}
                               </Badge>
-                      )}
+                            ))}
                           </div>
-                    }
+                        )}
 
                         <div className="flex items-center gap-4 text-xs text-slate-500">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
                             {moment(log.date_performed).format('MMM D, YYYY h:mm A')}
                           </span>
-                          {log.duration_minutes &&
-                      <span className="flex items-center gap-1">
+                          {log.duration_minutes && (
+                            <span className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
                               {log.duration_minutes} min
                             </span>
-                      }
+                          )}
                           {log.operator && <span>By: {log.operator}</span>}
                         </div>
                         
-                        {log.findings &&
-                    <p className="text-sm text-slate-600 mt-2"><strong>Findings:</strong> {log.findings}</p>
-                    }
+                        {log.findings && (
+                          <p className="text-sm text-slate-600 mt-2"><strong>Findings:</strong> {log.findings}</p>
+                        )}
                         
-                        {log.documentation_files && log.documentation_files.length > 0 &&
-                    <div className="mt-2 flex flex-wrap gap-2">
-                            {log.documentation_files.map((doc, didx) =>
-                      <a
-                        key={didx}
-                        href={doc.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded border border-blue-200">
-
+                        {log.documentation_files && log.documentation_files.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {log.documentation_files.map((doc, didx) => (
+                              <a
+                                key={didx}
+                                href={doc.file_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded border border-blue-200"
+                              >
                                 <Paperclip className="w-3 h-3" />
                                 {doc.description}
                               </a>
-                      )}
+                            ))}
                           </div>
-                    }
+                        )}
                       </div>
                     </div>
                   </Card>
-              )}
-              </div> :
-
-            <div className="text-center py-12 text-slate-500">
-                <FileText className="w-12 h-12 mx-auto mb-3 text-slate-400" />
-                <p>No procedures logged yet</p>
-              </div>
-            }
+                  ))}
+                  </div>
+                  ) : (
+                  <div className="text-center py-12 text-slate-500">
+                  <FileText className="w-12 h-12 mx-auto mb-3 text-slate-400" />
+                  <p>No procedures logged yet</p>
+                  </div>
+                  )}
           </Card>
         </TabsContent>
       </Tabs>
@@ -511,10 +512,10 @@ Provide recommendations in JSON format with: procedure_name, indication, clinica
         note={note}
         selectedProcedure={selectedProcedure}
         onSave={(data) => logProcedureMutation.mutate(data)}
-        isSaving={logProcedureMutation.isPending} />
-
-    </div>);
-
+        isSaving={logProcedureMutation.isPending}
+      />
+    </div>
+  );
 }
 
 function LogProcedureDialog({ open, onOpenChange, note, selectedProcedure, onSave, isSaving }) {
@@ -659,17 +660,17 @@ Return structured data.`,
               <Input
                 value={formData.procedure_name}
                 onChange={(e) => setFormData({ ...formData, procedure_name: e.target.value })}
-                placeholder="e.g., Central Line Placement" />
-
-            </div>
+                placeholder="e.g., Central Line Placement"
+              />
+              </div>
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1 block">Procedure Code</label>
               <Input
                 value={formData.procedure_code}
                 onChange={(e) => setFormData({ ...formData, procedure_code: e.target.value })}
-                placeholder="CPT code" />
-
-            </div>
+                placeholder="CPT code"
+              />
+              </div>
           </div>
 
           <div>
@@ -678,8 +679,8 @@ Return structured data.`,
               value={formData.indication}
               onChange={(e) => setFormData({ ...formData, indication: e.target.value })}
               placeholder="Clinical indication for procedure"
-              rows={2} />
-
+              rows={2}
+            />
           </div>
 
           {/* ICD-10 Codes Section */}
@@ -690,38 +691,38 @@ Return structured data.`,
             </label>
             
             {/* Current ICD-10 Codes */}
-            {formData.icd10_codes.length > 0 &&
-            <div className="flex flex-wrap gap-2 mb-3">
-                {formData.icd10_codes.map((code, idx) =>
-              <Badge key={idx} className="bg-purple-100 text-purple-800 gap-1">
+            {formData.icd10_codes.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {formData.icd10_codes.map((code, idx) => (
+                  <Badge key={idx} className="bg-purple-100 text-purple-800 gap-1">
                     {code}
                     <button
-                  onClick={() => {
-                    const updated = formData.icd10_codes.filter((_, i) => i !== idx);
-                    setFormData({ ...formData, icd10_codes: updated });
-                  }}
-                  className="ml-1 hover:bg-purple-200 rounded-full p-0.5">
-
+                      onClick={() => {
+                        const updated = formData.icd10_codes.filter((_, i) => i !== idx);
+                        setFormData({ ...formData, icd10_codes: updated });
+                      }}
+                      className="ml-1 hover:bg-purple-200 rounded-full p-0.5"
+                    >
                       <XIcon className="w-3 h-3" />
                     </button>
-                  </Badge>
-              )}
-              </div>
-            }
+                    </Badge>
+                    ))}
+                    </div>
+                    )}
 
             {/* AI Suggestions */}
-            {loadingIcd10 &&
-            <div className="flex items-center gap-2 text-sm text-slate-500 mb-3">
+            {loadingIcd10 && (
+              <div className="flex items-center gap-2 text-sm text-slate-500 mb-3">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Getting ICD-10 suggestions...</span>
               </div>
-            }
+            )}
 
-            {icd10Suggestions.length > 0 &&
-            <div className="space-y-2 mb-3">
+            {icd10Suggestions.length > 0 && (
+              <div className="space-y-2 mb-3">
                 <p className="text-xs font-medium text-slate-600">Suggested codes for this procedure:</p>
-                {icd10Suggestions.map((suggestion, idx) =>
-              <div key={idx} className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                {icd10Suggestions.map((suggestion, idx) => (
+                  <div key={idx} className="bg-purple-50 border border-purple-200 rounded-lg p-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -733,40 +734,41 @@ Return structured data.`,
                         <p className="text-xs text-slate-600 mt-1">{suggestion.rationale}</p>
                       </div>
                       <Button
-                    size="sm"
-                    onClick={() => {
-                      if (!formData.icd10_codes.includes(`${suggestion.code} - ${suggestion.description}`)) {
-                        setFormData({
-                          ...formData,
-                          icd10_codes: [...formData.icd10_codes, `${suggestion.code} - ${suggestion.description}`]
-                        });
-                        toast.success("ICD-10 code added");
-                      }
-                    }}
-                    className="flex-shrink-0">
-
+                        size="sm"
+                        onClick={() => {
+                          if (!formData.icd10_codes.includes(`${suggestion.code} - ${suggestion.description}`)) {
+                            setFormData({
+                              ...formData,
+                              icd10_codes: [...formData.icd10_codes, `${suggestion.code} - ${suggestion.description}`]
+                            });
+                            toast.success("ICD-10 code added");
+                          }
+                        }}
+                        className="flex-shrink-0"
+                      >
                         <Plus className="w-3 h-3" />
                       </Button>
                     </div>
-                  </div>
-              )}
-              </div>
-            }
+                    </div>
+                    </div>
+                    ))}
+                    </div>
+                    )}
 
             {/* Manual ICD-10 Entry */}
             <div className="flex gap-2">
               <Input
                 placeholder="Search ICD-10 codes..."
-                value={icd10Search}
-                onChange={(e) => setIcd10Search(e.target.value)}
-                className="flex-1" />
+                 value={icd10Search}
+                 onChange={(e) => setIcd10Search(e.target.value)}
+                 className="flex-1"
+                />
+                <Button
+                 size="sm"
+                 onClick={async () => {
+                   if (!icd10Search.trim()) return;
 
-              <Button
-                size="sm"
-                onClick={async () => {
-                  if (!icd10Search.trim()) return;
-
-                  setLoadingIcd10(true);
+                   setLoadingIcd10(true);
                   try {
                     const result = await base44.integrations.Core.InvokeLLM({
                       prompt: `Search for ICD-10 codes related to: "${icd10Search}". Return the top 5 most relevant codes with full descriptions.`,
@@ -813,36 +815,36 @@ Return structured data.`,
               Procedure Documentation
             </label>
             
-            {formData.documentation_files.length > 0 &&
-            <div className="space-y-2 mb-3">
-                {formData.documentation_files.map((doc, idx) =>
-              <div key={idx} className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg p-2">
+            {formData.documentation_files.length > 0 && (
+              <div className="space-y-2 mb-3">
+                {formData.documentation_files.map((doc, idx) => (
+                  <div key={idx} className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg p-2">
                     <Paperclip className="w-4 h-4 text-blue-600 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-slate-900 truncate">{doc.description}</p>
                       <p className="text-xs text-slate-500">{doc.file_type}</p>
                     </div>
                     <a
-                  href={doc.file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800">
-
+                      href={doc.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800"
+                    >
                       <ExternalLink className="w-4 h-4" />
                     </a>
                     <button
-                  onClick={() => {
-                    const updated = formData.documentation_files.filter((_, i) => i !== idx);
-                    setFormData({ ...formData, documentation_files: updated });
-                  }}
-                  className="text-red-600 hover:text-red-800">
-
+                      onClick={() => {
+                        const updated = formData.documentation_files.filter((_, i) => i !== idx);
+                        setFormData({ ...formData, documentation_files: updated });
+                      }}
+                      className="text-red-600 hover:text-red-800"
+                    >
                       <XIcon className="w-4 h-4" />
                     </button>
-                  </div>
-              )}
-              </div>
-            }
+                    </div>
+                    ))}
+                    </div>
+                    )}
 
             <div className="flex items-center gap-2">
               <input
@@ -852,27 +854,27 @@ Return structured data.`,
                 onChange={handleFileUpload}
                 disabled={uploadingFiles}
                 className="hidden"
-                id="procedure-file-upload" />
-
-              <label
+                id="procedure-file-upload"
+                />
+                <label
                 htmlFor="procedure-file-upload"
-                className="flex-1 cursor-pointer">
-
+                className="flex-1 cursor-pointer"
+                >
                 <div className="border-2 border-dashed border-slate-300 hover:border-blue-400 rounded-lg p-4 text-center transition-colors">
-                  {uploadingFiles ?
-                  <div className="flex items-center justify-center gap-2 text-slate-500">
+                  {uploadingFiles ? (
+                    <div className="flex items-center justify-center gap-2 text-slate-500">
                       <Loader2 className="w-4 h-4 animate-spin" />
                       <span className="text-sm">Uploading...</span>
-                    </div> :
-
-                  <div>
+                    </div>
+                  ) : (
+                    <div>
                       <Upload className="w-6 h-6 text-slate-400 mx-auto mb-1" />
                       <p className="text-sm text-slate-600">Click to upload images, reports, or documents</p>
                       <p className="text-xs text-slate-500 mt-1">Supports images, PDF, Word documents</p>
                     </div>
-                  }
+                  )}
                 </div>
-              </label>
+                </label>
             </div>
           </div>
 
@@ -882,29 +884,29 @@ Return structured data.`,
               <Input
                 value={formData.operator}
                 onChange={(e) => setFormData({ ...formData, operator: e.target.value })}
-                placeholder="Physician name" />
-
-            </div>
+                placeholder="Physician name"
+              />
+              </div>
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1 block">Duration (minutes)</label>
               <Input
                 type="number"
-                value={formData.duration_minutes}
-                onChange={(e) => setFormData({ ...formData, duration_minutes: e.target.value })}
-                placeholder="30" />
-
-            </div>
+                 value={formData.duration_minutes}
+                 onChange={(e) => setFormData({ ...formData, duration_minutes: e.target.value })}
+                 placeholder="30"
+                />
+                </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1 block">Location</label>
               <select
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg">
-
-                <option value="clinic">Clinic</option>
+               value={formData.location}
+               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+               className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+              >
+               <option value="clinic">Clinic</option>
                 <option value="bedside">Bedside</option>
                 <option value="procedure_room">Procedure Room</option>
                 <option value="or">Operating Room</option>
@@ -915,11 +917,11 @@ Return structured data.`,
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1 block">Anesthesia Type</label>
               <select
-                value={formData.anesthesia_type}
-                onChange={(e) => setFormData({ ...formData, anesthesia_type: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg">
-
-                <option value="none">None</option>
+               value={formData.anesthesia_type}
+               onChange={(e) => setFormData({ ...formData, anesthesia_type: e.target.value })}
+               className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+              >
+               <option value="none">None</option>
                 <option value="local">Local</option>
                 <option value="regional">Regional</option>
                 <option value="conscious_sedation">Conscious Sedation</option>
@@ -934,9 +936,9 @@ Return structured data.`,
               value={formData.technique}
               onChange={(e) => setFormData({ ...formData, technique: e.target.value })}
               placeholder="Brief description of technique"
-              rows={2} />
-
-          </div>
+              rows={2}
+              />
+              </div>
 
           <div>
             <label className="text-sm font-medium text-slate-700 mb-1 block">Findings</label>
@@ -944,9 +946,9 @@ Return structured data.`,
               value={formData.findings}
               onChange={(e) => setFormData({ ...formData, findings: e.target.value })}
               placeholder="Procedure findings"
-              rows={2} />
-
-          </div>
+              rows={2}
+              />
+              </div>
 
           <div>
             <label className="text-sm font-medium text-slate-700 mb-1 block">Complications</label>
@@ -954,17 +956,17 @@ Return structured data.`,
               value={formData.complications}
               onChange={(e) => setFormData({ ...formData, complications: e.target.value })}
               placeholder="Any complications (leave blank if none)"
-              rows={2} />
-
-          </div>
+              rows={2}
+              />
+              </div>
 
           <div>
             <label className="text-sm font-medium text-slate-700 mb-1 block">Outcome</label>
             <select
               value={formData.outcome}
               onChange={(e) => setFormData({ ...formData, outcome: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg">
-
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+            >
               <option value="successful">Successful</option>
               <option value="partially_successful">Partially Successful</option>
               <option value="unsuccessful">Unsuccessful</option>
@@ -978,17 +980,17 @@ Return structured data.`,
               value={formData.post_procedure_plan}
               onChange={(e) => setFormData({ ...formData, post_procedure_plan: e.target.value })}
               placeholder="Post-procedure care instructions"
-              rows={2} />
-
-          </div>
+              rows={2}
+              />
+              </div>
 
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
               checked={formData.consent_obtained}
               onChange={(e) => setFormData({ ...formData, consent_obtained: e.target.checked })}
-              className="w-4 h-4" />
-
+              className="w-4 h-4"
+            />
             <label className="text-sm text-slate-700">Informed consent obtained</label>
           </div>
 
@@ -999,13 +1001,13 @@ Return structured data.`,
             <Button
               onClick={handleSubmit}
               disabled={isSaving || !formData.procedure_name || !formData.indication}
-              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800">
-
+              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
+              >
               {isSaving ? "Saving..." : "Save Procedure"}
-            </Button>
+              </Button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>);
-
-}
+        </DialogContent>
+        </Dialog>
+        );
+        }

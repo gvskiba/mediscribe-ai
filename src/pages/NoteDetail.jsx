@@ -80,6 +80,7 @@ import ClinicalWorkflowAutomation from "../components/notes/ClinicalWorkflowAuto
 import AIGuidelineSuggestions from "../components/notes/AIGuidelineSuggestions";
 import AISidebar from "../components/ai/AISidebar";
 import InlineSectionAI from "../components/ai/InlineSectionAI";
+import NoteTypeAndTemplateSelector from "../components/notes/NoteTypeAndTemplateSelector";
 
 const TAB_GROUPS = [
   {

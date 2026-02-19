@@ -37,6 +37,7 @@ export default function MedicalDecisionMakingTab({ note, onUpdateNote, noteId })
   const [newSectionTitle, setNewSectionTitle] = useState("");
   const [newSectionContent, setNewSectionContent] = useState("");
   const [showAddSection, setShowAddSection] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   // Generate AI MDM Analysis
   const generateAIMDMAnalysis = async () => {

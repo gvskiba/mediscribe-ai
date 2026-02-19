@@ -92,7 +92,9 @@ export default function DraggableNotificationButtons() {
   const handleMouseUp = async () => {
     if (isDragging && prefs) {
       setIsDragging(null);
-      await base44.auth.updateMe({ preferences: prefs });
+      if (wasDragged) {
+        await base44.auth.updateMe({ preferences: prefs });
+      }
     }
   };
 

@@ -419,8 +419,8 @@ const PANEL_MAP = {
 export default function AISidebar({ isOpen, onClose, note, noteId, onUpdateNote }) {
   const [activeTab, setActiveTab] = useState("summarize");
   const ActivePanel = PANEL_MAP[activeTab];
-  const tab = TABS.find(t => t.id === activeTab);
-  const c = COLOR[tab?.color || "blue"];
+  const activeTabDef = TABS.find(t => t.id === activeTab);
+  const c = COLOR[activeTabDef?.color || "blue"];
 
   return (
     <AnimatePresence>
@@ -452,8 +452,8 @@ export default function AISidebar({ isOpen, onClose, note, noteId, onUpdateNote 
               </Button>
             </div>
 
-            {/* Tab Bar */}
-            <div className="flex overflow-x-auto border-b border-slate-200 bg-white flex-shrink-0 scrollbar-hide">
+            {/* Tab Grid — all tabs visible, no scrolling */}
+            <div className="grid grid-cols-4 gap-1.5 p-3 bg-slate-50 border-b border-slate-200 flex-shrink-0">
               {TABS.map((t) => {
                 const isActive = activeTab === t.id;
                 const tc = COLOR[t.color];
@@ -461,15 +461,23 @@ export default function AISidebar({ isOpen, onClose, note, noteId, onUpdateNote 
                   <button
                     key={t.id}
                     onClick={() => setActiveTab(t.id)}
-                    className={`flex flex-col items-center gap-1 px-4 py-3 border-b-2 transition-all whitespace-nowrap flex-shrink-0 ${
-                      isActive ? `border-current ${tc.text}` : "border-transparent text-slate-400 hover:text-slate-600"
+                    className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border-2 transition-all ${
+                      isActive
+                        ? `${tc.badge} ${tc.border} shadow-sm`
+                        : "bg-white border-transparent text-slate-400 hover:text-slate-600 hover:bg-white hover:border-slate-200"
                     }`}
                   >
-                    <t.icon className="w-4 h-4" />
-                    <span className="text-xs font-semibold">{t.label}</span>
+                    <t.icon className={`w-4 h-4 ${isActive ? tc.text : ""}`} />
+                    <span className={`text-xs font-semibold leading-tight ${isActive ? tc.text : "text-slate-500"}`}>{t.label}</span>
                   </button>
                 );
               })}
+            </div>
+
+            {/* Active panel label */}
+            <div className={`flex items-center gap-2 px-4 py-2 border-b ${c.border} bg-white flex-shrink-0`}>
+              {activeTabDef && <activeTabDef.icon className={`w-3.5 h-3.5 ${c.text}`} />}
+              <span className={`text-xs font-bold uppercase tracking-wide ${c.text}`}>{activeTabDef?.label}</span>
             </div>
 
             {/* Active Panel */}

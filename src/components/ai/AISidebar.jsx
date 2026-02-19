@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Sparkles, X, ClipboardList, Code, Pill, Brain, BookOpen, AlertCircle,
-  Loader2, Check, ChevronRight, Activity, FileText, Stethoscope
+  Loader2, Check, ChevronRight, Activity, FileText, Stethoscope, ScanSearch,
+  TrendingUp, CheckCircle2, Lightbulb, TriangleAlert
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";

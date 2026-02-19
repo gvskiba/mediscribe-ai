@@ -113,36 +113,36 @@ Provide:
     }
   };
 
-  // Rank reasoning by acuity
-  const rankByAcuity = async (analysis) => {
+  // Rank reasoning by likelihood
+  const rankByLikelihood = async (analysis) => {
     setLoadingRank(true);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze the following clinical reasoning sections and rank them by acuity level (HIGH, MEDIUM, LOW).
-        
-Problem Summary: ${analysis.problem_summary}
-Differential Diagnosis Reasoning: ${analysis.differential_reasoning}
-Imaging/Labs Rationale: ${analysis.imaging_labs_rationale}
-Treatment Reasoning: ${analysis.treatment_reasoning}
-Risk Assessment: ${analysis.risk_assessment}
-Follow-up Strategy: ${analysis.follow_up_strategy}
+        prompt: `Analyze the following clinical reasoning sections and rank them by likelihood of clinical importance (percentage 0-100%).
 
-Return a JSON with each section and its acuity ranking.`,
+  Problem Summary: ${analysis.problem_summary}
+  Differential Diagnosis Reasoning: ${analysis.differential_reasoning}
+  Imaging/Labs Rationale: ${analysis.imaging_labs_rationale}
+  Treatment Reasoning: ${analysis.treatment_reasoning}
+  Risk Assessment: ${analysis.risk_assessment}
+  Follow-up Strategy: ${analysis.follow_up_strategy}
+
+  Return a JSON with each section and its likelihood percentage (0-100).`,
         response_json_schema: {
           type: "object",
           properties: {
-            problem_summary: { type: "string", enum: ["HIGH", "MEDIUM", "LOW"] },
-            differential_reasoning: { type: "string", enum: ["HIGH", "MEDIUM", "LOW"] },
-            imaging_labs_rationale: { type: "string", enum: ["HIGH", "MEDIUM", "LOW"] },
-            treatment_reasoning: { type: "string", enum: ["HIGH", "MEDIUM", "LOW"] },
-            risk_assessment: { type: "string", enum: ["HIGH", "MEDIUM", "LOW"] },
-            follow_up_strategy: { type: "string", enum: ["HIGH", "MEDIUM", "LOW"] },
+            problem_summary: { type: "number", minimum: 0, maximum: 100 },
+            differential_reasoning: { type: "number", minimum: 0, maximum: 100 },
+            imaging_labs_rationale: { type: "number", minimum: 0, maximum: 100 },
+            treatment_reasoning: { type: "number", minimum: 0, maximum: 100 },
+            risk_assessment: { type: "number", minimum: 0, maximum: 100 },
+            follow_up_strategy: { type: "number", minimum: 0, maximum: 100 },
           },
         },
       });
       setAiRanking(res);
     } catch (error) {
-      console.error("Failed to rank by acuity:", error);
+      console.error("Failed to rank by likelihood:", error);
     } finally {
       setLoadingRank(false);
     }

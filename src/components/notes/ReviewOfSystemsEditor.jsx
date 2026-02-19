@@ -55,6 +55,8 @@ function initSections(rosData) {
 export default function ReviewOfSystemsEditor({ rosData, onUpdate, onAddToNote }) {
   const [sections, setSections] = useState(() => initSections(rosData));
   const [expandedId, setExpandedId] = useState(null);
+  const [addingSection, setAddingSection] = useState(false);
+  const [newSectionLabel, setNewSectionLabel] = useState("");
 
   const save = (updated) => {
     const obj = {};

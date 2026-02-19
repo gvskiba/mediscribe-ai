@@ -197,52 +197,31 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-20">
+    <div className="max-w-6xl mx-auto pb-20">
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="flex items-start justify-between">
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-slate-900">Patient Dashboard</h1>
-            <p className="text-slate-600 mt-2">Real-time patient overview and clinical insights</p>
+            <h1 className="text-3xl font-bold text-slate-900">{latestNote.patient_name}</h1>
+            <div className="flex gap-4 mt-1 text-xs text-slate-600">
+              {latestNote.patient_id && <span>MRN: {latestNote.patient_id}</span>}
+              {latestNote.patient_age && <span>Age: {latestNote.patient_age}</span>}
+              {latestNote.date_of_visit && (
+                <span>{format(new Date(latestNote.date_of_visit), "MMM d, yyyy")}</span>
+              )}
+            </div>
           </div>
           <Link to={createPageUrl(`NoteDetail?id=${latestNote.id}`)}>
-            <Button className="gap-2">
-              <FileText className="w-4 h-4" /> Open Latest Note
+            <Button size="sm" className="gap-1">
+              <FileText className="w-4 h-4" /> View Note
             </Button>
           </Link>
         </div>
       </motion.div>
 
-      {/* Patient Header Card */}
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">{latestNote.patient_name}</h2>
-              <div className="flex gap-6 mt-3 text-sm text-slate-600">
-                {latestNote.patient_id && <span>MRN: {latestNote.patient_id}</span>}
-                {latestNote.patient_age && <span>Age: {latestNote.patient_age}</span>}
-                {latestNote.date_of_visit && (
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    {format(new Date(latestNote.date_of_visit), "MMM d, yyyy")}
-                  </span>
-                )}
-              </div>
-            </div>
-            {latestNote.chief_complaint && (
-              <div className="bg-white rounded-lg p-3 border border-blue-200 flex-1 ml-6">
-                <p className="text-xs font-semibold text-blue-900 mb-1">Chief Complaint</p>
-                <p className="text-sm text-slate-700">{latestNote.chief_complaint}</p>
-              </div>
-            )}
-          </div>
-        </Card>
-      </motion.div>
-
-      <div className="grid lg:grid-cols-3 gap-8">
+      <div className="grid lg:grid-cols-2 gap-6">
         {/* Left Column: Vitals & Medications */}
-        <div className="lg:col-span-2 space-y-8">
+        <div className="space-y-6">
           {/* Vital Signs */}
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
             <Card className="border-emerald-200 overflow-hidden">

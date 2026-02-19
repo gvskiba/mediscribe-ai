@@ -16,6 +16,7 @@ import AIComprehensiveSummary from "../notes/AIComprehensiveSummary";
 
 // ── Tab definitions ───────────────────────────────────────────────────────────
 const TABS = [
+  { id: "analyze",    label: "Analyze",    icon: ScanSearch,    color: "violet" },
   { id: "summarize",  label: "Summarize",  icon: ClipboardList, color: "blue" },
   { id: "icd10",      label: "ICD-10",     icon: Code,          color: "emerald" },
   { id: "treatment",  label: "Treatment",  icon: Pill,          color: "orange" },

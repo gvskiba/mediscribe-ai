@@ -45,13 +45,26 @@ export default function MedicalDecisionMakingTab({ note, onUpdateNote, noteId })
 
     setLoadingAI(true);
     try {
+      // Safely extract vital signs info
+      let vitalSummary = "";
+      if (note.vital_signs && typeof note.vital_signs === "object") {
+        const vs = note.vital_signs;
+        const parts = [];
+        if (vs.temperature?.value) parts.push(`Temp: ${vs.temperature.value}°${vs.temperature.unit || "F"}`);
+        if (vs.heart_rate?.value) parts.push(`HR: ${vs.heart_rate.value} bpm`);
+        if (vs.blood_pressure?.systolic) parts.push(`BP: ${vs.blood_pressure.systolic}/${vs.blood_pressure.diastolic}`);
+        if (vs.respiratory_rate?.value) parts.push(`RR: ${vs.respiratory_rate.value}`);
+        if (vs.oxygen_saturation?.value) parts.push(`O2: ${vs.oxygen_saturation.value}%`);
+        vitalSummary = parts.join(", ");
+      }
+
       const context = [
         note.chief_complaint && `Chief Complaint: ${note.chief_complaint}`,
         note.history_of_present_illness && `HPI: ${note.history_of_present_illness}`,
         note.assessment && `Assessment: ${note.assessment}`,
         note.diagnoses?.length && `Diagnoses: ${note.diagnoses.join(", ")}`,
-        note.vital_signs && Object.keys(note.vital_signs).length > 0 && `Vital Signs: ${JSON.stringify(note.vital_signs)}`,
-        note.review_of_systems && `ROS: ${note.review_of_systems}`,
+        vitalSummary && `Vital Signs: ${vitalSummary}`,
+        note.review_of_systems && `ROS: ${typeof note.review_of_systems === "string" ? note.review_of_systems : JSON.stringify(note.review_of_systems)}`,
         note.physical_exam && `Physical Exam: ${note.physical_exam}`,
       ].filter(Boolean).join("\n\n");
 

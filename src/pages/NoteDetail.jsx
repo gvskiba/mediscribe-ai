@@ -1754,25 +1754,7 @@ Generated: ${new Date().toLocaleString()}
                               </div>
                             </div>
 
-                            {/* Past Medical History */}
-                            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                              <div className="bg-slate-50 px-5 py-4 border-b border-slate-200 flex items-center justify-between">
-                                <div>
-                                  <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Section 4</p>
-                                  <h3 className="font-bold text-slate-800 text-base">Past Medical History</h3>
-                                </div>
-                                <InlineSectionAI type="medical_history" note={note} onApply={async (val) => { await base44.entities.ClinicalNote.update(noteId, { medical_history: val }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
-                              </div>
-                              <div className="p-5">
-                                <Textarea
-                                  value={note.medical_history || ""}
-                                  onChange={(e) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, medical_history: e.target.value }))}
-                                  onBlur={async (e) => { await base44.entities.ClinicalNote.update(noteId, { medical_history: e.target.value }); toast.success("Medical history saved"); }}
-                                  placeholder="Past medical history, chronic conditions, prior surgeries..."
-                                  className="min-h-[160px] text-sm"
-                                />
-                              </div>
-                            </div>
+
 
                             {/* Footer */}
                             <div className="flex justify-between items-center pt-2 border-t border-slate-200">

@@ -37,6 +37,204 @@ const COLOR = {
   violet:  { btn: "bg-violet-600 hover:bg-violet-700",  badge: "bg-violet-100 text-violet-700",  border: "border-violet-200",  text: "text-violet-700",  dot: "bg-violet-500" },
 };
 
+// ── Panel: Analyze ────────────────────────────────────────────────────────────
+const PRIORITY_CONFIG = {
+  critical: { label: "Critical", color: "bg-red-100 text-red-700 border-red-200", dot: "bg-red-500", icon: TriangleAlert },
+  high:     { label: "High",     color: "bg-orange-100 text-orange-700 border-orange-200", dot: "bg-orange-500", icon: AlertCircle },
+  medium:   { label: "Medium",   color: "bg-amber-100 text-amber-700 border-amber-200", dot: "bg-amber-400", icon: Lightbulb },
+  low:      { label: "Low",      color: "bg-slate-100 text-slate-600 border-slate-200", dot: "bg-slate-400", icon: CheckCircle2 },
+};
+
+function AnalyzePanel({ note, onUpdateNote }) {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [applied, setApplied] = useState(new Set());
+
+  const run = async () => {
+    const context = [
+      note.patient_name && `Patient: ${note.patient_name}`,
+      note.chief_complaint && `Chief Complaint: ${note.chief_complaint}`,
+      note.history_of_present_illness && `HPI: ${note.history_of_present_illness}`,
+      note.assessment && `Assessment: ${note.assessment}`,
+      note.plan && `Plan: ${note.plan}`,
+      note.diagnoses?.length && `Diagnoses: ${note.diagnoses.join(", ")}`,
+      note.medications?.length && `Medications: ${note.medications.join(", ")}`,
+      note.allergies?.length && `Allergies: ${note.allergies.join(", ")}`,
+      note.review_of_systems && `ROS: ${note.review_of_systems}`,
+      note.physical_exam && `Physical Exam: ${note.physical_exam}`,
+      note.vital_signs && Object.keys(note.vital_signs).length > 0 &&
+        `Vitals: ${JSON.stringify(note.vital_signs)}`,
+    ].filter(Boolean).join("\n");
+
+    if (!context.trim()) {
+      toast.error("Add some clinical data to the note first");
+      return;
+    }
+    setLoading(true);
+    setResult(null);
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are an expert clinical AI. Perform a comprehensive analysis of this clinical note and identify gaps, recommendations, safety alerts, and quality improvement opportunities.
+
+CLINICAL NOTE DATA:
+${context}
+
+Analyze across the following dimensions:
+1. Documentation completeness — missing required elements
+2. Clinical safety — drug interactions, allergy conflicts, contraindications, abnormal vitals
+3. Diagnostic gaps — missing workup, incomplete differential
+4. Treatment optimization — guideline adherence, underutilized therapies
+5. Billing & coding — documentation supporting the visit complexity
+6. Follow-up & care coordination — missing follow-up instructions, referrals
+
+For each finding, classify priority as: critical, high, medium, or low.
+Provide an overall_score (0-100) reflecting documentation and clinical quality.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            overall_score: { type: "number", minimum: 0, maximum: 100 },
+            score_label: { type: "string" },
+            score_rationale: { type: "string" },
+            findings: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  category: { type: "string" },
+                  priority: { type: "string", enum: ["critical", "high", "medium", "low"] },
+                  title: { type: "string" },
+                  detail: { type: "string" },
+                  action: { type: "string" },
+                  apply_field: { type: "string" },
+                  apply_value: { type: "string" }
+                }
+              }
+            },
+            strengths: { type: "array", items: { type: "string" } }
+          }
+        }
+      });
+      setResult(res);
+    } catch {
+      toast.error("Analysis failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const applyFinding = async (finding, idx) => {
+    if (!finding.apply_field || !finding.apply_value) return;
+    const current = note[finding.apply_field] || "";
+    const updated = current ? `${current}\n\n${finding.apply_value}` : finding.apply_value;
+    await onUpdateNote({ [finding.apply_field]: updated });
+    setApplied(prev => new Set([...prev, idx]));
+    toast.success("Applied to note");
+  };
+
+  const scoreColor = (s) => s >= 80 ? "text-emerald-600" : s >= 60 ? "text-amber-600" : "text-rose-600";
+  const scoreBg   = (s) => s >= 80 ? "bg-emerald-50 border-emerald-200" : s >= 60 ? "bg-amber-50 border-amber-200" : "bg-rose-50 border-rose-200";
+
+  const grouped = result?.findings
+    ? ["critical","high","medium","low"].reduce((acc, p) => {
+        const items = result.findings.filter(f => f.priority === p);
+        if (items.length) acc[p] = items;
+        return acc;
+      }, {})
+    : {};
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-violet-50 border border-violet-200 rounded-xl p-3 text-xs text-violet-800">
+        AI scans the entire note for documentation gaps, safety alerts, clinical quality, and actionable improvements.
+      </div>
+
+      <Button onClick={run} disabled={loading} className="w-full bg-violet-600 hover:bg-violet-700 text-white gap-2">
+        {loading
+          ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing note...</>
+          : <><ScanSearch className="w-4 h-4" /> Run Full Analysis</>}
+      </Button>
+
+      {result && (
+        <div className="space-y-4">
+          {/* Score */}
+          <div className={`rounded-xl border p-4 ${scoreBg(result.overall_score)}`}>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-bold uppercase tracking-wide text-slate-600">Note Quality Score</span>
+              <span className={`text-2xl font-black ${scoreColor(result.overall_score)}`}>{result.overall_score}<span className="text-sm font-semibold text-slate-400">/100</span></span>
+            </div>
+            <div className="w-full h-2 bg-white rounded-full border border-slate-200 overflow-hidden mb-2">
+              <div className={`h-full rounded-full transition-all duration-700 ${result.overall_score >= 80 ? "bg-emerald-500" : result.overall_score >= 60 ? "bg-amber-500" : "bg-rose-500"}`} style={{ width: `${result.overall_score}%` }} />
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">{result.score_rationale}</p>
+          </div>
+
+          {/* Findings by priority */}
+          {Object.entries(grouped).map(([priority, items]) => {
+            const cfg = PRIORITY_CONFIG[priority];
+            const Icon = cfg.icon;
+            return (
+              <div key={priority}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
+                  <span className="text-xs font-bold uppercase tracking-wide text-slate-500">{cfg.label} Priority ({items.length})</span>
+                </div>
+                <div className="space-y-2">
+                  {items.map((f, i) => {
+                    const globalIdx = result.findings.indexOf(f);
+                    const isApplied = applied.has(globalIdx);
+                    return (
+                      <div key={i} className={`rounded-xl border p-3 ${cfg.color}`}>
+                        <div className="flex items-start gap-2">
+                          <Icon className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold leading-snug">{f.title}</p>
+                            <p className="text-xs mt-0.5 opacity-80 leading-relaxed">{f.detail}</p>
+                            {f.action && (
+                              <p className="text-xs mt-1 font-semibold">→ {f.action}</p>
+                            )}
+                            {f.apply_field && f.apply_value && (
+                              <button
+                                onClick={() => applyFinding(f, globalIdx)}
+                                disabled={isApplied}
+                                className={`mt-2 flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-md border transition-all ${
+                                  isApplied
+                                    ? "bg-white/60 text-slate-500 border-slate-200 cursor-default"
+                                    : "bg-white/70 hover:bg-white border-current cursor-pointer"
+                                }`}
+                              >
+                                {isApplied ? <><CheckCircle2 className="w-3 h-3" /> Applied</> : <><Check className="w-3 h-3" /> Apply to note</>}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Strengths */}
+          {result.strengths?.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Strengths</span>
+              </div>
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 space-y-1">
+                {result.strengths.map((s, i) => (
+                  <p key={i} className="text-xs text-emerald-800 flex gap-2"><CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />{s}</p>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Panel: Summarize ──────────────────────────────────────────────────────────
 const SUMMARY_PRESETS = [
   { id: "brief_patient",    label: "Brief — Patient",       desc: "Simple language, 2–3 sentences",                color: "blue",   instruction: "Write a brief 2-3 sentence summary in simple, plain language suitable for the patient themselves. Avoid medical jargon." },

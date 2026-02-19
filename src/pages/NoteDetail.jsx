@@ -142,6 +142,7 @@ const TAB_GROUPS = [
     color: 'purple',
     tabs: [
       { id: 'disposition_plan', label: 'Disposition', icon: FileText },
+      { id: 'discharge_summary', label: 'Discharge Summary', icon: FileText },
       { id: 'patient_education', label: 'Patient Education', icon: BookOpen },
     ]
   }
@@ -2907,6 +2908,119 @@ Generated: ${new Date().toLocaleString()}
                        <div className="flex justify-between items-center pt-4 border-t border-slate-200">
                          <div className="flex gap-2">
                            <TabDataPreview tabId="disposition_plan" note={note} />
+                           <ClinicalNotePreviewButton note={note} />
+                         </div>
+                         <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                           Next <ArrowLeft className="w-4 h-4 rotate-180" />
+                         </Button>
+                       </div>
+                     </TabsContent>
+
+                     {/* Discharge Summary Tab */}
+                     <TabsContent value="discharge_summary" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+                       <div className="max-w-5xl mx-auto space-y-8">
+                         {/* Header */}
+                         <div className="text-center mb-8">
+                           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 mb-4 shadow-lg">
+                             <FileText className="w-8 h-8 text-white" />
+                           </div>
+                           <h2 className="text-3xl font-bold text-slate-900 mb-2">Discharge Summary</h2>
+                           <p className="text-slate-600 max-w-2xl mx-auto">Create a concise summary for continuity of care</p>
+                         </div>
+
+                         {/* Discharge Summary Editor */}
+                         <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-lg overflow-hidden">
+                           <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-5 text-white">
+                             <h3 className="font-bold text-lg flex items-center gap-2">
+                               <FileText className="w-6 h-6" />
+                               Discharge Summary
+                             </h3>
+                             <p className="text-indigo-100 text-sm mt-1">Document key clinical information for discharge</p>
+                           </div>
+                           <div className="p-6 space-y-6">
+                             <Textarea
+                               value={note.discharge_summary || ""}
+                               onChange={(e) => {
+                                 queryClient.setQueryData(["note", noteId], (old) => ({
+                                   ...old,
+                                   discharge_summary: e.target.value
+                                 }));
+                               }}
+                               onBlur={async (e) => {
+                                 await base44.entities.ClinicalNote.update(noteId, { discharge_summary: e.target.value });
+                                 toast.success("Discharge summary saved");
+                               }}
+                               placeholder="Include: chief complaint, diagnosis, hospital course, medications, follow-up care, and restrictions..."
+                               className="min-h-[400px] text-base"
+                             />
+                             <div className="flex gap-2">
+                               <Button
+                                 onClick={async () => {
+                                   try {
+                                     const summaryText = `DISCHARGE SUMMARY
+
+                     Patient: ${note.patient_name}
+                     MRN: ${note.patient_id || "N/A"}
+                     Date of Visit: ${note.date_of_visit || "N/A"}
+
+                     CHIEF COMPLAINT:
+                     ${note.chief_complaint || "N/A"}
+
+                     DIAGNOSES:
+                     ${note.diagnoses?.join("\n") || "N/A"}
+
+                     ASSESSMENT & HOSPITAL COURSE:
+                     ${note.assessment || "N/A"}
+
+                     MEDICATIONS AT DISCHARGE:
+                     ${note.medications?.join("\n") || "No medications"}
+
+                     DISPOSITION:
+                     ${note.disposition_plan || "N/A"}
+
+                     FOLLOW-UP INSTRUCTIONS:
+                     ${note.plan || "N/A"}
+
+                     ═════════════════════════════════════════`;
+
+                                     await base44.entities.ClinicalNote.update(noteId, { 
+                                       discharge_summary: summaryText
+                                     });
+                                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                     toast.success("Discharge summary auto-filled");
+                                   } catch (error) {
+                                     console.error("Failed to fill discharge summary:", error);
+                                     toast.error("Failed to fill discharge summary");
+                                   }
+                                 }}
+                                 className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2"
+                               >
+                                 <Sparkles className="w-4 h-4" /> Auto-Fill from Note
+                               </Button>
+                               <Button
+                                 onClick={async () => {
+                                   try {
+                                     await base44.entities.ClinicalNote.update(noteId, { discharge_summary: note.discharge_summary });
+                                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                     toast.success("Discharge summary saved");
+                                   } catch (error) {
+                                     console.error("Failed to save discharge summary:", error);
+                                     toast.error("Failed to save discharge summary");
+                                   }
+                                 }}
+                                 className="bg-purple-600 hover:bg-purple-700 text-white gap-2"
+                               >
+                                 <Check className="w-4 h-4" /> Save
+                               </Button>
+                             </div>
+                           </div>
+                         </div>
+                       </div>
+
+                       {/* Next Button */}
+                       <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+                         <div className="flex gap-2">
+                           <TabDataPreview tabId="discharge_summary" note={note} />
                            <ClinicalNotePreviewButton note={note} />
                          </div>
                          <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">

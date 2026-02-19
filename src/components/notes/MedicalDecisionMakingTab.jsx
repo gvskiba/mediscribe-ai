@@ -20,9 +20,15 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 
 export default function MedicalDecisionMakingTab({ note, onUpdateNote, noteId }) {
-  const [mdmSections, setMdmSections] = useState(
-    note.mdm ? JSON.parse(typeof note.mdm === "string" ? note.mdm : JSON.stringify(note.mdm)) : []
-  );
+  const [mdmSections, setMdmSections] = useState(() => {
+    if (!note.mdm) return [];
+    try {
+      const parsed = typeof note.mdm === "string" ? JSON.parse(note.mdm) : note.mdm;
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const [loadingAI, setLoadingAI] = useState(false);
   const [expandedSection, setExpandedSection] = useState(null);

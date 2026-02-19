@@ -20,6 +20,7 @@ import NoteQuestionAnswering from "./NoteQuestionAnswering";
 const TABS = [
   { id: "analyze",    label: "Analyze",    icon: ScanSearch,    color: "violet" },
   { id: "summarize",  label: "Summarize",  icon: ClipboardList, color: "blue" },
+  { id: "consolidated",  label: "Consolidated",  icon: FileText, color: "blue" },
   { id: "qa",         label: "Q&A",        icon: Brain,         color: "indigo" },
   { id: "icd10",      label: "ICD-10",     icon: Code,          color: "emerald" },
   { id: "treatment",  label: "Treatment",  icon: Pill,          color: "orange" },

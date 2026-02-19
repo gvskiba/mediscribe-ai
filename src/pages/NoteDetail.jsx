@@ -2945,16 +2945,18 @@ Generated: ${new Date().toLocaleString()}
                                  try {
                                    setLoadingDischargeSummary(true);
                                    const result = await base44.integrations.Core.InvokeLLM({
-                                     prompt: `Based on the following clinical note, generate detailed discharge instructions for the patient. Include medication instructions, activity restrictions, follow-up care, warning signs, and lifestyle modifications.
+                                     prompt: `Based on the following clinical note, generate concise discharge instructions for the patient. Include medication instructions, activity restrictions, follow-up care, warning signs, and lifestyle modifications.
 
-                                 PATIENT: ${note.patient_name}
-                                 DIAGNOSES: ${note.diagnoses?.join(", ") || "N/A"}
-                                 ASSESSMENT: ${note.assessment || "N/A"}
-                                 MEDICATIONS: ${note.medications?.join(", ") || "None"}
-                                 PLAN: ${note.plan || "N/A"}
-                                 DISPOSITION: ${note.disposition_plan || "N/A"}
+                                   Do NOT include: patient demographics, diagnoses list, medications list, signatures, acknowledgment sections, or placeholder fields.
 
-                                 Format the response as a professional discharge summary with clear sections and actionable instructions.`,
+                                   PATIENT: ${note.patient_name}
+                                   DIAGNOSES: ${note.diagnoses?.join(", ") || "N/A"}
+                                   ASSESSMENT: ${note.assessment || "N/A"}
+                                   MEDICATIONS: ${note.medications?.join(", ") || "None"}
+                                   PLAN: ${note.plan || "N/A"}
+                                   DISPOSITION: ${note.disposition_plan || "N/A"}
+
+                                   Format as clear, actionable instructions only.`,
                                      add_context_from_internet: false
                                    });
 

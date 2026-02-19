@@ -35,13 +35,17 @@ const DEFAULT_SECTIONS = [
 export default function PhysicalExamEditor({ examData, onUpdate, onAddToNote }) {
   const [sections, setSections] = useState(() => {
     if (examData && typeof examData === 'object' && !Array.isArray(examData)) {
-      return Object.keys(examData).map(key => ({
-        id: key,
-        label: DEFAULT_SECTIONS.find(s => s.id === key)?.label || key,
-        icon: DEFAULT_SECTIONS.find(s => s.id === key)?.icon || User,
-        content: examData[key],
-        enabled: true
-      }));
+      return Object.keys(examData).map(key => {
+        const defaultSection = DEFAULT_SECTIONS.find(s => s.id === key);
+        return {
+          id: key,
+          label: defaultSection?.label || key,
+          icon: defaultSection?.icon || User,
+          defaultText: defaultSection?.defaultText || "",
+          content: examData[key],
+          enabled: true
+        };
+      });
     }
     return DEFAULT_SECTIONS.map(s => ({
       ...s,

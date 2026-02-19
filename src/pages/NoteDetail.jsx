@@ -2695,6 +2695,89 @@ Generated: ${new Date().toLocaleString()}
                      </div>
                      </TabsContent>
 
+                     {/* Finalize Tab */}
+                     <TabsContent value="finalize" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+                       <div className="max-w-5xl mx-auto space-y-8">
+                         {/* Header */}
+                         <div className="text-center mb-8">
+                           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 mb-4 shadow-lg">
+                             <Check className="w-8 h-8 text-white" />
+                           </div>
+                           <h2 className="text-3xl font-bold text-slate-900 mb-2">Review & Export</h2>
+                           <p className="text-slate-600 max-w-2xl mx-auto">Finalize, review, and export your clinical note</p>
+                         </div>
+
+                         {/* Note Status */}
+                         <div className="bg-white rounded-xl border-2 border-indigo-200 shadow-lg p-6">
+                           <div className="flex items-center justify-between mb-4">
+                             <h3 className="text-lg font-bold text-slate-900">Note Status</h3>
+                             <Badge className={statusColors[note.status || "draft"]}>
+                               {note.status?.toUpperCase() || "DRAFT"}
+                             </Badge>
+                           </div>
+                           <div className="flex gap-3 flex-wrap">
+                             <Button
+                               onClick={() => finalizeMutation.mutate()}
+                               disabled={finalizeMutation.isPending || note.status === "finalized"}
+                               className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+                             >
+                               {finalizeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                               {note.status === "finalized" ? "Finalized" : "Finalize Note"}
+                             </Button>
+                             <Button
+                               onClick={() => exportNote('pdf')}
+                               disabled={exportingFormat === 'pdf'}
+                               variant="outline"
+                               className="gap-2"
+                             >
+                               {exportingFormat === 'pdf' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                               Export PDF
+                             </Button>
+                             <Button
+                               onClick={() => exportNote('text')}
+                               disabled={exportingFormat === 'text'}
+                               variant="outline"
+                               className="gap-2"
+                             >
+                               {exportingFormat === 'text' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                               Export Text
+                             </Button>
+                           </div>
+                         </div>
+
+                         {/* Note Preview */}
+                         <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
+                           <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-4 text-white">
+                             <h3 className="font-bold text-lg flex items-center gap-2">
+                               <FileText className="w-6 h-6" />
+                               Note Preview
+                             </h3>
+                           </div>
+                           <div className="p-6 space-y-4">
+                             {[
+                               { label: "Chief Complaint", value: note.chief_complaint },
+                               { label: "History of Present Illness", value: note.history_of_present_illness },
+                               { label: "Assessment", value: note.assessment },
+                               { label: "Plan", value: note.plan },
+                             ].map(({ label, value }) => value ? (
+                               <div key={label}>
+                                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">{label}</p>
+                                 <p className="text-sm text-slate-700 whitespace-pre-wrap bg-slate-50 rounded-lg p-3 border border-slate-200">{value}</p>
+                               </div>
+                             ) : null)}
+                             {note.diagnoses?.length > 0 && (
+                               <div>
+                                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Diagnoses</p>
+                                 <div className="flex flex-wrap gap-2">
+                                   {note.diagnoses.map((d, i) => <Badge key={i} className="bg-blue-100 text-blue-700 border border-blue-200">{d}</Badge>)}
+                                 </div>
+                               </div>
+                             )}
+                           </div>
+                         </div>
+                       </div>
+                     </TabsContent>
+
                      {/* Custom Tabs Content */}
                      {tabGroups.flatMap(g => g.tabs).filter(t => t.id.startsWith('custom_')).map(tab => (
                        <TabsContent key={tab.id} value={tab.id} className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">

@@ -465,23 +465,6 @@ Generate the complete clinical note now.`;
 
   return (
     <div className="space-y-6">
-      {/* Header with Toggle */}
-      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border-2 border-indigo-300 p-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <FileText className="w-6 h-6 text-indigo-600" />
-            <h2 className="text-xl font-bold text-slate-900">Clinical Note</h2>
-          </div>
-          <Button
-            variant={showAggregated ? "default" : "outline"}
-            size="sm"
-            onClick={() => setShowAggregated(!showAggregated)}
-            className="gap-2"
-          >
-            {showAggregated ? "Show Sections" : "Show Aggregated"}
-          </Button>
-        </div>
-      </div>
 
       {/* Aggregated Clinical Note View */}
       {showAggregated && (

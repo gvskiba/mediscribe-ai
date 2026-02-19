@@ -61,6 +61,8 @@ export default function ReviewOfSystemsEditor({ rosData, onUpdate, onAddToNote }
   const [expandedId, setExpandedId] = useState(null);
   const [addingSection, setAddingSection] = useState(false);
   const [newSectionLabel, setNewSectionLabel] = useState("");
+  const [editingNormalId, setEditingNormalId] = useState(null);
+  const [savingSaving, setSavingDefaults] = useState(false);
 
   const save = (updated) => {
     const obj = {};

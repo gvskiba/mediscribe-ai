@@ -211,11 +211,18 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
               )}
             </div>
           </div>
-          <Link to={createPageUrl(`NoteDetail?id=${latestNote.id}`)}>
-            <Button size="sm" className="gap-1">
-              <FileText className="w-4 h-4" /> View Note
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link to={createPageUrl(`PatientHistory?patient=${encodeURIComponent(latestNote.patient_name)}`)}>
+              <Button size="sm" variant="outline" className="gap-1">
+                <Calendar className="w-4 h-4" /> History
+              </Button>
+            </Link>
+            <Link to={createPageUrl(`NoteDetail?id=${latestNote.id}`)}>
+              <Button size="sm" className="gap-1">
+                <FileText className="w-4 h-4" /> View Note
+              </Button>
+            </Link>
+          </div>
         </div>
       </motion.div>
 

@@ -1357,11 +1357,11 @@ Generated: ${new Date().toLocaleString()}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl border border-slate-200 p-6"
+        className="bg-white rounded-2xl border border-slate-200 px-5 py-4"
       >
-        {/* Patient Info */}
-        <div className="mb-6">
-          <div className="mb-3">
+        <div className="flex items-start justify-between gap-4">
+          {/* Left: patient name + meta */}
+          <div className="flex-1 min-w-0">
             <input
               type="text"
               value={note.patient_name === "New Patient" ? (note.chief_complaint || "New Patient") : note.patient_name}
@@ -1376,122 +1376,30 @@ Generated: ${new Date().toLocaleString()}
                 setLastSaved(new Date().toISOString());
                 toast.success("Note saved at " + format(new Date(), "h:mm:ss a"));
               }}
-              className="text-3xl font-bold text-slate-900 bg-transparent border-b-2 border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none transition-colors px-1 -ml-1 w-full"
+              className="text-xl font-bold text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none transition-colors w-full"
             />
-            <div className="flex items-center gap-4 mt-2 text-sm text-slate-600">
-              <span className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-slate-400" />
+            <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
+              <span className="flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
                 {note.date_of_visit ? format(new Date(note.date_of_visit), "MMM d, yyyy") : format(new Date(), "MMM d, yyyy")}
               </span>
-              <span className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-slate-400" />
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
                 {note.time_of_visit || format(new Date(), "h:mm a")}
               </span>
+              {note.patient_id && (
+                <span className="flex items-center gap-1"><Hash className="w-3 h-3" /> {note.patient_id}</span>
+              )}
             </div>
+            {note.chief_complaint && (
+              <p className="mt-2 text-xs text-slate-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-1.5">
+                <span className="font-semibold text-blue-800">CC:</span> {note.chief_complaint}
+              </p>
+            )}
           </div>
 
-          {note.chief_complaint && (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3 mb-3">
-              <p className="text-xs font-semibold text-blue-900 mb-1">Chief Complaint:</p>
-              <p className="text-sm text-slate-700">{note.chief_complaint}</p>
-            </div>
-          )}
-
-          <div className="grid sm:grid-cols-2 gap-3 text-sm text-slate-600">
-            {note.patient_id && (
-              <span className="flex items-center gap-2"><Hash className="w-4 h-4 text-slate-400" /> {note.patient_id}</span>
-            )}
-            {note.date_of_visit && (
-              <span className="flex items-center gap-2"><Calendar className="w-4 h-4 text-slate-400" /> {format(new Date(note.date_of_visit), "MMM d, yyyy")}</span>
-            )}
-            {note.specialty && (
-              <span className="text-slate-600">{note.specialty}</span>
-            )}
-          </div>
-          {note.summary && (
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-sm text-slate-700 leading-relaxed">{note.summary}</p>
-            </div>
-          )}
-        </div>
-
-
-
-        {/* Quick Actions */}
-        <div className="border-t border-slate-200 pt-6 flex gap-3">
-         <Button 
-           onClick={async () => {
-             setExtractingData(true);
-              try {
-                // Collect all available data from the note
-                const contextData = {
-                  raw_note: note.raw_note || "",
-                  chief_complaint: note.chief_complaint || "",
-                  history_of_present_illness: note.history_of_present_illness || "",
-                  medical_history: note.medical_history || "",
-                  review_of_systems: note.review_of_systems || "",
-                  physical_exam: note.physical_exam || "",
-                  assessment: note.assessment || "",
-                  plan: note.plan || "",
-                  clinical_impression: note.clinical_impression || "",
-                  diagnoses: note.diagnoses || [],
-                  medications: note.medications || [],
-                  allergies: note.allergies || []
-                };
-
-                const result = await base44.integrations.Core.InvokeLLM({
-                  prompt: `Analyze ALL the following clinical data and create a comprehensive, well-structured clinical note. Review each section carefully and extract/organize all relevant information into the appropriate fields.
-
-        AVAILABLE CLINICAL DATA:
-        ${JSON.stringify(contextData, null, 2)}
-
-        Your task is to:
-        1. Review ALL sections thoroughly
-        2. Extract and organize information appropriately
-        3. Fill in any missing sections based on available context
-        4. Ensure clinical coherence across all fields
-        5. Maintain professional medical documentation standards
-
-        Return a complete clinical note with ALL fields populated based on the available data:`,
-                  response_json_schema: {
-                    type: "object",
-                    properties: {
-                      chief_complaint: { type: "string" },
-                      history_of_present_illness: { type: "string" },
-                      medical_history: { type: "string" },
-                      review_of_systems: { type: "string" },
-                      physical_exam: { type: "string" },
-                      assessment: { type: "string" },
-                      plan: { type: "string" },
-                      clinical_impression: { type: "string" },
-                      diagnoses: { type: "array", items: { type: "string" } },
-                      medications: { type: "array", items: { type: "string" } },
-                      allergies: { type: "array", items: { type: "string" } }
-                    }
-                  }
-                });
-
-                // Update the note with all extracted data
-                await base44.entities.ClinicalNote.update(noteId, result);
-                queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                toast.success("Clinical note fields populated from AI analysis");
-              } catch (error) {
-                console.error("Failed to analyze and populate:", error);
-                toast.error("Failed to analyze note data");
-              } finally {
-                setExtractingData(false);
-              }
-            }}
-            disabled={extractingData}
-            className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl gap-2 shadow-lg shadow-purple-500/30 font-semibold transition-all"
-          >
-            {extractingData ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</>
-            ) : (
-              <><Sparkles className="w-4 h-4" /> AI Review & Fill</>
-            )}
-          </Button>
-          <Button 
+          {/* Right: New Note button */}
+          <Button
             onClick={async () => {
               const newNote = await base44.entities.ClinicalNote.create({
                 raw_note: "",
@@ -1500,15 +1408,11 @@ Generated: ${new Date().toLocaleString()}
               });
               window.location.href = createPageUrl(`NoteDetail?id=${newNote.id}`);
             }}
-            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl gap-2 shadow-lg shadow-blue-500/30 font-semibold transition-all"
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 flex-shrink-0"
           >
-            <Plus className="w-4 h-4" /> New Note
+            <Plus className="w-3.5 h-3.5" /> New Note
           </Button>
-          <Link to={createPageUrl("NotesLibrary")}>
-            <Button variant="outline" className="rounded-xl gap-2 border-slate-300 hover:bg-slate-50">
-              <FileText className="w-4 h-4" /> All Notes
-            </Button>
-          </Link>
         </div>
       </motion.div>
 

@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Check, Clock, MapPin, User, Truck } from "lucide-react";
+import { Check, Clock, MapPin, User, Truck, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 const DISPOSITION_TYPES = [

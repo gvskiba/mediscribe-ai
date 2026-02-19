@@ -18,7 +18,7 @@ const TAB_AI_CONFIGS = {
     subtitle: "AI assistance for intake & chief complaint",
     gradient: "from-blue-600 to-indigo-600",
     icon: Activity,
-    panels: ["documentation", "extract"],
+    panels: ["extract"],
   },
   hpi: {
     title: "HPI AI Assistant",

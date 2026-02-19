@@ -839,6 +839,7 @@ function QAPanel({ note, onUpdateNote }) {
 const PANEL_MAP = {
   analyze: AnalyzePanel,
   summarize: SummarizePanel,
+  consolidated: ConsolidatedNotePanel,
   qa: QAPanel,
   icd10: ICD10Panel,
   treatment: TreatmentPanel,

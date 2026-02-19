@@ -2024,8 +2024,49 @@ Generated: ${new Date().toLocaleString()}
                 <p className="text-slate-600 max-w-2xl mx-auto">Detailed documentation of the current illness</p>
               </div>
 
+              {/* Chief Complaint Card */}
+              <div className="bg-white rounded-xl border-2 border-blue-300 shadow-lg overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-500 to-indigo-500 px-6 py-5 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-bold text-lg flex items-center gap-2">
+                        <Activity className="w-6 h-6" />
+                        Chief Complaint
+                      </h3>
+                      <p className="text-blue-100 text-sm mt-1">Primary reason for the patient's visit</p>
+                    </div>
+                    <InlineSectionAI
+                      type="chief_complaint"
+                      note={note}
+                      onApply={async (val) => {
+                        await base44.entities.ClinicalNote.update(noteId, { chief_complaint: val });
+                        queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="p-6">
+                  <textarea
+                    value={note.chief_complaint || ""}
+                    onChange={(e) => {
+                      queryClient.setQueryData(["note", noteId], (old) => ({
+                        ...old,
+                        chief_complaint: e.target.value
+                      }));
+                    }}
+                    onBlur={async (e) => {
+                      await base44.entities.ClinicalNote.update(noteId, { chief_complaint: e.target.value });
+                      toast.success("Chief complaint saved");
+                    }}
+                    placeholder="Enter the patient's chief complaint (e.g., 'Chest pain for 2 hours', 'Persistent cough for 1 week')..."
+                    className="w-full px-4 py-4 rounded-lg border-2 border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all text-base text-slate-900 placeholder:text-slate-400 resize-none"
+                    rows="3"
+                  />
+                </div>
+              </div>
+
               {/* HPI Editor */}
-              <div className="bg-white rounded-xl border-2 border-purple-300 shadow-lg overflow-hidden">
+               <div className="bg-white rounded-xl border-2 border-purple-300 shadow-lg overflow-hidden">
                  <div className="bg-gradient-to-r from-purple-500 to-indigo-500 px-6 py-5 text-white">
                    <div className="flex items-center justify-between">
                      <div>

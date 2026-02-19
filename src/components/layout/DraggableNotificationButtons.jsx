@@ -140,10 +140,11 @@ export default function DraggableNotificationButtons() {
           onClick={handleReturnToNote}
           whileHover={{ scale: isDragging ? 1 : 1.08 }}
           whileTap={{ scale: 0.95 }}
-          className={`${sizes.container} rounded-full bg-white shadow-xl border-2 border-transparent flex items-center justify-center transition-all ${isDragging === 'arrow' ? 'cursor-grab' : 'cursor-pointer'}`}
+          className={`${sizes.container} rounded-full shadow-lg border-2 border-transparent flex items-center justify-center transition-all ${isDragging === 'arrow' ? 'cursor-grabbing' : 'cursor-grab'}`}
           style={{
-            background: "white",
+            background: "rgba(255, 255, 255, 0.95)",
             boxShadow: colorShadows[prefs.fab_color_arrow] + ", 0 1.5px 6px 0 rgba(99,102,241,0.15)",
+            backdropFilter: "blur(8px)"
           }}
           title="Return to open note (drag to move)"
         >
@@ -165,10 +166,11 @@ export default function DraggableNotificationButtons() {
         onClick={handleCreateNote}
         whileHover={{ scale: isDragging ? 1 : 1.08 }}
         whileTap={{ scale: 0.95 }}
-        className={`${sizes.container} rounded-full bg-white shadow-xl border-2 border-transparent flex items-center justify-center transition-all ${isDragging === 'plus' ? 'cursor-grab' : 'cursor-pointer'}`}
+        className={`${sizes.container} rounded-full shadow-lg border-2 border-transparent flex items-center justify-center transition-all ${isDragging === 'plus' ? 'cursor-grabbing' : 'cursor-grab'}`}
         style={{
-          background: "white",
+          background: "rgba(255, 255, 255, 0.95)",
           boxShadow: colorShadows[prefs.fab_color_plus] + ", 0 1.5px 6px 0 rgba(99,102,241,0.15)",
+          backdropFilter: "blur(8px)"
         }}
         title="Create new note (drag to move)"
       >

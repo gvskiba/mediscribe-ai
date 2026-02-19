@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
-  Sparkles, X, FileText, Activity, Code, Pill, BookOpen, AlertCircle, Brain, Beaker, Stethoscope, ClipboardList
+  Sparkles, X, FileText, Activity, Code, Pill, BookOpen, AlertCircle, Brain, Beaker, Stethoscope, ClipboardList, Check, Loader2, Copy
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import AIDocumentationAssistant from "./AIDocumentationAssistant";
+import { base44 } from "@/api/base44Client";
+import { toast } from "sonner";
 import AIComprehensiveSummary from "../notes/AIComprehensiveSummary";
 import AIMDMAnalyzer from "../notes/AIMDMAnalyzer";
 import AITreatmentPlanAnalyzer from "../notes/AITreatmentPlanAnalyzer";

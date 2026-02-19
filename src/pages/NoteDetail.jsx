@@ -2958,19 +2958,7 @@ Generated: ${new Date().toLocaleString()}
                                      add_context_from_internet: false
                                    });
 
-                                   const dischargeSummaryText = `DISCHARGE INSTRUCTIONS
-
-                                   DIAGNOSES:
-                                   ${note.diagnoses?.join("\n• ") ? "• " + note.diagnoses.join("\n• ") : "N/A"}
-
-                                   MEDICATIONS:
-                                   ${note.medications?.length ? note.medications.map(m => "• " + m).join("\n") : "No new medications"}
-
-                                   INSTRUCTIONS:
-                                   ${result}
-
-                                   FOLLOW-UP:
-                                   ${note.plan || "Follow up as needed"}`;
+                                   const dischargeSummaryText = result;
 
                                    queryClient.setQueryData(["note", noteId], (old) => ({
                                      ...old,

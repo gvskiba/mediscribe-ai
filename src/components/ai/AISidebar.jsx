@@ -688,6 +688,146 @@ function ResearchPanel({ note, onUpdateNote }) {
   );
 }
 
+// ── Panel: Consolidated Note ──────────────────────────────────────────────────
+function ConsolidatedNotePanel({ note, onUpdateNote }) {
+  const [generatingConsolidated, setGeneratingConsolidated] = useState(false);
+  const [consolidatedNote, setConsolidatedNote] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  const generateConsolidatedNote = async () => {
+    setGeneratingConsolidated(true);
+    try {
+      const clinicalNoteData = JSON.stringify(note, null, 2);
+      
+      const prompt = `You are an expert medical documentalist. Your task is to compile a comprehensive clinical note from the provided structured patient data. Ensure clarity, accuracy, and adherence to standard medical documentation practices.
+
+Here is the full clinical note data in JSON format:
+${clinicalNoteData}
+
+Please generate a single, well-structured clinical note using the following sections and order:
+
+1. **PATIENT DEMOGRAPHICS:**
+   - Patient Name: [patient_name]
+   - Date of Birth: [date_of_birth]
+   - Gender: [patient_gender]
+   - Patient ID: [patient_id]
+   - Date of Visit: [date_of_visit]
+   - Note Type: [note_type]
+   - Specialty: [specialty]
+
+2. **CHIEF COMPLAINT (CC):**
+   [chief_complaint]
+
+3. **HISTORY OF PRESENT ILLNESS (HPI):**
+   [history_of_present_illness]
+
+4. **REVIEW OF SYSTEMS (ROS):**
+   [review_of_systems - Format as bullet points if present]
+
+5. **PHYSICAL EXAMINATION (PE):**
+   [physical_exam - Format as bullet points if present]
+   
+   Vital Signs:
+   • Temperature: [vital_signs.temperature.value] [vital_signs.temperature.unit]
+   • Heart Rate: [vital_signs.heart_rate.value] [vital_signs.heart_rate.unit]
+   • Blood Pressure: [vital_signs.blood_pressure.systolic]/[vital_signs.blood_pressure.diastolic] [vital_signs.blood_pressure.unit]
+   • Respiratory Rate: [vital_signs.respiratory_rate.value] [vital_signs.respiratory_rate.unit]
+   • Oxygen Saturation: [vital_signs.oxygen_saturation.value] [vital_signs.oxygen_saturation.unit]
+   • Weight: [vital_signs.weight.value] [vital_signs.weight.unit]
+   • Height: [vital_signs.height.value] [vital_signs.height.unit]
+
+6. **MEDICAL DECISION MAKING:**
+   [Include medical decision making content if available in the note data]
+
+7. **ASSESSMENT:**
+   [assessment]
+
+8. **DIAGNOSES (with ICD-10 Codes):**
+   [List all items from the diagnoses array, one per line with bullet points]
+
+9. **PLAN:**
+   [plan]
+
+10. **CLINICAL IMPRESSION:**
+    [clinical_impression]
+
+FORMATTING INSTRUCTIONS:
+- If a field is empty or not available in the JSON, state "Not documented" or "None"
+- Format Review of Systems and Physical Exam findings as bullet points
+- Maintain a professional medical tone throughout
+- Ensure all sections are clearly delimited with bold headings
+- Use bullet points where appropriate for readability
+
+Generate the complete clinical note now.`;
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: prompt,
+        add_context_from_internet: false
+      });
+
+      setConsolidatedNote(result);
+      toast.success("Consolidated clinical note generated");
+    } catch (error) {
+      console.error("Failed to generate consolidated note:", error);
+      toast.error("Failed to generate consolidated note");
+    } finally {
+      setGeneratingConsolidated(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (consolidatedNote) {
+      navigator.clipboard.writeText(consolidatedNote);
+      setCopied(true);
+      toast.success("Copied to clipboard");
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-800">
+        Generate a comprehensive, formatted clinical note from all tabs and data.
+      </div>
+
+      <Button onClick={generateConsolidatedNote} disabled={generatingConsolidated} className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2">
+        {generatingConsolidated ? (
+          <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
+        ) : (
+          <><Sparkles className="w-4 h-4" /> Generate Note</>
+        )}
+      </Button>
+
+      {consolidatedNote && (
+        <div className="space-y-3">
+          <div className="bg-white rounded-lg border-2 border-blue-200 p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="font-bold text-slate-900">Generated Clinical Note</h4>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={copyToClipboard}
+                className="gap-2"
+              >
+                {copied ? (
+                  <><Check className="w-4 h-4 text-green-600" /> Copied</>
+                ) : (
+                  <><FileText className="w-4 h-4" /> Copy</>
+                )}
+              </Button>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-3 max-h-[400px] overflow-y-auto">
+              <pre className="text-xs text-slate-900 whitespace-pre-wrap font-sans leading-relaxed">
+                {consolidatedNote}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Panel: Q&A ─────────────────────────────────────────────────────────────────
 function QAPanel({ note, onUpdateNote }) {
   return (

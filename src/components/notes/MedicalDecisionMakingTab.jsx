@@ -554,13 +554,13 @@ Provide:
                 <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
                   <div className="flex items-start justify-between mb-2">
                     <p className="text-xs font-bold text-emerald-900">Follow-up Strategy</p>
-                    {aiRanking?.follow_up_strategy && (
+                    {aiRanking?.follow_up_strategy !== undefined && (
                       <Badge variant="secondary" className={`text-xs ${
-                        aiRanking.follow_up_strategy === "HIGH" ? "bg-red-100 text-red-700" :
-                        aiRanking.follow_up_strategy === "MEDIUM" ? "bg-yellow-100 text-yellow-700" :
+                        aiRanking.follow_up_strategy >= 75 ? "bg-red-100 text-red-700" :
+                        aiRanking.follow_up_strategy >= 50 ? "bg-yellow-100 text-yellow-700" :
                         "bg-green-100 text-green-700"
                       }`}>
-                        {aiRanking.follow_up_strategy}
+                        {aiRanking.follow_up_strategy}%
                       </Badge>
                     )}
                   </div>

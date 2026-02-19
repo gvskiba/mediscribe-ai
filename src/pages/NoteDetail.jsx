@@ -216,6 +216,7 @@ export default function NoteDetail() {
   const [newGroupColor, setNewGroupColor] = useState("blue");
   const [physicalExamNormal, setPhysicalExamNormal] = useState(false);
   const [rosNormal, setRosNormal] = useState(false);
+  const [loadingDischargeSummary, setLoadingDischargeSummary] = useState(false);
 
   const handleNext = () => {
     const allTabs = tabGroups.flatMap(g => g.tabs.map(t => t.id));

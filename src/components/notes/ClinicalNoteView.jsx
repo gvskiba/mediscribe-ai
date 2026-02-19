@@ -9,11 +9,29 @@ import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from "date-fns";
 
-const AggregateSectionText = ({ title, field, value, borderColor, titleColor, onSave }) => {
+const AggregateSectionText = ({ title, field, value, borderColor, titleColor, onSave, isROS }) => {
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(value || "");
 
   if (!value && !editing) return null;
+
+  // Parse ROS JSON if needed
+  const formatROS = (val) => {
+    if (!val) return val;
+    if (isROS && typeof val === 'string' && val.startsWith('{')) {
+      try {
+        const ros = JSON.parse(val);
+        return Object.entries(ros)
+          .map(([system, findings]) => `${system.charAt(0).toUpperCase() + system.slice(1).replace(/_/g, ' ')}: ${findings}`)
+          .join('\n');
+      } catch {
+        return val;
+      }
+    }
+    return val;
+  };
+
+  const displayValue = formatROS(value);
 
   return (
     <div>
@@ -46,7 +64,20 @@ const AggregateSectionText = ({ title, field, value, borderColor, titleColor, on
       {editing ? (
         <Textarea value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-full min-h-[100px] bg-white text-sm" />
       ) : (
-        <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{value}</p>
+        <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+          {isROS ? (
+            <ul className="space-y-2">
+              {displayValue.split('\n').map((line, i) => (
+                <li key={i} className="flex gap-2">
+                  <span className="text-amber-600">•</span>
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            displayValue
+          )}
+        </div>
       )}
     </div>
   );

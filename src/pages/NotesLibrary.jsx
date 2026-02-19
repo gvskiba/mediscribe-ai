@@ -6,7 +6,7 @@ import { createPageUrl } from "../utils";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Archive, CheckCircle2, X } from "lucide-react";
+import { Plus, Trash2, Archive, CheckCircle2, X, FileText, CheckCheck, PenTool, Users } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import NotesFilters from "../components/notes/NotesFilters";
@@ -171,23 +171,47 @@ export default function NotesLibrary() {
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
           <div className="flex-1">
             <h1 className="text-4xl font-bold text-slate-900 tracking-tight mb-3">Clinical Notes</h1>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="bg-white/80 backdrop-blur rounded-xl p-4 border border-slate-200 shadow-sm">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Total</p>
-                <p className="text-2xl font-bold text-slate-900">{notes.length}</p>
-              </div>
-              <div className="bg-white/80 backdrop-blur rounded-xl p-4 border border-emerald-200 shadow-sm">
-                <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide mb-1">Finalized</p>
-                <p className="text-2xl font-bold text-emerald-700">{notes.filter(n => n.status === "finalized").length}</p>
-              </div>
-              <div className="bg-white/80 backdrop-blur rounded-xl p-4 border border-amber-200 shadow-sm">
-                <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-1">Drafts</p>
-                <p className="text-2xl font-bold text-amber-700">{notes.filter(n => n.status === "draft").length}</p>
-              </div>
-              <div className="bg-white/80 backdrop-blur rounded-xl p-4 border border-purple-200 shadow-sm">
-                <p className="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-1">Patients</p>
-                <p className="text-2xl font-bold text-purple-700">{uniquePatients.length}</p>
-              </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-lg h-10 w-10 p-0 group relative hover:bg-slate-100"
+              >
+                <FileText className="w-5 h-5 text-slate-600" />
+                <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 bg-slate-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                  Total: {notes.length}
+                </span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-lg h-10 w-10 p-0 group relative hover:bg-emerald-50"
+              >
+                <CheckCheck className="w-5 h-5 text-emerald-600" />
+                <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 bg-slate-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                  Finalized: {notes.filter(n => n.status === "finalized").length}
+                </span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-lg h-10 w-10 p-0 group relative hover:bg-amber-50"
+              >
+                <PenTool className="w-5 h-5 text-amber-600" />
+                <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 bg-slate-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                  Drafts: {notes.filter(n => n.status === "draft").length}
+                </span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-lg h-10 w-10 p-0 group relative hover:bg-purple-50"
+              >
+                <Users className="w-5 h-5 text-purple-600" />
+                <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 bg-slate-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                  Patients: {uniquePatients.length}
+                </span>
+              </Button>
             </div>
           </div>
           <Link to={createPageUrl("NewNote")}>

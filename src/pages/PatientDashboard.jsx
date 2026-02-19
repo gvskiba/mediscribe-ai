@@ -292,32 +292,31 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Diagnoses */}
-          {/* Diagnoses */}
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-            <Card className="border-purple-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-purple-500 to-indigo-500 px-6 py-4 text-white">
-                <h3 className="font-bold text-lg flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" /> Diagnoses ({latestNote.diagnoses?.length || 0})
-                </h3>
-              </div>
-              <div className="p-6">
-                {latestNote.diagnoses && latestNote.diagnoses.length > 0 ? (
-                  <div className="space-y-2">
-                    {latestNote.diagnoses.slice(0, 5).map((diag, idx) => (
-                      <Badge key={idx} className="block w-full justify-start bg-purple-100 text-purple-900 border border-purple-200 text-xs py-2 px-3">
-                        {diag}
-                      </Badge>
-                    ))}
-                    {latestNote.diagnoses.length > 5 && (
-                      <p className="text-xs text-slate-500 text-center pt-2">+{latestNote.diagnoses.length - 5} more</p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-slate-500 text-center py-8">No diagnoses recorded</p>
-                )}
-              </div>
-            </Card>
-          </motion.div>
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="border-purple-200 overflow-hidden">
+            <div className="bg-purple-500 px-4 py-3 text-white">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <TrendingUp className="w-4 h-4" /> Diagnoses ({latestNote.diagnoses?.length || 0})
+              </h3>
+            </div>
+            <div className="p-4">
+              {latestNote.diagnoses && latestNote.diagnoses.length > 0 ? (
+                <div className="space-y-2">
+                  {latestNote.diagnoses.slice(0, 4).map((diag, idx) => (
+                    <div key={idx} className="text-xs bg-purple-50 border border-purple-200 rounded p-2 text-slate-700">
+                      {diag}
+                    </div>
+                  ))}
+                  {latestNote.diagnoses.length > 4 && (
+                    <p className="text-xs text-slate-500 pt-1">+{latestNote.diagnoses.length - 4} more</p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-slate-500 text-center py-6 text-sm">No diagnoses</p>
+              )}
+            </div>
+          </Card>
+        </motion.div>
 
           {/* AI Risk Assessment */}
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>

@@ -1775,16 +1775,43 @@ Generated: ${new Date().toLocaleString()}
                    </h3>
                    <p className="text-emerald-100 text-sm mt-1">Manually enter or edit vital signs</p>
                  </div>
-                 <div className="p-6">
+                 <div className="p-6 space-y-6">
                    <VitalSignsInput
                      vitalSigns={note.vital_signs || {}}
                      onChange={async (newVitalSigns) => {
                        await base44.entities.ClinicalNote.update(noteId, { vital_signs: newVitalSigns });
                        queryClient.invalidateQueries({ queryKey: ["note", noteId] });
                      }}
+                     onSave={async (newVitalSigns) => {
+                       // Add to history with timestamp
+                       const newEntry = {
+                         vitals: newVitalSigns,
+                         timestamp: new Date().toISOString()
+                       };
+                       setVitalSignsHistory(prev => [newEntry, ...prev]);
+
+                       // Update note with vitals
+                       await base44.entities.ClinicalNote.update(noteId, { vital_signs: newVitalSigns });
+                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                       toast.success("Vital signs saved with timestamp");
+                     }}
                    />
                  </div>
-               </div>
+                 </div>
+
+                 {/* Vital Signs History */}
+                 <div className="bg-white rounded-xl border-2 border-emerald-300 shadow-lg overflow-hidden">
+                 <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-5 text-white">
+                   <h3 className="font-bold text-lg flex items-center gap-2">
+                     <Activity className="w-6 h-6" />
+                     Vital Signs History
+                   </h3>
+                   <p className="text-emerald-100 text-sm mt-1">View and manage previously recorded vital signs</p>
+                 </div>
+                 <div className="p-6">
+                   <VitalSignsHistory vitalHistory={vitalSignsHistory} />
+                 </div>
+                 </div>
 
                {/* AI Vital Signs Analysis */}
                {(note.vital_signs && Object.keys(note.vital_signs).length > 0) && (

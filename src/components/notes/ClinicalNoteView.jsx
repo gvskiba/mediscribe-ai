@@ -467,7 +467,7 @@ Generate the complete clinical note now.`;
     <div className="space-y-6">
       {/* Header with Toggle */}
       <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border-2 border-indigo-300 p-5">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <FileText className="w-6 h-6 text-indigo-600" />
             <h2 className="text-xl font-bold text-slate-900">Clinical Note</h2>
@@ -480,23 +480,6 @@ Generate the complete clinical note now.`;
           >
             {showAggregated ? "Show Sections" : "Show Aggregated"}
           </Button>
-        </div>
-        <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-2">Note Type</label>
-          <select
-            value={note.note_type || "progress_note"}
-            onChange={(e) => onUpdate("note_type", e.target.value)}
-            className="w-full px-4 py-2 rounded-lg border-2 border-indigo-200 bg-white text-slate-900 font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all"
-          >
-            <option value="progress_note">Progress Note</option>
-            <option value="h_and_p">History & Physical</option>
-            <option value="discharge_summary">Discharge Summary</option>
-            <option value="consult">Consultation</option>
-            <option value="procedure_note">Procedure Note</option>
-          </select>
-          <p className="text-xs text-indigo-700 mt-2">
-            Current: <strong>{typeLabels[note.note_type] || "Progress Note"}</strong>
-          </p>
         </div>
       </div>
 

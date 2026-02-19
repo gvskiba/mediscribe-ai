@@ -169,7 +169,13 @@ export default function DraggableNotificationButtons() {
       {/* Create New Note Button */}
       <motion.button
         onMouseDown={(e) => handleMouseDown(e, 'plus')}
-        onClick={handleCreateNote}
+        onClick={(e) => {
+          if (isDragging === 'plus') {
+            e.preventDefault();
+            return;
+          }
+          handleCreateNote();
+        }}
         whileHover={{ scale: isDragging ? 1 : 1.08 }}
         whileTap={{ scale: 0.95 }}
         className={`fab-button fixed ${sizes.container} rounded-full bg-white shadow-xl border-2 border-transparent flex items-center justify-center transition-all ${isDragging === 'plus' ? 'cursor-grabbing' : 'cursor-grab'}`}

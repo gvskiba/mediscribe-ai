@@ -39,6 +39,7 @@ export default function ProceduresPanel({ note, noteId }) {
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [logDialogOpen, setLogDialogOpen] = useState(false);
   const [selectedProcedure, setSelectedProcedure] = useState(null);
+  const [createdNote, setCreatedNote] = useState(null);
 
   const queryClient = useQueryClient();
 

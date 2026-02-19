@@ -1567,98 +1567,135 @@ Generated: ${new Date().toLocaleString()}
 
                         <div className="flex-1 overflow-hidden min-h-0">
 
-                        {/* Subjective Tab — combined Patient Intake + HPI */}
-                        <TabsContent value="patient_intake" className="overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
-                          <div className="max-w-5xl mx-auto px-8 py-6 space-y-6">
+                        {/* Subjective Tab */}
+                        <TabsContent value="patient_intake" className="overflow-y-auto bg-slate-50">
+                          <div className="max-w-4xl mx-auto px-6 py-5 space-y-4">
 
                             {/* Page Header */}
-                            <div className="flex items-center gap-4 pb-2 border-b border-slate-200">
-                              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md flex-shrink-0">
-                                <FileText className="w-6 h-6 text-white" />
-                              </div>
+                            <div className="flex items-center justify-between">
                               <div>
-                                <h2 className="text-2xl font-bold text-slate-900">Subjective</h2>
-                                <p className="text-sm text-slate-500">Chief complaint, raw notes, HPI, and medical history</p>
+                                <h2 className="text-lg font-bold text-slate-900">Subjective</h2>
+                                <p className="text-xs text-slate-500">Chief complaint, history, and AI documentation</p>
                               </div>
-                              <div className="ml-auto">
-                                <Button
-                                  onClick={async () => {
-                                    if (!note.raw_note) { toast.error("Please enter raw patient data first"); return; }
-                                    setAnalyzingRawData(true);
-                                    try {
-                                      const result = await base44.integrations.Core.InvokeLLM({
-                                        prompt: `Analyze this raw patient encounter data and extract structured clinical information:\n\nRAW PATIENT DATA:\n${note.raw_note}\n\nExtract: chief_complaint, history_of_present_illness (OLDCARTS), review_of_systems, initial_assessment, suggested_diagnoses, recommended_tests.`,
-                                        add_context_from_internet: false,
-                                        response_json_schema: {
-                                          type: "object",
-                                          properties: {
-                                            chief_complaint: { type: "string" },
-                                            history_of_present_illness: { type: "string" },
-                                            review_of_systems: { type: "string" },
-                                            initial_assessment: { type: "string" },
-                                            suggested_diagnoses: { type: "array", items: { type: "string" } },
-                                            recommended_tests: { type: "array", items: { type: "string" } }
-                                          }
+                              <Button
+                                onClick={async () => {
+                                  if (!note.raw_note && !note.chief_complaint) { toast.error("Please enter some patient data first"); return; }
+                                  setAnalyzingRawData(true);
+                                  try {
+                                    const result = await base44.integrations.Core.InvokeLLM({
+                                      prompt: `Analyze this raw patient encounter data and extract structured clinical information:\n\nRAW PATIENT DATA:\n${note.raw_note || note.chief_complaint}\n\nExtract: chief_complaint, history_of_present_illness (OLDCARTS), review_of_systems, initial_assessment, suggested_diagnoses, recommended_tests.`,
+                                      add_context_from_internet: false,
+                                      response_json_schema: {
+                                        type: "object",
+                                        properties: {
+                                          chief_complaint: { type: "string" },
+                                          history_of_present_illness: { type: "string" },
+                                          review_of_systems: { type: "string" },
+                                          initial_assessment: { type: "string" },
+                                          suggested_diagnoses: { type: "array", items: { type: "string" } },
+                                          recommended_tests: { type: "array", items: { type: "string" } }
                                         }
-                                      });
-                                      await base44.entities.ClinicalNote.update(noteId, {
-                                        chief_complaint: result.chief_complaint,
-                                        history_of_present_illness: result.history_of_present_illness,
-                                        review_of_systems: result.review_of_systems,
-                                        assessment: result.initial_assessment
-                                      });
-                                      queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                                      toast.success("AI analysis complete — fields populated");
-                                    } catch (error) {
-                                      toast.error("Failed to analyze patient data");
-                                    } finally {
-                                      setAnalyzingRawData(false);
-                                    }
-                                  }}
-                                  disabled={analyzingRawData || !note.raw_note}
-                                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white gap-2 shadow-md"
-                                >
-                                  {analyzingRawData ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</> : <><Sparkles className="w-4 h-4" /> AI Auto-Fill</>}
-                                </Button>
-                              </div>
+                                      }
+                                    });
+                                    await base44.entities.ClinicalNote.update(noteId, {
+                                      chief_complaint: result.chief_complaint,
+                                      history_of_present_illness: result.history_of_present_illness,
+                                      review_of_systems: result.review_of_systems,
+                                      assessment: result.initial_assessment
+                                    });
+                                    queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                                    toast.success("AI analysis complete — fields populated");
+                                  } catch (error) {
+                                    toast.error("Failed to analyze patient data");
+                                  } finally {
+                                    setAnalyzingRawData(false);
+                                  }
+                                }}
+                                disabled={analyzingRawData}
+                                size="sm"
+                                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white gap-2"
+                              >
+                                {analyzingRawData ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Analyzing...</> : <><Sparkles className="w-3.5 h-3.5" /> AI Auto-Fill</>}
+                              </Button>
                             </div>
 
-                            {/* Chief Complaint */}
-                            <div className="bg-white rounded-2xl border border-blue-200 shadow-sm overflow-hidden">
-                              <div className="bg-gradient-to-r from-blue-500 to-indigo-500 px-5 py-4 flex items-center justify-between text-white">
-                                <div>
-                                  <p className="text-xs font-semibold uppercase tracking-widest text-blue-100">Section 1</p>
-                                  <h3 className="font-bold text-base">Chief Complaint</h3>
+                            {/* Chief Complaint — compact single-line */}
+                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                              <div className="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center text-xs font-bold">1</div>
+                                  <span className="text-sm font-semibold">Chief Complaint</span>
+                                  <span className="text-blue-200 text-xs">· primary reason for visit</span>
                                 </div>
                                 <InlineSectionAI type="chief_complaint" note={note} onApply={async (val) => { await base44.entities.ClinicalNote.update(noteId, { chief_complaint: val }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
                               </div>
-                              <div className="p-5">
-                                <textarea
+                              <div className="px-4 py-3">
+                                <input
+                                  type="text"
                                   value={note.chief_complaint || ""}
                                   onChange={(e) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, chief_complaint: e.target.value }))}
                                   onBlur={async (e) => { await base44.entities.ClinicalNote.update(noteId, { chief_complaint: e.target.value }); toast.success("Saved"); }}
-                                  placeholder="Primary reason for visit (e.g., 'Chest pain for 2 hours')..."
-                                  className="w-full px-4 py-3 rounded-xl border border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm text-slate-900 placeholder:text-slate-400 resize-none"
-                                  rows="5"
+                                  placeholder="e.g., Chest pain for 2 hours..."
+                                  className="w-full text-sm text-slate-900 placeholder:text-slate-400 border-0 outline-none focus:ring-0 bg-transparent"
+                                  maxLength={200}
+                                />
+                              </div>
+                            </div>
+
+                            {/* HPI / Raw Notes */}
+                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                              <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-slate-600 to-slate-700 text-white">
+                                <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center text-xs font-bold">2</div>
+                                <span className="text-sm font-semibold">History of Present Illness</span>
+                                <span className="text-slate-300 text-xs">· OLDCARTS format</span>
+                                <div className="ml-auto">
+                                  <InlineSectionAI type="hpi" note={note} onApply={async (val) => { await base44.entities.ClinicalNote.update(noteId, { history_of_present_illness: val }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
+                                </div>
+                              </div>
+                              <div className="px-4 py-3">
+                                <textarea
+                                  value={note.history_of_present_illness || ""}
+                                  onChange={(e) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, history_of_present_illness: e.target.value }))}
+                                  onBlur={async (e) => { await base44.entities.ClinicalNote.update(noteId, { history_of_present_illness: e.target.value }); toast.success("Saved"); }}
+                                  placeholder="Onset, Location, Duration, Character, Alleviating factors, Relieving factors, Timing, Severity..."
+                                  className="w-full text-sm text-slate-900 placeholder:text-slate-400 border-0 outline-none focus:ring-0 bg-transparent resize-none"
+                                  rows={5}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Raw Notes / Dictation */}
+                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                              <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-slate-500 to-slate-600 text-white">
+                                <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center text-xs font-bold">3</div>
+                                <span className="text-sm font-semibold">Raw Notes / Dictation</span>
+                                <span className="text-slate-300 text-xs">· paste transcript or freeform notes</span>
+                              </div>
+                              <div className="px-4 py-3">
+                                <textarea
+                                  value={note.raw_note || ""}
+                                  onChange={(e) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, raw_note: e.target.value }))}
+                                  onBlur={async (e) => { await base44.entities.ClinicalNote.update(noteId, { raw_note: e.target.value }); toast.success("Saved"); }}
+                                  placeholder="Paste dictation, transcription, or unstructured notes here. Use AI Auto-Fill to extract structured data..."
+                                  className="w-full text-sm text-slate-900 placeholder:text-slate-400 border-0 outline-none focus:ring-0 bg-transparent resize-none"
+                                  rows={4}
                                 />
                               </div>
                             </div>
 
                             {/* AI Documentation Assistant */}
-                            <div className="bg-white rounded-2xl border border-purple-200 shadow-sm overflow-hidden">
-                              <div className="bg-gradient-to-r from-purple-500 to-indigo-500 px-5 py-4 text-white">
-                                <p className="text-xs font-semibold uppercase tracking-widest text-purple-100">Section 3</p>
-                                <h3 className="font-bold text-base">AI Documentation Assistant</h3>
+                            <div className="bg-white rounded-xl border border-purple-200 shadow-sm overflow-hidden">
+                              <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-500 text-white">
+                                <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center text-xs font-bold">4</div>
+                                <span className="text-sm font-semibold">AI Documentation Assistant</span>
                               </div>
-                              <div className="p-5">
+                              <div className="p-4">
                                 <AIDocumentationAssistant note={note} onUpdateNote={async (updates) => {
                                   await base44.entities.ClinicalNote.update(noteId, updates);
                                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
                                 }} />
                               </div>
                             </div>
-
-
 
                             {/* Footer */}
                             <div className="flex justify-between items-center pt-2 border-t border-slate-200">

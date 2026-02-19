@@ -2025,21 +2025,38 @@ Generated: ${new Date().toLocaleString()}
                      </div>
                    </div>
                    <div className="p-6 space-y-6">
-                     <Textarea
-                       value={note.plan || ""}
-                       onChange={(e) => {
-                         queryClient.setQueryData(["note", noteId], (old) => ({
-                           ...old,
-                           plan: e.target.value
-                         }));
+                     <div className="flex gap-3">
+                       <Textarea
+                         value={note.plan || ""}
+                         onChange={(e) => {
+                           queryClient.setQueryData(["note", noteId], (old) => ({
+                             ...old,
+                             plan: e.target.value
+                           }));
+                         }}
+                         onBlur={async (e) => {
+                           await base44.entities.ClinicalNote.update(noteId, { plan: e.target.value });
+                           toast.success("Treatment plan saved");
+                         }}
+                         placeholder="Document treatment plan, follow-up instructions, patient education..."
+                         className="min-h-[400px] text-base flex-1"
+                       />
+                     </div>
+                     <Button
+                       onClick={async () => {
+                         try {
+                           await base44.entities.ClinicalNote.update(noteId, { plan: note.plan });
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                           toast.success("Treatment plan added to clinical note");
+                         } catch (error) {
+                           console.error("Failed to add treatment plan:", error);
+                           toast.error("Failed to add treatment plan");
+                         }
                        }}
-                       onBlur={async (e) => {
-                         await base44.entities.ClinicalNote.update(noteId, { plan: e.target.value });
-                         toast.success("Treatment plan saved");
-                       }}
-                       placeholder="Document treatment plan, follow-up instructions, patient education..."
-                       className="min-h-[400px] text-base"
-                     />
+                       className="bg-amber-600 hover:bg-amber-700 text-white gap-2"
+                     >
+                       <Check className="w-4 h-4" /> Add to Note
+                     </Button>
                      {note.plan && (
                        <div className="bg-slate-50 rounded-xl border-2 border-slate-200 p-6">
                          <h4 className="text-sm font-semibold text-slate-700 mb-4">Preview</h4>

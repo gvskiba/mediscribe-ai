@@ -677,6 +677,7 @@ function MDMPanel({ note, onUpdateNote }) {
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 const PANEL_MAP = {
+  analyze: AnalyzePanel,
   summarize: SummarizePanel,
   icd10: ICD10Panel,
   treatment: TreatmentPanel,

@@ -2390,25 +2390,38 @@ Generated: ${new Date().toLocaleString()}
                  </div>
 
                  <div className="bg-white rounded-xl border-2 border-emerald-300 shadow-lg overflow-hidden">
-                   <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-5 text-white">
-                     <div className="flex items-center justify-between">
-                       <div>
-                         <h3 className="font-bold text-lg flex items-center gap-2">
-                           <Activity className="w-6 h-6" />
-                           Physical Exam Editor
-                         </h3>
-                         <p className="text-emerald-100 text-sm mt-1">Structured examination documentation</p>
-                       </div>
-                       <InlineSectionAI
-                         type="physical_exam"
-                         note={note}
-                         onApply={async (val) => {
-                           await base44.entities.ClinicalNote.update(noteId, { physical_exam: val });
-                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                         }}
-                       />
-                     </div>
+                 <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-5 text-white">
+                 <div className="flex items-center justify-between">
+                   <div>
+                     <h3 className="font-bold text-lg flex items-center gap-2">
+                       <Activity className="w-6 h-6" />
+                       Physical Exam Editor
+                     </h3>
+                     <p className="text-emerald-100 text-sm mt-1">Structured examination documentation</p>
                    </div>
+                   <div className="flex items-center gap-2">
+                     <Button
+                       size="sm"
+                       onClick={async () => {
+                         await base44.entities.ClinicalNote.update(noteId, { physical_exam: "No abnormalities noted. All systems within normal limits on examination." });
+                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                         toast.success("Physical exam set to normal");
+                       }}
+                       className="bg-white/20 hover:bg-white/30 border-white/30 border text-white gap-2"
+                     >
+                       <Check className="w-4 h-4" /> Set Normal
+                     </Button>
+                     <InlineSectionAI
+                       type="physical_exam"
+                       note={note}
+                       onApply={async (val) => {
+                         await base44.entities.ClinicalNote.update(noteId, { physical_exam: val });
+                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                       }}
+                     />
+                   </div>
+                 </div>
+                 </div>
                    <div className="p-6 space-y-6 overflow-y-auto">
                      <PhysicalExamEditor
                        examData={note.physical_exam}

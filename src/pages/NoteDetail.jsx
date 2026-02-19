@@ -1398,21 +1398,7 @@ Generated: ${new Date().toLocaleString()}
             )}
           </div>
 
-          {/* Right: New Note button */}
-          <Button
-            onClick={async () => {
-              const newNote = await base44.entities.ClinicalNote.create({
-                raw_note: "",
-                patient_name: "New Patient",
-                status: "draft"
-              });
-              window.location.href = createPageUrl(`NoteDetail?id=${newNote.id}`);
-            }}
-            size="sm"
-            className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 flex-shrink-0"
-          >
-            <Plus className="w-3.5 h-3.5" /> New Note
-          </Button>
+
         </div>
       </motion.div>
 

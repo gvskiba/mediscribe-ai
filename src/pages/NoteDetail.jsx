@@ -1810,18 +1810,19 @@ Generated: ${new Date().toLocaleString()}
                            }
                          }
                        }}
-                       className={`gap-2 shadow-lg py-6 text-base ${
+                       className={`rounded-full w-14 h-14 flex items-center justify-center shadow-xl border-4 transition-all ${
                          isRecording 
-                           ? 'bg-red-600 hover:bg-red-700 text-white' 
-                           : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white'
+                           ? 'bg-red-600 hover:bg-red-700 border-red-300 animate-pulse' 
+                           : 'bg-gradient-to-br from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-blue-200'
                        }`}
-                     >
+                       title={isRecording ? `Stop Recording (${Math.floor(recordingTime / 60)}:${String(recordingTime % 60).padStart(2, '0')})` : "Start Voice Recording"}
+                       >
                        {isRecording ? (
-                         <><X className="w-5 h-5" /> Stop Recording ({Math.floor(recordingTime / 60)}:{String(recordingTime % 60).padStart(2, '0')})</>
+                         <X className="w-6 h-6 text-white" />
                        ) : (
-                         <><Activity className="w-5 h-5" /> Start Voice Recording</>
+                         <Activity className="w-6 h-6 text-white" />
                        )}
-                     </Button>
+                       </Button>
                    </div>
                    {isRecording && (
                      <div className="flex items-center justify-center gap-2 text-red-600 animate-pulse">

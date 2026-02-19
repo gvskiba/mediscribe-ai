@@ -3181,6 +3181,29 @@ Generated: ${new Date().toLocaleString()}
 
        </div>
 
+       {/* Floating AI Assistant Button */}
+       <motion.button
+         onClick={() => setAiSidebarOpen(true)}
+         whileHover={{ scale: 1.08 }}
+         whileTap={{ scale: 0.95 }}
+         className="fixed left-5 bottom-28 z-40 w-14 h-14 rounded-full bg-white shadow-xl border-2 border-transparent flex items-center justify-center"
+         style={{
+           background: "white",
+           boxShadow: "0 4px 24px 0 rgba(168,85,247,0.25), 0 1.5px 6px 0 rgba(99,102,241,0.15)",
+         }}
+         title="Open AI Assistant"
+       >
+         <div
+           className="w-12 h-12 rounded-full flex items-center justify-center"
+           style={{
+             background: "linear-gradient(135deg, #f0abfc 0%, #a78bfa 50%, #818cf8 100%)",
+             boxShadow: "inset 0 1px 3px rgba(255,255,255,0.5), 0 0 0 2px rgba(167,139,250,0.4)",
+           }}
+         >
+           <Sparkles className="w-6 h-6 text-white drop-shadow" />
+         </div>
+       </motion.button>
+
        {/* AI Sidebar */}
        <AISidebar
          isOpen={aiSidebarOpen}

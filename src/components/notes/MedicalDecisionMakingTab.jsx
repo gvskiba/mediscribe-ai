@@ -564,18 +564,45 @@ Return a JSON with each section and its acuity ranking.`,
                       </Badge>
                     )}
                   </div>
-                  <p className="text-xs text-slate-700 line-clamp-3 mb-2">{aiAnalysis.follow_up_strategy}</p>
-                  <Button
-                    onClick={async () => {
-                      await onUpdateNote({ mdm: `## Follow-up Strategy\n${aiAnalysis.follow_up_strategy}` });
-                      toast.success("Added to clinical note");
-                    }}
-                    size="sm"
-                    variant="outline"
-                    className="w-full gap-1"
-                  >
-                    <Plus className="w-3 h-3" /> Add to Note
-                  </Button>
+                  {editingSection === "follow_up_strategy" ? (
+                    <Textarea
+                      value={editedContent.follow_up_strategy || aiAnalysis.follow_up_strategy}
+                      onChange={(e) => setEditedContent({...editedContent, follow_up_strategy: e.target.value})}
+                      className="mb-2 text-xs"
+                    />
+                  ) : (
+                    <p className="text-xs text-slate-700 line-clamp-3 mb-2">{editedContent.follow_up_strategy || aiAnalysis.follow_up_strategy}</p>
+                  )}
+                  <div className="flex gap-2">
+                    {editingSection === "follow_up_strategy" ? (
+                      <>
+                        <Button onClick={() => setEditingSection(null)} size="sm" variant="outline" className="flex-1">Done</Button>
+                        <Button
+                          onClick={async () => {
+                            await onUpdateNote({ mdm: `## Follow-up Strategy\n${editedContent.follow_up_strategy || aiAnalysis.follow_up_strategy}` });
+                            toast.success("Added to clinical note");
+                            setEditingSection(null);
+                          }}
+                          size="sm" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
+                        >
+                          <Plus className="w-3 h-3" /> Add
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button onClick={() => {setEditingSection("follow_up_strategy"); setEditedContent({...editedContent, follow_up_strategy: aiAnalysis.follow_up_strategy});}} size="sm" variant="outline" className="flex-1">Edit</Button>
+                        <Button
+                          onClick={async () => {
+                            await onUpdateNote({ mdm: `## Follow-up Strategy\n${editedContent.follow_up_strategy || aiAnalysis.follow_up_strategy}` });
+                            toast.success("Added to clinical note");
+                          }}
+                          size="sm" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
+                        >
+                          <Plus className="w-3 h-3" /> Add
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
 

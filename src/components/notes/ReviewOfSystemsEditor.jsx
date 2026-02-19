@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Activity, Eye, Heart, Wind, User, Brain, Plus, X, Check, Ear, Bone, Droplets, Thermometer, Zap, Shield
+  Activity, Eye, Heart, Wind, User, Brain, Plus, X, Check, Ear, Bone, Droplets, Thermometer, Zap, Shield, Save, Edit2
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { base44 } from "@/api/base44Client";
 
 const SYSTEMS = [
   { id: "constitutional",    label: "Constitutional",    icon: Thermometer, color: "slate",    normal: "Denies fever, chills, fatigue, weight loss, or night sweats." },

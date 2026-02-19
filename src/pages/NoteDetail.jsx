@@ -2381,6 +2381,24 @@ Generated: ${new Date().toLocaleString()}
                    }}
                  />
 
+                 <div className="bg-white rounded-xl border-2 border-blue-300 shadow-lg overflow-hidden">
+                   <div className="bg-gradient-to-r from-blue-500 to-indigo-500 px-6 py-5 text-white">
+                     <h3 className="font-bold text-lg flex items-center gap-2">
+                       <Sparkles className="w-6 h-6" />
+                       Generate Complete Clinical Note
+                     </h3>
+                     <p className="text-blue-100 text-sm mt-1">AI-powered comprehensive note generation</p>
+                   </div>
+                   <div className="p-6">
+                     <Button
+                       onClick={() => setAiSidebarOpen(true)}
+                       className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white gap-2 py-6 text-base"
+                     >
+                       <Sparkles className="w-5 h-5" /> Generate Complete Note
+                     </Button>
+                   </div>
+                 </div>
+
                  <ClinicalNoteView
                    note={note}
                    onUpdate={async (field, value) => {

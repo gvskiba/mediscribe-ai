@@ -243,21 +243,183 @@ Return a JSON with each section and its acuity ranking.`,
             </Button>
           ) : (
             <div className="space-y-3">
+              {loadingRank && (
+                <div className="text-center py-2">
+                  <p className="text-xs text-indigo-600 flex items-center justify-center gap-2">
+                    <Loader2 className="w-3 h-3 animate-spin" /> Ranking by acuity...
+                  </p>
+                </div>
+              )}
+
+              {/* Problem Summary */}
               <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
-                <p className="text-xs font-bold text-indigo-900 mb-2">Problem Summary</p>
-                <p className="text-sm text-slate-700 leading-relaxed">{aiAnalysis.problem_summary}</p>
+                <div className="flex items-start justify-between mb-2">
+                  <p className="text-xs font-bold text-indigo-900">Problem Summary</p>
+                  {aiRanking?.problem_summary && (
+                    <Badge variant="secondary" className={`text-xs ${
+                      aiRanking.problem_summary === "HIGH" ? "bg-red-100 text-red-700" :
+                      aiRanking.problem_summary === "MEDIUM" ? "bg-yellow-100 text-yellow-700" :
+                      "bg-green-100 text-green-700"
+                    }`}>
+                      {aiRanking.problem_summary}
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-sm text-slate-700 leading-relaxed mb-3">{aiAnalysis.problem_summary}</p>
+                <Button
+                  onClick={async () => {
+                    await onUpdateNote({ mdm: `## Problem Summary\n${aiAnalysis.problem_summary}` });
+                    toast.success("Added to clinical note");
+                  }}
+                  size="sm"
+                  variant="outline"
+                  className="w-full gap-1"
+                >
+                  <Plus className="w-3 h-3" /> Add to Note
+                </Button>
               </div>
 
               <div className="grid md:grid-cols-2 gap-3">
-                <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                  <p className="text-xs font-bold text-purple-900 mb-2 flex items-center gap-1">
-                    <Beaker className="w-3 h-3" /> Labs/Imaging
-                  </p>
-                  <p className="text-xs text-slate-700 line-clamp-3">{aiAnalysis.imaging_labs_rationale}</p>
+                {/* Differential Reasoning */}
+                <div className="bg-cyan-50 rounded-lg p-4 border border-cyan-200">
+                  <div className="flex items-start justify-between mb-2">
+                    <p className="text-xs font-bold text-cyan-900">Differential Diagnosis</p>
+                    {aiRanking?.differential_reasoning && (
+                      <Badge variant="secondary" className={`text-xs ${
+                        aiRanking.differential_reasoning === "HIGH" ? "bg-red-100 text-red-700" :
+                        aiRanking.differential_reasoning === "MEDIUM" ? "bg-yellow-100 text-yellow-700" :
+                        "bg-green-100 text-green-700"
+                      }`}>
+                        {aiRanking.differential_reasoning}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-700 line-clamp-3 mb-2">{aiAnalysis.differential_reasoning}</p>
+                  <Button
+                    onClick={async () => {
+                      await onUpdateNote({ mdm: `## Differential Diagnosis Reasoning\n${aiAnalysis.differential_reasoning}` });
+                      toast.success("Added to clinical note");
+                    }}
+                    size="sm"
+                    variant="outline"
+                    className="w-full gap-1"
+                  >
+                    <Plus className="w-3 h-3" /> Add to Note
+                  </Button>
                 </div>
+
+                {/* Labs/Imaging */}
+                <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                  <div className="flex items-start justify-between mb-2">
+                    <p className="text-xs font-bold text-purple-900 flex items-center gap-1">
+                      <Beaker className="w-3 h-3" /> Labs/Imaging
+                    </p>
+                    {aiRanking?.imaging_labs_rationale && (
+                      <Badge variant="secondary" className={`text-xs ${
+                        aiRanking.imaging_labs_rationale === "HIGH" ? "bg-red-100 text-red-700" :
+                        aiRanking.imaging_labs_rationale === "MEDIUM" ? "bg-yellow-100 text-yellow-700" :
+                        "bg-green-100 text-green-700"
+                      }`}>
+                        {aiRanking.imaging_labs_rationale}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-700 line-clamp-3 mb-2">{aiAnalysis.imaging_labs_rationale}</p>
+                  <Button
+                    onClick={async () => {
+                      await onUpdateNote({ mdm: `## Imaging/Labs Rationale\n${aiAnalysis.imaging_labs_rationale}` });
+                      toast.success("Added to clinical note");
+                    }}
+                    size="sm"
+                    variant="outline"
+                    className="w-full gap-1"
+                  >
+                    <Plus className="w-3 h-3" /> Add to Note
+                  </Button>
+                </div>
+
+                {/* Treatment Reasoning */}
                 <div className="bg-pink-50 rounded-lg p-4 border border-pink-200">
-                  <p className="text-xs font-bold text-pink-900 mb-2">Treatment Reasoning</p>
-                  <p className="text-xs text-slate-700 line-clamp-3">{aiAnalysis.treatment_reasoning}</p>
+                  <div className="flex items-start justify-between mb-2">
+                    <p className="text-xs font-bold text-pink-900">Treatment Reasoning</p>
+                    {aiRanking?.treatment_reasoning && (
+                      <Badge variant="secondary" className={`text-xs ${
+                        aiRanking.treatment_reasoning === "HIGH" ? "bg-red-100 text-red-700" :
+                        aiRanking.treatment_reasoning === "MEDIUM" ? "bg-yellow-100 text-yellow-700" :
+                        "bg-green-100 text-green-700"
+                      }`}>
+                        {aiRanking.treatment_reasoning}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-700 line-clamp-3 mb-2">{aiAnalysis.treatment_reasoning}</p>
+                  <Button
+                    onClick={async () => {
+                      await onUpdateNote({ mdm: `## Treatment Reasoning\n${aiAnalysis.treatment_reasoning}` });
+                      toast.success("Added to clinical note");
+                    }}
+                    size="sm"
+                    variant="outline"
+                    className="w-full gap-1"
+                  >
+                    <Plus className="w-3 h-3" /> Add to Note
+                  </Button>
+                </div>
+
+                {/* Risk Assessment */}
+                <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+                  <div className="flex items-start justify-between mb-2">
+                    <p className="text-xs font-bold text-orange-900">Risk Assessment</p>
+                    {aiRanking?.risk_assessment && (
+                      <Badge variant="secondary" className={`text-xs ${
+                        aiRanking.risk_assessment === "HIGH" ? "bg-red-100 text-red-700" :
+                        aiRanking.risk_assessment === "MEDIUM" ? "bg-yellow-100 text-yellow-700" :
+                        "bg-green-100 text-green-700"
+                      }`}>
+                        {aiRanking.risk_assessment}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-700 line-clamp-3 mb-2">{aiAnalysis.risk_assessment}</p>
+                  <Button
+                    onClick={async () => {
+                      await onUpdateNote({ mdm: `## Risk Assessment\n${aiAnalysis.risk_assessment}` });
+                      toast.success("Added to clinical note");
+                    }}
+                    size="sm"
+                    variant="outline"
+                    className="w-full gap-1"
+                  >
+                    <Plus className="w-3 h-3" /> Add to Note
+                  </Button>
+                </div>
+
+                {/* Follow-up Strategy */}
+                <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
+                  <div className="flex items-start justify-between mb-2">
+                    <p className="text-xs font-bold text-emerald-900">Follow-up Strategy</p>
+                    {aiRanking?.follow_up_strategy && (
+                      <Badge variant="secondary" className={`text-xs ${
+                        aiRanking.follow_up_strategy === "HIGH" ? "bg-red-100 text-red-700" :
+                        aiRanking.follow_up_strategy === "MEDIUM" ? "bg-yellow-100 text-yellow-700" :
+                        "bg-green-100 text-green-700"
+                      }`}>
+                        {aiRanking.follow_up_strategy}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-700 line-clamp-3 mb-2">{aiAnalysis.follow_up_strategy}</p>
+                  <Button
+                    onClick={async () => {
+                      await onUpdateNote({ mdm: `## Follow-up Strategy\n${aiAnalysis.follow_up_strategy}` });
+                      toast.success("Added to clinical note");
+                    }}
+                    size="sm"
+                    variant="outline"
+                    className="w-full gap-1"
+                  >
+                    <Plus className="w-3 h-3" /> Add to Note
+                  </Button>
                 </div>
               </div>
 
@@ -265,7 +427,7 @@ Return a JSON with each section and its acuity ranking.`,
                 onClick={addAIAnalysisSection}
                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white gap-2"
               >
-                <Plus className="w-4 h-4" /> Add to MDM Sections
+                <Plus className="w-4 h-4" /> Add All Sections to MDM
               </Button>
             </div>
           )}

@@ -332,13 +332,13 @@ Provide:
                 <div className="bg-cyan-50 rounded-lg p-4 border border-cyan-200">
                   <div className="flex items-start justify-between mb-2">
                     <p className="text-xs font-bold text-cyan-900">Differential Diagnosis</p>
-                    {aiRanking?.differential_reasoning && (
+                    {aiRanking?.differential_reasoning !== undefined && (
                       <Badge variant="secondary" className={`text-xs ${
-                        aiRanking.differential_reasoning === "HIGH" ? "bg-red-100 text-red-700" :
-                        aiRanking.differential_reasoning === "MEDIUM" ? "bg-yellow-100 text-yellow-700" :
+                        aiRanking.differential_reasoning >= 75 ? "bg-red-100 text-red-700" :
+                        aiRanking.differential_reasoning >= 50 ? "bg-yellow-100 text-yellow-700" :
                         "bg-green-100 text-green-700"
                       }`}>
-                        {aiRanking.differential_reasoning}
+                        {aiRanking.differential_reasoning}%
                       </Badge>
                     )}
                   </div>

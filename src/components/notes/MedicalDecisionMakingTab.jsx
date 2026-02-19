@@ -257,13 +257,13 @@ Provide:
               <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
                 <div className="flex items-start justify-between mb-2">
                   <p className="text-xs font-bold text-indigo-900">Problem Summary</p>
-                  {aiRanking?.problem_summary && (
+                  {aiRanking?.problem_summary !== undefined && (
                     <Badge variant="secondary" className={`text-xs ${
-                      aiRanking.problem_summary === "HIGH" ? "bg-red-100 text-red-700" :
-                      aiRanking.problem_summary === "MEDIUM" ? "bg-yellow-100 text-yellow-700" :
+                      aiRanking.problem_summary >= 75 ? "bg-red-100 text-red-700" :
+                      aiRanking.problem_summary >= 50 ? "bg-yellow-100 text-yellow-700" :
                       "bg-green-100 text-green-700"
                     }`}>
-                      {aiRanking.problem_summary}
+                      {aiRanking.problem_summary}%
                     </Badge>
                   )}
                 </div>

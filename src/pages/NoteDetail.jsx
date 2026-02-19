@@ -115,7 +115,6 @@ const TAB_GROUPS = [
     tabs: [
       { id: 'differential', label: 'Differential Dx', icon: Code },
       { id: 'labs_imaging', label: 'Labs & Imaging', icon: Beaker },
-      { id: 'diagnoses', label: 'Final Diagnoses', icon: Code },
       { id: 'mdm', label: 'MDM', icon: Brain },
     ]
   },
@@ -134,6 +133,7 @@ const TAB_GROUPS = [
     label: 'Finalize',
     color: 'indigo',
     tabs: [
+      { id: 'diagnoses', label: 'Final Diagnoses', icon: Code },
       { id: 'clinical_note', label: 'Clinical Note', icon: FileText },
       { id: 'finalize', label: 'Review & Export', icon: Check },
     ]

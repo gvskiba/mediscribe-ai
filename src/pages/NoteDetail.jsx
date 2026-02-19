@@ -2927,41 +2927,25 @@ Generated: ${new Date().toLocaleString()}
                              <FileText className="w-8 h-8 text-white" />
                            </div>
                            <h2 className="text-3xl font-bold text-slate-900 mb-2">Discharge Summary</h2>
-                           <p className="text-slate-600 max-w-2xl mx-auto">Create a concise summary for continuity of care</p>
+                           <p className="text-slate-600 max-w-2xl mx-auto">AI-generated discharge instructions that you can customize</p>
                          </div>
 
-                         {/* Discharge Summary Editor */}
+                         {/* Generate AI Instructions */}
                          <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-lg overflow-hidden">
                            <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-5 text-white">
                              <h3 className="font-bold text-lg flex items-center gap-2">
-                               <FileText className="w-6 h-6" />
-                               Discharge Summary
+                               <Sparkles className="w-6 h-6" />
+                               AI Discharge Instructions
                              </h3>
-                             <p className="text-indigo-100 text-sm mt-1">Document key clinical information for discharge</p>
+                             <p className="text-indigo-100 text-sm mt-1">Generate professional discharge instructions from your clinical note</p>
                            </div>
-                           <div className="p-6 space-y-6">
-                             <Textarea
-                               value={note.discharge_summary || ""}
-                               onChange={(e) => {
-                                 queryClient.setQueryData(["note", noteId], (old) => ({
-                                   ...old,
-                                   discharge_summary: e.target.value
-                                 }));
-                               }}
-                               onBlur={async (e) => {
-                                 await base44.entities.ClinicalNote.update(noteId, { discharge_summary: e.target.value });
-                                 toast.success("Discharge summary saved");
-                               }}
-                               placeholder="Include: chief complaint, diagnosis, hospital course, medications, follow-up care, and restrictions..."
-                               className="min-h-[400px] text-base"
-                             />
-                             <div className="flex gap-2">
-                               <Button
-                                 onClick={async () => {
-                                   try {
-                                     setLoadingDischargeSummary(true);
-                                     const result = await base44.integrations.Core.InvokeLLM({
-                                       prompt: `Based on the following clinical note, generate detailed discharge instructions for the patient. Include medication instructions, activity restrictions, follow-up care, warning signs, and lifestyle modifications.
+                           <div className="p-6">
+                             <Button
+                               onClick={async () => {
+                                 try {
+                                   setLoadingDischargeSummary(true);
+                                   const result = await base44.integrations.Core.InvokeLLM({
+                                     prompt: `Based on the following clinical note, generate detailed discharge instructions for the patient. Include medication instructions, activity restrictions, follow-up care, warning signs, and lifestyle modifications.
 
                                  PATIENT: ${note.patient_name}
                                  DIAGNOSES: ${note.diagnoses?.join(", ") || "N/A"}
@@ -2971,10 +2955,10 @@ Generated: ${new Date().toLocaleString()}
                                  DISPOSITION: ${note.disposition_plan || "N/A"}
 
                                  Format the response as a professional discharge summary with clear sections and actionable instructions.`,
-                                       add_context_from_internet: false
-                                     });
+                                     add_context_from_internet: false
+                                   });
 
-                                     const dischargeSummaryText = `DISCHARGE SUMMARY & INSTRUCTIONS
+                                   const dischargeSummaryText = `DISCHARGE SUMMARY & INSTRUCTIONS
 
                                  Patient: ${note.patient_name}
                                  MRN: ${note.patient_id || "N/A"}
@@ -3006,50 +2990,91 @@ Generated: ${new Date().toLocaleString()}
                                  DISPOSITION:
                                  ${note.disposition_plan || "Patient discharged in stable condition"}`;
 
-                                     await base44.entities.ClinicalNote.update(noteId, { 
-                                       discharge_summary: dischargeSummaryText
-                                     });
-                                     const updatedNote = await base44.entities.ClinicalNote.list().then(
-                                       (notes) => notes.find((n) => n.id === noteId)
-                                     );
-                                     queryClient.setQueryData(["note", noteId], updatedNote);
-                                     toast.success("AI discharge instructions generated");
-                                   } catch (error) {
-                                     console.error("Failed to generate discharge instructions:", error);
-                                     toast.error("Failed to generate discharge instructions");
-                                   } finally {
-                                     setLoadingDischargeSummary(false);
-                                   }
-                                 }}
-                                 disabled={loadingDischargeSummary}
-                                 className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2"
-                               >
-                                 {loadingDischargeSummary ? (
-                                   <>
-                                     <Loader2 className="w-4 h-4 animate-spin" /> Generating...
-                                   </>
-                                 ) : (
-                                   <>
-                                     <Sparkles className="w-4 h-4" /> AI Generate Instructions
-                                   </>
-                                 )}
-                               </Button>
-                               <Button
-                                 onClick={async () => {
-                                   try {
-                                     await base44.entities.ClinicalNote.update(noteId, { discharge_summary: note.discharge_summary });
-                                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                                     toast.success("Discharge summary saved");
-                                   } catch (error) {
-                                     console.error("Failed to save discharge summary:", error);
-                                     toast.error("Failed to save discharge summary");
-                                   }
-                                 }}
-                                 className="bg-purple-600 hover:bg-purple-700 text-white gap-2"
-                               >
-                                 <Check className="w-4 h-4" /> Save
-                               </Button>
+                                   queryClient.setQueryData(["note", noteId], (old) => ({
+                                     ...old,
+                                     discharge_summary: dischargeSummaryText
+                                   }));
+                                   toast.success("Discharge instructions generated");
+                                 } catch (error) {
+                                   console.error("Failed to generate discharge instructions:", error);
+                                   toast.error("Failed to generate discharge instructions");
+                                 } finally {
+                                   setLoadingDischargeSummary(false);
+                                 }
+                               }}
+                               disabled={loadingDischargeSummary}
+                               className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white gap-2 py-6 text-base"
+                             >
+                               {loadingDischargeSummary ? (
+                                 <><Loader2 className="w-5 h-5 animate-spin" /> Generating...</>
+                               ) : (
+                                 <><Sparkles className="w-5 h-5" /> Generate Discharge Instructions</>
+                               )}
+                             </Button>
+                           </div>
+                         </div>
+
+                         {/* Display Generated Instructions */}
+                         {note.discharge_summary && (
+                           <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
+                             <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
+                               <h3 className="text-lg font-bold text-slate-900">Generated Instructions</h3>
                              </div>
+                             <div className="p-6">
+                               <div className="prose prose-sm prose-slate max-w-none text-slate-700 bg-slate-50 rounded-lg p-4 border border-slate-200 mb-6 max-h-96 overflow-y-auto">
+                                 <ReactMarkdown
+                                   components={{
+                                     p: ({ children }) => <p className="mb-2 leading-relaxed">{children}</p>,
+                                     h1: ({ children }) => <h1 className="text-xl font-bold mt-4 mb-2">{children}</h1>,
+                                     h2: ({ children }) => <h2 className="text-lg font-bold mt-3 mb-2">{children}</h2>,
+                                     h3: ({ children }) => <h3 className="text-base font-bold mt-2 mb-1">{children}</h3>,
+                                     ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+                                     li: ({ children }) => <li className="block text-sm">{children}</li>,
+                                     strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+                                   }}
+                                 >
+                                   {note.discharge_summary}
+                                 </ReactMarkdown>
+                               </div>
+                             </div>
+                           </div>
+                         )}
+
+                         {/* Edit Instructions */}
+                         <div className="bg-white rounded-xl border-2 border-purple-300 shadow-lg overflow-hidden">
+                           <div className="bg-gradient-to-r from-purple-500 to-indigo-500 px-6 py-5 text-white">
+                             <h3 className="font-bold text-lg flex items-center gap-2">
+                               <FileText className="w-6 h-6" />
+                               Edit Instructions
+                             </h3>
+                             <p className="text-purple-100 text-sm mt-1">Customize the discharge instructions for your patient</p>
+                           </div>
+                           <div className="p-6 space-y-4">
+                             <Textarea
+                               value={note.discharge_summary || ""}
+                               onChange={(e) => {
+                                 queryClient.setQueryData(["note", noteId], (old) => ({
+                                   ...old,
+                                   discharge_summary: e.target.value
+                                 }));
+                               }}
+                               placeholder="Edit the discharge instructions here..."
+                               className="min-h-[400px] text-base"
+                             />
+                             <Button
+                               onClick={async () => {
+                                 try {
+                                   await base44.entities.ClinicalNote.update(noteId, { discharge_summary: note.discharge_summary });
+                                   toast.success("Discharge summary saved");
+                                 } catch (error) {
+                                   console.error("Failed to save:", error);
+                                   toast.error("Failed to save discharge summary");
+                                 }
+                               }}
+                               className="w-full bg-purple-600 hover:bg-purple-700 text-white gap-2 py-2"
+                             >
+                               <Check className="w-4 h-4" /> Save Changes
+                             </Button>
                            </div>
                          </div>
                        </div>

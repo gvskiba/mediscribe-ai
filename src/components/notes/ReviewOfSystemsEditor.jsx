@@ -41,13 +41,17 @@ const COLOR_MAP = {
 
 function initSections(rosData) {
   if (rosData && typeof rosData === "object" && !Array.isArray(rosData)) {
-    return SYSTEMS.map(s => ({
-      ...s,
-      status: rosData[s.id] !== undefined
-        ? (rosData[s.id] === s.normal ? "normal" : rosData[s.id] ? "abnormal" : "not_assessed")
-        : "not_assessed",
-      notes: rosData[s.id] || "",
-    }));
+    return SYSTEMS.map(s => {
+      const systemData = rosData[s.id];
+      const status = systemData !== undefined
+        ? (systemData === s.normal ? "normal" : systemData ? "abnormal" : "not_assessed")
+        : "not_assessed";
+      return {
+        ...s,
+        status,
+        notes: systemData || "",
+      };
+    });
   }
   return SYSTEMS.map(s => ({ ...s, status: "not_assessed", notes: "" }));
 }

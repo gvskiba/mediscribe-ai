@@ -74,7 +74,11 @@ export default function ReviewOfSystemsEditor({ rosData, onUpdate, onAddToNote }
   const setStatus = (id, status) => {
     const updated = sections.map(s => {
       if (s.id !== id) return s;
-      const notes = status === "normal" ? s.normal : status === "abnormal" ? "" : "";
+      // Default to normal status
+      if (status === "normal" || !status) {
+        return { ...s, status: "normal", notes: s.normal };
+      }
+      const notes = status === "abnormal" ? "" : "";
       return { ...s, status, notes };
     });
     setSections(updated);

@@ -15,6 +15,7 @@ import {
 import { base44 } from "@/api/base44Client";
 import GlobalSearchBar from "./components/search/GlobalSearchBar";
 import RecentNotesDropdown from "./components/notes/RecentNotesDropdown";
+import NotificationButtons from "./components/layout/NotificationButtons";
 
 import { Settings } from "lucide-react";
 import ReturnToNoteButton from "./components/notes/ReturnToNoteButton";

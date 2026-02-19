@@ -35,21 +35,57 @@ const COLOR = {
 };
 
 // ── Panel: Summarize ──────────────────────────────────────────────────────────
+const SUMMARY_PRESETS = [
+  { id: "brief_patient",    label: "Brief — Patient",       desc: "Simple language, 2–3 sentences",                color: "blue",   instruction: "Write a brief 2-3 sentence summary in simple, plain language suitable for the patient themselves. Avoid medical jargon." },
+  { id: "specialist",       label: "Specialist Referral",   desc: "Detailed clinical summary",                     color: "indigo", instruction: "Write a detailed, formal clinical summary suitable for a specialist referral letter. Include all clinically relevant details, pertinent positives and negatives, current medications with doses, and clear reason for referral." },
+  { id: "handoff",          label: "Handoff / Sign-out",    desc: "Key facts for covering provider",               color: "emerald",instruction: "Write a concise handoff summary for a covering provider. Focus on active issues, pending tasks, anticipated events, and any 'if-then' contingency plans." },
+  { id: "recent_changes",   label: "Recent Changes",        desc: "What changed since last visit",                 color: "amber",  instruction: "Summarize only the changes and new developments since the last encounter. Highlight new diagnoses, medication changes, new findings, and updated plan." },
+  { id: "discharge",        label: "Discharge Summary",     desc: "Hospital course & discharge plan",              color: "rose",   instruction: "Write a discharge summary covering the reason for admission, hospital course, procedures performed, discharge diagnoses, discharge medications, and follow-up instructions." },
+  { id: "insurance",        label: "Insurance / Billing",   desc: "Medically necessary documentation",            color: "purple", instruction: "Write a concise clinical summary that documents medical necessity for the encounter and any procedures. Use specific clinical language and ICD-10-relevant terminology." },
+];
+
+const PRESET_COLORS = {
+  blue:   { pill: "bg-blue-100 text-blue-700 border-blue-200",   active: "bg-blue-600 text-white border-blue-600",   btn: "bg-blue-600 hover:bg-blue-700" },
+  indigo: { pill: "bg-indigo-100 text-indigo-700 border-indigo-200", active: "bg-indigo-600 text-white border-indigo-600", btn: "bg-indigo-600 hover:bg-indigo-700" },
+  emerald:{ pill: "bg-emerald-100 text-emerald-700 border-emerald-200", active: "bg-emerald-600 text-white border-emerald-600", btn: "bg-emerald-600 hover:bg-emerald-700" },
+  amber:  { pill: "bg-amber-100 text-amber-700 border-amber-200",  active: "bg-amber-600 text-white border-amber-600",  btn: "bg-amber-600 hover:bg-amber-700" },
+  rose:   { pill: "bg-rose-100 text-rose-700 border-rose-200",    active: "bg-rose-600 text-white border-rose-600",    btn: "bg-rose-600 hover:bg-rose-700" },
+  purple: { pill: "bg-purple-100 text-purple-700 border-purple-200", active: "bg-purple-600 text-white border-purple-600", btn: "bg-purple-600 hover:bg-purple-700" },
+};
+
 function SummarizePanel({ note, onUpdateNote }) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [selectedPreset, setSelectedPreset] = useState("brief_patient");
+  const [customFocus, setCustomFocus] = useState("");
+
+  const activePreset = SUMMARY_PRESETS.find(p => p.id === selectedPreset);
+  const pc = PRESET_COLORS[activePreset?.color || "blue"];
 
   const run = async () => {
     setLoading(true);
+    const instruction = customFocus.trim()
+      ? `Write a clinical summary with this specific focus: "${customFocus}".`
+      : activePreset.instruction;
+
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `Create a concise clinical summary.\n\nPATIENT: ${note.patient_name}\nCHIEF COMPLAINT: ${note.chief_complaint || "N/A"}\nDIAGNOSES: ${(note.diagnoses || []).join(", ") || "None"}\nMEDICATIONS: ${(note.medications || []).join(", ") || "None"}\nALLERGIES: ${(note.allergies || []).join(", ") || "None"}\nMEDICAL HISTORY: ${note.medical_history || "None"}`,
+        prompt: `${instruction}
+
+PATIENT: ${note.patient_name}
+CHIEF COMPLAINT: ${note.chief_complaint || "N/A"}
+HPI: ${note.history_of_present_illness || "N/A"}
+DIAGNOSES: ${(note.diagnoses || []).join(", ") || "None"}
+MEDICATIONS: ${(note.medications || []).join(", ") || "None"}
+ALLERGIES: ${(note.allergies || []).join(", ") || "None"}
+MEDICAL HISTORY: ${note.medical_history || "None"}
+ASSESSMENT: ${note.assessment || "N/A"}
+PLAN: ${note.plan || "N/A"}`,
         response_json_schema: {
           type: "object",
           properties: {
             summary: { type: "string" },
             key_conditions: { type: "array", items: { type: "string" } },
-            active_medications: { type: "array", items: { type: "string" } },
             risk_factors: { type: "array", items: { type: "string" } },
             recommendations: { type: "array", items: { type: "string" } }
           }
@@ -62,20 +98,53 @@ function SummarizePanel({ note, onUpdateNote }) {
 
   const addToNote = async () => {
     if (!result) return;
-    const text = `\n\nPATIENT SUMMARY\n${result.summary}\n\nKey Conditions: ${result.key_conditions?.join(", ")}\nRisk Factors: ${result.risk_factors?.join(", ")}\nRecommendations:\n${result.recommendations?.map(r => `• ${r}`).join("\n")}`;
     await onUpdateNote({ summary: result.summary });
     toast.success("Summary added to note");
   };
 
   return (
     <div className="space-y-4">
-      <Button onClick={run} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2">
+      {/* Preset selector */}
+      <div>
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Summary Type</p>
+        <div className="grid grid-cols-2 gap-1.5">
+          {SUMMARY_PRESETS.map((p) => {
+            const isActive = selectedPreset === p.id && !customFocus.trim();
+            const col = PRESET_COLORS[p.color];
+            return (
+              <button
+                key={p.id}
+                onClick={() => { setSelectedPreset(p.id); setCustomFocus(""); setResult(null); }}
+                className={`text-left px-3 py-2 rounded-lg border text-xs transition-all ${isActive ? col.active : col.pill} hover:opacity-90`}
+              >
+                <p className="font-semibold leading-tight">{p.label}</p>
+                <p className={`mt-0.5 leading-tight ${isActive ? "text-white/80" : "opacity-70"}`}>{p.desc}</p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Custom focus */}
+      <div>
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Custom Focus <span className="normal-case font-normal">(optional — overrides preset)</span></p>
+        <input
+          type="text"
+          value={customFocus}
+          onChange={(e) => { setCustomFocus(e.target.value); setResult(null); }}
+          placeholder="e.g. focus on cardiac risk factors..."
+          className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 placeholder:text-slate-400"
+        />
+      </div>
+
+      <Button onClick={run} disabled={loading} className={`w-full text-white gap-2 ${pc.btn}`}>
         {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</> : <><Sparkles className="w-4 h-4" /> Generate Summary</>}
       </Button>
+
       {result && (
         <div className="space-y-3">
           <div className="bg-blue-50 rounded-xl border border-blue-200 p-4 text-sm space-y-3">
-            <p className="text-slate-700 leading-relaxed">{result.summary}</p>
+            <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{result.summary}</p>
             {[["Key Conditions", result.key_conditions], ["Risk Factors", result.risk_factors], ["Recommendations", result.recommendations]].map(([label, items]) =>
               items?.length > 0 && (
                 <div key={label}>

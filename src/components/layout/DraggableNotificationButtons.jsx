@@ -147,7 +147,7 @@ export default function DraggableNotificationButtons() {
         <motion.button
           onMouseDown={(e) => handleMouseDown(e, 'arrow')}
           onClick={(e) => {
-            if (isDragging === 'arrow') {
+            if (wasDragged) {
               e.preventDefault();
               return;
             }

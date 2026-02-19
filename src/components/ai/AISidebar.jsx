@@ -678,6 +678,13 @@ function MDMPanel({ note, onUpdateNote }) {
   );
 }
 
+// ── Panel: Research ────────────────────────────────────────────────────────────
+function ResearchPanel({ note, onUpdateNote }) {
+  return (
+    <MedicalLiteratureSearch note={note} />
+  );
+}
+
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 const PANEL_MAP = {
   analyze: AnalyzePanel,

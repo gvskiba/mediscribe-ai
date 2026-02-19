@@ -1,320 +1,244 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Search, Loader2, BookOpen, ExternalLink, Quote, Plus, Sparkles, FileText } from "lucide-react";
+import { Loader2, Search, ExternalLink, BookOpen, Lightbulb, CheckCircle2, AlertCircle } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
 
-export default function MedicalLiteratureSearch({ noteContext, onAddToNote }) {
+export default function MedicalLiteratureSearch({ note }) {
   const [query, setQuery] = useState("");
-  const [searching, setSearching] = useState(false);
-  const [results, setResults] = useState([]);
-  const [selectedArticles, setSelectedArticles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState(null);
 
   const handleSearch = async () => {
     if (!query.trim()) {
-      toast.error("Please enter a search query");
+      toast.error("Please enter a medical query");
       return;
     }
 
-    setSearching(true);
+    setLoading(true);
+    setResults(null);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Search for relevant medical literature, research papers, and clinical guidelines for the following query:
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a medical research expert. Search for and summarize relevant medical literature, clinical trials, and guidelines for the following query:
 
-SEARCH QUERY: ${query}
+MEDICAL QUERY: ${query}
 
-${noteContext ? `
-CLINICAL CONTEXT:
-- Chief Complaint: ${noteContext.chief_complaint || "Not specified"}
-- Diagnoses: ${noteContext.diagnoses?.join(", ") || "None"}
-- Assessment: ${noteContext.assessment || "Not documented"}
-` : ""}
+Provide a comprehensive summary including:
+1. Recent clinical trials and their findings
+2. Relevant clinical guidelines and recommendations
+3. Key research papers and their conclusions
+4. Treatment options and efficacy data
+5. Potential risks and contraindications
 
-Find 5-7 highly relevant, recent, and evidence-based sources including:
-1. Peer-reviewed research papers
-2. Clinical guidelines from major organizations (AHA, ACC, ACP, etc.)
-3. Systematic reviews or meta-analyses
-4. High-quality clinical studies
+For each finding, include:
+- Title/Name of the research or guideline
+- Key finding or recommendation
+- Source type (clinical trial, guideline, research paper, etc.)
+- Year/Publication date if available
+- Relevance to the query
 
-For each source, provide:
-- Title
-- Authors/Organization
-- Publication year
-- Journal/Source
-- Key findings (2-3 sentences)
-- Clinical relevance
-- Citation format (AMA style)
-- URL or DOI if available`,
+Format the response to be clear, evidence-based, and actionable for clinical use.`,
         add_context_from_internet: true,
         response_json_schema: {
           type: "object",
           properties: {
-            search_summary: { type: "string" },
-            results: {
+            summary: { type: "string" },
+            clinical_trials: {
               type: "array",
               items: {
                 type: "object",
                 properties: {
                   title: { type: "string" },
-                  authors: { type: "string" },
+                  finding: { type: "string" },
                   year: { type: "string" },
-                  source: { type: "string" },
-                  key_findings: { type: "string" },
-                  clinical_relevance: { type: "string" },
-                  citation: { type: "string" },
-                  url: { type: "string" },
-                  type: { 
-                    type: "string",
-                    enum: ["research_paper", "clinical_guideline", "systematic_review", "meta_analysis", "clinical_study"]
-                  },
-                  quality_level: {
-                    type: "string",
-                    enum: ["high", "moderate"]
-                  }
+                  relevance: { type: "string" }
                 }
               }
-            }
+            },
+            guidelines: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  recommendation: { type: "string" },
+                  source: { type: "string" },
+                  strength: { type: "string", enum: ["strong", "moderate", "weak"] }
+                }
+              }
+            },
+            research_papers: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  title: { type: "string" },
+                  conclusion: { type: "string" },
+                  methodology: { type: "string" },
+                  year: { type: "string" }
+                }
+              }
+            },
+            treatment_options: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  option: { type: "string" },
+                  efficacy: { type: "string" },
+                  considerations: { type: "string" }
+                }
+              }
+            },
+            key_takeaways: { type: "array", items: { type: "string" } }
           }
         }
       });
-
-      setResults(result.results || []);
-      if (result.results?.length === 0) {
-        toast.info("No results found. Try refining your search.");
-      }
+      setResults(response);
     } catch (error) {
       console.error("Search failed:", error);
-      toast.error("Search failed. Please try again.");
+      toast.error("Failed to search medical literature");
     } finally {
-      setSearching(false);
+      setLoading(false);
     }
-  };
-
-  const handleToggleSelect = (index) => {
-    setSelectedArticles(prev => 
-      prev.includes(index) 
-        ? prev.filter(i => i !== index)
-        : [...prev, index]
-    );
-  };
-
-  const handleAddSelected = () => {
-    if (selectedArticles.length === 0) {
-      toast.error("Please select at least one article");
-      return;
-    }
-
-    const selectedRefs = selectedArticles.map(i => results[i]);
-    const citationText = selectedRefs.map(ref => 
-      `\n\n${ref.citation}\nKey Findings: ${ref.key_findings}`
-    ).join("\n");
-
-    onAddToNote?.(citationText);
-    toast.success(`Added ${selectedArticles.length} citation(s) to note`);
-    setSelectedArticles([]);
-  };
-
-  const typeColors = {
-    research_paper: "bg-blue-100 text-blue-800 border-blue-300",
-    clinical_guideline: "bg-purple-100 text-purple-800 border-purple-300",
-    systematic_review: "bg-green-100 text-green-800 border-green-300",
-    meta_analysis: "bg-orange-100 text-orange-800 border-orange-300",
-    clinical_study: "bg-cyan-100 text-cyan-800 border-cyan-300"
-  };
-
-  const typeLabels = {
-    research_paper: "Research Paper",
-    clinical_guideline: "Clinical Guideline",
-    systematic_review: "Systematic Review",
-    meta_analysis: "Meta-Analysis",
-    clinical_study: "Clinical Study"
   };
 
   return (
-    <div className="space-y-6">
-      {/* Search Header */}
-      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-200">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center">
-            <Sparkles className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-slate-900">Medical Literature Search</h2>
-            <p className="text-sm text-slate-600">AI-powered search for research papers, guidelines, and clinical evidence</p>
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-            placeholder="Search for medical literature, guidelines, or clinical evidence..."
-            className="flex-1 h-12 text-base"
-            disabled={searching}
-          />
-          <Button
-            onClick={handleSearch}
-            disabled={searching || !query.trim()}
-            className="h-12 px-6 bg-indigo-600 hover:bg-indigo-700"
-          >
-            {searching ? (
-              <><Loader2 className="w-5 h-5 animate-spin mr-2" /> Searching...</>
-            ) : (
-              <><Search className="w-5 h-5 mr-2" /> Search</>
-            )}
-          </Button>
-        </div>
-
-        {noteContext && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            <span className="text-xs text-slate-600">Context-aware search using:</span>
-            {noteContext.chief_complaint && (
-              <Badge variant="outline" className="text-xs">CC: {noteContext.chief_complaint.substring(0, 30)}...</Badge>
-            )}
-            {noteContext.diagnoses?.length > 0 && (
-              <Badge variant="outline" className="text-xs">{noteContext.diagnoses.length} diagnosis(es)</Badge>
-            )}
-          </div>
-        )}
+    <div className="space-y-4">
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-800">
+        <p className="font-semibold mb-1">Medical Literature Search</p>
+        <p>Search for clinical trials, guidelines, and research on any medical condition, treatment, or drug.</p>
       </div>
 
-      {/* Selected Articles Actions */}
-      {selectedArticles.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between"
+      {/* Search Input */}
+      <div className="flex gap-2">
+        <Input
+          placeholder="e.g., Hypertension management, COVID-19 vaccines, Aspirin dosing..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSearch();
+          }}
+          className="text-sm"
+        />
+        <Button
+          onClick={handleSearch}
+          disabled={loading}
+          className="bg-blue-600 hover:bg-blue-700 text-white gap-2 flex-shrink-0"
         >
-          <p className="text-sm font-medium text-blue-900">
-            {selectedArticles.length} article{selectedArticles.length > 1 ? "s" : ""} selected
-          </p>
-          <Button
-            onClick={handleAddSelected}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <Plus className="w-4 h-4 mr-2" /> Add to Note
-          </Button>
-        </motion.div>
-      )}
+          {loading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Search className="w-4 h-4" />
+          )}
+        </Button>
+      </div>
 
-      {/* Results */}
-      <AnimatePresence>
-        {results.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-4"
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-slate-900">
-                Search Results ({results.length})
-              </h3>
-            </div>
-
-            {results.map((article, index) => {
-              const isSelected = selectedArticles.includes(index);
-              return (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className={`bg-white rounded-xl border-2 p-5 transition-all cursor-pointer ${
-                    isSelected 
-                      ? "border-blue-500 bg-blue-50/50 shadow-md" 
-                      : "border-slate-200 hover:border-slate-300 hover:shadow-sm"
-                  }`}
-                  onClick={() => handleToggleSelect(index)}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      isSelected ? "bg-blue-600" : "bg-slate-100"
-                    }`}>
-                      {isSelected ? (
-                        <Quote className="w-5 h-5 text-white" />
-                      ) : (
-                        <BookOpen className="w-5 h-5 text-slate-600" />
-                      )}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-4 mb-2">
-                        <h4 className="text-base font-semibold text-slate-900 leading-snug">
-                          {article.title}
-                        </h4>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {article.quality_level === "high" && (
-                            <Badge className="bg-green-100 text-green-800 border border-green-300">
-                              High Quality
-                            </Badge>
-                          )}
-                          <Badge className={`${typeColors[article.type]} border`}>
-                            {typeLabels[article.type]}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      <p className="text-sm text-slate-600 mb-1">
-                        {article.authors} ({article.year})
-                      </p>
-                      <p className="text-sm text-slate-500 italic mb-3">
-                        {article.source}
-                      </p>
-
-                      <div className="bg-slate-50 rounded-lg p-3 mb-3">
-                        <p className="text-xs font-semibold text-slate-700 mb-1">Key Findings:</p>
-                        <p className="text-sm text-slate-700 leading-relaxed">{article.key_findings}</p>
-                      </div>
-
-                      <div className="bg-indigo-50 rounded-lg p-3 mb-3">
-                        <p className="text-xs font-semibold text-indigo-900 mb-1">Clinical Relevance:</p>
-                        <p className="text-sm text-indigo-800 leading-relaxed">{article.clinical_relevance}</p>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-3 border-t border-slate-200">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-slate-600 mb-1">Citation:</p>
-                          <p className="text-xs text-slate-700 font-mono bg-slate-100 p-2 rounded">
-                            {article.citation}
-                          </p>
-                        </div>
-                        {article.url && (
-                          <a
-                            href={article.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="ml-3 flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                            View
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Empty State */}
-      {!searching && results.length === 0 && (
-        <div className="text-center py-16 px-4">
-          <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-            <Search className="w-8 h-8 text-slate-400" />
+      {results && (
+        <div className="space-y-4">
+          {/* Summary */}
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <p className="text-xs font-bold text-slate-700 uppercase mb-2">Overview</p>
+            <p className="text-sm text-slate-600 leading-relaxed">{results.summary}</p>
           </div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">Search Medical Literature</h3>
-          <p className="text-sm text-slate-600 max-w-md mx-auto">
-            Enter a query to search for research papers, clinical guidelines, and evidence-based medicine resources.
-            Results will be tailored to your clinical context.
-          </p>
+
+          {/* Key Takeaways */}
+          {results.key_takeaways?.length > 0 && (
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+              <p className="text-xs font-bold text-green-900 uppercase mb-2 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" /> Key Takeaways
+              </p>
+              <ul className="space-y-1">
+                {results.key_takeaways.map((takeaway, i) => (
+                  <li key={i} className="text-xs text-green-800 flex gap-2">
+                    <span className="text-green-600 font-bold">•</span>
+                    <span>{takeaway}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Clinical Trials */}
+          {results.clinical_trials?.length > 0 && (
+            <div className="bg-white border border-slate-200 rounded-xl p-4">
+              <p className="text-xs font-bold text-slate-700 uppercase mb-3 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" /> Clinical Trials
+              </p>
+              <div className="space-y-2">
+                {results.clinical_trials.map((trial, i) => (
+                  <div key={i} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                    <p className="font-semibold text-xs text-slate-900">{trial.title}</p>
+                    <p className="text-xs text-slate-600 mt-1">{trial.finding}</p>
+                    {trial.year && <p className="text-xs text-slate-500 mt-1">Published: {trial.year}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Guidelines */}
+          {results.guidelines?.length > 0 && (
+            <div className="bg-white border border-slate-200 rounded-xl p-4">
+              <p className="text-xs font-bold text-slate-700 uppercase mb-3 flex items-center gap-2">
+                <BookOpen className="w-4 h-4" /> Guidelines & Recommendations
+              </p>
+              <div className="space-y-2">
+                {results.guidelines.map((guideline, i) => (
+                  <div key={i} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                    <div className="flex items-start justify-between mb-1">
+                      <p className="font-semibold text-xs text-slate-900">{guideline.name}</p>
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        guideline.strength === 'strong' ? 'bg-green-100 text-green-700' :
+                        guideline.strength === 'moderate' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-orange-100 text-orange-700'
+                      }`}>
+                        {guideline.strength?.charAt(0).toUpperCase() + guideline.strength?.slice(1)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600">{guideline.recommendation}</p>
+                    {guideline.source && <p className="text-xs text-slate-500 mt-1">Source: {guideline.source}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Research Papers */}
+          {results.research_papers?.length > 0 && (
+            <div className="bg-white border border-slate-200 rounded-xl p-4">
+              <p className="text-xs font-bold text-slate-700 uppercase mb-3 flex items-center gap-2">
+                <Lightbulb className="w-4 h-4" /> Research Papers
+              </p>
+              <div className="space-y-2">
+                {results.research_papers.map((paper, i) => (
+                  <div key={i} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                    <p className="font-semibold text-xs text-slate-900">{paper.title}</p>
+                    <p className="text-xs text-slate-600 mt-1"><strong>Methodology:</strong> {paper.methodology}</p>
+                    <p className="text-xs text-slate-600"><strong>Conclusion:</strong> {paper.conclusion}</p>
+                    {paper.year && <p className="text-xs text-slate-500 mt-1">Published: {paper.year}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Treatment Options */}
+          {results.treatment_options?.length > 0 && (
+            <div className="bg-white border border-slate-200 rounded-xl p-4">
+              <p className="text-xs font-bold text-slate-700 uppercase mb-3">Treatment Options</p>
+              <div className="space-y-2">
+                {results.treatment_options.map((option, i) => (
+                  <div key={i} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                    <p className="font-semibold text-xs text-slate-900">{option.option}</p>
+                    <p className="text-xs text-slate-600 mt-1"><strong>Efficacy:</strong> {option.efficacy}</p>
+                    <p className="text-xs text-slate-600"><strong>Considerations:</strong> {option.considerations}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

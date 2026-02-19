@@ -466,31 +466,17 @@ Base recommendations on current clinical guidelines.`,
          )}
        </div>
 
-      <div className="flex gap-2">
-        <Button
-          onClick={generateStructuredNote}
-          disabled={processing || !rawInput.trim()}
-          className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white gap-2"
-        >
-          {processing ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
-          ) : (
-            <><Sparkles className="w-4 h-4" /> Generate Clinical Note</>
-          )}
-        </Button>
-        <Button
-          onClick={handleGrammarCheck}
-          disabled={isCheckingGrammar || !rawInput.trim()}
-          variant="outline"
-          className="gap-2"
-        >
-          {isCheckingGrammar ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /></>
-          ) : (
-            <><CheckSquare className="w-4 h-4" /> Check Grammar</>
-          )}
-        </Button>
-        </div>
+      <Button
+        onClick={generateStructuredNote}
+        disabled={processing || !rawInput.trim()}
+        className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white gap-2"
+      >
+        {processing ? (
+          <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
+        ) : (
+          <><Sparkles className="w-4 h-4" /> Generate Complete Clinical Note</>
+        )}
+      </Button>
 
         {grammarSuggestions && grammarSuggestions.has_errors && (
         <div className="p-4 rounded-lg bg-amber-50 border border-amber-200">

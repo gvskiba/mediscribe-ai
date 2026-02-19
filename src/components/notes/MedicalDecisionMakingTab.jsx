@@ -32,7 +32,9 @@ export default function MedicalDecisionMakingTab({ note, onUpdateNote, noteId })
     }
   });
   const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [aiRanking, setAiRanking] = useState(null);
   const [loadingAI, setLoadingAI] = useState(false);
+  const [loadingRank, setLoadingRank] = useState(false);
   const [expandedSection, setExpandedSection] = useState(null);
   const [newSectionTitle, setNewSectionTitle] = useState("");
   const [newSectionContent, setNewSectionContent] = useState("");

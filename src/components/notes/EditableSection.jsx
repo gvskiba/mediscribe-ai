@@ -391,14 +391,26 @@ export default function EditableSection({
                   placeholder={getPlaceholder()}
                   spellCheck="true"
                 />
-               {showSuggestions && ["history_of_present_illness", "assessment", "plan"].includes(field) && (
-                 <SectionAISuggestions
-                   field={field}
-                   currentValue={editValue}
-                   context={noteContext}
-                   onApplySuggestion={handleApplySuggestion}
-                 />
+               {grammarSuggestions && grammarSuggestions.has_errors && (
+                 <div className="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                   <p className="text-xs font-semibold text-amber-900 mb-2">Grammar & Spelling Issues:</p>
+                   {grammarSuggestions.errors.map((error, i) => (
+                     <div key={i} className="text-xs text-amber-800 mb-1.5 last:mb-0">
+                       <span className="font-medium">{error.issue}</span>
+                       <br />
+                       <span className="text-amber-700">Suggestion: {error.suggestion}</span>
+                     </div>
+                   ))}
+                 </div>
                )}
+               {showSuggestions && ["history_of_present_illness", "assessment", "plan"].includes(field) && (
+                  <SectionAISuggestions
+                    field={field}
+                    currentValue={editValue}
+                    context={noteContext}
+                    onApplySuggestion={handleApplySuggestion}
+                  />
+                )}
              </>
            ) : type === "array" ? (
             <div className="space-y-2">

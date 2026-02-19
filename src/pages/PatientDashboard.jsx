@@ -261,36 +261,37 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
           </Card>
         </motion.div>
 
-          {/* Medications */}
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-            <Card className="border-blue-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-4 text-white">
-                <h3 className="font-bold text-lg flex items-center gap-2">
-                  <Pill className="w-5 h-5" /> Current Medications ({latestNote.medications?.length || 0})
-                </h3>
-              </div>
-              <div className="p-6">
-                {latestNote.medications && latestNote.medications.length > 0 ? (
-                  <div className="space-y-2">
-                    {latestNote.medications.map((med, idx) => (
-                      <div key={idx} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                        <div className="w-6 h-6 rounded bg-blue-600 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
-                          {idx + 1}
-                        </div>
-                        <p className="text-sm text-slate-700">{med}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-slate-500 text-center py-8">No medications recorded</p>
-                )}
-              </div>
-            </Card>
-          </motion.div>
-        </div>
+        {/* Medications */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="border-blue-200 overflow-hidden">
+            <div className="bg-blue-500 px-4 py-3 text-white">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <Pill className="w-4 h-4" /> Medications ({latestNote.medications?.length || 0})
+              </h3>
+            </div>
+            <div className="p-4">
+              {latestNote.medications && latestNote.medications.length > 0 ? (
+                <div className="space-y-2">
+                  {latestNote.medications.slice(0, 5).map((med, idx) => (
+                    <div key={idx} className="flex items-start gap-2 text-sm">
+                      <span className="font-bold text-blue-600 flex-shrink-0">{idx + 1}.</span>
+                      <p className="text-slate-700">{med}</p>
+                    </div>
+                  ))}
+                  {latestNote.medications.length > 5 && (
+                    <p className="text-xs text-slate-500 pt-2">+{latestNote.medications.length - 5} more</p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-slate-500 text-center py-6 text-sm">No medications</p>
+              )}
+            </div>
+          </Card>
+        </motion.div>
+      </div>
 
-        {/* Right Column: Diagnoses & Insights */}
-        <div className="space-y-8">
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Diagnoses */}
           {/* Diagnoses */}
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
             <Card className="border-purple-200 overflow-hidden">

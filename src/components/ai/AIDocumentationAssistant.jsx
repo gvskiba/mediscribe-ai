@@ -424,33 +424,47 @@ Base recommendations on current clinical guidelines.`,
     <div className="space-y-3">
       {/* Input area with dictation */}
       <div className="relative">
-        <Textarea
-          value={rawInput}
-          onChange={(e) => setRawInput(e.target.value)}
-          placeholder="Paste or dictate raw clinical data, voice transcript, or unstructured notes here..."
-          rows={5}
-          className={`text-sm pr-12 ${isRecording ? "border-red-400 ring-2 ring-red-100" : ""}`}
-        />
-        {/* Mic button */}
-        <button
-          type="button"
-          onClick={isRecording ? stopDictation : startDictation}
-          className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow ${
-            isRecording
-              ? "bg-red-500 hover:bg-red-600 text-white animate-pulse"
-              : "bg-slate-100 hover:bg-slate-200 text-slate-600"
-          }`}
-          title={isRecording ? "Stop dictation" : "Start dictation"}
-        >
-          {isRecording ? <Square className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
-        </button>
-        {isRecording && (
-          <div className="absolute bottom-2 right-2 flex items-center gap-1 text-xs text-red-600 font-medium pointer-events-none">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-            Recording
-          </div>
-        )}
-      </div>
+         <Textarea
+           value={rawInput}
+           onChange={(e) => setRawInput(e.target.value)}
+           placeholder="Paste or dictate raw clinical data, voice transcript, or unstructured notes here..."
+           rows={5}
+           className={`text-sm pr-24 ${isRecording ? "border-red-400 ring-2 ring-red-100" : ""}`}
+         />
+         {/* Mic button */}
+         <button
+           type="button"
+           onClick={isRecording ? stopDictation : startDictation}
+           className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow ${
+             isRecording
+               ? "bg-red-500 hover:bg-red-600 text-white animate-pulse"
+               : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+           }`}
+           title={isRecording ? "Stop dictation" : "Start dictation"}
+         >
+           {isRecording ? <Square className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+         </button>
+         {/* Grammar & Spelling Check button */}
+         <button
+           type="button"
+           onClick={handleGrammarCheck}
+           disabled={isCheckingGrammar || !rawInput.trim()}
+           className="absolute top-12 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow bg-slate-100 hover:bg-slate-200 text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+           title="Check grammar & spelling"
+         >
+           {isCheckingGrammar ? (
+             <Loader2 className="w-3.5 h-3.5 animate-spin" />
+           ) : (
+             <CheckSquare className="w-3.5 h-3.5" />
+           )}
+         </button>
+         {isRecording && (
+           <div className="absolute bottom-2 right-2 flex items-center gap-1 text-xs text-red-600 font-medium pointer-events-none">
+             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+             Recording
+           </div>
+         )}
+       </div>
 
       <div className="flex gap-2">
         <Button

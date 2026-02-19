@@ -178,7 +178,7 @@ export default function VitalSignsInput({ vitalSigns, onChange, onSave, readOnly
             <h4 className="text-base font-bold text-slate-900">{activeVital.label}</h4>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 md:gap-4">
+          <div className="space-y-3">
             {activeVital.inputs.map(input => (
               <div key={input.key}>
                 <label className="block text-xs font-semibold text-slate-700 mb-2 capitalize">

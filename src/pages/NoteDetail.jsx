@@ -2825,11 +2825,23 @@ Generated: ${new Date().toLocaleString()}
 
                  <div className="bg-white rounded-xl border-2 border-purple-300 shadow-lg overflow-hidden">
                    <div className="bg-gradient-to-r from-purple-500 to-indigo-500 px-6 py-5 text-white">
-                     <h3 className="font-bold text-lg flex items-center gap-2">
-                       <Activity className="w-6 h-6" />
-                       Review of Systems Editor
-                     </h3>
-                     <p className="text-purple-100 text-sm mt-1">Comprehensive system-based symptom review</p>
+                     <div className="flex items-center justify-between">
+                       <div>
+                         <h3 className="font-bold text-lg flex items-center gap-2">
+                           <Activity className="w-6 h-6" />
+                           Review of Systems Editor
+                         </h3>
+                         <p className="text-purple-100 text-sm mt-1">Comprehensive system-based symptom review</p>
+                       </div>
+                       <InlineSectionAI
+                         type="review_of_systems"
+                         note={note}
+                         onApply={async (val) => {
+                           await base44.entities.ClinicalNote.update(noteId, { review_of_systems: val });
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                         }}
+                       />
+                     </div>
                    </div>
                    <div className="p-6 space-y-6 overflow-y-auto">
                      <ReviewOfSystemsEditor

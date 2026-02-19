@@ -1719,94 +1719,24 @@ Generated: ${new Date().toLocaleString()}
                               </div>
                             </div>
 
-                            {/* Two-column top row: Chief Complaint + Raw Notes */}
-                            <div className="grid lg:grid-cols-2 gap-6">
-
-                              {/* Chief Complaint */}
-                              <div className="bg-white rounded-2xl border border-blue-200 shadow-sm overflow-hidden">
-                                <div className="bg-gradient-to-r from-blue-500 to-indigo-500 px-5 py-4 flex items-center justify-between text-white">
-                                  <div>
-                                    <p className="text-xs font-semibold uppercase tracking-widest text-blue-100">Section 1</p>
-                                    <h3 className="font-bold text-base">Chief Complaint</h3>
-                                  </div>
-                                  <InlineSectionAI type="chief_complaint" note={note} onApply={async (val) => { await base44.entities.ClinicalNote.update(noteId, { chief_complaint: val }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
+                            {/* Chief Complaint */}
+                            <div className="bg-white rounded-2xl border border-blue-200 shadow-sm overflow-hidden">
+                              <div className="bg-gradient-to-r from-blue-500 to-indigo-500 px-5 py-4 flex items-center justify-between text-white">
+                                <div>
+                                  <p className="text-xs font-semibold uppercase tracking-widest text-blue-100">Section 1</p>
+                                  <h3 className="font-bold text-base">Chief Complaint</h3>
                                 </div>
-                                <div className="p-5">
-                                  <textarea
-                                    value={note.chief_complaint || ""}
-                                    onChange={(e) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, chief_complaint: e.target.value }))}
-                                    onBlur={async (e) => { await base44.entities.ClinicalNote.update(noteId, { chief_complaint: e.target.value }); toast.success("Saved"); }}
-                                    placeholder="Primary reason for visit (e.g., 'Chest pain for 2 hours')..."
-                                    className="w-full px-4 py-3 rounded-xl border border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm text-slate-900 placeholder:text-slate-400 resize-none"
-                                    rows="5"
-                                  />
-                                </div>
+                                <InlineSectionAI type="chief_complaint" note={note} onApply={async (val) => { await base44.entities.ClinicalNote.update(noteId, { chief_complaint: val }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
                               </div>
-
-                              {/* Raw Notes */}
-                              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                                <div className="bg-slate-700 px-5 py-4 flex items-center justify-between text-white">
-                                  <div>
-                                    <p className="text-xs font-semibold uppercase tracking-widest text-slate-300">Section 2</p>
-                                    <h3 className="font-bold text-base">Raw Notes / Transcription</h3>
-                                  </div>
-                                  <Button
-                                    onClick={async () => {
-                                      if (isRecording) {
-                                        if (mediaRecorder) { mediaRecorder.stop(); setIsRecording(false); setRecordingTime(0); }
-                                      } else {
-                                        try {
-                                          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                                          const recorder = new MediaRecorder(stream);
-                                          const audioChunks = [];
-                                          recorder.ondataavailable = (e) => audioChunks.push(e.data);
-                                          const interval = setInterval(() => setRecordingTime(prev => prev + 1), 1000);
-                                          recorder.onstop = async () => {
-                                            clearInterval(interval);
-                                            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                                            const audioFile = new File([audioBlob], 'recording.wav', { type: 'audio/wav' });
-                                            toast.info("Transcribing...");
-                                            try {
-                                              const { file_url } = await base44.integrations.Core.UploadFile({ file: audioFile });
-                                              const transcription = await base44.integrations.Core.InvokeLLM({ prompt: "Transcribe this medical audio recording accurately.", file_urls: [file_url] });
-                                              const updated = (note.raw_note || "") + "\n\n" + transcription;
-                                              await base44.entities.ClinicalNote.update(noteId, { raw_note: updated });
-                                              queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                                              toast.success("Audio transcribed");
-                                            } catch { toast.error("Transcription failed"); }
-                                            stream.getTracks().forEach(t => t.stop());
-                                          };
-                                          recorder.start();
-                                          setMediaRecorder(recorder);
-                                          setIsRecording(true);
-                                        } catch { toast.error("Microphone access denied"); }
-                                      }
-                                    }}
-                                    size="sm"
-                                    className={`rounded-full w-9 h-9 p-0 flex items-center justify-center border-2 transition-all ${isRecording ? 'bg-red-600 hover:bg-red-700 border-red-400 animate-pulse' : 'bg-white/20 hover:bg-white/30 border-white/30'}`}
-                                    title={isRecording ? "Stop Recording" : "Start Voice Recording"}
-                                  >
-                                    {isRecording ? <X className="w-4 h-4 text-white" /> : <Activity className="w-4 h-4 text-white" />}
-                                  </Button>
-                                </div>
-                                {isRecording && (
-                                  <div className="flex items-center gap-2 text-red-600 px-5 py-2 bg-red-50 border-b border-red-100">
-                                    <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
-                                    <span className="text-xs font-medium">Recording — {Math.floor(recordingTime / 60)}:{String(recordingTime % 60).padStart(2, '0')}</span>
-                                  </div>
-                                )}
-                                <div className="p-5">
-                                  <RichTextNoteEditor
-                                    value={note.raw_note || ""}
-                                    onChange={(content) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, raw_note: content }))}
-                                    onBlur={async () => {
-                                      const currentNote = queryClient.getQueryData(["note", noteId]);
-                                      await base44.entities.ClinicalNote.update(noteId, { raw_note: currentNote.raw_note });
-                                      toast.success("Saved");
-                                    }}
-                                    placeholder="Paste or type raw encounter notes, transcription..."
-                                  />
-                                </div>
+                              <div className="p-5">
+                                <textarea
+                                  value={note.chief_complaint || ""}
+                                  onChange={(e) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, chief_complaint: e.target.value }))}
+                                  onBlur={async (e) => { await base44.entities.ClinicalNote.update(noteId, { chief_complaint: e.target.value }); toast.success("Saved"); }}
+                                  placeholder="Primary reason for visit (e.g., 'Chest pain for 2 hours')..."
+                                  className="w-full px-4 py-3 rounded-xl border border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm text-slate-900 placeholder:text-slate-400 resize-none"
+                                  rows="5"
+                                />
                               </div>
                             </div>
 

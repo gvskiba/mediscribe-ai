@@ -146,6 +146,14 @@ const TAB_GROUPS = [
       { id: 'discharge_summary', label: 'Discharge Summary', icon: FileText },
       { id: 'patient_education', label: 'Patient Education', icon: BookOpen },
     ]
+  },
+  {
+    id: 'analysis',
+    label: 'AI Analysis',
+    color: 'orange',
+    tabs: [
+      { id: 'ai_analysis', label: 'AI Analysis', icon: Brain },
+    ]
   }
 ];
 

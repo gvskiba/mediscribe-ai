@@ -227,7 +227,7 @@ export default function NoteDetail() {
   const [physicalExamNormal, setPhysicalExamNormal] = useState(false);
   const [rosNormal, setRosNormal] = useState(false);
   const [loadingDischargeSummary, setLoadingDischargeSummary] = useState(false);
-  const [autosaveEnabled, setAutosaveEnabled] = useState(true);
+  const [autosaveEnabled, setAutosaveEnabled] = useState(false);
 
   const handleNext = () => {
     const allTabs = tabGroups.flatMap(g => g.tabs.map(t => t.id));

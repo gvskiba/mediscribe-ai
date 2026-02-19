@@ -499,13 +499,13 @@ Provide:
                 <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
                   <div className="flex items-start justify-between mb-2">
                     <p className="text-xs font-bold text-orange-900">Risk Assessment</p>
-                    {aiRanking?.risk_assessment && (
+                    {aiRanking?.risk_assessment !== undefined && (
                       <Badge variant="secondary" className={`text-xs ${
-                        aiRanking.risk_assessment === "HIGH" ? "bg-red-100 text-red-700" :
-                        aiRanking.risk_assessment === "MEDIUM" ? "bg-yellow-100 text-yellow-700" :
+                        aiRanking.risk_assessment >= 75 ? "bg-red-100 text-red-700" :
+                        aiRanking.risk_assessment >= 50 ? "bg-yellow-100 text-yellow-700" :
                         "bg-green-100 text-green-700"
                       }`}>
-                        {aiRanking.risk_assessment}
+                        {aiRanking.risk_assessment}%
                       </Badge>
                     )}
                   </div>

@@ -450,7 +450,7 @@ function PanelSection({ type, note, onUpdateNote }) {
 }
 
 export default function AISidebar({ isOpen, onClose, note, noteId, onUpdateNote, activeTab }) {
-  const config = TAB_AI_CONFIGS[activeTab] || DEFAULT_CONFIG;
+  const config = DEFAULT_CONFIG;
   const Icon = config.icon;
 
   return (

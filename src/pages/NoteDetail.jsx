@@ -1642,51 +1642,10 @@ Generated: ${new Date().toLocaleString()}
                               </div>
                             </div>
 
-                            {/* HPI / Raw Notes */}
-                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                              <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-slate-600 to-slate-700 text-white">
-                                <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center text-xs font-bold">2</div>
-                                <span className="text-sm font-semibold">History of Present Illness</span>
-                                <span className="text-slate-300 text-xs">· OLDCARTS format</span>
-                                <div className="ml-auto">
-                                  <InlineSectionAI type="hpi" note={note} onApply={async (val) => { await base44.entities.ClinicalNote.update(noteId, { history_of_present_illness: val }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
-                                </div>
-                              </div>
-                              <div className="px-4 py-3">
-                                <textarea
-                                  value={note.history_of_present_illness || ""}
-                                  onChange={(e) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, history_of_present_illness: e.target.value }))}
-                                  onBlur={async (e) => { await base44.entities.ClinicalNote.update(noteId, { history_of_present_illness: e.target.value }); toast.success("Saved"); }}
-                                  placeholder="Onset, Location, Duration, Character, Alleviating factors, Relieving factors, Timing, Severity..."
-                                  className="w-full text-sm text-slate-900 placeholder:text-slate-400 border-0 outline-none focus:ring-0 bg-transparent resize-none"
-                                  rows={5}
-                                />
-                              </div>
-                            </div>
-
-                            {/* Raw Notes / Dictation */}
-                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                              <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-slate-500 to-slate-600 text-white">
-                                <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center text-xs font-bold">3</div>
-                                <span className="text-sm font-semibold">Raw Notes / Dictation</span>
-                                <span className="text-slate-300 text-xs">· paste transcript or freeform notes</span>
-                              </div>
-                              <div className="px-4 py-3">
-                                <textarea
-                                  value={note.raw_note || ""}
-                                  onChange={(e) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, raw_note: e.target.value }))}
-                                  onBlur={async (e) => { await base44.entities.ClinicalNote.update(noteId, { raw_note: e.target.value }); toast.success("Saved"); }}
-                                  placeholder="Paste dictation, transcription, or unstructured notes here. Use AI Auto-Fill to extract structured data..."
-                                  className="w-full text-sm text-slate-900 placeholder:text-slate-400 border-0 outline-none focus:ring-0 bg-transparent resize-none"
-                                  rows={4}
-                                />
-                              </div>
-                            </div>
-
                             {/* AI Documentation Assistant */}
                             <div className="bg-white rounded-xl border border-purple-200 shadow-sm overflow-hidden">
                               <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-500 text-white">
-                                <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center text-xs font-bold">4</div>
+                                <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center text-xs font-bold">2</div>
                                 <span className="text-sm font-semibold">AI Documentation Assistant</span>
                               </div>
                               <div className="p-4">

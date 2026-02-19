@@ -290,6 +290,61 @@ Provide:
           )}
         </AnimatePresence>
 
+        {/* Preview Section */}
+        {mdmSections.length > 0 && (
+          <div className="bg-slate-50 rounded-xl border-2 border-slate-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-sm font-semibold text-slate-700">Preview</h4>
+              <Button
+                onClick={() => setShowPreview(!showPreview)}
+                size="sm"
+                variant="outline"
+                className="gap-2"
+              >
+                {showPreview ? "Hide" : "Show"} Preview
+              </Button>
+            </div>
+            {showPreview && (
+              <div className="prose prose-sm prose-slate max-w-none text-slate-700 bg-white rounded-lg p-4 border border-slate-200">
+                {mdmSections.map((section) => (
+                  <div key={section.id} className="mb-6">
+                    <h3 className="text-base font-bold mt-0 mb-2">{section.title}</h3>
+                    <ReactMarkdown
+                      components={{
+                        p: ({ children }) => <p className="mb-2 leading-relaxed">{children}</p>,
+                        h1: ({ children }) => <h1 className="text-lg font-bold mt-3 mb-2">{children}</h1>,
+                        h2: ({ children }) => <h2 className="text-base font-bold mt-2 mb-1">{children}</h2>,
+                        h3: ({ children }) => <h3 className="text-sm font-bold mt-2 mb-1">{children}</h3>,
+                        ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+                        li: ({ children }) => <li className="block">{children}</li>,
+                        strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+                        em: ({ children }) => <em className="italic">{children}</em>,
+                      }}
+                    >
+                      {section.content}
+                    </ReactMarkdown>
+                  </div>
+                ))}
+              </div>
+            )}
+            <Button
+              onClick={async () => {
+                const fullMDM = mdmSections.map(s => `## ${s.title}\n${s.content}`).join("\n\n");
+                try {
+                  await base44.entities.ClinicalNote.update(noteId, { mdm: fullMDM });
+                  toast.success("MDM sections added to clinical note");
+                } catch (error) {
+                  toast.error("Failed to add MDM to note");
+                }
+              }}
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white gap-2 mt-4"
+            >
+              <Check className="w-4 h-4" /> Add to Clinical Note
+            </Button>
+          </div>
+        )}
+
         {/* Sections List */}
         <div className="space-y-2">
           {mdmSections.length === 0 ? (

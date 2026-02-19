@@ -234,212 +234,182 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
             <h2 className="text-lg font-bold">Clinical Overview</h2>
           </div>
 
-          <div className="p-6 space-y-6">
-            {/* Vital Signs */}
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                <Activity className="w-4 h-4 text-emerald-600" /> Vital Signs
-              </h3>
-              {latestNote.vital_signs && Object.keys(latestNote.vital_signs).length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {Object.entries(latestNote.vital_signs)
-                    .filter(([_, v]) => v && v.value)
-                    .map(([key, vital]) => {
-                      const vitalStatus = getVitalStatus(key, vital.value);
-                      const displayKey = key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-                      return (
-                        <div key={key} className={`rounded p-2 ${vitalStatus.color} border ${
-                          vitalStatus.status === "normal" ? "border-green-300" :
-                          vitalStatus.status === "abnormal" ? "border-red-300" : "border-yellow-300"
-                        }`}>
-                          <p className="text-xs font-semibold text-slate-600">{displayKey}</p>
-                          <p className="text-lg font-bold text-slate-900 mt-0.5">
-                            {key === "blood_pressure" && vital.systolic
-                              ? `${vital.systolic}/${vital.diastolic}`
-                              : vital.value}
-                          </p>
-                          <p className="text-xs text-slate-500">{vital.unit || ""}</p>
-                        </div>
-                      );
-                    })}
-                </div>
-              ) : (
-                <p className="text-slate-500 text-sm">No vital signs recorded</p>
-              )}
-            </div>
-
-            <div className="border-t border-slate-200" />
-
-            {/* Medications */}
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                <Pill className="w-4 h-4 text-blue-600" /> Medications ({latestNote.medications?.length || 0})
-              </h3>
-              {latestNote.medications && latestNote.medications.length > 0 ? (
-                <div className="grid md:grid-cols-2 gap-3">
-                  {latestNote.medications.slice(0, 6).map((med, idx) => (
-                    <div key={idx} className="flex gap-2 text-sm bg-blue-50 border border-blue-200 rounded p-2">
-                      <span className="font-bold text-blue-600 flex-shrink-0 text-xs">{idx + 1}.</span>
-                      <p className="text-slate-700">{med}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-slate-500 text-sm">No medications recorded</p>
-              )}
-              {latestNote.medications && latestNote.medications.length > 6 && (
-                <p className="text-xs text-slate-500 mt-2">+{latestNote.medications.length - 6} more</p>
-              )}
-            </div>
-
-            <div className="border-t border-slate-200" />
-
-            {/* Lab Findings */}
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                <Microscope className="w-4 h-4 text-red-600" /> Lab Findings ({latestNote.lab_findings?.length || 0})
-              </h3>
-              {latestNote.lab_findings && latestNote.lab_findings.length > 0 ? (
-                <div className="space-y-2">
-                  {latestNote.lab_findings.slice(0, 5).map((lab, idx) => (
-                    <div key={idx} className="text-sm bg-red-50 border border-red-200 rounded p-2">
-                      <p className="font-semibold text-slate-900">{lab.test_name}</p>
-                      <div className="flex justify-between items-center gap-2 mt-1">
-                        <span className="text-xs text-slate-700">
-                          {lab.result} {lab.unit ? `${lab.unit}` : ""}
-                        </span>
-                        {lab.status && (
-                          <Badge className={`text-xs ${
-                            lab.status === "critical" ? "bg-red-600 text-white" :
-                            lab.status === "abnormal" ? "bg-yellow-600 text-white" :
-                            "bg-green-600 text-white"
-                          }`}>
-                            {lab.status}
-                          </Badge>
-                        )}
-                      </div>
-                      {lab.reference_range && (
-                        <p className="text-xs text-slate-500 mt-1">Ref: {lab.reference_range}</p>
-                      )}
-                    </div>
-                  ))}
-                  {latestNote.lab_findings.length > 5 && (
-                    <p className="text-xs text-slate-500 mt-2">+{latestNote.lab_findings.length - 5} more</p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-slate-500 text-sm">No lab findings recorded</p>
-              )}
-            </div>
-
-            <div className="border-t border-slate-200" />
-
-            {/* Imaging Findings */}
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                <Radio className="w-4 h-4 text-cyan-600" /> Imaging Findings ({latestNote.imaging_findings?.length || 0})
-              </h3>
-              {latestNote.imaging_findings && latestNote.imaging_findings.length > 0 ? (
-                <div className="space-y-2">
-                  {latestNote.imaging_findings.map((imaging, idx) => (
-                    <div key={idx} className="text-sm bg-cyan-50 border border-cyan-200 rounded p-2">
-                      <p className="font-semibold text-slate-900">{imaging.study_type} - {imaging.location}</p>
-                      <p className="text-xs text-slate-700 mt-1">{imaging.findings}</p>
-                      {imaging.impression && (
-                        <p className="text-xs text-slate-600 italic mt-1">Impression: {imaging.impression}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-slate-500 text-sm">No imaging findings recorded</p>
-              )}
-            </div>
-
-            <div className="border-t border-slate-200" />
-
-            {/* Diagnoses */}
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-purple-600" /> Diagnoses ({latestNote.diagnoses?.length || 0})
-              </h3>
-              {latestNote.diagnoses && latestNote.diagnoses.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {latestNote.diagnoses.slice(0, 6).map((diag, idx) => (
-                    <div key={idx} className="text-xs bg-purple-100 border border-purple-300 rounded-full px-3 py-1 text-slate-800">
-                      {diag}
-                    </div>
-                  ))}
-                  {latestNote.diagnoses.length > 6 && (
-                    <div className="text-xs text-slate-500 py-1">+{latestNote.diagnoses.length - 6} more</div>
-                  )}
-                </div>
-              ) : (
-                <p className="text-slate-500 text-sm">No diagnoses recorded</p>
-              )}
-            </div>
-
-            <div className="border-t border-slate-200" />
-
-            {/* AI Risk Assessment */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-orange-600" /> AI Risk Assessment
+          <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Column 1: Vital Signs & Assessment */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-emerald-600" /> Vital Signs
                 </h3>
-                <Button
-                  size="sm"
-                  onClick={generateAiInsights}
-                  disabled={loadingInsights}
-                  variant="outline"
-                  className="h-7 text-xs gap-1"
-                >
-                  {loadingInsights ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                  {loadingInsights ? "Analyzing" : "Analyze"}
-                </Button>
+                {latestNote.vital_signs && Object.keys(latestNote.vital_signs).length > 0 ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    {Object.entries(latestNote.vital_signs)
+                      .filter(([_, v]) => v && v.value)
+                      .map(([key, vital]) => {
+                        const vitalStatus = getVitalStatus(key, vital.value);
+                        const displayKey = key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+                        return (
+                          <div key={key} className={`rounded p-2 ${vitalStatus.color} border ${
+                            vitalStatus.status === "normal" ? "border-green-300" :
+                            vitalStatus.status === "abnormal" ? "border-red-300" : "border-yellow-300"
+                          }`}>
+                            <p className="text-xs font-semibold text-slate-600">{displayKey}</p>
+                            <p className="text-sm font-bold text-slate-900 mt-0.5">
+                              {key === "blood_pressure" && vital.systolic
+                                ? `${vital.systolic}/${vital.diastolic}`
+                                : vital.value}
+                            </p>
+                            <p className="text-xs text-slate-500">{vital.unit || ""}</p>
+                          </div>
+                        );
+                      })}
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-xs">No vital signs</p>
+                )}
               </div>
-              {loadingInsights && !aiInsights ? (
-                <div className="flex items-center justify-center py-4">
-                  <Loader2 className="w-4 h-4 animate-spin text-orange-500" />
+
+              <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                <h4 className="text-xs font-bold text-blue-900 mb-1">Summary</h4>
+                <p className="text-xs text-blue-800 leading-relaxed">
+                  {latestNote.summary || "No summary available"}
+                </p>
+              </div>
+            </div>
+
+            {/* Column 2: Medications & Lab */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                  <Pill className="w-4 h-4 text-blue-600" /> Medications
+                </h3>
+                {latestNote.medications && latestNote.medications.length > 0 ? (
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {latestNote.medications.slice(0, 4).map((med, idx) => (
+                      <div key={idx} className="text-xs bg-blue-50 border border-blue-200 rounded p-2">
+                        <p className="text-slate-700 font-medium">{med}</p>
+                      </div>
+                    ))}
+                    {latestNote.medications.length > 4 && (
+                      <p className="text-xs text-slate-500">+{latestNote.medications.length - 4} more</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-xs">No medications</p>
+                )}
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                  <Microscope className="w-4 h-4 text-red-600" /> Lab Results
+                </h3>
+                {latestNote.lab_findings && latestNote.lab_findings.length > 0 ? (
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {latestNote.lab_findings.slice(0, 4).map((lab, idx) => (
+                      <div key={idx} className="text-xs bg-red-50 border border-red-200 rounded p-2">
+                        <p className="font-semibold text-slate-900">{lab.test_name}</p>
+                        <div className="flex justify-between items-center gap-1 mt-1">
+                          <span className="text-slate-700">{lab.result} {lab.unit || ""}</span>
+                          {lab.status && (
+                            <Badge className={`text-xs ${
+                              lab.status === "critical" ? "bg-red-600 text-white" :
+                              lab.status === "abnormal" ? "bg-yellow-600 text-white" :
+                              "bg-green-600 text-white"
+                            }`}>
+                              {lab.status}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {latestNote.lab_findings.length > 4 && (
+                      <p className="text-xs text-slate-500">+{latestNote.lab_findings.length - 4} more</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-xs">No lab findings</p>
+                )}
+              </div>
+            </div>
+
+            {/* Column 3: Imaging, Diagnoses & Risk */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                  <Radio className="w-4 h-4 text-cyan-600" /> Imaging
+                </h3>
+                {latestNote.imaging_findings && latestNote.imaging_findings.length > 0 ? (
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {latestNote.imaging_findings.slice(0, 2).map((imaging, idx) => (
+                      <div key={idx} className="text-xs bg-cyan-50 border border-cyan-200 rounded p-2">
+                        <p className="font-semibold text-slate-900">{imaging.study_type}</p>
+                        <p className="text-slate-600">{imaging.location}</p>
+                      </div>
+                    ))}
+                    {latestNote.imaging_findings.length > 2 && (
+                      <p className="text-xs text-slate-500">+{latestNote.imaging_findings.length - 2} more</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-xs">No imaging</p>
+                )}
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 mb-2 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-purple-600" /> Diagnoses
+                </h3>
+                {latestNote.diagnoses && latestNote.diagnoses.length > 0 ? (
+                  <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                    {latestNote.diagnoses.slice(0, 4).map((diag, idx) => (
+                      <div key={idx} className="text-xs bg-purple-100 border border-purple-300 rounded-full px-2 py-1 text-slate-800">
+                        {diag.length > 20 ? diag.substring(0, 17) + "..." : diag}
+                      </div>
+                    ))}
+                    {latestNote.diagnoses.length > 4 && (
+                      <span className="text-xs text-slate-500">+{latestNote.diagnoses.length - 4}</span>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-xs">No diagnoses</p>
+                )}
+              </div>
+
+              <div className={`rounded-lg p-3 border ${aiInsights?.risk_level === "high" ? "bg-red-50 border-red-300" : aiInsights?.risk_level === "moderate" ? "bg-yellow-50 border-yellow-300" : "bg-green-50 border-green-300"}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-bold text-slate-900">Risk Assessment</h4>
+                  <Button
+                    size="sm"
+                    onClick={generateAiInsights}
+                    disabled={loadingInsights}
+                    variant="ghost"
+                    className="h-5 w-5 p-0"
+                  >
+                    {loadingInsights ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                  </Button>
                 </div>
-              ) : aiInsights ? (
-                <div className={`rounded-lg p-3 border ${aiInsights.risk_level === "high" ? "bg-red-50 border-red-300" : aiInsights.risk_level === "moderate" ? "bg-yellow-50 border-yellow-300" : "bg-green-50 border-green-300"}`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge className={getRiskBadgeColor(aiInsights.risk_level)}>
+                {loadingInsights && !aiInsights ? (
+                  <Loader2 className="w-3 h-3 animate-spin text-slate-500" />
+                ) : aiInsights ? (
+                  <div className="space-y-2">
+                    <Badge className={getRiskBadgeColor(aiInsights.risk_level)} style={{ fontSize: "10px" }}>
                       {aiInsights.risk_level.toUpperCase()}
                     </Badge>
+                    {aiInsights.urgent_actions?.length > 0 && (
+                      <div>
+                        <p className="text-xs font-bold text-slate-700">Actions:</p>
+                        <ul className="space-y-0.5">
+                          {aiInsights.urgent_actions.slice(0, 1).map((action, idx) => (
+                            <li key={idx} className="text-xs text-slate-600">• {action.substring(0, 40)}...</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
-                  {aiInsights.urgent_actions && aiInsights.urgent_actions.length > 0 && (
-                    <div className="mb-2">
-                      <p className="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> Actions
-                      </p>
-                      <ul className="space-y-0.5">
-                        {aiInsights.urgent_actions.slice(0, 2).map((action, idx) => (
-                          <li key={idx} className="text-xs text-slate-600">• {action}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {aiInsights.abnormal_vitals && aiInsights.abnormal_vitals.length > 0 && (
-                    <div>
-                      <p className="text-xs font-bold text-slate-700 mb-1">⚠️ Abnormal Vitals</p>
-                      <ul className="space-y-0.5">
-                        {aiInsights.abnormal_vitals.slice(0, 2).map((vital, idx) => (
-                          <li key={idx} className="text-xs text-slate-600">• {vital}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <button
-                  onClick={generateAiInsights}
-                  className="text-xs text-slate-600 hover:text-slate-900 w-full py-2"
-                >
-                  Generate AI insights
-                </button>
-              )}
+                ) : (
+                  <p className="text-xs text-slate-600">Click to analyze</p>
+                )}
+              </div>
             </div>
           </div>
         </Card>

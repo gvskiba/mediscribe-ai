@@ -1829,10 +1829,33 @@ Generated: ${new Date().toLocaleString()}
                        <span className="text-sm font-medium">Recording in progress...</span>
                      </div>
                    )}
-                 </div>
-               </div>
-
-
+                   </div>
+                   {/* Text Editor */}
+                   <div className="p-6">
+                   {isRecording && (
+                     <div className="flex items-center gap-2 text-red-600 animate-pulse mb-4 bg-red-50 rounded-lg p-3 border border-red-200">
+                       <div className="w-3 h-3 rounded-full bg-red-600"></div>
+                       <span className="text-sm font-medium">Recording in progress...</span>
+                     </div>
+                   )}
+                   <RichTextNoteEditor
+                     value={note.raw_note || ""}
+                     onChange={(content) => {
+                       queryClient.setQueryData(["note", noteId], (old) => ({
+                         ...old,
+                         raw_note: content
+                       }));
+                     }}
+                     onBlur={async () => {
+                       const currentNote = queryClient.getQueryData(["note", noteId]);
+                       await base44.entities.ClinicalNote.update(noteId, { raw_note: currentNote.raw_note });
+                       setLastSaved(new Date().toISOString());
+                       toast.success("Note saved at " + format(new Date(), "h:mm:ss a"));
+                     }}
+                     placeholder="Type or paste raw patient data, encounter notes, or transcription here..."
+                   />
+                   </div>
+                   </div>
 
                    {/* AI Analysis */}
                <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-lg overflow-hidden">

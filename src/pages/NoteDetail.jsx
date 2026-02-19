@@ -592,7 +592,7 @@ export default function NoteDetail() {
       }
     },
     interval: 30000,
-    enabled: true,
+    enabled: autosaveEnabled,
   });
 
   const finalizeMutation = useMutation({

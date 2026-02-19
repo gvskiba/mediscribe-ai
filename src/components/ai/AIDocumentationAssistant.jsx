@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Loader2, FileText, Code, Pill, ClipboardList, Wand2, Copy, Check } from "lucide-react";
+import { Sparkles, Loader2, FileText, Code, Pill, ClipboardList, Wand2, Copy, Check, Mic, MicOff, Square } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -14,6 +14,53 @@ export default function AIDocumentationAssistant({ note, onUpdateNote }) {
   const [processing, setProcessing] = useState(false);
   const [generatedContent, setGeneratedContent] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef(null);
+
+  const startDictation = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error("Speech recognition not supported in this browser");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    let finalTranscript = rawInput;
+
+    recognition.onresult = (event) => {
+      let interim = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += (finalTranscript ? " " : "") + transcript;
+        } else {
+          interim = transcript;
+        }
+      }
+      setRawInput(finalTranscript + (interim ? " " + interim : ""));
+    };
+
+    recognition.onerror = (e) => {
+      toast.error("Dictation error: " + e.error);
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => setIsRecording(false);
+
+    recognition.start();
+    recognitionRef.current = recognition;
+    setIsRecording(true);
+    toast.success("Dictation started — speak now");
+  };
+
+  const stopDictation = () => {
+    recognitionRef.current?.stop();
+    setIsRecording(false);
+    toast.success("Dictation stopped");
+  };
 
   // 1. Generate Structured Clinical Note
   const generateStructuredNote = async () => {

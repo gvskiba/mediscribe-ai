@@ -85,6 +85,7 @@ import InlineSectionAI from "../components/ai/InlineSectionAI";
 import NoteTypeAndTemplateSelector from "../components/notes/NoteTypeAndTemplateSelector";
 import MedicalDecisionMakingTab from "../components/notes/MedicalDecisionMakingTab";
 import VitalSignsPasteAnalyzer from "../components/notes/VitalSignsPasteAnalyzer";
+import DispositionPlanner from "../components/notes/DispositionPlanner";
 
 const TAB_GROUPS = [
   {
@@ -2870,48 +2871,36 @@ Generated: ${new Date().toLocaleString()}
                            <p className="text-slate-600 max-w-2xl mx-auto">Document patient disposition, follow-up care, and discharge instructions</p>
                          </div>
 
-                         {/* Disposition Content */}
-                         <div className="bg-white rounded-xl border-2 border-purple-300 shadow-lg overflow-hidden">
-                           <div className="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-5 text-white">
-                             <h3 className="font-bold text-lg flex items-center gap-2">
-                               <FileText className="w-6 h-6" />
-                               Disposition Details
-                             </h3>
-                             <p className="text-purple-100 text-sm mt-1">Patient disposition, location, and follow-up instructions</p>
-                           </div>
-                           <div className="p-6 space-y-6">
-                             <Textarea
-                               value={note.disposition_plan || ""}
-                               onChange={(e) => {
-                                 queryClient.setQueryData(["note", noteId], (old) => ({
-                                   ...old,
-                                   disposition_plan: e.target.value
-                                 }));
-                               }}
-                               onBlur={async (e) => {
-                                 await base44.entities.ClinicalNote.update(noteId, { disposition_plan: e.target.value });
-                                 toast.success("Disposition plan saved");
-                               }}
-                               placeholder="Document patient disposition (admission, discharge home, transfer, etc.), follow-up appointments, discharge instructions, and patient education..."
-                               className="min-h-[400px] text-base"
-                             />
-                             <Button
-                               onClick={async () => {
-                                 try {
-                                   await base44.entities.ClinicalNote.update(noteId, { disposition_plan: note.disposition_plan });
-                                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                                   toast.success("Disposition plan saved");
-                                 } catch (error) {
-                                   console.error("Failed to save disposition plan:", error);
-                                   toast.error("Failed to save disposition plan");
-                                 }
-                               }}
-                               className="bg-purple-600 hover:bg-purple-700 text-white gap-2"
-                             >
-                               <Check className="w-4 h-4" /> Save
-                             </Button>
-                           </div>
-                         </div>
+                         {/* Disposition Planner */}
+                         <DispositionPlanner
+                           onSave={async (dispositionData) => {
+                             try {
+                               const dispositionText = `
+                         DISPOSITION PLAN
+                         ═════════════════════════════════════════
+
+                         TYPE: ${dispositionData.disposition_type.toUpperCase()}
+                         LOCATION: ${dispositionData.location}
+                         ${dispositionData.accepting_provider ? `ACCEPTING PROVIDER: ${dispositionData.accepting_provider}` : ""}
+                         ${dispositionData.admission_time ? `ADMISSION TIME: ${dispositionData.admission_time}` : ""}
+                         ${dispositionData.transfer_method ? `TRANSFER METHOD: ${dispositionData.transfer_method}` : ""}
+                         ${dispositionData.contact_info ? `FACILITY CONTACT: ${dispositionData.contact_info}` : ""}
+
+                         ADDITIONAL INSTRUCTIONS:
+                         ${dispositionData.additional_notes || "None"}
+                         `.trim();
+
+                               await base44.entities.ClinicalNote.update(noteId, { 
+                                 disposition_plan: dispositionText 
+                               });
+                               queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                               toast.success("Disposition plan saved");
+                             } catch (error) {
+                               console.error("Failed to save disposition plan:", error);
+                               toast.error("Failed to save disposition plan");
+                             }
+                           }}
+                         />
                        </div>
 
                        {/* Next Button */}

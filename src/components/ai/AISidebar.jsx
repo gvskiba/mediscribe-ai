@@ -410,6 +410,42 @@ function PanelSection({ type, note, onUpdateNote }) {
     );
   }
 
+  if (type === "summarize") {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 mb-1">
+          <ClipboardList className="w-4 h-4 text-blue-600" />
+          <h4 className="font-semibold text-slate-800 text-sm">Summarize Patient History</h4>
+        </div>
+        <SummarizePanel note={note} onUpdateNote={onUpdateNote} />
+      </div>
+    );
+  }
+
+  if (type === "icd10") {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 mb-1">
+          <Code className="w-4 h-4 text-emerald-600" />
+          <h4 className="font-semibold text-slate-800 text-sm">ICD-10 Code Suggestions</h4>
+        </div>
+        <ICD10Panel note={note} onUpdateNote={onUpdateNote} />
+      </div>
+    );
+  }
+
+  if (type === "treatmentAI") {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 mb-1">
+          <Pill className="w-4 h-4 text-orange-600" />
+          <h4 className="font-semibold text-slate-800 text-sm">Treatment Plan Generator</h4>
+        </div>
+        <TreatmentAIPanel note={note} onUpdateNote={onUpdateNote} />
+      </div>
+    );
+  }
+
   return null;
 }
 

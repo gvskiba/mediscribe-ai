@@ -25,7 +25,7 @@ const TAB_AI_CONFIGS = {
     subtitle: "Generate & refine history of present illness",
     gradient: "from-purple-600 to-indigo-600",
     icon: FileText,
-    panels: ["documentation", "analysis"],
+    panels: ["analysis"],
   },
   review_of_systems: {
     title: "Review of Systems AI",

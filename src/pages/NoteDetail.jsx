@@ -2957,45 +2957,77 @@ Generated: ${new Date().toLocaleString()}
                                <Button
                                  onClick={async () => {
                                    try {
-                                     const summaryText = `DISCHARGE SUMMARY
+                                     setLoadingDischargeSummary(true);
+                                     const response = await base44.integrations.Core.InvokeLLM({
+                                       prompt: `Based on the following clinical note, generate detailed discharge instructions for the patient. Include medication instructions, activity restrictions, follow-up care, warning signs, and lifestyle modifications.
 
-                     Patient: ${note.patient_name}
-                     MRN: ${note.patient_id || "N/A"}
-                     Date of Visit: ${note.date_of_visit || "N/A"}
+                             PATIENT: ${note.patient_name}
+                             DIAGNOSES: ${note.diagnoses?.join(", ") || "N/A"}
+                             ASSESSMENT: ${note.assessment || "N/A"}
+                             MEDICATIONS: ${note.medications?.join(", ") || "None"}
+                             PLAN: ${note.plan || "N/A"}
+                             DISPOSITION: ${note.disposition_plan || "N/A"}
 
-                     CHIEF COMPLAINT:
-                     ${note.chief_complaint || "N/A"}
+                             Format the response as a professional discharge summary with clear sections and actionable instructions.`,
+                                       add_context_from_internet: false
+                                     });
 
-                     DIAGNOSES:
-                     ${note.diagnoses?.join("\n") || "N/A"}
+                                     const dischargeSummaryText = `DISCHARGE SUMMARY & INSTRUCTIONS
 
-                     ASSESSMENT & HOSPITAL COURSE:
-                     ${note.assessment || "N/A"}
+                             Patient: ${note.patient_name}
+                             MRN: ${note.patient_id || "N/A"}
+                             Date of Visit: ${note.date_of_visit || "N/A"}
 
-                     MEDICATIONS AT DISCHARGE:
-                     ${note.medications?.join("\n") || "No medications"}
+                             CHIEF COMPLAINT:
+                             ${note.chief_complaint || "N/A"}
 
-                     DISPOSITION:
-                     ${note.disposition_plan || "N/A"}
+                             DIAGNOSES:
+                             ${note.diagnoses?.join("\n• ") ? "• " + note.diagnoses.join("\n• ") : "N/A"}
 
-                     FOLLOW-UP INSTRUCTIONS:
-                     ${note.plan || "N/A"}
+                             HOSPITAL COURSE & FINDINGS:
+                             ${note.assessment || "N/A"}
 
-                     ═════════════════════════════════════════`;
+                             DISCHARGE MEDICATIONS:
+                             ${note.medications?.length ? note.medications.map(m => "• " + m).join("\n") : "No new medications"}
+
+                             ═════════════════════════════════════════
+
+                             DISCHARGE INSTRUCTIONS:
+
+                             ${response}
+
+                             ═════════════════════════════════════════
+
+                             FOLLOW-UP CARE:
+                             ${note.plan || "Patient instructed to follow up as needed"}
+
+                             DISPOSITION:
+                             ${note.disposition_plan || "Patient discharged in stable condition"}`;
 
                                      await base44.entities.ClinicalNote.update(noteId, { 
-                                       discharge_summary: summaryText
+                                       discharge_summary: dischargeSummaryText
                                      });
                                      queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                                     toast.success("Discharge summary auto-filled");
+                                     toast.success("AI discharge instructions generated");
                                    } catch (error) {
-                                     console.error("Failed to fill discharge summary:", error);
-                                     toast.error("Failed to fill discharge summary");
+                                     console.error("Failed to generate discharge instructions:", error);
+                                     toast.error("Failed to generate discharge instructions");
+                                   } finally {
+                                     setLoadingDischargeSummary(false);
                                    }
                                  }}
+                                 disabled={loadingDischargeSummary}
                                  className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2"
                                >
-                                 <Sparkles className="w-4 h-4" /> Auto-Fill from Note
+                                 {loadingDischargeSummary ? (
+                                   <>
+                                     <Loader2 className="w-4 h-4 animate-spin" /> Generating...
+                                   </>
+                                 ) : (
+                                   <>
+                                     <Sparkles className="w-4 h-4" /> AI Generate Instructions
+                                   </>
+                                 )}
                                </Button>
                                <Button
                                  onClick={async () => {

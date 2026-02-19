@@ -444,13 +444,13 @@ Provide:
                 <div className="bg-pink-50 rounded-lg p-4 border border-pink-200">
                   <div className="flex items-start justify-between mb-2">
                     <p className="text-xs font-bold text-pink-900">Treatment Reasoning</p>
-                    {aiRanking?.treatment_reasoning && (
+                    {aiRanking?.treatment_reasoning !== undefined && (
                       <Badge variant="secondary" className={`text-xs ${
-                        aiRanking.treatment_reasoning === "HIGH" ? "bg-red-100 text-red-700" :
-                        aiRanking.treatment_reasoning === "MEDIUM" ? "bg-yellow-100 text-yellow-700" :
+                        aiRanking.treatment_reasoning >= 75 ? "bg-red-100 text-red-700" :
+                        aiRanking.treatment_reasoning >= 50 ? "bg-yellow-100 text-yellow-700" :
                         "bg-green-100 text-green-700"
                       }`}>
-                        {aiRanking.treatment_reasoning}
+                        {aiRanking.treatment_reasoning}%
                       </Badge>
                     )}
                   </div>

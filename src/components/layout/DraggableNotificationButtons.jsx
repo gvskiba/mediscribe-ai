@@ -56,6 +56,7 @@ export default function DraggableNotificationButtons() {
 
   const handleMouseDown = (e, buttonType) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(buttonType);
     setDragStart({ x: e.clientX, y: e.clientY });
   };

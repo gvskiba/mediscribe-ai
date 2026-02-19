@@ -2024,7 +2024,7 @@ Generated: ${new Date().toLocaleString()}
                        />
                      </div>
                    </div>
-                   <div className="p-6">
+                   <div className="p-6 space-y-6">
                      <Textarea
                        value={note.plan || ""}
                        onChange={(e) => {
@@ -2040,6 +2040,28 @@ Generated: ${new Date().toLocaleString()}
                        placeholder="Document treatment plan, follow-up instructions, patient education..."
                        className="min-h-[400px] text-base"
                      />
+                     {note.plan && (
+                       <div className="bg-slate-50 rounded-xl border-2 border-slate-200 p-6">
+                         <h4 className="text-sm font-semibold text-slate-700 mb-4">Preview</h4>
+                         <div className="prose prose-sm prose-slate max-w-none text-slate-700">
+                           <ReactMarkdown
+                             components={{
+                               p: ({ children }) => <p className="mb-2 leading-relaxed">{children}</p>,
+                               h1: ({ children }) => <h1 className="text-xl font-bold mt-4 mb-2">{children}</h1>,
+                               h2: ({ children }) => <h2 className="text-lg font-bold mt-3 mb-2">{children}</h2>,
+                               h3: ({ children }) => <h3 className="text-base font-bold mt-2 mb-1">{children}</h3>,
+                               ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+                               ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+                               li: ({ children }) => <li className="ml-4">{children}</li>,
+                               strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+                               em: ({ children }) => <em className="italic">{children}</em>,
+                             }}
+                           >
+                             {note.plan}
+                           </ReactMarkdown>
+                         </div>
+                       </div>
+                     )}
                    </div>
                  </div>
 

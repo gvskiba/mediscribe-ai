@@ -201,8 +201,13 @@ export default function NoteDetail() {
   const [showCreateGroupDialog, setShowCreateGroupDialog] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupColor, setNewGroupColor] = useState("blue");
-  const [physicalExamNormal, setPhysicalExamNormal] = useState(false);
-  const [rosNormal, setRosNormal] = useState(false);
+  const [physicalExamNormal, setPhysicalExamNormal] = useState(
+    note?.physical_exam === "No abnormalities noted. All systems within normal limits on examination."
+  );
+  const [rosNormal, setRosNormal] = useState(
+    note?.review_of_systems?.includes("REVIEW OF SYSTEMS:") && 
+    note?.review_of_systems?.includes("Denies fever, chills, weight loss")
+  );
 
   const handleNext = () => {
     const allTabs = tabGroups.flatMap(g => g.tabs.map(t => t.id));

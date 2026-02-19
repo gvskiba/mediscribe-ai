@@ -688,7 +688,7 @@ const PANEL_MAP = {
 };
 
 export default function AISidebar({ isOpen, onClose, note, noteId, onUpdateNote }) {
-  const [activeTab, setActiveTab] = useState("summarize");
+  const [activeTab, setActiveTab] = useState("analyze");
   const ActivePanel = PANEL_MAP[activeTab];
   const activeTabDef = TABS.find(t => t.id === activeTab);
   const c = COLOR[activeTabDef?.color || "blue"];

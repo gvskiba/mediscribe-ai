@@ -31,6 +31,7 @@ export default function Customize() {
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [openNoteId] = useState(() => localStorage.getItem('currentOpenNote'));
 
   useEffect(() => {
     base44.auth.me().then(u => {

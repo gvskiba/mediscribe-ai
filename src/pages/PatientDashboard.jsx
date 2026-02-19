@@ -230,8 +230,34 @@ Be specific and actionable. Focus only on genuine clinical concerns.`,
 
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
         <Card className="border border-slate-200 overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 text-white">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 text-white flex items-center justify-between">
             <h2 className="text-lg font-bold">Clinical Overview</h2>
+            <div className="flex gap-2">
+              <Link to={createPageUrl("Dashboard")}>
+                <Button size="sm" variant="secondary" className="gap-1 text-xs">
+                  <LayoutDashboard className="w-4 h-4" /> Dashboard
+                </Button>
+              </Link>
+              <Link to={createPageUrl(`NoteDetail?id=${latestNote.id}`)}>
+                <Button size="sm" variant="secondary" className="gap-1 text-xs">
+                  <FileText className="w-4 h-4" /> Open Note
+                </Button>
+              </Link>
+              <Button 
+                size="sm" 
+                className="gap-1 text-xs bg-white text-blue-600 hover:bg-slate-100"
+                onClick={async () => {
+                  const newNote = await base44.entities.ClinicalNote.create({
+                    raw_note: "",
+                    patient_name: "New Patient",
+                    status: "draft"
+                  });
+                  window.location.href = createPageUrl(`NoteDetail?id=${newNote.id}`);
+                }}
+              >
+                <FileText className="w-4 h-4" /> New Note
+              </Button>
+            </div>
           </div>
 
           <div className="p-6 space-y-6">

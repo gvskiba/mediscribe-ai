@@ -11,8 +11,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Check, Clock, MapPin, User, Truck, CheckCircle2 } from "lucide-react";
+import { Check, Clock, MapPin, User, Truck, CheckCircle2, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { base44 } from "@/api/base44Client";
 
 const DISPOSITION_TYPES = [
   { value: "discharge", label: "Discharge Home", color: "bg-green-100 text-green-800" },

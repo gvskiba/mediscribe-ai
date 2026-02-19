@@ -9,14 +9,14 @@ export default function DraggableNotificationButtons() {
   const [currentNoteId, setCurrentNoteId] = useState(null);
   const [prefs, setPrefs] = useState({
     fab_enabled: true,
-    fab_position: { left: 20, top: 120 },
+    fab_position_arrow: { left: 20, top: 120 },
+    fab_position_plus: { left: 20, top: 180 },
     fab_color_arrow: "blue",
     fab_color_plus: "green",
     fab_size: "large"
   });
   const [isDragging, setIsDragging] = useState(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     const savedNoteId = localStorage.getItem("currentOpenNote");

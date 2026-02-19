@@ -68,6 +68,12 @@ export default function DraggableNotificationButtons() {
     
     const deltaX = e.clientX - dragStart.x;
     const deltaY = e.clientY - dragStart.y;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    
+    // Only treat as drag if mouse moved more than 5 pixels
+    if (distance > 5) {
+      setWasDragged(true);
+    }
     
     const posKey = isDragging === 'arrow' ? 'fab_position_arrow' : 'fab_position_plus';
     const currentPos = prefs[posKey];

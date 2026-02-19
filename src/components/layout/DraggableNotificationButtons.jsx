@@ -20,7 +20,7 @@ export default function DraggableNotificationButtons() {
     base44.auth.me().then(u => {
       setPrefs({
         fab_enabled: true,
-        fab_position: { left: window.innerWidth - 100, top: window.innerHeight - 200 },
+        fab_position: u?.preferences?.fab_position || { left: 20, top: 120 },
         fab_color_arrow: "blue",
         fab_color_plus: "green",
         fab_size: "large",

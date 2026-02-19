@@ -127,14 +127,7 @@ export default function DraggableNotificationButtons() {
   const sizes = sizeClasses[prefs.fab_size];
 
   return (
-    <div
-      className="fixed z-40 flex flex-col gap-4"
-      style={{
-        left: `${prefs.fab_position.left}px`,
-        top: `${prefs.fab_position.top}px`,
-        pointerEvents: isDragging ? 'auto' : 'auto'
-      }}
-    >
+    <div className="fixed z-40 pointer-events-none">
       {/* Return to Note Button */}
       {currentNoteId && (
         <motion.button

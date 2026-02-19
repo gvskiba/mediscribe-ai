@@ -379,6 +379,47 @@ Base recommendations on current clinical guidelines.`,
     toast.success("Copied to clipboard");
   };
 
+  const handleGrammarCheck = async () => {
+    if (!rawInput.trim()) {
+      toast.error("Please add text to check grammar and spelling");
+      return;
+    }
+
+    setIsCheckingGrammar(true);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Check this clinical text for grammar, spelling, punctuation, and clarity issues. Be thorough but concise.\n\nText: "${rawInput}"\n\nRespond with ONLY a JSON object with this structure: { "has_errors": boolean, "errors": [{issue, location, suggestion}], "overall_feedback": "string" }. If no errors, return empty errors array.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            has_errors: { type: "boolean" },
+            errors: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  issue: { type: "string" },
+                  location: { type: "string" },
+                  suggestion: { type: "string" }
+                }
+              }
+            },
+            overall_feedback: { type: "string" }
+          }
+        }
+      });
+
+      setGrammarSuggestions(result);
+      if (!result.has_errors) {
+        toast.success("No grammar or spelling issues found!");
+      }
+    } catch (error) {
+      toast.error("Failed to check grammar");
+    } finally {
+      setIsCheckingGrammar(false);
+    }
+  };
+
   return (
     <div className="space-y-3">
       {/* Input area with dictation */}

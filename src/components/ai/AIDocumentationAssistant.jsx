@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Loader2, FileText, Code, Pill, ClipboardList, Wand2, Copy, Check, Mic, MicOff, Square } from "lucide-react";
+import { Sparkles, Loader2, FileText, Code, Pill, ClipboardList, Wand2, Copy, Check, Mic, MicOff, Square, CheckSquare } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 

@@ -88,6 +88,7 @@ import MedicalDecisionMakingTab from "../components/notes/MedicalDecisionMakingT
 import VitalSignsPasteAnalyzer from "../components/notes/VitalSignsPasteAnalyzer";
 import DispositionPlanner from "../components/notes/DispositionPlanner";
 import AutosaveToggle from "../components/notes/AutosaveToggle";
+import VitalSignsHistory from "../components/notes/VitalSignsHistory";
 
 const TAB_GROUPS = [
   {

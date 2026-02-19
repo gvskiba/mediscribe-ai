@@ -342,18 +342,45 @@ Return a JSON with each section and its acuity ranking.`,
                       </Badge>
                     )}
                   </div>
-                  <p className="text-xs text-slate-700 line-clamp-3 mb-2">{aiAnalysis.differential_reasoning}</p>
-                  <Button
-                    onClick={async () => {
-                      await onUpdateNote({ mdm: `## Differential Diagnosis Reasoning\n${aiAnalysis.differential_reasoning}` });
-                      toast.success("Added to clinical note");
-                    }}
-                    size="sm"
-                    variant="outline"
-                    className="w-full gap-1"
-                  >
-                    <Plus className="w-3 h-3" /> Add to Note
-                  </Button>
+                  {editingSection === "differential_reasoning" ? (
+                    <Textarea
+                      value={editedContent.differential_reasoning || aiAnalysis.differential_reasoning}
+                      onChange={(e) => setEditedContent({...editedContent, differential_reasoning: e.target.value})}
+                      className="mb-2 text-xs"
+                    />
+                  ) : (
+                    <p className="text-xs text-slate-700 line-clamp-3 mb-2">{editedContent.differential_reasoning || aiAnalysis.differential_reasoning}</p>
+                  )}
+                  <div className="flex gap-2">
+                    {editingSection === "differential_reasoning" ? (
+                      <>
+                        <Button onClick={() => setEditingSection(null)} size="sm" variant="outline" className="flex-1">Done</Button>
+                        <Button
+                          onClick={async () => {
+                            await onUpdateNote({ mdm: `## Differential Diagnosis Reasoning\n${editedContent.differential_reasoning || aiAnalysis.differential_reasoning}` });
+                            toast.success("Added to clinical note");
+                            setEditingSection(null);
+                          }}
+                          size="sm" className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white gap-1"
+                        >
+                          <Plus className="w-3 h-3" /> Add
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button onClick={() => {setEditingSection("differential_reasoning"); setEditedContent({...editedContent, differential_reasoning: aiAnalysis.differential_reasoning});}} size="sm" variant="outline" className="flex-1">Edit</Button>
+                        <Button
+                          onClick={async () => {
+                            await onUpdateNote({ mdm: `## Differential Diagnosis Reasoning\n${editedContent.differential_reasoning || aiAnalysis.differential_reasoning}` });
+                            toast.success("Added to clinical note");
+                          }}
+                          size="sm" className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white gap-1"
+                        >
+                          <Plus className="w-3 h-3" /> Add
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Labs/Imaging */}

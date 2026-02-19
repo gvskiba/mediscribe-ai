@@ -3336,17 +3336,12 @@ Generated: ${new Date().toLocaleString()}
                            <p className="text-slate-600 max-w-2xl mx-auto">Comprehensive AI-powered analysis and insights</p>
                          </div>
 
-                         <AISidebar
-                           isOpen={true}
-                           onClose={() => {}}
-                           note={note}
-                           noteId={noteId}
-                           activeTab={activeTab}
-                           onUpdateNote={async (updates) => {
-                             await base44.entities.ClinicalNote.update(noteId, updates);
-                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                           }}
-                         />
+                         <Button
+                           onClick={() => setAiSidebarOpen(true)}
+                           className="w-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white gap-2 py-6 text-base"
+                         >
+                           <Sparkles className="w-5 h-5" /> Open AI Analysis Tools
+                         </Button>
                        </div>
 
                        {/* Next Button */}

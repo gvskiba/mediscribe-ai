@@ -21,6 +21,7 @@ const TABS = [
   { id: "diagnosis",  label: "Diagnosis",  icon: Brain,         color: "purple" },
   { id: "guidelines", label: "Guidelines", icon: BookOpen,      color: "amber" },
   { id: "mdm",        label: "MDM",        icon: FileText,      color: "rose" },
+  { id: "ros",        label: "ROS",        icon: Activity,      color: "teal" },
 ];
 
 const COLOR = {

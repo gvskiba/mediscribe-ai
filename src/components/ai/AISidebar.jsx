@@ -107,7 +107,7 @@ const TAB_AI_CONFIGS = {
 };
 
 const DEFAULT_CONFIG = {
-  title: "AI Assistant Hub",
+  title: "AI Assistance Hub",
   subtitle: "Intelligent clinical tools",
   gradient: "from-purple-600 to-indigo-600",
   icon: Sparkles,

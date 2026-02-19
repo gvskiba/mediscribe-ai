@@ -25,10 +25,12 @@ import {
   Upload,
   X as XIcon,
   Code,
-  Paperclip
+  Paperclip,
+  Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import moment from "moment";
+import ProcedureNoteCreator from "./ProcedureNoteCreator";
 
 export default function ProceduresPanel({ note, noteId }) {
   const [activeTab, setActiveTab] = useState("recommendations");

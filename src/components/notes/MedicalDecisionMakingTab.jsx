@@ -267,18 +267,64 @@ Return a JSON with each section and its acuity ranking.`,
                     </Badge>
                   )}
                 </div>
-                <p className="text-sm text-slate-700 leading-relaxed mb-3">{aiAnalysis.problem_summary}</p>
-                <Button
-                  onClick={async () => {
-                    await onUpdateNote({ mdm: `## Problem Summary\n${aiAnalysis.problem_summary}` });
-                    toast.success("Added to clinical note");
-                  }}
-                  size="sm"
-                  variant="outline"
-                  className="w-full gap-1"
-                >
-                  <Plus className="w-3 h-3" /> Add to Note
-                </Button>
+                {editingSection === "problem_summary" ? (
+                  <Textarea
+                    value={editedContent.problem_summary || aiAnalysis.problem_summary}
+                    onChange={(e) => setEditedContent({...editedContent, problem_summary: e.target.value})}
+                    className="mb-2 text-xs"
+                  />
+                ) : (
+                  <p className="text-sm text-slate-700 leading-relaxed mb-3">{editedContent.problem_summary || aiAnalysis.problem_summary}</p>
+                )}
+                <div className="flex gap-2">
+                  {editingSection === "problem_summary" ? (
+                    <>
+                      <Button
+                        onClick={() => setEditingSection(null)}
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        Done Editing
+                      </Button>
+                      <Button
+                        onClick={async () => {
+                          await onUpdateNote({ mdm: `## Problem Summary\n${editedContent.problem_summary || aiAnalysis.problem_summary}` });
+                          toast.success("Added to clinical note");
+                          setEditingSection(null);
+                        }}
+                        size="sm"
+                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+                      >
+                        <Plus className="w-3 h-3" /> Add to Note
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        onClick={() => {
+                          setEditingSection("problem_summary");
+                          setEditedContent({...editedContent, problem_summary: aiAnalysis.problem_summary});
+                        }}
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        onClick={async () => {
+                          await onUpdateNote({ mdm: `## Problem Summary\n${editedContent.problem_summary || aiAnalysis.problem_summary}` });
+                          toast.success("Added to clinical note");
+                        }}
+                        size="sm"
+                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+                      >
+                        <Plus className="w-3 h-3" /> Add
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-3">

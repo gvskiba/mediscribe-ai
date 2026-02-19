@@ -1,25 +1,11 @@
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Activity, Thermometer, Heart, Wind, Droplet, Weight, Ruler, Save, X } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Activity, Thermometer, Heart, Wind, Droplet, Weight, Ruler } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function VitalSignsInput({ vitalSigns, onChange, onSave, readOnly = false }) {
   const [values, setValues] = useState(vitalSigns || {});
-
-  const handleSave = () => {
-    if (onSave) {
-      onSave(values);
-    } else if (onChange) {
-      onChange(values);
-    }
-  };
-
-  const handleCancel = () => {
-    setValues(vitalSigns || {});
-    setEditing(false);
-  };
+  const [selectedVital, setSelectedVital] = useState(null);
 
   const updateValue = (field, key, value) => {
     const newValues = {

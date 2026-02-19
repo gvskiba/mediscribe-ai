@@ -129,15 +129,32 @@ export default function ReviewOfSystemsEditor({ rosData, onUpdate, onAddToNote }
             {abnormals.length} abnormal
           </span>
         </div>
-        <Button
-          size="sm"
-          onClick={handleAddToNote}
-          disabled={assessed.length === 0}
-          className="bg-purple-600 hover:bg-purple-700 text-white gap-1.5"
-        >
-          <Check className="w-3.5 h-3.5" /> Add to Note
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setAddingSection(true)} className="border-purple-200 text-purple-700 hover:bg-purple-50 gap-1">
+            <Plus className="w-3.5 h-3.5" /> Add Section
+          </Button>
+          <Button size="sm" onClick={handleAddToNote} disabled={assessed.length === 0} className="bg-purple-600 hover:bg-purple-700 text-white gap-1.5">
+            <Check className="w-3.5 h-3.5" /> Add to Note
+          </Button>
+        </div>
       </div>
+
+      {/* Add section inline form */}
+      {addingSection && (
+        <div className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-xl px-3 py-2">
+          <input
+            autoFocus
+            type="text"
+            value={newSectionLabel}
+            onChange={(e) => setNewSectionLabel(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") addCustomSection(); if (e.key === "Escape") { setAddingSection(false); setNewSectionLabel(""); } }}
+            placeholder="Section name (e.g. Allergic/Immunologic)..."
+            className="flex-1 text-sm bg-transparent border-0 outline-none focus:ring-0 placeholder:text-slate-400"
+          />
+          <button onClick={addCustomSection} className="text-purple-600 hover:text-purple-800"><Check className="w-4 h-4" /></button>
+          <button onClick={() => { setAddingSection(false); setNewSectionLabel(""); }} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+        </div>
+      )}
 
       {/* Systems grid */}
       <div className="grid grid-cols-1 gap-2">

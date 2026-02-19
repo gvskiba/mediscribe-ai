@@ -34,6 +34,7 @@ const COLOR = {
   amber:   { btn: "bg-amber-600 hover:bg-amber-700",    badge: "bg-amber-100 text-amber-700",    border: "border-amber-200",   text: "text-amber-700",   dot: "bg-amber-500" },
   rose:    { btn: "bg-rose-600 hover:bg-rose-700",      badge: "bg-rose-100 text-rose-700",      border: "border-rose-200",    text: "text-rose-700",    dot: "bg-rose-500" },
   teal:    { btn: "bg-teal-600 hover:bg-teal-700",      badge: "bg-teal-100 text-teal-700",      border: "border-teal-200",    text: "text-teal-700",    dot: "bg-teal-500" },
+  violet:  { btn: "bg-violet-600 hover:bg-violet-700",  badge: "bg-violet-100 text-violet-700",  border: "border-violet-200",  text: "text-violet-700",  dot: "bg-violet-500" },
 };
 
 // ── Panel: Summarize ──────────────────────────────────────────────────────────

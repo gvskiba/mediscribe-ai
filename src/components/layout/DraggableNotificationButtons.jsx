@@ -136,7 +136,13 @@ export default function DraggableNotificationButtons() {
       {currentNoteId && (
         <motion.button
           onMouseDown={(e) => handleMouseDown(e, 'arrow')}
-          onClick={handleReturnToNote}
+          onClick={(e) => {
+            if (isDragging === 'arrow') {
+              e.preventDefault();
+              return;
+            }
+            handleReturnToNote();
+          }}
           whileHover={{ scale: isDragging ? 1 : 1.08 }}
           whileTap={{ scale: 0.95 }}
           className={`fab-button fixed ${sizes.container} rounded-full bg-white shadow-xl border-2 border-transparent flex items-center justify-center transition-all ${isDragging === 'arrow' ? 'cursor-grabbing' : 'cursor-grab'}`}

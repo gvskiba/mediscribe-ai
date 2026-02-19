@@ -58,6 +58,10 @@ export default function Customize() {
         fab_color_arrow: 'blue',
         fab_color_plus: 'green',
         fab_size: 'large',
+        ai_response_verbosity: 'balanced',
+        ai_enable_coding_suggestions: true,
+        ai_enable_safety_checks: true,
+        ai_response_language: 'clinical',
         ...(u?.preferences || {})
       });
     }).finally(() => setLoading(false));

@@ -255,6 +255,61 @@ export default function Customize() {
                   </div>
                 </Card>
 
+                <Card title="AI Settings" subtitle="Configure AI response behavior and features">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-900 mb-3">Response Verbosity</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { value: 'concise', label: 'Concise', desc: 'Short, direct answers' },
+                          { value: 'balanced', label: 'Balanced', desc: 'Moderate detail' },
+                          { value: 'detailed', label: 'Detailed', desc: 'In-depth explanations' },
+                        ].map(v => (
+                          <button
+                            key={v.value}
+                            onClick={() => set('ai_response_verbosity', v.value)}
+                            className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all text-center ${
+                              prefs.ai_response_verbosity === v.value
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-slate-200 bg-white hover:border-slate-300'
+                            }`}
+                          >
+                            <span className="text-sm font-medium text-slate-900">{v.label}</span>
+                            <span className="text-xs text-slate-500">{v.desc}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="border-t border-slate-100 pt-4">
+                      <label className="block text-sm font-medium text-slate-900 mb-3">Response Language</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { value: 'clinical', label: 'Clinical' },
+                          { value: 'patient_friendly', label: 'Patient-Friendly' },
+                        ].map(l => (
+                          <button
+                            key={l.value}
+                            onClick={() => set('ai_response_language', l.value)}
+                            className={`px-4 py-2 rounded-lg border-2 transition-all font-medium text-sm ${
+                              prefs.ai_response_language === l.value
+                                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                            }`}
+                          >
+                            {l.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="border-t border-slate-100 pt-4 space-y-3">
+                      <Toggle label="Code Suggestions" desc="Enable ICD-10 and clinical coding suggestions" checked={prefs.ai_enable_coding_suggestions} onChange={v => set('ai_enable_coding_suggestions', v)} />
+                      <Toggle label="Safety Checks" desc="Enable AI to flag potential safety concerns and drug interactions" checked={prefs.ai_enable_safety_checks} onChange={v => set('ai_enable_safety_checks', v)} />
+                    </div>
+                  </div>
+                </Card>
+
                 <Card title="Editor Behavior" subtitle="Configure how the note editor works">
                   <div className="space-y-3">
                     <Toggle label="Auto-Save" desc="Automatically save notes while editing" checked={prefs.auto_save} onChange={v => set('auto_save', v)} />

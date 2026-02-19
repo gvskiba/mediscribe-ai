@@ -2476,14 +2476,27 @@ Generated: ${new Date().toLocaleString()}
                          </h3>
                          <p className="text-purple-100 text-sm mt-1">Comprehensive system-based symptom review</p>
                        </div>
-                       <InlineSectionAI
-                         type="review_of_systems"
-                         note={note}
-                         onApply={async (val) => {
-                           await base44.entities.ClinicalNote.update(noteId, { review_of_systems: val });
-                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                         }}
-                       />
+                       <div className="flex items-center gap-2">
+                         <Button
+                           size="sm"
+                           onClick={async () => {
+                             await base44.entities.ClinicalNote.update(noteId, { review_of_systems: "REVIEW OF SYSTEMS:\nGeneral: Denies fever, chills, weight loss.\nHeadache: Denies headache or dizziness.\nEyes, Ears, Nose, Throat: Denies vision changes, hearing loss, rhinorrhea, or sore throat.\nCardiovascular: Denies chest pain, palpitations, orthopnea, PND.\nRespiratory: Denies dyspnea, cough, or wheezing.\nGastrointestinal: Denies nausea, vomiting, diarrhea, constipation, or abdominal pain.\nGenitourinary: Denies dysuria, frequency, or urgency.\nMusculoskeletal: Denies joint pain, swelling, or stiffness.\nNeurological: Denies numbness, tingling, weakness, or tremor.\nPsychiatric: Denies depression, anxiety, or sleep disturbance.\nSkin: No rashes or lesions noted." });
+                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                             toast.success("ROS set to normal");
+                           }}
+                           className="bg-white/20 hover:bg-white/30 border-white/30 border text-white gap-2"
+                         >
+                           <Check className="w-4 h-4" /> Set Normal
+                         </Button>
+                         <InlineSectionAI
+                           type="review_of_systems"
+                           note={note}
+                           onApply={async (val) => {
+                             await base44.entities.ClinicalNote.update(noteId, { review_of_systems: val });
+                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                           }}
+                         />
+                       </div>
                      </div>
                    </div>
                    <div className="p-6 space-y-6 overflow-y-auto">

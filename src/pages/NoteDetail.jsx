@@ -201,6 +201,8 @@ export default function NoteDetail() {
   const [showCreateGroupDialog, setShowCreateGroupDialog] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupColor, setNewGroupColor] = useState("blue");
+  const [physicalExamNormal, setPhysicalExamNormal] = useState(false);
+  const [rosNormal, setRosNormal] = useState(false);
 
   const handleNext = () => {
     const allTabs = tabGroups.flatMap(g => g.tabs.map(t => t.id));

@@ -168,11 +168,12 @@ Provide recommendations in JSON format with: procedure_name, indication, clinica
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="recommendations">AI Recommendations</TabsTrigger>
-          <TabsTrigger value="search">Search Procedures</TabsTrigger>
-          <TabsTrigger value="logs">Procedure Log</TabsTrigger>
-        </TabsList>
+         <TabsList className="grid w-full grid-cols-4">
+           <TabsTrigger value="recommendations">AI Recommendations</TabsTrigger>
+           <TabsTrigger value="search">Search Procedures</TabsTrigger>
+           <TabsTrigger value="procedure_note">Procedure Note</TabsTrigger>
+           <TabsTrigger value="logs">Procedure Log</TabsTrigger>
+         </TabsList>
 
         {/* AI Recommendations Tab */}
         <TabsContent value="recommendations" className="space-y-4">

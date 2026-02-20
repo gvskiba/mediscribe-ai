@@ -1806,19 +1806,46 @@ Generated: ${new Date().toLocaleString()}
                  </div>
                  </div>
 
-                 {/* Vital Signs History */}
-                 <div className="bg-white rounded-xl border-2 border-emerald-300 shadow-lg overflow-hidden">
-                 <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-5 text-white">
-                   <h3 className="font-bold text-lg flex items-center gap-2">
-                     <Activity className="w-6 h-6" />
-                     Vital Signs History
-                   </h3>
-                   <p className="text-emerald-100 text-sm mt-1">View and manage previously recorded vital signs</p>
-                 </div>
-                 <div className="p-6">
-                   <VitalSignsHistory vitalHistory={vitalSignsHistory} />
-                 </div>
-                 </div>
+                 {/* Add to Note Button */}
+                    {note.vital_signs && Object.keys(note.vital_signs).filter(k => note.vital_signs[k]?.value || note.vital_signs[k]?.systolic).length > 0 && (
+                      <div className="flex justify-end">
+                        <Button
+                          onClick={async () => {
+                            const vs = note.vital_signs;
+                            const lines = [];
+                            if (vs.temperature?.value) lines.push(`Temperature: ${vs.temperature.value}°${vs.temperature.unit || 'F'}`);
+                            if (vs.heart_rate?.value) lines.push(`Heart Rate: ${vs.heart_rate.value} bpm`);
+                            if (vs.blood_pressure?.systolic) lines.push(`Blood Pressure: ${vs.blood_pressure.systolic}/${vs.blood_pressure.diastolic} mmHg`);
+                            if (vs.respiratory_rate?.value) lines.push(`Respiratory Rate: ${vs.respiratory_rate.value} breaths/min`);
+                            if (vs.oxygen_saturation?.value) lines.push(`Oxygen Saturation: ${vs.oxygen_saturation.value}%`);
+                            if (vs.weight?.value) lines.push(`Weight: ${vs.weight.value} ${vs.weight.unit || 'lbs'}`);
+                            if (vs.height?.value) lines.push(`Height: ${vs.height.value} ${vs.height.unit || 'in'}`);
+                            const vitalsText = `\n\nVITAL SIGNS (${new Date().toLocaleDateString()}):\n${lines.join('\n')}`;
+                            const updatedNote = (note.physical_exam || "") + vitalsText;
+                            await base44.entities.ClinicalNote.update(noteId, { physical_exam: updatedNote });
+                            queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                            toast.success("Vital signs added to Physical Exam section");
+                          }}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+                        >
+                          <Plus className="w-4 h-4" /> Add to Note
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Vital Signs History */}
+                    <div className="bg-white rounded-xl border-2 border-emerald-300 shadow-lg overflow-hidden">
+                    <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-5 text-white">
+                      <h3 className="font-bold text-lg flex items-center gap-2">
+                        <Activity className="w-6 h-6" />
+                        Vital Signs History
+                      </h3>
+                      <p className="text-emerald-100 text-sm mt-1">View and manage previously recorded vital signs</p>
+                    </div>
+                    <div className="p-6">
+                      <VitalSignsHistory vitalHistory={vitalSignsHistory} />
+                    </div>
+                    </div>
 
 
                </div>

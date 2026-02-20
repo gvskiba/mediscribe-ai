@@ -1751,7 +1751,9 @@ Generated: ${new Date().toLocaleString()}
 
                {/* Paste Analyzer */}
                <VitalSignsPasteAnalyzer
-                 onApplyVitals={async (vitals) => {
+                  vitalSigns={note.vital_signs}
+                  patientAge={note.patient_age}
+                  onApplyVitals={async (vitals) => {
                    const vitalSigns = {
                      temperature: vitals.temperature,
                      heart_rate: vitals.heart_rate,

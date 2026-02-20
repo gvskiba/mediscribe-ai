@@ -15,9 +15,8 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Note ID is required' }, { status: 400 });
     }
 
-    // Fetch the note
-    const notes = await base44.entities.ClinicalNote.list();
-    const note = notes.find(n => n.id === noteId);
+    // Fetch the note directly by ID
+    const note = await base44.entities.ClinicalNote.get(noteId);
 
     if (!note) {
       return Response.json({ error: 'Note not found' }, { status: 404 });

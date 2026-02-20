@@ -119,6 +119,73 @@ Return organized data with parsed numeric values and units.`,
     }
   };
 
+  const handleAnalyzeVitals = async () => {
+    const vitals = vitalSigns || analyzedVitals;
+    if (!vitals || Object.keys(vitals).length === 0) {
+      toast.error("No vital signs to analyze");
+      return;
+    }
+    setLoadingVitalAnalysis(true);
+    try {
+      const vitalsSummary = Object.entries(vitals)
+        .filter(([_, v]) => v && (v.value || v.systolic))
+        .map(([key, v]) => {
+          const displayKey = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+          if (key === 'blood_pressure') return `- ${displayKey}: ${v.systolic}/${v.diastolic} ${v.unit || 'mmHg'}`;
+          return `- ${displayKey}: ${v.value} ${v.unit || ''}`;
+        })
+        .join('\n');
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a clinical expert. Analyze these vital signs and classify each as NORMAL or ABNORMAL based on standard adult reference ranges.
+
+PATIENT INFORMATION:
+Age: ${patientAge || 'Adult (assumed)'}
+
+VITAL SIGNS RECORDED:
+${vitalsSummary}
+
+REFERENCE RANGES FOR ADULTS:
+- Temperature: 97-99°F (36.1-37.2°C)
+- Heart Rate: 60-100 bpm
+- Blood Pressure: <120/80 mmHg (normal), 120-139/80-89 (elevated), ≥140/90 (high)
+- Respiratory Rate: 12-20 breaths/min
+- Oxygen Saturation: ≥95%
+
+For EACH vital sign provided, determine:
+1. Is it NORMAL or ABNORMAL?
+2. What is the normal reference range?
+3. If abnormal, what is the clinical significance?`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            analysis: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  vital_sign: { type: "string" },
+                  status: { type: "string", enum: ["normal", "abnormal"] },
+                  value: { type: "string" },
+                  reference_range: { type: "string" },
+                  clinical_significance: { type: "string" }
+                }
+              }
+            },
+            summary: { type: "string" }
+          }
+        }
+      });
+
+      setVitalSignsAnalysis(result);
+    } catch (error) {
+      console.error("Failed to analyze vital signs:", error);
+      toast.error("Failed to analyze vital signs");
+    } finally {
+      setLoadingVitalAnalysis(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">

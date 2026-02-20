@@ -211,15 +211,27 @@ export default function VitalSignsInput({ vitalSigns, onChange, onSave, readOnly
 
           <button
             onClick={() => {
-              if (onSave) onSave(values);
-              else if (onChange) onChange(values);
+              if (onChange) onChange(values);
               setSelectedVital(null);
             }}
             className="mt-4 w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm transition-all"
           >
-            Save {activeVital.label}
+            Done
           </button>
         </motion.div>
+      )}
+
+      {/* Always-visible Save to History button */}
+      {onSave && (
+        <button
+          onClick={() => {
+            onSave(values);
+            setSelectedVital(null);
+          }}
+          className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2"
+        >
+          💾 Save Vitals to History
+        </button>
       )}
     </div>
   );

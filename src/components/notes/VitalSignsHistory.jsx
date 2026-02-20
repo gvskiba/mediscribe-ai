@@ -2,7 +2,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format, formatDistanceToNow } from "date-fns";
-import { Activity, Trash2, Copy } from "lucide-react";
+import { Activity, Trash2, Copy, Plus } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 

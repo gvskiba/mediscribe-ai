@@ -1909,6 +1909,70 @@ Generated: ${new Date().toLocaleString()}
                        }
                      }}
                    />
+                   {/* AI Vital Signs Analysis */}
+                   <div className="border-t border-slate-200 pt-4 space-y-3">
+                     <div className="flex items-center gap-2">
+                       <Sparkles className="w-4 h-4 text-teal-600" />
+                       <p className="text-sm font-semibold text-slate-700">AI Vital Signs Analysis</p>
+                       <p className="text-xs text-slate-500">— analyze for abnormalities</p>
+                     </div>
+                     <Button
+                       onClick={async () => {
+                         const vitals = note.vital_signs;
+                         if (!vitals || Object.keys(vitals).length === 0) { toast.error("No vital signs to analyze"); return; }
+                         setLoadingVitalAnalysis(true);
+                         try {
+                           const vitalsSummary = Object.entries(vitals)
+                             .filter(([_, v]) => v && (v.value || v.systolic))
+                             .map(([key, v]) => {
+                               const displayKey = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                               if (key === 'blood_pressure') return `- ${displayKey}: ${v.systolic}/${v.diastolic} ${v.unit || 'mmHg'}`;
+                               return `- ${displayKey}: ${v.value} ${v.unit || ''}`;
+                             }).join('\n');
+                           const result = await base44.integrations.Core.InvokeLLM({
+                             prompt: `Analyze these vital signs for abnormalities based on standard adult reference ranges.\n\nVITAL SIGNS:\n${vitalsSummary}\n\nFor each, determine NORMAL or ABNORMAL, reference range, and clinical significance.`,
+                             response_json_schema: {
+                               type: "object",
+                               properties: {
+                                 analysis: { type: "array", items: { type: "object", properties: { vital_sign: { type: "string" }, status: { type: "string", enum: ["normal", "abnormal"] }, value: { type: "string" }, reference_range: { type: "string" }, clinical_significance: { type: "string" } } } },
+                                 summary: { type: "string" }
+                               }
+                             }
+                           });
+                           setVitalSignsAnalysis(result);
+                         } catch (e) {
+                           toast.error("Failed to analyze vital signs");
+                         } finally {
+                           setLoadingVitalAnalysis(false);
+                         }
+                       }}
+                       disabled={loadingVitalAnalysis}
+                       variant="outline"
+                       className="gap-2 border-teal-300 text-teal-700 hover:bg-teal-50"
+                     >
+                       {loadingVitalAnalysis ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</> : <><Sparkles className="w-4 h-4" /> Analyze Vital Signs</>}
+                     </Button>
+                     {vitalSignsAnalysis && (
+                       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
+                         {vitalSignsAnalysis.analysis?.map((item, idx) => (
+                           <div key={idx} className={`rounded-lg border p-3 ${item.status === "abnormal" ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200"}`}>
+                             <div className="flex items-center justify-between mb-1">
+                               <p className="font-semibold text-sm text-slate-900 capitalize">{item.vital_sign}</p>
+                               <Badge className={item.status === "abnormal" ? "bg-red-600 text-white" : "bg-green-600 text-white"}>{item.status.toUpperCase()}</Badge>
+                             </div>
+                             <p className="text-xs text-slate-700"><strong>Value:</strong> {item.value} &nbsp;|&nbsp; <strong>Range:</strong> {item.reference_range}</p>
+                             {item.clinical_significance && <p className="text-xs text-slate-600 mt-0.5"><strong>Significance:</strong> {item.clinical_significance}</p>}
+                           </div>
+                         ))}
+                         {vitalSignsAnalysis.summary && (
+                           <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                             <p className="text-xs font-semibold text-slate-700 mb-1">Summary</p>
+                             <p className="text-xs text-slate-600">{vitalSignsAnalysis.summary}</p>
+                           </div>
+                         )}
+                       </motion.div>
+                     )}
+                   </div>
                  </div>
                </div>
 

@@ -1053,6 +1053,13 @@ export default function AISidebar({ isOpen, onClose, note, noteId, activeTab: ex
 
             {/* Active Panel */}
             <div className="flex-1 overflow-y-auto p-5">
+              {/* Context-aware quick actions for current note tab */}
+              <ContextualAIPanel
+                activeNoteTab={externalActiveTab}
+                note={note}
+                onUpdateNote={onUpdateNote}
+                onSwitchAITab={(tab) => setActiveTab(tab)}
+              />
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeTab}

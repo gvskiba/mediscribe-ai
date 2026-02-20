@@ -237,6 +237,7 @@ export default function NoteDetail() {
   const [grammarSuggestions, setGrammarSuggestions] = useState(null);
   const [structuredPreview, setStructuredPreview] = useState(null);
   const [showStructuredPreview, setShowStructuredPreview] = useState(false);
+  const [editTreatmentPlanOpen, setEditTreatmentPlanOpen] = useState(false);
 
   const handleNext = () => {
     const allTabs = tabGroups.flatMap(g => g.tabs.map(t => t.id));

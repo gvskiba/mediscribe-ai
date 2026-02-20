@@ -232,6 +232,8 @@ export default function NoteDetail() {
   const [vitalSignsAnalysis, setVitalSignsAnalysis] = useState(null);
   const [loadingVitalAnalysis, setLoadingVitalAnalysis] = useState(false);
   const [vitalSignsHistory, setVitalSignsHistory] = useState([]);
+  const [checkingGrammar, setCheckingGrammar] = useState(false);
+  const [grammarSuggestions, setGrammarSuggestions] = useState(null);
 
   const handleNext = () => {
     const allTabs = tabGroups.flatMap(g => g.tabs.map(t => t.id));

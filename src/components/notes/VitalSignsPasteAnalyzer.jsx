@@ -285,69 +285,6 @@ For EACH vital sign provided, determine:
         </div>
       )}
 
-      {/* AI Vital Signs Analysis */}
-      <div className="bg-white rounded-xl border-2 border-teal-300 shadow-lg overflow-hidden">
-        <div className="bg-gradient-to-r from-teal-500 to-cyan-500 px-6 py-5 text-white">
-          <h3 className="font-bold text-lg flex items-center gap-2">
-            <Sparkles className="w-6 h-6" />
-            AI Vital Signs Analysis
-          </h3>
-          <p className="text-teal-100 text-sm mt-1">Analyze vital signs for abnormalities</p>
-        </div>
-        <div className="p-6 space-y-4">
-          <Button
-            onClick={handleAnalyzeVitals}
-            disabled={loadingVitalAnalysis}
-            className="w-full bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white gap-2"
-          >
-            {loadingVitalAnalysis ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</>
-            ) : (
-              <><Sparkles className="w-4 h-4" /> Analyze Vital Signs</>
-            )}
-          </Button>
-
-          {vitalSignsAnalysis && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-4 mt-2 pt-4 border-t border-teal-200"
-            >
-              <p className="text-sm font-semibold text-slate-700">Analysis Results:</p>
-              <div className="space-y-3">
-                {vitalSignsAnalysis.analysis?.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className={`rounded-lg border-2 p-4 ${
-                      item.status === "abnormal"
-                        ? "bg-red-50 border-red-200"
-                        : "bg-green-50 border-green-200"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-slate-900 capitalize">{item.vital_sign}</h4>
-                      <Badge className={item.status === "abnormal" ? "bg-red-600 text-white" : "bg-green-600 text-white"}>
-                        {item.status.toUpperCase()}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-slate-700 mb-1"><strong>Value:</strong> {item.value}</p>
-                    <p className="text-sm text-slate-700 mb-1"><strong>Reference Range:</strong> {item.reference_range}</p>
-                    {item.clinical_significance && (
-                      <p className="text-sm text-slate-600"><strong>Significance:</strong> {item.clinical_significance}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-              {vitalSignsAnalysis.summary && (
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                  <p className="text-sm font-semibold text-slate-700 mb-2">Summary:</p>
-                  <p className="text-sm text-slate-600">{vitalSignsAnalysis.summary}</p>
-                </div>
-              )}
-            </motion.div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

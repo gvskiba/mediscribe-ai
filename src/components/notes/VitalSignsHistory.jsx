@@ -6,7 +6,7 @@ import { Activity, Trash2, Copy } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
-export default function VitalSignsHistory({ vitalHistory = [] }) {
+export default function VitalSignsHistory({ vitalHistory = [], onAddToNote }) {
   if (!vitalHistory || vitalHistory.length === 0) {
     return (
       <div className="text-center py-12 bg-slate-50 rounded-xl border-2 border-dashed border-slate-300">

@@ -133,23 +133,7 @@ Return organized data with parsed numeric values and units.`,
             placeholder="Paste vital signs here (e.g., 'BP 120/80, HR 72, Temp 98.6F, RR 16, SpO2 98%, Height 5'10, Weight 180lbs')"
             className="min-h-[100px] text-sm"
           />
-          <Button
-            onClick={handleAnalyze}
-            disabled={analyzing || !pastedText.trim()}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 gap-2"
-          >
-            {analyzing ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Analyzing...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                Analyze with AI
-              </>
-            )}
-          </Button>
+
         </div>
       </div>
 

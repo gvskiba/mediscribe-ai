@@ -1927,7 +1927,25 @@ Generated: ${new Date().toLocaleString()}
                       <p className="text-emerald-100 text-sm mt-1">View and manage previously recorded vital signs</p>
                     </div>
                     <div className="p-6">
-                      <VitalSignsHistory vitalHistory={vitalSignsHistory} />
+                      <VitalSignsHistory
+                       vitalHistory={vitalSignsHistory}
+                       onAddToNote={async (vitals) => {
+                         const vs = vitals;
+                         const lines = [];
+                         if (vs.temperature?.value) lines.push(`Temperature: ${vs.temperature.value}°${vs.temperature.unit || 'F'}`);
+                         if (vs.heart_rate?.value) lines.push(`Heart Rate: ${vs.heart_rate.value} bpm`);
+                         if (vs.blood_pressure?.systolic) lines.push(`Blood Pressure: ${vs.blood_pressure.systolic}/${vs.blood_pressure.diastolic} mmHg`);
+                         if (vs.respiratory_rate?.value) lines.push(`Respiratory Rate: ${vs.respiratory_rate.value} breaths/min`);
+                         if (vs.oxygen_saturation?.value) lines.push(`Oxygen Saturation: ${vs.oxygen_saturation.value}%`);
+                         if (vs.weight?.value) lines.push(`Weight: ${vs.weight.value} ${vs.weight.unit || 'lbs'}`);
+                         if (vs.height?.value) lines.push(`Height: ${vs.height.value} ${vs.height.unit || 'in'}`);
+                         const vitalsText = `\n\nVITAL SIGNS (${new Date().toLocaleDateString()}):\n${lines.join('\n')}`;
+                         const updatedNote = (note.physical_exam || "") + vitalsText;
+                         await base44.entities.ClinicalNote.update(noteId, { physical_exam: updatedNote });
+                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                         toast.success("Vital signs added to Physical Exam section");
+                       }}
+                     />
                     </div>
                     </div>
 

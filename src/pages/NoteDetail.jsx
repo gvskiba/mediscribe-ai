@@ -3670,8 +3670,21 @@ Generated: ${new Date().toLocaleString()}
          }}
        />
 
+       {/* AI Structured Note Preview */}
+       {showStructuredPreview && (
+         <AIStructuredNotePreview
+           structured={structuredPreview}
+           activeTab={activeTab}
+           onClose={() => setShowStructuredPreview(false)}
+           onApply={() => {
+             toast.success(`Analysis applied! ${Object.keys(structuredPreview || {}).length} fields populated`);
+             setShowStructuredPreview(false);
+           }}
+         />
+       )}
+
        {/* Create Template Dialog */}
-      <CreateTemplateFromNote
+       <CreateTemplateFromNote
         open={templateDialogOpen}
         onClose={() => setTemplateDialogOpen(false)}
         note={note}

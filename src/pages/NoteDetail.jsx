@@ -2309,16 +2309,27 @@ Generated: ${new Date().toLocaleString()}
                          </h3>
                          <p className="text-amber-100 text-sm mt-1">Review and edit the treatment approach and care plan</p>
                        </div>
-                       <Button
-                         onClick={() => {
-                           queryClient.setQueryData(["note", noteId], (old) => ({ ...old, _editingPlan: old.plan || "" }));
-                           setEditTreatmentPlanOpen(true);
-                         }}
-                         className="bg-white text-amber-700 hover:bg-amber-50 gap-2 font-semibold shadow-sm"
-                         size="sm"
-                       >
-                         <Settings className="w-4 h-4" /> Edit Treatment Plan
-                       </Button>
+                       <div className="flex gap-2">
+                         <Button
+                           onClick={async () => {
+                             await base44.entities.ClinicalNote.update(noteId, { plan: note.plan });
+                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                             toast.success("Treatment plan added to note");
+                           }}
+                           disabled={!note.plan}
+                           className="bg-white/20 hover:bg-white/30 border border-white/40 text-white gap-2 font-semibold"
+                           size="sm"
+                         >
+                           <Check className="w-4 h-4" /> Add to Note
+                         </Button>
+                         <Button
+                           onClick={() => setEditTreatmentPlanOpen(true)}
+                           className="bg-white text-amber-700 hover:bg-amber-50 gap-2 font-semibold shadow-sm"
+                           size="sm"
+                         >
+                           <Settings className="w-4 h-4" /> Edit Treatment Plan
+                         </Button>
+                       </div>
                      </div>
                    </div>
                    <div className="p-6">

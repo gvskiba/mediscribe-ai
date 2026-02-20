@@ -2296,17 +2296,8 @@ Generated: ${new Date().toLocaleString()}
 
            {/* Treatment Plan Tab */}
              <TabsContent value="treatment_plan" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
-               <div className="max-w-5xl mx-auto space-y-8">
-                 {/* Header */}
-                 <div className="text-center mb-8">
-                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 mb-4 shadow-lg">
-                     <FileText className="w-8 h-8 text-white" />
-                   </div>
-                   <h2 className="text-3xl font-bold text-slate-900 mb-2">Treatment Plan</h2>
-                   <p className="text-slate-600 max-w-2xl mx-auto">Document comprehensive treatment approach and care plan</p>
-                 </div>
-
-                 {/* Treatment Plan Editor */}
+               <div className="max-w-4xl mx-auto space-y-6">
+                 {/* Treatment Plan Preview Card */}
                  <div className="bg-white rounded-xl border-2 border-amber-300 shadow-lg overflow-hidden">
                    <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-5 text-white">
                      <div className="flex items-center justify-between">
@@ -2315,104 +2306,144 @@ Generated: ${new Date().toLocaleString()}
                            <FileText className="w-6 h-6" />
                            Treatment Plan
                          </h3>
-                         <p className="text-amber-100 text-sm mt-1">Document detailed treatment approach, follow-up, and patient instructions</p>
+                         <p className="text-amber-100 text-sm mt-1">Review and edit the treatment approach and care plan</p>
                        </div>
-                       <InlineSectionAI
-                         type="plan"
-                         note={note}
-                         onApply={async (val) => {
-                           await base44.entities.ClinicalNote.update(noteId, { plan: val });
-                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                         }}
-                       />
-                     </div>
-                   </div>
-                   <div className="p-6 space-y-6">
-                     <div className="flex gap-3">
-                       <Textarea
-                         value={note.plan || ""}
-                         onChange={(e) => {
-                           queryClient.setQueryData(["note", noteId], (old) => ({
-                             ...old,
-                             plan: e.target.value
-                           }));
-                         }}
-                         onBlur={async (e) => {
-                           await base44.entities.ClinicalNote.update(noteId, { plan: e.target.value });
-                           toast.success("Treatment plan saved");
-                         }}
-                         placeholder="Document treatment plan, follow-up instructions, patient education..."
-                         className="min-h-[400px] text-base flex-1"
-                       />
-                     </div>
-                     <div className="flex gap-2">
-                       <Button
-                         onClick={async () => {
-                           try {
-                             await base44.entities.ClinicalNote.update(noteId, { plan: note.plan });
-                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                             toast.success("Treatment plan added to clinical note");
-                           } catch (error) {
-                             console.error("Failed to add treatment plan:", error);
-                             toast.error("Failed to add treatment plan");
-                           }
-                         }}
-                         className="bg-amber-600 hover:bg-amber-700 text-white gap-2"
-                       >
-                         <Check className="w-4 h-4" /> Add to Note
-                       </Button>
                        <Button
                          onClick={() => {
-                           queryClient.setQueryData(["note", noteId], (old) => ({
-                             ...old,
-                             plan: ""
-                           }));
-                           toast.success("Treatment plan cleared");
+                           queryClient.setQueryData(["note", noteId], (old) => ({ ...old, _editingPlan: old.plan || "" }));
+                           setEditTreatmentPlanOpen(true);
                          }}
-                         variant="outline"
-                         className="gap-2 text-slate-600 hover:bg-red-50"
+                         className="bg-white text-amber-700 hover:bg-amber-50 gap-2 font-semibold shadow-sm"
+                         size="sm"
                        >
-                         <X className="w-4 h-4" /> Clear
+                         <Settings className="w-4 h-4" /> Edit Treatment Plan
                        </Button>
                      </div>
-                     {note.plan && (
-                       <div className="bg-slate-50 rounded-xl border-2 border-slate-200 p-6">
-                         <h4 className="text-sm font-semibold text-slate-700 mb-4">Preview</h4>
-                         <div className="prose prose-sm prose-slate max-w-none text-slate-700">
-                           <ReactMarkdown
-                             components={{
-                               p: ({ children }) => <p className="mb-2 leading-relaxed">{children}</p>,
-                               h1: ({ children }) => <h1 className="text-xl font-bold mt-4 mb-2">{children}</h1>,
-                               h2: ({ children }) => <h2 className="text-lg font-bold mt-3 mb-2">{children}</h2>,
-                               h3: ({ children }) => <h3 className="text-base font-bold mt-2 mb-1">{children}</h3>,
-                               ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
-                               ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
-                               li: ({ children }) => <li className="block">{children}</li>,
-                               strong: ({ children }) => <strong className="font-bold">{children}</strong>,
-                               em: ({ children }) => <em className="italic">{children}</em>,
-                             }}
-                           >
-                             {note.plan}
-                           </ReactMarkdown>
-                         </div>
+                   </div>
+                   <div className="p-6">
+                     {note.plan ? (
+                       <div className="prose prose-sm prose-slate max-w-none text-slate-700">
+                         <ReactMarkdown
+                           components={{
+                             p: ({ children }) => <p className="mb-2 leading-relaxed">{children}</p>,
+                             h1: ({ children }) => <h1 className="text-xl font-bold mt-4 mb-2">{children}</h1>,
+                             h2: ({ children }) => <h2 className="text-lg font-bold mt-3 mb-2">{children}</h2>,
+                             h3: ({ children }) => <h3 className="text-base font-bold mt-2 mb-1">{children}</h3>,
+                             ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+                             ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+                             li: ({ children }) => <li className="block">{children}</li>,
+                             strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+                             em: ({ children }) => <em className="italic">{children}</em>,
+                           }}
+                         >
+                           {note.plan}
+                         </ReactMarkdown>
+                       </div>
+                     ) : (
+                       <div className="text-center py-16">
+                         <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                         <p className="text-slate-500 font-medium">No treatment plan documented yet</p>
+                         <p className="text-sm text-slate-400 mt-1">Click "Edit Treatment Plan" to get started</p>
+                         <Button
+                           onClick={() => setEditTreatmentPlanOpen(true)}
+                           className="mt-4 bg-amber-600 hover:bg-amber-700 text-white gap-2"
+                           size="sm"
+                         >
+                           <Plus className="w-4 h-4" /> Add Treatment Plan
+                         </Button>
                        </div>
                      )}
                    </div>
                  </div>
-
-                 {/* Workflow Automation */}
-                 <ClinicalWorkflowAutomation
-                   note={note}
-                   noteId={noteId}
-                   onUpdateNote={async (updates) => {
-                     await base44.entities.ClinicalNote.update(noteId, updates);
-                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                   }}
-                 />
                </div>
 
+               {/* Edit Treatment Plan Modal */}
+               {editTreatmentPlanOpen && (
+                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                   <motion.div
+                     initial={{ opacity: 0, scale: 0.95 }}
+                     animate={{ opacity: 1, scale: 1 }}
+                     className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden"
+                   >
+                     {/* Modal Header */}
+                     <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-5 text-white flex items-center justify-between flex-shrink-0">
+                       <div className="flex items-center gap-3">
+                         <FileText className="w-6 h-6" />
+                         <div>
+                           <h3 className="font-bold text-lg">Edit Treatment Plan</h3>
+                           <p className="text-amber-100 text-sm">Document treatment approach, follow-up, and instructions</p>
+                         </div>
+                       </div>
+                       <div className="flex items-center gap-2">
+                         <InlineSectionAI
+                           type="plan"
+                           note={note}
+                           onApply={async (val) => {
+                             queryClient.setQueryData(["note", noteId], (old) => ({ ...old, plan: val }));
+                             await base44.entities.ClinicalNote.update(noteId, { plan: val });
+                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                           }}
+                         />
+                         <button onClick={() => setEditTreatmentPlanOpen(false)} className="p-1.5 rounded-lg hover:bg-white/20 transition-colors">
+                           <X className="w-5 h-5" />
+                         </button>
+                       </div>
+                     </div>
+
+                     {/* Modal Body */}
+                     <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                       <Textarea
+                         value={note.plan || ""}
+                         onChange={(e) => {
+                           queryClient.setQueryData(["note", noteId], (old) => ({ ...old, plan: e.target.value }));
+                         }}
+                         placeholder="Document treatment plan, follow-up instructions, patient education..."
+                         className="min-h-[400px] text-base"
+                         autoFocus
+                       />
+                       <ClinicalWorkflowAutomation
+                         note={note}
+                         noteId={noteId}
+                         onUpdateNote={async (updates) => {
+                           await base44.entities.ClinicalNote.update(noteId, updates);
+                           queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                         }}
+                       />
+                     </div>
+
+                     {/* Modal Footer */}
+                     <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-200 flex-shrink-0 bg-slate-50">
+                       <Button
+                         variant="outline"
+                         onClick={() => {
+                           queryClient.setQueryData(["note", noteId], (old) => ({ ...old, plan: "" }));
+                           toast.success("Treatment plan cleared");
+                         }}
+                         className="gap-2 text-slate-600 hover:bg-red-50 hover:border-red-200 hover:text-red-600"
+                       >
+                         <X className="w-4 h-4" /> Clear
+                       </Button>
+                       <div className="flex gap-2">
+                         <Button variant="outline" onClick={() => setEditTreatmentPlanOpen(false)}>Cancel</Button>
+                         <Button
+                           onClick={async () => {
+                             await base44.entities.ClinicalNote.update(noteId, { plan: note.plan });
+                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                             setEditTreatmentPlanOpen(false);
+                             toast.success("Treatment plan saved");
+                           }}
+                           className="bg-amber-600 hover:bg-amber-700 text-white gap-2"
+                         >
+                           <Check className="w-4 h-4" /> Save Plan
+                         </Button>
+                       </div>
+                     </div>
+                   </motion.div>
+                 </div>
+               )}
+
                {/* Next Button */}
-               <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+               <div className="flex justify-between items-center pt-4 border-t border-slate-200 max-w-4xl mx-auto">
                  <div className="flex gap-2">
                    <TabDataPreview tabId="treatment_plan" note={note} />
                    <ClinicalNotePreviewButton note={note} />

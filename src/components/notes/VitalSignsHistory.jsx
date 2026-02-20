@@ -53,23 +53,35 @@ export default function VitalSignsHistory({ vitalHistory = [], onAddToNote }) {
                   {format(new Date(entry.timestamp), "MMM d, yyyy • h:mm a")}
                 </p>
               </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  const vitalsText = Object.entries(entry.vitals)
-                    .map(([key, vital]) => {
-                      const label = key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-                      return `${label}: ${formatVitalValue(key, vital)}`;
-                    })
-                    .join("\n");
-                  navigator.clipboard.writeText(vitalsText);
-                  toast.success("Vitals copied to clipboard");
-                }}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <Copy className="w-4 h-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                {onAddToNote && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onAddToNote(entry.vitals)}
+                    className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 gap-1 text-xs"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add to Note
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    const vitalsText = Object.entries(entry.vitals)
+                      .map(([key, vital]) => {
+                        const label = key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+                        return `${label}: ${formatVitalValue(key, vital)}`;
+                      })
+                      .join("\n");
+                    navigator.clipboard.writeText(vitalsText);
+                    toast.success("Vitals copied to clipboard");
+                  }}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
 
             {/* Vital signs grid */}

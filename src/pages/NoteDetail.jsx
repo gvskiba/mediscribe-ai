@@ -1624,8 +1624,9 @@ Generated: ${new Date().toLocaleString()}
                                       const response = await base44.functions.invoke('analyzeAndStructureNote', {
                                         noteId: noteId
                                       });
+                                      setStructuredPreview(response.data.structured);
+                                      setShowStructuredPreview(true);
                                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                                      toast.success(`Analysis complete! ${response.data.extracted.fields_populated} fields populated`);
                                     } catch (error) {
                                       console.error("Failed to analyze:", error);
                                       toast.error("Failed to analyze note");

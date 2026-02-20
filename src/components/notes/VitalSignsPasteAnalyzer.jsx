@@ -6,12 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { Loader2, Sparkles, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
 
-export default function VitalSignsPasteAnalyzer({ onApplyVitals }) {
+export default function VitalSignsPasteAnalyzer({ onApplyVitals, vitalSigns, patientAge }) {
   const [pastedText, setPastedText] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzedVitals, setAnalyzedVitals] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [loadingVitalAnalysis, setLoadingVitalAnalysis] = useState(false);
+  const [vitalSignsAnalysis, setVitalSignsAnalysis] = useState(null);
 
   const handleAnalyze = async () => {
     if (!pastedText.trim()) {

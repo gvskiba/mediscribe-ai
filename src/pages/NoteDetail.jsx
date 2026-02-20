@@ -1708,11 +1708,74 @@ Generated: ${new Date().toLocaleString()}
 
                             {/* Raw Input */}
                             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                              <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-slate-500 to-slate-600 text-white">
-                                <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center text-xs font-bold">2</div>
-                                <span className="text-sm font-semibold">Raw Note Input</span>
+                              <div className="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-slate-500 to-slate-600 text-white">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center text-xs font-bold">2</div>
+                                  <span className="text-sm font-semibold">Raw Note Input</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    disabled={checkingGrammar || !note.raw_note}
+                                    onClick={async () => {
+                                      if (!note.raw_note) return;
+                                      setCheckingGrammar(true);
+                                      setGrammarSuggestions(null);
+                                      try {
+                                        const result = await base44.integrations.Core.InvokeLLM({
+                                          prompt: `Check the following clinical note text for grammar and spelling errors. Return a list of corrections with the original text, the corrected text, and the type of issue (grammar or spelling). Also provide the full corrected version of the text.
+
+                            TEXT:
+                            ${note.raw_note}`,
+                                          response_json_schema: {
+                                            type: "object",
+                                            properties: {
+                                              issues: {
+                                                type: "array",
+                                                items: {
+                                                  type: "object",
+                                                  properties: {
+                                                    original: { type: "string" },
+                                                    corrected: { type: "string" },
+                                                    type: { type: "string", enum: ["grammar", "spelling"] },
+                                                    explanation: { type: "string" }
+                                                  }
+                                                }
+                                              },
+                                              corrected_text: { type: "string" }
+                                            }
+                                          }
+                                        });
+                                        setGrammarSuggestions(result);
+                                      } catch (e) {
+                                        toast.error("Failed to check grammar");
+                                      } finally {
+                                        setCheckingGrammar(false);
+                                      }
+                                    }}
+                                    className="text-white hover:bg-white/20 gap-1.5 text-xs"
+                                  >
+                                    {checkingGrammar ? <><Loader2 className="w-3 h-3 animate-spin" /> Checking...</> : <><Sparkles className="w-3 h-3" /> Grammar & Spell Check</>}
+                                  </Button>
+                                  {note.raw_note && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={async () => {
+                                        queryClient.setQueryData(["note", noteId], (old) => ({ ...old, raw_note: "" }));
+                                        await base44.entities.ClinicalNote.update(noteId, { raw_note: "" });
+                                        setGrammarSuggestions(null);
+                                        toast.success("Raw note cleared");
+                                      }}
+                                      className="text-white hover:bg-white/20 gap-1.5 text-xs"
+                                    >
+                                      <X className="w-3 h-3" /> Clear
+                                    </Button>
+                                  )}
+                                </div>
                               </div>
-                              <div className="p-4">
+                              <div className="p-4 space-y-3">
                                 <Textarea
                                   value={note.raw_note || ""}
                                   onChange={(e) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, raw_note: e.target.value }))}
@@ -1723,6 +1786,50 @@ Generated: ${new Date().toLocaleString()}
                                   placeholder="Paste raw clinical data, voice transcripts, or unstructured notes here..."
                                   className="min-h-[200px] text-base"
                                 />
+                                {grammarSuggestions && (
+                                  <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                    <div className="bg-slate-50 px-3 py-2 flex items-center justify-between border-b border-slate-200">
+                                      <p className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                                        <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                                        {grammarSuggestions.issues?.length > 0 ? `${grammarSuggestions.issues.length} issue(s) found` : "No issues found ✓"}
+                                      </p>
+                                      <div className="flex gap-2">
+                                        {grammarSuggestions.corrected_text && grammarSuggestions.issues?.length > 0 && (
+                                          <Button
+                                            size="sm"
+                                            onClick={async () => {
+                                              queryClient.setQueryData(["note", noteId], (old) => ({ ...old, raw_note: grammarSuggestions.corrected_text }));
+                                              await base44.entities.ClinicalNote.update(noteId, { raw_note: grammarSuggestions.corrected_text });
+                                              setGrammarSuggestions(null);
+                                              toast.success("Corrections applied");
+                                            }}
+                                            className="h-6 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2"
+                                          >
+                                            Apply All
+                                          </Button>
+                                        )}
+                                        <button onClick={() => setGrammarSuggestions(null)} className="text-slate-400 hover:text-slate-600">
+                                          <X className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                    {grammarSuggestions.issues?.length > 0 && (
+                                      <div className="p-3 space-y-2 max-h-48 overflow-y-auto">
+                                        {grammarSuggestions.issues.map((issue, i) => (
+                                          <div key={i} className="flex items-start gap-2 text-xs">
+                                            <span className={`flex-shrink-0 px-1.5 py-0.5 rounded font-medium ${issue.type === 'spelling' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                                              {issue.type}
+                                            </span>
+                                            <span className="text-slate-500 line-through">{issue.original}</span>
+                                            <span className="text-slate-400">→</span>
+                                            <span className="text-slate-800 font-medium">{issue.corrected}</span>
+                                            {issue.explanation && <span className="text-slate-400 italic">({issue.explanation})</span>}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </div>
 

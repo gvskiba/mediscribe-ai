@@ -136,6 +136,7 @@ Return comprehensive structured data with no placeholders or "[Not documented]" 
     return Response.json({
       success: true,
       message: 'Note analyzed and structured successfully',
+      structured: updateData,
       extracted: {
         fields_populated: Object.keys(updateData).length,
         diagnoses_found: updateData.diagnoses?.length || 0,

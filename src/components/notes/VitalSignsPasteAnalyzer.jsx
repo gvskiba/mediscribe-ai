@@ -188,13 +188,13 @@ For EACH vital sign provided, determine:
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-3 text-white">
-          <h3 className="font-semibold text-sm flex items-center gap-2">
+      <div className="rounded-xl border border-slate-200 overflow-hidden">
+        <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
+          <h3 className="font-semibold text-sm flex items-center gap-2 text-slate-700">
             <Copy className="w-4 h-4" />
             Paste Vital Signs
           </h3>
-          <p className="text-xs text-emerald-100 mt-1">Paste vital signs data and let AI organize it</p>
+          <p className="text-xs text-slate-500 mt-0.5">Paste vital signs data and let AI organize it</p>
         </div>
         <div className="p-4 space-y-3">
           <Textarea

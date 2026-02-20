@@ -1860,35 +1860,36 @@ Generated: ${new Date().toLocaleString()}
                  <p className="text-slate-600 max-w-2xl mx-auto">Record patient vital signs and measurements</p>
                </div>
 
-               {/* Paste Analyzer */}
-               <VitalSignsPasteAnalyzer
-                  vitalSigns={note.vital_signs}
-                  patientAge={note.patient_age}
-                  onApplyVitals={async (vitals) => {
-                   const vitalSigns = {
-                     temperature: vitals.temperature,
-                     heart_rate: vitals.heart_rate,
-                     blood_pressure: vitals.blood_pressure,
-                     respiratory_rate: vitals.respiratory_rate,
-                     oxygen_saturation: vitals.oxygen_saturation,
-                     height: vitals.height,
-                     weight: vitals.weight
-                   };
-                   await base44.entities.ClinicalNote.update(noteId, { vital_signs: vitalSigns });
-                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                 }}
-               />
-
-               {/* Vital Signs Input */}
+               {/* Combined Vital Signs Card */}
                <div className="bg-white rounded-xl border-2 border-emerald-300 shadow-lg overflow-hidden">
                  <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-5 text-white">
                    <h3 className="font-bold text-lg flex items-center gap-2">
                      <Activity className="w-6 h-6" />
-                     Vital Signs Form
+                     Vital Signs
                    </h3>
-                   <p className="text-emerald-100 text-sm mt-1">Manually enter or edit vital signs</p>
+                   <p className="text-emerald-100 text-sm mt-1">Enter manually or paste and let AI organize</p>
                  </div>
                  <div className="p-6 space-y-6">
+                   {/* Paste section */}
+                   <VitalSignsPasteAnalyzer
+                     vitalSigns={note.vital_signs}
+                     patientAge={note.patient_age}
+                     onApplyVitals={async (vitals) => {
+                       const vitalSigns = {
+                         temperature: vitals.temperature,
+                         heart_rate: vitals.heart_rate,
+                         blood_pressure: vitals.blood_pressure,
+                         respiratory_rate: vitals.respiratory_rate,
+                         oxygen_saturation: vitals.oxygen_saturation,
+                         height: vitals.height,
+                         weight: vitals.weight
+                       };
+                       await base44.entities.ClinicalNote.update(noteId, { vital_signs: vitalSigns });
+                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                     }}
+                   />
+                   <div className="border-t border-slate-200" />
+                   {/* Manual entry section */}
                    <VitalSignsInput
                      vitalSigns={note.vital_signs || {}}
                      onChange={async (newVitalSigns) => {
@@ -1897,14 +1898,8 @@ Generated: ${new Date().toLocaleString()}
                      }}
                      onSave={async (newVitalSigns) => {
                        try {
-                         // Add to history with timestamp
-                         const newEntry = {
-                           vitals: newVitalSigns,
-                           timestamp: new Date().toISOString()
-                         };
+                         const newEntry = { vitals: newVitalSigns, timestamp: new Date().toISOString() };
                          setVitalSignsHistory(prev => [newEntry, ...prev]);
-
-                         // Update note with vitals
                          await base44.entities.ClinicalNote.update(noteId, { vital_signs: newVitalSigns });
                          queryClient.invalidateQueries({ queryKey: ["note", noteId] });
                          toast.success("Vital signs saved with timestamp");
@@ -1915,7 +1910,7 @@ Generated: ${new Date().toLocaleString()}
                      }}
                    />
                  </div>
-                 </div>
+               </div>
 
                  {/* Vital Signs History */}
                     <div className="bg-white rounded-xl border-2 border-emerald-300 shadow-lg overflow-hidden">

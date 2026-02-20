@@ -498,9 +498,7 @@ export default function NoteDetail() {
 
   const { data: note, isLoading } = useQuery({
     queryKey: ["note", noteId],
-    queryFn: () => base44.entities.ClinicalNote.list().then(
-      (notes) => notes.find((n) => n.id === noteId)
-    ),
+    queryFn: () => base44.entities.ClinicalNote.get(noteId),
     enabled: !!noteId,
   });
 

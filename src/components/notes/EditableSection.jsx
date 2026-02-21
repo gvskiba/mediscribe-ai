@@ -67,7 +67,7 @@ export default function EditableSection({
         ? newValue.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1').replace(/^#{1,6}\s+/gm, '')
         : newValue) || "";
       setEditValue(cleaned);
-      onUpdate(field, cleaned);
+      if (typeof onUpdate === 'function') onUpdate(field, cleaned);
     }
     setIsReanalyzing(false);
   };

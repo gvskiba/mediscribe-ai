@@ -54,7 +54,8 @@ function initSections(rosData) {
       };
     });
   }
-  return SYSTEMS.map(s => ({ ...s, status: "not_assessed", notes: "" }));
+  // Default: all systems set to "normal"
+  return SYSTEMS.map(s => ({ ...s, status: "normal", notes: s.normal }));
 }
 
 export default function ReviewOfSystemsEditor({ rosData, onUpdate, onAddToNote }) {

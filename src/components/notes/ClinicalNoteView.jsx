@@ -349,7 +349,7 @@ const ArraySection = ({ title, items, field, onSave, color = "blue" }) => {
   );
 };
 
-export default function ClinicalNoteView({ note, onUpdate, noteTypes }) {
+export default function ClinicalNoteView({ note, onUpdate, noteTypes, differentialDiagnosis = [] }) {
   const [generatingConsolidated, setGeneratingConsolidated] = useState(false);
   const [consolidatedNote, setConsolidatedNote] = useState(null);
   const [copied, setCopied] = useState(false);

@@ -200,7 +200,7 @@ export default function EditableSection({
 
     const newText = text.substring(0, start) + formattedText + text.substring(end);
     setEditValue(newText);
-    onUpdate(field, newText);
+    if (typeof onUpdate === 'function') onUpdate(field, newText);
 
     setTimeout(() => {
       textarea.focus();

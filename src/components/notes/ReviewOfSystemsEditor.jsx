@@ -226,7 +226,10 @@ Return findings for these systems: constitutional, eyes, ent, cardiovascular, re
             {abnormals.length} abnormal
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button size="sm" onClick={autoFillFromAI} disabled={loadingAI} className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white gap-1.5">
+            {loadingAI ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Analyzing...</> : <><Sparkles className="w-3.5 h-3.5" /> AI Auto-Fill ROS</>}
+          </Button>
           <Button size="sm" variant="outline" onClick={() => setAddingSection(true)} className="border-purple-200 text-purple-700 hover:bg-purple-50 gap-1">
             <Plus className="w-3.5 h-3.5" /> Add Section
           </Button>

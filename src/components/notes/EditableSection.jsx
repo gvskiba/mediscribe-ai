@@ -56,7 +56,7 @@ export default function EditableSection({
 
   const handleChange = (newValue) => {
     setEditValue(newValue);
-    onUpdate(field, newValue);
+    if (typeof onUpdate === 'function') onUpdate(field, newValue);
   };
 
   const handleReanalyze = async () => {

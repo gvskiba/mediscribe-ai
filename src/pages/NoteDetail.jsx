@@ -2236,15 +2236,15 @@ Generated: ${new Date().toLocaleString()}
                              <div className="flex justify-between items-center pt-4 border-t border-slate-200">
                <div className="flex gap-2">
                  <TabDataPreview tabId="differential" note={note} />
-                 <ClinicalNotePreviewButton note={note} />
-               </div>
-               <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                 <ClinicalNotePreviewButton note={note} templates={templates} selectedTemplate={selectedTemplate} onTemplateChange={setSelectedTemplate} onUpdate={async (field, value) => { await base44.entities.ClinicalNote.update(noteId, { [field]: value }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
+                 </div>
+                 <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
                  Next <ArrowLeft className="w-4 h-4 rotate-180" />
-               </Button>
-             </div>
-             </TabsContent>
+                 </Button>
+                 </div>
+                 </TabsContent>
 
-           {/* Labs & Imaging Tab */}
+                 {/* Labs & Imaging Tab */}
              <TabsContent value="labs_imaging" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
                <div className="max-w-5xl mx-auto space-y-8">
                  {/* Header */}

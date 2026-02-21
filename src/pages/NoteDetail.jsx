@@ -3136,6 +3136,27 @@ Generated: ${new Date().toLocaleString()}
                        </div>
                      </div>
 
+                     {/* AI Medical Coding Assistant - ICD-10 + CPT */}
+                     <div className="bg-white rounded-2xl border-2 border-blue-200 shadow-xl overflow-hidden">
+                       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-5 text-white">
+                         <h3 className="font-bold text-lg flex items-center gap-2">
+                           <Sparkles className="w-6 h-6" />
+                           AI Medical Coding Assistant
+                         </h3>
+                         <p className="text-blue-100 text-sm mt-1">Auto-generate ICD-10 &amp; CPT codes from this encounter for billing &amp; records</p>
+                       </div>
+                       <div className="p-6">
+                         <MedicalCodingAssistant
+                           note={note}
+                           onAddDiagnoses={async (newDiagnoses) => {
+                             const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
+                             await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
+                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                           }}
+                         />
+                       </div>
+                     </div>
+
                      {/* ICD-10 Code Search - Enhanced */}
                      <div className="bg-white rounded-2xl border-2 border-slate-200 shadow-xl overflow-hidden">
                        <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-5 text-white">

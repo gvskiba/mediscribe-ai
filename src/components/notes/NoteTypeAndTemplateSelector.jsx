@@ -53,9 +53,64 @@ export default function NoteTypeAndTemplateSelector({
   isApplyingTemplate = false
 }) {
   const [expandedType, setExpandedType] = useState(note?.note_type || "progress_note");
+  const [suggestedTemplates, setSuggestedTemplates] = useState([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [appliedTemplateId, setAppliedTemplateId] = useState(null);
 
   const currentType = NOTE_TYPES.find(t => t.id === expandedType);
   const applicableTemplates = templates.filter(t => !t.note_type || t.note_type === expandedType);
+
+  const suggestTemplates = async () => {
+    if (!note?.chief_complaint && !note?.history_of_present_illness) return;
+    setLoadingSuggestions(true);
+    setSuggestedTemplates([]);
+    try {
+      const templateList = templates.map(t => ({ id: t.id, name: t.name, description: t.description, specialty: t.specialty, note_type: t.note_type }));
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Based on the following clinical presentation, suggest the most relevant note templates from the list provided. Rank them by relevance.
+
+CHIEF COMPLAINT: ${note.chief_complaint || "N/A"}
+HISTORY OF PRESENT ILLNESS: ${note.history_of_present_illness || "N/A"}
+
+AVAILABLE TEMPLATES:
+${JSON.stringify(templateList, null, 2)}
+
+Return the top 3 most relevant template IDs with a brief reason why each is a good match. Only include templates that are genuinely relevant.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            suggestions: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  template_id: { type: "string" },
+                  reason: { type: "string" },
+                  relevance_score: { type: "number", minimum: 1, maximum: 10 }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      const enriched = (result.suggestions || [])
+        .map(s => ({ ...templates.find(t => t.id === s.template_id), reason: s.reason, relevance_score: s.relevance_score }))
+        .filter(t => t.id);
+      setSuggestedTemplates(enriched);
+    } catch (e) {
+      console.error("Failed to suggest templates", e);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  const handleApply = async (template) => {
+    setAppliedTemplateId(template.id);
+    onTemplateSelect(template);
+    await onApplyTemplate(template.id);
+    setAppliedTemplateId(null);
+  };
 
   return (
     <div className="space-y-6">

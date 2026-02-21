@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import { motion } from "framer-motion";
-import { Sparkles, FileText, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Sparkles, FileText, ChevronRight, Loader2, Zap, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { base44 } from "@/api/base44Client";
+import { Badge } from "@/components/ui/badge";
 
 const NOTE_TYPES = [
   {

@@ -78,9 +78,9 @@ export default function EditableSection({
     setIsReanalyzing(true);
     const newValue = await onReanalyze(field);
     if (newValue) {
-      const cleanedValue = stripMarkdown(newValue);
-      setEditValue(cleanedValue || "");
-      onUpdate(field, cleanedValue || "");
+      const cleaned = stripMarkdown(newValue) || "";
+      setEditValue(cleaned);
+      onUpdate(field, cleaned);
     }
     setIsReanalyzing(false);
   };

@@ -22,11 +22,23 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Note not found' }, { status: 404 });
     }
 
+    // Build structured ROS text from object (includes ALL systems, normal and abnormal)
+    let rosText = null;
+    if (note.review_of_systems && typeof note.review_of_systems === 'object' && !Array.isArray(note.review_of_systems)) {
+      const rosLines = Object.entries(note.review_of_systems)
+        .map(([system, finding]) => `  ${system.replace(/_/g, ' ').toUpperCase()}: ${finding}`)
+        .join('\n');
+      rosText = rosLines ? `REVIEW OF SYSTEMS (all documented systems):\n${rosLines}` : null;
+    } else if (typeof note.review_of_systems === 'string' && note.review_of_systems) {
+      rosText = `REVIEW OF SYSTEMS:\n${note.review_of_systems}`;
+    }
+
     // Build content from whatever is available
     const availableContent = [
       note.raw_note ? `RAW NOTE:\n${note.raw_note}` : null,
       note.chief_complaint ? `CHIEF COMPLAINT: ${note.chief_complaint}` : null,
       note.history_of_present_illness ? `HPI: ${note.history_of_present_illness}` : null,
+      rosText,
       note.assessment ? `ASSESSMENT: ${note.assessment}` : null,
       note.plan ? `PLAN: ${note.plan}` : null,
     ].filter(Boolean).join('\n\n');

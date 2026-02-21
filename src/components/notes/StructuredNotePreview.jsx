@@ -303,6 +303,62 @@ FORMATTING RULES (CRITICAL):
     }
   };
 
+  const handleTemplateChange = async (template) => {
+    if (onTemplateChange) onTemplateChange(template);
+    if (!template || !note) return;
+
+    // AI reformats the note content based on template structure
+    try {
+      const { base44 } = await import("@/api/base44Client");
+      const sectionNames = template.sections
+        ?.filter(s => s.enabled !== false)
+        .map(s => `${s.name}${s.ai_instructions ? ': ' + s.ai_instructions : ''}`)
+        .join('\n') || '';
+
+      toast.info("AI is reformatting note to match template...");
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are reformatting a clinical note to match a specific template format.
+
+TEMPLATE: "${template.name}"
+${template.ai_instructions ? `Template Instructions: ${template.ai_instructions}` : ''}
+
+TEMPLATE SECTIONS:
+${sectionNames}
+
+EXISTING NOTE DATA:
+Chief Complaint: ${note.chief_complaint || 'N/A'}
+HPI: ${note.history_of_present_illness || 'N/A'}
+Assessment: ${note.assessment || 'N/A'}
+Plan: ${note.plan || 'N/A'}
+Diagnoses: ${note.diagnoses?.join(', ') || 'N/A'}
+Medical History: ${note.medical_history || 'N/A'}
+Review of Systems: ${note.review_of_systems || 'N/A'}
+Physical Exam: ${note.physical_exam || 'N/A'}
+
+Rewrite and reformat the clinical note content to fit this template's structure and style. Return only the fields that exist in the standard note schema.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            chief_complaint: { type: "string" },
+            history_of_present_illness: { type: "string" },
+            assessment: { type: "string" },
+            plan: { type: "string" },
+            medical_history: { type: "string" },
+          }
+        }
+      });
+
+      // Apply only non-empty results
+      Object.entries(result).forEach(([field, value]) => {
+        if (value && value.trim()) onUpdate(field, value);
+      });
+      toast.success(`Note reformatted to "${template.name}" template`);
+    } catch (e) {
+      console.error("Failed to reformat note:", e);
+    }
+  };
+
   const handleFeedback = (suggestionId, feedbackType, comments = "") => {
     setAiSuggestionFeedback(prev => ({
       ...prev,

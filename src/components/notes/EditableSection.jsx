@@ -143,16 +143,14 @@ export default function EditableSection({
   const handleApplySuggestion = (field, suggestion) => {
     if (!suggestion) return;
 
+    if (typeof onUpdate !== 'function') return;
     if (field === "history_of_present_illness") {
-      // For differential diagnoses, add to assessment
       const diagnosisText = `\n\nDifferential Consideration: ${suggestion.name} (${suggestion.probability})`;
       onUpdate(field, (editValue || "") + diagnosisText);
     } else if (field === "assessment") {
-      // For ICD-10 codes, add to diagnoses array
       const codeText = `${suggestion.code} - ${suggestion.diagnosis}`;
       onUpdate("diagnoses", [...(noteContext.diagnoses || []), codeText]);
     } else if (field === "plan") {
-      // For plan suggestions, add to plan
       const planText = `\n\n${suggestion.category}: ${suggestion.suggestion}`;
       onUpdate(field, (editValue || "") + planText);
     }

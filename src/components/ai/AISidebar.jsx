@@ -692,7 +692,8 @@ ${context}
 Generate a ROS for all 13 standard systems. For each system:
 - If related to the chief complaint or diagnosis, reflect appropriate abnormal findings
 - For unrelated systems, document negative/normal findings consistent with the presentation
-- Use formal clinical documentation language`,
+- Use formal clinical documentation language
+- IMPORTANT: findings text must be plain text only — no markdown, no asterisks, no hashtags, no bold/italic formatting`,
         response_json_schema: {
           type: "object",
           properties: {

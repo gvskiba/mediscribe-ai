@@ -58,13 +58,14 @@ function initSections(rosData) {
   return SYSTEMS.map(s => ({ ...s, status: "normal", notes: s.normal }));
 }
 
-export default function ReviewOfSystemsEditor({ rosData, onUpdate, onAddToNote }) {
+export default function ReviewOfSystemsEditor({ rosData, onUpdate, onAddToNote, note }) {
   const [sections, setSections] = useState(() => initSections(rosData));
   const [expandedId, setExpandedId] = useState(null);
   const [addingSection, setAddingSection] = useState(false);
   const [newSectionLabel, setNewSectionLabel] = useState("");
   const [editingNormalId, setEditingNormalId] = useState(null);
   const [savingDefaults, setSavingDefaults] = useState(false);
+  const [loadingAI, setLoadingAI] = useState(false);
 
   const save = (updated) => {
     const obj = {};

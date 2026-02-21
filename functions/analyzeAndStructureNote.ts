@@ -118,7 +118,15 @@ Return comprehensive structured data with no placeholders or "[Not documented]" 
       updateData.diagnoses = result.diagnoses;
     }
     if (result.medications && Array.isArray(result.medications) && result.medications.length > 0) {
-      updateData.medications = result.medications;
+      // Normalize medications: LLM sometimes returns objects instead of strings
+      updateData.medications = result.medications.map(med => {
+        if (typeof med === 'string') return med;
+        if (typeof med === 'object' && med !== null) {
+          const parts = [med.name, med.dosage, med.frequency].filter(Boolean);
+          return parts.join(' - ');
+        }
+        return String(med);
+      });
     }
     if (result.allergies && Array.isArray(result.allergies) && result.allergies.length > 0) {
       updateData.allergies = result.allergies;

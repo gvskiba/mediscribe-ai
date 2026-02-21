@@ -2973,10 +2973,9 @@ Generated: ${new Date().toLocaleString()}
                          toast.success("Review of systems updated");
                        }}
                        onAddToNote={async (rosText) => {
-                         const updatedNote = (note.review_of_systems || "") + rosText;
-                         await base44.entities.ClinicalNote.update(noteId, { review_of_systems: updatedNote });
+                         await base44.entities.ClinicalNote.update(noteId, { review_of_systems: rosText });
                          queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                         toast.success("Review of systems findings added to clinical note");
+                         toast.success("Review of systems added to note");
                        }}
                      />
                    </div>

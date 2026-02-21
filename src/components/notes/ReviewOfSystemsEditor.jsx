@@ -133,6 +133,68 @@ export default function ReviewOfSystemsEditor({ rosData, onUpdate, onAddToNote, 
     save(updated);
   };
 
+  const autoFillFromAI = async () => {
+    if (!note?.chief_complaint && !note?.history_of_present_illness) {
+      toast.error("Please add a chief complaint or HPI first");
+      return;
+    }
+    setLoadingAI(true);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a clinical documentation expert. Based on the following patient information, fill in a Review of Systems.
+
+Chief Complaint: ${note.chief_complaint || "N/A"}
+History of Present Illness: ${note.history_of_present_illness || "N/A"}
+Assessment: ${note.assessment || "N/A"}
+
+For each body system listed below, determine if findings are NORMAL or ABNORMAL based on the clinical context. 
+- If normal: return the status as "normal"
+- If abnormal or likely abnormal given the presentation: return status as "abnormal" and provide specific findings text
+- Systems not clearly related to the presentation should default to "normal"
+
+Return findings for these systems: constitutional, eyes, ent, cardiovascular, respiratory, gastrointestinal, genitourinary, musculoskeletal, neurological, psychiatric, endocrine, hematologic, integumentary`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            systems: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  status: { type: "string", enum: ["normal", "abnormal"] },
+                  findings: { type: "string", description: "Specific findings text for abnormal systems" }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      const aiSystems = result.systems || [];
+      const aiMap = {};
+      aiSystems.forEach(s => { aiMap[s.id] = s; });
+
+      const updated = sections.map(s => {
+        const ai = aiMap[s.id];
+        if (!ai) return s;
+        if (ai.status === "abnormal") {
+          return { ...s, status: "abnormal", notes: ai.findings || "" };
+        }
+        return { ...s, status: "normal", notes: s.normal };
+      });
+
+      setSections(updated);
+      save(updated);
+      toast.success("ROS filled from AI analysis");
+    } catch (error) {
+      console.error("AI ROS fill failed:", error);
+      toast.error("Failed to auto-fill ROS");
+    } finally {
+      setLoadingAI(false);
+    }
+  };
+
   const handleAddToNote = () => {
     let text = "\n\nREVIEW OF SYSTEMS\n" + "─".repeat(40) + "\n";
     sections.filter(s => s.status !== "not_assessed").forEach(s => {

@@ -3809,8 +3809,30 @@ Generated: ${new Date().toLocaleString()}
            structured={structuredPreview}
            activeTab={activeTab}
            onClose={() => setShowStructuredPreview(false)}
-           onApply={() => {
-             toast.success(`Analysis applied! ${Object.keys(structuredPreview || {}).length} fields populated`);
+           onApply={async () => {
+             if (!structuredPreview) return;
+             // Strip markdown from text fields before applying
+             const stripMd = (text) => typeof text === 'string'
+               ? text.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1').replace(/^#{1,6}\s+/gm, '')
+               : text;
+             const fieldsToApply = [
+               'chief_complaint', 'history_of_present_illness', 'medical_history',
+               'review_of_systems', 'physical_exam', 'assessment', 'plan',
+               'summary', 'diagnoses', 'medications', 'allergies',
+               'lab_findings', 'imaging_findings'
+             ];
+             const updates = {};
+             fieldsToApply.forEach(field => {
+               const val = structuredPreview[field];
+               if (val !== undefined && val !== null && val !== '' && !(Array.isArray(val) && val.length === 0)) {
+                 updates[field] = Array.isArray(val) ? val : stripMd(val);
+               }
+             });
+             if (Object.keys(updates).length > 0) {
+               await base44.entities.ClinicalNote.update(noteId, updates);
+               queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+             }
+             toast.success(`Applied ${Object.keys(updates).length} fields to note`);
              setShowStructuredPreview(false);
            }}
          />

@@ -2965,6 +2965,7 @@ Generated: ${new Date().toLocaleString()}
                    <div className="p-6 space-y-6 overflow-y-auto">
                      <ReviewOfSystemsEditor
                        rosData={note.review_of_systems}
+                       note={note}
                        onUpdate={async (rosData) => {
                          const rosString = typeof rosData === 'string' ? rosData : JSON.stringify(rosData);
                          await base44.entities.ClinicalNote.update(noteId, { review_of_systems: rosString });

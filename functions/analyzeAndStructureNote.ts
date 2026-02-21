@@ -22,16 +22,25 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Note not found' }, { status: 404 });
     }
 
-    if (!note.raw_note) {
-      return Response.json({ error: 'No raw note content to analyze' }, { status: 400 });
+    // Build content from whatever is available
+    const availableContent = [
+      note.raw_note ? `RAW NOTE:\n${note.raw_note}` : null,
+      note.chief_complaint ? `CHIEF COMPLAINT: ${note.chief_complaint}` : null,
+      note.history_of_present_illness ? `HPI: ${note.history_of_present_illness}` : null,
+      note.assessment ? `ASSESSMENT: ${note.assessment}` : null,
+      note.plan ? `PLAN: ${note.plan}` : null,
+    ].filter(Boolean).join('\n\n');
+
+    if (!availableContent) {
+      return Response.json({ error: 'No note content to analyze' }, { status: 400 });
     }
 
     // Invoke LLM to extract and structure all fields
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an expert clinical documentation specialist. Analyze this raw clinical note and extract ALL relevant structured medical information. Be thorough and accurate.
+      prompt: `You are an expert clinical documentation specialist. Analyze this clinical content and extract ALL relevant structured medical information. Be thorough and accurate.
 
-RAW CLINICAL NOTE:
-${note.raw_note}
+CLINICAL CONTENT:
+${availableContent}
 
 CRITICAL REQUIREMENTS:
 1. For DIAGNOSES: Extract ALL diagnoses, suspected conditions, impressions, and clinical findings. MUST include at least one item. If none explicitly stated, infer from chief complaint and assessment.

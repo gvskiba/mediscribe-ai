@@ -1841,7 +1841,7 @@ Generated: ${new Date().toLocaleString()}
                             <div className="flex justify-between items-center pt-2 border-t border-slate-200">
                               <div className="flex gap-2">
                                 <TabDataPreview tabId="patient_intake" note={note} />
-                                <ClinicalNotePreviewButton note={note} />
+                                <ClinicalNotePreviewButton note={note} templates={templates} selectedTemplate={selectedTemplate} onTemplateChange={setSelectedTemplate} onUpdate={async (field, value) => { await base44.entities.ClinicalNote.update(noteId, { [field]: value }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
                               </div>
                               <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
                                 Next <ArrowLeft className="w-4 h-4 rotate-180" />

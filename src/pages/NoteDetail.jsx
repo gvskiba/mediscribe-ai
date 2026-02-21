@@ -2712,6 +2712,7 @@ Generated: ${new Date().toLocaleString()}
                      toast.success("Updated successfully");
                    }}
                    noteTypes={templates}
+                   differentialDiagnosis={differentialDiagnosis}
                  />
 
                  {/* Complete Clinical Note Generator */}

@@ -73,6 +73,16 @@ const GROUP_HEADER_COLORS = {
   cyan:    "from-cyan-600 to-teal-600",
 };
 
+const stripMarkdown = (text) => {
+  if (typeof text !== 'string') return text;
+  return text
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^[-•*]\s+/gm, '')
+    .trim();
+};
+
 function renderValue(key, value, color) {
   const c = COLOR_MAP[color] || COLOR_MAP.slate;
 
@@ -113,9 +123,9 @@ function renderValue(key, value, color) {
     );
   }
 
-  // Long text
+  // Long text — strip markdown before display
   return (
-    <p className="text-sm text-slate-800 mt-2 leading-relaxed whitespace-pre-wrap">{value}</p>
+    <p className="text-sm text-slate-800 mt-2 leading-relaxed whitespace-pre-wrap">{stripMarkdown(value)}</p>
   );
 }
 

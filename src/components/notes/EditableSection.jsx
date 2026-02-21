@@ -34,8 +34,18 @@ export default function EditableSection({
     const textareaRef = useRef(null);
     const selectionRef = useRef({ start: 0, end: 0 });
 
+  const stripMarkdown = (text) => {
+    if (typeof text !== 'string') return text;
+    return text
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/\*([^*]+)\*/g, '$1')
+      .replace(/^#{1,6}\s+/gm, '')
+      .replace(/Not extracted/g, '');
+  };
+
   useEffect(() => {
-    setEditValue(value === "Not extracted" ? "" : value);
+    const raw = value === "Not extracted" ? "" : value;
+    setEditValue(typeof raw === 'string' ? stripMarkdown(raw) : raw);
   }, [value]);
 
   const colorMap = {

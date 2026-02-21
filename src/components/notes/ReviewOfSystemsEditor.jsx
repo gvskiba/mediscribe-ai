@@ -226,19 +226,53 @@ Return findings for these systems: constitutional, eyes, ent, cardiovascular, re
             {abnormals.length} abnormal
           </span>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button size="sm" onClick={autoFillFromAI} disabled={loadingAI} className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white gap-1.5">
-            {loadingAI ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Analyzing...</> : <><Sparkles className="w-3.5 h-3.5" /> AI Auto-Fill ROS</>}
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => setAddingSection(true)} className="border-purple-200 text-purple-700 hover:bg-purple-50 gap-1">
-            <Plus className="w-3.5 h-3.5" /> Add Section
-          </Button>
-          <Button size="sm" variant="outline" onClick={saveDefaults} disabled={savingDefaults} className="border-blue-200 text-blue-700 hover:bg-blue-50 gap-1">
-            <Save className="w-3.5 h-3.5" /> {savingDefaults ? "Saving..." : "Save as Default"}
-          </Button>
-          <Button size="sm" onClick={handleAddToNote} disabled={assessed.length === 0} className="bg-purple-600 hover:bg-purple-700 text-white gap-1.5">
-            <Check className="w-3.5 h-3.5" /> Add to Note
-          </Button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={autoFillFromAI}
+            disabled={loadingAI}
+            title="AI Auto-Fill ROS"
+            className="group flex items-center gap-0 overflow-hidden rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-2 py-1.5 transition-all duration-300 disabled:opacity-60"
+          >
+            {loadingAI ? <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" /> : <Sparkles className="w-4 h-4 flex-shrink-0" />}
+            <span className="max-w-0 group-hover:max-w-[120px] overflow-hidden whitespace-nowrap transition-all duration-300 text-xs font-medium group-hover:ml-1.5">
+              {loadingAI ? "Analyzing..." : "AI Auto-Fill ROS"}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setAddingSection(true)}
+            title="Add Section"
+            className="group flex items-center gap-0 overflow-hidden rounded-lg border border-purple-200 text-purple-700 hover:bg-purple-50 px-2 py-1.5 transition-all duration-300 bg-white"
+          >
+            <Plus className="w-4 h-4 flex-shrink-0" />
+            <span className="max-w-0 group-hover:max-w-[90px] overflow-hidden whitespace-nowrap transition-all duration-300 text-xs font-medium group-hover:ml-1.5">
+              Add Section
+            </span>
+          </button>
+
+          <button
+            onClick={saveDefaults}
+            disabled={savingDefaults}
+            title="Save as Default"
+            className="group flex items-center gap-0 overflow-hidden rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 px-2 py-1.5 transition-all duration-300 bg-white disabled:opacity-60"
+          >
+            <Save className="w-4 h-4 flex-shrink-0" />
+            <span className="max-w-0 group-hover:max-w-[110px] overflow-hidden whitespace-nowrap transition-all duration-300 text-xs font-medium group-hover:ml-1.5">
+              {savingDefaults ? "Saving..." : "Save as Default"}
+            </span>
+          </button>
+
+          <button
+            onClick={handleAddToNote}
+            disabled={assessed.length === 0}
+            title="Add to Note"
+            className="group flex items-center gap-0 overflow-hidden rounded-lg bg-purple-600 hover:bg-purple-700 text-white px-2 py-1.5 transition-all duration-300 disabled:opacity-50"
+          >
+            <Check className="w-4 h-4 flex-shrink-0" />
+            <span className="max-w-0 group-hover:max-w-[80px] overflow-hidden whitespace-nowrap transition-all duration-300 text-xs font-medium group-hover:ml-1.5">
+              Add to Note
+            </span>
+          </button>
         </div>
       </div>
 

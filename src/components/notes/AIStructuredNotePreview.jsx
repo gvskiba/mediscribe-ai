@@ -11,8 +11,9 @@ const FIELD_META = {
   history_of_present_illness: { label: "History of Present Illness", tab: "subjective",      icon: FileText,      color: "indigo" },
   medical_history:            { label: "Past Medical History",       tab: "subjective",      icon: FileText,      color: "slate" },
   allergies:                  { label: "Allergies",                  tab: "subjective",      icon: AlertTriangle, color: "red" },
-  review_of_systems:          { label: "Review of Systems",          tab: "ros",             icon: ClipboardList, color: "violet" },
-  physical_exam:              { label: "Physical Examination",       tab: "physical_exam",   icon: Stethoscope,   color: "teal" },
+  // review_of_systems and physical_exam are excluded — managed by their dedicated editors
+  // review_of_systems:       { label: "Review of Systems",          tab: "ros",             icon: ClipboardList, color: "violet" },
+  // physical_exam:           { label: "Physical Examination",       tab: "physical_exam",   icon: Stethoscope,   color: "teal" },
   assessment:                 { label: "Assessment",                 tab: "assessment",      icon: Activity,      color: "orange" },
   plan:                       { label: "Treatment Plan",             tab: "plan",            icon: FileText,      color: "emerald" },
   diagnoses:                  { label: "Diagnoses",                  tab: "diagnoses",       icon: Target,        color: "purple" },

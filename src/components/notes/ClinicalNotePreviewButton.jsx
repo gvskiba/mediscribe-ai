@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { FileText, Eye } from "lucide-react";
 import StructuredNotePreview from "./StructuredNotePreview";
 
-export default function ClinicalNotePreviewButton({ note }) {
+export default function ClinicalNotePreviewButton({ note, templates = [], selectedTemplate, onTemplateChange, onUpdate }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -28,7 +28,13 @@ export default function ClinicalNotePreviewButton({ note }) {
             </DialogTitle>
           </DialogHeader>
           <div className="mt-4">
-            <StructuredNotePreview note={note} />
+            <StructuredNotePreview
+              note={note}
+              templates={templates}
+              selectedTemplate={selectedTemplate}
+              onTemplateChange={onTemplateChange}
+              onUpdate={onUpdate || (() => {})}
+            />
           </div>
         </DialogContent>
       </Dialog>

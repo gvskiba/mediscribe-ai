@@ -225,6 +225,8 @@ export default function Layout({ children, currentPageName }) {
         </div>
         {/* Draggable Notification Buttons */}
         <DraggableNotificationButtons />
+        {/* Medical AI Chatbot */}
+        <MedicalChatbot />
       </main>
     </div>);
 

@@ -69,7 +69,9 @@ export default function EditableSection({
     setIsReanalyzing(true);
     const newValue = await onReanalyze(field);
     if (newValue) {
-      const cleaned = stripMarkdown(newValue) || "";
+      const cleaned = (typeof newValue === 'string'
+        ? newValue.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1').replace(/^#{1,6}\s+/gm, '')
+        : newValue) || "";
       setEditValue(cleaned);
       onUpdate(field, cleaned);
     }

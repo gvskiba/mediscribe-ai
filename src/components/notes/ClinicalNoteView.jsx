@@ -533,6 +533,27 @@ Generate the complete clinical note now.`;
               </div>
             )}
 
+            {/* Differential Diagnoses (read-only display) */}
+            {differentialDiagnosis && differentialDiagnosis.length > 0 && (
+              <div>
+                <h4 className="text-sm font-bold text-rose-900 mb-2 pb-2 border-b-2 border-rose-200">DIFFERENTIAL DIAGNOSES</h4>
+                <ul className="space-y-2">
+                  {differentialDiagnosis.map((diff, idx) => (
+                    <li key={idx} className="flex items-start gap-3 bg-rose-50 border border-rose-200 rounded-lg p-3 text-sm">
+                      <span className="font-bold text-rose-600 flex-shrink-0">{idx + 1}.</span>
+                      <div className="flex-1 min-w-0">
+                        <span className="font-semibold text-slate-900">{diff.diagnosis}</span>
+                        <span className="ml-2 text-xs text-rose-700 font-medium">({diff.likelihood_rank}/5)</span>
+                        {diff.clinical_reasoning && (
+                          <p className="text-xs text-slate-600 mt-0.5">{diff.clinical_reasoning}</p>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <AggregateSectionText title="ASSESSMENT" field="assessment" value={note.assessment} borderColor="border-indigo-200" titleColor="text-indigo-900" onSave={onUpdate} />
             <AggregateSectionArray title="DIAGNOSES" field="diagnoses" items={note.diagnoses} borderColor="border-blue-200" titleColor="text-blue-900" itemBg="bg-blue-50 border-blue-200" itemNumColor="text-blue-600" onSave={onUpdate} />
             <AggregateSectionText title="PLAN" field="plan" value={note.plan} borderColor="border-rose-200" titleColor="text-rose-900" onSave={onUpdate} />

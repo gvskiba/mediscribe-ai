@@ -55,13 +55,20 @@ export default function EditableSection({
     onUpdate(field, newValue);
   };
 
+  const stripMarkdown = (text) => {
+    if (typeof text !== 'string') return text;
+    return text
+      .replace(/\*\*([^*]+)\*\*/g, '$1')  // **bold**
+      .replace(/\*([^*]+)\*/g, '$1')       // *italic*
+      .replace(/^#{1,6}\s+/gm, '')         // ### headings
+      .replace(/Not extracted/g, '');
+  };
+
   const handleReanalyze = async () => {
     setIsReanalyzing(true);
     const newValue = await onReanalyze(field);
     if (newValue) {
-      const cleanedValue = typeof newValue === 'string' 
-        ? newValue.replace(/\*\*/g, '').replace(/\*/g, '').replace(/Not extracted/g, '')
-        : newValue;
+      const cleanedValue = stripMarkdown(newValue);
       setEditValue(cleanedValue || "");
       onUpdate(field, cleanedValue || "");
     }

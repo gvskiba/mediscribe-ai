@@ -70,7 +70,7 @@ Return comprehensive structured data with no placeholders or "[Not documented]" 
           chief_complaint: { type: "string", description: "Primary reason for visit" },
           summary: { type: "string", description: "Concise overview of the visit" },
           history_of_present_illness: { type: "string", description: "Detailed HPI" },
-          review_of_systems: { type: "string", description: "Review of systems findings" },
+          review_of_systems: { type: "string", description: "Complete review of systems — include ALL documented systems (both normal and abnormal), formatted as 'System: findings' per line" },
           physical_exam: { type: "string", description: "Physical exam findings" },
           assessment: { type: "string", description: "Clinical assessment" },
           plan: { type: "string", description: "Treatment plan" },

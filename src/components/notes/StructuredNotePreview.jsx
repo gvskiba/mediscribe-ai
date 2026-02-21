@@ -839,7 +839,7 @@ Rewrite and reformat the clinical note content to fit this template's structure 
                 value={selectedTemplate?.id || ""}
                 onChange={(e) => {
                   const template = templates.find(t => t.id === e.target.value);
-                  onTemplateChange(template || null);
+                  handleTemplateChange(template || null);
                 }}
                 className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
               >

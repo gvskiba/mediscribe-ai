@@ -69,8 +69,8 @@ const TAB_CONTEXTS = {
         run: async (note) => {
           if (!note.chief_complaint) throw new Error("Add chief complaint first");
           const res = await base44.integrations.Core.InvokeLLM({
-            prompt: `Based on this presentation, list the most clinically relevant pertinent positives and pertinent negatives for the ROS:\n\nChief Complaint: ${note.chief_complaint}\nHPI: ${note.history_of_present_illness || "N/A"}\nDiagnoses: ${(note.diagnoses || []).join(", ") || "N/A"}`,
-            response_json_schema: { type: "object", properties: { pertinent_ros: { type: "string" } } }
+            prompt: `Based on this presentation, list the most clinically relevant pertinent positives and pertinent negatives for the ROS. Use plain text only — no markdown, no asterisks, no hashtags, no bullet symbols except simple dashes.\n\nChief Complaint: ${note.chief_complaint}\nHPI: ${note.history_of_present_illness || "N/A"}\nDiagnoses: ${(note.diagnoses || []).join(", ") || "N/A"}`,
+            response_json_schema: { type: "object", properties: { pertinent_ros: { type: "string", description: "Plain text only, no markdown formatting" } } }
           });
           return { field: "review_of_systems", value: res.pertinent_ros, label: "Pertinent ROS added", append: true };
         }

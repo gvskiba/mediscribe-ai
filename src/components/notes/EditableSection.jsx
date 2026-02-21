@@ -111,7 +111,7 @@ export default function EditableSection({
     if (type === "array") {
       const newArray = [...(Array.isArray(editValue) ? editValue : []), snippetText];
       setEditValue(newArray);
-      onUpdate(field, newArray);
+      if (typeof onUpdate === 'function') onUpdate(field, newArray);
       setSnippetPickerOpen(false);
       return;
     }
@@ -120,7 +120,7 @@ export default function EditableSection({
     if (!textarea) {
       const newText = (editValue || "") + "\n\n" + snippetText;
       setEditValue(newText);
-      onUpdate(field, newText);
+      if (typeof onUpdate === 'function') onUpdate(field, newText);
       setSnippetPickerOpen(false);
       return;
     }
@@ -130,7 +130,7 @@ export default function EditableSection({
     const currentValue = editValue || "";
     const newText = currentValue.substring(0, start) + snippetText + currentValue.substring(end);
     setEditValue(newText);
-    onUpdate(field, newText);
+    if (typeof onUpdate === 'function') onUpdate(field, newText);
     
     setTimeout(() => {
       textarea.focus();

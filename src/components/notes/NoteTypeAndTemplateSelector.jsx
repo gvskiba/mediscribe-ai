@@ -166,20 +166,91 @@ Return the top 3 most relevant template IDs with a brief reason why each is a go
 
       {/* Smart Template Applicator */}
       <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border-2 border-purple-200 p-8 shadow-lg">
-        <div className="mb-6">
-          <h3 className="text-2xl font-bold text-slate-900 mb-2 flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-purple-600" />
-            AI Smart Templates
-          </h3>
-          <p className="text-sm text-slate-600">Apply a pre-built template to auto-populate sections</p>
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-2xl font-bold text-slate-900 mb-2 flex items-center gap-2">
+              <Sparkles className="w-6 h-6 text-purple-600" />
+              AI Smart Templates
+            </h3>
+            <p className="text-sm text-slate-600">Apply a pre-built template to auto-populate sections</p>
+          </div>
+          {templates.length > 0 && (note?.chief_complaint || note?.history_of_present_illness) && (
+            <Button
+              onClick={suggestTemplates}
+              disabled={loadingSuggestions}
+              size="sm"
+              className="flex-shrink-0 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white gap-2"
+            >
+              {loadingSuggestions ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+              {loadingSuggestions ? "Analyzing..." : "AI Suggest"}
+            </Button>
+          )}
         </div>
+
+        {/* AI Suggestions */}
+        <AnimatePresence>
+          {suggestedTemplates.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mb-6"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <Zap className="w-4 h-4 text-amber-500" />
+                <p className="text-sm font-semibold text-slate-700">AI-Suggested Templates</p>
+                <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs">Based on your note</Badge>
+              </div>
+              <div className="space-y-3">
+                {suggestedTemplates.map((template) => (
+                  <motion.div
+                    key={template.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="p-4 rounded-xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-bold text-slate-900 text-sm">{template.name}</h4>
+                          {template.relevance_score && (
+                            <Badge className="bg-amber-500 text-white text-xs px-1.5 py-0">{template.relevance_score}/10</Badge>
+                          )}
+                        </div>
+                        {template.reason && (
+                          <p className="text-xs text-amber-800 italic">"{template.reason}"</p>
+                        )}
+                        {template.specialty && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium mt-1 inline-block">{template.specialty}</span>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => handleApply(template)}
+                        disabled={appliedTemplateId === template.id}
+                        className="flex-shrink-0 bg-amber-500 hover:bg-amber-600 text-white gap-1.5"
+                      >
+                        {appliedTemplateId === template.id ? (
+                          <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Applying...</>
+                        ) : (
+                          <><Check className="w-3.5 h-3.5" /> Apply</>
+                        )}
+                      </Button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+              <div className="border-t border-purple-200 my-4" />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {applicableTemplates.length > 0 ? (
           <div className="space-y-3">
             {applicableTemplates.map((template) => (
               <motion.div
                 key={template.id}
-                whileHover={{ scale: 1.02 }}
+                whileHover={{ scale: 1.01 }}
                 className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all ${
                   selectedTemplate?.id === template.id
                     ? "border-purple-500 bg-white shadow-lg ring-2 ring-purple-200"
@@ -187,27 +258,26 @@ Return the top 3 most relevant template IDs with a brief reason why each is a go
                 }`}
                 onClick={() => onTemplateSelect(template)}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
                     <h4 className="font-bold text-slate-900">{template.name}</h4>
                     <p className="text-xs text-slate-600 mt-1">{template.description}</p>
                     {template.specialty && (
-                      <div className="mt-2 flex items-center gap-2">
-                        <span className="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-700 font-medium">
-                          {template.specialty}
-                        </span>
-                      </div>
+                      <span className="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-700 font-medium mt-2 inline-block">{template.specialty}</span>
                     )}
                   </div>
-                  {selectedTemplate?.id === template.id && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="flex-shrink-0 w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center"
-                    >
-                      <ChevronRight className="w-4 h-4 text-white" />
-                    </motion.div>
-                  )}
+                  <Button
+                    size="sm"
+                    onClick={(e) => { e.stopPropagation(); handleApply(template); }}
+                    disabled={appliedTemplateId === template.id}
+                    className="flex-shrink-0 bg-purple-600 hover:bg-purple-700 text-white gap-1.5"
+                  >
+                    {appliedTemplateId === template.id ? (
+                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Applying...</>
+                    ) : (
+                      <><Sparkles className="w-3.5 h-3.5" /> Apply</>
+                    )}
+                  </Button>
                 </div>
               </motion.div>
             ))}
@@ -218,33 +288,6 @@ Return the top 3 most relevant template IDs with a brief reason why each is a go
             <p className="text-slate-600 font-medium">No templates available for this note type</p>
             <p className="text-sm text-slate-500 mt-1">Create a custom template from your existing notes</p>
           </div>
-        )}
-
-        {/* Apply Template Button */}
-        {selectedTemplate && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-4"
-          >
-            <Button
-              onClick={() => onApplyTemplate(selectedTemplate.id)}
-              disabled={isApplyingTemplate}
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white gap-2 py-6"
-            >
-              {isApplyingTemplate ? (
-                <>
-                  <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                  Applying Template...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  Apply Template
-                </>
-              )}
-            </Button>
-          </motion.div>
         )}
       </div>
     </div>

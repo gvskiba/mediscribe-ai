@@ -154,27 +154,43 @@ export default function PhysicalExamEditor({ examData, onUpdate, onAddToNote }) 
               {sections.filter(s => s.enabled).length} sections active
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant={customizing ? "default" : "outline"}
-              size="sm"
+          <div className="flex items-center gap-2">
+            <button
               onClick={() => setCustomizing(!customizing)}
-              className={customizing ? "bg-emerald-600 hover:bg-emerald-700" : "border-emerald-300 hover:bg-emerald-50"}
+              title={customizing ? "Done" : "Customize"}
+              className={`group flex items-center gap-0 overflow-hidden rounded-lg px-2 py-1.5 transition-all duration-300 border ${
+                customizing
+                  ? "bg-emerald-600 text-white border-transparent"
+                  : "border-emerald-300 text-emerald-700 hover:bg-emerald-50 bg-white"
+              }`}
             >
-              <Settings className="w-4 h-4 mr-2" />
-              {customizing ? "Done" : "Customize"}
-            </Button>
-            <Button
-              onClick={() => {
-                const examText = formatForNote();
-                onAddToNote(examText);
-              }}
-              size="sm"
-              className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
+              <Settings className="w-4 h-4 flex-shrink-0" />
+              <span className="max-w-0 group-hover:max-w-[80px] overflow-hidden whitespace-nowrap transition-all duration-300 text-xs font-medium group-hover:ml-1.5">
+                {customizing ? "Done" : "Customize"}
+              </span>
+            </button>
+
+            <button
+              onClick={addCustomSection}
+              title="Add Section"
+              className="group flex items-center gap-0 overflow-hidden rounded-lg border border-emerald-300 text-emerald-700 hover:bg-emerald-50 px-2 py-1.5 transition-all duration-300 bg-white"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Add to Clinical Note
-            </Button>
+              <Plus className="w-4 h-4 flex-shrink-0" />
+              <span className="max-w-0 group-hover:max-w-[90px] overflow-hidden whitespace-nowrap transition-all duration-300 text-xs font-medium group-hover:ml-1.5">
+                Add Section
+              </span>
+            </button>
+
+            <button
+              onClick={() => { onAddToNote(formatForNote()); toast.success("Physical exam added to note"); }}
+              title="Add to Note"
+              className="group flex items-center gap-0 overflow-hidden rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1.5 transition-all duration-300"
+            >
+              <Check className="w-4 h-4 flex-shrink-0" />
+              <span className="max-w-0 group-hover:max-w-[80px] overflow-hidden whitespace-nowrap transition-all duration-300 text-xs font-medium group-hover:ml-1.5">
+                Add to Note
+              </span>
+            </button>
           </div>
         </div>
       </div>

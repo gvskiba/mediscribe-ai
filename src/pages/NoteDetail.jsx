@@ -2186,6 +2186,11 @@ Generated: ${new Date().toLocaleString()}
                              onClick={async () => {
                                try {
                                  const updatedDiagnoses = [...(note.diagnoses || []), diff.diagnosis];
+                                 // Optimistic update so preview reflects change immediately
+                                 queryClient.setQueryData(["note", noteId], (old) => ({
+                                   ...old,
+                                   diagnoses: updatedDiagnoses,
+                                 }));
                                  await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
                                  queryClient.invalidateQueries({ queryKey: ["note", noteId] });
                                  toast.success("Diagnosis added");

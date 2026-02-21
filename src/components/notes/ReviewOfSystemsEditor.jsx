@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Activity, Eye, Heart, Wind, User, Brain, Plus, X, Check, Ear, Bone, Droplets, Thermometer, Zap, Shield, Save, Edit2
+  Activity, Eye, Heart, Wind, User, Brain, Plus, X, Check, Ear, Bone, Droplets, Thermometer, Zap, Shield, Save, Edit2, Sparkles, Loader2
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";

@@ -1931,16 +1931,17 @@ Generated: ${new Date().toLocaleString()}
                      <Button
                        onClick={async () => {
                          const vitals = note.vital_signs;
-                         if (!vitals || Object.keys(vitals).length === 0) { toast.error("No vital signs to analyze"); return; }
+                         if (!vitals || Object.keys(vitals).length === 0) { toast.error("No vital signs recorded. Please enter and save vital signs first."); return; }
                          setLoadingVitalAnalysis(true);
                          try {
                            const vitalsSummary = Object.entries(vitals)
-                             .filter(([_, v]) => v && (v.value || v.systolic))
+                             .filter(([_, v]) => v && typeof v === 'object' && (v.value !== undefined && v.value !== "" || v.systolic !== undefined))
                              .map(([key, v]) => {
                                const displayKey = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
                                if (key === 'blood_pressure') return `- ${displayKey}: ${v.systolic}/${v.diastolic} ${v.unit || 'mmHg'}`;
-                               return `- ${displayKey}: ${v.value} ${v.unit || ''}`;
+                               return `- ${displayKey}: ${v.value} ${v.unit || ''}`.trim();
                              }).join('\n');
+                           if (!vitalsSummary) { toast.error("No vital sign values found to analyze"); setLoadingVitalAnalysis(false); return; }
                            const result = await base44.integrations.Core.InvokeLLM({
                              prompt: `Analyze these vital signs for abnormalities based on standard adult reference ranges.\n\nVITAL SIGNS:\n${vitalsSummary}\n\nFor each, determine NORMAL or ABNORMAL, reference range, and clinical significance.`,
                              response_json_schema: {

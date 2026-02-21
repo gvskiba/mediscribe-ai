@@ -1899,9 +1899,20 @@ Generated: ${new Date().toLocaleString()}
                      }}
                      onSave={async (newVitalSigns) => {
                        try {
-                         const newEntry = { vitals: newVitalSigns, timestamp: new Date().toISOString() };
+                         // Filter out empty vitals
+                         const filteredVitals = Object.fromEntries(
+                           Object.entries(newVitalSigns).filter(([_, v]) => 
+                             v && (v.value !== undefined && v.value !== "" || v.systolic !== undefined)
+                           )
+                         );
+                         if (Object.keys(filteredVitals).length === 0) {
+                           toast.error("Please enter at least one vital sign before saving");
+                           return;
+                         }
+                         const newEntry = { vitals: filteredVitals, timestamp: new Date().toISOString() };
                          setVitalSignsHistory(prev => [newEntry, ...prev]);
-                         await base44.entities.ClinicalNote.update(noteId, { vital_signs: newVitalSigns });
+                         // Also persist to DB so AI analysis can use them
+                         await base44.entities.ClinicalNote.update(noteId, { vital_signs: filteredVitals });
                          queryClient.invalidateQueries({ queryKey: ["note", noteId] });
                          toast.success("Vital signs saved with timestamp");
                        } catch (error) {

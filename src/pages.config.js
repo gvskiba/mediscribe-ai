@@ -64,6 +64,7 @@ import SmartTemplates from './pages/SmartTemplates';
 import Snippets from './pages/Snippets';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
+import MedicalKnowledgeBase from './pages/MedicalKnowledgeBase';
 import __Layout from './Layout.jsx';
 
 
@@ -85,6 +86,7 @@ export const PAGES = {
     "Snippets": Snippets,
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
+    "MedicalKnowledgeBase": MedicalKnowledgeBase,
 }
 
 export const pagesConfig = {

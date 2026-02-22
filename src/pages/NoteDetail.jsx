@@ -1862,14 +1862,25 @@ Generated: ${new Date().toLocaleString()}
                                 <TabDataPreview tabId="patient_intake" note={note} />
                                 <ClinicalNotePreviewButton note={note} templates={templates} selectedTemplate={selectedTemplate} onTemplateChange={setSelectedTemplate} onUpdate={async (field, value) => { await base44.entities.ClinicalNote.update(noteId, { [field]: value }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
                               </div>
-                              <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
-                                Next <ArrowLeft className="w-4 h-4 rotate-180" />
-                              </Button>
-                            </div>
-                          </div>
-                        </TabsContent>
+                              <div className="flex items-center gap-2">
+                                  {!isFirstTab() && (
+                                    <button onClick={handleBack} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg px-2.5 py-2 font-medium text-sm" title="Back">
+                                      <ArrowLeft className="w-4 h-4 flex-shrink-0" />
+                                      <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Back</span>
+                                    </button>
+                                  )}
+                                  {!isLastTab() && (
+                                    <button onClick={handleNext} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-2.5 py-2 font-medium text-sm" title="Next">
+                                      <ArrowLeft className="w-4 h-4 rotate-180 flex-shrink-0" />
+                                      <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Next</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                              </div>
+                              </TabsContent>
 
-           {/* Vital Signs Tab (moved to Patient) */}
+                              {/* Vital Signs Tab (moved to Patient) */}
            <TabsContent value="vital_signs" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
              <div className="max-w-4xl mx-auto space-y-8">
                {/* Header */}

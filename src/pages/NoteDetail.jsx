@@ -248,6 +248,25 @@ export default function NoteDetail() {
     }
   };
 
+  const handleBack = () => {
+    const allTabs = tabGroups.flatMap(g => g.tabs.map(t => t.id));
+    const currentIndex = allTabs.indexOf(activeTab);
+    if (currentIndex > 0) {
+      setActiveTab(allTabs[currentIndex - 1]);
+    }
+  };
+
+  const isFirstTab = () => {
+    const allTabs = tabGroups.flatMap(g => g.tabs.map(t => t.id));
+    return allTabs.indexOf(activeTab) === 0;
+  };
+
+  const isLastTab = () => {
+    const allTabs = tabGroups.flatMap(g => g.tabs.map(t => t.id));
+    const currentIndex = allTabs.indexOf(activeTab);
+    return currentIndex === allTabs.length - 1;
+  };
+
   const handleDragEnd = async (result) => {
     const { source, destination, type } = result;
     if (!destination) return;

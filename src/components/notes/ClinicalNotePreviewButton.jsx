@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { FileText, Eye } from "lucide-react";
+import { FileText } from "lucide-react";
 import StructuredNotePreview from "./StructuredNotePreview";
 
 export default function ClinicalNotePreviewButton({ note, templates = [], selectedTemplate, onTemplateChange, onUpdate }) {

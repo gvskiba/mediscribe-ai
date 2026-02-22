@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Eye, Copy, Check } from "lucide-react";
+import { Layers, Copy, Check } from "lucide-react";
 
 export default function TabDataPreview({ tabId, note }) {
   const [open, setOpen] = useState(false);

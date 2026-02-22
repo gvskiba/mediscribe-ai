@@ -186,15 +186,14 @@ export default function TabDataPreview({ tabId, note }) {
 
   return (
     <>
-      <Button
+      <button
         onClick={() => setOpen(true)}
-        variant="outline"
-        size="sm"
-        className="gap-2 border-purple-300 hover:bg-purple-50 hover:border-purple-400 shadow-sm"
+        className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden border border-purple-300 hover:bg-purple-50 hover:border-purple-400 text-purple-600 rounded-lg px-2.5 py-2 font-medium text-sm shadow-sm bg-white"
+        title="Preview Tab"
       >
-        <Eye className="w-4 h-4" />
-        Preview Tab
-      </Button>
+        <Eye className="w-4 h-4 flex-shrink-0" />
+        <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Preview Tab</span>
+      </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">

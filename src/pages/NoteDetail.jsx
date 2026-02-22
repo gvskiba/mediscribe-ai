@@ -3946,12 +3946,23 @@ Generated: ${new Date().toLocaleString()}
                              <TabDataPreview tabId={tab.id} note={note} />
                              <ClinicalNotePreviewButton note={note} />
                            </div>
-                           <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 gap-2">
-                             Next <ArrowLeft className="w-4 h-4 rotate-180" />
-                           </Button>
-                         </div>
-                       </TabsContent>
-                       ))}
+                           <div className="flex items-center gap-2">
+                             {!isFirstTab() && (
+                               <button onClick={handleBack} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg px-2.5 py-2 font-medium text-sm" title="Back">
+                                 <ArrowLeft className="w-4 h-4 flex-shrink-0" />
+                                 <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Back</span>
+                               </button>
+                             )}
+                             {!isLastTab() && (
+                               <button onClick={handleNext} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-2.5 py-2 font-medium text-sm" title="Next">
+                                 <ArrowLeft className="w-4 h-4 rotate-180 flex-shrink-0" />
+                                 <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Next</span>
+                               </button>
+                             )}
+                           </div>
+                           </div>
+                           </TabsContent>
+                           ))}
                        </div>
                        </Tabs>
                        </motion.div>

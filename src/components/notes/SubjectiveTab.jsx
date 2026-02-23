@@ -242,6 +242,7 @@ export default function SubjectiveTab({
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center text-xs font-bold">4</div>
             <span className="text-sm font-semibold">Review of Systems</span>
+
             <span className="text-purple-200 text-xs">· systematic symptom review</span>
           </div>
           <div className="flex items-center gap-2">

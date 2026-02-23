@@ -165,30 +165,7 @@ export default function SubjectiveTab({
         </div>
       </div>
 
-      {/* 2 - Chief Complaint */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center text-xs font-bold">2</div>
-            <span className="text-sm font-semibold">Chief Complaint</span>
-            <span className="text-blue-200 text-xs">· primary reason for visit</span>
-          </div>
-          <InlineSectionAI type="chief_complaint" note={note} onApply={async (val) => { await base44.entities.ClinicalNote.update(noteId, { chief_complaint: val }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
-        </div>
-        <div className="px-4 py-3">
-          <input
-            type="text"
-            value={note.chief_complaint || ""}
-            onChange={(e) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, chief_complaint: e.target.value }))}
-            onBlur={async (e) => { await base44.entities.ClinicalNote.update(noteId, { chief_complaint: e.target.value }); toast.success("Saved"); }}
-            placeholder="e.g., Chest pain for 2 hours..."
-            className="w-full text-sm text-slate-900 placeholder:text-slate-400 border-0 outline-none focus:ring-0 bg-transparent"
-            maxLength={200}
-          />
-        </div>
-      </div>
-
-      {/* 3 - Raw Note Input */}
+      {/* 2 - Raw Note Input */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-slate-500 to-slate-600 text-white">
           <div className="flex items-center gap-2">

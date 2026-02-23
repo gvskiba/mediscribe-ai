@@ -159,15 +159,15 @@ export default function MedicalChatbot() {
 
     try {
       const history = newMessages
-        .slice(-8)
-        .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
+        .slice(-4)
+        .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content?.slice(0, 400)}`)
         .join("\n");
 
       const prompt = buildPrompt(mode, userText, history, knowledgeBase);
 
       const result = await base44.integrations.Core.InvokeLLM({
         prompt,
-        add_context_from_internet: mode !== "knowledge",
+        add_context_from_internet: false,
       });
 
       setMessages((prev) => [...prev, { role: "assistant", content: result }]);

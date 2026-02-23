@@ -1642,7 +1642,7 @@ Generated: ${new Date().toLocaleString()}
                           />
                         </TabsContent>
 
-                              {/* Vital Signs Tab (moved to Patient) */}
+                              {/* Vital Signs Tab - content moved to Subjective tab */}
            <TabsContent value="vital_signs" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
              <div className="max-w-4xl mx-auto space-y-8">
                {/* Header */}

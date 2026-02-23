@@ -1624,12 +1624,9 @@ Generated: ${new Date().toLocaleString()}
                               <DifferentialTab note={note} noteId={noteId} queryClient={queryClient} templates={templates} selectedTemplate={selectedTemplate} setSelectedTemplate={setSelectedTemplate} loadingDifferential={loadingDifferential} generateDifferentialDiagnosis={generateDifferentialDiagnosis} differentialDiagnosis={differentialDiagnosis} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
                               </TabsContent>
 
-                              {/* placeholder to fix find match */}
-                              <TabsContent value="__unused__" className="hidden">
-                              <div className="text-center mb-8">
-                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 mb-4 shadow-lg">
-                                  <Code className="w-8 h-8 text-white" />
-                                </div>
+                              {/* placeholder removed */}
+                              <TabsContent value="__unused2__" className="hidden">
+                              <div>
 
                {/* Clinical Context */}
                {note.chief_complaint && (

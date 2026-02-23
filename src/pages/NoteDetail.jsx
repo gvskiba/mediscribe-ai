@@ -1424,51 +1424,25 @@ Generated: ${new Date().toLocaleString()}
         />
       )}
 
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl border border-slate-200 px-5 py-4"
-      >
-        <div className="flex items-start justify-between gap-4">
-          {/* Left: patient name + meta */}
-          <div className="flex-1 min-w-0">
-            <input
-              type="text"
-              value={note.patient_name === "New Patient" ? (note.chief_complaint || "New Patient") : note.patient_name}
-              onChange={(e) => {
-                queryClient.setQueryData(["note", noteId], (old) => ({
-                  ...old,
-                  patient_name: e.target.value
-                }));
-              }}
-              onBlur={async (e) => {
-                await base44.entities.ClinicalNote.update(noteId, { patient_name: e.target.value });
-                setLastSaved(new Date().toISOString());
-                toast.success("Note saved at " + format(new Date(), "h:mm:ss a"));
-              }}
-              className="text-xl font-bold text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none transition-colors w-full"
-            />
-            <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                {note.date_of_visit ? format(new Date(note.date_of_visit), "MMM d, yyyy") : format(new Date(), "MMM d, yyyy")}
-              </span>
-              <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                {note.time_of_visit || format(new Date(), "h:mm a")}
-              </span>
-              {note.patient_id && (
-                <span className="flex items-center gap-1"><Hash className="w-3 h-3" /> {note.patient_id}</span>
-              )}
-            </div>
-            {note.chief_complaint && (
-              <p className="mt-2 text-xs text-slate-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-1.5">
-                <span className="font-semibold text-blue-800">CC:</span> {note.chief_complaint}
-              </p>
-            )}
+      {/* Chief Complaint Banner */}
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+        <div className="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white">
+          <div className="flex items-center gap-2"><span className="text-sm font-semibold">Chief Complaint</span><span className="text-blue-200 text-xs">· primary reason for visit</span></div>
+          <InlineSectionAI type="chief_complaint" note={note} onApply={async (val) => { await base44.entities.ClinicalNote.update(noteId, { chief_complaint: val }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
+        </div>
+        <div className="px-4 py-3">
+          <input type="text" value={note.chief_complaint || ""} onChange={(e) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, chief_complaint: e.target.value }))} onBlur={async (e) => { await base44.entities.ClinicalNote.update(noteId, { chief_complaint: e.target.value }); toast.success("Saved"); }} placeholder="e.g., Chest pain for 2 hours..." className="w-full text-sm text-slate-900 placeholder:text-slate-400 border-0 outline-none focus:ring-0 bg-transparent" maxLength={200} />
+        </div>
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-slate-200 px-5 py-4">
+        <div className="flex-1 min-w-0">
+          <input type="text" value={note.patient_name === "New Patient" ? (note.chief_complaint || "New Patient") : note.patient_name} onChange={(e) => { queryClient.setQueryData(["note", noteId], (old) => ({ ...old, patient_name: e.target.value })); }} onBlur={async (e) => { await base44.entities.ClinicalNote.update(noteId, { patient_name: e.target.value }); setLastSaved(new Date().toISOString()); toast.success("Note saved at " + format(new Date(), "h:mm:ss a")); }} className="text-xl font-bold text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none transition-colors w-full" />
+          <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
+            <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{note.date_of_visit ? format(new Date(note.date_of_visit), "MMM d, yyyy") : format(new Date(), "MMM d, yyyy")}</span>
+            <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{note.time_of_visit || format(new Date(), "h:mm a")}</span>
+            {note.patient_id && (<span className="flex items-center gap-1"><Hash className="w-3 h-3" /> {note.patient_id}</span>)}
           </div>
-
-
         </div>
       </motion.div>
 

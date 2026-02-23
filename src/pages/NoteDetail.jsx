@@ -2652,84 +2652,26 @@ Generated: ${new Date().toLocaleString()}
                      </TabsContent>
 
                      {/* Disposition Tab */}
-                     <TabsContent value="disposition_plan" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
-                       <div className="max-w-5xl mx-auto space-y-8">
-                         {/* Header */}
-                         <div className="text-center mb-8">
-                           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 mb-4 shadow-lg">
-                             <FileText className="w-8 h-8 text-white" />
+                     <TabsContent value="disposition_plan" className="overflow-y-auto bg-slate-50">
+                       <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
+                         <div><h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Disposition Plan</h2><p className="text-xs text-slate-400 mt-0.5">Patient disposition, follow-up care, and discharge</p></div>
+                         <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-purple-500 shadow-sm overflow-hidden">
+                           <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-purple-500" /><span className="text-sm font-semibold text-slate-800">Disposition Planner</span></div>
+                           <div className="p-4">
+                             <DispositionPlanner note={note} onSave={async (d) => { const t = `DISPOSITION PLAN\n\nTYPE: ${d.disposition_type.toUpperCase()}\nLOCATION: ${d.location}${d.accepting_provider ? `\nACCEPTING PROVIDER: ${d.accepting_provider}` : ""}${d.admission_time ? `\nADMISSION TIME: ${d.admission_time}` : ""}\n\nADDITIONAL INSTRUCTIONS:\n${d.additional_notes || "None"}`.trim(); await base44.entities.ClinicalNote.update(noteId, { disposition_plan: t }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); toast.success("Saved"); }} />
                            </div>
-                           <h2 className="text-3xl font-bold text-slate-900 mb-2">Disposition Plan</h2>
-                           <p className="text-slate-600 max-w-2xl mx-auto">Document patient disposition, follow-up care, and discharge instructions</p>
                          </div>
-
-                         {/* Disposition Planner */}
-                         <DispositionPlanner
-                           note={note}
-                           onSave={async (dispositionData) => {
-                             try {
-                               const dispositionText = `
-                         DISPOSITION PLAN
-                         ═════════════════════════════════════════
-
-                         TYPE: ${dispositionData.disposition_type.toUpperCase()}
-                         LOCATION: ${dispositionData.location}
-                         ${dispositionData.accepting_provider ? `ACCEPTING PROVIDER: ${dispositionData.accepting_provider}` : ""}
-                         ${dispositionData.admission_time ? `ADMISSION TIME: ${dispositionData.admission_time}` : ""}
-                         ${dispositionData.transfer_method ? `TRANSFER METHOD: ${dispositionData.transfer_method}` : ""}
-                         ${dispositionData.contact_info ? `FACILITY CONTACT: ${dispositionData.contact_info}` : ""}
-
-                         ADDITIONAL INSTRUCTIONS:
-                         ${dispositionData.additional_notes || "None"}
-                         `.trim();
-
-                               await base44.entities.ClinicalNote.update(noteId, { 
-                                 disposition_plan: dispositionText 
-                               });
-                               queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                               toast.success("Disposition plan saved");
-                             } catch (error) {
-                               console.error("Failed to save disposition plan:", error);
-                               toast.error("Failed to save disposition plan");
-                             }
-                           }}
-                         />
+                         <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                           <div className="flex gap-2"><TabDataPreview tabId="disposition_plan" note={note} /><ClinicalNotePreviewButton note={note} /></div>
+                           <div className="flex items-center gap-1.5">{!isFirstTab() && <button onClick={handleBack} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"><ArrowLeft className="w-3.5 h-3.5" />Back</button>}{!isLastTab() && <button onClick={handleNext} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">Next<ArrowLeft className="w-3.5 h-3.5 rotate-180" /></button>}</div>
+                         </div>
                        </div>
-
-                       {/* Next Button */}
-                       <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                         <div className="flex gap-2">
-                           <TabDataPreview tabId="disposition_plan" note={note} />
-                           <ClinicalNotePreviewButton note={note} />
-                         </div>
-                         <div className="flex items-center gap-2">
-                           {!isFirstTab() && (
-                             <button onClick={handleBack} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg px-2.5 py-2 font-medium text-sm" title="Back">
-                               <ArrowLeft className="w-4 h-4 flex-shrink-0" />
-                               <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Back</span>
-                             </button>
-                           )}
-                           {!isLastTab() && (
-                             <button onClick={handleNext} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-2.5 py-2 font-medium text-sm" title="Next">
-                               <ArrowLeft className="w-4 h-4 rotate-180 flex-shrink-0" />
-                               <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Next</span>
-                             </button>
-                           )}
-                         </div>
-                         </div>
-                         </TabsContent>
+                     </TabsContent>
 
                          {/* Discharge Summary Tab */}
-                     <TabsContent value="discharge_summary" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
-                       <div className="max-w-5xl mx-auto space-y-8">
-                         {/* Header */}
-                         <div className="text-center mb-8">
-                           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 mb-4 shadow-lg">
-                             <FileText className="w-8 h-8 text-white" />
-                           </div>
-                           <h2 className="text-3xl font-bold text-slate-900 mb-2">Discharge Summary</h2>
-                           <p className="text-slate-600 max-w-2xl mx-auto">AI-generated discharge instructions that you can customize</p>
-                         </div>
+                     <TabsContent value="discharge_summary" className="overflow-y-auto bg-slate-50">
+                       <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
+                         <div><h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Discharge Summary</h2><p className="text-xs text-slate-400 mt-0.5">AI-generated discharge instructions</p></div>
 
                          {/* Generate AI Instructions */}
                          <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-lg overflow-hidden">

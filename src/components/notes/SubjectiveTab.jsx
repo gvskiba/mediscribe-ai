@@ -169,7 +169,7 @@ export default function SubjectiveTab({
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-slate-500 to-slate-600 text-white">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center text-xs font-bold">3</div>
+            <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center text-xs font-bold">2</div>
             <span className="text-sm font-semibold">Raw Note Input</span>
           </div>
           <div className="flex items-center gap-2">

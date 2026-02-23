@@ -2673,16 +2673,9 @@ Generated: ${new Date().toLocaleString()}
                        <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
                          <div><h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Discharge Summary</h2><p className="text-xs text-slate-400 mt-0.5">AI-generated discharge instructions</p></div>
 
-                         {/* Generate AI Instructions */}
-                         <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-lg overflow-hidden">
-                           <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-5 text-white">
-                             <h3 className="font-bold text-lg flex items-center gap-2">
-                               <Sparkles className="w-6 h-6" />
-                               AI Discharge Instructions
-                             </h3>
-                             <p className="text-indigo-100 text-sm mt-1">Generate professional discharge instructions from your clinical note</p>
-                           </div>
-                           <div className="p-6">
+                         <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-indigo-500 shadow-sm overflow-hidden">
+                           <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-indigo-500" /><span className="text-sm font-semibold text-slate-800">AI Discharge Instructions</span></div>
+                           <div className="p-4">
                              <Button
                                onClick={async () => {
                                  try {

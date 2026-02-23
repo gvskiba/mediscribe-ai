@@ -1944,108 +1944,29 @@ Generated: ${new Date().toLocaleString()}
              </TabsContent>
 
            {/* Clinical Note Tab */}
-             <TabsContent value="clinical_note" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
-               <div className="max-w-5xl mx-auto space-y-8">
-                 <NoteTypeAndTemplateSelector
-                   note={note}
-                   templates={templates}
-                   selectedTemplate={selectedTemplate}
-                   onNoteTypeChange={async (noteType) => {
-                     await base44.entities.ClinicalNote.update(noteId, { note_type: noteType });
-                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                     toast.success("Note type updated");
-                   }}
-                   onTemplateSelect={setSelectedTemplate}
-                   onApplyTemplate={async (templateId) => {
-                     const selected = templates.find(t => t.id === templateId);
-                     if (selected) {
-                       try {
-                         // Apply template sections to note
-                         const updates = {
-                           note_type: selected.note_type || note.note_type,
-                         };
-
-                         if (selected.sections) {
-                           selected.sections.forEach(section => {
-                             if (section.content_template) {
-                               const fieldMap = {
-                                 "chief_complaint": "chief_complaint",
-                                 "hpi": "history_of_present_illness",
-                                 "ros": "review_of_systems",
-                                 "physical_exam": "physical_exam",
-                                 "assessment": "assessment",
-                                 "plan": "plan"
-                               };
-                               const field = fieldMap[section.id];
-                               if (field) {
-                                 updates[field] = section.content_template;
-                               }
-                             }
-                           });
-                         }
-
-                         await base44.entities.ClinicalNote.update(noteId, updates);
-                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                         toast.success("Template applied successfully");
-                       } catch (error) {
-                         console.error("Failed to apply template:", error);
-                         toast.error("Failed to apply template");
-                       }
-                     }
-                   }}
-                 />
-
-                 <ClinicalNoteView
-                   note={note}
-                   onUpdate={async (field, value) => {
-                     await base44.entities.ClinicalNote.update(noteId, { [field]: value });
-                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                     toast.success("Updated successfully");
-                   }}
-                   noteTypes={templates}
-                   differentialDiagnosis={differentialDiagnosis}
-                 />
-
-                 {/* Complete Clinical Note Generator */}
-                 <div className="bg-white rounded-xl border-2 border-purple-300 shadow-lg overflow-hidden">
-                   <div className="bg-gradient-to-r from-purple-500 to-indigo-500 px-6 py-5 text-white">
-                     <h3 className="font-bold text-lg flex items-center gap-2">
-                       <Sparkles className="w-6 h-6" />
-                       Generate Complete Clinical Note
-                     </h3>
-                     <p className="text-purple-100 text-sm mt-1">Generate a full clinical note from raw data</p>
-                   </div>
-                   <div className="p-6">
-                     <AIDocumentationAssistant note={note} onUpdateNote={async (updates) => {
-                       await base44.entities.ClinicalNote.update(noteId, updates);
-                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                     }} />
+             <TabsContent value="clinical_note" className="overflow-y-auto bg-slate-50">
+               <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
+                 <div><h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Clinical Note</h2><p className="text-xs text-slate-400 mt-0.5">Templates, structured view, and note generation</p></div>
+                 <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-slate-400 shadow-sm overflow-hidden">
+                   <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-slate-400" /><span className="text-sm font-semibold text-slate-800">Template & Type</span></div>
+                   <div className="p-4">
+                     <NoteTypeAndTemplateSelector note={note} templates={templates} selectedTemplate={selectedTemplate} onNoteTypeChange={async (t) => { await base44.entities.ClinicalNote.update(noteId, { note_type: t }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); toast.success("Updated"); }} onTemplateSelect={setSelectedTemplate} onApplyTemplate={async (templateId) => { const s = templates.find(t => t.id === templateId); if (s) { const u = { note_type: s.note_type || note.note_type }; if (s.sections) s.sections.forEach(sec => { if (sec.content_template) { const fm = { chief_complaint:"chief_complaint", hpi:"history_of_present_illness", ros:"review_of_systems", physical_exam:"physical_exam", assessment:"assessment", plan:"plan" }; if (fm[sec.id]) u[fm[sec.id]] = sec.content_template; } }); await base44.entities.ClinicalNote.update(noteId, u); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); toast.success("Template applied"); } }} />
                    </div>
                  </div>
+                 <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-blue-500 shadow-sm overflow-hidden">
+                   <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-blue-500" /><span className="text-sm font-semibold text-slate-800">Structured Note View</span></div>
+                   <div className="p-4"><ClinicalNoteView note={note} onUpdate={async (field, value) => { await base44.entities.ClinicalNote.update(noteId, { [field]: value }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); toast.success("Updated"); }} noteTypes={templates} differentialDiagnosis={differentialDiagnosis} /></div>
                  </div>
-
-               {/* Next Button */}
-               <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-               <div className="flex gap-2">
-                 <TabDataPreview tabId="clinical_note" note={note} />
-                 <ClinicalNotePreviewButton note={note} />
+                 <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-purple-500 shadow-sm overflow-hidden">
+                   <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-purple-500" /><span className="text-sm font-semibold text-slate-800">Generate Complete Note</span></div>
+                   <div className="p-4"><AIDocumentationAssistant note={note} onUpdateNote={async (updates) => { await base44.entities.ClinicalNote.update(noteId, updates); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} /></div>
+                 </div>
+                 <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                   <div className="flex gap-2"><TabDataPreview tabId="clinical_note" note={note} /><ClinicalNotePreviewButton note={note} /></div>
+                   <div className="flex items-center gap-1.5">{!isFirstTab() && <button onClick={handleBack} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"><ArrowLeft className="w-3.5 h-3.5" />Back</button>}{!isLastTab() && <button onClick={handleNext} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">Next<ArrowLeft className="w-3.5 h-3.5 rotate-180" /></button>}</div>
+                 </div>
                </div>
-               <div className="flex items-center gap-2">
-                 {!isFirstTab() && (
-                   <button onClick={handleBack} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg px-2.5 py-2 font-medium text-sm" title="Back">
-                     <ArrowLeft className="w-4 h-4 flex-shrink-0" />
-                     <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Back</span>
-                   </button>
-                 )}
-                 {!isLastTab() && (
-                   <button onClick={handleNext} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-2.5 py-2 font-medium text-sm" title="Next">
-                     <ArrowLeft className="w-4 h-4 rotate-180 flex-shrink-0" />
-                     <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Next</span>
-                   </button>
-                 )}
-               </div>
-               </div>
-               </TabsContent>
+             </TabsContent>
 
            {/* Old tabs removed - replaced by sidebar */}
 

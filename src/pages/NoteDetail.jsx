@@ -1981,251 +1981,54 @@ Generated: ${new Date().toLocaleString()}
              </TabsContent>
 
                    {/* Diagnoses Tab */}
-                     <TabsContent value="diagnoses" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
-                   <div className="max-w-6xl mx-auto space-y-8">
-                     {/* Header Section */}
-                     <div className="text-center mb-8">
-                       <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 mb-4 shadow-lg">
-                         <Beaker className="w-8 h-8 text-white" />
+                     <TabsContent value="diagnoses" className="overflow-y-auto bg-slate-50">
+                   <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
+                     <div><h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Diagnoses & ICD-10</h2><p className="text-xs text-slate-400 mt-0.5">AI-powered diagnostic support and coding</p></div>
+                     <div className="grid sm:grid-cols-2 gap-3">
+                       <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-purple-500 shadow-sm overflow-hidden">
+                         <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-purple-500" /><span className="text-sm font-semibold text-slate-800">AI Suggestions</span></div>
+                         <div className="p-4"><ClinicalDecisionSupport type="diagnostic" note={note} onAddToNote={async (d) => { const u = [...(note.diagnoses || []), d]; await base44.entities.ClinicalNote.update(noteId, { diagnoses: u }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} /></div>
                        </div>
-                       <h2 className="text-3xl font-bold text-slate-900 mb-2">Diagnoses & ICD-10 Coding</h2>
-                       <p className="text-slate-600 max-w-2xl mx-auto">AI-powered diagnostic support with intelligent code suggestions and validation</p>
-                     </div>
-
-                     {/* AI Suggestion Cards - Side by Side */}
-                     <div className="grid md:grid-cols-2 gap-6">
-                       {/* Diagnostic Suggestions */}
-                       <div className="bg-white rounded-2xl border-2 border-purple-200 shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-                         <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-4 text-white">
-                           <h3 className="font-bold flex items-center gap-2">
-                             <Sparkles className="w-5 h-5" />
-                             AI Diagnostic Suggestions
-                           </h3>
-                           <p className="text-purple-100 text-xs mt-1">Real-time clinical decision support</p>
-                         </div>
-                         <div className="p-6">
-                           <ClinicalDecisionSupport
-                             type="diagnostic"
-                             note={note}
-                             onAddToNote={async (diagnosis) => {
-                               const updatedDiagnoses = [...(note.diagnoses || []), diagnosis];
-                               await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
-                               queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                             }}
-                           />
-                         </div>
-                       </div>
-
-                       {/* AI Recommendations */}
-                       <div className="bg-white rounded-2xl border-2 border-indigo-200 shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-                         <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-4 text-white">
-                           <h3 className="font-bold flex items-center gap-2">
-                             <Activity className="w-5 h-5" />
-                             Evidence-Based Recommendations
-                           </h3>
-                           <p className="text-indigo-100 text-xs mt-1">Clinical pattern recognition</p>
-                         </div>
-                         <div className="p-6">
-                           <DiagnosisRecommendations
-                             note={note}
-                             onAddDiagnoses={async (newDiagnoses) => {
-                               const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
-                               await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
-                               queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                             }}
-                           />
-                         </div>
+                       <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-indigo-500 shadow-sm overflow-hidden">
+                         <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-indigo-500" /><span className="text-sm font-semibold text-slate-800">Evidence-Based</span></div>
+                         <div className="p-4"><DiagnosisRecommendations note={note} onAddDiagnoses={async (d) => { const u = [...(note.diagnoses || []), ...d]; await base44.entities.ClinicalNote.update(noteId, { diagnoses: u }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} /></div>
                        </div>
                      </div>
-
-                     {/* Current Diagnoses - Enhanced Design */}
-                     <div className="bg-white rounded-2xl border-2 border-slate-200 shadow-xl overflow-hidden">
-                       <div className="bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-5 text-white">
-                         <div className="flex items-center justify-between">
-                           <div>
-                             <h3 className="font-bold text-lg flex items-center gap-2">
-                               <Code className="w-6 h-6" />
-                               Current Diagnoses
-                             </h3>
-                             <p className="text-blue-50 text-sm mt-1">
-                               {note.diagnoses?.length || 0} {note.diagnoses?.length === 1 ? 'diagnosis' : 'diagnoses'} documented
-                             </p>
-                           </div>
-                           <div className="flex items-center gap-2">
-                             <Button
-                               variant="outline"
-                               onClick={() => setTemplateDialogOpen(true)}
-                               size="sm"
-                               className="gap-2 bg-white/20 border-white/30 text-white hover:bg-white/30"
-                             >
-                               <Sparkles className="w-4 h-4" /> Template
-                             </Button>
-                           </div>
-                         </div>
+                     <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-blue-500 shadow-sm overflow-hidden">
+                       <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
+                         <div className="flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-blue-500" /><span className="text-sm font-semibold text-slate-800">Current Diagnoses</span><span className="text-xs text-slate-400">({note.diagnoses?.length || 0})</span></div>
+                         <Button onClick={() => setTemplateDialogOpen(true)} size="sm" variant="outline" className="text-xs h-6 px-2 gap-1 border-slate-200"><Sparkles className="w-3 h-3" />Template</Button>
                        </div>
-
-                       <div className="p-8">
-                         {note.diagnoses && Array.isArray(note.diagnoses) && note.diagnoses.length > 0 ? (
-                           <div className="space-y-3">
+                       <div className="p-4">
+                         {note.diagnoses?.length > 0 ? (
+                           <div className="space-y-1.5">
                              {note.diagnoses.map((diag, i) => {
-                               const icd10Match = diag.match(/^([A-Z0-9.]+)\s*-\s*(.+)$/);
-                               const code = icd10Match ? icd10Match[1] : null;
-                               const description = icd10Match ? icd10Match[2] : diag;
-
+                               const m = diag.match(/^([A-Z0-9.]+)\s*-\s*(.+)$/);
                                return (
-                                 <motion.div
-                                   key={i}
-                                   initial={{ opacity: 0, x: -20 }}
-                                   animate={{ opacity: 1, x: 0 }}
-                                   transition={{ delay: i * 0.05 }}
-                                   className="group relative flex items-start gap-4 p-5 rounded-xl border-2 border-slate-200 bg-gradient-to-r from-white via-slate-50 to-white hover:border-blue-400 hover:shadow-lg transition-all duration-200"
-                                 >
-                                   <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white font-bold shadow-md flex-shrink-0">
-                                     {i + 1}
-                                   </div>
-                                   <div className="flex-1 min-w-0 py-1">
-                                     {code ? (
-                                       <>
-                                         <Badge className="bg-gradient-to-r from-blue-600 to-blue-700 text-white font-mono text-sm px-3 py-1 mb-2 shadow-sm">
-                                           {code}
-                                         </Badge>
-                                         <p className="text-base font-semibold text-slate-900 leading-relaxed">{description}</p>
-                                       </>
-                                     ) : (
-                                       <p className="text-base font-semibold text-slate-900 leading-relaxed">{diag}</p>
-                                     )}
-                                   </div>
-                                   <Button
-                                     variant="ghost"
-                                     size="sm"
-                                     onClick={async () => {
-                                       const updatedDiagnoses = note.diagnoses.filter((_, idx) => idx !== i);
-                                       await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
-                                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                                       toast.success("Diagnosis removed");
-                                     }}
-                                     className="opacity-0 group-hover:opacity-100 transition-all text-red-600 hover:bg-red-50 hover:text-red-700"
-                                   >
-                                     <X className="w-5 h-5" />
-                                   </Button>
-                                 </motion.div>
+                                 <div key={i} className="group flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-all">
+                                   {m ? <><Badge className="bg-blue-100 text-blue-700 text-xs font-mono px-1.5">{m[1]}</Badge><span className="text-xs text-slate-800 flex-1">{m[2]}</span></> : <span className="text-xs text-slate-800 flex-1">{diag}</span>}
+                                   <button onClick={async () => { const u = note.diagnoses.filter((_,j) => j !== i); await base44.entities.ClinicalNote.update(noteId, { diagnoses: u }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); toast.success("Removed"); }} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 p-0.5"><X className="w-3 h-3" /></button>
+                                 </div>
                                );
                              })}
                            </div>
-                         ) : (
-                           <div className="text-center py-16">
-                             <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center mx-auto mb-4 shadow-inner">
-                               <Code className="w-10 h-10 text-slate-400" />
-                             </div>
-                             <p className="text-lg font-semibold text-slate-700 mb-2">No diagnoses documented yet</p>
-                             <p className="text-slate-500 max-w-md mx-auto">Start by using AI suggestions above or search for ICD-10 codes below</p>
-                           </div>
-                         )}
+                         ) : <p className="text-xs text-slate-400 text-center py-4">No diagnoses yet. Use AI suggestions above or search below.</p>}
                        </div>
                      </div>
-
-                     {/* AI Medical Coding Assistant - ICD-10 + CPT */}
-                     <div className="bg-white rounded-2xl border-2 border-blue-200 shadow-xl overflow-hidden">
-                       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-5 text-white">
-                         <h3 className="font-bold text-lg flex items-center gap-2">
-                           <Sparkles className="w-6 h-6" />
-                           AI Medical Coding Assistant
-                         </h3>
-                         <p className="text-blue-100 text-sm mt-1">Auto-generate ICD-10 &amp; CPT codes from this encounter for billing &amp; records</p>
-                       </div>
-                       <div className="p-6">
-                         <MedicalCodingAssistant
-                           note={note}
-                           onAddDiagnoses={async (newDiagnoses) => {
-                             const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
-                             await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
-                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                           }}
-                         />
-                       </div>
+                     <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-cyan-500 shadow-sm overflow-hidden">
+                       <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-cyan-500" /><span className="text-sm font-semibold text-slate-800">AI Coding Assistant</span></div>
+                       <div className="p-4"><MedicalCodingAssistant note={note} onAddDiagnoses={async (d) => { const u = [...(note.diagnoses || []), ...d]; await base44.entities.ClinicalNote.update(noteId, { diagnoses: u }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} /></div>
                      </div>
-
-                     {/* ICD-10 Code Search - Enhanced */}
-                     <div className="bg-white rounded-2xl border-2 border-slate-200 shadow-xl overflow-hidden">
-                       <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-5 text-white">
-                         <h3 className="font-bold text-lg flex items-center gap-2">
-                           <Sparkles className="w-6 h-6" />
-                           ICD-10 Code Search & Mapper
-                         </h3>
-                         <p className="text-indigo-50 text-sm mt-1">Search thousands of codes or let AI suggest the best match</p>
-                       </div>
-                       <div className="p-8">
-                         <ICD10CodeSearch
-                           suggestions={icd10Suggestions}
-                           diagnoses={note.diagnoses}
-                           onAddDiagnoses={async (newDiagnoses) => {
-                             const updatedDiagnoses = [...(note.diagnoses || []), ...newDiagnoses];
-                             await base44.entities.ClinicalNote.update(noteId, { diagnoses: updatedDiagnoses });
-                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                           }}
-                         />
-                       </div>
+                     <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-slate-400 shadow-sm overflow-hidden">
+                       <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-slate-400" /><span className="text-sm font-semibold text-slate-800">ICD-10 Code Search</span></div>
+                       <div className="p-4"><ICD10CodeSearch suggestions={icd10Suggestions} diagnoses={note.diagnoses} onAddDiagnoses={async (d) => { const u = [...(note.diagnoses || []), ...d]; await base44.entities.ClinicalNote.update(noteId, { diagnoses: u }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} /></div>
                      </div>
-
-                     {/* Quick Actions Bar */}
-                     <div className="flex items-center gap-4 p-6 bg-gradient-to-r from-slate-50 to-white rounded-2xl border-2 border-slate-200">
-                       <div className="flex-1">
-                         <p className="text-sm font-semibold text-slate-700">Quick Actions</p>
-                         <p className="text-xs text-slate-500">Export or save your diagnoses</p>
-                       </div>
-                       <div className="flex gap-3">
-                         <Button
-                           variant="outline"
-                           onClick={() => exportNote('pdf')}
-                           disabled={exportingFormat === 'pdf'}
-                           className="gap-2 border-slate-300 hover:bg-slate-50 hover:border-slate-400"
-                         >
-                           {exportingFormat === 'pdf' ? (
-                             <Loader2 className="w-4 h-4 animate-spin" />
-                           ) : (
-                             <Download className="w-4 h-4" />
-                           )}
-                           Export PDF
-                         </Button>
-                         <Button
-                           variant="outline"
-                           onClick={() => exportNote('text')}
-                           disabled={exportingFormat === 'text'}
-                           className="gap-2 border-slate-300 hover:bg-slate-50 hover:border-slate-400"
-                         >
-                           {exportingFormat === 'text' ? (
-                             <Loader2 className="w-4 h-4 animate-spin" />
-                           ) : (
-                             <Download className="w-4 h-4" />
-                           )}
-                           Export Text
-                         </Button>
-                       </div>
+                     <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                       <div className="flex gap-2"><TabDataPreview tabId="research" note={note} /><ClinicalNotePreviewButton note={note} /></div>
+                       <div className="flex items-center gap-1.5">{!isFirstTab() && <button onClick={handleBack} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"><ArrowLeft className="w-3.5 h-3.5" />Back</button>}{!isLastTab() && <button onClick={handleNext} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">Next<ArrowLeft className="w-3.5 h-3.5 rotate-180" /></button>}</div>
                      </div>
-
-                     {/* Next Button */}
-                     <div className="flex justify-between items-center pt-4">
-                       <div className="flex gap-2">
-                         <TabDataPreview tabId="research" note={note} />
-                         <ClinicalNotePreviewButton note={note} />
-                       </div>
-                       <div className="flex items-center gap-2">
-                         {!isFirstTab() && (
-                           <button onClick={handleBack} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg px-2.5 py-2 font-medium text-sm" title="Back">
-                             <ArrowLeft className="w-4 h-4 flex-shrink-0" />
-                             <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Back</span>
-                           </button>
-                         )}
-                         {!isLastTab() && (
-                           <button onClick={handleNext} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-2.5 py-2 font-medium text-sm" title="Next">
-                             <ArrowLeft className="w-4 h-4 rotate-180 flex-shrink-0" />
-                             <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Next</span>
-                           </button>
-                         )}
-                       </div>
-                     </div>
-                     </div>
-                     </TabsContent>
+                   </div>
+                   </TabsContent>
 
                      {/* Disposition Tab */}
                      <TabsContent value="disposition_plan" className="overflow-y-auto bg-slate-50">

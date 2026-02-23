@@ -1614,215 +1614,22 @@ Generated: ${new Date().toLocaleString()}
                           />
                         </TabsContent>
 
-                              {/* Vital Signs Tab - content moved to Subjective tab */}
-           <TabsContent value="vital_signs" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
-             <div className="max-w-4xl mx-auto space-y-8">
-               {/* Header */}
-               <div className="text-center mb-8">
-                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 mb-4 shadow-lg">
-                   <Activity className="w-8 h-8 text-white" />
-                 </div>
-                 <h2 className="text-3xl font-bold text-slate-900 mb-2">Vital Signs</h2>
-                 <p className="text-slate-600 max-w-2xl mx-auto">Record patient vital signs and measurements</p>
-               </div>
+                              {/* Vital Signs Tab */}
+                              <TabsContent value="vital_signs" className="overflow-y-auto bg-slate-50">
+                              <VitalSignsTab note={note} noteId={noteId} queryClient={queryClient} templates={templates} selectedTemplate={selectedTemplate} setSelectedTemplate={setSelectedTemplate} loadingVitalAnalysis={loadingVitalAnalysis} setLoadingVitalAnalysis={setLoadingVitalAnalysis} vitalSignsAnalysis={vitalSignsAnalysis} setVitalSignsAnalysis={setVitalSignsAnalysis} vitalSignsHistory={vitalSignsHistory} setVitalSignsHistory={setVitalSignsHistory} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
+                              </TabsContent>
 
-               {/* Combined Vital Signs Card */}
-               <div className="bg-white rounded-xl border-2 border-emerald-300 shadow-lg overflow-hidden">
-                 <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-5 text-white">
-                   <h3 className="font-bold text-lg flex items-center gap-2">
-                     <Activity className="w-6 h-6" />
-                     Vital Signs
-                   </h3>
-                   <p className="text-emerald-100 text-sm mt-1">Enter manually or paste and let AI organize</p>
-                 </div>
-                 <div className="p-6 space-y-6">
-                   {/* Paste section */}
-                   <VitalSignsPasteAnalyzer
-                     vitalSigns={note.vital_signs}
-                     patientAge={note.patient_age}
-                     onApplyVitals={async (vitals) => {
-                       const vitalSigns = {
-                         temperature: vitals.temperature,
-                         heart_rate: vitals.heart_rate,
-                         blood_pressure: vitals.blood_pressure,
-                         respiratory_rate: vitals.respiratory_rate,
-                         oxygen_saturation: vitals.oxygen_saturation,
-                         height: vitals.height,
-                         weight: vitals.weight
-                       };
-                       await base44.entities.ClinicalNote.update(noteId, { vital_signs: vitalSigns });
-                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                     }}
-                   />
-                   <div className="border-t border-slate-200" />
-                   {/* Manual entry section */}
-                   <VitalSignsInput
-                     vitalSigns={note.vital_signs || {}}
-                     onChange={async (newVitalSigns) => {
-                       await base44.entities.ClinicalNote.update(noteId, { vital_signs: newVitalSigns });
-                       queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                     }}
-                     onSave={async (newVitalSigns) => {
-                       try {
-                         // Filter out empty vitals
-                         const filteredVitals = Object.fromEntries(
-                           Object.entries(newVitalSigns).filter(([_, v]) => 
-                             v && (v.value !== undefined && v.value !== "" || v.systolic !== undefined)
-                           )
-                         );
-                         if (Object.keys(filteredVitals).length === 0) {
-                           toast.error("Please enter at least one vital sign before saving");
-                           return;
-                         }
-                         const newEntry = { vitals: filteredVitals, timestamp: new Date().toISOString() };
-                         setVitalSignsHistory(prev => [newEntry, ...prev]);
-                         // Also persist to DB so AI analysis can use them
-                         await base44.entities.ClinicalNote.update(noteId, { vital_signs: filteredVitals });
-                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                         toast.success("Vital signs saved with timestamp");
-                       } catch (error) {
-                         console.error("Failed to save vital signs:", error);
-                         toast.error("Failed to save vital signs");
-                       }
-                     }}
-                   />
-                   {/* AI Vital Signs Analysis */}
-                   <div className="border-t border-slate-200 pt-4 space-y-3">
-                     <div className="flex items-center gap-2">
-                       <Sparkles className="w-4 h-4 text-teal-600" />
-                       <p className="text-sm font-semibold text-slate-700">AI Vital Signs Analysis</p>
-                       <p className="text-xs text-slate-500">— analyze for abnormalities</p>
-                     </div>
-                     <Button
-                       onClick={async () => {
-                         const vitals = note.vital_signs;
-                         if (!vitals || Object.keys(vitals).length === 0) { toast.error("No vital signs recorded. Please enter and save vital signs first."); return; }
-                         setLoadingVitalAnalysis(true);
-                         try {
-                           const vitalsSummary = Object.entries(vitals)
-                             .filter(([_, v]) => v && typeof v === 'object' && (v.value !== undefined && v.value !== "" || v.systolic !== undefined))
-                             .map(([key, v]) => {
-                               const displayKey = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-                               if (key === 'blood_pressure') return `- ${displayKey}: ${v.systolic}/${v.diastolic} ${v.unit || 'mmHg'}`;
-                               return `- ${displayKey}: ${v.value} ${v.unit || ''}`.trim();
-                             }).join('\n');
-                           if (!vitalsSummary) { toast.error("No vital sign values found to analyze"); setLoadingVitalAnalysis(false); return; }
-                           const result = await base44.integrations.Core.InvokeLLM({
-                             prompt: `Analyze these vital signs for abnormalities based on standard adult reference ranges.\n\nVITAL SIGNS:\n${vitalsSummary}\n\nFor each, determine NORMAL or ABNORMAL, reference range, and clinical significance.`,
-                             response_json_schema: {
-                               type: "object",
-                               properties: {
-                                 analysis: { type: "array", items: { type: "object", properties: { vital_sign: { type: "string" }, status: { type: "string", enum: ["normal", "abnormal"] }, value: { type: "string" }, reference_range: { type: "string" }, clinical_significance: { type: "string" } } } },
-                                 summary: { type: "string" }
-                               }
-                             }
-                           });
-                           setVitalSignsAnalysis(result);
-                         } catch (e) {
-                           toast.error("Failed to analyze vital signs");
-                         } finally {
-                           setLoadingVitalAnalysis(false);
-                         }
-                       }}
-                       disabled={loadingVitalAnalysis}
-                       variant="outline"
-                       className="gap-2 border-teal-300 text-teal-700 hover:bg-teal-50"
-                     >
-                       {loadingVitalAnalysis ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</> : <><Sparkles className="w-4 h-4" /> Analyze Vital Signs</>}
-                     </Button>
-                     {vitalSignsAnalysis && (
-                       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
-                         {vitalSignsAnalysis.analysis?.map((item, idx) => (
-                           <div key={idx} className={`rounded-lg border p-3 ${item.status === "abnormal" ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200"}`}>
-                             <div className="flex items-center justify-between mb-1">
-                               <p className="font-semibold text-sm text-slate-900 capitalize">{item.vital_sign}</p>
-                               <Badge className={item.status === "abnormal" ? "bg-red-600 text-white" : "bg-green-600 text-white"}>{item.status.toUpperCase()}</Badge>
-                             </div>
-                             <p className="text-xs text-slate-700"><strong>Value:</strong> {item.value} &nbsp;|&nbsp; <strong>Range:</strong> {item.reference_range}</p>
-                             {item.clinical_significance && <p className="text-xs text-slate-600 mt-0.5"><strong>Significance:</strong> {item.clinical_significance}</p>}
-                           </div>
-                         ))}
-                         {vitalSignsAnalysis.summary && (
-                           <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                             <p className="text-xs font-semibold text-slate-700 mb-1">Summary</p>
-                             <p className="text-xs text-slate-600">{vitalSignsAnalysis.summary}</p>
-                           </div>
-                         )}
-                       </motion.div>
-                     )}
-                   </div>
-                 </div>
-               </div>
+                              {/* Differential Diagnosis Tab */}
+                              <TabsContent value="differential" className="overflow-y-auto bg-slate-50">
+                              <DifferentialTab note={note} noteId={noteId} queryClient={queryClient} templates={templates} selectedTemplate={selectedTemplate} setSelectedTemplate={setSelectedTemplate} loadingDifferential={loadingDifferential} generateDifferentialDiagnosis={generateDifferentialDiagnosis} differentialDiagnosis={differentialDiagnosis} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
+                              </TabsContent>
 
-                 {/* Vital Signs History */}
-                    <div className="bg-white rounded-xl border-2 border-emerald-300 shadow-lg overflow-hidden">
-                    <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-5 text-white">
-                      <h3 className="font-bold text-lg flex items-center gap-2">
-                        <Activity className="w-6 h-6" />
-                        Vital Signs History
-                      </h3>
-                      <p className="text-emerald-100 text-sm mt-1">View and manage previously recorded vital signs</p>
-                    </div>
-                    <div className="p-6">
-                      <VitalSignsHistory
-                       vitalHistory={vitalSignsHistory}
-                       onAddToNote={async (vitals) => {
-                         const vs = vitals;
-                         const lines = [];
-                         if (vs.temperature?.value) lines.push(`Temperature: ${vs.temperature.value}°${vs.temperature.unit || 'F'}`);
-                         if (vs.heart_rate?.value) lines.push(`Heart Rate: ${vs.heart_rate.value} bpm`);
-                         if (vs.blood_pressure?.systolic) lines.push(`Blood Pressure: ${vs.blood_pressure.systolic}/${vs.blood_pressure.diastolic} mmHg`);
-                         if (vs.respiratory_rate?.value) lines.push(`Respiratory Rate: ${vs.respiratory_rate.value} breaths/min`);
-                         if (vs.oxygen_saturation?.value) lines.push(`Oxygen Saturation: ${vs.oxygen_saturation.value}%`);
-                         if (vs.weight?.value) lines.push(`Weight: ${vs.weight.value} ${vs.weight.unit || 'lbs'}`);
-                         if (vs.height?.value) lines.push(`Height: ${vs.height.value} ${vs.height.unit || 'in'}`);
-                         const vitalsText = `\n\nVITAL SIGNS (${new Date().toLocaleDateString()}):\n${lines.join('\n')}`;
-                         const updatedNote = (note.physical_exam || "") + vitalsText;
-                         await base44.entities.ClinicalNote.update(noteId, { physical_exam: updatedNote });
-                         queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                         toast.success("Vital signs added to Physical Exam section");
-                       }}
-                     />
-                    </div>
-                    </div>
-
-
-               </div>
-
-             {/* Next Button */}
-             <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-               <div className="flex gap-2">
-                 <TabDataPreview tabId="vital_signs" note={note} />
-                                 <ClinicalNotePreviewButton note={note} templates={templates} selectedTemplate={selectedTemplate} onTemplateChange={setSelectedTemplate} onUpdate={async (field, value) => { await base44.entities.ClinicalNote.update(noteId, { [field]: value }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
-               </div>
-               <div className="flex items-center gap-2">
-                   {!isFirstTab() && (
-                     <button onClick={handleBack} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg px-2.5 py-2 font-medium text-sm" title="Back">
-                       <ArrowLeft className="w-4 h-4 flex-shrink-0" />
-                       <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Back</span>
-                     </button>
-                   )}
-                   {!isLastTab() && (
-                     <button onClick={handleNext} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-2.5 py-2 font-medium text-sm" title="Next">
-                       <ArrowLeft className="w-4 h-4 rotate-180 flex-shrink-0" />
-                       <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Next</span>
-                     </button>
-                   )}
-                 </div>
-                </div>
-               </TabsContent>
-
-               {/* Differential Diagnosis Tab */}
-           <TabsContent value="differential" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
-             <div className="max-w-5xl mx-auto space-y-8">
-               {/* Header */}
-               <div className="text-center mb-8">
-                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 mb-4 shadow-lg">
-                   <Code className="w-8 h-8 text-white" />
-                 </div>
-                 <h2 className="text-3xl font-bold text-slate-900 mb-2">Differential Diagnosis</h2>
-                 <p className="text-slate-600 max-w-2xl mx-auto">AI-powered differential diagnosis generator</p>
-               </div>
+                              {/* placeholder to fix find match */}
+                              <TabsContent value="__unused__" className="hidden">
+                              <div className="text-center mb-8">
+                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 mb-4 shadow-lg">
+                                  <Code className="w-8 h-8 text-white" />
+                                </div>
 
                {/* Clinical Context */}
                {note.chief_complaint && (

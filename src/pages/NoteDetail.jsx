@@ -99,8 +99,6 @@ const TAB_GROUPS = [
     color: 'blue',
     tabs: [
       { id: 'patient_intake', label: 'Subjective', icon: Activity },
-      { id: 'vital_signs', label: 'Vital Signs', icon: Activity },
-      { id: 'review_of_systems', label: 'Review of Systems', icon: Activity },
     ]
   },
   {

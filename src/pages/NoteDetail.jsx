@@ -1835,84 +1835,9 @@ Generated: ${new Date().toLocaleString()}
                  </TabsContent>
 
                  {/* Labs & Imaging Tab */}
-             <TabsContent value="labs_imaging" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
-               <div className="max-w-5xl mx-auto space-y-8">
-                 {/* Header */}
-                 <div className="text-center mb-8">
-                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 mb-4 shadow-lg">
-                     <Beaker className="w-8 h-8 text-white" />
-                   </div>
-                   <h2 className="text-3xl font-bold text-slate-900 mb-2">Labs & Imaging</h2>
-                   <p className="text-slate-600 max-w-2xl mx-auto">Upload and analyze laboratory results and imaging studies</p>
-                 </div>
-
-                 {/* Imaging Analysis */}
-                 <ImagingAnalysis
-                   noteId={noteId}
-                   onAddToNote={async (imagingText, linkedFindings) => {
-                     const updates = { assessment: (note.assessment || "") + imagingText };
-                     if (linkedFindings && Object.keys(linkedFindings).length > 0) {
-                       Object.entries(linkedFindings).forEach(([findingKey, sections]) => {
-                         sections.forEach((sectionId) => {
-                           const fieldMap = { assessment: "assessment", plan: "plan", history_of_present_illness: "history_of_present_illness" };
-                           if (fieldMap[sectionId]) {
-                             const sectionText = `\n\n[Imaging Finding] ${imagingText.split("\n")[0]}`;
-                             updates[fieldMap[sectionId]] = (updates[fieldMap[sectionId]] || note[fieldMap[sectionId]] || "") + sectionText;
-                           }
-                         });
-                       });
-                     }
-                     await base44.entities.ClinicalNote.update(noteId, updates);
-                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                     toast.success("Imaging summary added to clinical note");
-                   }}
-                 />
-
-                 {/* Laboratory Analysis */}
-                 <LabsAnalysis
-                   noteId={noteId}
-                   onAddToNote={async (labsText) => {
-                     const updatedAssessment = (note.assessment || "") + labsText;
-                     await base44.entities.ClinicalNote.update(noteId, { assessment: updatedAssessment });
-                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                     toast.success("Lab summary added to clinical note");
-                   }}
-                 />
-
-                 {/* EKG Analysis */}
-                 <EKGAnalysis
-                   noteId={noteId}
-                   onAddToNote={async (ekgText) => {
-                     const updatedAssessment = (note.assessment || "") + ekgText;
-                     await base44.entities.ClinicalNote.update(noteId, { assessment: updatedAssessment });
-                     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                     toast.success("EKG analysis added to clinical note");
-                   }}
-                 />
-               </div>
-
-               {/* Next Button */}
-               <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                 <div className="flex gap-2">
-                   <TabDataPreview tabId="labs_imaging" note={note} />
-                   <ClinicalNotePreviewButton note={note} />
-                 </div>
-                 <div className="flex items-center gap-2">
-                     {!isFirstTab() && (
-                       <button onClick={handleBack} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg px-2.5 py-2 font-medium text-sm" title="Back">
-                         <ArrowLeft className="w-4 h-4 flex-shrink-0" />
-                         <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Back</span>
-                       </button>
-                     )}
-                     {!isLastTab() && (
-                       <button onClick={handleNext} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-2.5 py-2 font-medium text-sm" title="Next">
-                         <ArrowLeft className="w-4 h-4 rotate-180 flex-shrink-0" />
-                         <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Next</span>
-                       </button>
-                     )}
-                   </div>
-               </div>
-             </TabsContent>
+                 <TabsContent value="labs_imaging" className="overflow-y-auto bg-slate-50">
+                 <LabsImagingTab note={note} noteId={noteId} queryClient={queryClient} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
+                 </TabsContent>
 
            {/* Treatment Plan Tab */}
              <TabsContent value="treatment_plan" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">

@@ -2676,505 +2676,130 @@ Generated: ${new Date().toLocaleString()}
                          <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-indigo-500 shadow-sm overflow-hidden">
                            <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-indigo-500" /><span className="text-sm font-semibold text-slate-800">AI Discharge Instructions</span></div>
                            <div className="p-4">
-                             <Button
-                               onClick={async () => {
-                                 try {
-                                   setLoadingDischargeSummary(true);
-                                   const result = await base44.integrations.Core.InvokeLLM({
-                                     prompt: `Based on the following clinical note, generate concise discharge instructions for the patient. Include medication instructions, activity restrictions, follow-up care, warning signs, and lifestyle modifications.
-
-                                   Do NOT include: patient demographics, diagnoses list, medications list, signatures, acknowledgment sections, or placeholder fields.
-
-                                   PATIENT: ${note.patient_name}
-                                   DIAGNOSES: ${note.diagnoses?.join(", ") || "N/A"}
-                                   ASSESSMENT: ${note.assessment || "N/A"}
-                                   MEDICATIONS: ${note.medications?.join(", ") || "None"}
-                                   PLAN: ${note.plan || "N/A"}
-                                   DISPOSITION: ${note.disposition_plan || "N/A"}
-
-                                   Format as clear, actionable instructions only.`,
-                                     add_context_from_internet: false
-                                   });
-
-                                   const dischargeSummaryText = result;
-
-                                   queryClient.setQueryData(["note", noteId], (old) => ({
-                                     ...old,
-                                     discharge_summary: dischargeSummaryText
-                                   }));
-                                   toast.success("Discharge instructions generated");
-                                 } catch (error) {
-                                   console.error("Failed to generate discharge instructions:", error);
-                                   toast.error("Failed to generate discharge instructions");
-                                 } finally {
-                                   setLoadingDischargeSummary(false);
-                                 }
-                               }}
-                               disabled={loadingDischargeSummary}
-                               className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white gap-2 py-6 text-base"
-                             >
-                               {loadingDischargeSummary ? (
-                                 <><Loader2 className="w-5 h-5 animate-spin" /> Generating...</>
-                               ) : (
-                                 <><Sparkles className="w-5 h-5" /> Generate Discharge Instructions</>
-                               )}
+                             <Button onClick={async () => { setLoadingDischargeSummary(true); try { const r = await base44.integrations.Core.InvokeLLM({ prompt: `Generate concise discharge instructions. PATIENT: ${note.patient_name}, DIAGNOSES: ${note.diagnoses?.join(", ") || "N/A"}, PLAN: ${note.plan || "N/A"}. Format as clear actionable instructions only.`, add_context_from_internet: false }); queryClient.setQueryData(["note", noteId], o => ({ ...o, discharge_summary: r })); toast.success("Generated"); } catch { toast.error("Failed"); } finally { setLoadingDischargeSummary(false); } }} disabled={loadingDischargeSummary} size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 text-xs h-7 px-3">
+                               {loadingDischargeSummary ? <><Loader2 className="w-3 h-3 animate-spin" />Generating...</> : <><Sparkles className="w-3 h-3" />Generate Instructions</>}
                              </Button>
-                           </div>
-                         </div>
-
-                         {/* Display Generated Instructions */}
-                         {note.discharge_summary && (
-                           <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
-                             <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
-                               <h3 className="text-lg font-bold text-slate-900">Generated Instructions</h3>
                              </div>
-                             <div className="p-6">
-                               <div className="prose prose-sm prose-slate max-w-none text-slate-700 bg-slate-50 rounded-lg p-4 border border-slate-200 mb-6 max-h-96 overflow-y-auto">
-                                 <ReactMarkdown
-                                   components={{
-                                     p: ({ children }) => <p className="mb-2 leading-relaxed">{children}</p>,
-                                     h1: ({ children }) => <h1 className="text-xl font-bold mt-4 mb-2">{children}</h1>,
-                                     h2: ({ children }) => <h2 className="text-lg font-bold mt-3 mb-2">{children}</h2>,
-                                     h3: ({ children }) => <h3 className="text-base font-bold mt-2 mb-1">{children}</h3>,
-                                     ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
-                                     li: ({ children }) => <li className="block text-sm">{children}</li>,
-                                     strong: ({ children }) => <strong className="font-bold">{children}</strong>,
-                                   }}
-                                 >
-                                   {note.discharge_summary}
-                                 </ReactMarkdown>
-                               </div>
                              </div>
-                           </div>
-                         )}
-
-                         {/* Edit Instructions */}
-                         <div className="bg-white rounded-xl border-2 border-purple-300 shadow-lg overflow-hidden">
-                           <div className="bg-gradient-to-r from-purple-500 to-indigo-500 px-6 py-5 text-white">
-                             <h3 className="font-bold text-lg flex items-center gap-2">
-                               <FileText className="w-6 h-6" />
-                               Edit Instructions
-                             </h3>
-                             <p className="text-purple-100 text-sm mt-1">Customize the discharge instructions for your patient</p>
-                           </div>
-                           <div className="p-6 space-y-4">
-                             <Textarea
-                               value={note.discharge_summary || ""}
-                               onChange={(e) => {
-                                 queryClient.setQueryData(["note", noteId], (old) => ({
-                                   ...old,
-                                   discharge_summary: e.target.value
-                                 }));
-                               }}
-                               placeholder="Edit the discharge instructions here..."
-                               className="min-h-[400px] text-base"
-                             />
-                             <Button
-                               onClick={async () => {
-                                 try {
-                                   await base44.entities.ClinicalNote.update(noteId, { discharge_summary: note.discharge_summary });
-                                   toast.success("Discharge summary saved");
-                                 } catch (error) {
-                                   console.error("Failed to save:", error);
-                                   toast.error("Failed to save discharge summary");
-                                 }
-                               }}
-                               className="w-full bg-purple-600 hover:bg-purple-700 text-white gap-2 py-2"
-                             >
-                               <Check className="w-4 h-4" /> Save Changes
-                             </Button>
-                           </div>
-                         </div>
-                       </div>
-
-                       {/* Next Button */}
-                       <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                         <div className="flex gap-2">
-                           <TabDataPreview tabId="discharge_summary" note={note} />
-                           <ClinicalNotePreviewButton note={note} />
-                         </div>
-                         <div className="flex items-center gap-2">
-                           {!isFirstTab() && (
-                             <button onClick={handleBack} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg px-2.5 py-2 font-medium text-sm" title="Back">
-                               <ArrowLeft className="w-4 h-4 flex-shrink-0" />
-                               <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Back</span>
-                             </button>
-                           )}
-                           {!isLastTab() && (
-                             <button onClick={handleNext} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-2.5 py-2 font-medium text-sm" title="Next">
-                               <ArrowLeft className="w-4 h-4 rotate-180 flex-shrink-0" />
-                               <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Next</span>
-                             </button>
-                           )}
-                         </div>
-                         </div>
-                         </TabsContent>
-
-                         {/* Patient Education Tab */}
-                     <TabsContent value="patient_education" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
-                       <div className="max-w-5xl mx-auto space-y-8">
-                         {/* Header */}
-                         <div className="text-center mb-8">
-                           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-600 mb-4 shadow-lg">
-                             <BookOpen className="w-8 h-8 text-white" />
-                           </div>
-                           <h2 className="text-3xl font-bold text-slate-900 mb-2">Patient Education</h2>
-                           <p className="text-slate-600 max-w-2xl mx-auto">Generate and manage patient education materials</p>
-                         </div>
-
-                         {/* Generate Button */}
-                         <div className="bg-white rounded-xl border-2 border-blue-300 shadow-lg overflow-hidden">
-                           <div className="bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-5 text-white">
-                             <h3 className="font-bold text-lg flex items-center gap-2">
-                               <Sparkles className="w-6 h-6" />
-                               Generate Patient Education
-                             </h3>
-                             <p className="text-blue-100 text-sm mt-1">Create easy-to-understand materials for patients</p>
-                           </div>
-                           <div className="p-6">
-                             <Button
-                               onClick={generatePatientEducation}
-                               disabled={generatingEducation || !note.diagnoses?.length}
-                               className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white gap-2 py-6 text-base"
-                             >
-                               {generatingEducation ? (
-                                 <><Loader2 className="w-5 h-5 animate-spin" /> Generating...</>
-                               ) : (
-                                 <><Sparkles className="w-5 h-5" /> Generate Education Materials</>
-                               )}
-                             </Button>
-                             {!note.diagnoses?.length && (
-                               <p className="text-sm text-slate-500 text-center mt-3">Add diagnoses to generate patient education</p>
+                             {note.discharge_summary && (
+                             <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-slate-400 shadow-sm overflow-hidden">
+                             <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-slate-400" /><span className="text-sm font-semibold text-slate-800">Edit Instructions</span></div>
+                             <div className="p-4 space-y-3">
+                               <Textarea value={note.discharge_summary || ""} onChange={(e) => queryClient.setQueryData(["note", noteId], o => ({ ...o, discharge_summary: e.target.value }))} placeholder="Edit discharge instructions..." className="min-h-[200px] text-sm resize-none border-slate-200" />
+                               <Button onClick={async () => { await base44.entities.ClinicalNote.update(noteId, { discharge_summary: note.discharge_summary }); toast.success("Saved"); }} size="sm" className="bg-slate-700 hover:bg-slate-800 text-white gap-1 text-xs h-7"><Check className="w-3 h-3" />Save</Button>
+                             </div>
+                             </div>
                              )}
-                           </div>
-                         </div>
-
-                         {/* Education Materials */}
-                         {patientEducation && patientEducation.length > 0 && (
-                           <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
-                             <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-                               <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                 <BookOpen className="w-5 h-5 text-blue-600" />
-                                 Patient Education Materials
-                               </h3>
-                               <Button
-                                 onClick={() => downloadPatientEducation('txt')}
-                                 variant="outline"
-                                 size="sm"
-                                 className="gap-2"
-                               >
-                                 <Download className="w-4 h-4" /> Download
-                               </Button>
+                             <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                             <div className="flex gap-2"><TabDataPreview tabId="discharge_summary" note={note} /><ClinicalNotePreviewButton note={note} /></div>
+                             <div className="flex items-center gap-1.5">{!isFirstTab() && <button onClick={handleBack} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"><ArrowLeft className="w-3.5 h-3.5" />Back</button>}{!isLastTab() && <button onClick={handleNext} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">Next<ArrowLeft className="w-3.5 h-3.5 rotate-180" /></button>}</div>
                              </div>
-                             <div className="p-6 space-y-6">
-                               {patientEducation.map((material, idx) => (
-                                 <motion.div
-                                   key={idx}
-                                   initial={{ opacity: 0, y: 20 }}
-                                   animate={{ opacity: 1, y: 0 }}
-                                   className="rounded-xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50 p-6"
-                                 >
-                                   <h4 className="text-lg font-bold text-slate-900 mb-4">{material.diagnosis}</h4>
-
-                                   <div className="space-y-4">
-                                     {material.what_is_it && (
-                                       <div>
-                                         <p className="font-semibold text-slate-800 mb-2">What Is It?</p>
-                                         <p className="text-slate-700 text-sm leading-relaxed">{material.what_is_it}</p>
-                                       </div>
-                                     )}
-
-                                     {material.symptoms_to_watch?.length > 0 && (
-                                       <div>
-                                         <p className="font-semibold text-slate-800 mb-2">Symptoms to Watch For</p>
-                                         <ul className="list-disc list-inside space-y-1">
-                                           {material.symptoms_to_watch.map((s, i) => (
-                                             <li key={i} className="text-slate-700 text-sm">{s}</li>
-                                           ))}
-                                         </ul>
-                                       </div>
-                                     )}
-
-                                     {material.self_care?.length > 0 && (
-                                       <div>
-                                         <p className="font-semibold text-slate-800 mb-2">What You Can Do</p>
-                                         <ul className="list-disc list-inside space-y-1">
-                                           {material.self_care.map((c, i) => (
-                                             <li key={i} className="text-slate-700 text-sm">{c}</li>
-                                           ))}
-                                         </ul>
-                                       </div>
-                                     )}
-
-                                     {material.when_to_seek_help?.length > 0 && (
-                                       <div className="bg-red-50 rounded-lg p-4 border-2 border-red-200">
-                                         <p className="font-semibold text-red-900 mb-2">⚠️ When to Seek Help</p>
-                                         <ul className="list-disc list-inside space-y-1">
-                                           {material.when_to_seek_help.map((h, i) => (
-                                             <li key={i} className="text-red-800 text-sm">{h}</li>
-                                           ))}
-                                         </ul>
-                                       </div>
-                                     )}
-
-                                     {material.questions_for_doctor?.length > 0 && (
-                                       <div>
-                                         <p className="font-semibold text-slate-800 mb-2">Questions for Your Doctor</p>
-                                         <ul className="list-disc list-inside space-y-1">
-                                           {material.questions_for_doctor.map((q, i) => (
-                                             <li key={i} className="text-slate-700 text-sm">{q}</li>
-                                           ))}
-                                         </ul>
-                                       </div>
-                                     )}
-
-                                     {material.follow_up && (
-                                       <div>
-                                         <p className="font-semibold text-slate-800 mb-2">Follow-up</p>
-                                         <p className="text-slate-700 text-sm">{material.follow_up}</p>
-                                       </div>
-                                     )}
-                                   </div>
-                                 </motion.div>
-                               ))}
                              </div>
-                           </div>
-                         )}
-                       </div>
+                             </TabsContent>
 
-                       {/* Next Button */}
-                       <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                         <div className="flex gap-2">
-                           <TabDataPreview tabId="patient_education" note={note} />
-                           <ClinicalNotePreviewButton note={note} />
-                         </div>
-                         <div className="flex items-center gap-2">
-                           {!isFirstTab() && (
-                             <button onClick={handleBack} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg px-2.5 py-2 font-medium text-sm" title="Back">
-                               <ArrowLeft className="w-4 h-4 flex-shrink-0" />
-                               <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Back</span>
-                             </button>
-                           )}
-                           {!isLastTab() && (
-                             <button onClick={handleNext} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-2.5 py-2 font-medium text-sm" title="Next">
-                               <ArrowLeft className="w-4 h-4 rotate-180 flex-shrink-0" />
-                               <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Next</span>
-                             </button>
-                           )}
-                         </div>
-                         </div>
-                         </TabsContent>
-
-                         {/* Procedures Tab */}
-                     <TabsContent value="procedures" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
-                     <div className="max-w-5xl mx-auto space-y-8">
-                     {/* Header */}
-                     <div className="text-center mb-8">
-                       <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 mb-4 shadow-lg">
-                         <Activity className="w-8 h-8 text-white" />
-                       </div>
-                       <h2 className="text-3xl font-bold text-slate-900 mb-2">Procedures</h2>
-                       <p className="text-slate-600 max-w-2xl mx-auto">AI-powered procedure recommendations, educational resources, and procedure logging</p>
-                     </div>
-
-                     <ProceduresPanel note={note} noteId={noteId} />
-                     </div>
-
-                     {/* Next Button */}
-                     <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                       <div className="flex gap-2">
-                         <TabDataPreview tabId="procedures" note={note} />
-                         <ClinicalNotePreviewButton note={note} />
-                       </div>
-                       <div className="flex items-center gap-2">
-                         {!isFirstTab() && (
-                           <button onClick={handleBack} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg px-2.5 py-2 font-medium text-sm" title="Back">
-                             <ArrowLeft className="w-4 h-4 flex-shrink-0" />
-                             <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Back</span>
-                           </button>
-                         )}
-                         {!isLastTab() && (
-                           <button onClick={handleNext} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-2.5 py-2 font-medium text-sm" title="Next">
-                             <ArrowLeft className="w-4 h-4 rotate-180 flex-shrink-0" />
-                             <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Next</span>
-                           </button>
-                         )}
-                       </div>
-                       </div>
-                       </TabsContent>
-
-                       {/* Finalize Tab */}
-                     <TabsContent value="finalize" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
-                       <div className="max-w-5xl mx-auto space-y-8">
-                         {/* Header */}
-                         <div className="text-center mb-8">
-                           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 mb-4 shadow-lg">
-                             <Check className="w-8 h-8 text-white" />
-                           </div>
-                           <h2 className="text-3xl font-bold text-slate-900 mb-2">Review & Export</h2>
-                           <p className="text-slate-600 max-w-2xl mx-auto">Finalize, review, and export your clinical note</p>
-                         </div>
-
-                         {/* Note Status */}
-                         <div className="bg-white rounded-xl border-2 border-indigo-200 shadow-lg p-6">
-                           <div className="flex items-center justify-between mb-4">
-                             <h3 className="text-lg font-bold text-slate-900">Note Status</h3>
-                             <Badge className={statusColors[note.status || "draft"]}>
-                               {note.status?.toUpperCase() || "DRAFT"}
-                             </Badge>
-                           </div>
-                           <div className="flex gap-3 flex-wrap">
-                             <Button
-                               onClick={() => finalizeMutation.mutate()}
-                               disabled={finalizeMutation.isPending || note.status === "finalized"}
-                               className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
-                             >
-                               {finalizeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                               {note.status === "finalized" ? "Finalized" : "Finalize Note"}
-                             </Button>
-                             <Button
-                               onClick={() => exportNote('pdf')}
-                               disabled={exportingFormat === 'pdf'}
-                               variant="outline"
-                               className="gap-2"
-                             >
-                               {exportingFormat === 'pdf' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                               Export PDF
-                             </Button>
-                             <Button
-                               onClick={() => exportNote('text')}
-                               disabled={exportingFormat === 'text'}
-                               variant="outline"
-                               className="gap-2"
-                             >
-                               {exportingFormat === 'text' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                               Export Text
-                             </Button>
-                           </div>
-                         </div>
-
-                         {/* Note Preview */}
-                         <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
-                           <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-4 text-white">
-                             <h3 className="font-bold text-lg flex items-center gap-2">
-                               <FileText className="w-6 h-6" />
-                               Note Preview
-                             </h3>
-                           </div>
-                           <div className="p-6 space-y-4">
-                             {[
-                               { label: "Chief Complaint", value: note.chief_complaint },
-                               { label: "History of Present Illness", value: note.history_of_present_illness },
-                               { label: "Assessment", value: note.assessment },
-                               { label: "Plan", value: note.plan },
-                             ].map(({ label, value }) => value ? (
-                               <div key={label}>
-                                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">{label}</p>
-                                 <p className="text-sm text-slate-700 whitespace-pre-wrap bg-slate-50 rounded-lg p-3 border border-slate-200">{value}</p>
-                               </div>
-                             ) : null)}
-                             {note.diagnoses?.length > 0 && (
-                               <div>
-                                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Diagnoses</p>
-                                 <div className="flex flex-wrap gap-2">
-                                   {note.diagnoses.map((d, i) => <Badge key={i} className="bg-blue-100 text-blue-700 border border-blue-200">{d}</Badge>)}
-                                 </div>
-                               </div>
-                             )}
-                           </div>
-                         </div>
-                       </div>
-                     </TabsContent>
-
-                     {/* AI Analysis Tab */}
-                     <TabsContent value="ai_analysis" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
-                       <div className="max-w-5xl mx-auto space-y-8">
-                         <div className="text-center mb-8">
-                           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 mb-4 shadow-lg">
-                             <Brain className="w-8 h-8 text-white" />
-                           </div>
-                           <h2 className="text-3xl font-bold text-slate-900 mb-2">AI Analysis</h2>
-                           <p className="text-slate-600 max-w-2xl mx-auto">Comprehensive AI-powered analysis and insights</p>
-                         </div>
-
-                         <Button
-                           onClick={() => setAiSidebarOpen(true)}
-                           className="w-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white gap-2 py-6 text-base"
-                         >
-                           <Sparkles className="w-5 h-5" /> Open AI Analysis Tools
-                         </Button>
-                       </div>
-
-                       {/* Next Button */}
-                       <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                         <div className="flex gap-2">
-                           <TabDataPreview tabId="ai_analysis" note={note} />
-                           <ClinicalNotePreviewButton note={note} />
-                         </div>
-                         <div className="flex items-center gap-2">
-                           {!isFirstTab() && (
-                             <button onClick={handleBack} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg px-2.5 py-2 font-medium text-sm" title="Back">
-                               <ArrowLeft className="w-4 h-4 flex-shrink-0" />
-                               <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Back</span>
-                             </button>
-                           )}
-                           {!isLastTab() && (
-                             <button onClick={handleNext} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-2.5 py-2 font-medium text-sm" title="Next">
-                               <ArrowLeft className="w-4 h-4 rotate-180 flex-shrink-0" />
-                               <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Next</span>
-                             </button>
-                           )}
-                         </div>
-                         </div>
-                         </TabsContent>
-
-                         {/* Custom Tabs Content */}
-                     {tabGroups.flatMap(g => g.tabs).filter(t => t.id.startsWith('custom_')).map(tab => (
-                       <TabsContent key={tab.id} value={tab.id} className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
-                         <div className="max-w-5xl mx-auto space-y-8">
-                           <div className="text-center mb-8">
-                             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-500 to-slate-600 mb-4 shadow-lg">
-                               <Plus className="w-8 h-8 text-white" />
+                             {/* Patient Education Tab */}
+                             <TabsContent value="patient_education" className="overflow-y-auto bg-slate-50">
+                             <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
+                             <div><h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Patient Education</h2><p className="text-xs text-slate-400 mt-0.5">Generate patient-friendly education materials</p></div>
+                             <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-blue-500 shadow-sm overflow-hidden">
+                             <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
+                             <div className="flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-blue-500" /><span className="text-sm font-semibold text-slate-800">Generate Materials</span></div>
+                             <Button onClick={generatePatientEducation} disabled={generatingEducation || !note.diagnoses?.length} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 text-xs h-7 px-3">{generatingEducation ? <><Loader2 className="w-3 h-3 animate-spin" />Generating...</> : <><Sparkles className="w-3 h-3" />Generate</>}</Button>
                              </div>
-                             <h2 className="text-3xl font-bold text-slate-900 mb-2">{tab.label}</h2>
-                             <p className="text-slate-600 max-w-2xl mx-auto">Custom section for your clinical documentation</p>
-                           </div>
-
-                           <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
-                             <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
-                               <h3 className="text-lg font-bold text-slate-900">Notes</h3>
+                             {!note.diagnoses?.length && <p className="text-xs text-slate-400 px-4 py-2">Add diagnoses first to generate education materials.</p>}
                              </div>
-                             <div className="p-6">
-                               <Textarea
-                                 placeholder={`Add notes for ${tab.label}...`}
-                                 className="w-full min-h-[400px] bg-slate-50"
-                               />
+                             {patientEducation?.length > 0 && patientEducation.map((m, i) => (
+                             <div key={i} className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-cyan-500 shadow-sm overflow-hidden">
+                             <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
+                               <div className="flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-cyan-500" /><span className="text-sm font-semibold text-slate-800">{m.diagnosis}</span></div>
+                               <Button onClick={() => downloadPatientEducation('txt')} size="sm" variant="outline" className="text-xs h-6 px-2"><Download className="w-3 h-3" /></Button>
                              </div>
-                           </div>
-                         </div>
+                             <div className="p-4 space-y-3 text-xs text-slate-700">
+                               {m.what_is_it && <div><p className="font-semibold text-slate-800 mb-1">What Is It?</p><p className="leading-relaxed">{m.what_is_it}</p></div>}
+                               {m.symptoms_to_watch?.length > 0 && <div><p className="font-semibold text-slate-800 mb-1">Symptoms to Watch</p><ul className="space-y-0.5">{m.symptoms_to_watch.map((s, j) => <li key={j} className="flex gap-1.5"><span className="text-slate-400 flex-shrink-0">•</span>{s}</li>)}</ul></div>}
+                               {m.when_to_seek_help?.length > 0 && <div className="bg-red-50 border border-red-100 rounded-lg px-3 py-2"><p className="font-semibold text-red-800 mb-1">⚠ When to Seek Help</p><ul className="space-y-0.5">{m.when_to_seek_help.map((h, j) => <li key={j} className="text-red-700">{h}</li>)}</ul></div>}
+                             </div>
+                             </div>
+                             ))}
+                             <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                             <div className="flex gap-2"><TabDataPreview tabId="patient_education" note={note} /><ClinicalNotePreviewButton note={note} /></div>
+                             <div className="flex items-center gap-1.5">{!isFirstTab() && <button onClick={handleBack} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"><ArrowLeft className="w-3.5 h-3.5" />Back</button>}{!isLastTab() && <button onClick={handleNext} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">Next<ArrowLeft className="w-3.5 h-3.5 rotate-180" /></button>}</div>
+                             </div>
+                             </div>
+                             </TabsContent>
 
-                         <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                           <div className="flex gap-2">
-                             <TabDataPreview tabId={tab.id} note={note} />
-                             <ClinicalNotePreviewButton note={note} />
-                           </div>
-                           <div className="flex items-center gap-2">
-                             {!isFirstTab() && (
-                               <button onClick={handleBack} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg px-2.5 py-2 font-medium text-sm" title="Back">
-                                 <ArrowLeft className="w-4 h-4 flex-shrink-0" />
-                                 <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Back</span>
-                               </button>
-                             )}
-                             {!isLastTab() && (
-                               <button onClick={handleNext} className="group flex items-center gap-0 hover:gap-2 transition-all duration-200 w-9 hover:w-auto overflow-hidden bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-2.5 py-2 font-medium text-sm" title="Next">
-                                 <ArrowLeft className="w-4 h-4 rotate-180 flex-shrink-0" />
-                                 <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-200">Next</span>
-                               </button>
-                             )}
-                           </div>
-                           </div>
-                           </TabsContent>
-                           ))}
+                             {/* Procedures Tab */}
+                             <TabsContent value="procedures" className="overflow-y-auto bg-slate-50">
+                             <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
+                             <div><h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Procedures</h2><p className="text-xs text-slate-400 mt-0.5">Recommendations, education, and logging</p></div>
+                             <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-rose-500 shadow-sm overflow-hidden">
+                             <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-rose-500" /><span className="text-sm font-semibold text-slate-800">Procedures Panel</span></div>
+                             <div className="p-4"><ProceduresPanel note={note} noteId={noteId} /></div>
+                             </div>
+                             <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                             <div className="flex gap-2"><TabDataPreview tabId="procedures" note={note} /><ClinicalNotePreviewButton note={note} /></div>
+                             <div className="flex items-center gap-1.5">{!isFirstTab() && <button onClick={handleBack} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"><ArrowLeft className="w-3.5 h-3.5" />Back</button>}{!isLastTab() && <button onClick={handleNext} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">Next<ArrowLeft className="w-3.5 h-3.5 rotate-180" /></button>}</div>
+                             </div>
+                             </div>
+                             </TabsContent>
+
+                             {/* Finalize Tab */}
+                             <TabsContent value="finalize" className="overflow-y-auto bg-slate-50">
+                             <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
+                             <div><h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Review & Export</h2><p className="text-xs text-slate-400 mt-0.5">Finalize, review, and export your clinical note</p></div>
+                             <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-indigo-500 shadow-sm overflow-hidden">
+                             <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
+                             <div className="flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-indigo-500" /><span className="text-sm font-semibold text-slate-800">Note Status</span><Badge className={`text-xs ${statusColors[note.status || "draft"]}`}>{note.status || "draft"}</Badge></div>
+                             <div className="flex gap-1.5">
+                               <Button onClick={() => finalizeMutation.mutate()} disabled={finalizeMutation.isPending || note.status === "finalized"} size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1 text-xs h-7">{finalizeMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}{note.status === "finalized" ? "Finalized" : "Finalize"}</Button>
+                               <Button onClick={() => exportNote('pdf')} disabled={exportingFormat === 'pdf'} size="sm" variant="outline" className="gap-1 text-xs h-7">{exportingFormat === 'pdf' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}PDF</Button>
+                               <Button onClick={() => exportNote('text')} disabled={exportingFormat === 'text'} size="sm" variant="outline" className="gap-1 text-xs h-7">{exportingFormat === 'text' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}Text</Button>
+                             </div>
+                             </div>
+                             </div>
+                             <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-slate-400 shadow-sm overflow-hidden">
+                             <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-slate-400" /><span className="text-sm font-semibold text-slate-800">Note Preview</span></div>
+                             <div className="p-4 space-y-3">
+                             {[{label:"CC",val:note.chief_complaint},{label:"HPI",val:note.history_of_present_illness},{label:"Assessment",val:note.assessment},{label:"Plan",val:note.plan}].filter(x=>x.val).map(({label,val}) => (
+                               <div key={label}><p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">{label}</p><p className="text-xs text-slate-700 whitespace-pre-wrap bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">{val}</p></div>
+                             ))}
+                             {note.diagnoses?.length > 0 && <div><p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Diagnoses</p><div className="flex flex-wrap gap-1.5">{note.diagnoses.map((d,i) => <Badge key={i} className="bg-blue-100 text-blue-700 border border-blue-200 text-xs">{d}</Badge>)}</div></div>}
+                             </div>
+                             </div>
+                             </div>
+                             </TabsContent>
+
+                             {/* AI Analysis Tab */}
+                             <TabsContent value="ai_analysis" className="overflow-y-auto bg-slate-50">
+                             <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
+                             <div><h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">AI Analysis</h2><p className="text-xs text-slate-400 mt-0.5">Comprehensive AI-powered analysis and insights</p></div>
+                             <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-amber-500 shadow-sm overflow-hidden">
+                             <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-amber-500" /><span className="text-sm font-semibold text-slate-800">AI Analysis Tools</span></div>
+                             <div className="p-4"><Button onClick={() => setAiSidebarOpen(true)} size="sm" className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5 text-xs h-7 px-3"><Sparkles className="w-3 h-3" />Open AI Analysis</Button></div>
+                             </div>
+                             <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                             <div className="flex gap-2"><TabDataPreview tabId="ai_analysis" note={note} /><ClinicalNotePreviewButton note={note} /></div>
+                             <div className="flex items-center gap-1.5">{!isFirstTab() && <button onClick={handleBack} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"><ArrowLeft className="w-3.5 h-3.5" />Back</button>}{!isLastTab() && <button onClick={handleNext} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">Next<ArrowLeft className="w-3.5 h-3.5 rotate-180" /></button>}</div>
+                             </div>
+                             </div>
+                             </TabsContent>
+
+                             {/* Custom Tabs Content */}
+                             {tabGroups.flatMap(g => g.tabs).filter(t => t.id.startsWith('custom_')).map(tab => (
+                             <TabsContent key={tab.id} value={tab.id} className="overflow-y-auto bg-slate-50">
+                             <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
+                             <div><h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">{tab.label}</h2></div>
+                             <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-slate-400 shadow-sm overflow-hidden">
+                             <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-slate-400" /><span className="text-sm font-semibold text-slate-800">Notes</span></div>
+                             <div className="p-4"><Textarea placeholder={`Add notes for ${tab.label}...`} className="w-full min-h-[300px] text-sm resize-none border-slate-200" /></div>
+                             </div>
+                             <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                             <div className="flex gap-2"><TabDataPreview tabId={tab.id} note={note} /><ClinicalNotePreviewButton note={note} /></div>
+                             <div className="flex items-center gap-1.5">{!isFirstTab() && <button onClick={handleBack} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"><ArrowLeft className="w-3.5 h-3.5" />Back</button>}{!isLastTab() && <button onClick={handleNext} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">Next<ArrowLeft className="w-3.5 h-3.5 rotate-180" /></button>}</div>
+                             </div>
+                             </div>
+                             </TabsContent>
+                             ))}
                        </div>
                        </Tabs>
                        </motion.div>

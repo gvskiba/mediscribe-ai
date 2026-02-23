@@ -1840,76 +1840,30 @@ Generated: ${new Date().toLocaleString()}
                  </TabsContent>
 
            {/* Treatment Plan Tab */}
-             <TabsContent value="treatment_plan" className="p-8 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
-               <div className="max-w-4xl mx-auto space-y-6">
-                 {/* Treatment Plan Preview Card */}
-                 <div className="bg-white rounded-xl border-2 border-amber-300 shadow-lg overflow-hidden">
-                   <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-5 text-white">
-                     <div className="flex items-center justify-between">
-                       <div>
-                         <h3 className="font-bold text-lg flex items-center gap-2">
-                           <FileText className="w-6 h-6" />
-                           Treatment Plan
-                         </h3>
-                         <p className="text-amber-100 text-sm mt-1">Review and edit the treatment approach and care plan</p>
-                       </div>
-                       <div className="flex gap-2">
-                         <Button
-                           onClick={async () => {
-                             await base44.entities.ClinicalNote.update(noteId, { plan: note.plan });
-                             queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                             toast.success("Treatment plan added to note");
-                           }}
-                           disabled={!note.plan}
-                           className="bg-white/20 hover:bg-white/30 border border-white/40 text-white gap-2 font-semibold"
-                           size="sm"
-                         >
-                           <Check className="w-4 h-4" /> Add to Note
-                         </Button>
-                         <Button
-                           onClick={() => setEditTreatmentPlanOpen(true)}
-                           className="bg-white text-amber-700 hover:bg-amber-50 gap-2 font-semibold shadow-sm"
-                           size="sm"
-                         >
-                           <Settings className="w-4 h-4" /> Edit Treatment Plan
-                         </Button>
-                       </div>
-                     </div>
+             <TabsContent value="treatment_plan" className="overflow-y-auto bg-slate-50">
+               <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
+                 <div><h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Treatment Plan</h2><p className="text-xs text-slate-400 mt-0.5">Review and edit the treatment approach</p></div>
+                 <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-amber-500 shadow-sm overflow-hidden">
+                   <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
+                     <div className="flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-amber-500" /><span className="text-sm font-semibold text-slate-800">Treatment Plan</span></div>
+                     <Button onClick={() => setEditTreatmentPlanOpen(true)} size="sm" variant="outline" className="text-xs h-6 px-2 gap-1 border-slate-200"><Settings className="w-3 h-3" />Edit</Button>
                    </div>
-                   <div className="p-6">
+                   <div className="p-4">
                      {note.plan ? (
-                       <div className="prose prose-sm prose-slate max-w-none text-slate-700">
-                         <ReactMarkdown
-                           components={{
-                             p: ({ children }) => <p className="mb-2 leading-relaxed">{children}</p>,
-                             h1: ({ children }) => <h1 className="text-xl font-bold mt-4 mb-2">{children}</h1>,
-                             h2: ({ children }) => <h2 className="text-lg font-bold mt-3 mb-2">{children}</h2>,
-                             h3: ({ children }) => <h3 className="text-base font-bold mt-2 mb-1">{children}</h3>,
-                             ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
-                             ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
-                             li: ({ children }) => <li className="block">{children}</li>,
-                             strong: ({ children }) => <strong className="font-bold">{children}</strong>,
-                             em: ({ children }) => <em className="italic">{children}</em>,
-                           }}
-                         >
-                           {note.plan}
-                         </ReactMarkdown>
+                       <div className="prose prose-xs prose-slate max-w-none text-slate-700 text-xs">
+                         <ReactMarkdown components={{ p: ({children})=><p className="mb-1.5 leading-relaxed">{children}</p>, ul: ({children})=><ul className="list-disc list-inside mb-1.5">{children}</ul>, li: ({children})=><li className="block">{children}</li> }}>{note.plan}</ReactMarkdown>
                        </div>
                      ) : (
-                       <div className="text-center py-16">
-                         <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                         <p className="text-slate-500 font-medium">No treatment plan documented yet</p>
-                         <p className="text-sm text-slate-400 mt-1">Click "Edit Treatment Plan" to get started</p>
-                         <Button
-                           onClick={() => setEditTreatmentPlanOpen(true)}
-                           className="mt-4 bg-amber-600 hover:bg-amber-700 text-white gap-2"
-                           size="sm"
-                         >
-                           <Plus className="w-4 h-4" /> Add Treatment Plan
-                         </Button>
+                       <div className="text-center py-8">
+                         <p className="text-xs text-slate-400">No treatment plan yet.</p>
+                         <Button onClick={() => setEditTreatmentPlanOpen(true)} size="sm" className="mt-2 bg-amber-600 hover:bg-amber-700 text-white gap-1 text-xs h-6"><Plus className="w-3 h-3" />Add Plan</Button>
                        </div>
                      )}
                    </div>
+                 </div>
+                 <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                   <div className="flex gap-2"><TabDataPreview tabId="treatment_plan" note={note} /><ClinicalNotePreviewButton note={note} /></div>
+                   <div className="flex items-center gap-1.5">{!isFirstTab() && <button onClick={handleBack} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"><ArrowLeft className="w-3.5 h-3.5" />Back</button>}{!isLastTab() && <button onClick={handleNext} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">Next<ArrowLeft className="w-3.5 h-3.5 rotate-180" /></button>}</div>
                  </div>
                </div>
 

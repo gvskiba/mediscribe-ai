@@ -17,7 +17,6 @@ import QuickLinksWidget from "../components/dashboard/QuickLinksWidget";
 import WorkflowAutomationWidget from "../components/dashboard/WorkflowAutomationWidget";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { toast } from "sonner";
 
 const quickLinks = [
   {
@@ -123,19 +122,20 @@ export default function Dashboard() {
     setActiveWidgets(prev => prev.filter(id => id !== widgetId));
   };
 
-  const savePreferences = async (widgetsOverride, layoutOverride) => {
+  const savePreferences = async () => {
     try {
-      const updatedPrefs = {
-        ...(userPreferences || {}),
-        dashboard_layout: layoutOverride ?? layout,
-        active_widgets: widgetsOverride ?? activeWidgets
-      };
-      await base44.auth.updateMe({ preferences: updatedPrefs });
-      setUserPreferences(updatedPrefs);
-      return true;
+      const user = await base44.auth.me();
+      if (user) {
+        await base44.auth.updateMe({
+          preferences: {
+            ...userPreferences,
+            dashboard_layout: layout,
+            active_widgets: activeWidgets
+          }
+        });
+      }
     } catch (error) {
       console.error("Failed to save preferences:", error);
-      return false;
     }
   };
 
@@ -249,9 +249,8 @@ export default function Dashboard() {
                 <Button variant="outline" onClick={() => setManageDialogOpen(false)}>
                   Close
                 </Button>
-                <Button onClick={async () => {
-                  const ok = await savePreferences();
-                  if (ok !== false) toast.success("Dashboard preferences saved");
+                <Button onClick={() => {
+                  savePreferences();
                   setManageDialogOpen(false);
                 }} className="bg-blue-600 hover:bg-blue-700">
                   Save Changes

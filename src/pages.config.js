@@ -63,10 +63,10 @@ import PatientHistory from './pages/PatientHistory';
 import Search from './pages/Search';
 import SmartTemplates from './pages/SmartTemplates';
 import Snippets from './pages/Snippets';
-import TemplateEditor from './pages/TemplateEditor';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
+import TemplateEditor from './pages/TemplateEditor';
 import __Layout from './Layout.jsx';
 
 
@@ -87,10 +87,10 @@ export const PAGES = {
     "Search": Search,
     "SmartTemplates": SmartTemplates,
     "Snippets": Snippets,
-    "TemplateEditor": TemplateEditor,
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
+    "TemplateEditor": TemplateEditor,
 }
 
 export const pagesConfig = {

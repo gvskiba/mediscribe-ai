@@ -24,8 +24,21 @@ export default function TreatmentPlanTab({ note, noteId, queryClient, isFirstTab
         </div>
         <div className="p-4">
           {note.plan ? (
-            <div className="prose prose-xs prose-slate max-w-none text-slate-700 text-xs">
-              <ReactMarkdown components={{ p: ({children})=><p className="mb-1.5 leading-relaxed">{children}</p>, ul: ({children})=><ul className="list-disc list-inside mb-1.5">{children}</ul>, li: ({children})=><li className="block">{children}</li> }}>{note.plan}</ReactMarkdown>
+            <div className="prose prose-sm prose-slate max-w-none text-slate-700 text-sm leading-relaxed">
+              <ReactMarkdown
+                components={{
+                  h1: ({children}) => <h1 className="text-base font-bold text-slate-800 mt-4 mb-2 first:mt-0">{children}</h1>,
+                  h2: ({children}) => <h2 className="text-sm font-bold text-slate-800 mt-3 mb-1.5 first:mt-0">{children}</h2>,
+                  h3: ({children}) => <h3 className="text-sm font-semibold text-slate-700 mt-3 mb-1 first:mt-0">{children}</h3>,
+                  p: ({children}) => <p className="mb-2 leading-relaxed text-slate-700">{children}</p>,
+                  ul: ({children}) => <ul className="mb-2 ml-4 space-y-1">{children}</ul>,
+                  ol: ({children}) => <ol className="mb-2 ml-4 space-y-1 list-decimal">{children}</ol>,
+                  li: ({children}) => <li className="flex gap-2 text-slate-700"><span className="text-amber-500 mt-0.5 flex-shrink-0">•</span><span>{children}</span></li>,
+                  strong: ({children}) => <strong className="font-semibold text-slate-800">{children}</strong>,
+                  hr: () => <hr className="border-slate-200 my-3" />,
+                  blockquote: ({children}) => <blockquote className="border-l-2 border-amber-400 pl-3 italic text-slate-600 my-2">{children}</blockquote>,
+                }}
+              >{note.plan}</ReactMarkdown>
             </div>
           ) : (
             <div className="text-center py-8">

@@ -53,9 +53,6 @@ import CreateTemplateFromNote from "../components/templates/CreateTemplateFromNo
 import ICD10CodeSearch from "../components/notes/ICD10CodeSearch";
 import GuidelineReviewPrompt from "../components/notes/GuidelineReviewPrompt";
 import NoteRevisionHistory from "../components/notes/NoteRevisionHistory";
-import ImagingAnalysis from "../components/notes/ImagingAnalysis";
-import LabsAnalysis from "../components/notes/LabsAnalysis";
-import EKGAnalysis from "../components/notes/EKGAnalysis";
 import DiagnosesTab from "../components/notes/DiagnosesTab";
 import MedicalLiteratureSearch from "../components/research/MedicalLiteratureSearch";
 import VitalSignsInput from "../components/notes/VitalSignsInput";

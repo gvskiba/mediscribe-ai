@@ -529,11 +529,24 @@ Generate the complete clinical note now.`;
       {showAggregated && (
         <div className="bg-white rounded-xl border-2 border-slate-200 shadow-lg overflow-hidden">
           <div className="bg-gradient-to-r from-slate-700 to-slate-800 px-6 py-5 text-white">
-            <h3 className="font-bold text-lg flex items-center gap-2">
-              <FileText className="w-6 h-6" />
-              Complete Clinical Note
-            </h3>
-            <p className="text-slate-200 text-sm mt-1">All clinical data integrated from all tabs</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-lg flex items-center gap-2">
+                  <FileText className="w-6 h-6" />
+                  Complete Clinical Note
+                </h3>
+                <p className="text-slate-200 text-sm mt-1">All clinical data integrated from all tabs</p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={copyStructuredNote}
+                className="bg-white/10 border-white/30 text-white hover:bg-white/20 gap-1.5"
+              >
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? "Copied!" : "Copy Note"}
+              </Button>
+            </div>
           </div>
           <div className="p-6 space-y-4 max-h-[800px] overflow-y-auto">
             <AggregateSectionText title="CHIEF COMPLAINT" field="chief_complaint" value={note.chief_complaint} borderColor="border-blue-200" titleColor="text-blue-900" onSave={onUpdate} />

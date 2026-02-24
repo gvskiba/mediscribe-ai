@@ -68,7 +68,7 @@ const AggregateSectionText = ({ title, field, value, borderColor, titleColor, on
             field={field}
             value={editValue}
             onChange={setEditValue}
-            note={typeof onSave === 'function' ? undefined : undefined}
+            note={note}
             placeholder={`Enter ${title?.toLowerCase() || field}...`}
             className="w-full min-h-[100px] text-sm resize-none rounded-md border border-input px-3 py-2 focus:outline-none focus:ring-1 focus:ring-ring bg-white"
             minRows={4}

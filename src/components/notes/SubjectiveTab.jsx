@@ -133,7 +133,17 @@ export default function SubjectiveTab({
           <div className="border-t border-slate-100" />
           <VitalSignsInput
             vitalSigns={note.vital_signs || {}}
-            onChange={async (newVitalSigns) => { await base44.entities.ClinicalNote.update(noteId, { vital_signs: newVitalSigns }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }}
+            onChange={async (newVitalSigns) => {
+              const sanitized = Object.fromEntries(
+                Object.entries(newVitalSigns).filter(([_, v]) => {
+                  if (!v || typeof v !== 'object') return false;
+                  if ('systolic' in v) return v.systolic !== undefined && v.systolic !== '';
+                  return v.value !== undefined && v.value !== '';
+                })
+              );
+              await base44.entities.ClinicalNote.update(noteId, { vital_signs: sanitized });
+              queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+            }}
             onSave={async (newVitalSigns) => {
               const filteredVitals = Object.fromEntries(Object.entries(newVitalSigns).filter(([_, v]) => v && (v.value !== undefined && v.value !== "" || v.systolic !== undefined)));
               if (Object.keys(filteredVitals).length === 0) { toast.error("Please enter at least one vital sign"); return; }

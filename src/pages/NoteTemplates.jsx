@@ -498,10 +498,7 @@ Return a JSON structure with:
             <Wand2 className="w-4 h-4" /> AI Create
           </Button>
           <Button
-            onClick={() => {
-              resetForm();
-              setDialogOpen(true);
-            }}
+            onClick={() => { window.location.href = createPageUrl("TemplateEditor"); }}
             className="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white rounded-xl gap-2 shadow-lg shadow-cyan-500/30"
           >
             <Plus className="w-4 h-4" /> New Template

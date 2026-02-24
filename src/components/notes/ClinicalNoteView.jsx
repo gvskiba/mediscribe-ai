@@ -261,7 +261,14 @@ const NoteSection = ({ title, value, field, onSave, color = "blue", note }) => {
       </div>
       <div className="p-4">
         {editing ? (
-          AI_COMPLETION_FIELDS.includes(field) && note ? (
+          RICH_EDITOR_FIELDS.includes(field) ? (
+            <RichMarkdownEditor
+              value={editValue}
+              onChange={setEditValue}
+              placeholder={`Enter ${title.toLowerCase()}...`}
+              minRows={6}
+            />
+          ) : AI_COMPLETION_FIELDS.includes(field) && note ? (
             <AITextCompletion
               field={field}
               value={editValue}
@@ -282,7 +289,13 @@ const NoteSection = ({ title, value, field, onSave, color = "blue", note }) => {
         ) : (
           <div className="bg-white rounded-lg p-3 border border-slate-200 min-h-[80px]">
             {value ? (
-              <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{value}</p>
+              RICH_EDITOR_FIELDS.includes(field) ? (
+                <div className="prose prose-sm max-w-none text-slate-700">
+                  <ReactMarkdown>{value}</ReactMarkdown>
+                </div>
+              ) : (
+                <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{value}</p>
+              )
             ) : (
               <p className="text-sm text-slate-400 italic">No {title.toLowerCase()} documented</p>
             )}

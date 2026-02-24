@@ -691,6 +691,7 @@ Generate the complete clinical note now.`;
         field="history_of_present_illness"
         onSave={onUpdate}
         color="purple"
+        note={note}
       />
 
       {/* Review of Systems */}
@@ -718,6 +719,7 @@ Generate the complete clinical note now.`;
         field="assessment"
         onSave={onUpdate}
         color="purple"
+        note={note}
       />
 
       {/* Diagnoses */}

@@ -64,18 +64,27 @@ const AggregateSectionText = ({ title, field, value, borderColor, titleColor, on
       {editing ? (
         <Textarea value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-full min-h-[100px] bg-white text-sm" />
       ) : (
-        <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
-          {isROS ? (
-            <ul className="space-y-2">
-              {displayValue.split('\n').map((line, i) => (
-                <li key={i} className="flex gap-2">
-                  <span className="text-amber-600">•</span>
-                  <span>{line}</span>
-                </li>
-              ))}
+        <div className="text-sm text-slate-700 leading-relaxed">
+          {(isROS || isPhysExam) && displayValue?.includes('\n') ? (
+            <ul className="space-y-1.5">
+              {displayValue.split('\n').filter(Boolean).map((line, i) => {
+                const colonIdx = line.indexOf(':');
+                const label = colonIdx > -1 ? line.slice(0, colonIdx) : null;
+                const text = colonIdx > -1 ? line.slice(colonIdx + 1).trim() : line;
+                return (
+                  <li key={i} className="flex gap-2 items-baseline">
+                    {label && (
+                      <span className={`font-semibold flex-shrink-0 text-xs uppercase tracking-wide ${isPhysExam ? "text-green-700" : "text-amber-700"}`}>
+                        {label}:
+                      </span>
+                    )}
+                    <span>{text}</span>
+                  </li>
+                );
+              })}
             </ul>
           ) : (
-            displayValue
+            <p className="whitespace-pre-wrap">{displayValue}</p>
           )}
         </div>
       )}

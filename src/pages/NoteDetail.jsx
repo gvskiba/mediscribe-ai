@@ -65,14 +65,7 @@ import ClinicalNotePreviewButton from "../components/notes/ClinicalNotePreviewBu
 import TabDataPreview from "../components/notes/TabDataPreview";
 import AITreatmentPlanAnalyzer from "../components/notes/AITreatmentPlanAnalyzer";
 import ClinicalNoteView from "../components/notes/ClinicalNoteView";
-import SmartTemplateApplicator from "../components/templates/SmartTemplateApplicator";
 import AIDocumentationAssistant from "../components/ai/AIDocumentationAssistant";
-import AIMDMAnalyzer from "../components/notes/AIMDMAnalyzer";
-import PhysicalExamEditor from "../components/notes/PhysicalExamEditor";
-import ReviewOfSystemsEditor from "../components/notes/ReviewOfSystemsEditor";
-import BMICalculator from "../components/calculators/BMICalculator";
-import CreatinineClearanceCalculator from "../components/calculators/CreatinineClearanceCalculator";
-import MedicationDosingLookup from "../components/calculators/MedicationDosingLookup";
 import ProceduresPanel from "../components/procedures/ProceduresPanel";
 import ClinicalWorkflowAutomation from "../components/notes/ClinicalWorkflowAutomation";
 import AIGuidelineSuggestions from "../components/notes/AIGuidelineSuggestions";

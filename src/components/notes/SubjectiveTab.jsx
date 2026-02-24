@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Loader2, X, Check, ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
+
 import { motion } from "framer-motion";
 import InlineSectionAI from "../ai/InlineSectionAI";
 import VitalSignsCard from "./VitalSignsCard";

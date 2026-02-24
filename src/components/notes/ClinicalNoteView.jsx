@@ -143,7 +143,9 @@ const AggregateSectionArray = ({ title, field, items, borderColor, titleColor, i
   );
 };
 
-const NoteSection = ({ title, value, field, onSave, color = "blue" }) => {
+const AI_COMPLETION_FIELDS = ["history_of_present_illness", "assessment", "plan"];
+
+const NoteSection = ({ title, value, field, onSave, color = "blue", note }) => {
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(value || "");
 

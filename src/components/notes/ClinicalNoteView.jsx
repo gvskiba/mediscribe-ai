@@ -10,7 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { format } from "date-fns";
 import AITextCompletion from "../ai/AITextCompletion";
 
-const AggregateSectionText = ({ title, field, value, borderColor, titleColor, onSave, isROS, isPhysExam }) => {
+const AggregateSectionText = ({ title, field, value, borderColor, titleColor, onSave, isROS, isPhysExam, note }) => {
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(value || "");
 

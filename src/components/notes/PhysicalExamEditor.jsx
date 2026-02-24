@@ -138,11 +138,9 @@ function SectionRow({ section, onChange, isCustom, onRemove }) {
           <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
         </button>
 
-        {isCustom && (
-          <button onClick={() => onRemove(section.id)} className="flex-shrink-0 text-slate-300 hover:text-red-400 transition-colors">
-            <X className="w-3 h-3" />
-          </button>
-        )}
+        <button onClick={() => onRemove(section.id)} className="flex-shrink-0 text-slate-300 hover:text-red-400 transition-colors" title="Remove section">
+          <X className="w-3 h-3" />
+        </button>
       </div>
 
       <AnimatePresence>

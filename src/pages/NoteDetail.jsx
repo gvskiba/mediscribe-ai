@@ -52,7 +52,6 @@ import SmartGuidelinePanel from "../components/guidelines/SmartGuidelinePanel";
 import CreateTemplateFromNote from "../components/templates/CreateTemplateFromNote";
 import ICD10Suggestions from "../components/notes/ICD10Suggestions";
 import ICD10CodeSearch from "../components/notes/ICD10CodeSearch";
-import MedicalCodingAssistant from "../components/notes/MedicalCodingAssistant";
 import GuidelineReviewPrompt from "../components/notes/GuidelineReviewPrompt";
 import NoteRevisionHistory from "../components/notes/NoteRevisionHistory";
 import ImagingAnalysis from "../components/notes/ImagingAnalysis";

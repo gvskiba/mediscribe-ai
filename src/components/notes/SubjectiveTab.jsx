@@ -110,28 +110,7 @@ export default function SubjectiveTab({
           >
             {analyzingRawData ? <><Loader2 className="w-3 h-3 animate-spin" />Analyzing...</> : <><Sparkles className="w-3 h-3" />AI Structure</>}
           </Button>
-          <Button
-            onClick={async () => {
-              if (!note.raw_note && !note.chief_complaint) { toast.error("Please enter some patient data first"); return; }
-              setAnalyzingRawData(true);
-              try {
-                const result = await base44.integrations.Core.InvokeLLM({
-                  prompt: `Analyze this raw patient encounter data and extract structured clinical information:\n\nRAW PATIENT DATA:\n${note.raw_note || note.chief_complaint}\n\nExtract: chief_complaint, history_of_present_illness (OLDCARTS), review_of_systems, initial_assessment, suggested_diagnoses, recommended_tests.`,
-                  add_context_from_internet: false,
-                  response_json_schema: { type: "object", properties: { chief_complaint: { type: "string" }, history_of_present_illness: { type: "string" }, review_of_systems: { type: "string" }, initial_assessment: { type: "string" }, suggested_diagnoses: { type: "array", items: { type: "string" } }, recommended_tests: { type: "array", items: { type: "string" } } } }
-                });
-                await base44.entities.ClinicalNote.update(noteId, { chief_complaint: result.chief_complaint, history_of_present_illness: result.history_of_present_illness, review_of_systems: result.review_of_systems, assessment: result.initial_assessment });
-                queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                toast.success("AI analysis complete");
-              } catch { toast.error("Failed to analyze patient data"); } finally { setAnalyzingRawData(false); }
-            }}
-            disabled={analyzingRawData}
-            size="sm"
-            variant="outline"
-            className="gap-1.5 text-xs h-7 px-3 border-slate-200"
-          >
-            {analyzingRawData ? <><Loader2 className="w-3 h-3 animate-spin" />...</> : <><Sparkles className="w-3 h-3" />Quick Fill</>}
-          </Button>
+
         </div>
       </div>
 

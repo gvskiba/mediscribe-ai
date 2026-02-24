@@ -12,7 +12,6 @@ import { toast } from "sonner";
 import AIMDMAnalyzer from "../notes/AIMDMAnalyzer";
 import AIGuidelineSuggestions from "../notes/AIGuidelineSuggestions";
 import ClinicalDecisionSupport from "../notes/ClinicalDecisionSupport";
-import AIComprehensiveSummary from "../notes/AIComprehensiveSummary";
 import MedicalLiteratureSearch from "../research/MedicalLiteratureSearch";
 import NoteQuestionAnswering from "./NoteQuestionAnswering";
 import ContextualAIPanel from "./ContextualAIPanel";

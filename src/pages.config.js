@@ -65,6 +65,7 @@ import SmartTemplates from './pages/SmartTemplates';
 import Snippets from './pages/Snippets';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
+import UserSettings from './pages/UserSettings';
 import __Layout from './Layout.jsx';
 
 
@@ -87,6 +88,7 @@ export const PAGES = {
     "Snippets": Snippets,
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
+    "UserSettings": UserSettings,
 }
 
 export const pagesConfig = {

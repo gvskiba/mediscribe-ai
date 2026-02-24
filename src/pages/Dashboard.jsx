@@ -17,6 +17,7 @@ import QuickLinksWidget from "../components/dashboard/QuickLinksWidget";
 import WorkflowAutomationWidget from "../components/dashboard/WorkflowAutomationWidget";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 const quickLinks = [
   {

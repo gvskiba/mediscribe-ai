@@ -114,82 +114,13 @@ export default function SubjectiveTab({
       </div>
 
       {/* 1 - Vital Signs */}
-      <SectionCard
-        label="Vital Signs"
-        sublabel="· enter manually or paste for AI extraction"
-        accentColor="emerald"
-      >
-        <div className="p-4 space-y-4">
-          <VitalSignsPasteAnalyzer
-            vitalSigns={note.vital_signs}
-            patientAge={note.patient_age}
-            onApplyVitals={async (vitals) => {
-              const vitalSigns = { temperature: vitals.temperature, heart_rate: vitals.heart_rate, blood_pressure: vitals.blood_pressure, respiratory_rate: vitals.respiratory_rate, oxygen_saturation: vitals.oxygen_saturation, height: vitals.height, weight: vitals.weight };
-              await base44.entities.ClinicalNote.update(noteId, { vital_signs: vitalSigns });
-              queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-            }}
-          />
-          <div className="border-t border-slate-100" />
-          <VitalSignsInput
-            vitalSigns={note.vital_signs || {}}
-            onChange={async (newVitalSigns) => {
-              const sanitized = Object.fromEntries(
-                Object.entries(newVitalSigns).filter(([_, v]) => {
-                  if (!v || typeof v !== 'object') return false;
-                  if ('systolic' in v) return v.systolic !== undefined && v.systolic !== '';
-                  return v.value !== undefined && v.value !== '';
-                })
-              );
-              await base44.entities.ClinicalNote.update(noteId, { vital_signs: sanitized });
-              queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-            }}
-            onSave={async (newVitalSigns) => {
-              const filteredVitals = Object.fromEntries(Object.entries(newVitalSigns).filter(([_, v]) => v && (v.value !== undefined && v.value !== "" || v.systolic !== undefined)));
-              if (Object.keys(filteredVitals).length === 0) { toast.error("Please enter at least one vital sign"); return; }
-              setVitalSignsHistory(prev => [{ vitals: filteredVitals, timestamp: new Date().toISOString() }, ...prev]);
-              await base44.entities.ClinicalNote.update(noteId, { vital_signs: filteredVitals });
-              queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-              toast.success("Vital signs saved");
-            }}
-          />
-          <div className="border-t border-slate-100 pt-3 flex items-center gap-2">
-            <Button
-              onClick={async () => {
-                const vitals = note.vital_signs;
-                if (!vitals || Object.keys(vitals).length === 0) { toast.error("No vital signs recorded yet."); return; }
-                setLoadingVitalAnalysis(true);
-                try {
-                  const vitalsSummary = Object.entries(vitals).filter(([_, v]) => v && typeof v === 'object' && (v.value !== undefined && v.value !== "" || v.systolic !== undefined)).map(([key, v]) => { const displayKey = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()); if (key === 'blood_pressure') return `- ${displayKey}: ${v.systolic}/${v.diastolic} ${v.unit || 'mmHg'}`; return `- ${displayKey}: ${v.value} ${v.unit || ''}`.trim(); }).join('\n');
-                  if (!vitalsSummary) { toast.error("No vital sign values to analyze"); setLoadingVitalAnalysis(false); return; }
-                  const result = await base44.integrations.Core.InvokeLLM({ prompt: `Analyze these vital signs for abnormalities:\n\n${vitalsSummary}`, response_json_schema: { type: "object", properties: { analysis: { type: "array", items: { type: "object", properties: { vital_sign: { type: "string" }, status: { type: "string", enum: ["normal", "abnormal"] }, value: { type: "string" }, reference_range: { type: "string" }, clinical_significance: { type: "string" } } } }, summary: { type: "string" } } } });
-                  setVitalSignsAnalysis(result);
-                } catch { toast.error("Failed to analyze vital signs"); } finally { setLoadingVitalAnalysis(false); }
-              }}
-              disabled={loadingVitalAnalysis}
-              size="sm"
-              variant="outline"
-              className="gap-1.5 text-xs h-7 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-            >
-              {loadingVitalAnalysis ? <><Loader2 className="w-3 h-3 animate-spin" />Analyzing...</> : <><Sparkles className="w-3 h-3" />Analyze Vitals</>}
-            </Button>
-          </div>
-          {vitalSignsAnalysis && (
-            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-1.5">
-              {vitalSignsAnalysis.analysis?.map((item, idx) => (
-                <div key={idx} className={`rounded-lg border px-3 py-2 flex items-center justify-between ${item.status === "abnormal" ? "bg-red-50 border-red-200" : "bg-emerald-50 border-emerald-200"}`}>
-                  <div>
-                    <span className="font-medium text-xs text-slate-800 capitalize">{item.vital_sign}</span>
-                    <span className="text-xs text-slate-500 ml-2">{item.value} · {item.reference_range}</span>
-                    {item.clinical_significance && <p className="text-xs text-slate-500 mt-0.5">{item.clinical_significance}</p>}
-                  </div>
-                  <Badge className={`text-xs ml-2 flex-shrink-0 ${item.status === "abnormal" ? "bg-red-100 text-red-700 border border-red-200" : "bg-emerald-100 text-emerald-700 border border-emerald-200"}`}>{item.status}</Badge>
-                </div>
-              ))}
-              {vitalSignsAnalysis.summary && <p className="text-xs text-slate-500 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2">{vitalSignsAnalysis.summary}</p>}
-            </motion.div>
-          )}
-        </div>
-      </SectionCard>
+      <VitalSignsCard
+        note={note}
+        noteId={noteId}
+        queryClient={queryClient}
+        vitalSignsHistory={vitalSignsHistory}
+        setVitalSignsHistory={setVitalSignsHistory}
+      />
 
       {/* 2 - Raw Note Input */}
       <SectionCard

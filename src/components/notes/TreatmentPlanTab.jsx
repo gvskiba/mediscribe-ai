@@ -83,7 +83,15 @@ export default function TreatmentPlanTab({ note, noteId, queryClient, isFirstTab
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              <Textarea value={note.plan || ""} onChange={(e) => { queryClient.setQueryData(["note", noteId], (old) => ({ ...old, plan: e.target.value })); }} placeholder="Document treatment plan..." className="min-h-[300px] text-sm resize-none" autoFocus />
+              <AITextCompletion
+                field="plan"
+                value={note.plan || ""}
+                onChange={(val) => { queryClient.setQueryData(["note", noteId], (old) => ({ ...old, plan: val })); }}
+                note={note}
+                placeholder="Document treatment plan..."
+                className="w-full min-h-[300px] text-sm resize-none rounded-md border border-input px-3 py-2 focus:outline-none focus:ring-1 focus:ring-ring"
+                minRows={12}
+              />
               <ClinicalWorkflowAutomation note={note} noteId={noteId} onUpdateNote={async (updates) => { await base44.entities.ClinicalNote.update(noteId, updates); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
             </div>
             <div className="flex items-center justify-between gap-2 px-4 py-3 border-t border-slate-200 flex-shrink-0 bg-slate-50">

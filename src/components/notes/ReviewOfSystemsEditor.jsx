@@ -132,11 +132,9 @@ function SystemRow({ section, onStatusChange, onNotesChange, onDelete }) {
           <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
         </button>
 
-        {section.isCustom && (
-          <button onClick={() => onDelete(section.id)} className="flex-shrink-0 text-slate-300 hover:text-red-400 transition-colors">
-            <X className="w-3 h-3" />
-          </button>
-        )}
+        <button onClick={() => onDelete(section.id)} className="flex-shrink-0 text-slate-300 hover:text-red-400 transition-colors" title="Remove system">
+          <X className="w-3 h-3" />
+        </button>
       </div>
 
       <AnimatePresence>

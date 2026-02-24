@@ -96,6 +96,9 @@ import VitalSignsTab from "../components/notes/VitalSignsTab";
 import DifferentialTab from "../components/notes/DifferentialTab";
 import LabsImagingTab from "../components/notes/LabsImagingTab";
 import PhysicalExamTab from "../components/notes/PhysicalExamTab";
+import TreatmentPlanTab from "../components/notes/TreatmentPlanTab";
+import FinalizeTab from "../components/notes/FinalizeTab";
+import PatientEducationTab from "../components/notes/PatientEducationTab";
 
 const TAB_GROUPS = [
   {

@@ -48,6 +48,21 @@ export default function TreatmentPlanTab({ note, noteId, queryClient, isFirstTab
           )}
         </div>
       </div>
+      {/* AI shortcut */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center justify-between gap-3">
+        <p className="text-xs text-amber-800">Need evidence-based recommendations? Use the AI Treatment panel.</p>
+        <Button
+          size="sm"
+          onClick={() => {
+            // Open AI sidebar to treatment tab via custom event
+            window.dispatchEvent(new CustomEvent('openAISidebar', { detail: 'treatment' }));
+          }}
+          className="bg-amber-600 hover:bg-amber-700 text-white gap-1 text-xs h-6 flex-shrink-0"
+        >
+          <Sparkles className="w-3 h-3" />AI Plan
+        </Button>
+      </div>
+
       <div className="flex justify-between items-center pt-1 border-t border-slate-100">
         <div className="flex gap-2"><TabDataPreview tabId="treatment_plan" note={note} /><ClinicalNotePreviewButton note={note} /></div>
         <div className="flex items-center gap-1.5">

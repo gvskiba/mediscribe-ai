@@ -8,6 +8,7 @@ import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from "date-fns";
+import AITextCompletion from "../ai/AITextCompletion";
 
 const AggregateSectionText = ({ title, field, value, borderColor, titleColor, onSave, isROS, isPhysExam }) => {
   const [editing, setEditing] = useState(false);

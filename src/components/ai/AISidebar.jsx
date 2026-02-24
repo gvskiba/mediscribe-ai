@@ -15,10 +15,12 @@ import ClinicalDecisionSupport from "../notes/ClinicalDecisionSupport";
 import MedicalLiteratureSearch from "../research/MedicalLiteratureSearch";
 import NoteQuestionAnswering from "./NoteQuestionAnswering";
 import ContextualAIPanel from "./ContextualAIPanel";
+import AISectionDrafter from "./AISectionDrafter";
 
 // ── Tab definitions ───────────────────────────────────────────────────────────
 const TABS = [
   { id: "analyze",    label: "Analyze",    icon: ScanSearch,    color: "violet" },
+  { id: "draft",      label: "Draft",      icon: TrendingUp,    color: "indigo" },
   { id: "summarize",  label: "Summarize",  icon: ClipboardList, color: "blue" },
   { id: "consolidated",  label: "Consolidated",  icon: FileText, color: "blue" },
   { id: "qa",         label: "Q&A",        icon: Brain,         color: "indigo" },
@@ -933,8 +935,13 @@ function QAPanel({ note, onUpdateNote }) {
 }
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────
+function DraftPanel({ note, onUpdateNote }) {
+  return <AISectionDrafter note={note} onUpdateNote={onUpdateNote} />;
+}
+
 const PANEL_MAP = {
   analyze: AnalyzePanel,
+  draft: DraftPanel,
   summarize: SummarizePanel,
   consolidated: ConsolidatedNotePanel,
   qa: QAPanel,

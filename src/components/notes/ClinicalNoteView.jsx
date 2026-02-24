@@ -489,7 +489,7 @@ Generate the complete clinical note now.`;
             <AggregateSectionText title="CHIEF COMPLAINT" field="chief_complaint" value={note.chief_complaint} borderColor="border-blue-200" titleColor="text-blue-900" onSave={onUpdate} />
             <AggregateSectionText title="HISTORY OF PRESENT ILLNESS" field="history_of_present_illness" value={note.history_of_present_illness} borderColor="border-purple-200" titleColor="text-purple-900" onSave={onUpdate} />
             <AggregateSectionText title="REVIEW OF SYSTEMS" field="review_of_systems" value={note.review_of_systems} borderColor="border-amber-200" titleColor="text-amber-900" onSave={onUpdate} isROS={true} />
-            <AggregateSectionText title="PHYSICAL EXAMINATION" field="physical_exam" value={note.physical_exam} borderColor="border-green-200" titleColor="text-green-900" onSave={onUpdate} />
+            <AggregateSectionText title="PHYSICAL EXAMINATION" field="physical_exam" value={note.physical_exam} borderColor="border-green-200" titleColor="text-green-900" onSave={onUpdate} isPhysExam={true} />
 
             {/* Vital Signs (read-only display) */}
             {note.vital_signs && Object.keys(note.vital_signs).length > 0 && (

@@ -249,8 +249,9 @@ export default function Dashboard() {
                 <Button variant="outline" onClick={() => setManageDialogOpen(false)}>
                   Close
                 </Button>
-                <Button onClick={() => {
-                  savePreferences();
+                <Button onClick={async () => {
+                  const ok = await savePreferences();
+                  if (ok !== false) toast.success("Dashboard preferences saved");
                   setManageDialogOpen(false);
                 }} className="bg-blue-600 hover:bg-blue-700">
                   Save Changes

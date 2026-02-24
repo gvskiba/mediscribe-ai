@@ -67,7 +67,14 @@ const AggregateSectionText = ({ title, field, value, borderColor, titleColor, on
         </div>
       </div>
       {editing ? (
-        AI_COMPLETION_FIELDS.includes(field) ? (
+        RICH_EDITOR_FIELDS.includes(field) ? (
+          <RichMarkdownEditor
+            value={editValue}
+            onChange={setEditValue}
+            placeholder={`Enter ${title?.toLowerCase() || field}...`}
+            minRows={4}
+          />
+        ) : AI_COMPLETION_FIELDS.includes(field) ? (
           <AITextCompletion
             field={field}
             value={editValue}
@@ -82,7 +89,11 @@ const AggregateSectionText = ({ title, field, value, borderColor, titleColor, on
         )
       ) : (
         <div className="text-sm text-slate-700 leading-relaxed">
-          {(isROS || isPhysExam) && displayValue?.includes('\n') ? (
+          {RICH_EDITOR_FIELDS.includes(field) && value ? (
+            <div className="prose prose-sm max-w-none">
+              <ReactMarkdown>{displayValue}</ReactMarkdown>
+            </div>
+          ) : (isROS || isPhysExam) && displayValue?.includes('\n') ? (
             <ul className="space-y-1.5">
               {displayValue.split('\n').filter(Boolean).map((line, i) => {
                 const colonIdx = line.indexOf(':');

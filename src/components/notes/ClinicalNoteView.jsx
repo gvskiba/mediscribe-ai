@@ -234,12 +234,24 @@ const NoteSection = ({ title, value, field, onSave, color = "blue", note }) => {
       </div>
       <div className="p-4">
         {editing ? (
-          <Textarea
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            className="w-full min-h-[120px] bg-white"
-            placeholder={`Enter ${title.toLowerCase()}...`}
-          />
+          AI_COMPLETION_FIELDS.includes(field) && note ? (
+            <AITextCompletion
+              field={field}
+              value={editValue}
+              onChange={setEditValue}
+              note={note}
+              placeholder={`Enter ${title.toLowerCase()}...`}
+              className="w-full min-h-[120px] text-sm resize-none rounded-md border border-input px-3 py-2 focus:outline-none focus:ring-1 focus:ring-ring"
+              minRows={6}
+            />
+          ) : (
+            <Textarea
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              className="w-full min-h-[120px] bg-white"
+              placeholder={`Enter ${title.toLowerCase()}...`}
+            />
+          )
         ) : (
           <div className="bg-white rounded-lg p-3 border border-slate-200 min-h-[80px]">
             {value ? (

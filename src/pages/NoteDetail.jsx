@@ -1714,8 +1714,13 @@ Generated: ${new Date().toLocaleString()}
                    <div className="p-4"><ClinicalNoteView note={note} onUpdate={async (field, value) => { await base44.entities.ClinicalNote.update(noteId, { [field]: value }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); toast.success("Updated"); }} noteTypes={templates} differentialDiagnosis={differentialDiagnosis} /></div>
                  </div>
                  <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-purple-500 shadow-sm overflow-hidden">
-                   <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-purple-500" /><span className="text-sm font-semibold text-slate-800">Generate Complete Note</span></div>
-                   <div className="p-4"><AIDocumentationAssistant note={note} onUpdateNote={async (updates) => { await base44.entities.ClinicalNote.update(noteId, updates); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} /></div>
+                   <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
+                     <div className="flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-purple-500" /><span className="text-sm font-semibold text-slate-800">AI Note Tools</span></div>
+                   </div>
+                   <div className="p-4 space-y-2">
+                     <p className="text-xs text-slate-500">Use the AI Assistance Hub to generate a consolidated note, suggest ICD-10 codes, create treatment plans, and more.</p>
+                     <Button onClick={() => setAiSidebarOpen(true)} size="sm" className="bg-purple-600 hover:bg-purple-700 text-white gap-1.5 text-xs h-7 px-3"><Sparkles className="w-3 h-3" />Open AI Hub</Button>
+                   </div>
                  </div>
                  <div className="flex justify-between items-center pt-1 border-t border-slate-100">
                    <div className="flex gap-2"><TabDataPreview tabId="clinical_note" note={note} /><ClinicalNotePreviewButton note={note} /></div>

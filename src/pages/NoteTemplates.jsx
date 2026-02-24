@@ -661,11 +661,11 @@ Return a JSON structure with:
                         <Eye className="w-3 h-3" /> Preview
                       </Button>
                       <Button
-                        onClick={() => handleEdit(template)}
+                        onClick={() => { window.location.href = createPageUrl(`TemplateEditor?id=${template.id}`); }}
                         size="sm"
                         className="flex-1 bg-blue-600 hover:bg-blue-700 rounded-lg gap-1"
                       >
-                        <Edit className="w-3 h-3" /> Edit
+                        <ExternalLink className="w-3 h-3" /> Open Editor
                       </Button>
                     </div>
 

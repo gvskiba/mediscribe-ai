@@ -653,7 +653,7 @@ Generate the complete clinical note now.`;
               </div>
             )}
 
-            <AggregateSectionText title="ASSESSMENT" field="assessment" value={note.assessment} borderColor="border-indigo-200" titleColor="text-indigo-900" onSave={onUpdate} />
+            <AggregateSectionText title="ASSESSMENT" field="assessment" value={note.assessment} borderColor="border-indigo-200" titleColor="text-indigo-900" onSave={onUpdate} note={note} />
             <AggregateSectionArray title="DIAGNOSES" field="diagnoses" items={note.diagnoses} borderColor="border-blue-200" titleColor="text-blue-900" itemBg="bg-blue-50 border-blue-200" itemNumColor="text-blue-600" onSave={onUpdate} />
             <AggregateSectionText title="PLAN" field="plan" value={note.plan} borderColor="border-rose-200" titleColor="text-rose-900" onSave={onUpdate} />
             <AggregateSectionArray title="MEDICATIONS" field="medications" items={note.medications} borderColor="border-green-200" titleColor="text-green-900" itemBg="bg-green-50 border-green-200" itemNumColor="text-green-600" onSave={onUpdate} />

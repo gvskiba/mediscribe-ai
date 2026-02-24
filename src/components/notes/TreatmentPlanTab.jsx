@@ -8,6 +8,7 @@ import { base44 } from "@/api/base44Client";
 import ReactMarkdown from "react-markdown";
 import InlineSectionAI from "../ai/InlineSectionAI";
 import ClinicalWorkflowAutomation from "./ClinicalWorkflowAutomation";
+import AITextCompletion from "../ai/AITextCompletion";
 import TabDataPreview from "./TabDataPreview";
 import ClinicalNotePreviewButton from "./ClinicalNotePreviewButton";
 

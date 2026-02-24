@@ -122,20 +122,19 @@ export default function Dashboard() {
     setActiveWidgets(prev => prev.filter(id => id !== widgetId));
   };
 
-  const savePreferences = async () => {
+  const savePreferences = async (widgetsOverride, layoutOverride) => {
     try {
-      const user = await base44.auth.me();
-      if (user) {
-        await base44.auth.updateMe({
-          preferences: {
-            ...userPreferences,
-            dashboard_layout: layout,
-            active_widgets: activeWidgets
-          }
-        });
-      }
+      const updatedPrefs = {
+        ...(userPreferences || {}),
+        dashboard_layout: layoutOverride ?? layout,
+        active_widgets: widgetsOverride ?? activeWidgets
+      };
+      await base44.auth.updateMe({ preferences: updatedPrefs });
+      setUserPreferences(updatedPrefs);
+      return true;
     } catch (error) {
       console.error("Failed to save preferences:", error);
+      return false;
     }
   };
 

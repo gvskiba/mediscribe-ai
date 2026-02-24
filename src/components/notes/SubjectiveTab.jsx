@@ -7,8 +7,7 @@ import { Sparkles, Loader2, X, Check, ArrowLeft, ChevronDown, ChevronUp } from "
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import InlineSectionAI from "../ai/InlineSectionAI";
-import VitalSignsPasteAnalyzer from "./VitalSignsPasteAnalyzer";
-import VitalSignsInput from "./VitalSignsInput";
+import VitalSignsCard from "./VitalSignsCard";
 import ReviewOfSystemsEditor from "./ReviewOfSystemsEditor";
 import TabDataPreview from "./TabDataPreview";
 import ClinicalNotePreviewButton from "./ClinicalNotePreviewButton";

@@ -63,7 +63,19 @@ const AggregateSectionText = ({ title, field, value, borderColor, titleColor, on
         </div>
       </div>
       {editing ? (
-        <Textarea value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-full min-h-[100px] bg-white text-sm" />
+        AI_COMPLETION_FIELDS.includes(field) ? (
+          <AITextCompletion
+            field={field}
+            value={editValue}
+            onChange={setEditValue}
+            note={typeof onSave === 'function' ? undefined : undefined}
+            placeholder={`Enter ${title?.toLowerCase() || field}...`}
+            className="w-full min-h-[100px] text-sm resize-none rounded-md border border-input px-3 py-2 focus:outline-none focus:ring-1 focus:ring-ring bg-white"
+            minRows={4}
+          />
+        ) : (
+          <Textarea value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-full min-h-[100px] bg-white text-sm" />
+        )
       ) : (
         <div className="text-sm text-slate-700 leading-relaxed">
           {(isROS || isPhysExam) && displayValue?.includes('\n') ? (

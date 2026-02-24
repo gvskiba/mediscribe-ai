@@ -9,6 +9,10 @@ import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from "date-fns";
 import AITextCompletion from "../ai/AITextCompletion";
+import RichMarkdownEditor from "./RichMarkdownEditor";
+import ReactMarkdown from "react-markdown";
+
+const RICH_EDITOR_FIELDS = ["chief_complaint", "history_of_present_illness"];
 
 const AggregateSectionText = ({ title, field, value, borderColor, titleColor, onSave, isROS, isPhysExam, note }) => {
   const [editing, setEditing] = useState(false);

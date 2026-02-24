@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Check, ChevronDown, RotateCcw } from "lucide-react";
+import { Check, ChevronDown, RotateCcw, Plus, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const SYSTEMS = [

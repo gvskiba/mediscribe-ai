@@ -66,7 +66,6 @@ import ClinicalNoteView from "../components/notes/ClinicalNoteView";
 import AIDocumentationAssistant from "../components/ai/AIDocumentationAssistant";
 import ProceduresPanel from "../components/procedures/ProceduresPanel";
 import ClinicalWorkflowAutomation from "../components/notes/ClinicalWorkflowAutomation";
-import AIGuidelineSuggestions from "../components/notes/AIGuidelineSuggestions";
 import AISidebar from "../components/ai/AISidebar";
 import InlineSectionAI from "../components/ai/InlineSectionAI";
 import NoteTypeAndTemplateSelector from "../components/notes/NoteTypeAndTemplateSelector";

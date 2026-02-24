@@ -9,20 +9,20 @@ import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from "date-fns";
 
-const AggregateSectionText = ({ title, field, value, borderColor, titleColor, onSave, isROS }) => {
+const AggregateSectionText = ({ title, field, value, borderColor, titleColor, onSave, isROS, isPhysExam }) => {
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(value || "");
 
   if (!value && !editing) return null;
 
-  // Parse ROS JSON if needed
-  const formatROS = (val) => {
+  // Parse JSON object fields (ROS, physical exam) into readable lines
+  const formatStructured = (val) => {
     if (!val) return val;
-    if (isROS && typeof val === 'string' && val.startsWith('{')) {
+    if ((isROS || isPhysExam) && typeof val === 'string' && val.trim().startsWith('{')) {
       try {
-        const ros = JSON.parse(val);
-        return Object.entries(ros)
-          .map(([system, findings]) => `${system.charAt(0).toUpperCase() + system.slice(1).replace(/_/g, ' ')}: ${findings}`)
+        const parsed = JSON.parse(val);
+        return Object.entries(parsed)
+          .map(([key, text]) => `${key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ')}: ${text}`)
           .join('\n');
       } catch {
         return val;
@@ -31,7 +31,7 @@ const AggregateSectionText = ({ title, field, value, borderColor, titleColor, on
     return val;
   };
 
-  const displayValue = formatROS(value);
+  const displayValue = formatStructured(value);
 
   return (
     <div>

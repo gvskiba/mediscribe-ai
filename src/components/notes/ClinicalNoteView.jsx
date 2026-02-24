@@ -472,6 +472,56 @@ Generate the complete clinical note now.`;
     }
   };
 
+  const copyStructuredNote = () => {
+    // Build a plain-text version of all populated note sections
+    const sections = [];
+
+    if (note.chief_complaint) sections.push(`CHIEF COMPLAINT:\n${note.chief_complaint}`);
+    if (note.history_of_present_illness) sections.push(`HISTORY OF PRESENT ILLNESS:\n${note.history_of_present_illness}`);
+
+    // Format ROS - handle JSON or string
+    if (note.review_of_systems) {
+      let rosText = note.review_of_systems;
+      if (typeof rosText === 'string' && rosText.trim().startsWith('{')) {
+        try {
+          const parsed = JSON.parse(rosText);
+          rosText = Object.entries(parsed)
+            .map(([k, v]) => `  ${k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, ' ')}: ${v}`)
+            .join('\n');
+        } catch { /* keep as-is */ }
+      }
+      sections.push(`REVIEW OF SYSTEMS:\n${rosText}`);
+    }
+
+    // Format physical exam - handle JSON or string
+    if (note.physical_exam) {
+      let peText = note.physical_exam;
+      if (typeof peText === 'string' && peText.trim().startsWith('{')) {
+        try {
+          const parsed = JSON.parse(peText);
+          peText = Object.entries(parsed)
+            .map(([k, v]) => `  ${k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, ' ')}: ${v}`)
+            .join('\n');
+        } catch { /* keep as-is */ }
+      }
+      sections.push(`PHYSICAL EXAMINATION:\n${peText}`);
+    }
+
+    if (note.assessment) sections.push(`ASSESSMENT:\n${note.assessment}`);
+    if (note.diagnoses?.length > 0) sections.push(`DIAGNOSES:\n${note.diagnoses.map((d, i) => `  ${i + 1}. ${d}`).join('\n')}`);
+    if (note.plan) sections.push(`PLAN:\n${note.plan}`);
+    if (note.medications?.length > 0) sections.push(`MEDICATIONS:\n${note.medications.map((m, i) => `  ${i + 1}. ${m}`).join('\n')}`);
+    if (note.medical_history) sections.push(`MEDICAL HISTORY:\n${note.medical_history}`);
+    if (note.allergies?.length > 0) sections.push(`ALLERGIES:\n${note.allergies.map(a => `  ⚠ ${a}`).join('\n')}`);
+    if (note.clinical_impression) sections.push(`CLINICAL IMPRESSION:\n${note.clinical_impression}`);
+
+    const fullText = sections.join('\n\n');
+    navigator.clipboard.writeText(fullText);
+    setCopied(true);
+    toast.success("Note copied to clipboard");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className="space-y-6">
 

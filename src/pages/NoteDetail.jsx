@@ -535,6 +535,15 @@ export default function NoteDetail() {
     }
   }, [noteId]);
 
+  // Listen for AI sidebar open events from child components
+  useEffect(() => {
+    const handler = (e) => {
+      setAiSidebarOpen(true);
+    };
+    window.addEventListener('openAISidebar', handler);
+    return () => window.removeEventListener('openAISidebar', handler);
+  }, []);
+
   // Update button states when note loads
   useEffect(() => {
     if (note) {

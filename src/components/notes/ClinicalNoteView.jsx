@@ -747,6 +747,7 @@ Generate the complete clinical note now.`;
         field="plan"
         onSave={onUpdate}
         color="green"
+        note={note}
       />
 
       {/* Final Impression */}

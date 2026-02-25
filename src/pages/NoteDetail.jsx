@@ -529,11 +529,18 @@ export default function NoteDetail() {
     enabled: !!noteId,
   });
 
-  // Track current open note
+  // Track current open note and load user settings
   useEffect(() => {
     if (noteId) {
       localStorage.setItem('currentOpenNote', noteId);
     }
+    const loadSettings = async () => {
+      const settings = await base44.auth.me();
+      if (settings) {
+        setUserSettings(settings);
+      }
+    };
+    loadSettings();
   }, [noteId]);
 
   // Listen for AI sidebar open events from child components

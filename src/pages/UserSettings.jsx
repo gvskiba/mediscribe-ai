@@ -44,6 +44,19 @@ const COLOR_THEMES = [
   { value: "slate", label: "Classic Slate", primary: "#475569" },
 ];
 
+const MEDICAL_SPECIALTIES = [
+  { value: "emergency_medicine", label: "Emergency Medicine", desc: "Fast-paced acute care" },
+  { value: "internal_medicine", label: "Internal Medicine", desc: "General adult medicine" },
+  { value: "family_medicine", label: "Family Medicine", desc: "Primary care" },
+  { value: "pediatrics", label: "Pediatrics", desc: "Children's medicine" },
+  { value: "cardiology", label: "Cardiology", desc: "Heart & vascular" },
+  { value: "pulmonology", label: "Pulmonology", desc: "Respiratory medicine" },
+  { value: "neurology", label: "Neurology", desc: "Nervous system" },
+  { value: "psychiatry", label: "Psychiatry", desc: "Mental health" },
+  { value: "surgery", label: "Surgery", desc: "Surgical specialties" },
+  { value: "orthopedics", label: "Orthopedics", desc: "Bones & joints" },
+];
+
 const DEFAULT_SETTINGS = {
   // Clinical defaults
   ros_defaults: null,
@@ -52,6 +65,7 @@ const DEFAULT_SETTINGS = {
   default_note_type: "progress_note",
   default_template_id: null,
   auto_save: true,
+  medical_specialty: "internal_medicine",
   // AI behavior
   ai_verbosity: "standard",
   ai_auto_fill_ros: true,

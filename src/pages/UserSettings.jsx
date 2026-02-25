@@ -148,11 +148,12 @@ export default function UserSettings() {
   }, []);
 
   const update = (key, value) => setSettings(prev => ({ ...prev, [key]: value }));
+  const updatePref = (key, value) => setPrefs(prev => ({ ...prev, [key]: value }));
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await base44.auth.updateMe({ clinical_settings: settings });
+      await base44.auth.updateMe({ clinical_settings: settings, preferences: prefs });
       toast.success("Settings saved");
     } catch {
       toast.error("Failed to save settings");

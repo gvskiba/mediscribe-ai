@@ -30,7 +30,18 @@ const SECTIONS = [
   { id: "clinical_defaults", label: "Clinical Defaults", icon: Stethoscope, color: "emerald" },
   { id: "note_preferences", label: "Note Preferences", icon: FileText, color: "blue" },
   { id: "ai_behavior", label: "AI Behavior", icon: Brain, color: "purple" },
+  { id: "appearance", label: "Appearance", icon: Palette, color: "rose" },
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, color: "amber" },
+  { id: "notifications", label: "Notifications", icon: Bell, color: "slate" },
   { id: "account", label: "Account", icon: User, color: "slate" },
+];
+
+const COLOR_THEMES = [
+  { value: "blue", label: "Ocean Blue", primary: "#2563eb" },
+  { value: "purple", label: "Royal Purple", primary: "#7c3aed" },
+  { value: "emerald", label: "Emerald", primary: "#059669" },
+  { value: "rose", label: "Rose", primary: "#e11d48" },
+  { value: "slate", label: "Classic Slate", primary: "#475569" },
 ];
 
 const DEFAULT_SETTINGS = {

@@ -8,15 +8,28 @@ import PatientEducationGenerator from "./PatientEducationGenerator";
 export default function PatientEducationTab({ note, patientEducation, generatingEducation, generatePatientEducation, downloadPatientEducation, isFirstTab, isLastTab, handleBack, handleNext }) {
   return (
     <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
-      <div><h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Patient Education</h2><p className="text-xs text-slate-400 mt-0.5">Generate patient-friendly education materials</p></div>
-      <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-blue-500 shadow-sm overflow-hidden">
-        <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-blue-500" /><span className="text-sm font-semibold text-slate-800">Generate Materials</span></div>
-          <Button onClick={generatePatientEducation} disabled={generatingEducation || !note.diagnoses?.length} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 text-xs h-7 px-3">
-            {generatingEducation ? <><Loader2 className="w-3 h-3 animate-spin" />Generating...</> : <><Sparkles className="w-3 h-3" />Generate</>}
-          </Button>
+      <div><h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Patient Education</h2><p className="text-xs text-slate-400 mt-0.5">Generate patient-friendly education materials for discharge</p></div>
+      
+      <div className="grid sm:grid-cols-2 gap-3">
+        {/* AI Generated Materials */}
+        <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-teal-500 shadow-sm overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-teal-500" /><span className="text-sm font-semibold text-slate-800">AI-Generated Materials</span></div>
+          <div className="p-4"><PatientEducationGenerator note={note} onGenerationComplete={(materials) => { /* materials generated and ready for download */ }} /></div>
         </div>
-        {!note.diagnoses?.length && <p className="text-xs text-slate-400 px-4 py-2">Add diagnoses first to generate education materials.</p>}
+
+        {/* Existing Materials */}
+        <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-blue-500 shadow-sm overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
+            <div className="flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-blue-500" /><span className="text-sm font-semibold text-slate-800">Alternative Generation</span></div>
+          </div>
+          <div className="p-4">
+            <p className="text-xs text-slate-600 mb-3">Use this option to generate materials with different settings or format.</p>
+            <Button onClick={generatePatientEducation} disabled={generatingEducation || !note.diagnoses?.length} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 text-xs h-7 px-3">
+              {generatingEducation ? <><Loader2 className="w-3 h-3 animate-spin" />Generating...</> : <><Sparkles className="w-3 h-3" />Generate Legacy</>}
+            </Button>
+            {!note.diagnoses?.length && <p className="text-xs text-slate-400 mt-2">Add diagnoses first to generate education materials.</p>}
+          </div>
+        </div>
       </div>
       {patientEducation?.length > 0 && patientEducation.map((m, i) => (
         <div key={i} className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-cyan-500 shadow-sm overflow-hidden">

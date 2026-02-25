@@ -131,21 +131,7 @@ export default function Layout({ children, currentPageName }) {
 
             {/* Actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
-              <ReturnToNoteButton currentPage={currentPageName} />
-              <RecentNotesDropdown />
-              <button
-                onClick={async () => {
-                  const newNote = await base44.entities.ClinicalNote.create({
-                    raw_note: "",
-                    patient_name: "New Patient",
-                    status: "draft"
-                  });
-                  window.location.href = createPageUrl(`NoteDetail?id=${newNote.id}`);
-                }}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg px-4 py-2 font-semibold text-sm transition-all shadow-sm flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                New Note
-              </button>
+              <NoteActionsButton currentPage={currentPageName} />
               <button
                 onClick={() => base44.auth.logout()}
                 className="text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg p-2 transition-all"

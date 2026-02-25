@@ -191,6 +191,15 @@ function SystemRow({ section, onStatusChange, onNotesChange, onDelete }) {
 
 export default function ReviewOfSystemsEditor({ rosData, onUpdate, onAddToNote, note }) {
   const [sections, setSections] = useState(() => initSections(rosData));
+
+  // Re-initialize when rosData changes (e.g. note loaded from DB)
+  const prevRosDataRef = React.useRef(rosData);
+  useEffect(() => {
+    if (rosData !== prevRosDataRef.current) {
+      prevRosDataRef.current = rosData;
+      setSections(initSections(rosData));
+    }
+  }, [rosData]);
   const [loadingAI, setLoadingAI] = useState(false);
   const [addingSection, setAddingSection] = useState(false);
   const [newSectionLabel, setNewSectionLabel] = useState("");

@@ -83,6 +83,13 @@ export default function SubjectiveTab({
   handleBack,
   handleNext,
 }) {
+  const [rawNoteLocal, setRawNoteLocal] = React.useState(note?.raw_note || "");
+
+  // Sync if note.raw_note changes externally (e.g. grammar correction applied)
+  React.useEffect(() => {
+    setRawNoteLocal(note?.raw_note || "");
+  }, [note?.raw_note]);
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
 

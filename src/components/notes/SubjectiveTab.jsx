@@ -137,11 +137,11 @@ export default function SubjectiveTab({
           <>
             <Button size="sm" variant="ghost" disabled={checkingGrammar || !note.raw_note}
               onClick={async () => {
-                if (!note.raw_note) return;
+                if (!localRawNote) return;
                 setCheckingGrammar(true); setGrammarSuggestions(null);
                 try {
                   const result = await base44.integrations.Core.InvokeLLM({
-                    prompt: `Check the following clinical note text for grammar and spelling errors. Return a list of corrections with the original text, the corrected text, and the type of issue (grammar or spelling). Also provide the full corrected version of the text.\n\nTEXT:\n${note.raw_note}`,
+                    prompt: `Check the following clinical note text for grammar and spelling errors. Return a list of corrections with the original text, the corrected text, and the type of issue (grammar or spelling). Also provide the full corrected version of the text.\n\nTEXT:\n${localRawNote}`,
                     response_json_schema: { type: "object", properties: { issues: { type: "array", items: { type: "object", properties: { original: { type: "string" }, corrected: { type: "string" }, type: { type: "string", enum: ["grammar", "spelling"] }, explanation: { type: "string" } } } }, corrected_text: { type: "string" } } }
                   });
                   setGrammarSuggestions(result);

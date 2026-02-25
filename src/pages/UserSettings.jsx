@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
   Save, Check, User, FileText, Brain, Settings,
-  Activity, Stethoscope, Loader2, ChevronRight
+  Activity, Stethoscope, Loader2, ChevronRight,
+  Palette, LayoutDashboard, Bell, Sliders
 } from "lucide-react";
 import { toast } from "sonner";
 import ROSDefaultsEditor from "../components/settings/ROSDefaultsEditor";

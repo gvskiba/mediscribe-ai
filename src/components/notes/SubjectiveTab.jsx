@@ -135,7 +135,7 @@ export default function SubjectiveTab({
         accentColor="slate"
         actions={
           <>
-            <Button size="sm" variant="ghost" disabled={checkingGrammar || !note.raw_note}
+            <Button size="sm" variant="ghost" disabled={checkingGrammar || !localRawNote}
               onClick={async () => {
                 if (!localRawNote) return;
                 setCheckingGrammar(true); setGrammarSuggestions(null);

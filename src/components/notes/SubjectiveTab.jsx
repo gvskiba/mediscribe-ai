@@ -83,6 +83,12 @@ export default function SubjectiveTab({
   handleBack,
   handleNext,
 }) {
+  const [localRawNote, setLocalRawNote] = useState(note?.raw_note || "");
+
+  useEffect(() => {
+    setLocalRawNote(note?.raw_note || "");
+  }, [note?.id]); // only sync when note changes, not on every keystroke
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
 

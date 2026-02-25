@@ -45,8 +45,7 @@ const navSections = [
       {
               title: "Settings",
               items: [
-                { name: "Customize", icon: Settings, page: "Customize" },
-                { name: "User Settings", icon: Settings, page: "UserSettings" },
+                { name: "Settings", icon: Settings, page: "UserSettings" },
               ]
             }
     ];

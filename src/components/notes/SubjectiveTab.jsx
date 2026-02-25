@@ -151,8 +151,8 @@ export default function SubjectiveTab({
             >
               {checkingGrammar ? <><Loader2 className="w-3 h-3 animate-spin" />Checking</> : <><Sparkles className="w-3 h-3" />Grammar</>}
             </Button>
-            {note.raw_note && (
-              <Button size="sm" variant="ghost" onClick={async () => { queryClient.setQueryData(["note", noteId], (old) => ({ ...old, raw_note: "" })); await base44.entities.ClinicalNote.update(noteId, { raw_note: "" }); setGrammarSuggestions(null); toast.success("Cleared"); }} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 h-6 w-6 p-0">
+            {localRawNote && (
+              <Button size="sm" variant="ghost" onClick={async () => { setLocalRawNote(""); queryClient.setQueryData(["note", noteId], (old) => ({ ...old, raw_note: "" })); await base44.entities.ClinicalNote.update(noteId, { raw_note: "" }); setGrammarSuggestions(null); toast.success("Cleared"); }} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 h-6 w-6 p-0">
                 <X className="w-3 h-3" />
               </Button>
             )}

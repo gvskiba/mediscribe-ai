@@ -189,6 +189,11 @@ export default function UserSettings() {
               <ROSDefaultsEditor
                 defaults={settings.ros_defaults || {}}
                 onChange={(val) => update("ros_defaults", val)}
+                onSave={async (val) => {
+                  const newSettings = { ...settings, ros_defaults: val };
+                  await base44.auth.updateMe({ clinical_settings: newSettings });
+                  toast.success("ROS section removed and saved");
+                }}
               />
             </div>
 
@@ -202,6 +207,11 @@ export default function UserSettings() {
               <PhysExamDefaultsEditor
                 defaults={settings.physexam_defaults || {}}
                 onChange={(val) => update("physexam_defaults", val)}
+                onSave={async (val) => {
+                  const newSettings = { ...settings, physexam_defaults: val };
+                  await base44.auth.updateMe({ clinical_settings: newSettings });
+                  toast.success("Exam section removed and saved");
+                }}
               />
             </div>
           </div>

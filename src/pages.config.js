@@ -49,11 +49,13 @@
  */
 import Calculators from './pages/Calculators';
 import Customize from './pages/Customize';
+import Dashboard from './pages/Dashboard';
 import GuidelineDetail from './pages/GuidelineDetail';
 import Guidelines from './pages/Guidelines';
 import Home from './pages/Home';
 import MedicalKnowledgeBase from './pages/MedicalKnowledgeBase';
 import NewNote from './pages/NewNote';
+import NoteDetail from './pages/NoteDetail';
 import NoteTemplates from './pages/NoteTemplates';
 import NotesLibrary from './pages/NotesLibrary';
 import PatientDashboard from './pages/PatientDashboard';
@@ -65,19 +67,19 @@ import TemplateEditor from './pages/TemplateEditor';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
-import NoteDetail from './pages/NoteDetail';
-import Dashboard from './pages/Dashboard';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "Calculators": Calculators,
     "Customize": Customize,
+    "Dashboard": Dashboard,
     "GuidelineDetail": GuidelineDetail,
     "Guidelines": Guidelines,
     "Home": Home,
     "MedicalKnowledgeBase": MedicalKnowledgeBase,
     "NewNote": NewNote,
+    "NoteDetail": NoteDetail,
     "NoteTemplates": NoteTemplates,
     "NotesLibrary": NotesLibrary,
     "PatientDashboard": PatientDashboard,
@@ -89,8 +91,6 @@ export const PAGES = {
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
-    "NoteDetail": NoteDetail,
-    "Dashboard": Dashboard,
 }
 
 export const pagesConfig = {

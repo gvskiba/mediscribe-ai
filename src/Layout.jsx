@@ -153,18 +153,7 @@ export default function Layout({ children, currentPageName }) {
             <span className="font-bold text-sm truncate">Notrya AI</span>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={async () => {
-                const newNote = await base44.entities.ClinicalNote.create({
-                  raw_note: "",
-                  patient_name: "New Patient",
-                  status: "draft"
-                });
-                window.location.href = createPageUrl(`NoteDetail?id=${newNote.id}`);
-              }}
-              className="bg-blue-600 hover:bg-blue-700 rounded-lg p-2 transition-all shadow-sm text-white">
-              <FileText className="w-4 h-4" />
-            </button>
+            <NoteActionsButton currentPage={currentPageName} />
             <button onClick={() => setMobileOpen(!mobileOpen)} className="hover:bg-slate-100 rounded-lg p-1 transition-colors">
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>

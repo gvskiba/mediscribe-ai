@@ -83,13 +83,6 @@ export default function SubjectiveTab({
   handleBack,
   handleNext,
 }) {
-  const [rawNoteLocal, setRawNoteLocal] = React.useState(note?.raw_note || "");
-
-  // Sync if note.raw_note changes externally (e.g. grammar correction applied)
-  React.useEffect(() => {
-    setRawNoteLocal(note?.raw_note || "");
-  }, [note?.raw_note]);
-
   return (
     <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
 
@@ -152,8 +145,8 @@ export default function SubjectiveTab({
             >
               {checkingGrammar ? <><Loader2 className="w-3 h-3 animate-spin" />Checking</> : <><Sparkles className="w-3 h-3" />Grammar</>}
             </Button>
-            {rawNoteLocal && (
-              <Button size="sm" variant="ghost" onClick={async () => { setRawNoteLocal(""); queryClient.setQueryData(["note", noteId], (old) => ({ ...old, raw_note: "" })); await base44.entities.ClinicalNote.update(noteId, { raw_note: "" }); setGrammarSuggestions(null); toast.success("Cleared"); }} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 h-6 w-6 p-0">
+            {note.raw_note && (
+              <Button size="sm" variant="ghost" onClick={async () => { queryClient.setQueryData(["note", noteId], (old) => ({ ...old, raw_note: "" })); await base44.entities.ClinicalNote.update(noteId, { raw_note: "" }); setGrammarSuggestions(null); toast.success("Cleared"); }} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 h-6 w-6 p-0">
                 <X className="w-3 h-3" />
               </Button>
             )}
@@ -162,13 +155,9 @@ export default function SubjectiveTab({
       >
         <div className="p-4 space-y-3">
           <Textarea
-            value={rawNoteLocal}
-            onChange={(e) => setRawNoteLocal(e.target.value)}
-            onBlur={async (e) => {
-              const val = e.target.value;
-              queryClient.setQueryData(["note", noteId], (old) => ({ ...old, raw_note: val }));
-              await base44.entities.ClinicalNote.update(noteId, { raw_note: val });
-            }}
+            value={note.raw_note || ""}
+            onChange={(e) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, raw_note: e.target.value }))}
+            onBlur={async (e) => { await base44.entities.ClinicalNote.update(noteId, { raw_note: e.target.value }); }}
             placeholder="Paste raw clinical data, voice transcripts, or unstructured notes here..."
             className="min-h-[140px] text-sm resize-none border-slate-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
           />
@@ -181,7 +170,7 @@ export default function SubjectiveTab({
                 </p>
                 <div className="flex gap-2 items-center">
                   {grammarSuggestions.corrected_text && grammarSuggestions.issues?.length > 0 && (
-                    <Button size="sm" onClick={async () => { setRawNoteLocal(grammarSuggestions.corrected_text); queryClient.setQueryData(["note", noteId], (old) => ({ ...old, raw_note: grammarSuggestions.corrected_text })); await base44.entities.ClinicalNote.update(noteId, { raw_note: grammarSuggestions.corrected_text }); setGrammarSuggestions(null); toast.success("Applied"); }} className="h-5 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 rounded">Apply All</Button>
+                    <Button size="sm" onClick={async () => { queryClient.setQueryData(["note", noteId], (old) => ({ ...old, raw_note: grammarSuggestions.corrected_text })); await base44.entities.ClinicalNote.update(noteId, { raw_note: grammarSuggestions.corrected_text }); setGrammarSuggestions(null); toast.success("Applied"); }} className="h-5 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 rounded">Apply All</Button>
                   )}
                   <button onClick={() => setGrammarSuggestions(null)} className="text-slate-400 hover:text-slate-600"><X className="w-3 h-3" /></button>
                 </div>

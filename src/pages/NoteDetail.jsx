@@ -1627,11 +1627,6 @@ Generated: ${new Date().toLocaleString()}
                           />
                         </TabsContent>
 
-                              {/* Vital Signs Tab */}
-                              <TabsContent value="vital_signs" className="overflow-y-auto bg-slate-50">
-                              <VitalSignsTab note={note} noteId={noteId} queryClient={queryClient} templates={templates} selectedTemplate={selectedTemplate} setSelectedTemplate={setSelectedTemplate} loadingVitalAnalysis={loadingVitalAnalysis} setLoadingVitalAnalysis={setLoadingVitalAnalysis} vitalSignsAnalysis={vitalSignsAnalysis} setVitalSignsAnalysis={setVitalSignsAnalysis} vitalSignsHistory={vitalSignsHistory} setVitalSignsHistory={setVitalSignsHistory} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
-                              </TabsContent>
-
                               {/* Differential Diagnosis Tab */}
                               <TabsContent value="differential" className="overflow-y-auto bg-slate-50">
                               <DifferentialTab note={note} noteId={noteId} queryClient={queryClient} templates={templates} selectedTemplate={selectedTemplate} setSelectedTemplate={setSelectedTemplate} loadingDifferential={loadingDifferential} generateDifferentialDiagnosis={generateDifferentialDiagnosis} differentialDiagnosis={differentialDiagnosis} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />

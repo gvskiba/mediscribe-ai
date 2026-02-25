@@ -18,9 +18,9 @@ import RecentNotesDropdown from "./components/notes/RecentNotesDropdown";
 import NotificationButtons from "./components/layout/NotificationButtons";
 
 import { Settings } from "lucide-react";
-import ReturnToNoteButton from "./components/notes/ReturnToNoteButton";
 import DraggableNotificationButtons from "./components/layout/DraggableNotificationButtons";
 import MedicalChatbot from "./components/ai/MedicalChatbot";
+import NoteActionsButton from "./components/notes/NoteActionsButton";
 
 const navSections = [
             {

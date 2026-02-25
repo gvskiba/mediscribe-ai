@@ -45,7 +45,7 @@ export default function PhysicalExamTab({
           <PhysicalExamEditor
             examData={note.physical_exam}
             onUpdate={async (d) => { await base44.entities.ClinicalNote.update(noteId, { physical_exam: typeof d === 'string' ? d : JSON.stringify(d) }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); toast.success("Updated"); }}
-            onAddToNote={async (t) => { await base44.entities.ClinicalNote.update(noteId, { physical_exam: (note.physical_exam || "") + t }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); toast.success("Added"); }}
+            onAddToNote={async (t) => { await base44.entities.ClinicalNote.update(noteId, { physical_exam: t }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); toast.success("Saved"); }}
           />
         </div>
       </div>

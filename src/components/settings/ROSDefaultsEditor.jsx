@@ -52,8 +52,10 @@ export default function ROSDefaultsEditor({ defaults, onChange, onSave }) {
     setCustomSystems(prev => prev.filter(s => s.id !== id));
     const updated = { ...defaults };
     delete updated[id];
-    onChange({ ...updated, [`_hidden_${id}`]: true });
+    const next = { ...updated, [`_hidden_${id}`]: true };
+    onChange(next);
     if (expandedId === id) setExpandedId(null);
+    if (onSave) onSave(next);
   };
 
   const visibleSystems = allSystems.filter(s => !defaults?.[`_hidden_${s.id}`]);

@@ -61,14 +61,20 @@ export default function PhysExamDefaultsEditor({ defaults, onChange, onSave }) {
   };
 
   const removeSection = (id, isCustom) => {
+    let next;
     if (isCustom) {
-      deleteSection(id);
+      setCustomSections(prev => prev.filter(s => s.id !== id));
+      const updated = { ...defaults };
+      delete updated[id];
+      next = updated;
     } else {
       const updated = { ...defaults };
       delete updated[id];
-      onChange({ ...updated, [`_hidden_${id}`]: true });
+      next = { ...updated, [`_hidden_${id}`]: true };
     }
+    onChange(next);
     if (expandedId === id) setExpandedId(null);
+    if (onSave) onSave(next);
   };
 
   const visibleSections = allSections.filter(s => !defaults?.[`_hidden_${s.id}`]);

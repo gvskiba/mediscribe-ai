@@ -59,7 +59,8 @@ export default function VitalSignsCard({ note, noteId, queryClient, vitalSignsHi
   }, [note?.vital_signs]);
 
   const updateField = (field, key, rawValue) => {
-    const value = key === "unit" ? rawValue : (parseFloat(rawValue) || rawValue || "");
+    const parsed = parseFloat(rawValue);
+    const value = key === "unit" ? rawValue : (rawValue === "" ? "" : (!isNaN(parsed) ? parsed : rawValue));
     setLocalVitals(prev => ({
       ...prev,
       [field]: { ...(prev[field] || {}), [key]: value }

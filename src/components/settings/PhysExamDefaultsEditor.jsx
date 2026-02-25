@@ -15,7 +15,7 @@ const SECTIONS = [
   { id: "psychiatric",    label: "Psychiatric",    defaultText: "Appropriate mood and affect, normal thought process" },
 ];
 
-export default function PhysExamDefaultsEditor({ defaults, onChange }) {
+export default function PhysExamDefaultsEditor({ defaults, onChange, onSave }) {
   const [expandedId, setExpandedId] = useState(null);
   const [customSections, setCustomSections] = useState([]);
   const [addingNew, setAddingNew] = useState(false);

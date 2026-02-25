@@ -18,7 +18,7 @@ const SYSTEMS = [
   { id: "integumentary",    label: "Integumentary",    normal: "Denies rashes, skin lesions, pruritus, or changes in moles." },
 ];
 
-export default function ROSDefaultsEditor({ defaults, onChange }) {
+export default function ROSDefaultsEditor({ defaults, onChange, onSave }) {
   const [expandedId, setExpandedId] = useState(null);
   const [customSystems, setCustomSystems] = useState([]);
   const [addingNew, setAddingNew] = useState(false);

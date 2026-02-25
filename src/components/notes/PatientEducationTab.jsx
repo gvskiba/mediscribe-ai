@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2, Download, ArrowLeft } from "lucide-react";
 import TabDataPreview from "./TabDataPreview";
 import ClinicalNotePreviewButton from "./ClinicalNotePreviewButton";
+import PatientEducationGenerator from "./PatientEducationGenerator";
 
 export default function PatientEducationTab({ note, patientEducation, generatingEducation, generatePatientEducation, downloadPatientEducation, isFirstTab, isLastTab, handleBack, handleNext }) {
   return (

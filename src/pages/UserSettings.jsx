@@ -108,6 +108,7 @@ function ToggleSetting({ label, desc, checked, onChange }) {
 export default function UserSettings() {
   const [user, setUser] = useState(null);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [prefs, setPrefs] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState("clinical_defaults");
@@ -125,6 +126,18 @@ export default function UserSettings() {
         if (currentUser?.clinical_settings) {
           setSettings(prev => ({ ...prev, ...currentUser.clinical_settings }));
         }
+        setPrefs({
+          color_theme: "blue",
+          font_size: "medium",
+          compact_mode: false,
+          dashboard_layout: "2x2",
+          clock_face_style: "digital",
+          active_widgets: ["quicklinks", "stats", "recentnotes", "news"],
+          notifications_email: true,
+          notifications_inapp: true,
+          notify_on_save: false,
+          ...(currentUser?.preferences || {}),
+        });
       } catch {
         toast.error("Failed to load settings");
       } finally {

@@ -329,6 +329,28 @@ export default function UserSettings() {
               </div>
             )}
 
+            {/* Medical Specialty */}
+            <div className="border-t border-slate-100 pt-4">
+              <p className="text-sm font-semibold text-slate-800 mb-3">Medical Specialty</p>
+              <p className="text-xs text-slate-500 mb-3">AI will tailor differential diagnoses and treatment recommendations to this specialty</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {MEDICAL_SPECIALTIES.map(spec => (
+                  <button
+                    key={spec.value}
+                    onClick={() => update("medical_specialty", spec.value)}
+                    className={`px-3 py-2.5 rounded-xl border text-left transition-all ${
+                      settings.medical_specialty === spec.value
+                        ? "bg-blue-600 border-blue-600 text-white shadow-sm"
+                        : "bg-white border-slate-200 text-slate-700 hover:border-blue-300"
+                    }`}
+                  >
+                    <p className="text-xs font-semibold">{spec.label}</p>
+                    <p className={`text-xs mt-0.5 ${settings.medical_specialty === spec.value ? "text-blue-100" : "text-slate-400"}`}>{spec.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Autosave */}
             <div className="border-t border-slate-100 pt-4">
               <ToggleSetting

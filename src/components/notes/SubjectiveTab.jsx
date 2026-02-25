@@ -205,7 +205,32 @@ export default function SubjectiveTab({
         </div>
       </SectionCard>
 
-      {/* 3 - Review of Systems */}
+      {/* 3 - History of Present Illness */}
+      <SectionCard
+        label="History of Present Illness"
+        sublabel="· HPI narrative"
+        accentColor="blue"
+        actions={
+          <InlineSectionAI type="history_of_present_illness" note={note} onApply={async (val) => { setLocalHPI(val); await base44.entities.ClinicalNote.update(noteId, { history_of_present_illness: val }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
+        }
+      >
+        <div className="p-4">
+          <AITextCompletion
+            field="history_of_present_illness"
+            value={localHPI}
+            onChange={setLocalHPI}
+            note={note}
+            placeholder="Document the history of present illness..."
+            className="w-full min-h-[120px] text-sm resize-none rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-100 focus:border-blue-400 bg-white"
+            onBlur={async () => {
+              queryClient.setQueryData(["note", noteId], (old) => ({ ...old, history_of_present_illness: localHPI }));
+              await base44.entities.ClinicalNote.update(noteId, { history_of_present_illness: localHPI });
+            }}
+          />
+        </div>
+      </SectionCard>
+
+      {/* 4 - Review of Systems */}
       <SectionCard
         label="Review of Systems"
         sublabel="· systematic symptom review"

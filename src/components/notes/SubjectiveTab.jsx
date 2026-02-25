@@ -56,7 +56,7 @@ function SectionCard({ label, sublabel, badge, actions, children, accentColor = 
 export default function SubjectiveTab({
   note,
   noteId,
-  queryClient,
+  queryClient, 
   templates,
   selectedTemplate,
   setSelectedTemplate,

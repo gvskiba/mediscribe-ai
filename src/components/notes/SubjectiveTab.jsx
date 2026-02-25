@@ -57,7 +57,6 @@ export default function SubjectiveTab({
   note,
   noteId,
   queryClient,
-  
   templates,
   selectedTemplate,
   setSelectedTemplate,

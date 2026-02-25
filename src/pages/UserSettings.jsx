@@ -31,7 +31,7 @@ const SECTIONS = [
   { id: "note_preferences", label: "Note Preferences", icon: FileText, color: "blue" },
   { id: "ai_behavior", label: "AI Behavior", icon: Brain, color: "purple" },
   { id: "appearance", label: "Appearance", icon: Palette, color: "rose" },
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, color: "amber" },
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, color: "blue" },
   { id: "notifications", label: "Notifications", icon: Bell, color: "slate" },
   { id: "account", label: "Account", icon: User, color: "slate" },
 ];

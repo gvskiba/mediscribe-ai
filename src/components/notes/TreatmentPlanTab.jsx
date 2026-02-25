@@ -108,17 +108,31 @@ ${response.data.red_flags?.map(r => `⚠️  ${r}`).join('\n') || "None"}`;
       </div>
       {/* AI shortcut */}
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center justify-between gap-3">
-        <p className="text-xs text-amber-800">Need evidence-based recommendations? Use the AI Treatment panel.</p>
-        <Button
-          size="sm"
-          onClick={() => {
-            // Open AI sidebar to treatment tab via custom event
-            window.dispatchEvent(new CustomEvent('openAISidebar', { detail: 'treatment' }));
-          }}
-          className="bg-amber-600 hover:bg-amber-700 text-white gap-1 text-xs h-6 flex-shrink-0"
-        >
-          <Sparkles className="w-3 h-3" />AI Plan
-        </Button>
+        <div className="flex-1">
+          <p className="text-xs text-amber-800">Generate specialty-specific treatment plan using AI</p>
+          {userSettings?.medical_specialty && (
+            <p className="text-xs text-amber-600 mt-1">Specialty: {userSettings.medical_specialty.replace(/_/g, ' ').toUpperCase()}</p>
+          )}
+        </div>
+        <div className="flex gap-2 flex-shrink-0">
+          <Button
+            size="sm"
+            onClick={generateAITreatmentPlan}
+            disabled={loading || !note.diagnoses?.length}
+            className="bg-amber-600 hover:bg-amber-700 text-white gap-1 text-xs h-6"
+          >
+            {loading ? <><Loader2 className="w-3 h-3 animate-spin" />Generating...</> : <><Sparkles className="w-3 h-3" />Generate Plan</>}
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('openAISidebar', { detail: 'treatment' }));
+            }}
+            className="bg-amber-600 hover:bg-amber-700 text-white gap-1 text-xs h-6 flex-shrink-0"
+          >
+            <Sparkles className="w-3 h-3" />AI Hub
+          </Button>
+        </div>
       </div>
 
       <div className="flex justify-between items-center pt-1 border-t border-slate-100">

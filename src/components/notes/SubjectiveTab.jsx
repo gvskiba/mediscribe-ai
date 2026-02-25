@@ -162,9 +162,13 @@ export default function SubjectiveTab({
       >
         <div className="p-4 space-y-3">
           <Textarea
-            value={note.raw_note || ""}
-            onChange={(e) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, raw_note: e.target.value }))}
-            onBlur={async (e) => { await base44.entities.ClinicalNote.update(noteId, { raw_note: e.target.value }); }}
+            value={rawNoteLocal}
+            onChange={(e) => setRawNoteLocal(e.target.value)}
+            onBlur={async (e) => {
+              const val = e.target.value;
+              queryClient.setQueryData(["note", noteId], (old) => ({ ...old, raw_note: val }));
+              await base44.entities.ClinicalNote.update(noteId, { raw_note: val });
+            }}
             placeholder="Paste raw clinical data, voice transcripts, or unstructured notes here..."
             className="min-h-[140px] text-sm resize-none border-slate-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
           />

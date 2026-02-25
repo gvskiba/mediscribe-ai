@@ -12,6 +12,7 @@ import VitalSignsCard from "./VitalSignsCard";
 import ReviewOfSystemsEditor from "./ReviewOfSystemsEditor";
 import TabDataPreview from "./TabDataPreview";
 import ClinicalNotePreviewButton from "./ClinicalNotePreviewButton";
+import AITextCompletion from "../ai/AITextCompletion";
 
 function SectionCard({ label, sublabel, badge, actions, children, accentColor = "blue", defaultOpen = true }) {
   const [open, setOpen] = React.useState(defaultOpen);

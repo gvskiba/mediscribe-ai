@@ -183,6 +183,7 @@ export default function NoteDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const noteId = urlParams.get("id");
   const queryClient = useQueryClient();
+  const [userSettings, setUserSettings] = useState(null);
   const [patientSummary, setPatientSummary] = useState(null);
   const [generatingSummary, setGeneratingSummary] = useState(false);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);

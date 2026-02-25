@@ -53,7 +53,7 @@ function SectionCard({ label, sublabel, badge, actions, children, accentColor = 
   );
 }
 
-export default function SubjectiveTab({
+export default function SubjectiveTab({ // eslint-disable-line
   note,
   noteId,
   queryClient,

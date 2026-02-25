@@ -180,7 +180,7 @@ export default function SubjectiveTab({
                 </p>
                 <div className="flex gap-2 items-center">
                   {grammarSuggestions.corrected_text && grammarSuggestions.issues?.length > 0 && (
-                    <Button size="sm" onClick={async () => { queryClient.setQueryData(["note", noteId], (old) => ({ ...old, raw_note: grammarSuggestions.corrected_text })); await base44.entities.ClinicalNote.update(noteId, { raw_note: grammarSuggestions.corrected_text }); setGrammarSuggestions(null); toast.success("Applied"); }} className="h-5 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 rounded">Apply All</Button>
+                    <Button size="sm" onClick={async () => { const corrected = grammarSuggestions.corrected_text; setLocalRawNote(corrected); queryClient.setQueryData(["note", noteId], (old) => ({ ...old, raw_note: corrected })); await base44.entities.ClinicalNote.update(noteId, { raw_note: corrected }); setGrammarSuggestions(null); toast.success("Applied"); }} className="h-5 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 rounded">Apply All</Button>
                   )}
                   <button onClick={() => setGrammarSuggestions(null)} className="text-slate-400 hover:text-slate-600"><X className="w-3 h-3" /></button>
                 </div>

@@ -85,9 +85,11 @@ export default function SubjectiveTab({
   handleNext,
 }) {
   const [localRawNote, setLocalRawNote] = useState(note?.raw_note || "");
+  const [localHPI, setLocalHPI] = useState(note?.history_of_present_illness || "");
 
   useEffect(() => {
     setLocalRawNote(note?.raw_note || "");
+    setLocalHPI(note?.history_of_present_illness || "");
   }, [note?.id]); // only sync when note changes, not on every keystroke
 
   return (

@@ -23,14 +23,23 @@ const AggregateSectionText = ({ title, field, value, borderColor, titleColor, on
   // Parse JSON object fields (ROS, physical exam) into readable lines
   const formatStructured = (val) => {
     if (!val) return val;
-    if ((isROS || isPhysExam) && typeof val === 'string' && val.trim().startsWith('{')) {
-      try {
-        const parsed = JSON.parse(val);
-        return Object.entries(parsed)
+    if (isROS || isPhysExam) {
+      // Handle when value is already a plain object
+      if (typeof val === 'object' && !Array.isArray(val)) {
+        return Object.entries(val)
           .map(([key, text]) => `${key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ')}: ${text}`)
           .join('\n');
-      } catch {
-        return val;
+      }
+      // Handle when value is a JSON string
+      if (typeof val === 'string' && val.trim().startsWith('{')) {
+        try {
+          const parsed = JSON.parse(val);
+          return Object.entries(parsed)
+            .map(([key, text]) => `${key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ')}: ${text}`)
+            .join('\n');
+        } catch {
+          return val;
+        }
       }
     }
     return val;

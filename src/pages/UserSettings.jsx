@@ -387,7 +387,121 @@ export default function UserSettings() {
         </SettingSection>
       </motion.div>
 
-      {/* 4. Account */}
+      {/* 4. Appearance */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.175 }}>
+        <SettingSection
+          id="appearance"
+          title="Appearance"
+          subtitle="Color theme, font size, and display density"
+          icon={Palette}
+          color="rose"
+          active={activeSection === "appearance"}
+          onClick={() => toggleSection("appearance")}
+        >
+          {prefs && <div className="space-y-5">
+            <div>
+              <p className="text-sm font-semibold text-slate-800 mb-3">Color Theme</p>
+              <div className="flex gap-3 flex-wrap">
+                {COLOR_THEMES.map(t => (
+                  <button key={t.value} onClick={() => updatePref("color_theme", t.value)}
+                    className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all ${prefs.color_theme === t.value ? "border-slate-700 scale-105 shadow" : "border-transparent hover:border-slate-200"}`}>
+                    <div className="w-7 h-7 rounded-full shadow" style={{ background: t.primary }} />
+                    <span className="text-xs font-medium text-slate-700">{t.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="border-t border-slate-100 pt-4">
+              <p className="text-sm font-semibold text-slate-800 mb-3">Font Size</p>
+              <div className="flex gap-2">
+                {["small", "medium", "large"].map(s => (
+                  <button key={s} onClick={() => updatePref("font_size", s)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${prefs.font_size === s ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="border-t border-slate-100 pt-4">
+              <ToggleSetting label="Compact Mode" desc="Reduce padding and spacing throughout the app" checked={prefs.compact_mode} onChange={v => updatePref("compact_mode", v)} />
+            </div>
+          </div>}
+        </SettingSection>
+      </motion.div>
+
+      {/* 5. Dashboard */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
+        <SettingSection
+          id="dashboard"
+          title="Dashboard"
+          subtitle="Widgets, layout, and clock style"
+          icon={LayoutDashboard}
+          color="blue"
+          active={activeSection === "dashboard"}
+          onClick={() => toggleSection("dashboard")}
+        >
+          {prefs && <div className="space-y-5">
+            <div>
+              <p className="text-sm font-semibold text-slate-800 mb-3">Dashboard Layout</p>
+              <div className="flex gap-2 flex-wrap">
+                {[{v:"2x2",l:"2×2"},{v:"3x3",l:"3×3"},{v:"4x4",l:"4×4"},{v:"6x6",l:"6×6"},{v:"horizontal",l:"Horizontal"}].map(o => (
+                  <button key={o.v} onClick={() => updatePref("dashboard_layout", o.v)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${prefs.dashboard_layout === o.v ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>
+                    {o.l}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="border-t border-slate-100 pt-4">
+              <p className="text-sm font-semibold text-slate-800 mb-3">Clock Style</p>
+              <div className="flex gap-2 flex-wrap">
+                {["digital","analog","minimal","binary"].map(s => (
+                  <button key={s} onClick={() => updatePref("clock_face_style", s)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${prefs.clock_face_style === s ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="border-t border-slate-100 pt-4">
+              <p className="text-sm font-semibold text-slate-800 mb-3">Visible Widgets</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[{id:"quicklinks",l:"Quick Links"},{id:"stats",l:"Stats Overview"},{id:"recentnotes",l:"Recent Notes"},{id:"news",l:"Medical News"},{id:"guidelines",l:"Guidelines"},{id:"tasks",l:"Task List"},{id:"calendar",l:"Calendar"},{id:"progress",l:"Progress Tracker"}].map(w => {
+                  const active = (prefs.active_widgets || []).includes(w.id);
+                  return (
+                    <button key={w.id} onClick={() => { const cur = prefs.active_widgets || []; updatePref("active_widgets", active ? cur.filter(x => x !== w.id) : [...cur, w.id]); }}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-all ${active ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${active ? "bg-blue-500" : "bg-slate-300"}`} />
+                      {w.l}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>}
+        </SettingSection>
+      </motion.div>
+
+      {/* 6. Notifications */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.19 }}>
+        <SettingSection
+          id="notifications"
+          title="Notifications"
+          subtitle="Control how and when you receive alerts"
+          icon={Bell}
+          color="slate"
+          active={activeSection === "notifications"}
+          onClick={() => toggleSection("notifications")}
+        >
+          {prefs && <div className="divide-y divide-slate-100">
+            <ToggleSetting label="Email Notifications" desc="Receive updates and reminders by email" checked={prefs.notifications_email} onChange={v => updatePref("notifications_email", v)} />
+            <ToggleSetting label="In-App Notifications" desc="Show notification banners inside the app" checked={prefs.notifications_inapp} onChange={v => updatePref("notifications_inapp", v)} />
+            <ToggleSetting label="Save Confirmation" desc="Show a toast message whenever a note is saved" checked={prefs.notify_on_save} onChange={v => updatePref("notify_on_save", v)} />
+          </div>}
+        </SettingSection>
+      </motion.div>
+
+      {/* 7. Account */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
         <SettingSection
           id="account"

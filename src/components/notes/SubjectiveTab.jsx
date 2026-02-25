@@ -228,7 +228,7 @@ export default function SubjectiveTab({
           <ReviewOfSystemsEditor
             rosData={note.review_of_systems}
             note={note}
-            onUpdate={async (rosData) => { await base44.entities.ClinicalNote.update(noteId, { review_of_systems: rosData }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }}
+            onUpdate={async (rosData) => { const val = typeof rosData === 'object' ? JSON.stringify(rosData) : rosData; await base44.entities.ClinicalNote.update(noteId, { review_of_systems: val }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }}
             onAddToNote={async (rosText) => { await base44.entities.ClinicalNote.update(noteId, { review_of_systems: rosText }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); toast.success("ROS saved"); }}
           />
         </div>

@@ -110,7 +110,6 @@ const TAB_GROUPS = [
     label: 'Objective',
     color: 'emerald',
     tabs: [
-      { id: 'vital_signs', label: 'Vital Signs', icon: Activity },
       { id: 'physical_exam', label: 'Physical Exam', icon: Activity },
     ]
   },

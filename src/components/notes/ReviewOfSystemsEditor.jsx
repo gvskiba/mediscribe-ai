@@ -30,6 +30,10 @@ const DOT_COLOR = {
 };
 
 function initSections(rosData) {
+  // Handle JSON string stored from previous stringify
+  if (rosData && typeof rosData === "string") {
+    try { rosData = JSON.parse(rosData); } catch { /* not JSON, ignore */ }
+  }
   if (rosData && typeof rosData === "object" && !Array.isArray(rosData)) {
     return SYSTEMS.map(s => {
       const val = rosData[s.id];

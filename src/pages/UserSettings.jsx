@@ -100,7 +100,12 @@ function ToggleSetting({ label, desc, checked, onChange }) {
         <p className="text-sm font-medium text-slate-800">{label}</p>
         {desc && <p className="text-xs text-slate-500 mt-0.5">{desc}</p>}
       </div>
-      <Switch checked={checked} onCheckedChange={onChange} />
+      <div className="flex items-center gap-2">
+        <span className={`text-xs font-semibold ${checked ? 'text-green-600' : 'text-slate-400'}`}>
+          {checked ? 'ON' : 'OFF'}
+        </span>
+        <Switch checked={checked} onCheckedChange={onChange} />
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,10 +10,48 @@ import TabPageLayout from "./TabPageLayout";
 export default function DifferentialTab({
   note, noteId, queryClient,
   templates, selectedTemplate, setSelectedTemplate,
-  loadingDifferential, generateDifferentialDiagnosis,
-  differentialDiagnosis,
+  loadingDifferential, differentialDiagnosis,
   isFirstTab, isLastTab, handleBack, handleNext,
 }) {
+  const [loading, setLoading] = useState(false);
+  const [userSettings, setUserSettings] = useState(null);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      const settings = await base44.auth.me();
+      if (settings) {
+        setUserSettings(settings);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  const generateDifferentialDiagnosis = async () => {
+    if (!note?.chief_complaint) return;
+    setLoading(true);
+    try {
+      const response = await base44.functions.invoke('generateSpecialtyAwareDifferential', {
+        chiefComplaint: note.chief_complaint,
+        hpi: note.history_of_present_illness || "",
+        physicalExam: note.physical_exam || "",
+        assessment: note.assessment || "",
+        specialty: userSettings?.medical_specialty || "internal_medicine"
+      });
+      
+      if (response.data.differentials) {
+        queryClient.setQueryData(["note", noteId], old => ({ 
+          ...old, 
+          differentials: response.data.differentials 
+        }));
+        toast.success("Differentials generated for " + (userSettings?.medical_specialty || "Internal Medicine"));
+      }
+    } catch (error) {
+      console.error("Failed to generate differential diagnosis:", error);
+      toast.error("Failed to generate differential diagnoses");
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <TabPageLayout
       title="Differential Diagnosis"

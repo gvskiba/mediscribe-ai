@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Settings, Plus, X, Check, ArrowLeft, Loader2, Sparkles } from "lucide-react";
@@ -14,6 +14,63 @@ import ClinicalNotePreviewButton from "./ClinicalNotePreviewButton";
 
 export default function TreatmentPlanTab({ note, noteId, queryClient, isFirstTab, isLastTab, handleBack, handleNext }) {
   const [editOpen, setEditOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [userSettings, setUserSettings] = useState(null);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      const settings = await base44.auth.me();
+      if (settings) {
+        setUserSettings(settings);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  const generateAITreatmentPlan = async () => {
+    if (!note?.diagnoses || note.diagnoses.length === 0) {
+      toast.error("Add diagnoses first to generate treatment plan");
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await base44.functions.invoke('generateSpecialtyAwareTreatmentPlan', {
+        diagnoses: note.diagnoses,
+        assessment: note.assessment || "",
+        specialty: userSettings?.medical_specialty || "internal_medicine"
+      });
+      
+      if (response.data) {
+        const planText = `TREATMENT PLAN (${userSettings?.medical_specialty?.replace(/_/g, " ").toUpperCase() || "INTERNAL MEDICINE"})
+
+IMMEDIATE ACTIONS:
+${response.data.immediate_actions?.map(a => `• ${a}`).join('\n') || "None"}
+
+MEDICATIONS:
+${response.data.medications?.map(m => `• ${m}`).join('\n') || "None"}
+
+INTERVENTIONS:
+${response.data.interventions?.map(i => `• ${i}`).join('\n') || "None"}
+
+FOLLOW-UP PLAN:
+${response.data.follow_up?.map(f => `• ${f}`).join('\n') || "None"}
+
+PATIENT EDUCATION:
+${response.data.education?.map(e => `• ${e}`).join('\n') || "None"}
+
+RED FLAGS:
+${response.data.red_flags?.map(r => `⚠️  ${r}`).join('\n') || "None"}`;
+
+        queryClient.setQueryData(["note", noteId], old => ({ ...old, plan: planText }));
+        toast.success("Treatment plan generated for " + (userSettings?.medical_specialty?.replace(/_/g, " ") || "Internal Medicine"));
+      }
+    } catch (error) {
+      console.error("Failed to generate treatment plan:", error);
+      toast.error("Failed to generate treatment plan");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">

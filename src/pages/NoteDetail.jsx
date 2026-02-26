@@ -1760,7 +1760,7 @@ Generated: ${new Date().toLocaleString()}
                                return (
                                  <div key={i} className="group flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-all">
                                    {m ? <><Badge className="bg-blue-100 text-blue-700 text-xs font-mono px-1.5">{m[1]}</Badge><span className="text-xs text-slate-800 flex-1">{m[2]}</span></> : <span className="text-xs text-slate-800 flex-1">{diag}</span>}
-                                   <button onClick={async () => { const u = note.diagnoses.filter((_,j) => j !== i); await base44.entities.ClinicalNote.update(noteId, { diagnoses: u }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); toast.success("Removed"); }} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 p-0.5"><X className="w-3 h-3" /></button>
+                                   <button onClick={async () => { const u = note.diagnoses.filter((_,j) => j !== i); await base44.entities.ClinicalNote.update(noteId, { diagnoses: u }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); toast.success("Removed"); }} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 p-0.5"><XCircle className="w-3 h-3" /></button>
                                  </div>
                                );
                              })}

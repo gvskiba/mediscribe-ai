@@ -23,6 +23,38 @@ const ALL_SYSTEMS = [
   { id: "integumentary",    label: "Integumentary",    icon: Shield,      color: "green",  normal: "Denies rashes, skin lesions, pruritus, or changes in moles." },
 ];
 
+function initSectionsWithDefaults(rosData, rosDefaults) {
+  // Parse stored JSON if needed
+  let parsed = rosData;
+  if (parsed && typeof parsed === "string") {
+    try { parsed = JSON.parse(parsed); } catch { /* not JSON */ }
+  }
+
+  // If we have existing rosData (already saved on the note), restore from it
+  if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+    const storedIds = Object.keys(parsed).filter(k => !k.startsWith("_hidden_"));
+    return ALL_SYSTEMS
+      .filter(s => storedIds.includes(s.id))
+      .map(s => {
+        const val = parsed[s.id];
+        const normalText = (rosDefaults?.[s.id]) || s.normal;
+        const status = val === normalText || val === s.normal ? "normal" : val ? "abnormal" : "normal";
+        return { ...s, normal: normalText, status, notes: val || normalText };
+      });
+  }
+
+  // No saved note data — use settings defaults to determine which systems to show
+  if (rosDefaults) {
+    const hiddenIds = Object.keys(rosDefaults).filter(k => k.startsWith("_hidden_")).map(k => k.replace("_hidden_", ""));
+    return ALL_SYSTEMS
+      .filter(s => !hiddenIds.includes(s.id))
+      .map(s => ({ ...s, normal: rosDefaults[s.id] || s.normal, status: "normal", notes: rosDefaults[s.id] || s.normal }));
+  }
+
+  // Fallback: all systems
+  return ALL_SYSTEMS.map(s => ({ ...s, status: "normal", notes: s.normal }));
+}
+
 function initSections(rosData, relevantIds = null) {
   // Parse stored JSON if needed
   if (rosData && typeof rosData === "string") {

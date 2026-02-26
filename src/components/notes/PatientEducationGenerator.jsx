@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles, Download, X } from "lucide-react";
+import { Loader2, Sparkles, Download, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 import { jsPDF } from "jspdf";
@@ -290,7 +290,7 @@ Keep language at 5th-grade reading level. Use analogies and comparisons to every
                 variant="outline"
                 className="text-xs h-6 px-2"
               >
-                <X className="w-3 h-3" />Clear
+                <XCircle className="w-3 h-3" />Clear
               </Button>
             </div>
           </div>

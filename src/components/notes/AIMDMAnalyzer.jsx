@@ -331,7 +331,7 @@ Be specific, evidence-based, and demonstrate thorough clinical reasoning. Includ
             </p>
             <Button
               onClick={generateMDM}
-              disabled={generating || !note.chief_complaint}
+              disabled={generating || (!note.chief_complaint && !note.assessment && !note.diagnoses?.length)}
               className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg gap-2"
             >
               {generating ? (

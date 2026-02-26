@@ -7,7 +7,7 @@ import {
   Clock,
   Plus,
   Loader2,
-  X,
+  XCircle,
   ChevronDown,
   ChevronUp,
   Brain,

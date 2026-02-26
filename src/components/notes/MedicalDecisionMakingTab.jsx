@@ -38,15 +38,7 @@ export default function MedicalDecisionMakingTab({ note, onUpdateNote, noteId })
   const [newSectionContent, setNewSectionContent] = useState("");
   const [showAddSection, setShowAddSection] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [editingSection, setEditingSection] = useState(null);
-  const [editedContent, setEditedContent] = useState({});
   const [userSettings, setUserSettings] = useState(null);
-  const [keyFindings, setKeyFindings] = useState(null);
-  const [drugInteractions, setDrugInteractions] = useState(null);
-  const [criticalFlags, setCriticalFlags] = useState(null);
-  const [loadingFindings, setLoadingFindings] = useState(false);
-  const [loadingInteractions, setLoadingInteractions] = useState(false);
-  const [loadingFlags, setLoadingFlags] = useState(false);
 
   useEffect(() => {
     const loadSettings = async () => {

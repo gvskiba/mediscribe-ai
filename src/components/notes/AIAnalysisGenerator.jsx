@@ -140,7 +140,12 @@ Return:
     };
 
     try {
-      await base44.entities.ClinicalNote.update(noteId, { mdm: JSON.stringify([newSection]) });
+      // Get existing MDM sections and append
+      const existingMDM = note.mdm ? (typeof note.mdm === "string" ? JSON.parse(note.mdm) : note.mdm) : [];
+      const mdmArray = Array.isArray(existingMDM) ? existingMDM : [];
+      const updatedMDM = [...mdmArray, newSection];
+      
+      await base44.entities.ClinicalNote.update(noteId, { mdm: JSON.stringify(updatedMDM) });
       toast.success("AI analysis added to MDM");
       setAiAnalysis(null);
       setAiRanking(null);

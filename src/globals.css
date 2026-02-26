@@ -1,4 +1,4 @@
-
+css
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,15 +8,14 @@
     @apply border-border;
   }
   body {
-    background-color: #0f0f1a;
-    color: #e2e8f0;
+    @apply bg-white text-slate-900;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   h1, h2, h3, h4, h5, h6 {
-    color: #f1f5f9;
+    @apply text-slate-900;
   }
   p {
-    color: #cbd5e1;
+    @apply text-slate-700;
   }
 }
 

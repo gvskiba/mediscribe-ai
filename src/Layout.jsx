@@ -55,122 +55,53 @@ export default function Layout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#0f0f1a' }}>
+    <div className="min-h-screen bg-white flex flex-col">
       <style>{`
         :root {
-          --primary: #6d28d9;
-          --primary-dark: #5b21b6;
-          --primary-light: #7c3aed;
+          --primary: #2563eb;
+          --primary-dark: #1d4ed8;
+          --primary-light: #3b82f6;
           --accent: #0891b2;
-          --bg-main: #0f0f1a;
-          --bg-secondary: #1a1a2e;
-          --card-bg: #16213e;
-          --border-subtle: rgba(139, 92, 246, 0.15);
+          --bg-main: #ffffff;
+          --bg-secondary: #f8fafc;
+          --sidebar-bg: linear-gradient(165deg, #f8fafc 0%, #ffffff 100%);
+          --card-bg: #ffffff;
+          --border-subtle: rgba(15, 23, 42, 0.08);
         }
         body { 
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-          background: #0f0f1a;
-          color: #e2e8f0;
+          background: var(--bg-main);
+          color: #1f2937;
         }
         .nav-link { 
           transition: all 0.2s ease;
-          color: #94a3b8;
         }
         .nav-link:hover { 
-          background: rgba(139, 92, 246, 0.15);
-          color: #a78bfa;
+          background: rgba(59, 130, 246, 0.08);
+          color: #2563eb;
         }
         .nav-link.active { 
-          background: rgba(139, 92, 246, 0.2);
-          color: #c4b5fd;
+          background: rgba(59, 130, 246, 0.1);
+          color: #2563eb;
           font-weight: 600;
-          border-bottom: 2px solid #7c3aed;
+          border-bottom: 2px solid #2563eb;
         }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-        /* Global dark theme overrides */
-        main, .bg-white { background-color: #0f0f1a !important; }
-        .bg-slate-50 { background-color: #1a1a2e !important; }
-        .bg-slate-100 { background-color: #1e1e35 !important; }
-        .bg-gray-50 { background-color: #1a1a2e !important; }
-        .bg-gray-100 { background-color: #1e1e35 !important; }
-        .text-slate-900, .text-gray-900 { color: #f1f5f9 !important; }
-        .text-slate-800, .text-gray-800 { color: #e2e8f0 !important; }
-        .text-slate-700, .text-gray-700 { color: #cbd5e1 !important; }
-        .text-slate-600, .text-gray-600 { color: #94a3b8 !important; }
-        .text-slate-500, .text-gray-500 { color: #64748b !important; }
-        .border-slate-200, .border-gray-200 { border-color: rgba(139,92,246,0.2) !important; }
-        .border-slate-300, .border-gray-300 { border-color: rgba(139,92,246,0.25) !important; }
-        /* Card styling */
-        .rounded-xl, .rounded-2xl, .rounded-lg {
-          background-color: #16213e;
-          border-color: rgba(139,92,246,0.2);
-        }
-        /* Dialog / Modal / Popover dark */
-        [role="dialog"], [data-radix-popper-content-wrapper] > div, .dialog-content {
-          background-color: #16213e !important;
-          border-color: rgba(139,92,246,0.25) !important;
-          color: #e2e8f0 !important;
-        }
-        /* Badge overrides */
-        .bg-green-100 { background-color: rgba(16,185,129,0.15) !important; }
-        .text-green-800 { color: #34d399 !important; }
-        .bg-red-100 { background-color: rgba(239,68,68,0.15) !important; }
-        .text-red-800 { color: #f87171 !important; }
-        .bg-yellow-100 { background-color: rgba(234,179,8,0.15) !important; }
-        .text-yellow-800 { color: #fbbf24 !important; }
-        .bg-purple-100, .bg-violet-100 { background-color: rgba(139,92,246,0.15) !important; }
-        .text-purple-800, .text-violet-800 { color: #c4b5fd !important; }
-        .bg-blue-100 { background-color: rgba(99,102,241,0.15) !important; }
-        .text-blue-800 { color: #a5b4fc !important; }
-        /* Table rows */
-        tr:hover { background-color: rgba(139,92,246,0.07) !important; }
-        thead tr { background-color: #1a1a2e !important; }
-        th { color: #94a3b8 !important; border-color: rgba(139,92,246,0.2) !important; }
-        td { border-color: rgba(139,92,246,0.1) !important; }
-        /* Scrollbar styling */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #0f0f1a; }
-        ::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.4); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(139,92,246,0.6); }
-        /* Input fields */
-        input, textarea, select {
-          background-color: #1e1e35 !important;
-          color: #e2e8f0 !important;
-          border-color: rgba(139,92,246,0.3) !important;
-        }
-        input::placeholder, textarea::placeholder {
-          color: #475569 !important;
-        }
-        input:focus, textarea:focus, select:focus {
-          border-color: #7c3aed !important;
-          box-shadow: 0 0 0 2px rgba(124,58,237,0.2) !important;
-        }
-        /* Button pop color */
-        .bg-blue-600 { background-color: #7c3aed !important; }
-        .bg-blue-700, .hover\\:bg-blue-700:hover { background-color: #6d28d9 !important; }
-        .bg-indigo-600 { background-color: #4f46e5 !important; }
-        .text-blue-600 { color: #a78bfa !important; }
-        .border-blue-500 { border-color: #7c3aed !important; }
-        /* Gradient headers */
-        header, .header-gradient {
-          background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%) !important;
-          border-bottom-color: rgba(139,92,246,0.3) !important;
-        }
       `}</style>
 
       {/* Desktop Header */}
-      <header className="hidden lg:block fixed top-0 left-0 right-0 border-b z-40" style={{ background: 'linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%)', borderBottomColor: 'rgba(139,92,246,0.3)' }}>
+      <header className="hidden lg:block fixed top-0 left-0 right-0 bg-white border-b border-slate-200 z-40" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)' }}>
         <div className="px-6 py-4">
           <div className="flex items-center justify-between gap-6">
             {/* Logo */}
             <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 via-purple-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-purple-900/50">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-200">
                 <Stethoscope className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-base font-bold tracking-tight text-white">Notrya AI</h1>
-                <p className="text-xs text-violet-300">Clinical AI Assistant</p>
+                <h1 className="text-base font-bold tracking-tight text-slate-900">Notrya AI</h1>
+                <p className="text-xs text-slate-600">Clinical AI Assistant</p>
               </div>
             </div>
 
@@ -187,8 +118,8 @@ export default function Layout({ children, currentPageName }) {
                   to={createPageUrl(item.page)}
                   className={`nav-link group flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                     currentPageName === item.page ?
-                    "active text-violet-300 bg-violet-900/30" :
-                    "text-slate-400 hover:text-slate-200"
+                    "active text-blue-600 bg-blue-50" :
+                    "text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   <item.icon className="w-5 h-5" />
@@ -210,13 +141,13 @@ export default function Layout({ children, currentPageName }) {
                   });
                   window.location.href = createPageUrl(`NoteDetail?id=${newNote.id}`);
                 }}
-                className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-lg px-4 py-2 font-semibold text-sm transition-all shadow-lg shadow-violet-900/40 flex items-center gap-2">
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg px-4 py-2 font-semibold text-sm transition-all shadow-sm flex items-center gap-2">
                 <FileText className="w-4 h-4" />
                 New Note
               </button>
               <button
                 onClick={() => base44.auth.logout()}
-                className="text-slate-400 hover:text-violet-300 hover:bg-violet-900/30 rounded-lg p-2 transition-all"
+                className="text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg p-2 transition-all"
                 title="Sign Out"
               >
                 <LogOut className="w-5 h-5" />
@@ -227,13 +158,13 @@ export default function Layout({ children, currentPageName }) {
       </header>
 
       {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 border-b px-4 py-3 z-40 space-y-3" style={{ background: 'linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%)', borderBottomColor: 'rgba(139,92,246,0.3)' }}>
+      <div className="lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-slate-200 text-slate-900 px-4 py-3 z-40 space-y-3" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 via-purple-600 to-indigo-700 flex items-center justify-center flex-shrink-0 shadow-lg shadow-purple-900/50">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-200">
               <Stethoscope className="w-4 h-4 text-white" />
             </div>
-            <span className="font-bold text-sm truncate text-white">Notrya AI</span>
+            <span className="font-bold text-sm truncate">Notrya AI</span>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -245,10 +176,10 @@ export default function Layout({ children, currentPageName }) {
                 });
                 window.location.href = createPageUrl(`NoteDetail?id=${newNote.id}`);
               }}
-              className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 rounded-lg p-2 transition-all shadow-sm text-white">
+              className="bg-blue-600 hover:bg-blue-700 rounded-lg p-2 transition-all shadow-sm text-white">
               <FileText className="w-4 h-4" />
             </button>
-            <button onClick={() => setMobileOpen(!mobileOpen)} className="text-slate-300 hover:bg-violet-900/30 rounded-lg p-1 transition-colors">
+            <button onClick={() => setMobileOpen(!mobileOpen)} className="hover:bg-slate-100 rounded-lg p-1 transition-colors">
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
@@ -260,7 +191,7 @@ export default function Layout({ children, currentPageName }) {
       {mobileOpen &&
       <div className="lg:hidden fixed inset-0 z-30 bg-black/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)}>
           <div
-          className="absolute left-0 top-20 bottom-0 w-64 p-4 space-y-2 border-r overflow-y-auto" style={{ background: '#1a1a2e', borderColor: 'rgba(139,92,246,0.3)' }}
+          className="absolute left-0 top-20 bottom-0 w-64 bg-white text-slate-900 p-4 space-y-2 border-r border-slate-200 overflow-y-auto"
           onClick={(e) => e.stopPropagation()}>
             {navSections.flatMap(section => section.items).map((item) => (
               <Link
@@ -269,8 +200,8 @@ export default function Layout({ children, currentPageName }) {
                 onClick={() => setMobileOpen(false)}
                 className={`nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium ${
                   currentPageName === item.page ?
-                  "active text-violet-300 bg-violet-900/30" :
-                  "text-slate-400 hover:text-slate-200 hover:bg-violet-900/20"
+                  "active text-blue-600 bg-blue-50" :
+                  "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                 }`}
               >
                 <item.icon className="w-5 h-5" />
@@ -279,7 +210,7 @@ export default function Layout({ children, currentPageName }) {
                 ))}
                 <button
                 onClick={() => base44.auth.logout()}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-violet-900/20 w-full"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 w-full"
                 >
                 <LogOut className="w-5 h-5" />
                 Sign Out
@@ -289,7 +220,7 @@ export default function Layout({ children, currentPageName }) {
       }
 
       {/* Main Content */}
-      <main className="pt-32 lg:pt-20 flex-1 min-h-screen" style={{ background: '#0f0f1a' }}>
+      <main className="bg-blue-100 pt-32 lg:pt-20 flex-1 min-h-screen">
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
           {children}
         </div>

@@ -1447,7 +1447,7 @@ Generated: ${new Date().toLocaleString()}
       )}
 
       {/* Patient Header Card */}
-      <PatientHeaderCard note={note} noteId={noteId} queryClient={queryClient} setLastSaved={setLastSaved} />
+      <PatientHeaderCard note={note} noteId={noteId} queryClient={queryClient} setLastSaved={setLastSaved} onNavigate={setActiveTab} />
 
 
 

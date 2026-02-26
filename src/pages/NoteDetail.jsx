@@ -88,6 +88,7 @@ import AutosaveToggle from "../components/notes/AutosaveToggle";
 import VitalSignsHistory from "../components/notes/VitalSignsHistory";
 import AIStructuredNotePreview from "../components/notes/AIStructuredNotePreview";
 import SubjectiveTab from "../components/notes/SubjectiveTab";
+import PatientHeaderCard from "../components/notes/PatientHeaderCard";
 import VitalSignsTab from "../components/notes/VitalSignsTab";
 import DifferentialTab from "../components/notes/DifferentialTab";
 import LabsImagingTab from "../components/notes/LabsImagingTab";

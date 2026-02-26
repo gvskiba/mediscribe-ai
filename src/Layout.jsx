@@ -221,7 +221,7 @@ export default function Layout({ children, currentPageName }) {
               className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 rounded-lg p-2 transition-all shadow-sm text-white">
               <FileText className="w-4 h-4" />
             </button>
-            <button onClick={() => setMobileOpen(!mobileOpen)} className="hover:bg-slate-100 rounded-lg p-1 transition-colors">
+            <button onClick={() => setMobileOpen(!mobileOpen)} className="text-slate-300 hover:bg-violet-900/30 rounded-lg p-1 transition-colors">
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
@@ -252,7 +252,7 @@ export default function Layout({ children, currentPageName }) {
                 ))}
                 <button
                 onClick={() => base44.auth.logout()}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-violet-900/20 w-full"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 w-full"
                 >
                 <LogOut className="w-5 h-5" />
                 Sign Out

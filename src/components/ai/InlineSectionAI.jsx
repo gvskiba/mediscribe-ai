@@ -29,18 +29,18 @@ const SECTION_CONFIGS = {
     actions: [
       {
         id: "generate",
-        label: "Generate OLDCARTS HPI",
-        prompt: (note) => `Write a comprehensive HPI using OLDCARTS (Onset, Location, Duration, Character, Alleviating/Aggravating, Radiation, Timing, Severity) from:\nCC: ${note.chief_complaint || "N/A"}\nRaw Notes: ${note.raw_note || "N/A"}\nExisting HPI: ${note.history_of_present_illness || "N/A"}`,
+        label: "Generate Brief Paragraph",
+        prompt: (note) => `Write a brief 2-3 sentence HPI as a concise paragraph from:\nCC: ${note.chief_complaint || "N/A"}\nRaw Notes: ${note.raw_note || "N/A"}\nExisting HPI: ${note.history_of_present_illness || "N/A"}`,
       },
       {
         id: "expand",
         label: "Expand Existing",
-        prompt: (note) => `Expand and improve this HPI with more clinical detail and OLDCARTS elements:\n${note.history_of_present_illness || note.raw_note || "N/A"}`,
+        prompt: (note) => `Expand this HPI into a more detailed paragraph while keeping it brief and clinical:\n${note.history_of_present_illness || note.raw_note || "N/A"}`,
       },
       {
         id: "summarize",
         label: "Clinical Summary",
-        prompt: (note) => `Write a concise, well-structured clinical HPI summary in 3-5 sentences for this patient:\nCC: ${note.chief_complaint || "N/A"}\nHPI: ${note.history_of_present_illness || note.raw_note || "N/A"}\nInclude onset, key symptoms, severity, and relevant context.`,
+        prompt: (note) => `Write a brief, well-structured clinical HPI paragraph in 3-5 sentences for this patient:\nCC: ${note.chief_complaint || "N/A"}\nHPI: ${note.history_of_present_illness || note.raw_note || "N/A"}\nInclude onset, key symptoms, severity, and relevant context.`,
       }
     ]
   },
@@ -50,18 +50,18 @@ const SECTION_CONFIGS = {
     actions: [
       {
         id: "generate",
-        label: "Generate OLDCARTS HPI",
-        prompt: (note) => `Write a comprehensive HPI using OLDCARTS (Onset, Location, Duration, Character, Alleviating/Aggravating, Radiation, Timing, Severity) from:\nCC: ${note.chief_complaint || "N/A"}\nRaw Notes: ${note.raw_note || "N/A"}\nExisting HPI: ${note.history_of_present_illness || "N/A"}`,
+        label: "Generate Brief Paragraph",
+        prompt: (note) => `Write a brief 2-3 sentence HPI as a concise paragraph from:\nCC: ${note.chief_complaint || "N/A"}\nRaw Notes: ${note.raw_note || "N/A"}\nExisting HPI: ${note.history_of_present_illness || "N/A"}`,
       },
       {
         id: "expand",
         label: "Expand Existing",
-        prompt: (note) => `Expand and improve this HPI with more clinical detail and OLDCARTS elements:\n${note.history_of_present_illness || note.raw_note || "N/A"}`,
+        prompt: (note) => `Expand this HPI into a more detailed paragraph while keeping it brief and clinical:\n${note.history_of_present_illness || note.raw_note || "N/A"}`,
       },
       {
         id: "summarize",
         label: "Clinical Summary",
-        prompt: (note) => `Write a concise, well-structured clinical HPI summary in 3-5 sentences for this patient:\nCC: ${note.chief_complaint || "N/A"}\nHPI: ${note.history_of_present_illness || note.raw_note || "N/A"}\nInclude onset, key symptoms, severity, and relevant context.`,
+        prompt: (note) => `Write a brief, well-structured clinical HPI paragraph in 3-5 sentences for this patient:\nCC: ${note.chief_complaint || "N/A"}\nHPI: ${note.history_of_present_illness || note.raw_note || "N/A"}\nInclude onset, key symptoms, severity, and relevant context.`,
       }
     ]
   },

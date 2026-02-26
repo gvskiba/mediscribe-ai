@@ -233,7 +233,7 @@ export default function Layout({ children, currentPageName }) {
       {mobileOpen &&
       <div className="lg:hidden fixed inset-0 z-30 bg-black/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)}>
           <div
-          className="absolute left-0 top-20 bottom-0 w-64 bg-white text-slate-900 p-4 space-y-2 border-r border-slate-200 overflow-y-auto"
+          className="absolute left-0 top-20 bottom-0 w-64 p-4 space-y-2 border-r overflow-y-auto" style={{ background: '#1a1a2e', borderColor: 'rgba(139,92,246,0.3)' }}
           onClick={(e) => e.stopPropagation()}>
             {navSections.flatMap(section => section.items).map((item) => (
               <Link

@@ -138,7 +138,7 @@ export default function Layout({ children, currentPageName }) {
           <div className="flex items-center justify-between gap-6">
             {/* Logo */}
             <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-200">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 via-purple-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-purple-900/50">
                 <Stethoscope className="w-5 h-5 text-white" />
               </div>
               <div>

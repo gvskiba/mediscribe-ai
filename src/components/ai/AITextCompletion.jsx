@@ -211,7 +211,7 @@ export default function AITextCompletion({
       {/* Real textarea */}
       <textarea
         ref={textareaRef}
-        value={suggestion ? value + suggestion : value}
+        value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         onBlur={handleBlur}
@@ -219,22 +219,13 @@ export default function AITextCompletion({
         disabled={disabled}
         rows={minRows}
         className={className}
-        style={suggestion ? {
-          background: `linear-gradient(transparent, transparent)`,
-        } : undefined}
       />
 
-      {/* Ghost-text overlay using a positioned div matching textarea */}
+      {/* Ghost suggestion shown as a preview block below */}
       {suggestion && (
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 pointer-events-none overflow-hidden rounded-md"
-          style={{ padding: "0.5rem 0.75rem", zIndex: 3 }}
-        >
-          <span
-            className="whitespace-pre-wrap break-words text-sm"
-            style={{ color: "transparent" }}
-          >{value}</span><span className="text-slate-400 opacity-80 text-sm whitespace-pre-wrap">{suggestion}</span>
+        <div className="mt-1 px-3 py-2 rounded-md border border-dashed border-indigo-200 bg-indigo-50 text-sm text-slate-500 leading-relaxed">
+          <span className="text-indigo-400 font-medium text-xs mr-1.5">↳ AI suggestion:</span>
+          <span className="italic">{suggestion}</span>
         </div>
       )}
 

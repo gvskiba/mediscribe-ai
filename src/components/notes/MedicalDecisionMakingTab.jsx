@@ -133,6 +133,159 @@ Return:
     }
   };
 
+  // Summarize key findings from HPI and ROS
+  const summarizeKeyFindings = async () => {
+    if (!note.history_of_present_illness && !note.review_of_systems) {
+      toast.error("Add HPI or ROS to summarize findings");
+      return;
+    }
+
+    setLoadingFindings(true);
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `Based on the following clinical information, summarize the key findings that are most clinically significant:
+
+History of Present Illness: ${note.history_of_present_illness || "Not documented"}
+
+Review of Systems: ${note.review_of_systems ? (typeof note.review_of_systems === "string" ? note.review_of_systems : JSON.stringify(note.review_of_systems)) : "Not documented"}
+
+Provide a concise summary highlighting:
+1. Primary symptom complex
+2. Associated symptoms of concern
+3. Red flags or warning signs
+4. Timeline and progression
+5. Clinical significance`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            primary_findings: { type: "array", items: { type: "string" } },
+            associated_symptoms: { type: "array", items: { type: "string" } },
+            red_flags: { type: "array", items: { type: "string" } },
+            clinical_significance: { type: "string" },
+          },
+        },
+      });
+      setKeyFindings(res);
+      toast.success("Key findings summarized");
+    } catch (error) {
+      console.error("Failed to summarize findings:", error);
+      toast.error("Failed to summarize findings");
+    } finally {
+      setLoadingFindings(false);
+    }
+  };
+
+  // Check for drug interactions
+  const checkDrugInteractions = async () => {
+    if (!note.medications?.length) {
+      toast.error("Add medications to check for interactions");
+      return;
+    }
+
+    setLoadingInteractions(true);
+    try {
+      const proposedTreatments = note.assessment || note.clinical_impression || "None specified";
+      
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a pharmacist specializing in drug interactions. Analyze the following medications and proposed treatments for potential interactions:
+
+Current Medications: ${note.medications.join(", ")}
+
+Proposed Treatments/Assessment: ${proposedTreatments}
+
+For each significant interaction found, identify:
+1. Drugs involved
+2. Type of interaction (PK/PD)
+3. Severity (mild/moderate/severe)
+4. Mechanism
+5. Clinical recommendation
+
+Return empty arrays if no significant interactions found.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            interactions_found: { type: "array", items: { type: "string" } },
+            severity_levels: { type: "array", items: { type: "string" } },
+            recommendations: { type: "array", items: { type: "string" } },
+          },
+        },
+      });
+      setDrugInteractions(res);
+      toast.success("Drug interactions analyzed");
+    } catch (error) {
+      console.error("Failed to check interactions:", error);
+      toast.error("Failed to check drug interactions");
+    } finally {
+      setLoadingInteractions(false);
+    }
+  };
+
+  // Flag critical lab/vital values
+  const flagCriticalValues = async () => {
+    const hasLabs = note.lab_findings?.length > 0;
+    const hasVitals = note.vital_signs && typeof note.vital_signs === "object";
+
+    if (!hasLabs && !hasVitals) {
+      toast.error("Add lab results or vital signs to check critical values");
+      return;
+    }
+
+    setLoadingFlags(true);
+    try {
+      let labsInfo = "";
+      if (hasLabs) {
+        labsInfo = note.lab_findings.map(lab => 
+          `${lab.test_name}: ${lab.result} ${lab.unit} (ref: ${lab.reference_range}) - Status: ${lab.status}`
+        ).join("\n");
+      }
+
+      let vitalsInfo = "";
+      if (hasVitals) {
+        const vs = note.vital_signs;
+        const parts = [];
+        if (vs.temperature?.value) parts.push(`Temperature: ${vs.temperature.value}°${vs.temperature.unit || "F"}`);
+        if (vs.heart_rate?.value) parts.push(`Heart Rate: ${vs.heart_rate.value} bpm`);
+        if (vs.blood_pressure?.systolic) parts.push(`BP: ${vs.blood_pressure.systolic}/${vs.blood_pressure.diastolic} mmHg`);
+        if (vs.respiratory_rate?.value) parts.push(`RR: ${vs.respiratory_rate.value} breaths/min`);
+        if (vs.oxygen_saturation?.value) parts.push(`O2 Sat: ${vs.oxygen_saturation.value}%`);
+        vitalsInfo = parts.join("\n");
+      }
+
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `Analyze the following laboratory and vital sign values. Identify ANY values that are critically abnormal or require immediate clinical attention:
+
+Lab Results:
+${labsInfo || "Not provided"}
+
+Vital Signs:
+${vitalsInfo || "Not provided"}
+
+For each critical or concerning value, provide:
+1. The specific value
+2. Why it is concerning
+3. Immediate action needed
+4. Potential underlying causes
+5. Risk level (Critical/High/Moderate)`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            critical_values: { type: "array", items: { type: "string" } },
+            concerns: { type: "array", items: { type: "string" } },
+            immediate_actions: { type: "array", items: { type: "string" } },
+            risk_assessment: { type: "string" },
+          },
+        },
+      });
+      setCriticalFlags(res);
+      toast.success("Critical values flagged");
+    } catch (error) {
+      console.error("Failed to flag critical values:", error);
+      toast.error("Failed to flag critical values");
+    } finally {
+      setLoadingFlags(false);
+    }
+  };
+
   // Rank reasoning by likelihood
   const rankByLikelihood = async (analysis) => {
     setLoadingRank(true);

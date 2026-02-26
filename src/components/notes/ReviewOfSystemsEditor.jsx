@@ -27,7 +27,12 @@ function initSectionsWithDefaults(rosData, rosDefaults) {
   // Parse stored JSON if needed
   let parsed = rosData;
   if (parsed && typeof parsed === "string") {
-    try { parsed = JSON.parse(parsed); } catch { /* not JSON */ }
+    try { parsed = JSON.parse(parsed); } catch { 
+      // If it's a formatted string (contains REVIEW OF SYSTEMS), don't use it for initialization
+      if (parsed.includes("REVIEW OF SYSTEMS") || parsed.includes("SYSTEM") || parsed.length > 200) {
+        parsed = null;
+      }
+    }
   }
 
   // If we have existing rosData (already saved on the note), restore from it
@@ -303,8 +308,14 @@ Example: CC "cough" → include constitutional, respiratory, cardiovascular (hea
   const handleStatusChange = (id, status) => {
     const updated = sections.map(s => {
       if (s.id !== id) return s;
-      if (status === "normal") return { ...s, status: "normal", notes: s.normal };
-      if (status === "abnormal") return { ...s, status: "abnormal", notes: s.notes === s.normal ? "" : s.notes };
+      if (status === "normal") {
+        return { ...s, status: "normal", notes: s.normal };
+      }
+      if (status === "abnormal") {
+        // When switching to abnormal, clear the notes field so user can enter abnormal findings
+        const currentNotes = s.notes === s.normal || !s.notes ? "" : s.notes;
+        return { ...s, status: "abnormal", notes: currentNotes };
+      }
       return { ...s, status: "not_assessed" };
     });
     setSections(updated);
@@ -315,7 +326,9 @@ Example: CC "cough" → include constitutional, respiratory, cardiovascular (hea
     const updated = sections.map(s => {
       if (s.id !== id) return s;
       if (isNormalEdit) return { ...s, normal: value };
-      return { ...s, notes: value };
+      // Auto-detect status based on value vs normal
+      const status = value === s.normal || !value ? "normal" : "abnormal";
+      return { ...s, status, notes: value };
     });
     setSections(updated);
     save(updated);

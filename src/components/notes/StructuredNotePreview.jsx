@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
-import { Check, Pill, Stethoscope, ClipboardList, Target, Lightbulb, X, Loader2, ChevronDown, ChevronUp, FileText, Activity, BookOpen, Sparkles, Link, CheckCircle2, Copy, Eye, Search, MoreVertical } from "lucide-react";
+import { Check, Pill, Stethoscope, ClipboardList, Target, Lightbulb, XCircle, Loader2, ChevronDown, ChevronUp, FileText, Activity, BookOpen, Sparkles, Link, CheckCircle2, Copy, Eye, Search, MoreVertical } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import EditableSection from "./EditableSection";
@@ -502,7 +502,7 @@ Rewrite and reformat the clinical note content to fit this template's structure 
                 onClick={() => setShowGuidelines(false)}
                 className="h-8 w-8 rounded-lg hover:bg-slate-100"
               >
-                <X className="w-4 h-4 text-slate-400" />
+                <XCircle className="w-4 h-4 text-slate-400" />
               </Button>
             </div>
 
@@ -693,7 +693,7 @@ Rewrite and reformat the clinical note content to fit this template's structure 
                    onClick={() => setShowDifferentials(false)}
                    className="h-8 w-8 rounded-lg hover:bg-slate-100"
                  >
-                   <X className="w-4 h-4 text-slate-400" />
+                   <XCircle className="w-4 h-4 text-slate-400" />
                  </Button>
                </div>
              </div>
@@ -803,7 +803,7 @@ Rewrite and reformat the clinical note content to fit this template's structure 
                             onClick={() => handleFeedback(feedbackId, "not_helpful")}
                             className="h-7 text-xs gap-1"
                           >
-                            <X className="w-3 h-3" /> Not Helpful
+                            <XCircle className="w-3 h-3" /> Not Helpful
                           </Button>
                         </div>
                       </div>
@@ -1067,7 +1067,7 @@ Rewrite and reformat the clinical note content to fit this template's structure 
                 onClick={() => handleDeleteSection(section.id)}
                 className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
               >
-                <X className="w-4 h-4" />
+                <XCircle className="w-4 h-4" />
               </Button>
             </div>
             <div className="p-4">

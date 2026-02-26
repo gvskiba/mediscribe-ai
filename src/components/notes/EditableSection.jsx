@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Loader2, Plus, X, FileText, Bold, Italic, List, ListOrdered, CheckSquare } from "lucide-react";
+import { Sparkles, Loader2, Plus, XCircle, FileText, Bold, Italic, List, ListOrdered, CheckSquare } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import SnippetPicker from "../snippets/SnippetPicker";
@@ -431,7 +431,7 @@ export default function EditableSection({
                     onClick={() => handleArrayItemRemove(index)}
                     className="h-9 w-9 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600"
                   >
-                    <X className="w-4 h-4" />
+                    <XCircle className="w-4 h-4" />
                   </Button>
                 </div>
               ))}

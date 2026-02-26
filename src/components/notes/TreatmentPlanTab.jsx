@@ -140,7 +140,7 @@ RED FLAGS:
 ${response.data.red_flags?.map(r => `⚠️  ${r}`).join('\n') || "None"}`;
 
         queryClient.setQueryData(["note", noteId], old => ({ ...old, plan: planText }));
-        toast.success("Treatment plan generated for " + (userSettings?.medical_specialty?.replace(/_/g, " ") || "Internal Medicine"));
+        toast.success("Treatment plan generated for " + (userSettings?.clinical_settings?.medical_specialty?.replace(/_/g, " ") || "Internal Medicine"));
       }
     } catch (error) {
       console.error("Failed to generate treatment plan:", error);

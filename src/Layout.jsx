@@ -7,10 +7,10 @@ import {
   BookOpen,
   LayoutDashboard,
   Menu,
-  X,
   LogOut,
   Activity,
-  Sparkles } from
+  Sparkles,
+  XCircle } from
 "lucide-react";
 import { base44 } from "@/api/base44Client";
 import GlobalSearchBar from "./components/search/GlobalSearchBar";

@@ -3,17 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
-  Sparkles,
   Clock,
   Plus,
-  Loader2,
   XCircle,
   ChevronDown,
   ChevronUp,
   Brain,
-  Beaker,
-  ImageIcon,
-  AlertCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";
@@ -21,7 +16,8 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import ReactMarkdown from "react-markdown";
 import { Check } from "lucide-react";
-import MDMSectionRenderer from "./MDMSectionRenderer";
+import QuickAIAnalysisTools from "./QuickAIAnalysisTools";
+import AIAnalysisGenerator from "./AIAnalysisGenerator";
 
 export default function MedicalDecisionMakingTab({ note, onUpdateNote, noteId }) {
   const [mdmSections, setMdmSections] = useState(() => {

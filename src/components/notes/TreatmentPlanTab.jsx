@@ -231,7 +231,7 @@ ${response.data.red_flags?.map(r => `⚠️  ${r}`).join('\n') || "None"}`;
               <ClinicalWorkflowAutomation note={note} noteId={noteId} onUpdateNote={async (updates) => { await base44.entities.ClinicalNote.update(noteId, updates); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
             </div>
             <div className="flex items-center justify-between gap-2 px-4 py-3 border-t border-slate-200 flex-shrink-0 bg-slate-50">
-              <Button variant="ghost" onClick={() => { queryClient.setQueryData(["note", noteId], (old) => ({ ...old, plan: "" })); }} className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 gap-1 h-7"><X className="w-3 h-3" />Clear</Button>
+              <Button variant="ghost" onClick={() => { queryClient.setQueryData(["note", noteId], (old) => ({ ...old, plan: "" })); }} className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 gap-1 h-7"><XCircle className="w-3 h-3" />Clear</Button>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setEditOpen(false)} className="text-xs h-7">Cancel</Button>
                 <Button onClick={async () => { await base44.entities.ClinicalNote.update(noteId, { plan: note.plan }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); setEditOpen(false); toast.success("Saved"); }} className="bg-amber-600 hover:bg-amber-700 text-white gap-1 text-xs h-7"><Check className="w-3 h-3" />Save</Button>

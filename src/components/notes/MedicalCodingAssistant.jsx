@@ -300,7 +300,7 @@ For each code provide: code, description, confidence (high/moderate/low), ration
           )}
 
           {(icd10Codes.length > 0 || cptCodes.length > 0) && (
-            <Tabs defaultValue="icd10">
+            <Tabs value={activeCodeTab} onValueChange={setActiveCodeTab}>
               <TabsList className="grid grid-cols-2 bg-slate-50 border border-slate-200 rounded-xl p-1 h-auto">
                 <TabsTrigger value="icd10" className="rounded-lg text-xs py-2">
                   <FileCode className="w-3 h-3 mr-1" /> ICD-10-CM
@@ -312,14 +312,103 @@ For each code provide: code, description, confidence (high/moderate/low), ration
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="icd10" className="mt-3 space-y-2">
-                <p className="text-xs text-slate-500">Click <strong>Add</strong> to include a code in your diagnoses list</p>
-                {icd10Codes.map((code, i) => (
-                  <CodeCard key={i} code={code} codeType="icd10"
-                    added={addedCodes.has(`icd10-${code.code}`)}
-                    onAdd={(c) => handleAddCode(c, "icd10")}
-                  />
-                ))}
+              <TabsContent value="icd10" className="mt-3 space-y-3">
+                {/* Nested tabs for sections */}
+                {Object.values(icd10BySection).some(codes => codes.length > 0) ? (
+                  <Tabs defaultValue="all">
+                    <TabsList className="grid grid-cols-4 bg-slate-100 rounded-lg p-1 text-xs h-auto">
+                      <TabsTrigger value="all" className="rounded text-xs py-1">All ({icd10Codes.length})</TabsTrigger>
+                      <TabsTrigger value="hpi" className="rounded text-xs py-1">HPI ({icd10BySection.hpi?.length || 0})</TabsTrigger>
+                      <TabsTrigger value="assessment" className="rounded text-xs py-1">Assess ({icd10BySection.assessment?.length || 0})</TabsTrigger>
+                      <TabsTrigger value="diagnoses_list" className="rounded text-xs py-1">Diagnoses ({icd10BySection.diagnoses_list?.length || 0})</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="all" className="mt-2 space-y-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs text-slate-500">Select codes and add to Final Diagnoses</p>
+                        {selectedCodesForAdd.size > 0 && (
+                          <Button size="sm" onClick={handleAddMultiple} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1 text-xs h-7 px-2">
+                            <Check className="w-3 h-3" /> Add {selectedCodesForAdd.size} selected
+                          </Button>
+                        )}
+                      </div>
+                      {icd10Codes.map((code, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedCodesForAdd.has(`icd10-${code.code}`)}
+                            onChange={(e) => {
+                              const key = `icd10-${code.code}`;
+                              if (e.target.checked) {
+                                setSelectedCodesForAdd(prev => new Set([...prev, key]));
+                              } else {
+                                setSelectedCodesForAdd(prev => {
+                                  const next = new Set(prev);
+                                  next.delete(key);
+                                  return next;
+                                });
+                              }
+                            }}
+                            className="mt-1 w-4 h-4 rounded"
+                          />
+                          <div className="flex-1">
+                            <CodeCard code={code} codeType="icd10"
+                              added={addedCodes.has(`icd10-${code.code}`)}
+                              onAdd={(c) => handleAddCode(c, "icd10")}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </TabsContent>
+
+                    {['hpi', 'assessment', 'diagnoses_list'].map(section => (
+                      <TabsContent key={section} value={section} className="mt-2 space-y-2">
+                        <p className="text-xs text-slate-500 mb-2">Based on <strong>{section === 'hpi' ? 'History of Present Illness' : section === 'assessment' ? 'Assessment' : 'Diagnoses List'}</strong></p>
+                        {icd10BySection[section]?.length > 0 ? (
+                          icd10BySection[section].map((code, i) => (
+                            <div key={i} className="flex items-start gap-2">
+                              <input
+                                type="checkbox"
+                                checked={selectedCodesForAdd.has(`icd10-${code.code}`)}
+                                onChange={(e) => {
+                                  const key = `icd10-${code.code}`;
+                                  if (e.target.checked) {
+                                    setSelectedCodesForAdd(prev => new Set([...prev, key]));
+                                  } else {
+                                    setSelectedCodesForAdd(prev => {
+                                      const next = new Set(prev);
+                                      next.delete(key);
+                                      return next;
+                                    });
+                                  }
+                                }}
+                                className="mt-1 w-4 h-4 rounded"
+                              />
+                              <div className="flex-1">
+                                <CodeCard code={code} codeType="icd10"
+                                  added={addedCodes.has(`icd10-${code.code}`)}
+                                  onAdd={(c) => handleAddCode(c, "icd10")}
+                                />
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-xs text-slate-400 text-center py-4">No codes from this section</p>
+                        )}
+                      </TabsContent>
+                    ))}
+                  </Tabs>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs text-slate-500">Click <strong>Add</strong> to include a code in your Final Diagnoses</p>
+                    {icd10Codes.map((code, i) => (
+                      <CodeCard key={i} code={code} codeType="icd10"
+                        added={addedCodes.has(`icd10-${code.code}`)}
+                        onAdd={(c) => handleAddCode(c, "icd10")}
+                      />
+                    ))}
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="cpt" className="mt-3 space-y-2">

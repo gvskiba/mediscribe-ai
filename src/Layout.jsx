@@ -55,7 +55,7 @@ export default function Layout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: '#0f0f1a' }}>
       <style>{`
         :root {
           --primary: #6d28d9;

@@ -22,10 +22,10 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { chiefComplaint, hpi, physicalExam, assessment, specialty = "internal_medicine" } = await req.json();
+    const { chiefComplaint, hpi, physicalExam, assessment, specialty = "internal_medicine", symptoms, patientHistory } = await req.json();
 
-    if (!chiefComplaint) {
-      return Response.json({ error: 'Chief complaint required' }, { status: 400 });
+    if (!chiefComplaint && !symptoms) {
+      return Response.json({ error: 'Chief complaint or symptoms required' }, { status: 400 });
     }
 
     const specialtyContext = SPECIALTY_CONTEXTS[specialty] || SPECIALTY_CONTEXTS.internal_medicine;
@@ -36,7 +36,10 @@ Deno.serve(async (req) => {
 SPECIALTY CONTEXT: ${specialtyContext}
 
 CHIEF COMPLAINT:
-${chiefComplaint}
+${chiefComplaint || "Not specified"}
+
+${symptoms ? `SYMPTOMS:\n${symptoms}\n` : ""}
+${patientHistory ? `PATIENT HISTORY (PMH, medications, allergies, social/family history):\n${patientHistory}\n` : ""}
 
 HISTORY OF PRESENT ILLNESS:
 ${hpi || "N/A"}
@@ -47,7 +50,7 @@ ${physicalExam || "N/A"}
 VITAL SIGNS & ASSESSMENT:
 ${assessment || "N/A"}
 
-IMPORTANT: Generate differentials that are relevant and commonly seen in ${specialty.replace(/_/g, " ")}. Exclude conditions that are outside the scope of this specialty unless absolutely critical. Rank by likelihood within this specialty context and provide reasoning for each.
+IMPORTANT: Use ALL available clinical information above to generate the most accurate differentials. Generate differentials that are relevant and commonly seen in ${specialty.replace(/_/g, " ")}. Rank by likelihood within this specialty context and provide reasoning for each.
 
 Provide results with: diagnosis, likelihood_rank (1-5, 5 being most likely), clinical_reasoning, red_flags_to_monitor.`,
       add_context_from_internet: true,

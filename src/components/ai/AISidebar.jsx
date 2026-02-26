@@ -1019,7 +1019,7 @@ export default function AISidebar({ isOpen, onClose, note, noteId, activeTab: ex
                 </div>
               </div>
               <Button variant="ghost" size="icon" onClick={onClose} className="text-white hover:bg-white/20 rounded-lg">
-                <X className="w-5 h-5" />
+                <XCircle className="w-5 h-5" />
               </Button>
             </div>
 

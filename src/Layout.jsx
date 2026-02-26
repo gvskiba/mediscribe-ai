@@ -106,6 +106,33 @@ export default function Layout({ children, currentPageName }) {
           background-color: #16213e;
           border-color: rgba(139,92,246,0.2);
         }
+        /* Dialog / Modal / Popover dark */
+        [role="dialog"], [data-radix-popper-content-wrapper] > div, .dialog-content {
+          background-color: #16213e !important;
+          border-color: rgba(139,92,246,0.25) !important;
+          color: #e2e8f0 !important;
+        }
+        /* Badge overrides */
+        .bg-green-100 { background-color: rgba(16,185,129,0.15) !important; }
+        .text-green-800 { color: #34d399 !important; }
+        .bg-red-100 { background-color: rgba(239,68,68,0.15) !important; }
+        .text-red-800 { color: #f87171 !important; }
+        .bg-yellow-100 { background-color: rgba(234,179,8,0.15) !important; }
+        .text-yellow-800 { color: #fbbf24 !important; }
+        .bg-purple-100, .bg-violet-100 { background-color: rgba(139,92,246,0.15) !important; }
+        .text-purple-800, .text-violet-800 { color: #c4b5fd !important; }
+        .bg-blue-100 { background-color: rgba(99,102,241,0.15) !important; }
+        .text-blue-800 { color: #a5b4fc !important; }
+        /* Table rows */
+        tr:hover { background-color: rgba(139,92,246,0.07) !important; }
+        thead tr { background-color: #1a1a2e !important; }
+        th { color: #94a3b8 !important; border-color: rgba(139,92,246,0.2) !important; }
+        td { border-color: rgba(139,92,246,0.1) !important; }
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f0f1a; }
+        ::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.4); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(139,92,246,0.6); }
         /* Input fields */
         input, textarea, select {
           background-color: #1e1e35 !important;

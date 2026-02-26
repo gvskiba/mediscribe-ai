@@ -342,8 +342,13 @@ For each critical or concerning value, provide:
 
     const updatedSections = [...mdmSections, newSection];
     setMdmSections(updatedSections);
-    await onUpdateNote({ mdm: JSON.stringify(updatedSections) });
-    toast.success("AI analysis added to MDM");
+    try {
+      await base44.entities.ClinicalNote.update(noteId, { mdm: JSON.stringify(updatedSections) });
+      toast.success("AI analysis added to MDM");
+    } catch (error) {
+      console.error("Failed to save MDM section:", error);
+      toast.error("Failed to save MDM section");
+    }
   };
 
   // Add Custom MDM Section
@@ -362,20 +367,29 @@ For each critical or concerning value, provide:
 
     const updatedSections = [...mdmSections, newSection];
     setMdmSections(updatedSections);
-    await onUpdateNote({ mdm: JSON.stringify(updatedSections) });
-    
-    setNewSectionTitle("");
-    setNewSectionContent("");
-    setShowAddSection(false);
-    toast.success("Section added to MDM");
+    try {
+      await base44.entities.ClinicalNote.update(noteId, { mdm: JSON.stringify(updatedSections) });
+      setNewSectionTitle("");
+      setNewSectionContent("");
+      setShowAddSection(false);
+      toast.success("Section added to MDM");
+    } catch (error) {
+      console.error("Failed to save MDM section:", error);
+      toast.error("Failed to save MDM section");
+    }
   };
 
   // Delete MDM Section
   const deleteSection = async (sectionId) => {
     const updatedSections = mdmSections.filter((s) => s.id !== sectionId);
     setMdmSections(updatedSections);
-    await onUpdateNote({ mdm: JSON.stringify(updatedSections) });
-    toast.success("Section removed");
+    try {
+      await base44.entities.ClinicalNote.update(noteId, { mdm: JSON.stringify(updatedSections) });
+      toast.success("Section removed");
+    } catch (error) {
+      console.error("Failed to delete MDM section:", error);
+      toast.error("Failed to delete MDM section");
+    }
   };
 
   return (

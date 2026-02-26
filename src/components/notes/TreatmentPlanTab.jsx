@@ -12,6 +12,79 @@ import AITextCompletion from "../ai/AITextCompletion";
 import TabDataPreview from "./TabDataPreview";
 import ClinicalNotePreviewButton from "./ClinicalNotePreviewButton";
 
+function formatPlanText(text) {
+  if (!text) return null;
+
+  // Split on section headers like "IMMEDIATE ACTIONS:", "MEDICATIONS:", etc.
+  const sectionRegex = /([A-Z][A-Z\s\/&]+):\s*/g;
+  const parts = text.split(sectionRegex).filter(p => p.trim());
+
+  // If no sections detected, just split on • bullets
+  if (parts.length <= 1) {
+    const bullets = text.split(/•/).map(b => b.trim()).filter(Boolean);
+    if (bullets.length <= 1) return <p className="text-sm text-slate-700 leading-relaxed">{text}</p>;
+    return (
+      <ul className="space-y-1.5">
+        {bullets.map((b, i) => (
+          <li key={i} className="flex gap-2 text-sm text-slate-700">
+            <span className="text-amber-500 mt-0.5 flex-shrink-0">•</span>
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  // Build header→content pairs
+  const sections = [];
+  for (let i = 0; i < parts.length; i += 2) {
+    const header = parts[i]?.trim();
+    const content = parts[i + 1]?.trim() || "";
+    if (header) sections.push({ header, content });
+  }
+
+  const headerColors = {
+    "IMMEDIATE ACTIONS": "text-red-700 bg-red-50 border-red-200",
+    "MEDICATIONS": "text-blue-700 bg-blue-50 border-blue-200",
+    "INTERVENTIONS": "text-purple-700 bg-purple-50 border-purple-200",
+    "FOLLOW-UP PLAN": "text-green-700 bg-green-50 border-green-200",
+    "FOLLOW UP": "text-green-700 bg-green-50 border-green-200",
+    "PATIENT EDUCATION": "text-teal-700 bg-teal-50 border-teal-200",
+    "RED FLAGS": "text-rose-700 bg-rose-50 border-rose-200",
+    "TREATMENT PLAN": "text-amber-700 bg-amber-50 border-amber-200",
+  };
+
+  return (
+    <div className="space-y-4">
+      {sections.map(({ header, content }, idx) => {
+        const colorClass = Object.entries(headerColors).find(([k]) => header.includes(k))?.[1] || "text-slate-700 bg-slate-50 border-slate-200";
+        const bullets = content.split(/•|⚠️\s*/).map(b => b.trim()).filter(Boolean);
+        const isRedFlags = header.includes("RED FLAG");
+
+        return (
+          <div key={idx} className="space-y-1.5">
+            <div className={`inline-flex items-center px-2.5 py-0.5 rounded-md border text-xs font-bold uppercase tracking-wide ${colorClass}`}>
+              {isRedFlags && "⚠️ "}{header}
+            </div>
+            {bullets.length === 0 || (bullets.length === 1 && bullets[0].toLowerCase() === "none") ? (
+              <p className="text-xs text-slate-400 ml-1">None documented</p>
+            ) : (
+              <ul className="space-y-1.5 ml-1">
+                {bullets.map((b, i) => (
+                  <li key={i} className="flex gap-2 text-sm text-slate-700">
+                    <span className={`mt-0.5 flex-shrink-0 font-bold ${isRedFlags ? "text-rose-500" : "text-amber-500"}`}>{isRedFlags ? "⚠" : "•"}</span>
+                    <span className="leading-relaxed">{b}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function TreatmentPlanTab({ note, noteId, queryClient, isFirstTab, isLastTab, handleBack, handleNext }) {
   const [editOpen, setEditOpen] = useState(false);
   const [loading, setLoading] = useState(false);

@@ -242,8 +242,8 @@ export default function Layout({ children, currentPageName }) {
                 onClick={() => setMobileOpen(false)}
                 className={`nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium ${
                   currentPageName === item.page ?
-                  "active text-blue-600 bg-blue-50" :
-                  "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                  "active text-violet-300 bg-violet-900/30" :
+                  "text-slate-400 hover:text-slate-200 hover:bg-violet-900/20"
                 }`}
               >
                 <item.icon className="w-5 h-5" />

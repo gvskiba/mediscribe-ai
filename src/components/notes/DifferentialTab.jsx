@@ -223,7 +223,7 @@ export default function DifferentialTab({
                       className="p-0.5 text-slate-300 hover:text-red-400 transition-colors"
                       title="Remove"
                     >
-                      <X className="w-3.5 h-3.5" />
+                      <XCircle className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>

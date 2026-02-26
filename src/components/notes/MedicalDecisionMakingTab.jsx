@@ -390,6 +390,98 @@ For each critical or concerning value, provide:
         </p>
       </div>
 
+      {/* Quick AI Analysis Tools */}
+      <div className="grid md:grid-cols-3 gap-4">
+        {/* Key Findings Summary */}
+        <div className="bg-white rounded-lg border-2 border-blue-200 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Brain className="w-5 h-5 text-blue-600" />
+            <h4 className="font-bold text-sm text-slate-900">Key Findings</h4>
+          </div>
+          <Button
+            onClick={summarizeKeyFindings}
+            disabled={loadingFindings}
+            size="sm"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2 text-xs"
+          >
+            {loadingFindings ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+            Summarize
+          </Button>
+          {keyFindings && (
+            <div className="mt-3 text-xs space-y-2">
+              {keyFindings.red_flags?.length > 0 && (
+                <div className="p-2 bg-red-50 rounded border border-red-200">
+                  <p className="font-semibold text-red-700 mb-1">🚩 Red Flags:</p>
+                  <ul className="text-red-600 space-y-1">
+                    {keyFindings.red_flags.map((flag, i) => <li key={i}>• {flag}</li>)}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Drug Interactions */}
+        <div className="bg-white rounded-lg border-2 border-orange-200 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Beaker className="w-5 h-5 text-orange-600" />
+            <h4 className="font-bold text-sm text-slate-900">Interactions</h4>
+          </div>
+          <Button
+            onClick={checkDrugInteractions}
+            disabled={loadingInteractions}
+            size="sm"
+            className="w-full bg-orange-600 hover:bg-orange-700 text-white gap-2 text-xs"
+          >
+            {loadingInteractions ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+            Check
+          </Button>
+          {drugInteractions && (
+            <div className="mt-3 text-xs space-y-2">
+              {drugInteractions.interactions_found?.length > 0 ? (
+                <div className="p-2 bg-orange-50 rounded border border-orange-200">
+                  <p className="font-semibold text-orange-700 mb-1">⚠️ Found:</p>
+                  <ul className="text-orange-600 space-y-1">
+                    {drugInteractions.interactions_found.slice(0, 3).map((int, i) => <li key={i}>• {int}</li>)}
+                  </ul>
+                </div>
+              ) : (
+                <p className="text-green-600 p-2 bg-green-50 rounded">✓ No major interactions</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Critical Flags */}
+        <div className="bg-white rounded-lg border-2 border-red-200 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertCircle className="w-5 h-5 text-red-600" />
+            <h4 className="font-bold text-sm text-slate-900">Critical Values</h4>
+          </div>
+          <Button
+            onClick={flagCriticalValues}
+            disabled={loadingFlags}
+            size="sm"
+            className="w-full bg-red-600 hover:bg-red-700 text-white gap-2 text-xs"
+          >
+            {loadingFlags ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+            Flag
+          </Button>
+          {criticalFlags && (
+            <div className="mt-3 text-xs space-y-2">
+              {criticalFlags.critical_values?.length > 0 && (
+                <div className="p-2 bg-red-50 rounded border border-red-200">
+                  <p className="font-semibold text-red-700 mb-1">🚨 Critical:</p>
+                  <ul className="text-red-600 space-y-1">
+                    {criticalFlags.critical_values.slice(0, 2).map((val, i) => <li key={i}>• {val}</li>)}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* AI Analysis Generator */}
       <div className="bg-white rounded-xl border-2 border-indigo-300 shadow-lg overflow-hidden">
         <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-5 text-white">

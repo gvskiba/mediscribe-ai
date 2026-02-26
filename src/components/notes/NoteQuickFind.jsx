@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Search, X, ArrowRight } from "lucide-react";
+import { Search, XCircle, ArrowRight } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 // Map of searchable sections with their tab targets and content fields
@@ -100,7 +100,7 @@ export default function NoteQuickFind({ note, onNavigate }) {
         />
         {query && (
           <button onClick={() => { setQuery(""); setOpen(false); }} className="text-slate-400 hover:text-slate-600">
-            <X className="w-3 h-3" />
+            <XCircle className="w-3 h-3" />
           </button>
         )}
       </div>

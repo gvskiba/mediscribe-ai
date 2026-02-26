@@ -43,11 +43,20 @@ export default function MedicalDecisionMakingTab({ note, onUpdateNote, noteId })
   const [showPreview, setShowPreview] = useState(false);
   const [editingSection, setEditingSection] = useState(null);
   const [editedContent, setEditedContent] = useState({});
+  const [userSettings, setUserSettings] = useState(null);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      const settings = await base44.auth.me();
+      if (settings) setUserSettings(settings);
+    };
+    loadSettings();
+  }, []);
 
   // Generate AI MDM Analysis
   const generateAIMDMAnalysis = async () => {
-    if (!note.assessment && !note.diagnoses?.length) {
-      toast.error("Add assessment or diagnoses first");
+    if (!note.chief_complaint && !note.history_of_present_illness && !note.assessment && !note.diagnoses?.length) {
+      toast.error("Add chief complaint, HPI, assessment, or diagnoses first");
       return;
     }
 

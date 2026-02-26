@@ -591,6 +591,7 @@ Example: CC "cough" → include constitutional, respiratory, cardiovascular (hea
               Save to Note
             </button>
             <button
+              onClick={() => setShowPreview(true)}
               className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-rose-200 bg-white text-rose-700 text-xs font-semibold hover:bg-rose-50 transition-colors"
             >
               <Eye className="w-3.5 h-3.5" />

@@ -440,6 +440,47 @@ Example: CC "cough" → include constitutional, respiratory, cardiovascular (hea
         </div>
       )}
 
+      {/* AI Hub Panel */}
+      <AnimatePresence>
+        {showAIHub && !loadingAI && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-4 space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-purple-900">AI Assistance Hub</p>
+                  <p className="text-xs text-purple-600 mt-0.5">Generate ROS based on chief complaint</p>
+                </div>
+                <button onClick={() => setShowAIHub(false)} className="text-purple-400 hover:text-purple-600">
+                  <XCircle className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={analyzeRelevantSystems}
+                  disabled={loadingAI || (!note?.chief_complaint && !note?.history_of_present_illness)}
+                  className="flex-1 min-w-max px-3 py-2 rounded-lg bg-purple-600 text-white text-xs font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Analyze CC & HPI
+                </button>
+                <button
+                  onClick={markAllNormal}
+                  className="flex-1 min-w-max px-3 py-2 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  Mark All Normal
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Add system from list */}
       <AnimatePresence>
         {showAddFromList && !loadingAI && (

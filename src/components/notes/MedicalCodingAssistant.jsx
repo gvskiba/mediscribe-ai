@@ -96,8 +96,10 @@ export default function MedicalCodingAssistant({ note, onAddDiagnoses, onAddCPTC
     }
     setLoading(true);
     setIcd10Codes([]);
+    setIcd10BySection({});
     setCptCodes([]);
     setAddedCodes(new Set());
+    setSelectedCodesForAdd(new Set());
     try {
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `You are an expert medical coder (CPC certified). Analyze this clinical encounter and suggest the most accurate ICD-10-CM diagnosis codes AND CPT procedure/service codes.
@@ -110,11 +112,14 @@ HPI: ${note.history_of_present_illness || "N/A"}
 Plan: ${note.plan || "N/A"}
 Note Type: ${note.note_type || "progress_note"}
 
+IMPORTANT: For ICD-10 codes, organize suggestions by note section (hpi, assessment, diagnoses_list). This helps coders understand which part of the note supports each code.
+
 ICD-10 Rules:
 - Use the most specific codes available (5-7 characters)
 - Include laterality, severity, episode when documented
 - Code all documented conditions that affect management
 - Return up to 8 codes ranked by primary/secondary
+- Organize codes by source section: 'hpi', 'assessment', or 'diagnoses_list'
 
 CPT Rules:
 - Suggest E&M codes appropriate for the encounter type and complexity
@@ -122,7 +127,7 @@ CPT Rules:
 - Include any diagnostic codes if studies were performed
 - Return up to 6 codes
 
-For each code provide: code, description, confidence (high/moderate/low), rationale, and for CPT also include typical_use and rvu estimate.`,
+For each code provide: code, description, confidence (high/moderate/low), rationale, section (for ICD-10), and for CPT also include typical_use and rvu estimate.`,
         response_json_schema: {
           type: "object",
           properties: {
@@ -134,6 +139,7 @@ For each code provide: code, description, confidence (high/moderate/low), ration
                   code: { type: "string" },
                   description: { type: "string" },
                   diagnosis: { type: "string" },
+                  section: { type: "string", enum: ["hpi", "assessment", "diagnoses_list"], description: "Which note section this code is based on" },
                   confidence: { type: "string", enum: ["high", "moderate", "low"] },
                   rationale: { type: "string" }
                 }
@@ -158,6 +164,19 @@ For each code provide: code, description, confidence (high/moderate/low), ration
         }
       });
       setIcd10Codes(result.icd10_codes || []);
+      
+      // Organize codes by section
+      const bySection = {
+        hpi: [],
+        assessment: [],
+        diagnoses_list: []
+      };
+      (result.icd10_codes || []).forEach(code => {
+        const section = code.section || 'diagnoses_list';
+        if (bySection[section]) bySection[section].push(code);
+      });
+      setIcd10BySection(bySection);
+      
       setCptCodes(result.cpt_codes || []);
       if (!result.icd10_codes?.length && !result.cpt_codes?.length) {
         toast.info("No codes generated — try adding more clinical details");

@@ -99,10 +99,10 @@ export default function DifferentialTab({
                 size="sm"
                 className="bg-rose-600 hover:bg-rose-700 text-white gap-1.5 text-xs h-7 px-3"
               >
-                {loading ? <><Loader2 className="w-3 h-3 animate-spin" />Generating...</> : <><Sparkles className="w-3 h-3" />Generate for {userSettings?.medical_specialty?.replace(/_/g, ' ') || 'Internal Medicine'}</>}
+                {loading ? <><Loader2 className="w-3 h-3 animate-spin" />Generating...</> : <><Sparkles className="w-3 h-3" />Generate for {userSettings?.clinical_settings?.medical_specialty?.replace(/_/g, ' ') || 'Internal Medicine'}</>}
               </Button>
-              {userSettings?.medical_specialty && (
-                <span className="text-xs text-slate-500">Specialty: {userSettings.medical_specialty.replace(/_/g, ' ').toUpperCase()}</span>
+              {userSettings?.clinical_settings?.medical_specialty && (
+                <span className="text-xs text-slate-500">Specialty: {userSettings.clinical_settings.medical_specialty.replace(/_/g, ' ').toUpperCase()}</span>
               )}
             </div>
           )}

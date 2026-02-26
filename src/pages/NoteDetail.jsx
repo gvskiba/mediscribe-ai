@@ -1447,24 +1447,7 @@ Generated: ${new Date().toLocaleString()}
       )}
 
       {/* Patient Header Card */}
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="flex items-center gap-3 px-4 py-2.5 border-b border-slate-100">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0"><span className="text-white text-xs font-bold">{(note.patient_name || "?")[0]?.toUpperCase()}</span></div>
-          <input type="text" value={note.patient_name === "New Patient" ? (note.chief_complaint || "New Patient") : note.patient_name} onChange={(e) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, patient_name: e.target.value }))} onBlur={async (e) => { await base44.entities.ClinicalNote.update(noteId, { patient_name: e.target.value }); setLastSaved(new Date().toISOString()); }} className="flex-1 text-sm font-bold text-slate-900 bg-transparent border-0 outline-none focus:ring-0 min-w-0" />
-          <div className="flex items-center gap-2 flex-shrink-0 text-xs text-slate-400">
-            <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{note.date_of_visit ? format(new Date(note.date_of_visit), "MMM d, yyyy") : format(new Date(), "MMM d, yyyy")}</span>
-            <span className="hidden sm:flex items-center gap-1"><Clock className="w-3 h-3" />{note.time_of_visit || format(new Date(), "h:mm a")}</span>
-            {note.patient_id && <span className="hidden sm:flex items-center gap-1"><Hash className="w-3 h-3" />{note.patient_id}</span>}
-            <Badge className={`text-xs px-1.5 py-0 ${note.status === 'finalized' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'} border`}>{(note.status || "draft")}</Badge>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 px-4 py-2">
-          <span className="text-xs font-bold text-blue-600 uppercase tracking-wider flex-shrink-0">CC</span>
-          <div className="w-px h-3 bg-slate-200 flex-shrink-0" />
-          <input type="text" value={note.chief_complaint || ""} onChange={(e) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, chief_complaint: e.target.value }))} onBlur={async (e) => { await base44.entities.ClinicalNote.update(noteId, { chief_complaint: e.target.value }); }} placeholder="Chief complaint — primary reason for visit..." className="flex-1 text-xs text-slate-700 placeholder:text-slate-400 bg-transparent border-0 outline-none focus:ring-0" maxLength={200} />
-          <InlineSectionAI type="chief_complaint" note={note} onApply={async (val) => { await base44.entities.ClinicalNote.update(noteId, { chief_complaint: val }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
-        </div>
-      </motion.div>
+      <PatientHeaderCard note={note} noteId={noteId} queryClient={queryClient} setLastSaved={setLastSaved} />
 
 
 

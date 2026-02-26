@@ -501,9 +501,9 @@ export default function CreateTemplateFromNote({ open, onClose, note, onSuccess 
             </div>
 
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1.5">
                 <Sparkles className="w-4 h-4 text-blue-500" /> Global AI Instructions (optional)
-              </label>
+              </div>
               <Textarea
                 value={formData.ai_instructions}
                 onChange={(e) => setFormData({ ...formData, ai_instructions: e.target.value })}

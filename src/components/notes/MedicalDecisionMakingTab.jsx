@@ -106,7 +106,6 @@ Return:
       
       // Auto-rank by likelihood
       rankByLikelihood(res);
-
     } catch (error) {
       console.error("Failed to generate MDM analysis:", error);
       toast.error("Failed to generate MDM analysis");

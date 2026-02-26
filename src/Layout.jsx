@@ -58,36 +58,78 @@ export default function Layout({ children, currentPageName }) {
     <div className="min-h-screen bg-white flex flex-col">
       <style>{`
         :root {
-          --primary: #2563eb;
-          --primary-dark: #1d4ed8;
-          --primary-light: #3b82f6;
+          --primary: #6d28d9;
+          --primary-dark: #5b21b6;
+          --primary-light: #7c3aed;
           --accent: #0891b2;
-          --bg-main: #ffffff;
-          --bg-secondary: #f8fafc;
-          --sidebar-bg: linear-gradient(165deg, #f8fafc 0%, #ffffff 100%);
-          --card-bg: #ffffff;
-          --border-subtle: rgba(15, 23, 42, 0.08);
+          --bg-main: #0f0f1a;
+          --bg-secondary: #1a1a2e;
+          --card-bg: #16213e;
+          --border-subtle: rgba(139, 92, 246, 0.15);
         }
         body { 
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-          background: var(--bg-main);
-          color: #1f2937;
+          background: #0f0f1a;
+          color: #e2e8f0;
         }
         .nav-link { 
           transition: all 0.2s ease;
+          color: #94a3b8;
         }
         .nav-link:hover { 
-          background: rgba(59, 130, 246, 0.08);
-          color: #2563eb;
+          background: rgba(139, 92, 246, 0.15);
+          color: #a78bfa;
         }
         .nav-link.active { 
-          background: rgba(59, 130, 246, 0.1);
-          color: #2563eb;
+          background: rgba(139, 92, 246, 0.2);
+          color: #c4b5fd;
           font-weight: 600;
-          border-bottom: 2px solid #2563eb;
+          border-bottom: 2px solid #7c3aed;
         }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        /* Global dark theme overrides */
+        main, .bg-white { background-color: #0f0f1a !important; }
+        .bg-slate-50 { background-color: #1a1a2e !important; }
+        .bg-slate-100 { background-color: #1e1e35 !important; }
+        .bg-gray-50 { background-color: #1a1a2e !important; }
+        .bg-gray-100 { background-color: #1e1e35 !important; }
+        .text-slate-900, .text-gray-900 { color: #f1f5f9 !important; }
+        .text-slate-800, .text-gray-800 { color: #e2e8f0 !important; }
+        .text-slate-700, .text-gray-700 { color: #cbd5e1 !important; }
+        .text-slate-600, .text-gray-600 { color: #94a3b8 !important; }
+        .text-slate-500, .text-gray-500 { color: #64748b !important; }
+        .border-slate-200, .border-gray-200 { border-color: rgba(139,92,246,0.2) !important; }
+        .border-slate-300, .border-gray-300 { border-color: rgba(139,92,246,0.25) !important; }
+        /* Card styling */
+        .rounded-xl, .rounded-2xl, .rounded-lg {
+          background-color: #16213e;
+          border-color: rgba(139,92,246,0.2);
+        }
+        /* Input fields */
+        input, textarea, select {
+          background-color: #1e1e35 !important;
+          color: #e2e8f0 !important;
+          border-color: rgba(139,92,246,0.3) !important;
+        }
+        input::placeholder, textarea::placeholder {
+          color: #475569 !important;
+        }
+        input:focus, textarea:focus, select:focus {
+          border-color: #7c3aed !important;
+          box-shadow: 0 0 0 2px rgba(124,58,237,0.2) !important;
+        }
+        /* Button pop color */
+        .bg-blue-600 { background-color: #7c3aed !important; }
+        .bg-blue-700, .hover\\:bg-blue-700:hover { background-color: #6d28d9 !important; }
+        .bg-indigo-600 { background-color: #4f46e5 !important; }
+        .text-blue-600 { color: #a78bfa !important; }
+        .border-blue-500 { border-color: #7c3aed !important; }
+        /* Gradient headers */
+        header, .header-gradient {
+          background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%) !important;
+          border-bottom-color: rgba(139,92,246,0.3) !important;
+        }
       `}</style>
 
       {/* Desktop Header */}

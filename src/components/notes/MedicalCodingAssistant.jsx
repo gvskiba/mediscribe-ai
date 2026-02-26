@@ -77,12 +77,15 @@ function CodeCard({ code, codeType, onAdd, added }) {
 export default function MedicalCodingAssistant({ note, onAddDiagnoses, onAddCPTCodes }) {
   const [loading, setLoading] = useState(false);
   const [icd10Codes, setIcd10Codes] = useState([]);
+  const [icd10BySection, setIcd10BySection] = useState({});
   const [cptCodes, setCptCodes] = useState([]);
   const [addedCodes, setAddedCodes] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("suggest");
+  const [activeCodeTab, setActiveCodeTab] = useState("all");
+  const [selectedCodesForAdd, setSelectedCodesForAdd] = useState(new Set());
 
   const hasContext = note?.diagnoses?.length || note?.chief_complaint || note?.assessment;
 

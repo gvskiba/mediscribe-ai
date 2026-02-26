@@ -115,11 +115,11 @@ export default function TreatmentPlanTab({ note, noteId, queryClient, isFirstTab
       const response = await base44.functions.invoke('generateSpecialtyAwareTreatmentPlan', {
         diagnoses: note.diagnoses,
         assessment: note.assessment || "",
-        specialty: userSettings?.medical_specialty || "internal_medicine"
+        specialty: userSettings?.clinical_settings?.medical_specialty || "internal_medicine"
       });
       
       if (response.data) {
-        const planText = `TREATMENT PLAN (${userSettings?.medical_specialty?.replace(/_/g, " ").toUpperCase() || "INTERNAL MEDICINE"})
+        const planText = `TREATMENT PLAN (${userSettings?.clinical_settings?.medical_specialty?.replace(/_/g, " ").toUpperCase() || "INTERNAL MEDICINE"})
 
 IMMEDIATE ACTIONS:
 ${response.data.immediate_actions?.map(a => `• ${a}`).join('\n') || "None"}

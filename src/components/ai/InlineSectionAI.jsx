@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Sparkles, X, Check, Loader2, RefreshCw, ChevronDown } from "lucide-react";
+import { Sparkles, XCircle, Check, Loader2, RefreshCw, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -234,7 +234,7 @@ export default function InlineSectionAI({ type, note, onApply }) {
                   <span className="text-sm font-semibold">{config.label}</span>
                 </div>
                 <button onClick={() => setIsOpen(false)} className="text-white/70 hover:text-white">
-                  <X className="w-4 h-4" />
+                   <XCircle className="w-4 h-4" />
                 </button>
               </div>
 

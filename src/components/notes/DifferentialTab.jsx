@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Loader2, Plus, AlertCircle, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Sparkles, Loader2, Plus, AlertCircle, XCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import TabPageLayout from "./TabPageLayout";

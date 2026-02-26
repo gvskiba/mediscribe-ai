@@ -416,7 +416,7 @@ Return:
                   variant="outline"
                   className="gap-2"
                 >
-                  <X className="w-3.5 h-3.5" /> Cancel
+                  <XCircle className="w-3.5 h-3.5" /> Cancel
                 </Button>
                 <Button
                   onClick={addCustomSection}

@@ -600,6 +600,42 @@ Example: CC "cough" → include constitutional, respiratory, cardiovascular (hea
           </div>
         </div>
       )}
+
+      {/* Preview Modal */}
+      <AnimatePresence>
+        {showPreview && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowPreview(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+            >
+              <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-slate-900">Review of Systems Preview</h3>
+                <button onClick={() => setShowPreview(false)} className="text-slate-400 hover:text-slate-600">
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-6 space-y-4 text-sm text-slate-700 whitespace-pre-wrap font-mono text-xs leading-relaxed">
+                <div className="text-lg font-bold text-rose-800 mb-4">REVIEW OF SYSTEMS</div>
+                {sections.map((s) => (
+                  <div key={s.id}>
+                    <span className="font-bold text-slate-900">{s.label.toUpperCase()}:</span> {s.status === "normal" ? s.normal : (s.notes || "—")}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Sparkles, X, ClipboardList, Code, Pill, Brain, BookOpen, AlertCircle,
+  Sparkles, XCircle, ClipboardList, Code, Pill, Brain, BookOpen, AlertCircle,
   Loader2, Check, ChevronRight, Activity, FileText, Stethoscope, ScanSearch,
   TrendingUp, CheckCircle2, Lightbulb, TriangleAlert
 } from "lucide-react";

@@ -1668,7 +1668,7 @@ Generated: ${new Date().toLocaleString()}
                            <div key={idx} className="group flex items-center gap-3 px-3 py-2 rounded-lg border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-all">
                              <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center flex-shrink-0">{idx+1}</span>
                              <p className="text-xs text-slate-800 flex-1">{med}</p>
-                             <button onClick={async () => { const u = note.medications.filter((_,i) => i !== idx); await base44.entities.ClinicalNote.update(noteId, { medications: u }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); toast.success("Removed"); }} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-opacity p-0.5"><X className="w-3 h-3" /></button>
+                             <button onClick={async () => { const u = note.medications.filter((_,i) => i !== idx); await base44.entities.ClinicalNote.update(noteId, { medications: u }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); toast.success("Removed"); }} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-opacity p-0.5"><XCircle className="w-3 h-3" /></button>
                            </div>
                          ))}
                        </div>

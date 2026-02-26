@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Settings, Plus, X, Check, ArrowLeft, Loader2, Sparkles } from "lucide-react";
+import { Settings, Plus, XCircle, Check, ArrowLeft, Loader2, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";

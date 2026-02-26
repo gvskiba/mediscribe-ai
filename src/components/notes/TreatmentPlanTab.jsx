@@ -175,8 +175,8 @@ ${response.data.red_flags?.map(r => `⚠️  ${r}`).join('\n') || "None"}`;
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center justify-between gap-3">
         <div className="flex-1">
           <p className="text-xs text-amber-800">Generate specialty-specific treatment plan using AI</p>
-          {userSettings?.medical_specialty && (
-            <p className="text-xs text-amber-600 mt-1">Specialty: {userSettings.medical_specialty.replace(/_/g, ' ').toUpperCase()}</p>
+          {userSettings?.clinical_settings?.medical_specialty && (
+            <p className="text-xs text-amber-600 mt-1">Specialty: {userSettings.clinical_settings.medical_specialty.replace(/_/g, ' ').toUpperCase()}</p>
           )}
         </div>
         <div className="flex gap-2 flex-shrink-0">

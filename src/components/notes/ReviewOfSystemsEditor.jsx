@@ -54,14 +54,20 @@ function initSections(rosData, relevantIds = null) {
 
 function SystemRow({ section, onStatusChange, onNotesChange, onDelete }) {
   const [expanded, setExpanded] = useState(false);
-  const inputRef = useRef(null);
-  const { status, notes, label } = section;
+  const [localValue, setLocalValue] = useState(
+    section.status === "normal" ? section.normal : (section.notes || "")
+  );
+  const { status, label } = section;
 
+  // Sync local value when section changes from outside (status change, etc.)
   useEffect(() => {
-    if (expanded && status === "abnormal" && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [expanded, status]);
+    setLocalValue(section.status === "normal" ? section.normal : (section.notes || ""));
+  }, [section.id, section.status]);
+
+  const handleBlur = () => {
+    if (status === "normal") onNotesChange(section.id, localValue, true);
+    else onNotesChange(section.id, localValue, false);
+  };
 
   return (
     <div className={`rounded-xl border transition-all duration-150 ${
@@ -100,7 +106,7 @@ function SystemRow({ section, onStatusChange, onNotesChange, onDelete }) {
         )}
         {!expanded && status === "abnormal" && (
           <span onClick={() => setExpanded(true)} className="flex-1 min-w-0 text-xs text-rose-600 truncate cursor-text">
-            {notes || <span className="italic text-slate-400">Add findings...</span>}
+            {section.notes || <span className="italic text-slate-400">Add findings...</span>}
           </span>
         )}
         {expanded && <div className="flex-1" />}
@@ -124,12 +130,9 @@ function SystemRow({ section, onStatusChange, onNotesChange, onDelete }) {
           >
             <div className="px-3 pb-3">
               <textarea
-                ref={inputRef}
-                value={status === "normal" ? section.normal : (notes || "")}
-                onChange={(e) => {
-                  if (status === "normal") onNotesChange(section.id, e.target.value, true);
-                  else onNotesChange(section.id, e.target.value, false);
-                }}
+                value={localValue}
+                onChange={(e) => setLocalValue(e.target.value)}
+                onBlur={handleBlur}
                 placeholder={status === "normal" ? "Edit normal findings..." : `Describe ${label.toLowerCase()} findings...`}
                 rows={2}
                 className={`w-full text-xs rounded-lg border px-3 py-2 resize-none focus:outline-none focus:ring-1 transition-all bg-white ${

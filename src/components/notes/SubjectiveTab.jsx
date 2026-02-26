@@ -168,27 +168,12 @@ export default function SubjectiveTab({
         label="Review of Systems"
         sublabel="· systematic symptom review"
         accentColor="purple"
-        actions={
-          <>
-            <Button size="sm" variant="ghost"
-              onClick={async () => {
-                await base44.entities.ClinicalNote.update(noteId, { review_of_systems: "REVIEW OF SYSTEMS:\nGeneral: Denies fever, chills, weight loss.\nHeadache: Denies headache or dizziness.\nEyes, Ears, Nose, Throat: Denies vision changes, hearing loss, rhinorrhea, or sore throat.\nCardiovascular: Denies chest pain, palpitations, orthopnea, PND.\nRespiratory: Denies dyspnea, cough, or wheezing.\nGastrointestinal: Denies nausea, vomiting, diarrhea, constipation, or abdominal pain.\nGenitourinary: Denies dysuria, frequency, or urgency.\nMusculoskeletal: Denies joint pain, swelling, or stiffness.\nNeurological: Denies numbness, tingling, weakness, or tremor.\nPsychiatric: Denies depression, anxiety, or sleep disturbance.\nSkin: No rashes or lesions noted." });
-                queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                setRosNormal(true);
-                toast.success("ROS set to normal");
-              }}
-              className={`gap-1 text-xs h-6 px-2 ${rosNormal ? "text-emerald-600 bg-emerald-50 hover:bg-emerald-100" : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"}`}
-            >
-              <Check className="w-3 h-3" />Normal
-            </Button>
-            <InlineSectionAI type="review_of_systems" note={note} onApply={async (val) => { await base44.entities.ClinicalNote.update(noteId, { review_of_systems: val }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
-          </>
-        }
       >
         <div className="p-4">
           <ReviewOfSystemsEditor
             rosData={note.review_of_systems}
             note={note}
+            noteId={noteId}
             onUpdate={async (rosData) => { const val = typeof rosData === 'object' ? JSON.stringify(rosData) : rosData; await base44.entities.ClinicalNote.update(noteId, { review_of_systems: val }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }}
             onAddToNote={async (rosText) => { await base44.entities.ClinicalNote.update(noteId, { review_of_systems: rosText }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); toast.success("ROS saved"); }}
           />

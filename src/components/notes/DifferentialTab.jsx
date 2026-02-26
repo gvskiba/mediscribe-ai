@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Loader2, Plus, AlertCircle } from "lucide-react";
+import { Sparkles, Loader2, Plus, AlertCircle, X, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import TabPageLayout from "./TabPageLayout";
 
 export default function DifferentialTab({
@@ -15,27 +15,32 @@ export default function DifferentialTab({
 }) {
   const [loading, setLoading] = useState(false);
   const [userSettings, setUserSettings] = useState(null);
+  const [showInputs, setShowInputs] = useState(false);
+  const [symptoms, setSymptoms] = useState("");
+  const [patientHistory, setPatientHistory] = useState("");
+  const [newDiagnosis, setNewDiagnosis] = useState("");
+  const [addingManual, setAddingManual] = useState(false);
 
   useEffect(() => {
     const loadSettings = async () => {
       const settings = await base44.auth.me();
-      if (settings) {
-        setUserSettings(settings);
-      }
+      if (settings) setUserSettings(settings);
     };
     loadSettings();
   }, []);
 
   const generateDifferentialDiagnosis = async () => {
-    if (!note?.chief_complaint) return;
+    if (!note?.chief_complaint && !symptoms.trim()) return;
     setLoading(true);
     try {
       const response = await base44.functions.invoke('generateSpecialtyAwareDifferential', {
-        chiefComplaint: note.chief_complaint,
+        chiefComplaint: note.chief_complaint || "",
         hpi: note.history_of_present_illness || "",
         physicalExam: note.physical_exam || "",
         assessment: note.assessment || "",
-        specialty: userSettings?.clinical_settings?.medical_specialty || "internal_medicine"
+        specialty: userSettings?.clinical_settings?.medical_specialty || "internal_medicine",
+        symptoms: symptoms.trim() || undefined,
+        patientHistory: patientHistory.trim() || undefined,
       });
       
       if (response.data.differentials) {
@@ -43,15 +48,39 @@ export default function DifferentialTab({
           ...old, 
           differentials: response.data.differentials 
         }));
-        toast.success("Differentials generated for " + (userSettings?.clinical_settings?.medical_specialty || "Internal Medicine"));
+        toast.success("Differentials generated");
       }
     } catch (error) {
-      console.error("Failed to generate differential diagnosis:", error);
       toast.error("Failed to generate differential diagnoses");
     } finally {
       setLoading(false);
     }
   };
+
+  const removeDifferential = (idx) => {
+    const updated = differentialDiagnosis.filter((_, i) => i !== idx);
+    queryClient.setQueryData(["note", noteId], old => ({ ...old, differentials: updated }));
+    base44.entities.ClinicalNote.update(noteId, { differentials: updated });
+  };
+
+  const addManualDiagnosis = () => {
+    if (!newDiagnosis.trim()) return;
+    const newEntry = {
+      diagnosis: newDiagnosis.trim(),
+      likelihood_rank: 3,
+      clinical_reasoning: "Manually added",
+      red_flags_to_monitor: []
+    };
+    const updated = [...differentialDiagnosis, newEntry];
+    queryClient.setQueryData(["note", noteId], old => ({ ...old, differentials: updated }));
+    base44.entities.ClinicalNote.update(noteId, { differentials: updated });
+    setNewDiagnosis("");
+    setAddingManual(false);
+    toast.success("Diagnosis added");
+  };
+
+  const canGenerate = !!(note?.chief_complaint || symptoms.trim());
+
   return (
     <TabPageLayout
       title="Differential Diagnosis"
@@ -85,19 +114,61 @@ export default function DifferentialTab({
           <span className="text-sm font-semibold text-slate-800">AI Generator</span>
           <span className="text-xs text-slate-400">· ranked by likelihood</span>
         </div>
-        <div className="p-4">
-          {!note.chief_complaint ? (
-            <div className="flex items-center gap-2 text-xs text-slate-500 py-2">
+        <div className="p-4 space-y-3">
+          {/* Optional additional context toggle */}
+          <button
+            type="button"
+            onClick={() => setShowInputs(v => !v)}
+            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition-colors"
+          >
+            {showInputs ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            {showInputs ? "Hide" : "Add"} symptoms & patient history
+          </button>
+
+          <AnimatePresence>
+            {showInputs && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden space-y-2"
+              >
+                <div>
+                  <label className="text-xs font-medium text-slate-600 block mb-1">Symptoms</label>
+                  <textarea
+                    value={symptoms}
+                    onChange={e => setSymptoms(e.target.value)}
+                    placeholder="e.g. sharp chest pain radiating to left arm, diaphoresis, nausea for 2 hours..."
+                    rows={2}
+                    className="w-full text-xs rounded-lg border border-slate-200 focus:border-rose-300 focus:ring-1 focus:ring-rose-100 focus:outline-none px-3 py-2 resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600 block mb-1">Patient History</label>
+                  <textarea
+                    value={patientHistory}
+                    onChange={e => setPatientHistory(e.target.value)}
+                    placeholder="e.g. PMH: HTN, DM2, CAD. Medications: metformin, lisinopril. Family Hx: father MI at 55..."
+                    rows={2}
+                    className="w-full text-xs rounded-lg border border-slate-200 focus:border-rose-300 focus:ring-1 focus:ring-rose-100 focus:outline-none px-3 py-2 resize-none"
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {!canGenerate ? (
+            <div className="flex items-center gap-2 text-xs text-slate-500 py-1">
               <AlertCircle className="w-4 h-4 text-slate-400" />
-              Add a chief complaint above to generate differential diagnoses.
+              Add a chief complaint or symptoms above to generate differentials.
             </div>
           ) : (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1.5">
               <Button
                 onClick={generateDifferentialDiagnosis}
                 disabled={loading}
                 size="sm"
-                className="bg-rose-600 hover:bg-rose-700 text-white gap-1.5 text-xs h-7 px-3"
+                className="bg-rose-600 hover:bg-rose-700 text-white gap-1.5 text-xs h-7 px-3 self-start"
               >
                 {loading ? <><Loader2 className="w-3 h-3 animate-spin" />Generating...</> : <><Sparkles className="w-3 h-3" />Generate for {userSettings?.clinical_settings?.medical_specialty?.replace(/_/g, ' ') || 'Internal Medicine'}</>}
               </Button>
@@ -146,6 +217,13 @@ export default function DifferentialTab({
                       {[1,2,3,4,5].map(n => <div key={n} className={`w-1.5 h-3 rounded-sm ${n <= diff.likelihood_rank ? 'bg-rose-500' : 'bg-slate-200'}`} />)}
                     </div>
                     <Button size="sm" onClick={async () => { queryClient.setQueryData(["note", noteId], (old) => ({ ...old, diagnoses: [...(old.diagnoses || []), diff.diagnosis] })); await base44.entities.ClinicalNote.update(noteId, { diagnoses: [...(note.diagnoses || []), diff.diagnosis] }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); toast.success("Added"); }} className="h-5 text-xs bg-rose-600 hover:bg-rose-700 text-white px-2 rounded">Add</Button>
+                    <button
+                      onClick={() => removeDifferential(idx)}
+                      className="p-0.5 text-slate-300 hover:text-red-400 transition-colors"
+                      title="Remove"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">{diff.clinical_reasoning}</p>
@@ -156,7 +234,70 @@ export default function DifferentialTab({
                 )}
               </motion.div>
             ))}
+
+            {/* Manual add */}
+            <div className="pt-1">
+              <AnimatePresence>
+                {addingManual && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-2">
+                    <div className="flex gap-2">
+                      <input
+                        autoFocus
+                        value={newDiagnosis}
+                        onChange={e => setNewDiagnosis(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter") addManualDiagnosis(); if (e.key === "Escape") { setAddingManual(false); setNewDiagnosis(""); } }}
+                        placeholder="Diagnosis name..."
+                        className="flex-1 text-xs rounded-lg border border-slate-200 focus:border-rose-300 focus:outline-none px-3 py-1.5"
+                      />
+                      <Button size="sm" onClick={addManualDiagnosis} className="h-7 text-xs bg-rose-600 hover:bg-rose-700 text-white px-3">Add</Button>
+                      <Button size="sm" variant="ghost" onClick={() => { setAddingManual(false); setNewDiagnosis(""); }} className="h-7 text-xs px-2">Cancel</Button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              {!addingManual && (
+                <button
+                  onClick={() => setAddingManual(true)}
+                  className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-slate-300 text-xs text-slate-500 hover:border-rose-400 hover:text-rose-600 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add diagnosis manually
+                </button>
+              )}
+            </div>
           </div>
+        </div>
+      )}
+
+      {/* Manual add when list is empty */}
+      {differentialDiagnosis.length === 0 && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+          <p className="text-xs text-slate-500 mb-3">No differentials yet. Generate above or add manually.</p>
+          <AnimatePresence>
+            {addingManual && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-2">
+                <div className="flex gap-2">
+                  <input
+                    autoFocus
+                    value={newDiagnosis}
+                    onChange={e => setNewDiagnosis(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") addManualDiagnosis(); if (e.key === "Escape") { setAddingManual(false); setNewDiagnosis(""); } }}
+                    placeholder="Diagnosis name..."
+                    className="flex-1 text-xs rounded-lg border border-slate-200 focus:border-rose-300 focus:outline-none px-3 py-1.5"
+                  />
+                  <Button size="sm" onClick={addManualDiagnosis} className="h-7 text-xs bg-rose-600 hover:bg-rose-700 text-white px-3">Add</Button>
+                  <Button size="sm" variant="ghost" onClick={() => { setAddingManual(false); setNewDiagnosis(""); }} className="h-7 text-xs px-2">Cancel</Button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {!addingManual && (
+            <button
+              onClick={() => setAddingManual(true)}
+              className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-slate-300 text-xs text-slate-500 hover:border-rose-400 hover:text-rose-600 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add diagnosis manually
+            </button>
+          )}
         </div>
       )}
     </TabPageLayout>

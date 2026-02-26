@@ -262,7 +262,7 @@ export default function Layout({ children, currentPageName }) {
       }
 
       {/* Main Content */}
-      <main className="bg-blue-100 pt-32 lg:pt-20 flex-1 min-h-screen">
+      <main className="pt-32 lg:pt-20 flex-1 min-h-screen" style={{ background: '#0f0f1a' }}>
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
           {children}
         </div>

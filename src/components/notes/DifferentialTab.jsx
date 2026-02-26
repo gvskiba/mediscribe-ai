@@ -217,7 +217,7 @@ export default function DifferentialTab({
                     <div className="flex items-center gap-1">
                       {[1,2,3,4,5].map(n => <div key={n} className={`w-1.5 h-3 rounded-sm ${n <= diff.likelihood_rank ? 'bg-rose-500' : 'bg-slate-200'}`} />)}
                     </div>
-                    <Button size="sm" onClick={async () => { queryClient.setQueryData(["note", noteId], (old) => ({ ...old, diagnoses: [...(old.diagnoses || []), diff.diagnosis] })); await base44.entities.ClinicalNote.update(noteId, { diagnoses: [...(note.diagnoses || []), diff.diagnosis] }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); toast.success("Added"); }} className="h-5 text-xs bg-rose-600 hover:bg-rose-700 text-white px-2 rounded">Add</Button>
+                    <Button size="sm" onClick={async () => { await base44.entities.ClinicalNote.update(noteId, { diagnoses: [...(note.diagnoses || []), diff.diagnosis] }); queryClient.setQueryData(["note", noteId], (old) => ({ ...old, diagnoses: [...(old.diagnoses || []), diff.diagnosis] })); toast.success("Added"); }} className="h-5 text-xs bg-rose-600 hover:bg-rose-700 text-white px-2 rounded">Add</Button>
                     <button
                       onClick={() => removeDifferential(idx)}
                       className="p-0.5 text-slate-300 hover:text-red-400 transition-colors"

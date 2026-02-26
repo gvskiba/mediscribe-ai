@@ -180,7 +180,7 @@ export default function Layout({ children, currentPageName }) {
               <FileText className="w-4 h-4" />
             </button>
             <button onClick={() => setMobileOpen(!mobileOpen)} className="hover:bg-slate-100 rounded-lg p-1 transition-colors">
-              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {mobileOpen ? <XCircle className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>

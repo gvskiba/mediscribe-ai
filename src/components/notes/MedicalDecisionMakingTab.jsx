@@ -50,34 +50,7 @@ export default function MedicalDecisionMakingTab({ note, onUpdateNote, noteId })
 
 
 
-  // Add AI Analysis as MDM Section
-  const addAIAnalysisSection = async () => {
-    if (!aiAnalysis) return;
 
-    const newSection = {
-      id: `mdm_${Date.now()}`,
-      title: "AI Clinical Reasoning",
-      timestamp: new Date().toISOString(),
-      content: [
-        `Problem Summary:\n${aiAnalysis.problem_summary}`,
-        `Differential Diagnosis Reasoning:\n${aiAnalysis.differential_reasoning}`,
-        `Imaging/Labs Rationale:\n${aiAnalysis.imaging_labs_rationale}`,
-        `Treatment Reasoning:\n${aiAnalysis.treatment_reasoning}`,
-        `Risk Assessment:\n${aiAnalysis.risk_assessment}`,
-        `Follow-up Strategy:\n${aiAnalysis.follow_up_strategy}`,
-      ].join("\n\n"),
-    };
-
-    const updatedSections = [...mdmSections, newSection];
-    setMdmSections(updatedSections);
-    try {
-      await base44.entities.ClinicalNote.update(noteId, { mdm: JSON.stringify(updatedSections) });
-      toast.success("AI analysis added to MDM");
-    } catch (error) {
-      console.error("Failed to save MDM section:", error);
-      toast.error("Failed to save MDM section");
-    }
-  };
 
   // Add Custom MDM Section
   const addCustomSection = async () => {

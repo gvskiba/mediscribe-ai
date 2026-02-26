@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Loader2, X, Check, ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
+import { Sparkles, Loader2, Check, ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 
 import { motion } from "framer-motion";

@@ -142,8 +142,8 @@ export default function Layout({ children, currentPageName }) {
                 <Stethoscope className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-base font-bold tracking-tight text-slate-900">Notrya AI</h1>
-                <p className="text-xs text-slate-600">Clinical AI Assistant</p>
+                <h1 className="text-base font-bold tracking-tight text-white">Notrya AI</h1>
+                <p className="text-xs text-violet-300">Clinical AI Assistant</p>
               </div>
             </div>
 

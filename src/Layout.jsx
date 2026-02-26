@@ -218,7 +218,7 @@ export default function Layout({ children, currentPageName }) {
                 });
                 window.location.href = createPageUrl(`NoteDetail?id=${newNote.id}`);
               }}
-              className="bg-blue-600 hover:bg-blue-700 rounded-lg p-2 transition-all shadow-sm text-white">
+              className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 rounded-lg p-2 transition-all shadow-sm text-white">
               <FileText className="w-4 h-4" />
             </button>
             <button onClick={() => setMobileOpen(!mobileOpen)} className="hover:bg-slate-100 rounded-lg p-1 transition-colors">

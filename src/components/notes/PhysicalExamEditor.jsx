@@ -2,10 +2,11 @@ import React, { useState, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { 
   Activity, Eye, Heart, Wind, User, Brain,
-  Plus, XCircle, Check, ChevronDown, Settings
+  Plus, XCircle, Check, ChevronDown, Settings, Sparkles, Loader2, RefreshCw
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { base44 } from "@/api/base44Client";
 
 const SECTIONS = [
   { id: "general", label: "General", icon: User, short: "Gen", defaultText: "Well-developed, well-nourished, in no acute distress" },
@@ -184,7 +185,7 @@ function SectionRow({ section, onChange, isCustom, onRemove }) {
   );
 }
 
-export default function PhysicalExamEditor({ examData, onUpdate, onAddToNote }) {
+export default function PhysicalExamEditor({ examData, onUpdate, onAddToNote, note }) {
   const [sections, setSections] = useState(() => {
     if (examData && typeof examData === 'object' && !Array.isArray(examData)) {
       const base = SECTIONS.map(s => ({
@@ -201,6 +202,8 @@ export default function PhysicalExamEditor({ examData, onUpdate, onAddToNote }) 
   });
 
   const [customizing, setCustomizing] = useState(false);
+  const [loadingAI, setLoadingAI] = useState(false);
+  const [analyzed, setAnalyzed] = useState(false);
 
   const handleChange = (id, content) => {
     const updated = sections.map(s => s.id === id ? { ...s, content } : s);
@@ -240,6 +243,70 @@ export default function PhysicalExamEditor({ examData, onUpdate, onAddToNote }) 
     onUpdate(obj);
   };
 
+  const analyzeRelevantSections = async () => {
+    if (!note?.chief_complaint && !note?.history_of_present_illness) return;
+    setLoadingAI(true);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a clinical documentation expert. Based on the chief complaint and HPI below, determine which physical exam sections are RELEVANT and should be performed.
+
+Chief Complaint: ${note.chief_complaint || "N/A"}
+History of Present Illness: ${note.history_of_present_illness || "N/A"}
+
+From this list of physical exam sections, select only the ones that are clinically relevant:
+general, heent, neck, cardiovascular, respiratory, abdomen, musculoskeletal, neurological, skin, psychiatric
+
+Instructions:
+1. Always include "general" as a baseline
+2. Include all systems directly mentioned or implied in the CC/HPI
+3. Include related systems that should be examined based on the primary complaint
+4. Exclude sections unrelated to the presentation
+5. Return 4-8 most relevant sections
+
+Example: CC "chest pain" → include general, cardiovascular, respiratory, musculoskeletal, skin
+Example: CC "cough" → include general, respiratory, cardiovascular, neck, abdomen`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            relevant_sections: {
+              type: "array",
+              items: { type: "string" },
+              description: "Exam section IDs to include"
+            },
+            reasoning: { 
+              type: "string",
+              description: "Explanation of which sections are relevant"
+            }
+          }
+        }
+      });
+
+      const relevantIds = result.relevant_sections || [];
+      const updated = sections.map(s => ({
+        ...s,
+        enabled: relevantIds.includes(s.id) || s.id === 'general'
+      }));
+      setSections(updated);
+      const obj = {};
+      updated.filter(s => s.enabled).forEach(s => { obj[s.id] = s.content; });
+      onUpdate(obj);
+      setAnalyzed(true);
+      toast.success(`Enabled ${updated.filter(s => s.enabled).length} relevant exam sections`);
+    } catch {
+      toast.error("Could not analyze relevant sections");
+      setAnalyzed(true);
+    } finally {
+      setLoadingAI(false);
+    }
+  };
+
+  // Auto-analyze on mount if we have CC/HPI but haven't analyzed yet
+  useEffect(() => {
+    if (!analyzed && (note?.chief_complaint || note?.history_of_present_illness)) {
+      analyzeRelevantSections();
+    }
+  }, [note?.chief_complaint, note?.history_of_present_illness]);
+
   const formatForNote = () => {
     let text = "\nPHYSICAL EXAMINATION\n" + "─".repeat(40) + "\n\n";
     sections.filter(s => s.enabled && s.content).forEach(s => {
@@ -254,35 +321,56 @@ export default function PhysicalExamEditor({ examData, onUpdate, onAddToNote }) 
 
   return (
     <div className="space-y-3">
+      {/* AI loading state */}
+      {loadingAI && (
+        <div className="flex items-center gap-3 bg-purple-50 border border-purple-200 rounded-xl px-4 py-3">
+          <Loader2 className="w-4 h-4 animate-spin text-purple-600 flex-shrink-0" />
+          <div>
+            <p className="text-xs font-semibold text-purple-800">Analyzing chief complaint & HPI...</p>
+            <p className="text-xs text-purple-600 mt-0.5">Selecting relevant exam sections</p>
+          </div>
+        </div>
+      )}
+
       {/* Summary bar */}
-      <div className="flex items-center justify-between gap-3 bg-slate-50 rounded-xl px-4 py-2.5 border border-slate-200">
-        <div className="flex items-center gap-3 text-xs">
-          <span className="text-slate-500">{active.length} sections</span>
-          {normalCount > 0 && <span className="flex items-center gap-1 text-emerald-600 font-medium"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />{normalCount} normal</span>}
-          {abnormalCount > 0 && <span className="flex items-center gap-1 text-rose-600 font-medium"><span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block" />{abnormalCount} abnormal</span>}
+      {!loadingAI && (
+        <div className="flex items-center justify-between gap-3 bg-slate-50 rounded-xl px-4 py-2.5 border border-slate-200">
+          <div className="flex items-center gap-3 text-xs">
+            <span className="text-slate-500">{active.length} sections</span>
+            {normalCount > 0 && <span className="flex items-center gap-1 text-emerald-600 font-medium"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />{normalCount} normal</span>}
+            {abnormalCount > 0 && <span className="flex items-center gap-1 text-rose-600 font-medium"><span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block" />{abnormalCount} abnormal</span>}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={analyzeRelevantSections}
+              disabled={loadingAI}
+              title="Re-analyze relevant sections"
+              className="p-1.5 rounded-lg border bg-white border-purple-200 text-purple-600 hover:bg-purple-50 transition-colors flex items-center gap-1 disabled:opacity-60"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={markAllNormal}
+              className="px-2.5 py-1 text-xs font-medium rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+            >
+              All Normal
+            </button>
+            <button
+              onClick={() => setCustomizing(c => !c)}
+              className={`p-1.5 rounded-lg border text-xs transition-colors ${customizing ? "bg-slate-200 border-slate-300 text-slate-700" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-100"}`}
+              title="Customize sections"
+            >
+              <Settings className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => { onAddToNote(formatForNote()); toast.success("Added to note"); }}
+              className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-800 text-white hover:bg-slate-700 transition-colors flex items-center gap-1"
+            >
+              <Check className="w-3 h-3" /> Save to Note
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={markAllNormal}
-            className="px-2.5 py-1 text-xs font-medium rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
-          >
-            All Normal
-          </button>
-          <button
-            onClick={() => setCustomizing(c => !c)}
-            className={`p-1.5 rounded-lg border text-xs transition-colors ${customizing ? "bg-slate-200 border-slate-300 text-slate-700" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-100"}`}
-            title="Customize sections"
-          >
-            <Settings className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => { onAddToNote(formatForNote()); toast.success("Added to note"); }}
-            className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-800 text-white hover:bg-slate-700 transition-colors flex items-center gap-1"
-          >
-            <Check className="w-3 h-3" /> Save to Note
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Customize panel */}
       <AnimatePresence>
@@ -322,19 +410,21 @@ export default function PhysicalExamEditor({ examData, onUpdate, onAddToNote }) 
       </AnimatePresence>
 
       {/* Sections */}
-      <div className="space-y-1.5">
-        {active.map((section, idx) => (
-          <SectionRow
-            key={section.id}
-            section={section}
-            onChange={handleChange}
-            isCustom={section.isCustom}
-            onRemove={removeSection}
-          />
-        ))}
-      </div>
+      {!loadingAI && (
+        <div className="space-y-1.5">
+          {active.map((section, idx) => (
+            <SectionRow
+              key={section.id}
+              section={section}
+              onChange={handleChange}
+              isCustom={section.isCustom}
+              onRemove={removeSection}
+            />
+          ))}
+        </div>
+      )}
 
-      {active.length === 0 && (
+      {!loadingAI && active.length === 0 && (
         <div className="text-center py-8 text-slate-400 text-sm">
           No sections enabled. Use customize to add sections.
         </div>

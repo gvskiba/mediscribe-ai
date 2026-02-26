@@ -215,7 +215,7 @@ ${response.data.red_flags?.map(r => `⚠️  ${r}`).join('\n') || "None"}`;
               <span className="text-sm font-bold text-slate-800">Edit Treatment Plan</span>
               <div className="flex items-center gap-2">
                 <InlineSectionAI type="plan" note={note} onApply={async (val) => { queryClient.setQueryData(["note", noteId], (old) => ({ ...old, plan: val })); await base44.entities.ClinicalNote.update(noteId, { plan: val }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
-                <button onClick={() => setEditOpen(false)} className="p-1 rounded hover:bg-slate-100 text-slate-500"><X className="w-4 h-4" /></button>
+                <button onClick={() => setEditOpen(false)} className="p-1 rounded hover:bg-slate-100 text-slate-500"><XCircle className="w-4 h-4" /></button>
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-3">

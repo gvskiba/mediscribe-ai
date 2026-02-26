@@ -202,6 +202,7 @@ export default function ReviewOfSystemsEditor({ rosData, onUpdate, onAddToNote, 
   const [showAddFromList, setShowAddFromList] = useState(false);
   const [userRosDefaults, setUserRosDefaults] = useState(null);
   const [showAIHub, setShowAIHub] = useState(false);
+  const [aiHubAlwaysVisible, setAIHubAlwaysVisible] = useState(false);
 
   // Load user settings first, then initialize sections
   useEffect(() => {
@@ -442,7 +443,7 @@ Example: CC "cough" → include constitutional, respiratory, cardiovascular (hea
 
       {/* AI Hub Panel */}
       <AnimatePresence>
-        {showAIHub && !loadingAI && (
+        {(showAIHub || aiHubAlwaysVisible) && !loadingAI && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
@@ -455,9 +456,24 @@ Example: CC "cough" → include constitutional, respiratory, cardiovascular (hea
                   <p className="text-sm font-semibold text-purple-900">AI Assistance Hub</p>
                   <p className="text-xs text-purple-600 mt-0.5">Generate ROS based on chief complaint</p>
                 </div>
-                <button onClick={() => setShowAIHub(false)} className="text-purple-400 hover:text-purple-600">
-                  <XCircle className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={async () => {
+                      const newVal = !aiHubAlwaysVisible;
+                      setAIHubAlwaysVisible(newVal);
+                      await base44.auth.updateMe({ ai_hub_always_visible: newVal });
+                    }}
+                    className={`p-1 rounded-lg transition-colors ${aiHubAlwaysVisible ? "bg-purple-200 text-purple-700" : "text-purple-400 hover:bg-purple-100"}`}
+                    title={aiHubAlwaysVisible ? "Disable always visible" : "Enable always visible"}
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                  {!aiHubAlwaysVisible && (
+                    <button onClick={() => setShowAIHub(false)} className="text-purple-400 hover:text-purple-600">
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button

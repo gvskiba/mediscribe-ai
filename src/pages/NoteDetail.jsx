@@ -28,7 +28,7 @@ import {
         Beaker,
         Activity,
         Pill,
-        X,
+        XCircle,
         ChevronDown,
         ChevronUp,
         GripVertical,

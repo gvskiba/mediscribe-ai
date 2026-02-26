@@ -138,7 +138,11 @@ export default function SubjectiveTab({
         sublabel="· HPI narrative"
         accentColor="blue"
         actions={
-          <InlineSectionAI type="history_of_present_illness" note={note} onApply={async (val) => { setLocalHPI(val); await base44.entities.ClinicalNote.update(noteId, { history_of_present_illness: val }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} />
+          <InlineSectionAI type="history_of_present_illness" note={note} onApply={async (val) => { 
+            setLocalHPI(val); 
+            queryClient.setQueryData(["note", noteId], (old) => ({ ...old, history_of_present_illness: val }));
+            await base44.entities.ClinicalNote.update(noteId, { history_of_present_illness: val }); 
+          }} />
         }
       >
         <div className="p-4">

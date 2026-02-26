@@ -189,7 +189,7 @@ export default function Layout({ children, currentPageName }) {
               </button>
               <button
                 onClick={() => base44.auth.logout()}
-                className="text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg p-2 transition-all"
+                className="text-slate-400 hover:text-violet-300 hover:bg-violet-900/30 rounded-lg p-2 transition-all"
                 title="Sign Out"
               >
                 <LogOut className="w-5 h-5" />

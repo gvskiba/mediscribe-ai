@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   Activity, Eye, Heart, Wind, User, Brain, Plus, XCircle, Check,
-  Ear, Bone, Droplets, Thermometer, Zap, Shield, Sparkles, Loader2, ChevronDown, RefreshCw
+  Ear, Bone, Droplets, Thermometer, Zap, Shield, Sparkles, Loader2, ChevronDown, RefreshCw, FileText
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";

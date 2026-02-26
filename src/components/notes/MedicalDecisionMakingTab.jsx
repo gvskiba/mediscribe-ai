@@ -547,7 +547,7 @@ Return:
                             size="sm"
                             className="text-red-600 hover:bg-red-50 hover:text-red-700 gap-2"
                           >
-                            <X className="w-3.5 h-3.5" /> Delete
+                            <XCircle className="w-3.5 h-3.5" /> Delete
                           </Button>
                         </div>
                       </div>

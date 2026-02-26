@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
-  Activity, Eye, Heart, Wind, User, Brain, Plus, X, Check,
+  Activity, Eye, Heart, Wind, User, Brain, Plus, XCircle, Check,
   Ear, Bone, Droplets, Thermometer, Zap, Shield, Sparkles, Loader2, ChevronDown, RefreshCw
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -147,7 +147,7 @@ function SystemRow({ section, onStatusChange, onNotesChange, onDelete }) {
           <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
         </button>
         <button onClick={() => onDelete(section.id)} className="flex-shrink-0 text-slate-300 hover:text-red-400 transition-colors" title="Remove system">
-          <X className="w-3 h-3" />
+          <XCircle className="w-3 h-3" />
         </button>
       </div>
 
@@ -440,7 +440,7 @@ Always include "constitutional" and any systems directly or indirectly related t
                   className="flex-1 text-xs bg-white border border-blue-200 rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-blue-300 placeholder:text-slate-400"
                 />
                 <button onClick={addCustomSection} className="text-blue-600 hover:text-blue-800"><Check className="w-4 h-4" /></button>
-                <button onClick={() => { setShowAddFromList(false); setNewSectionLabel(""); }} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+                <button onClick={() => { setShowAddFromList(false); setNewSectionLabel(""); }} className="text-slate-400 hover:text-slate-600"><XCircle className="w-4 h-4" /></button>
               </div>
             </div>
           </motion.div>

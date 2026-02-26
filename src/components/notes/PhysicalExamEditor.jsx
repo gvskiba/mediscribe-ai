@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { 
   Activity, Eye, Heart, Wind, User, Brain,
-  Plus, X, Check, ChevronDown, Settings
+  Plus, XCircle, Check, ChevronDown, Settings
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -139,7 +139,7 @@ function SectionRow({ section, onChange, isCustom, onRemove }) {
         </button>
 
         <button onClick={() => onRemove(section.id)} className="flex-shrink-0 text-slate-300 hover:text-red-400 transition-colors" title="Remove section">
-          <X className="w-3 h-3" />
+          <XCircle className="w-3 h-3" />
         </button>
       </div>
 

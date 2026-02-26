@@ -31,24 +31,26 @@ function SectionCard({ label, sublabel, badge, actions, children, accentColor = 
 
   return (
     <div className={`bg-white rounded-xl border border-slate-200 shadow-sm border-l-4 ${accent} overflow-hidden`}>
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 transition-colors"
-      >
-        <div className="flex items-center gap-2.5">
+      <div className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 transition-colors">
+        <div
+          className="flex items-center gap-2.5 flex-1 cursor-pointer min-w-0"
+          onClick={() => setOpen(o => !o)}
+        >
           <div className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
           <span className="text-sm font-semibold text-slate-800">{label}</span>
           {sublabel && <span className="text-xs text-slate-400 hidden sm:inline">{sublabel}</span>}
           {badge && <span className="ml-1">{badge}</span>}
         </div>
-        <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-2 flex-shrink-0">
           {actions}
-          <div className="text-slate-400 pointer-events-none ml-1">
+          <div
+            className="text-slate-400 ml-1 cursor-pointer p-1"
+            onClick={() => setOpen(o => !o)}
+          >
             {open ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </div>
         </div>
-      </button>
+      </div>
       {open && <div className="border-t border-slate-100">{children}</div>}
     </div>
   );

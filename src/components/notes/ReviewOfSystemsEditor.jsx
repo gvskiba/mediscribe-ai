@@ -203,6 +203,7 @@ export default function ReviewOfSystemsEditor({ rosData, onUpdate, onAddToNote, 
   const [userRosDefaults, setUserRosDefaults] = useState(null);
   const [showAIHub, setShowAIHub] = useState(false);
   const [aiHubAlwaysVisible, setAIHubAlwaysVisible] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   // Load user settings first, then initialize sections
   useEffect(() => {

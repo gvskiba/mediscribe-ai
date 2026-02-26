@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, X, Send, Loader2, Bot, User, Sparkles, Stethoscope, Pill, BookOpen, FlaskConical } from "lucide-react";
+import { MessageCircle, XCircle, Send, Loader2, Bot, User, Sparkles, Stethoscope, Pill, BookOpen, FlaskConical } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 

@@ -79,6 +79,7 @@ function SettingSection({ id, title, subtitle, icon: Icon, color, active, onClic
     emerald: "border-l-emerald-500 bg-emerald-50 text-emerald-600",
     blue: "border-l-blue-500 bg-blue-50 text-blue-600",
     purple: "border-l-purple-500 bg-purple-50 text-purple-600",
+    rose: "border-l-rose-500 bg-rose-50 text-rose-600",
     slate: "border-l-slate-400 bg-slate-100 text-slate-600",
   };
 

@@ -226,7 +226,7 @@ export default function MedicalChatbot() {
                 </div>
               </div>
               <button onClick={() => setOpen(false)} className="p-1.5 rounded-lg hover:bg-white/20 transition-colors">
-                <X className="w-4 h-4" />
+                <XCircle className="w-4 h-4" />
               </button>
             </div>
 

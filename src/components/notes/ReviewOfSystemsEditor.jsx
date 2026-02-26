@@ -157,31 +157,52 @@ function SystemRow({ section, onStatusChange, onNotesChange, onDelete }) {
 }
 
 export default function ReviewOfSystemsEditor({ rosData, onUpdate, onAddToNote, note }) {
-  const [sections, setSections] = useState(() => initSections(rosData));
+  const [sections, setSections] = useState([]);
   const [loadingAI, setLoadingAI] = useState(false);
   const [analyzed, setAnalyzed] = useState(false);
   const [addingSection, setAddingSection] = useState(false);
   const [newSectionLabel, setNewSectionLabel] = useState("");
   const [showAddFromList, setShowAddFromList] = useState(false);
+  const [userRosDefaults, setUserRosDefaults] = useState(null);
+
+  // Load user settings first, then initialize sections
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const user = await base44.auth.me();
+        const rosDefaults = user?.clinical_settings?.ros_defaults || null;
+        setUserRosDefaults(rosDefaults);
+        setSections(initSectionsWithDefaults(rosData, rosDefaults));
+        const hasExistingData = rosData && typeof rosData !== "string"
+          ? Object.keys(rosData).length > 0
+          : typeof rosData === "string" && rosData.trim().length > 0;
+        if (hasExistingData) setAnalyzed(true);
+      } catch {
+        setSections(initSections(rosData));
+      }
+    };
+    loadSettings();
+  }, []);
 
   // Re-initialize when rosData changes from DB
   const prevRosDataRef = useRef(rosData);
   useEffect(() => {
     if (rosData !== prevRosDataRef.current) {
       prevRosDataRef.current = rosData;
-      setSections(initSections(rosData));
-      setAnalyzed(true); // already has data, skip auto-analyze
+      setSections(initSectionsWithDefaults(rosData, userRosDefaults));
+      setAnalyzed(true);
     }
-  }, [rosData]);
+  }, [rosData, userRosDefaults]);
 
   // Auto-analyze on mount if we have CC or HPI but no existing rosData
   useEffect(() => {
+    if (userRosDefaults === null) return; // wait for settings to load
     const hasExistingData = rosData && typeof rosData !== "string" ? Object.keys(rosData).length > 0 :
       typeof rosData === "string" && rosData.trim().length > 0;
     if (!hasExistingData && (note?.chief_complaint || note?.history_of_present_illness) && !analyzed) {
       analyzeRelevantSystems();
     }
-  }, []);
+  }, [userRosDefaults]);
 
   const save = (updated) => {
     const obj = {};

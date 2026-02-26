@@ -208,37 +208,35 @@ export default function AITextCompletion({
 
   return (
     <div className="relative">
-      {/* Ghost-text overlay */}
-      {suggestion && (
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 pointer-events-none"
-          style={{ zIndex: 1 }}
-        >
-          {/* We render an invisible replica with the suggestion appended */}
-          <div
-            className={`${className} w-full whitespace-pre-wrap break-words text-transparent`}
-            style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-          >
-            {value}
-            <span className="text-slate-400 opacity-70">{suggestion}</span>
-          </div>
-        </div>
-      )}
-
       {/* Real textarea */}
       <textarea
         ref={textareaRef}
-        value={value}
+        value={suggestion ? value + suggestion : value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         onBlur={handleBlur}
         placeholder={placeholder}
         disabled={disabled}
         rows={minRows}
-        className={`${className} relative bg-transparent`}
-        style={{ zIndex: 2, position: "relative" }}
+        className={className}
+        style={suggestion ? {
+          background: `linear-gradient(transparent, transparent)`,
+        } : undefined}
       />
+
+      {/* Ghost-text overlay using a positioned div matching textarea */}
+      {suggestion && (
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 pointer-events-none overflow-hidden rounded-md"
+          style={{ padding: "0.5rem 0.75rem", zIndex: 3 }}
+        >
+          <span
+            className="whitespace-pre-wrap break-words text-sm"
+            style={{ color: "transparent" }}
+          >{value}</span><span className="text-slate-400 opacity-80 text-sm whitespace-pre-wrap">{suggestion}</span>
+        </div>
+      )}
 
       {/* Status bar */}
       <div className="flex items-center justify-between mt-1 px-0.5">

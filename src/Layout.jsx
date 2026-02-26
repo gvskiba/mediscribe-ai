@@ -203,10 +203,10 @@ export default function Layout({ children, currentPageName }) {
       <div className="lg:hidden fixed top-0 left-0 right-0 border-b px-4 py-3 z-40 space-y-3" style={{ background: 'linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%)', borderBottomColor: 'rgba(139,92,246,0.3)' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-200">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 via-purple-600 to-indigo-700 flex items-center justify-center flex-shrink-0 shadow-lg shadow-purple-900/50">
               <Stethoscope className="w-4 h-4 text-white" />
             </div>
-            <span className="font-bold text-sm truncate">Notrya AI</span>
+            <span className="font-bold text-sm truncate text-white">Notrya AI</span>
           </div>
           <div className="flex items-center gap-2">
             <button

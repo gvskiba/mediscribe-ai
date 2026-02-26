@@ -271,11 +271,12 @@ Always include "constitutional" and any systems directly or indirectly related t
       });
 
       const relevantIds = result.relevant_system_ids || [];
+      const hiddenIds = userRosDefaults ? Object.keys(userRosDefaults).filter(k => k.startsWith("_hidden_")).map(k => k.replace("_hidden_", "")) : [];
       const filtered = ALL_SYSTEMS
-        .filter(s => relevantIds.includes(s.id))
-        .map(s => ({ ...s, status: "normal", notes: s.normal }));
+        .filter(s => relevantIds.includes(s.id) && !hiddenIds.includes(s.id))
+        .map(s => ({ ...s, normal: userRosDefaults?.[s.id] || s.normal, status: "normal", notes: userRosDefaults?.[s.id] || s.normal }));
 
-      setSections(filtered.length > 0 ? filtered : ALL_SYSTEMS.map(s => ({ ...s, status: "normal", notes: s.normal })));
+      setSections(filtered.length > 0 ? filtered : (userRosDefaults ? initSectionsWithDefaults(null, userRosDefaults) : ALL_SYSTEMS.map(s => ({ ...s, status: "normal", notes: s.normal }))));
       setAnalyzed(true);
       toast.success(`Showing ${filtered.length} relevant systems based on chief complaint`);
     } catch {

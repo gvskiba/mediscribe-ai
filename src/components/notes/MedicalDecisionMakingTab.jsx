@@ -247,14 +247,14 @@ Return:
         <div className="p-6 space-y-4">
           {!aiAnalysis ? (
             <>
-              {!note.assessment && !note.diagnoses?.length && (
+              {!note.chief_complaint && !note.history_of_present_illness && !note.assessment && !note.diagnoses?.length && (
                 <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-center">
-                  Add an assessment or diagnoses to generate MDM analysis
+                  Add a chief complaint, HPI, assessment, or diagnoses to generate MDM analysis
                 </p>
               )}
               <Button
                 onClick={generateAIMDMAnalysis}
-                disabled={loadingAI || (!note.assessment && !note.diagnoses?.length)}
+                disabled={loadingAI || (!note.chief_complaint && !note.history_of_present_illness && !note.assessment && !note.diagnoses?.length)}
                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white gap-2 disabled:opacity-50"
               >
                 {loadingAI ? (

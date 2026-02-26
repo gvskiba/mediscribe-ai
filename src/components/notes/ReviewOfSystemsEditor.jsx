@@ -243,6 +243,21 @@ export default function ReviewOfSystemsEditor({ rosData, onUpdate, onAddToNote, 
     }
   }, [userRosDefaults]);
 
+  // Load AI Hub always-visible setting
+  const loadAIHubSetting = async () => {
+    try {
+      const user = await base44.auth.me();
+      if (user?.ai_hub_always_visible) {
+        setAIHubAlwaysVisible(true);
+        setShowAIHub(true);
+      }
+    } catch { /* no user */ }
+  };
+
+  useEffect(() => {
+    loadAIHubSetting();
+  }, []);
+
   const save = (updated) => {
     const obj = {};
     updated.forEach(s => {

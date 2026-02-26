@@ -10,9 +10,10 @@ import TabPageLayout from "./TabPageLayout";
 export default function DifferentialTab({
   note, noteId, queryClient,
   templates, selectedTemplate, setSelectedTemplate,
-  loadingDifferential, differentialDiagnosis,
+  loadingDifferential,
   isFirstTab, isLastTab, handleBack, handleNext,
 }) {
+  const differentialDiagnosis = note?.differentials || [];
   const [loading, setLoading] = useState(false);
   const [userSettings, setUserSettings] = useState(null);
   const [showInputs, setShowInputs] = useState(false);

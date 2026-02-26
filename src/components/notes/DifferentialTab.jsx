@@ -35,7 +35,7 @@ export default function DifferentialTab({
         hpi: note.history_of_present_illness || "",
         physicalExam: note.physical_exam || "",
         assessment: note.assessment || "",
-        specialty: userSettings?.medical_specialty || "internal_medicine"
+        specialty: userSettings?.clinical_settings?.medical_specialty || "internal_medicine"
       });
       
       if (response.data.differentials) {
@@ -43,7 +43,7 @@ export default function DifferentialTab({
           ...old, 
           differentials: response.data.differentials 
         }));
-        toast.success("Differentials generated for " + (userSettings?.medical_specialty || "Internal Medicine"));
+        toast.success("Differentials generated for " + (userSettings?.clinical_settings?.medical_specialty || "Internal Medicine"));
       }
     } catch (error) {
       console.error("Failed to generate differential diagnosis:", error);

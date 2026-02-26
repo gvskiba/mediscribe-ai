@@ -30,12 +30,38 @@ const SECTION_CONFIGS = {
       {
         id: "generate",
         label: "Generate OLDCARTS HPI",
-        prompt: (note) => `Write a comprehensive HPI using OLDCARTS (Onset, Location, Duration, Character, Alleviating/Aggravating, Radiation, Timing, Severity) from:\nCC: ${note.chief_complaint || "N/A"}\nRaw Notes: ${note.raw_note || "N/A"}`,
+        prompt: (note) => `Write a comprehensive HPI using OLDCARTS (Onset, Location, Duration, Character, Alleviating/Aggravating, Radiation, Timing, Severity) from:\nCC: ${note.chief_complaint || "N/A"}\nRaw Notes: ${note.raw_note || "N/A"}\nExisting HPI: ${note.history_of_present_illness || "N/A"}`,
       },
       {
         id: "expand",
         label: "Expand Existing",
         prompt: (note) => `Expand and improve this HPI with more clinical detail and OLDCARTS elements:\n${note.history_of_present_illness || note.raw_note || "N/A"}`,
+      },
+      {
+        id: "summarize",
+        label: "Clinical Summary",
+        prompt: (note) => `Write a concise, well-structured clinical HPI summary in 3-5 sentences for this patient:\nCC: ${note.chief_complaint || "N/A"}\nHPI: ${note.history_of_present_illness || note.raw_note || "N/A"}\nInclude onset, key symptoms, severity, and relevant context.`,
+      }
+    ]
+  },
+  history_of_present_illness: {
+    label: "HPI AI",
+    color: "from-blue-600 to-indigo-600",
+    actions: [
+      {
+        id: "generate",
+        label: "Generate OLDCARTS HPI",
+        prompt: (note) => `Write a comprehensive HPI using OLDCARTS (Onset, Location, Duration, Character, Alleviating/Aggravating, Radiation, Timing, Severity) from:\nCC: ${note.chief_complaint || "N/A"}\nRaw Notes: ${note.raw_note || "N/A"}\nExisting HPI: ${note.history_of_present_illness || "N/A"}`,
+      },
+      {
+        id: "expand",
+        label: "Expand Existing",
+        prompt: (note) => `Expand and improve this HPI with more clinical detail and OLDCARTS elements:\n${note.history_of_present_illness || note.raw_note || "N/A"}`,
+      },
+      {
+        id: "summarize",
+        label: "Clinical Summary",
+        prompt: (note) => `Write a concise, well-structured clinical HPI summary in 3-5 sentences for this patient:\nCC: ${note.chief_complaint || "N/A"}\nHPI: ${note.history_of_present_illness || note.raw_note || "N/A"}\nInclude onset, key symptoms, severity, and relevant context.`,
       }
     ]
   },

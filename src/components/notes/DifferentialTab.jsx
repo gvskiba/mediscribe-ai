@@ -194,10 +194,10 @@ export default function DifferentialTab({
               <Button
                 size="sm" variant="outline"
                 onClick={async () => {
-                  const diffText = differentialDiagnosis.map((d, i) => `${i + 1}. ${d.diagnosis} (${d.likelihood_rank}/5)\n   ${d.clinical_reasoning}`).join('\n\n');
-                  await base44.entities.ClinicalNote.update(noteId, { assessment: (note.assessment || "") + "\n\nDIFFERENTIAL DIAGNOSIS\n\n" + diffText });
-                  queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-                  toast.success("Added to Assessment");
+                   const diffText = differentialDiagnosis.map((d, i) => `${i + 1}. ${d.diagnosis} (${d.likelihood_rank}/5)\n   ${d.clinical_reasoning}`).join('\n\n');
+                   await base44.entities.ClinicalNote.update(noteId, { clinical_impression: (note.clinical_impression || "") + "\n\nDIFFERENTIAL DIAGNOSIS\n\n" + diffText });
+                   queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+                   toast.success("Added to Initial Impression");
                 }}
                 className="text-xs h-6 px-2 border-slate-200 text-slate-600"
               >

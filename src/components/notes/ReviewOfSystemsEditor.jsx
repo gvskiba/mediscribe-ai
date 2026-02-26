@@ -257,15 +257,27 @@ History of Present Illness: ${note.history_of_present_illness || "N/A"}
 From this list of system IDs, select only the ones that are clinically relevant to review given this presentation:
 constitutional, eyes, ent, cardiovascular, respiratory, gastrointestinal, genitourinary, musculoskeletal, neurological, psychiatric, endocrine, hematologic, integumentary
 
-Always include "constitutional" and any systems directly or indirectly related to the chief complaint. Return 4-8 systems typically.`,
+Instructions:
+1. Always include "constitutional" as a baseline
+2. Include all systems directly mentioned or implied in the CC/HPI
+3. Include related systems that should be screened based on the primary complaint (e.g., respiratory if chest pain, neurological if headache)
+4. Exclude systems unrelated to the presentation
+5. Return 4-10 most pertinent systems
+
+Example: CC "chest pain" → include constitutional, cardiovascular, respiratory, gastrointestinal (GERD), musculoskeletal, psychiatric
+Example: CC "cough" → include constitutional, respiratory, cardiovascular (heart failure), gastrointestinal (GERD)`,
         response_json_schema: {
           type: "object",
           properties: {
             relevant_system_ids: {
               type: "array",
-              items: { type: "string" }
+              items: { type: "string" },
+              description: "System IDs to include in ROS"
             },
-            reasoning: { type: "string" }
+            reasoning: { 
+              type: "string",
+              description: "Explanation of which systems are relevant and why"
+            }
           }
         }
       });
@@ -278,7 +290,7 @@ Always include "constitutional" and any systems directly or indirectly related t
 
       setSections(filtered.length > 0 ? filtered : (userRosDefaults ? initSectionsWithDefaults(null, userRosDefaults) : ALL_SYSTEMS.map(s => ({ ...s, status: "normal", notes: s.normal }))));
       setAnalyzed(true);
-      toast.success(`Showing ${filtered.length} relevant systems based on chief complaint`);
+      toast.success(`Showing ${filtered.length} relevant systems for ${note.chief_complaint || 'this presentation'}`);
     } catch {
       toast.error("Could not analyze relevant systems");
       setSections(ALL_SYSTEMS.map(s => ({ ...s, status: "normal", notes: s.normal })));

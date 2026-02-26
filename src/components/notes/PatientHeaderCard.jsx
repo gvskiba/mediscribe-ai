@@ -5,8 +5,9 @@ import { Calendar, Clock, Hash } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import InlineSectionAI from "../ai/InlineSectionAI";
+import NoteQuickFind from "./NoteQuickFind";
 
-export default function PatientHeaderCard({ note, noteId, queryClient, setLastSaved }) {
+export default function PatientHeaderCard({ note, noteId, queryClient, setLastSaved, onNavigate }) {
   const avatarLetter = note.patient_age 
     ? note.patient_age[0] 
     : (note.patient_name && note.patient_name !== "New Patient" ? note.patient_name[0] : "?");

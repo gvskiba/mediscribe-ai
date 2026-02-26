@@ -243,13 +243,27 @@ For each code provide: code, description, confidence (high/moderate/low), ration
     setAddedCodes(prev => new Set([...prev, key]));
     if (codeType === "icd10" && onAddDiagnoses) {
       onAddDiagnoses([`${code.code} - ${code.description}`]);
-      toast.success(`ICD-10 ${code.code} added to diagnoses`);
+      toast.success(`ICD-10 ${code.code} added to Final Diagnoses`);
     } else if (codeType === "cpt" && onAddCPTCodes) {
       onAddCPTCodes([`${code.code} - ${code.description}`]);
       toast.success(`CPT ${code.code} added`);
     } else {
       toast.success(`${code.code} copied — paste it where needed`);
       navigator.clipboard.writeText(`${code.code} - ${code.description}`);
+    }
+  };
+
+  const handleAddMultiple = () => {
+    if (selectedCodesForAdd.size === 0) {
+      toast.error("Select codes to add");
+      return;
+    }
+    const codesToAdd = icd10Codes.filter(c => selectedCodesForAdd.has(`icd10-${c.code}`));
+    const formatted = codesToAdd.map(c => `${c.code} - ${c.description}`);
+    if (onAddDiagnoses && formatted.length > 0) {
+      onAddDiagnoses(formatted);
+      toast.success(`Added ${formatted.length} code(s) to Final Diagnoses`);
+      setSelectedCodesForAdd(new Set());
     }
   };
 

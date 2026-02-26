@@ -183,7 +183,7 @@ export default function Layout({ children, currentPageName }) {
                   });
                   window.location.href = createPageUrl(`NoteDetail?id=${newNote.id}`);
                 }}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg px-4 py-2 font-semibold text-sm transition-all shadow-sm flex items-center gap-2">
+                className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-lg px-4 py-2 font-semibold text-sm transition-all shadow-lg shadow-violet-900/40 flex items-center gap-2">
                 <FileText className="w-4 h-4" />
                 New Note
               </button>

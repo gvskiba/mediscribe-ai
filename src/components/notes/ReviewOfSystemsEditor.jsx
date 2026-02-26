@@ -574,12 +574,27 @@ Example: CC "cough" → include constitutional, respiratory, cardiovascular (hea
       {!loadingAI && abnormalCount > 0 && (
         <div className="bg-rose-50 rounded-xl border border-rose-200 px-4 py-3">
           <p className="text-xs font-bold text-rose-800 uppercase tracking-wide mb-2">Abnormal Findings</p>
-          <div className="space-y-1">
+          <div className="space-y-1 mb-4">
             {sections.filter(s => s.status === "abnormal").map(s => (
               <p key={s.id} className="text-xs text-rose-900">
                 <span className="font-semibold">{s.label}:</span> {s.notes || "—"}
               </p>
             ))}
+          </div>
+          <div className="flex items-center gap-2 border-t border-rose-200 pt-3">
+            <button
+              onClick={handleAddToNote}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition-colors"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              Save to Note
+            </button>
+            <button
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-rose-200 bg-white text-rose-700 text-xs font-semibold hover:bg-rose-50 transition-colors"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              Preview
+            </button>
           </div>
         </div>
       )}

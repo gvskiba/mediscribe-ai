@@ -480,9 +480,9 @@ export default function CreateTemplateFromNote({ open, onClose, note, onSuccess 
             </div>
 
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1.5">
                 <Tag className="w-4 h-4" /> Tags
-              </label>
+              </div>
               <Input
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}

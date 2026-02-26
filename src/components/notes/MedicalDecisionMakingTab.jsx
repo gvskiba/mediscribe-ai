@@ -85,18 +85,22 @@ export default function MedicalDecisionMakingTab({ note, onUpdateNote, noteId })
         note.physical_exam && `Physical Exam: ${note.physical_exam}`,
       ].filter(Boolean).join("\n\n");
 
+      const specialty = userSettings?.clinical_settings?.medical_specialty?.replace(/_/g, ' ').toUpperCase() || 'GENERAL MEDICINE';
+      
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are an expert clinician. Provide a comprehensive Medical Decision Making (MDM) analysis with detailed clinical reasoning. Return each section as an array of bullet points.
+        prompt: `You are an expert clinician specializing in ${specialty}. Provide a comprehensive Medical Decision Making (MDM) analysis with detailed clinical reasoning based on ${specialty} guidelines and standards of care. Return each section as an array of bullet points.
 
 ${context}
 
+IMPORTANT: Base all clinical decisions, diagnostic recommendations, and treatment approaches on ${specialty} guidelines, protocols, and best practices.
+
 Return:
 1. Problem Summary - Array of key clinical synthesis points
-2. Differential Diagnosis Reasoning - Array of differentials with reasoning
-3. Imaging/Labs Rationale - Array of tests and their justifications
-4. Treatment Reasoning - Array of treatment plans/rationale
-5. Risk Assessment - Array of identified risks
-6. Follow-up Strategy - Array of follow-up items with timing`,
+2. Differential Diagnosis Reasoning - Array of differentials with reasoning (ranked by ${specialty} likelihood)
+3. Imaging/Labs Rationale - Array of tests and their justifications (using ${specialty} standards)
+4. Treatment Reasoning - Array of treatment plans/rationale (following ${specialty} protocols)
+5. Risk Assessment - Array of identified risks (with ${specialty} risk stratification)
+6. Follow-up Strategy - Array of follow-up items with timing (per ${specialty} standards)`,
         response_json_schema: {
           type: "object",
           properties: {

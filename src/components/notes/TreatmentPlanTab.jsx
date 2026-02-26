@@ -58,21 +58,26 @@ function formatPlanText(text) {
     <div className="space-y-4">
       {sections.map(({ header, content }, idx) => {
         const colorClass = Object.entries(headerColors).find(([k]) => header.includes(k))?.[1] || "text-slate-700 bg-slate-50 border-slate-200";
-        const bullets = content.split(/•|⚠️\s*/).map(b => b.trim()).filter(Boolean);
         const isRedFlags = header.includes("RED FLAG");
 
+        // Split on bullet characters or newlines, handle both • and \n- patterns
+        const rawBullets = content
+          .split(/\n?•\s*|\n?⚠️?\s*|\n-\s+/)
+          .map(b => b.trim())
+          .filter(b => b && b.toLowerCase() !== "none");
+
         return (
-          <div key={idx} className="space-y-1.5">
+          <div key={idx} className="space-y-2">
             <div className={`inline-flex items-center px-2.5 py-0.5 rounded-md border text-xs font-bold uppercase tracking-wide ${colorClass}`}>
               {isRedFlags && "⚠️ "}{header}
             </div>
-            {bullets.length === 0 || (bullets.length === 1 && bullets[0].toLowerCase() === "none") ? (
+            {rawBullets.length === 0 ? (
               <p className="text-xs text-slate-400 ml-1">None documented</p>
             ) : (
-              <ul className="space-y-1.5 ml-1">
-                {bullets.map((b, i) => (
+              <ul className="space-y-2 ml-1">
+                {rawBullets.map((b, i) => (
                   <li key={i} className="flex gap-2 text-sm text-slate-700">
-                    <span className={`mt-0.5 flex-shrink-0 font-bold ${isRedFlags ? "text-rose-500" : "text-amber-500"}`}>{isRedFlags ? "⚠" : "•"}</span>
+                    <span className={`mt-1 flex-shrink-0 w-1.5 h-1.5 rounded-full ${isRedFlags ? "bg-rose-500" : "bg-amber-500"}`} />
                     <span className="leading-relaxed">{b}</span>
                   </li>
                 ))}

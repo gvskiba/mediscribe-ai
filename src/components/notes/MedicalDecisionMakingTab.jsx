@@ -233,22 +233,24 @@ Return:
         </div>
         <div className="p-6 space-y-4">
           {!aiAnalysis ? (
-            {!note.assessment && !note.diagnoses?.length && (
-              <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-center">
-                Add an assessment or diagnoses to generate MDM analysis
-              </p>
-            )}
-            <Button
-              onClick={generateAIMDMAnalysis}
-              disabled={loadingAI || (!note.assessment && !note.diagnoses?.length)}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white gap-2 disabled:opacity-50"
-            >
-              {loadingAI ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Generating Analysis...</>
-              ) : (
-                <><Brain className="w-4 h-4" /> Generate AI MDM Analysis</>
+            <>
+              {!note.assessment && !note.diagnoses?.length && (
+                <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-center">
+                  Add an assessment or diagnoses to generate MDM analysis
+                </p>
               )}
-            </Button>
+              <Button
+                onClick={generateAIMDMAnalysis}
+                disabled={loadingAI || (!note.assessment && !note.diagnoses?.length)}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white gap-2 disabled:opacity-50"
+              >
+                {loadingAI ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Generating Analysis...</>
+                ) : (
+                  <><Brain className="w-4 h-4" /> Generate AI MDM Analysis</>
+                )}
+              </Button>
+            </>
           ) : (
             <div className="space-y-3">
               {loadingRank && (

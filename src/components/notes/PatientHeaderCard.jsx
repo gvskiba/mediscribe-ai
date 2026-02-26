@@ -57,6 +57,9 @@ export default function PatientHeaderCard({ note, noteId, queryClient, setLastSa
           className="flex-1 text-sm text-slate-600 bg-transparent border-0 outline-none focus:ring-0 min-w-0 placeholder:text-slate-300"
         />
 
+        {/* Quick Find */}
+        {onNavigate && <NoteQuickFind note={note} onNavigate={onNavigate} />}
+
         {/* Right: date/time/status */}
         <div className="flex items-center gap-2 flex-shrink-0 text-xs text-slate-400">
           <span className="flex items-center gap-1">

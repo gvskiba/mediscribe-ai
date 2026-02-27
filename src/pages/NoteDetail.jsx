@@ -104,6 +104,7 @@ const TAB_GROUPS = [
     label: 'Patient',
     color: 'blue',
     tabs: [
+      { id: 'clinical_note', label: 'Clinical Note', icon: FileText },
       { id: 'patient_intake', label: 'Subjective', icon: Activity },
     ]
   },

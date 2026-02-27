@@ -63,6 +63,7 @@ Provide results with: diagnosis, icd10_code (the most specific applicable ICD-10
               type: "object",
               properties: {
                 diagnosis: { type: "string" },
+                icd10_code: { type: "string" },
                 likelihood_rank: { type: "number", minimum: 1, maximum: 5 },
                 clinical_reasoning: { type: "string" },
                 red_flags_to_monitor: { type: "array", items: { type: "string" } }

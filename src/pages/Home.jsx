@@ -313,7 +313,7 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t border-slate-800 pt-8 flex items-center justify-between text-sm text-slate-400">
-            <p>&copy; 2024 Notrya AI. All rights reserved.</p>
+            <p>&copy; 2024 MedNu. All rights reserved.</p>
             <p>HIPAA Compliant • SOC 2 Certified</p>
           </div>
         </div>

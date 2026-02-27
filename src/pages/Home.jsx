@@ -251,7 +251,7 @@ export default function Home() {
             Ready to Transform Your Documentation?
           </h3>
           <p className="text-xl text-blue-100 max-w-2xl mx-auto">
-            Join healthcare professionals already using Notrya AI to revolutionize their clinical practice.
+            Join healthcare professionals already using MedNu. to revolutionize their clinical practice.
           </p>
           {user ? (
             <Button

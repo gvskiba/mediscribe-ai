@@ -52,7 +52,7 @@ ${assessment || "N/A"}
 
 IMPORTANT: Use ALL available clinical information above to generate the most accurate differentials. Generate differentials that are relevant and commonly seen in ${specialty.replace(/_/g, " ")}. Rank by likelihood within this specialty context and provide reasoning for each.
 
-Provide results with: diagnosis, likelihood_rank (1-5, 5 being most likely), clinical_reasoning, red_flags_to_monitor.`,
+Provide results with: diagnosis, icd10_code (the most specific applicable ICD-10 code, e.g. "I21.9"), likelihood_rank (1-5, 5 being most likely), clinical_reasoning, red_flags_to_monitor.`,
       add_context_from_internet: true,
       response_json_schema: {
         type: "object",

@@ -6,7 +6,7 @@ import ClinicalNotePreviewButton from "./ClinicalNotePreviewButton";
 import PatientEducationGenerator from "./PatientEducationGenerator";
 import FollowUpSuggestions from "./FollowUpSuggestions";
 
-export default function PatientEducationTab({ note, patientEducation, generatingEducation, generatePatientEducation, downloadPatientEducation, isFirstTab, isLastTab, handleBack, handleNext }) {
+export default function PatientEducationTab({ note, patientEducation, generatingEducation, generatePatientEducation, downloadPatientEducation, onAddToNote, isFirstTab, isLastTab, handleBack, handleNext }) {
   return (
     <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
       <div><h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Patient Education</h2><p className="text-xs text-slate-400 mt-0.5">Generate patient-friendly education materials for discharge</p></div>

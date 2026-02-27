@@ -189,10 +189,10 @@ export default function Home() {
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
             <h3 className="text-3xl font-bold text-slate-900">
-              Why Choose Notrya AI?
+              Why Choose MedNu.?
             </h3>
             <p className="text-lg text-slate-600">
-              Built specifically for healthcare professionals, Notrya AI combines cutting-edge AI with clinical expertise to deliver the most intelligent documentation assistant on the market.
+              Built specifically for healthcare professionals, MedNu. combines cutting-edge AI with clinical expertise to deliver the most intelligent documentation assistant on the market.
             </p>
             <div className="space-y-4">
               {[

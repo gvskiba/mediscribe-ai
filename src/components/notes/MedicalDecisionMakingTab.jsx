@@ -516,16 +516,22 @@ function MDMPhaseSection({ phase, label, icon: Icon, color, entries, note, onAdd
 
   const colorMap = {
     blue: {
-      wrap: "from-blue-50 to-indigo-50 border-blue-200",
+      wrap: "from-blue-50 to-indigo-50 border-blue-300",
+      headerBg: "bg-blue-100",
       icon: "text-blue-600", title: "text-blue-900",
-      badge: "bg-blue-100 text-blue-700",
-      addBtn: "border-blue-300 text-blue-700 hover:bg-blue-50",
+      badge: "bg-blue-200 text-blue-800",
+      addBtn: "bg-blue-600 hover:bg-blue-700 text-white",
+      autoBtn: "border-indigo-300 text-indigo-700 hover:bg-indigo-50",
+      aiBtn: "border-purple-300 text-purple-700 hover:bg-purple-50",
     },
     emerald: {
-      wrap: "from-emerald-50 to-teal-50 border-emerald-200",
+      wrap: "from-emerald-50 to-teal-50 border-emerald-300",
+      headerBg: "bg-emerald-100",
       icon: "text-emerald-600", title: "text-emerald-900",
-      badge: "bg-emerald-100 text-emerald-700",
-      addBtn: "border-emerald-300 text-emerald-700 hover:bg-emerald-50",
+      badge: "bg-emerald-200 text-emerald-800",
+      addBtn: "bg-emerald-600 hover:bg-emerald-700 text-white",
+      autoBtn: "border-indigo-300 text-indigo-700 hover:bg-indigo-50",
+      aiBtn: "border-purple-300 text-purple-700 hover:bg-purple-50",
     },
   };
   const c = colorMap[color];
@@ -538,47 +544,58 @@ function MDMPhaseSection({ phase, label, icon: Icon, color, entries, note, onAdd
   return (
     <div className={`rounded-2xl border-2 bg-gradient-to-br ${c.wrap} overflow-hidden`}>
       {/* Header */}
-      <div className="px-5 py-4 flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-sm">
-            <Icon className={`w-5 h-5 ${c.icon}`} />
+      <div className={`${c.headerBg} px-5 py-4`}>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-sm">
+              <Icon className={`w-5 h-5 ${c.icon}`} />
+            </div>
+            <div>
+              <h4 className={`font-bold text-base ${c.title}`}>{label}</h4>
+              <p className="text-xs text-slate-500">
+                {phase === "initial" ? "Document reasoning at time of presentation" : "Document reasoning prior to discharge / disposition"}
+              </p>
+            </div>
+            <Badge className={`${c.badge} border-0`}>{entries.length} {entries.length === 1 ? "entry" : "entries"}</Badge>
           </div>
-          <div>
-            <h4 className={`font-bold text-base ${c.title}`}>{label}</h4>
-            <p className="text-xs text-slate-500">
-              {phase === "initial" ? "Document reasoning at time of presentation" : "Document reasoning prior to discharge / disposition"}
-            </p>
+          <div className="flex gap-2 flex-wrap">
+            <Button size="sm" variant="outline" onClick={() => { setShowAdd(!showAdd); setShowAutoPopulate(false); setShowAI(false); }} className={`gap-1.5 ${c.addBtn}`}>
+              <Plus className="w-3.5 h-3.5" /> Add Entry
+            </Button>
           </div>
-          <Badge className={`${c.badge} border-0 ml-1`}>{entries.length} {entries.length === 1 ? "entry" : "entries"}</Badge>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button size="sm" variant="outline" onClick={() => { setShowAutoPopulate(!showAutoPopulate); setShowAI(false); }}
-            className="border-indigo-300 text-indigo-700 hover:bg-indigo-50 gap-1.5">
-            <Wand2 className="w-3.5 h-3.5" /> Auto-Populate
+
+        {/* Secondary action row */}
+        <div className="flex gap-2 mt-3 pt-3 border-t border-white/60 flex-wrap">
+          <Button size="sm" variant="outline"
+            onClick={() => { setShowAutoPopulate(!showAutoPopulate); setShowAI(false); setShowAdd(false); }}
+            className={`gap-1.5 text-xs ${showAutoPopulate ? "bg-indigo-100 border-indigo-400 text-indigo-800" : c.autoBtn}`}>
+            <Wand2 className="w-3.5 h-3.5" />
+            {showAutoPopulate ? "Hide Auto-Populate" : "AI Auto-Populate"}
+            <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200 text-xs ml-0.5">AI</Badge>
           </Button>
-          <Button size="sm" variant="outline" onClick={() => { setShowAI(!showAI); setShowAutoPopulate(false); }}
-            className="border-purple-300 text-purple-700 hover:bg-purple-50 gap-1.5">
-            <Sparkles className="w-3.5 h-3.5" /> {showAI ? "Hide AI" : "AI Analysis"}
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => setShowAdd(!showAdd)} className={`gap-1.5 ${c.addBtn}`}>
-            <Plus className="w-3.5 h-3.5" /> Add Entry
+          <Button size="sm" variant="outline"
+            onClick={() => { setShowAI(!showAI); setShowAutoPopulate(false); setShowAdd(false); }}
+            className={`gap-1.5 text-xs ${showAI ? "bg-purple-100 border-purple-400 text-purple-800" : c.aiBtn}`}>
+            <Sparkles className="w-3.5 h-3.5" />
+            {showAI ? "Hide AI Analysis" : "AI Analysis"}
           </Button>
         </div>
       </div>
 
       {/* Body */}
-      <div className="px-5 pb-5 space-y-3">
+      <div className="px-5 py-4 space-y-3">
         <AnimatePresence>
           {showAutoPopulate && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
-              <AutoPopulatePanel note={note} phase={phase} onAddEntries={handleAddEntries} />
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+              <AutoPopulatePanel note={note} phase={phase} onAddEntries={handleAddEntries} onClose={() => setShowAutoPopulate(false)} />
             </motion.div>
           )}
         </AnimatePresence>
 
         <AnimatePresence>
           {showAI && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
               <AIAnalysisPanel note={note} phase={phase} entries={entries} />
             </motion.div>
           )}
@@ -593,16 +610,16 @@ function MDMPhaseSection({ phase, label, icon: Icon, color, entries, note, onAdd
           )}
         </AnimatePresence>
 
-        {entries.length === 0 && !showAdd ? (
+        {entries.length === 0 && !showAdd && !showAutoPopulate ? (
           <div className="text-center py-8 bg-white/60 rounded-xl border border-dashed border-slate-300">
             <Brain className="w-10 h-10 text-slate-300 mx-auto mb-2" />
             <p className="text-slate-500 text-sm font-medium">No entries yet</p>
-            <p className="text-xs text-slate-400 mt-1">Use "Auto-Populate" to generate AI sections or "Add Entry" to write manually</p>
+            <p className="text-xs text-slate-400 mt-1">Use <strong>AI Auto-Populate</strong> to generate sections or <strong>Add Entry</strong> to write manually</p>
           </div>
         ) : (
           <div className="space-y-2">
             {entries.map((entry, idx) => (
-              <EntryCard key={entry.id} entry={entry} idx={idx} onDelete={onDelete} onEdit={onEdit} />
+              <EntryCard key={entry.id} entry={entry} idx={idx} onDelete={onDelete} onEdit={onEdit} isAI={entry.ai_generated} />
             ))}
           </div>
         )}

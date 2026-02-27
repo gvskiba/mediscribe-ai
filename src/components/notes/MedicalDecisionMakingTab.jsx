@@ -86,7 +86,7 @@ Return JSON only.`,
   };
 
   const addAll = () => {
-    onAddEntries(suggestions);
+    onAddEntries(suggestions.map((s) => ({ ...s, ai_generated: true })));
     setSuggestions(null);
     toast.success(`${suggestions.length} sections added`);
   };

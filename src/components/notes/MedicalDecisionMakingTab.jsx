@@ -92,43 +92,62 @@ Return JSON only.`,
   };
 
   return (
-    <div className="border border-indigo-200 rounded-xl bg-indigo-50/50 p-4 space-y-3">
-      <div className="flex items-center justify-between flex-wrap gap-2">
+    <div className="border-2 border-indigo-300 rounded-xl bg-indigo-50 overflow-hidden">
+      {/* Panel header */}
+      <div className="px-4 py-3 bg-indigo-100 flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
-          <Wand2 className="w-4 h-4 text-indigo-600" />
-          <span className="text-sm font-semibold text-indigo-800">Auto-Populate MDM Sections</span>
-          <span className="text-xs text-indigo-500">— AI generates sections with ICD-10 codes from note content</span>
+          <Bot className="w-4 h-4 text-indigo-700" />
+          <span className="text-sm font-bold text-indigo-800">Auto-Populate MDM Sections</span>
+          <Badge className="bg-indigo-200 text-indigo-800 border-0 text-xs">AI</Badge>
         </div>
-        <Button onClick={generate} disabled={loading} size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
-          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
-          {loading ? "Generating…" : "Generate Sections"}
-        </Button>
+        <div className="flex gap-2 items-center">
+          <Button onClick={generate} disabled={loading} size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5">
+            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+            {loading ? "Generating…" : suggestions ? "Re-generate" : "Generate Sections"}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={onClose} className="text-indigo-600 hover:bg-indigo-100 px-2">
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
-      {loading && (
-        <div className="flex items-center gap-2 text-indigo-600 text-sm py-1">
-          <Loader2 className="w-4 h-4 animate-spin" /> Analyzing note and generating MDM sections…
-        </div>
-      )}
+      <div className="p-4 space-y-3">
+        <p className="text-xs text-indigo-700">
+          AI will generate structured MDM sections (with ICD-10 codes) based on the current note content. Review each section before adding.
+        </p>
 
-      {suggestions && suggestions.length > 0 && (
-        <div className="space-y-3">
-          {suggestions.map((s, i) => (
-            <div key={i} className="bg-white rounded-lg border border-indigo-100 p-3">
-              <p className="text-xs font-bold text-indigo-700 mb-1">{s.title}</p>
-              <p className="text-xs text-slate-600 whitespace-pre-wrap leading-relaxed line-clamp-4">{s.content}</p>
-            </div>
-          ))}
-          <div className="flex gap-2 justify-end">
-            <Button size="sm" variant="outline" onClick={() => setSuggestions(null)} className="gap-1">
-              <X className="w-3.5 h-3.5" /> Dismiss
-            </Button>
-            <Button size="sm" onClick={addAll} className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1">
-              <Plus className="w-3.5 h-3.5" /> Add All Sections
-            </Button>
+        {loading && (
+          <div className="flex items-center gap-2 text-indigo-600 text-sm py-2">
+            <Loader2 className="w-4 h-4 animate-spin" /> Analyzing note and generating MDM sections…
           </div>
-        </div>
-      )}
+        )}
+
+        {suggestions && suggestions.length > 0 && (
+          <div className="space-y-2">
+            {suggestions.map((s, i) => (
+              <div key={i} className="bg-white rounded-lg border border-indigo-200 p-3 space-y-1">
+                <div className="flex items-center gap-2">
+                  <Bot className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
+                  <p className="text-xs font-bold text-indigo-700">{s.title}</p>
+                  <Badge className="bg-indigo-50 text-indigo-500 border border-indigo-200 text-xs ml-auto">AI-generated</Badge>
+                </div>
+                <p className="text-xs text-slate-600 whitespace-pre-wrap leading-relaxed line-clamp-5 pl-5">{s.content}</p>
+              </div>
+            ))}
+            <div className="flex gap-2 justify-between items-center pt-1">
+              <span className="text-xs text-slate-500">{suggestions.length} sections ready to add — you can edit them after adding.</span>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => setSuggestions(null)} className="gap-1 border-slate-300">
+                  <X className="w-3.5 h-3.5" /> Dismiss
+                </Button>
+                <Button size="sm" onClick={addAll} className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1">
+                  <Plus className="w-3.5 h-3.5" /> Add All to MDM
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -76,7 +76,7 @@ export default function PatientSummary({ summary, patientName, onDownload, note,
         {summary.follow_up_plans && summary.follow_up_plans.length > 0 && (
           <div>
             <h4 className="text-sm font-semibold text-slate-900 mb-2">Follow-up Plans</h4>
-            <ul className="space-y-1">
+            <ul className="space-y-1 mb-3">
               {summary.follow_up_plans.map((plan, idx) => (
                 <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
                   <span className="text-indigo-500 mt-1">•</span>
@@ -84,6 +84,12 @@ export default function PatientSummary({ summary, patientName, onDownload, note,
                 </li>
               ))}
             </ul>
+            {note && (
+              <div className="border border-indigo-100 rounded-xl bg-indigo-50/50 p-3">
+                <p className="text-xs font-semibold text-indigo-800 mb-2">AI Follow-up Suggestions</p>
+                <FollowUpSuggestions note={note} onAddToNote={onAddToNote} />
+              </div>
+            )}
           </div>
         )}
 

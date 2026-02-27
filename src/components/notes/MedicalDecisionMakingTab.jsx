@@ -635,7 +635,7 @@ export default function MedicalDecisionMakingTab({ note, onUpdateNote, noteId })
   };
 
   const addEntry = async (phase, data) => {
-    const entry = { id: `mdm_${Date.now()}_${Math.random()}`, title: data.title, content: data.content, timestamp: new Date().toISOString() };
+    const entry = { id: `mdm_${Date.now()}_${Math.random()}`, title: data.title, content: data.content, timestamp: new Date().toISOString(), ai_generated: !!data.ai_generated };
     const updated = { ...mdm, [phase]: [...mdm[phase], entry] };
     await persist(updated);
     toast.success("Entry added");

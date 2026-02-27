@@ -280,11 +280,8 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                  <Stethoscope className="w-4 h-4 text-white" />
-                </div>
-                <span className="font-bold text-white">Notrya AI</span>
+              <div className="flex items-center mb-4">
+                <span className="text-lg font-bold text-white">med</span><span className="text-lg font-bold text-[#a78bfa]">nu.</span>
               </div>
               <p className="text-sm text-slate-400">
                 Intelligent clinical platform for modern healthcare professionals

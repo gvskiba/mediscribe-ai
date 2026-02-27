@@ -428,7 +428,7 @@ function EntryCard({ entry, idx, onDelete, onEdit, isAI }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+      className={`bg-white rounded-xl border overflow-hidden shadow-sm ${isAI ? "border-indigo-200" : "border-slate-200"}`}>
       <button onClick={() => !editing && setExpanded(!expanded)}
         className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors text-left">
         <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -436,7 +436,14 @@ function EntryCard({ entry, idx, onDelete, onEdit, isAI }) {
             {idx + 1}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-slate-900 text-sm truncate">{entry.title}</p>
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-slate-900 text-sm truncate">{entry.title}</p>
+              {isAI && (
+                <Badge className="bg-indigo-50 text-indigo-600 border border-indigo-200 text-xs gap-0.5 flex-shrink-0">
+                  <Bot className="w-2.5 h-2.5" /> AI
+                </Badge>
+              )}
+            </div>
             <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
               <Clock className="w-3 h-3" />{format(new Date(entry.timestamp), "MMM d, yyyy h:mm a")}
             </p>

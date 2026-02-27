@@ -32,6 +32,17 @@ export default function PatientEducationTab({ note, patientEducation, generating
           </div>
         </div>
       </div>
+      {/* AI Follow-up Suggestions */}
+      <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-indigo-500 shadow-sm overflow-hidden">
+        <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5">
+          <div className="w-2 h-2 rounded-full bg-indigo-500" />
+          <span className="text-sm font-semibold text-slate-800">Follow-up Suggestions</span>
+        </div>
+        <div className="p-4">
+          <FollowUpSuggestions note={note} onAddToNote={onAddToNote} />
+        </div>
+      </div>
+
       {patientEducation?.length > 0 && patientEducation.map((m, i) => (
         <div key={i} className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-cyan-500 shadow-sm overflow-hidden">
           <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">

@@ -414,7 +414,7 @@ Generate a formal, professional discharge summary with these sections:
 }
 
 // ─── Entry Card ────────────────────────────────────────────────────────────────
-function EntryCard({ entry, idx, onDelete, onEdit }) {
+function EntryCard({ entry, idx, onDelete, onEdit, isAI }) {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(entry.title);

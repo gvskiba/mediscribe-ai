@@ -391,8 +391,8 @@ export default function DifferentialTab({
                 <span className="text-sm font-semibold text-slate-800">Differentials to Rule Out</span>
                 <Badge className="bg-rose-100 text-rose-700 border border-rose-200 text-xs">{differentials.length}</Badge>
               </div>
-              <Button size="sm" variant="outline" onClick={addToMDM} className="text-xs h-7 px-3 border-rose-200 text-rose-700 hover:bg-rose-50 gap-1">
-                <Plus className="w-3 h-3" /> Add All to MDM
+              <Button size="sm" onClick={addToMDM} className="text-xs h-7 px-3 bg-blue-600 hover:bg-blue-700 text-white gap-1 shadow-sm" title="Add all differential diagnoses to Initial MDM section">
+                <Plus className="w-3 h-3" /> Add to Initial MDM
               </Button>
             </div>
             <div className="p-4 space-y-3">

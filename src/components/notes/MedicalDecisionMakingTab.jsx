@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   Clock, Plus, Trash2, ChevronDown, ChevronUp, Brain, Sparkles,
-  LogIn, LogOut, Loader2, Pencil, Check, X, GitCompare, FileText, Wand2,
+  LogIn, LogOut, Loader2, Pencil, Check, X, GitCompare, FileText, Wand2, Bot,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";

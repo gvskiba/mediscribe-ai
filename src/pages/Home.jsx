@@ -99,7 +99,7 @@ export default function Home() {
           </h2>
 
           <p className="text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            Notrya AI is your intelligent clinical assistant designed to streamline medical documentation, provide evidence-based recommendations, and enhance patient care through advanced AI analysis.
+            MedNu. is your intelligent clinical assistant designed to streamline medical documentation, provide evidence-based recommendations, and enhance patient care through advanced AI analysis.
           </p>
 
           {user ? (

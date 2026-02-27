@@ -142,7 +142,6 @@ const TAB_GROUPS = [
     color: 'indigo',
     tabs: [
       { id: 'diagnoses', label: 'Final Diagnoses', icon: Code },
-      { id: 'clinical_note', label: 'Clinical Note', icon: FileText },
       { id: 'finalize', label: 'Review & Export', icon: Check },
     ]
   },

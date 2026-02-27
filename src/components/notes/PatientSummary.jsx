@@ -73,9 +73,9 @@ export default function PatientSummary({ summary, patientName, onDownload, note,
         )}
 
         {/* Follow-up Plans */}
-        {summary.follow_up_plans && summary.follow_up_plans.length > 0 && (
-          <div>
-            <h4 className="text-sm font-semibold text-slate-900 mb-2">Follow-up Plans</h4>
+        <div>
+          <h4 className="text-sm font-semibold text-slate-900 mb-2">Follow-up Plans</h4>
+          {summary.follow_up_plans && summary.follow_up_plans.length > 0 && (
             <ul className="space-y-1 mb-3">
               {summary.follow_up_plans.map((plan, idx) => (
                 <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
@@ -84,14 +84,14 @@ export default function PatientSummary({ summary, patientName, onDownload, note,
                 </li>
               ))}
             </ul>
-            {note && (
-              <div className="border border-indigo-100 rounded-xl bg-indigo-50/50 p-3">
-                <p className="text-xs font-semibold text-indigo-800 mb-2">AI Follow-up Suggestions</p>
-                <FollowUpSuggestions note={note} onAddToNote={onAddToNote} />
-              </div>
-            )}
-          </div>
-        )}
+          )}
+          {note && (
+            <div className="border border-indigo-100 rounded-xl bg-indigo-50/50 p-3">
+              <p className="text-xs font-semibold text-indigo-800 mb-2">AI-Suggested Follow-ups</p>
+              <FollowUpSuggestions note={note} onAddToNote={onAddToNote} autoGenerate={true} />
+            </div>
+          )}
+        </div>
 
         {/* Critical Alerts */}
         {summary.critical_alerts && summary.critical_alerts.length > 0 && (

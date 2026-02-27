@@ -33,7 +33,7 @@ function MarkdownBox({ content, className = "" }) {
 }
 
 // ─── 1. Auto-Populate MDM Sections ────────────────────────────────────────────
-function AutoPopulatePanel({ note, phase, onAddEntries }) {
+function AutoPopulatePanel({ note, phase, onAddEntries, onClose }) {
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState(null);
 

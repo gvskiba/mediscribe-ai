@@ -2,6 +2,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { FileText, Download, User } from "lucide-react";
 import { motion } from "framer-motion";
+import FollowUpSuggestions from "./FollowUpSuggestions";
 
 export default function PatientSummary({ summary, patientName, onDownload }) {
   if (!summary) return null;

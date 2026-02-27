@@ -1840,7 +1840,7 @@ Generated: ${new Date().toLocaleString()}
 
                              {/* Patient Education Tab */}
                              <TabsContent value="patient_education" className="overflow-y-auto bg-slate-50">
-                               <PatientEducationTab note={note} patientEducation={patientEducation} generatingEducation={generatingEducation} generatePatientEducation={generatePatientEducation} downloadPatientEducation={downloadPatientEducation} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
+                               <PatientEducationTab note={note} patientEducation={patientEducation} generatingEducation={generatingEducation} generatePatientEducation={generatePatientEducation} downloadPatientEducation={downloadPatientEducation} onAddToNote={async (text) => { const updated = (note.plan || "") + "\n\nFOLLOW-UP:\n" + text; await base44.entities.ClinicalNote.update(noteId, { plan: updated }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
                              </TabsContent>
 
                              {/* Procedures Tab */}

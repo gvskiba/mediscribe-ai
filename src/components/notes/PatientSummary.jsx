@@ -4,7 +4,7 @@ import { FileText, Download, User } from "lucide-react";
 import { motion } from "framer-motion";
 import FollowUpSuggestions from "./FollowUpSuggestions";
 
-export default function PatientSummary({ summary, patientName, onDownload }) {
+export default function PatientSummary({ summary, patientName, onDownload, note, onAddToNote }) {
   if (!summary) return null;
 
   return (

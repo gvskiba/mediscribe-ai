@@ -59,6 +59,7 @@ import LabsAnalysis from "../components/notes/LabsAnalysis";
 import EKGAnalysis from "../components/notes/EKGAnalysis";
 import DiagnosisICD10Matcher from "../components/notes/DiagnosisICD10Matcher";
 import DiagnosisRecommendations from "../components/notes/DiagnosisRecommendations";
+import DiagnosisEducationPanel from "../components/notes/DiagnosisEducationPanel";
 import MedicalLiteratureSearch from "../components/research/MedicalLiteratureSearch";
 import VitalSignsInput from "../components/notes/VitalSignsInput";
 import { useAutoSave } from "../components/utils/useAutoSave";

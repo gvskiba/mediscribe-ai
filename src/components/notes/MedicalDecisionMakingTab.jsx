@@ -679,7 +679,7 @@ export default function MedicalDecisionMakingTab({ note, onUpdateNote, noteId })
           <h3 className="text-xl font-bold text-slate-900">Medical Decision Making</h3>
         </div>
         <p className="text-sm text-slate-600">
-          Document clinical reasoning across two phases with AI-powered auto-population (with ICD-10 codes), per-phase analysis, comparative summary, and discharge summary generation.
+          Two-phase documentation: <strong>Initial MDM</strong> captures reasoning on arrival (includes Differential Diagnoses from the Diagnoses tab). <strong>Final MDM</strong> documents pre-discharge reasoning. AI Auto-Populate fills sections from note content including ICD-10 codes.
         </p>
       </div>
 

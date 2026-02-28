@@ -148,69 +148,25 @@ export default function NotesLibrary() {
   };
 
   return (
-    <div style={{ background: T.bg, color: T.text, height: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* Header */}
+    <div style={{ background: T.bg, color: T.text, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      {/* Sidebar */}
       <div
         style={{
+          position: "fixed",
+          left: "64px",
+          top: "52px",
+          width: "200px",
+          height: "calc(100vh - 52px)",
           background: T.surface,
-          borderBottom: `1px solid ${T.border}`,
-          height: "52px",
+          borderRight: `1px solid ${T.border}`,
+          overflowY: "auto",
+          padding: "16px",
           display: "flex",
-          alignItems: "center",
-          paddingLeft: "20px",
-          paddingRight: "20px",
-          gap: "16px"
+          flexDirection: "column",
+          gap: "20px",
+          zIndex: 40
         }}
       >
-        <div style={{ fontSize: "30px", fontWeight: "bold", background: "linear-gradient(135deg, #00cca3, #009e80)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-          🩺
-        </div>
-        <span style={{ fontFamily: "Instrument Serif", fontSize: "16px", fontStyle: "italic" }}>
-          Provider <span style={{ color: T.teal }}>Suite</span>
-        </span>
-        <div style={{ width: "1px", height: "22px", background: T.border_2 }} />
-        <span style={{ fontFamily: "Geist Mono", fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: T.muted }}>
-          Clinical Notes
-        </span>
-        <div style={{ flex: 1 }} />
-        <div style={{ fontFamily: "Geist Mono", fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase", color: T.teal, background: T.teal_dim, border: `1px solid rgba(0,204,163,0.2)`, padding: "5px 10px", borderRadius: "6px" }}>
-          MD / DO / APP
-        </div>
-        <div
-          style={{
-            width: "30px",
-            height: "30px",
-            borderRadius: "6px",
-            background: T.blue_dim,
-            border: `1px solid rgba(59,130,246,0.35)`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontFamily: "Geist Mono",
-            fontSize: "11px",
-            color: T.blue,
-            fontWeight: "500"
-          }}
-        >
-          JD
-        </div>
-      </div>
-
-      {/* Main Layout */}
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        {/* Sidebar */}
-        <div
-          style={{
-            width: "200px",
-            background: T.surface,
-            borderRight: `1px solid ${T.border}`,
-            overflowY: "auto",
-            padding: "16px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "20px"
-          }}
-        >
           {/* Status Filter */}
           <div>
             <div style={{ fontFamily: "Geist Mono", fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase", color: T.dim, marginBottom: "10px" }}>
@@ -281,8 +237,8 @@ export default function NotesLibrary() {
           </div>
         </div>
 
-        {/* Main Content */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {/* Main Content */}
+      <div style={{ marginLeft: "264px", marginTop: "0px", flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           {/* Page Header */}
           <div
             style={{
@@ -536,7 +492,6 @@ export default function NotesLibrary() {
               </div>
             )}
           </div>
-        </div>
       </div>
 
       {/* New Note Modal */}

@@ -72,15 +72,11 @@ export default function CalendarWidget() {
                   value={newEvent.time}
                   onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
                 />
-                <select
-                  value={newEvent.type}
-                  onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                >
-                  <option value="meeting">Meeting</option>
-                  <option value="deadline">Deadline</option>
-                  <option value="appointment">Appointment</option>
-                </select>
+                <Textarea
+                  placeholder="Description (optional)"
+                  value={newEvent.description}
+                  onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                />
                 <Button onClick={handleAddEvent} className="w-full">
                   Add Event
                 </Button>

@@ -88,23 +88,40 @@ export default function DashboardTopBar({ user }) {
 
   return (
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 40, background: T.navy }}>
-      {/* Top Info Bar */}
+      {/* Gradient Top Bar */}
       <div
         style={{
-          height: "22px",
-          background: `linear-gradient(90deg, ${T.navy}, ${T.slate})`,
+          height: "4px",
+          background: "linear-gradient(90deg, #ff006e, #ff5c00, #f5a623, #2ecc71, #00d4bc)",
+          borderBottom: "none",
+        }}
+      />
+
+      {/* Welcome Bar with Stats */}
+      <div
+        style={{
+          height: "auto",
+          background: `linear-gradient(135deg, ${T.panel}, rgba(0,212,188,0.04))`,
           borderBottom: `1px solid ${T.border}`,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "0 20px",
-          fontSize: "11px",
+          padding: "12px 20px",
+          gap: "16px",
         }}
       >
-        <div style={{ color: T.dim }}>
-          <span style={{ color: T.bright }}>ClinAI</span> — Provider Dashboard
+        {/* Left: Greeting & Role */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0, flex: 0 }}>
+          <div style={{ fontSize: "18px" }}>👨‍⚕️</div>
+          <div>
+            <div style={{ fontSize: "13px", color: T.bright, fontWeight: 500 }}>
+              Good morning, <span style={{ color: T.teal }}>{lastName}</span>
+            </div>
+            <div style={{ fontSize: "10px", color: T.dim }}>
+              {specialty || "Set Specialty"} • Emergency Department
+            </div>
+          </div>
         </div>
-      </div>
 
       {/* Welcome Bar with Stats */}
       <div

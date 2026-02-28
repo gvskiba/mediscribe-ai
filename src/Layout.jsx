@@ -140,7 +140,7 @@ export default function Layout({ children, currentPageName }) {
         }
 
         {/* Main Content */}
-        <main className={`flex-1 ${currentPageName === 'NoteDetail' ? 'bg-[#050f1e]' : currentPageName === 'Dashboard' ? 'bg-[#050f1e]' : currentPageName === 'Home' ? '' : 'pt-32 lg:pt-20'}`}>
+        <main className={`flex-1 ${currentPageName === 'NoteDetail' ? 'bg-[#050f1e]' : currentPageName === 'Dashboard' ? 'bg-[#050f1e]' : currentPageName === 'Home' ? '' : 'pt-32 lg:pt-20'}`} style={{ marginLeft: showSidebar ? '80px' : '0px' }}>
           <div className={currentPageName === 'NoteDetail' || currentPageName === 'Dashboard' ? 'h-full' : 'p-4 md:p-8 max-w-7xl mx-auto'}>
             {children}
           </div>

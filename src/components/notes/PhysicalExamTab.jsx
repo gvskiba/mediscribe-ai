@@ -12,7 +12,7 @@ export default function PhysicalExamTab({
   isFirstTab, isLastTab, handleBack, handleNext,
 }) {
   return (
-    <div className="flex flex-col gap-3" style={{ margin: "-22px -26px" }}>
+    <div className="flex flex-col gap-3">
       <PhysicalExamEditor
         examData={note.physical_exam}
         note={note}

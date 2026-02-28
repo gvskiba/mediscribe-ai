@@ -93,10 +93,8 @@ export default function CalendarWidget() {
                 <div className="flex-1">
                   <p className="text-sm font-medium text-slate-900">{event.title}</p>
                   <p className="text-xs text-slate-500">{event.time}</p>
+                  {event.description && <p className="text-xs text-slate-600 mt-1">{event.description}</p>}
                 </div>
-                <Badge variant={event.type === 'deadline' ? 'destructive' : 'default'} className="text-xs">
-                  {event.type}
-                </Badge>
               </div>
             ))}
           </div>

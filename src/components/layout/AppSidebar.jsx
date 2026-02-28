@@ -32,7 +32,7 @@ export default function AppSidebar({ user }) {
         gap: 6,
         position: "fixed",
         left: 0,
-        top: 0,
+        top: 52,
         bottom: 0,
         zIndex: 50,
         borderRight: "1px solid rgba(255,255,255,0.06)",

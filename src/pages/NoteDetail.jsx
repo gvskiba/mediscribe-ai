@@ -1453,8 +1453,7 @@ Generated: ${new Date().toLocaleString()}
         />
       )}
 
-      {/* Patient Header Card */}
-      <PatientHeaderCard note={note} noteId={noteId} queryClient={queryClient} setLastSaved={setLastSaved} onNavigate={setActiveTab} />
+
 
       {/* Tabbed Interface */}
        <motion.div

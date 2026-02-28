@@ -654,9 +654,9 @@ export default function Dashboard() {
           <NewsPanel />
         </div>
 
-        {/* Notes Panel - Right */}
+        {/* Saved Guidelines Widget - Right */}
         <div style={{ gridColumn: 3, gridRow: "2 / 4" }}>
-          <NotesPanel />
+          <SavedGuidelinesWidget />
         </div>
       </div>
     </div>

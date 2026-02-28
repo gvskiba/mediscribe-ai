@@ -102,10 +102,10 @@ export default function DashboardTopBar({ user }) {
         }}
       >
         <div style={{ color: T.dim }}>
-          <span style={{ color: T.bright }}>ClinAI</span> — Provider Dashboard
+          Good morning, <span style={{ color: T.teal }}>Dr. {lastName}</span>
         </div>
         <div style={{ color: T.dim }}>
-          Emergency Medicine • Emergency Department — Bay 7
+          <span style={{ color: T.bright }}>ClinAI</span> — Provider Dashboard
         </div>
       </div>
 

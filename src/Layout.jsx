@@ -36,6 +36,7 @@ const navSections = [
         title: "Resources",
         items: [
           { name: "Guidelines", icon: BookOpen, page: "Guidelines" },
+          { name: "Saved Guidelines", icon: BookOpen, page: "SavedGuidelines" },
           { name: "Knowledge Base", icon: BookOpen, page: "MedicalKnowledgeBase" },
           { name: "Calculators", icon: Activity, page: "Calculators" },
           { name: "Templates", icon: FileText, page: "NoteTemplates" },

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Search } from "lucide-react";
-// import DashboardTopBar from "../components/dashboard/DashboardTopBar";
+import DashboardTopBar from "../components/dashboard/DashboardTopBar";
 import OpenEvidenceSearchPanel from "../components/dashboard/OpenEvidenceSearchPanel";
 import SavedGuidelinesWidget from "../components/dashboard/SavedGuidelinesWidget";
 import RecentQueriesWidget from "../components/dashboard/RecentQueriesWidget";

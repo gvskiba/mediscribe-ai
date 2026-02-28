@@ -404,25 +404,63 @@ function SearchPanel() {
         </button>
       </div>
 
+      {/* Search Results */}
+      {searchResults.length > 0 && (
+        <div style={{ padding: "12px 16px", borderTop: `1px solid ${T.border}` }}>
+          <div style={{ fontSize: "10px", color: T.dim, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>
+            Results ({searchResults.length})
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "200px", overflowY: "auto" }}>
+            {searchResults.map((result) => (
+              <button
+                key={result.id}
+                onClick={() => handleResultClick(result)}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: "6px",
+                  background: T.edge,
+                  border: `1px solid ${T.border}`,
+                  color: T.text,
+                  fontSize: "11px",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  textAlign: "left",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.teal; e.currentTarget.style.background = "rgba(0,212,188,0.1)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = T.edge; }}
+                title={result.title}
+              >
+                {result.title}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Recent Queries */}
-      <div style={{ padding: "0 16px 10px" }}>
-        <div style={{ fontSize: "10px", color: T.dim, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>
-          Recent
+      {searchResults.length === 0 && (
+        <div style={{ padding: "0 16px 10px" }}>
+          <div style={{ fontSize: "10px", color: T.dim, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>
+            Recent
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+            {pageData.openEvidence.recentQueries.map((q, i) => (
+              <button
+                key={i}
+                onClick={() => { setQuery(q); handleSearch(q); }}
+                style={{ padding: "4px 10px", borderRadius: "6px", background: T.edge, border: `1px solid ${T.border}`, color: T.text, fontSize: "12px", cursor: "pointer", transition: "all 0.15s" }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.teal; e.currentTarget.style.color = T.teal; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.text; }}
+              >
+                {q.substring(0, 20)}...
+              </button>
+            ))}
+          </div>
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-          {pageData.openEvidence.recentQueries.map((q, i) => (
-            <button
-              key={i}
-              onClick={() => { setQuery(q); handleSearch(q); }}
-              style={{ padding: "4px 10px", borderRadius: "6px", background: T.edge, border: `1px solid ${T.border}`, color: T.text, fontSize: "12px", cursor: "pointer", transition: "all 0.15s" }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.teal; e.currentTarget.style.color = T.teal; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.text; }}
-            >
-              {q.substring(0, 20)}...
-            </button>
-          ))}
-        </div>
-      </div>
+      )}
 
       {/* Topic Chips */}
       <div style={{ padding: "0 16px 14px" }}>

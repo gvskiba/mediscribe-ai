@@ -44,19 +44,20 @@ export default function AppSidebar({ user }) {
           width: 40,
           height: 40,
           borderRadius: 12,
-          background: "linear-gradient(135deg, #00c9b1, #0891b2)",
+          background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 18,
+          fontSize: 16,
           fontWeight: 700,
           color: "#fff",
           marginBottom: 20,
           flexShrink: 0,
-          boxShadow: "0 4px 14px rgba(0,201,177,0.35)",
+          boxShadow: "0 4px 14px rgba(37,99,235,0.35)",
         }}
+        title="MedNu. AI"
       >
-        C
+        M.
       </div>
 
       {/* Nav Items */}

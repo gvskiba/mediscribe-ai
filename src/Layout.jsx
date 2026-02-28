@@ -103,6 +103,9 @@ export default function Layout({ children, currentPageName }) {
       {/* App Sidebar */}
       {showSidebar && <AppSidebar user={user} />}
 
+      {/* Dashboard Top Bar */}
+      {currentPageName !== 'Home' && <DashboardTopBar user={user} />}
+
 
 
       {/* Mobile Nav Overlay */}

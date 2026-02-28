@@ -689,7 +689,7 @@ export default function Dashboard() {
         const u = await base44.auth.me();
         setUser(u);
         if (u?.dashboard_layout) {
-          setWidgetLayout(u.dashboard_layout);
+          setWidgetLayout(prev => ({ ...prev, ...u.dashboard_layout }));
         }
       } catch {
         setUser(null);

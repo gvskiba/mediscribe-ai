@@ -1437,6 +1437,10 @@ Generated: ${new Date().toLocaleString()}
 
       {/* Top Bar */}
       <NoteTopBar note={note} noteId={noteId} queryClient={queryClient} onNext={handleNext} />
+      {/* Patient Vitals Bar */}
+      <NotePatientVitalsBar note={note} />
+      {/* SOAP Nav */}
+      <NoteSOAPNav activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* Guideline Review Prompt */}
       {showGuidelinePrompt && note?.linked_guidelines && (

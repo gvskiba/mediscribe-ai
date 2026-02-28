@@ -379,8 +379,6 @@ export default function CalendarPage() {
 
         {/* Calendar */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          {/* Calendar Grid */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto" }}>
           {/* Day headers */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "8px", marginBottom: "12px" }}>
             {config.days_of_week.map((day) => (

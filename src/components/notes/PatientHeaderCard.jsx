@@ -79,28 +79,7 @@ export default function PatientHeaderCard({ note, noteId, queryClient, setLastSa
         </div>
       </div>
 
-      {/* Chief Complaint row */}
-      <div className="flex items-center gap-2 px-4 py-2">
-        <span className="text-xs font-bold text-blue-600 uppercase tracking-wider flex-shrink-0">CC</span>
-        <div className="w-px h-3 bg-slate-200 flex-shrink-0" />
-        <input
-          type="text"
-          value={note.chief_complaint || ""}
-          onChange={(e) => queryClient.setQueryData(["note", noteId], (old) => ({ ...old, chief_complaint: e.target.value }))}
-          onBlur={async (e) => { await base44.entities.ClinicalNote.update(noteId, { chief_complaint: e.target.value }); }}
-          placeholder="Chief complaint — primary reason for visit..."
-          className="flex-1 text-xs text-slate-700 placeholder:text-slate-400 bg-transparent border-0 outline-none focus:ring-0"
-          maxLength={200}
-        />
-        <InlineSectionAI
-          type="chief_complaint"
-          note={note}
-          onApply={async (val) => {
-            await base44.entities.ClinicalNote.update(noteId, { chief_complaint: val });
-            queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-          }}
-        />
-      </div>
+
     </motion.div>
   );
 }

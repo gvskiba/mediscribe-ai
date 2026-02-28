@@ -488,6 +488,61 @@ export default function CalendarPage() {
         editingShift={editingShift}
         selectedType={selectedType}
       />
+
+      {/* Quick Add Tray */}
+      {showQuickAdd && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0, 0, 0, 0.4)", display: "flex",
+          alignItems: "center", justifyContent: "center", zIndex: 40
+        }} onClick={() => setShowQuickAdd(false)}>
+          <div style={{
+            background: config.colors.surface, border: `1px solid ${config.colors.border}`,
+            borderRadius: "12px", padding: "20px", maxWidth: "480px", width: "90%"
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: "14px", fontWeight: 600, color: config.colors.text, marginBottom: "12px" }}>
+              Quick Add Shift
+            </div>
+            <p style={{ fontSize: "12px", color: config.colors.muted, marginBottom: "16px" }}>
+              Click a shift type to add it, or choose "Custom shift details…" for more options.
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px", marginBottom: "12px" }}>
+              {config.shift_types.map((type) => (
+                <button
+                  key={type.id}
+                  onClick={() => handleQuickAdd(type.id)}
+                  style={{
+                    padding: "12px", background: type.bg, border: `1px solid ${type.color}`,
+                    borderRadius: "6px", color: config.colors.text, cursor: "pointer", display: "flex",
+                    flexDirection: "column", alignItems: "center", gap: "4px", fontSize: "11px", fontWeight: 600,
+                    transition: "all 0.2s"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = type.color;
+                    e.currentTarget.style.color = config.colors.background;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = type.bg;
+                    e.currentTarget.style.color = config.colors.text;
+                  }}
+                >
+                  <div style={{ fontSize: "16px" }}>{type.icon}</div>
+                  <div>{type.label}</div>
+                  {type.hours > 0 && <div style={{ fontSize: "9px", opacity: "0.7" }}>{type.hours}h</div>}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => { setShowQuickAdd(false); openModalForDate(new Date(quickAddDate)); }}
+              style={{
+                width: "100%", padding: "10px", background: config.colors.dim, border: `1px solid ${config.colors.border}`,
+                borderRadius: "6px", color: config.colors.text, cursor: "pointer", fontSize: "12px", fontWeight: 600
+              }}
+            >
+              Custom shift details…
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

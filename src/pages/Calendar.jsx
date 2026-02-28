@@ -257,6 +257,8 @@ export default function CalendarPage() {
   const [shifts, setShifts] = useState([]);
   const [selectedDept, setSelectedDept] = useState("all");
   const [showModal, setShowModal] = useState(false);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [quickAddDate, setQuickAddDate] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedType, setSelectedType] = useState(null);
   const [editingShift, setEditingShift] = useState(null);
@@ -285,6 +287,7 @@ export default function CalendarPage() {
       setShifts([...shifts, { ...shiftData, id: Date.now().toString() }]);
     }
     setShowModal(false);
+    setShowQuickAdd(false);
     setEditingShift(null);
     setSelectedDate(null);
     setSelectedType(null);
@@ -292,6 +295,24 @@ export default function CalendarPage() {
 
   const handleDeleteShift = (id) => {
     setShifts(shifts.filter(s => s.id !== id));
+  };
+
+  const handleQuickAdd = (type) => {
+    const shiftType = config.shift_types.find(t => t.id === type);
+    const newShift = {
+      id: Date.now().toString(),
+      type: type,
+      title: "",
+      date: quickAddDate,
+      dept: "all",
+      start: shiftType.start || "",
+      end: shiftType.end || "",
+      hours: shiftType.hours,
+      location: "",
+      notes: ""
+    };
+    setShifts([...shifts, newShift]);
+    setShowQuickAdd(false);
   };
 
   const openModalForDate = (date, type = null) => {

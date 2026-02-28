@@ -581,7 +581,7 @@ export default function NotesLibrary() {
                     </span>
                   </div>
                 </div>
-                <div style={{ textAlign: "right", fontSize: "10px", color: config.colors.muted" }}>
+                <div style={{ textAlign: "right", fontSize: "10px", color: config.colors.muted }}>
                   {new Date(note.created_date).toLocaleDateString("en-US", {
                     month: "short",
                     day: "numeric",

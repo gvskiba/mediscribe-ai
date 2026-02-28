@@ -10,19 +10,21 @@ export default function PhysicalExamTab({
   isFirstTab, isLastTab, handleBack, handleNext,
 }) {
   return (
-    <TabPageLayout
-      title="Physical Examination"
-      subtitle="Structured examination findings"
-      tabId="physical_exam"
-      note={note}
-      isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext}
-    >
+    <div className="flex flex-col">
       <PhysicalExamEditor
         examData={note.physical_exam}
         note={note}
         onUpdate={async (d) => { await base44.entities.ClinicalNote.update(noteId, { physical_exam: typeof d === "string" ? d : JSON.stringify(d) }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); }}
         onAddToNote={async (t) => { await base44.entities.ClinicalNote.update(noteId, { physical_exam: t }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); toast.success("Saved to note"); }}
       />
-    </TabPageLayout>
+      {/* Footer Nav */}
+      <TabPageLayout
+        tabId="physical_exam"
+        note={note}
+        isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext}
+      >
+        <div />
+      </TabPageLayout>
+    </div>
   );
 }

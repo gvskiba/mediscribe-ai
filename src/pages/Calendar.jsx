@@ -76,10 +76,23 @@ export default function CalendarPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["calendarEvents"] }),
   });
 
-  const daysInMonth = eachDayOfInterval({
-    start: startOfWeek(startOfMonth(currentDate)),
-    end: endOfWeek(endOfMonth(currentDate)),
-  });
+  const getDaysToDisplay = () => {
+    if (view === "month") {
+      return eachDayOfInterval({
+        start: startOfWeek(startOfMonth(currentDate)),
+        end: endOfWeek(endOfMonth(currentDate)),
+      });
+    } else if (view === "week") {
+      return eachDayOfInterval({
+        start: startOfWeek(currentDate),
+        end: endOfWeek(currentDate),
+      });
+    } else {
+      return [currentDate];
+    }
+  };
+
+  const daysToDisplay = getDaysToDisplay();
 
   const getEventsForDate = (date) => {
     return events.filter((e) => {

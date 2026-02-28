@@ -10,6 +10,10 @@ import RecentQueriesWidget from "../components/dashboard/RecentQueriesWidget";
 import SpecialtyInsightsWidget from "../components/dashboard/SpecialtyInsightsWidget";
 import QuickCalculatorsWidget from "../components/dashboard/QuickCalculatorsWidget";
 import RecentProceduresWidget from "../components/dashboard/RecentProceduresWidget";
+import NoteStatusWidget from "../components/dashboard/NoteStatusWidget";
+import PendingSignaturesWidget from "../components/dashboard/PendingSignaturesWidget";
+import NotesActivityWidget from "../components/dashboard/NotesActivityWidget";
+import QuickNoteCreatorWidget from "../components/dashboard/QuickNoteCreatorWidget";
 
 const T = {
   navy: "#050f1e",
@@ -715,6 +719,10 @@ export default function Dashboard() {
     guidelines: { label: "Saved Guidelines", component: <SavedGuidelinesWidget /> },
     news: { label: "Medical News", component: <NewsPanel /> },
     notes: { label: "Recent Notes", component: <NotesPanel /> },
+    noteStatus: { label: "Note Status", component: <NoteStatusWidget /> },
+    pendingSignatures: { label: "Awaiting Signature", component: <PendingSignaturesWidget /> },
+    notesActivity: { label: "Recent Activity", component: <NotesActivityWidget /> },
+    quickNoteCreator: { label: "Quick Note", component: <QuickNoteCreatorWidget /> },
   };
 
   const handleWidgetResize = (widgetId, edge, delta) => {

@@ -398,9 +398,10 @@ function SearchPanel() {
           }}
           onFocus={(e) => { e.target.style.borderColor = T.teal; e.target.style.boxShadow = `0 0 0 3px rgba(0,212,188,0.15)`; }}
           onBlur={(e) => { e.target.style.borderColor = T.border; e.target.style.boxShadow = "none"; }}
+          disabled={loading}
         />
-        <button onClick={() => handleSearch(query)} style={{ padding: "10px 18px", borderRadius: "10px", background: `linear-gradient(135deg, ${T.teal}, ${T.teal2})`, color: T.navy, fontWeight: 600, fontSize: "13px", cursor: "pointer", border: "none" }}>
-          Search
+        <button onClick={() => handleSearch(query)} style={{ padding: "10px 18px", borderRadius: "10px", background: `linear-gradient(135deg, ${T.teal}, ${T.teal2})`, color: T.navy, fontWeight: 600, fontSize: "13px", cursor: "pointer", border: "none", opacity: loading ? 0.6 : 1 }} disabled={loading}>
+          {loading ? "..." : "Search"}
         </button>
       </div>
 

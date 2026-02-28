@@ -1001,27 +1001,13 @@ export default function MedicalDecisionMakingTab({ note, onUpdateNote, noteId })
     }
   };
 
-  // Build rows
   const visible = panels.filter(p => !p.hidden);
-  const rows = [];
-  let i = 0;
-  while (i < visible.length) {
-    const p = visible[i];
-    if (p.span === "full") { rows.push({ type: "full", panels: [p] }); i++; }
-    else if (p.span === "half") {
-      const n2 = visible[i + 1];
-      if (n2?.span === "half") { rows.push({ type: "halves", panels: [p, n2] }); i += 2; }
-      else { rows.push({ type: "full", panels: [p] }); i++; }
-    } else {
-      const n2 = visible[i + 1], n3 = visible[i + 2];
-      if (n2?.span === "third" && n3?.span === "third") { rows.push({ type: "thirds", panels: [p, n2, n3] }); i += 3; }
-      else if (n2?.span === "third") { rows.push({ type: "halves", panels: [p, n2] }); i += 2; }
-      else { rows.push({ type: "full", panels: [p] }); i++; }
-    }
-  }
+
+  // Map span names to CSS col-span classes (12-column grid)
+  const spanClass = { full: "col-span-12", half: "col-span-12 lg:col-span-6", third: "col-span-12 lg:col-span-4" };
 
   return (
-    <div className="min-h-screen p-5 space-y-4" style={{ background: T.navy, fontFamily: "DM Sans, sans-serif" }}>
+    <div className="min-h-screen p-5" style={{ background: T.navy, fontFamily: "DM Sans, sans-serif" }}>
       {/* Google Fonts */}
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@300;400;500&display=swap" />
 

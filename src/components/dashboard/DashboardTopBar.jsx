@@ -76,6 +76,7 @@ export default function DashboardTopBar({ user }) {
           medical_specialty: formData.specialty,
           bay_number: formData.bay_number,
           shift_type: formData.shift_type,
+          shift_duration: formData.shift_duration,
         },
       });
       setEditMode(false);

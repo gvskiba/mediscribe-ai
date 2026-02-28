@@ -276,8 +276,8 @@ function ClockCalPanel() {
           {time.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "6px" }}>
-          {["S", "M", "T", "W", "T", "F", "S"].map(d => (
-            <div key={d} style={{ fontSize: "10px", color: T.dim, fontWeight: 600, textAlign: "center", padding: "4px 0" }}>
+          {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+            <div key={i} style={{ fontSize: "10px", color: T.dim, fontWeight: 600, textAlign: "center", padding: "4px 0" }}>
               {d}
             </div>
           ))}

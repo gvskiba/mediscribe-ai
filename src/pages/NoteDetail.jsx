@@ -1426,7 +1426,8 @@ Generated: ${new Date().toLocaleString()}
         {/* Back Nav */}
         <Link
         to={createPageUrl("NotesLibrary")}
-        className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 transition-colors"
+        className="inline-flex items-center gap-2 text-sm transition-colors px-4 pt-4"
+        style={{ color: "#4a7299" }}
       >
         <ArrowLeft className="w-4 h-4" /> Back to Notes
       </Link>

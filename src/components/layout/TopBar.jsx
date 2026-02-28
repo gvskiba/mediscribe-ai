@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { createPageUrl } from "../../utils";
-import { FileText } from "lucide-react";
+import { FileText, Calendar } from "lucide-react";
 
 export default function TopBar() {
   const [user, setUser] = useState(null);

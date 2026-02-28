@@ -157,6 +157,19 @@ export default function UserSettings() {
         if (currentUser?.clinical_settings) {
           setSettings(prev => ({ ...prev, ...currentUser.clinical_settings }));
         }
+        
+        // Parse full_name into first and last
+        const nameParts = (currentUser?.full_name || "").split(" ");
+        const firstName = nameParts[0] || "";
+        const lastName = nameParts.slice(1).join(" ") || "";
+        
+        setProfileData({
+          first_name: firstName,
+          last_name: lastName,
+          provider_type: currentUser?.clinical_settings?.provider_type || "md",
+          specialty: currentUser?.clinical_settings?.medical_specialty || "",
+        });
+        
         setPrefs({
           color_theme: "blue",
           font_size: "medium",

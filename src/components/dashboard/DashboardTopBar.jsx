@@ -51,157 +51,193 @@ export default function DashboardTopBar({ user }) {
   ];
 
   return (
-    <div
-      style={{
-        id: "topbar",
-        height: "58px",
-        background: "rgba(11,29,53,0.7)",
-        backdropFilter: "blur(12px)",
-        borderBottom: `1px solid ${T.border}`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "0 20px",
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 40,
-      }}
-    >
-      {/* App Name & Provider Greeting */}
-      <div style={{ display: "flex", alignItems: "center", gap: "24px", flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: "Playfair Display, serif", fontSize: "14px", color: T.dim, fontWeight: 500, whiteSpace: "nowrap" }}>
-          ClinAI — <span style={{ color: T.bright }}>Provider Dashboard</span>
+    <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 40, background: T.navy }}>
+      {/* Top Info Bar */}
+      <div
+        style={{
+          height: "22px",
+          background: `linear-gradient(90deg, ${T.navy}, ${T.slate})`,
+          borderBottom: `1px solid ${T.border}`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 20px",
+          fontSize: "11px",
+        }}
+      >
+        <div style={{ color: T.dim }}>
+          <span style={{ color: T.bright }}>ClinAI</span> — Provider Dashboard
         </div>
-        <div style={{ fontSize: "11px", color: T.dim }}>
+        <div style={{ color: T.dim }}>
           Emergency Medicine • Emergency Department — Bay 7
         </div>
       </div>
 
-      {/* Center Stats Pills */}
-      <div style={{ display: "flex", gap: "10px", flex: 1, justifyContent: "center" }}>
-        {stats.map((stat, i) => (
-          <div
-            key={i}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              padding: "6px 14px",
-              background: T.edge,
-              borderRadius: "8px",
-              border: `1px solid ${T.border}`,
-            }}
-          >
-            <div style={{ fontSize: "10px", color: T.dim, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              {stat.label}
+      {/* Welcome Bar with Stats */}
+      <div
+        style={{
+          height: "72px",
+          background: `linear-gradient(135deg, ${T.panel}, rgba(0,212,188,0.04))`,
+          borderBottom: `1px solid ${T.border}`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 20px",
+          gap: "16px",
+        }}
+      >
+        {/* Left: Welcome Message */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
+          <div style={{ fontSize: "28px" }}>👩‍⚕️</div>
+          <div>
+            <div style={{ fontFamily: "Playfair Display, serif", fontSize: "20px", color: T.bright, fontWeight: 500 }}>
+              Good morning, <span style={{ color: T.teal }}>Reyes</span>
             </div>
-            <div style={{ fontSize: "16px", color: stat.color, fontWeight: 700, marginTop: "2px" }}>
-              {stat.value}
+            <div style={{ fontSize: "11px", color: T.dim }}>
+              <span style={{ color: T.amber }}>Emergency Medicine</span> • undefined • Day Shift • Emergency Department — Bay 7
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* Right: Status Badges & Time */}
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1, justifyContent: "flex-end" }}>
-        <div
-          style={{
-            padding: "5px 11px",
-            borderRadius: "6px",
-            background: "rgba(255,92,108,0.1)",
-            border: "1px solid rgba(255,92,108,0.2)",
-            fontSize: "10px",
-            color: "#ff8a95",
-            fontWeight: 600,
-            whiteSpace: "nowrap",
-          }}
-        >
-          ⚕ Emergency Medicine
         </div>
 
-        <div
-          style={{
-            padding: "5px 11px",
-            borderRadius: "6px",
-            background: T.edge,
-            border: `1px solid ${T.border}`,
-            fontSize: "10px",
-            color: T.text,
-            fontFamily: "JetBrains Mono, monospace",
-            whiteSpace: "nowrap",
-          }}
-        >
-          🕐 {hours}:{minutes} — 18:00
+        {/* Center: Stats Pills */}
+        <div style={{ display: "flex", gap: "12px", flex: 1, justifyContent: "center", minWidth: "fit-content" }}>
+          {stats.map((stat, i) => (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                padding: "8px 16px",
+                background: T.edge,
+                borderRadius: "8px",
+                border: `1px solid ${T.border}`,
+              }}
+            >
+              <div style={{ fontSize: "16px", color: stat.color, fontWeight: 700 }}>
+                {stat.value}
+              </div>
+              <div style={{ fontSize: "9px", color: T.dim, textTransform: "uppercase", letterSpacing: "0.05em", marginTop: "2px" }}>
+                {stat.label}
+              </div>
+            </div>
+          ))}
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "5px",
-            padding: "5px 11px",
-            borderRadius: "6px",
-            background: "rgba(46,204,113,0.1)",
-            border: "1px solid rgba(46,204,113,0.2)",
-            fontSize: "10px",
-            color: T.green,
-            fontWeight: 600,
-            whiteSpace: "nowrap",
-          }}
-        >
-          <Zap style={{ width: "11px", height: "11px" }} />
-          AI ACTIVE
+        {/* Right: Status & Actions */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: "fit-content" }}>
+          <div
+            style={{
+              padding: "5px 11px",
+              borderRadius: "6px",
+              background: "rgba(255,92,108,0.1)",
+              border: "1px solid rgba(255,92,108,0.2)",
+              fontSize: "10px",
+              color: "#ff8a95",
+              fontWeight: 600,
+              whiteSpace: "nowrap",
+            }}
+          >
+            🏥 Emergency Medicine
+          </div>
+
+          <div
+            style={{
+              padding: "5px 11px",
+              borderRadius: "6px",
+              background: T.edge,
+              border: `1px solid ${T.border}`,
+              fontSize: "10px",
+              color: T.teal,
+              fontFamily: "JetBrains Mono, monospace",
+              fontWeight: 600,
+              whiteSpace: "nowrap",
+            }}
+          >
+            🕐 {hours}:{minutes} — 18:00
+          </div>
+
+          <div
+            style={{
+              padding: "5px 11px",
+              borderRadius: "6px",
+              background: T.edge,
+              border: `1px solid ${T.border}`,
+              fontSize: "9px",
+              color: T.dim,
+              fontFamily: "JetBrains Mono, monospace",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Day Shift — 23hrs
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              padding: "5px 11px",
+              borderRadius: "6px",
+              background: "rgba(46,204,113,0.1)",
+              border: "1px solid rgba(46,204,113,0.2)",
+              fontSize: "10px",
+              color: T.green,
+              fontWeight: 600,
+              whiteSpace: "nowrap",
+            }}
+          >
+            ● AI ACTIVE
+          </div>
+
+          <button
+            style={{
+              padding: "5px 11px",
+              borderRadius: "6px",
+              background: "transparent",
+              border: `1px solid ${T.border}`,
+              color: T.text,
+              fontSize: "10px",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.2s",
+              whiteSpace: "nowrap",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = T.teal;
+              e.currentTarget.style.color = T.teal;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = T.border;
+              e.currentTarget.style.color = T.text;
+            }}
+          >
+            Preferences
+          </button>
+
+          <button
+            style={{
+              padding: "5px 12px",
+              borderRadius: "6px",
+              background: `linear-gradient(135deg, ${T.teal}, ${T.teal2})`,
+              border: "none",
+              color: T.navy,
+              fontSize: "10px",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.2s",
+              whiteSpace: "nowrap",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = "0.9";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = "1";
+            }}
+          >
+            + New Note
+          </button>
         </div>
-
-        <button
-          style={{
-            padding: "5px 11px",
-            borderRadius: "6px",
-            background: "transparent",
-            border: `1px solid ${T.border}`,
-            color: T.text,
-            fontSize: "10px",
-            fontWeight: 600,
-            cursor: "pointer",
-            transition: "all 0.2s",
-            whiteSpace: "nowrap",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = T.teal;
-            e.currentTarget.style.color = T.teal;
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = T.border;
-            e.currentTarget.style.color = T.text;
-          }}
-        >
-          Preferences
-        </button>
-
-        <button
-          style={{
-            padding: "5px 12px",
-            borderRadius: "6px",
-            background: `linear-gradient(135deg, ${T.teal}, ${T.teal2})`,
-            border: "none",
-            color: T.navy,
-            fontSize: "10px",
-            fontWeight: 600,
-            cursor: "pointer",
-            transition: "all 0.2s",
-            whiteSpace: "nowrap",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.opacity = "0.9";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.opacity = "1";
-          }}
-        >
-          + New Note
-        </button>
       </div>
     </div>
   );

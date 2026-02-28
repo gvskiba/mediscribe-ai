@@ -103,9 +103,9 @@ export default function Layout({ children, currentPageName }) {
         `}</style>
 
         {/* App Sidebar */}
-        {showSidebar && <AppSidebar user={user} />}
-
-
+        <div style={{ width: showSidebar ? '64px' : '0px' }}>
+          {showSidebar && <AppSidebar user={user} />}
+        </div>
 
         {/* Mobile Nav Overlay */}
         {mobileOpen &&

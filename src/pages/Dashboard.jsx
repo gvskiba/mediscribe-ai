@@ -485,11 +485,88 @@ function SearchPanel() {
           })}
         </div>
       </div>
-    </div>
-  );
-}
+      </div>
 
-function NewsPanel() {
+      {/* Content Modal */}
+      {selectedResult && (
+      <div style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: "rgba(0,0,0,0.6)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 50,
+      }} onClick={() => setSelectedResult(null)}>
+        <div style={{
+          background: T.panel,
+          border: `1px solid ${T.border}`,
+          borderRadius: "14px",
+          maxWidth: "600px",
+          width: "90%",
+          maxHeight: "70vh",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }} onClick={(e) => e.stopPropagation()}>
+          {/* Modal Header */}
+          <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontSize: "13px", color: T.bright, fontWeight: 600 }}>
+              {selectedResult.title}
+            </div>
+            <button onClick={() => setSelectedResult(null)} style={{ background: "none", border: "none", color: T.dim, cursor: "pointer", fontSize: "18px" }}>
+              ×
+            </button>
+          </div>
+          {/* Modal Content */}
+          <div style={{ flex: 1, overflow: "auto", padding: "16px 20px", color: T.text, fontSize: "12px", lineHeight: 1.6 }}>
+            {contentLoading ? (
+              <div style={{ textAlign: "center", color: T.dim }}>Loading content...</div>
+            ) : (
+              modalContent
+            )}
+          </div>
+          {/* Modal Footer */}
+          <div style={{ padding: "12px 16px", borderTop: `1px solid ${T.border}`, display: "flex", gap: "8px" }}>
+            <a href={selectedResult.url} target="_blank" rel="noopener noreferrer" style={{
+              flex: 1,
+              padding: "8px 12px",
+              borderRadius: "6px",
+              background: `linear-gradient(135deg, ${T.teal}, ${T.teal2})`,
+              color: T.navy,
+              textDecoration: "none",
+              fontSize: "11px",
+              fontWeight: 600,
+              textAlign: "center",
+              cursor: "pointer",
+            }}>
+              Open in OpenEvidence
+            </a>
+            <button onClick={() => setSelectedResult(null)} style={{
+              flex: 1,
+              padding: "8px 12px",
+              borderRadius: "6px",
+              background: T.edge,
+              border: `1px solid ${T.border}`,
+              color: T.text,
+              fontSize: "11px",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}>
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+      )}
+      </>
+      );
+      }
+
+      function NewsPanel() {
   const [activeTab, setActiveTab] = useState("all");
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);

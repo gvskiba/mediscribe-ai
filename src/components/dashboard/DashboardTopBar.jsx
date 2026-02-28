@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Zap, Edit2, Check } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { createPageUrl } from "../../utils";
 
 const T = {
   navy: "#050f1e",

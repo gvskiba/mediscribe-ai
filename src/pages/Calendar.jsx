@@ -390,7 +390,7 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: "24px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: "24px", padding: "0 24px 24px 24px", flex: 1, overflow: "hidden" }}>
         {/* Sidebar */}
         <div>
           <div style={{ fontSize: "16px", fontWeight: 700, marginBottom: "16px" }}>🩺 Provider Shifts</div>

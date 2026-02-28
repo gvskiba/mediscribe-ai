@@ -58,18 +58,18 @@ export default function TopBar() {
     }}>
       {/* Left: Logo */}
       <div style={{
-        width: 48,
-        height: 40,
-        borderRadius: 10,
+        width: 70,
+        height: 52,
+        borderRadius: 12,
         background: "#f5f5f5",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         flexShrink: 0,
         boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-        marginRight: "20px"
+        marginRight: "30px"
       }}>
-        <span style={{ fontSize: 14, fontWeight: 800, color: "#1e1b4b", letterSpacing: "-0.5px" }}>
+        <span style={{ fontSize: 20, fontWeight: 800, color: "#1e1b4b", letterSpacing: "-0.5px" }}>
           medn<span style={{ color: "#6d28d9" }}>u.</span>
         </span>
       </div>

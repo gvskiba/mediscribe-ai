@@ -4,9 +4,18 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const { searchParams } = new URL(req.url);
-    const query = searchParams.get('q');
-    const action = searchParams.get('action'); // 'search' or 'fetch'
-    const guidelineUrl = searchParams.get('url');
+    
+    let query = searchParams.get('q');
+    let action = searchParams.get('action');
+    let guidelineUrl = searchParams.get('url');
+
+    // If POST with JSON body, extract from there
+    if (req.method === 'POST' && !query) {
+      const body = await req.json();
+      query = body.q || body.query;
+      action = body.action;
+      guidelineUrl = body.url;
+    }
 
     if (action === 'fetch' && guidelineUrl) {
       return await fetchGuidelineContent(guidelineUrl);

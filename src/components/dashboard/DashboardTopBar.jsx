@@ -62,6 +62,26 @@ export default function DashboardTopBar({ user }) {
 
   const specialty = formData.specialty && specialties[formData.specialty];
 
+  const handleStatClick = (label) => {
+    const today = new Date().toISOString().split("T")[0];
+    switch (label) {
+      case "Active Patients":
+        window.location.href = createPageUrl(`NotesLibrary?date=${today}`);
+        break;
+      case "Notes Pending":
+        window.location.href = createPageUrl("NotesLibrary?status=pending");
+        break;
+      case "Orders Queue":
+        window.location.href = createPageUrl("OrdersQueue");
+        break;
+      case "Shift Hours":
+        window.location.href = createPageUrl("ShiftHours");
+        break;
+      default:
+        break;
+    }
+  };
+
   const stats = [
     { label: "Active Patients", value: "7", color: T.teal },
     { label: "Notes Pending", value: "3", color: T.amber },

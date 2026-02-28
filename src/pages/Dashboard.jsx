@@ -143,14 +143,16 @@ const pageData = {
   },
 };
 
-function WelcomeBar() {
+function WelcomeBar({ user }) {
   const provider = pageData.provider;
+  const lastName = user?.full_name?.split(" ").pop() || "Reyes";
+  
   return (
     <div style={{ background: `linear-gradient(135deg, ${T.panel}, rgba(0,212,188,0.04))`, border: `1px solid ${T.border}`, borderRadius: "14px", padding: "16px 24px", display: "flex", alignItems: "center", gap: "20px", position: "relative", overflow: "hidden" }}>
       <div style={{ height: "3px", width: "100%", background: `linear-gradient(90deg, ${T.teal}, ${T.purple}, ${T.amber})`, position: "absolute", top: 0, left: 0 }} />
       <div style={{ position: "absolute", right: "-40px", top: "-40px", width: "180px", height: "180px", background: `radial-gradient(circle, rgba(0,212,188,0.06), transparent 70%)`, pointerEvents: "none" }} />
       <div style={{ fontFamily: "Playfair Display, serif", fontSize: "22px", color: T.bright, fontWeight: 500 }}>
-        {provider.greeting}, <span style={{ color: T.teal }}>{provider.name.split(" ")[0]}</span>
+        {provider.greeting}, <span style={{ color: T.teal }}>Dr. {lastName}</span>
       </div>
       <div style={{ padding: "4px 12px", borderRadius: "20px", background: "rgba(255,92,108,0.1)", color: "#ff8a95", border: "1px solid rgba(255,92,108,0.2)", fontSize: "12px", fontWeight: 600 }}>
         {provider.specialty}

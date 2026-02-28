@@ -143,7 +143,10 @@ export default function CalendarPage() {
   };
 
   const upcomingEvents = events
-    .filter((e) => e.date >= new Date())
+    .filter((e) => {
+      const eventDate = new Date(e.date);
+      return eventDate >= new Date();
+    })
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .slice(0, 5);
 

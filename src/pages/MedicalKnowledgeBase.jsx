@@ -174,9 +174,10 @@ Return structured literature review:
 
   const handleSearch = async (searchQuery = query, tab = activeTab) => {
     if (!searchQuery.trim()) return;
-    setQuery(searchQuery);
-    setLoading(true);
-    setResults(null);
+    
+    // Redirect to OpenEvidence search
+    window.open(`https://www.openevidence.com/search?q=${encodeURIComponent(searchQuery)}`, '_blank');
+    return;
 
     const schemaMap = {
       drug: {

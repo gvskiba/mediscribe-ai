@@ -902,13 +902,14 @@ export default function Dashboard() {
         }}
       >
         {Object.entries(widgets).map(([widgetId, { label, component }]) => {
-          const layout = widgetLayout[widgetId];
-          return (
-            <div
-              key={widgetId}
-              style={{
-                gridColumn: `${layout.col} / span ${layout.colSpan}`,
-                gridRow: `${layout.row} / span ${layout.rowSpan}`,
+           const layout = widgetLayout[widgetId];
+           if (!layout) return null;
+           return (
+             <div
+               key={widgetId}
+               style={{
+                 gridColumn: `${layout.col} / span ${layout.colSpan}`,
+                 gridRow: `${layout.row} / span ${layout.rowSpan}`,
                 overflow: "hidden",
                 minHeight: 0,
               }}

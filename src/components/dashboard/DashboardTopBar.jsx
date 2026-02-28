@@ -86,8 +86,21 @@ export default function DashboardTopBar({ user }) {
     }
   };
 
+  const shiftStart = formData.shift_type === "day" ? 6 : 18;
+  const shiftEnd = shiftStart + formData.shift_duration;
+  const shiftEndDisplay = shiftEnd > 24 ? shiftEnd - 24 : shiftEnd;
+
   return (
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 40, background: T.navy }}>
+      {/* Gradient Bar */}
+      <div
+        style={{
+          height: "4px",
+          background: "linear-gradient(90deg, #ff6b9d 0%, #c44569 25%, #f8b500 50%, #ffa500 75%, #ff6b6b 100%)",
+          width: "100%",
+        }}
+      />
+
       {/* Top Info Bar */}
       <div
         style={{

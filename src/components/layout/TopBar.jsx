@@ -56,7 +56,25 @@ export default function TopBar() {
       justifyContent: "space-between",
       color: "#e2e8f0"
     }}>
-      {/* Left: Welcome */}
+      {/* Left: Logo */}
+      <div style={{
+        width: 48,
+        height: 40,
+        borderRadius: 10,
+        background: "#f5f5f5",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+        marginRight: "20px"
+      }}>
+        <span style={{ fontSize: 14, fontWeight: 800, color: "#1e1b4b", letterSpacing: "-0.5px" }}>
+          medn<span style={{ color: "#6d28d9" }}>u.</span>
+        </span>
+      </div>
+
+      {/* Welcome */}
       <div style={{ fontSize: "14px", fontWeight: 500, minWidth: "150px", display: "flex", alignItems: "center", gap: "8px" }}>
         <Calendar className="w-5 h-5" style={{ color: "#0ea5e9" }} />
         Welcome, {user?.full_name?.split(" ")[0]?.toLowerCase() || "user"}

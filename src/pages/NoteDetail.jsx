@@ -1453,13 +1453,13 @@ Generated: ${new Date().toLocaleString()}
       )}
 
       {/* Patient Header Card */}
-      {!isPhysicalExam && <PatientHeaderCard note={note} noteId={noteId} queryClient={queryClient} setLastSaved={setLastSaved} onNavigate={setActiveTab} />}
+      <PatientHeaderCard note={note} noteId={noteId} queryClient={queryClient} setLastSaved={setLastSaved} onNavigate={setActiveTab} />
 
       {/* Tabbed Interface */}
        <motion.div
          initial={{ opacity: 0, y: 12 }}
          animate={{ opacity: 1, y: 0 }}
-         className={isPhysicalExam ? "overflow-hidden" : "bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden pb-16"}
+         className="overflow-hidden"
        >
          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col">
                {/* ── Bottom Navigation Bar ── */}

@@ -117,14 +117,19 @@ export default function DashboardTopBar({ user }) {
           borderBottom: `1px solid ${T.border}`,
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
+          justifyContent: "space-between",
           padding: "10px 20px",
           gap: "12px",
           flexWrap: "nowrap",
         }}
       >
+        {/* Left: Welcome */}
+        <div style={{ fontSize: "11px", color: T.text, fontWeight: 500, whiteSpace: "nowrap", flexShrink: 0 }}>
+          Welcome, {lastName}
+        </div>
+
         {/* Stats Buttons - Centered */}
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: 1, justifyContent: "center" }}>
           {stats.map((stat) => (
             <button
               key={stat.label}

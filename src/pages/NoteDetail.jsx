@@ -85,7 +85,7 @@ import NoteTypeAndTemplateSelector from "../components/notes/NoteTypeAndTemplate
 import MedicalDecisionMakingTab from "../components/notes/MedicalDecisionMakingTab";
 import VitalSignsPasteAnalyzer from "../components/notes/VitalSignsPasteAnalyzer";
 import DispositionPlanner from "../components/notes/DispositionPlanner";
-import AutosaveToggle from "../components/notes/AutosaveToggle";
+
 import VitalSignsHistory from "../components/notes/VitalSignsHistory";
 import AIStructuredNotePreview from "../components/notes/AIStructuredNotePreview";
 import SubjectiveTab from "../components/notes/SubjectiveTab";

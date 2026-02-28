@@ -103,7 +103,7 @@ export default function Layout({ children, currentPageName }) {
         `}</style>
 
         {/* App Sidebar */}
-        <div style={{ width: showSidebar ? '64px' : '0px', marginTop: showSidebar ? '52px' : '0px' }}>
+        <div style={{ width: showSidebar ? '80px' : '0px', marginTop: showSidebar ? '52px' : '0px' }}>
           {showSidebar && <AppSidebar user={user} />}
         </div>
 

@@ -49,6 +49,7 @@
  */
 import Calculators from './pages/Calculators';
 import Customize from './pages/Customize';
+import Dashboard from './pages/Dashboard';
 import GuidelineDetail from './pages/GuidelineDetail';
 import Guidelines from './pages/Guidelines';
 import Home from './pages/Home';
@@ -70,13 +71,13 @@ import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
 import Calendar from './pages/Calendar';
-import Dashboard from './pages/Dashboard';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "Calculators": Calculators,
     "Customize": Customize,
+    "Dashboard": Dashboard,
     "GuidelineDetail": GuidelineDetail,
     "Guidelines": Guidelines,
     "Home": Home,
@@ -98,7 +99,6 @@ export const PAGES = {
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
     "Calendar": Calendar,
-    "Dashboard": Dashboard,
 }
 
 export const pagesConfig = {

@@ -166,18 +166,13 @@ function WelcomeBar({ user }) {
     <div style={{ background: `linear-gradient(135deg, ${T.panel}, rgba(0,212,188,0.04))`, border: `1px solid ${T.border}`, borderRadius: "14px", padding: "16px 24px", display: "flex", alignItems: "center", gap: "20px", position: "relative", overflow: "hidden" }}>
       <div style={{ height: "3px", width: "100%", background: `linear-gradient(90deg, ${T.teal}, ${T.purple}, ${T.amber})`, position: "absolute", top: 0, left: 0 }} />
       <div style={{ position: "absolute", right: "-40px", top: "-40px", width: "180px", height: "180px", background: `radial-gradient(circle, rgba(0,212,188,0.06), transparent 70%)`, pointerEvents: "none" }} />
-      <div style={{ flex: 1 }}>
-        <div style={{ fontFamily: "Playfair Display, serif", fontSize: "22px", color: T.bright, fontWeight: 500 }}>
-          {provider.greeting}, <span style={{ color: T.teal }}>{prefix} {lastName}</span>
-        </div>
-        <div style={{ fontSize: "14px", color: T.teal, marginTop: "6px", fontWeight: 500 }}>
-          {user?.email}
-        </div>
+      <div style={{ fontFamily: "Playfair Display, serif", fontSize: "22px", color: T.bright, fontWeight: 500 }}>
+        {provider.greeting}, <span style={{ color: T.teal }}>{prefix} {lastName}</span>
       </div>
       {specialty && (
-        <div style={{ background: "rgba(239,68,68,0.15)", border: `1px solid rgba(239,68,68,0.3)`, borderRadius: "12px", padding: "12px 16px", textAlign: "center" }}>
-          <div style={{ fontSize: "14px", color: "#ef4444", fontWeight: 600, lineHeight: "1.4" }}>
-            {specialty.split(" ").join("\n")}
+        <div style={{ background: "rgba(239,68,68,0.15)", border: `1px solid rgba(239,68,68,0.3)`, borderRadius: "12px", padding: "12px 16px", textAlign: "center", marginLeft: "auto" }}>
+          <div style={{ fontSize: "14px", color: "#ef4444", fontWeight: 600 }}>
+            {specialty}
           </div>
         </div>
       )}

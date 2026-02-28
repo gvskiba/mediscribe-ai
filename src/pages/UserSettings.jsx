@@ -569,15 +569,47 @@ export default function UserSettings() {
             </div>
             <div className="border-t border-slate-100 pt-4">
               <p className="text-sm font-semibold text-slate-800 mb-3">Visible Widgets</p>
-              <div className="grid grid-cols-2 gap-2">
-                {[{id:"quicklinks",l:"Quick Links"},{id:"stats",l:"Stats Overview"},{id:"recentnotes",l:"Recent Notes"},{id:"news",l:"Medical News"},{id:"guidelines",l:"Guidelines"},{id:"tasks",l:"Task List"},{id:"calendar",l:"Calendar"},{id:"progress",l:"Progress Tracker"}].map(w => {
+              <p className="text-xs text-slate-500 mb-3">Enable/disable widgets that appear on your dashboard. Drag to reorder.</p>
+              <div className="space-y-2">
+                {[{id:"welcome",l:"Welcome Bar"},{id:"clock",l:"Clock & Calendar"},{id:"search",l:"Evidence Search"},{id:"guidelines",l:"Saved Guidelines"},{id:"news",l:"Medical News"}].map((w, idx) => {
                   const active = (prefs.active_widgets || []).includes(w.id);
                   return (
-                    <button key={w.id} onClick={() => { const cur = prefs.active_widgets || []; updatePref("active_widgets", active ? cur.filter(x => x !== w.id) : [...cur, w.id]); }}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-all ${active ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
-                      <div className={`w-1.5 h-1.5 rounded-full ${active ? "bg-blue-500" : "bg-slate-300"}`} />
-                      {w.l}
-                    </button>
+                    <div
+                      key={w.id}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("widgetId", w.id);
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const sourceId = e.dataTransfer.getData("widgetId");
+                        if (sourceId !== w.id) {
+                          const widgets = prefs.active_widgets || [];
+                          const sourceIdx = widgets.indexOf(sourceId);
+                          const targetIdx = widgets.indexOf(w.id);
+                          if (sourceIdx !== -1 && targetIdx !== -1) {
+                            const newWidgets = [...widgets];
+                            [newWidgets[sourceIdx], newWidgets[targetIdx]] = [newWidgets[targetIdx], newWidgets[sourceIdx]];
+                            updatePref("active_widgets", newWidgets);
+                          }
+                        }
+                      }}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-move transition-all ${active ? "bg-blue-50 border-blue-200 hover:bg-blue-100" : "bg-slate-50 border-slate-200 opacity-50"}`}
+                    >
+                      <div className="text-slate-400 text-sm">⋮⋮</div>
+                      <button
+                        onClick={() => { const cur = prefs.active_widgets || []; updatePref("active_widgets", active ? cur.filter(x => x !== w.id) : [...cur, w.id]); }}
+                        className="flex-1 flex items-center gap-2 text-left"
+                      >
+                        <div className={`w-2 h-2 rounded-full transition-all ${active ? "bg-blue-500" : "bg-slate-300"}`} />
+                        <span className={`text-sm font-medium ${active ? "text-blue-700" : "text-slate-500"}`}>{w.l}</span>
+                      </button>
+                    </div>
                   );
                 })}
               </div>

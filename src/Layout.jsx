@@ -220,8 +220,8 @@ export default function Layout({ children, currentPageName }) {
       }
 
       {/* Main Content */}
-      <main className="bg-blue-100 pt-32 lg:pt-20 flex-1 min-h-screen">
-        <div className="p-4 md:p-8 max-w-7xl mx-auto">
+      <main className={`flex-1 min-h-screen ${currentPageName === 'NoteDetail' ? 'bg-[#050f1e]' : 'bg-blue-100 pt-32 lg:pt-20'}`}>
+        <div className={currentPageName === 'NoteDetail' ? '' : 'p-4 md:p-8 max-w-7xl mx-auto'}>
           {children}
         </div>
         {/* Draggable Notification Buttons */}

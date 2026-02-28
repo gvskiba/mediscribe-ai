@@ -122,13 +122,10 @@ export default function DashboardTopBar({ user }) {
           gap: "16px",
         }}
       >
-        {/* Left: Welcome Message */}
+        {/* Left: Editable Settings */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
           <div style={{ fontSize: "28px" }}>👩‍⚕️</div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: "Playfair Display, serif", fontSize: "20px", color: T.bright, fontWeight: 500 }}>
-              Good morning, <span style={{ color: T.teal }}>{lastName}</span>
-            </div>
             <div style={{ fontSize: "11px", color: T.dim, display: "flex", alignItems: "center", gap: "4px" }}>
               {editMode && editing.specialty ? (
                 <select

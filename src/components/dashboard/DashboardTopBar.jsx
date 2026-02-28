@@ -230,7 +230,7 @@ export default function DashboardTopBar({ user }) {
         </div>
 
         {/* Center: Stats Buttons */}
-         <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: "fit-content", order: 3, flexBasis: "100%", justifyContent: "flex-start" }}>
+         <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: "fit-content", order: 3, flexBasis: "100%", justifyContent: "center" }}>
           {stats.map((stat) => (
             <button
               key={stat.label}

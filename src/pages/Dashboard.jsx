@@ -299,7 +299,8 @@ function SearchPanel() {
 
   const handleSearch = (q) => {
     if (q.trim()) {
-      window.open(`${pageData.openEvidence.baseUrl}${encodeURIComponent(q)}`, "_blank");
+      const searchUrl = `https://www.openevidence.com/search?q=${encodeURIComponent(q)}`;
+      window.open(searchUrl, "_blank");
     }
   };
 

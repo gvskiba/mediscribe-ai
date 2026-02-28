@@ -409,11 +409,11 @@ export default function CalendarPage() {
         </div>
 
         {/* Calendar Grid */}
-        <div style={{ background: config.colors.card, border: `1px solid ${config.colors.border}`, borderRadius: "12px", padding: "16px" }}>
+        <div style={{ background: config.colors.card, border: `1px solid ${config.colors.border}`, borderRadius: config.layout.border_radius_px, padding: "20px" }}>
           {/* Day headers */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "8px", marginBottom: "12px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "10px", marginBottom: "16px" }}>
             {config.days_of_week.map((day) => (
-              <div key={day} style={{ textAlign: "center", fontSize: "12px", fontWeight: 600, color: config.colors.muted, paddingBottom: "8px", borderBottom: `1px solid ${config.colors.border}` }}>
+              <div key={day} style={{ textAlign: "center", fontSize: "13px", fontWeight: 700, color: config.colors.muted, paddingBottom: "12px", borderBottom: `2px solid ${config.colors.dim}` }}>
                 {day}
               </div>
             ))}

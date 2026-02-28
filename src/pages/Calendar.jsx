@@ -35,12 +35,25 @@ export default function CalendarPage() {
   });
   const queryClient = useQueryClient();
 
-  // Mock data - in production this would fetch from database
-  const [events, setEvents] = useState([
-    { id: 1, date: new Date(2026, 1, 28), time: "10:30", title: "Trauma bay — incoming GSW", color: T.red },
-    { id: 2, date: new Date(2026, 1, 28), time: "12:00", title: "Team handoff / lunch huddle", color: T.amber },
-    { id: 3, date: new Date(2026, 1, 28), time: "14:00", title: "Procedure: LP — Bay 4", color: T.teal },
-  ]);
+  const { data: events = [], isLoading } = useQuery({
+    queryKey: ["calendarEvents"],
+    queryFn: () => base44.entities.CalendarEvent.list(),
+  });
+
+  const createEventMutation = useMutation({
+    mutationFn: (eventData) => base44.entities.CalendarEvent.create(eventData),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["calendarEvents"] }),
+  });
+
+  const updateEventMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.CalendarEvent.update(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["calendarEvents"] }),
+  });
+
+  const deleteEventMutation = useMutation({
+    mutationFn: (id) => base44.entities.CalendarEvent.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["calendarEvents"] }),
+  });
 
   const daysInMonth = eachDayOfInterval({
     start: startOfWeek(startOfMonth(currentDate)),

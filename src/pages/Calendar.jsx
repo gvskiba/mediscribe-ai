@@ -469,14 +469,14 @@ const generateICS = (shifts) => {
   return icsContent;
 };
 
-function download(content, filename) {
+const download = (content, filename) => {
   const link = document.createElement("a");
   link.href = `data:text/calendar;charset=utf-8,${encodeURIComponent(content)}`;
   link.download = filename;
   link.click();
-}
+};
 
-function handleImportICS(file, shifts, setShifts) {
+const handleImportICS = (file, shifts, setShifts) => {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = (e) => {

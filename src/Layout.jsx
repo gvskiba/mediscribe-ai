@@ -91,7 +91,7 @@ export default function Layout({ children, currentPageName }) {
       `}</style>
 
       {/* Desktop Header */}
-      <header className="hidden lg:block fixed top-0 left-0 right-0 bg-white border-b border-slate-200 z-40" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)' }}>
+      <header className={`hidden lg:block fixed top-0 left-0 right-0 bg-white border-b border-slate-200 z-40 ${currentPageName === 'Home' ? '!hidden' : ''}`} style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)' }}>
         <div className="px-6 py-4">
           <div className="flex items-center justify-between gap-6">
             {/* Logo */}

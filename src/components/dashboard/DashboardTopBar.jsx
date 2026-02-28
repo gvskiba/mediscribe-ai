@@ -162,18 +162,30 @@ export default function DashboardTopBar({ user }) {
               )}
               {" • "}
               {editMode && editing.shift ? (
-                <select
-                  value={formData.shift_type}
-                  onChange={(e) => setFormData({ ...formData, shift_type: e.target.value })}
-                  style={{ padding: "2px 6px", borderRadius: "4px", background: T.edge, border: `1px solid ${T.border}`, color: T.text, fontSize: "11px" }}
-                >
-                  <option value="day">Day Shift</option>
-                  <option value="night">Night Shift</option>
-                </select>
+               <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+                 <select
+                   value={formData.shift_type}
+                   onChange={(e) => setFormData({ ...formData, shift_type: e.target.value })}
+                   style={{ padding: "2px 6px", borderRadius: "4px", background: T.edge, border: `1px solid ${T.border}`, color: T.text, fontSize: "11px" }}
+                 >
+                   <option value="day">Day Shift</option>
+                   <option value="night">Night Shift</option>
+                 </select>
+                 <span>•</span>
+                 <input
+                   type="number"
+                   min="1"
+                   max="24"
+                   value={formData.shift_duration}
+                   onChange={(e) => setFormData({ ...formData, shift_duration: parseInt(e.target.value) || 12 })}
+                   style={{ padding: "2px 6px", borderRadius: "4px", background: T.edge, border: `1px solid ${T.border}`, color: T.text, fontSize: "11px", width: "40px" }}
+                 />
+                 <span>hrs</span>
+               </div>
               ) : (
-                <span style={{ cursor: "pointer" }} onClick={() => { setEditMode(true); setEditing({ ...editing, shift: true }); }}>
-                  {formData.shift_type === "day" ? "Day Shift" : "Night Shift"}
-                </span>
+               <span style={{ cursor: "pointer" }} onClick={() => { setEditMode(true); setEditing({ ...editing, shift: true }); }}>
+                 {formData.shift_type === "day" ? "Day Shift" : "Night Shift"} • {formData.shift_duration}hrs
+               </span>
               )}
               {" • Emergency Department"}
             </div>

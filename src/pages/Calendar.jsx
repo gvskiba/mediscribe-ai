@@ -361,7 +361,7 @@ export default function CalendarPage() {
   return (
     <div style={{ background: config.colors.background, color: config.colors.text, display: "flex", flexDirection: "column", gap: "16px", minHeight: "100vh", padding: "0" }}>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))} style={{ background: "none", border: "none", color: config.colors.accent, cursor: "pointer" }}>
             <ChevronLeft className="w-5 h-5" />

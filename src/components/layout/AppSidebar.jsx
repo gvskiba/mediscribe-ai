@@ -21,8 +21,8 @@ export default function AppSidebar({ user }) {
   return (
     <div
       style={{
-        width: 64,
-        minHeight: "100vh",
+        width: 80,
+        minHeight: "calc(100vh - 52px)",
         background: "linear-gradient(180deg, #0b1628 0%, #0d1f3c 100%)",
         display: "flex",
         flexDirection: "column",

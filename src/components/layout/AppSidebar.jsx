@@ -41,23 +41,22 @@ export default function AppSidebar({ user }) {
       {/* Logo */}
       <div
         style={{
-          width: 40,
+          width: 48,
           height: 40,
-          borderRadius: 12,
-          background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
+          borderRadius: 10,
+          background: "#f5f5f5",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 16,
-          fontWeight: 700,
-          color: "#fff",
           marginBottom: 20,
           flexShrink: 0,
-          boxShadow: "0 4px 14px rgba(37,99,235,0.35)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
         }}
         title="MedNu. AI"
       >
-        M.
+        <span style={{ fontSize: 14, fontWeight: 800, color: "#1e1b4b", letterSpacing: "-0.5px" }}>
+          medn<span style={{ color: "#6d28d9" }}>u.</span>
+        </span>
       </div>
 
       {/* Nav Items */}

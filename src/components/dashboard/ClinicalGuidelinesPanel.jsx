@@ -159,18 +159,90 @@ export default function ClinicalGuidelinesPanel() {
             <div
               key={idx}
               style={{
-                marginBottom: 16,
-                padding: 14,
-                borderRadius: 10,
+                marginBottom: 20,
+                padding: msg.role === "user" ? "12px 16px" : "20px 18px",
+                borderRadius: 12,
                 background: msg.role === "user" ? COLORS.dim : COLORS.surface,
-                border: `1px solid ${msg.role === "user" ? COLORS.dim : COLORS.border}`,
+                border: `1px solid ${msg.role === "user" ? COLORS.dim : COLORS.borderActive}`,
                 color: COLORS.text,
-                fontSize: 13,
-                lineHeight: 1.6,
-                whiteSpace: "pre-wrap"
+                fontSize: msg.role === "user" ? 12 : 13,
+                lineHeight: 1.7,
               }}
             >
-              {msg.content}
+              {msg.role === "user" ? (
+                <div style={{ color: COLORS.muted }}>{msg.content}</div>
+              ) : (
+                <div style={{ color: COLORS.text }}>
+                  {msg.content.split('\n').map((line, i) => {
+                    // Headers
+                    if (line.startsWith('##')) {
+                      return (
+                        <div key={i} style={{
+                          fontSize: 15,
+                          fontWeight: 700,
+                          color: COLORS.accent,
+                          marginTop: i > 0 ? 16 : 0,
+                          marginBottom: 10
+                        }}>
+                          {line.replace('##', '').trim()}
+                        </div>
+                      );
+                    }
+                    // Bold text
+                    if (line.includes('**')) {
+                      const parts = line.split(/\*\*(.*?)\*\*/);
+                      return (
+                        <div key={i} style={{ marginBottom: 8 }}>
+                          {parts.map((part, j) => (
+                            <span key={j} style={{
+                              fontWeight: j % 2 === 1 ? 700 : 400,
+                              color: j % 2 === 1 ? COLORS.accent : COLORS.text
+                            }}>
+                              {part}
+                            </span>
+                          ))}
+                        </div>
+                      );
+                    }
+                    // Bullet points
+                    if (line.trim().startsWith('•') || line.trim().startsWith('-')) {
+                      return (
+                        <div key={i} style={{
+                          marginLeft: 16,
+                          marginBottom: 8,
+                          color: COLORS.text
+                        }}>
+                          {line}
+                        </div>
+                      );
+                    }
+                    // Blockquotes
+                    if (line.startsWith('>')) {
+                      return (
+                        <div key={i} style={{
+                          paddingLeft: 12,
+                          borderLeft: `3px solid ${COLORS.accent}`,
+                          marginLeft: 0,
+                          marginBottom: 12,
+                          color: COLORS.accent,
+                          fontStyle: "italic",
+                          fontSize: 12
+                        }}>
+                          {line.replace('>', '').trim()}
+                        </div>
+                      );
+                    }
+                    // Normal paragraphs
+                    return line.trim() ? (
+                      <div key={i} style={{ marginBottom: 10 }}>
+                        {line}
+                      </div>
+                    ) : (
+                      <div key={i} style={{ height: 6 }} />
+                    );
+                  })}
+                </div>
+              )}
             </div>
           ))}
           {loading && (

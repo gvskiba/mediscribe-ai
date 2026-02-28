@@ -48,7 +48,9 @@
  * The mainPage value must match a key in the PAGES object exactly.
  */
 import Calculators from './pages/Calculators';
+import Calendar from './pages/Calendar';
 import Customize from './pages/Customize';
+import Dashboard from './pages/Dashboard';
 import GuidelineDetail from './pages/GuidelineDetail';
 import Guidelines from './pages/Guidelines';
 import Home from './pages/Home';
@@ -69,14 +71,14 @@ import TemplateEditor from './pages/TemplateEditor';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
-import Calendar from './pages/Calendar';
-import Dashboard from './pages/Dashboard';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "Calculators": Calculators,
+    "Calendar": Calendar,
     "Customize": Customize,
+    "Dashboard": Dashboard,
     "GuidelineDetail": GuidelineDetail,
     "Guidelines": Guidelines,
     "Home": Home,
@@ -97,8 +99,6 @@ export const PAGES = {
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
-    "Calendar": Calendar,
-    "Dashboard": Dashboard,
 }
 
 export const pagesConfig = {

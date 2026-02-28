@@ -672,7 +672,7 @@ export default function Dashboard() {
 
 
       {/* Grid Layout */}
-      <div style={{ padding: "18px 20px", paddingTop: "20px", display: "grid", gridTemplateColumns: "200px 1fr 300px", gridTemplateRows: "auto auto 1fr", gap: "14px", alignContent: "start", maxWidth: "100%" }}>
+      <div style={{ padding: "18px 20px", display: "grid", gridTemplateColumns: "200px 1fr 300px", gridTemplateRows: "auto auto 1fr", gap: "14px", alignContent: "start", maxWidth: "100%" }}>
         {/* Welcome Bar - Full Width */}
          {false && visibleWidgets.includes("welcome") && (
           <div style={{ gridColumn: "1 / -1" }}>

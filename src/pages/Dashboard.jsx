@@ -608,7 +608,7 @@ export default function Dashboard() {
       <DashboardTopBar user={user} />
 
       {/* Grid Layout */}
-      <div style={{ padding: "18px 20px", paddingTop: "76px", display: "grid", gridTemplateColumns: "280px 1fr 300px", gridTemplateRows: "auto auto 1fr", gap: "14px", alignContent: "start", maxWidth: "100%" }}>
+      <div style={{ padding: "18px 20px", paddingTop: "100px", display: "grid", gridTemplateColumns: "280px 1fr 300px", gridTemplateRows: "auto auto 1fr", gap: "14px", alignContent: "start", maxWidth: "100%" }}>
         {/* Welcome Bar - Full Width */}
         <div style={{ gridColumn: "1 / -1" }}>
           <WelcomeBar user={user} />

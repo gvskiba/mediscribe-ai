@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Search } from "lucide-react";
 import { createPageUrl } from "../utils";
-import DashboardTopBar from "../components/dashboard/DashboardTopBar";
+
 import ClinicalGuidelinesPanel from "../components/dashboard/ClinicalGuidelinesPanel";
 import SavedGuidelinesWidget from "../components/dashboard/SavedGuidelinesWidget";
 import RecentQueriesWidget from "../components/dashboard/RecentQueriesWidget";

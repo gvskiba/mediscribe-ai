@@ -368,6 +368,16 @@ export default function OpenEvidenceSearchPanel() {
           to { transform: rotate(360deg); }
         }
       `}</style>
+
+      {selectedGuideline && (
+        <SaveGuidelineModal
+          guideline={selectedGuideline}
+          onClose={() => setSelectedGuideline(null)}
+          onSaved={() => {
+            setSelectedGuideline(null);
+          }}
+        />
+      )}
     </div>
   );
 }

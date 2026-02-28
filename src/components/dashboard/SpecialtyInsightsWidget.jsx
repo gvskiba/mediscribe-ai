@@ -29,12 +29,34 @@ export default function SpecialtyInsightsWidget() {
         setSpecialty(user?.clinical_settings?.medical_specialty || "emergency_medicine");
 
         const result = await base44.integrations.Core.InvokeLLM({
-          prompt: `Generate 4-5 brief clinical insights and trending topics relevant to ${user?.clinical_settings?.medical_specialty || "emergency medicine"} based on recent clinical literature and guidelines. Focus on recent developments, common pitfalls, and important updates clinicians should know about. Format as bullet points with practical, actionable information.`,
+          prompt: `Find 3-4 recent clinical insights relevant to ${user?.clinical_settings?.medical_specialty || "emergency medicine"}. For each insight:
+1. Provide the key clinical point or recent development
+2. Cite a specific guideline, organization, or research (e.g., "ACC/AHA 2023", "NEJM 2024", "Cochrane 2023")
+3. Include a practical recommendation
+
+Format as JSON array with objects containing: {insight: "...", guideline: "...", source_url: "...", recommendation: "..."}.
+Make sure to cite real, verifiable sources with URLs.`,
           add_context_from_internet: true,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              insights: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    insight: { type: "string" },
+                    guideline: { type: "string" },
+                    source_url: { type: "string" },
+                    recommendation: { type: "string" }
+                  }
+                }
+              }
+            }
+          }
         });
 
-        const insightList = result?.split("\n").filter(line => line.trim().length > 0).slice(0, 5) || [];
-        setInsights(insightList);
+        setInsights(result?.insights || []);
       } catch (error) {
         console.error("Failed to load insights:", error);
       } finally {

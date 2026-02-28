@@ -6,7 +6,9 @@ import {
   Brain, Sparkles, Loader2, Plus, Trash2, Pencil, Check, X,
   ChevronDown, ChevronUp, GitCompare, FileText, Wand2, Bot,
   Clock, Activity, AlertTriangle, Zap, FlaskConical, Eye, RefreshCw,
+  Settings, GripVertical, EyeOff, RotateCcw,
 } from "lucide-react";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";

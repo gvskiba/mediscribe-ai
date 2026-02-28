@@ -695,6 +695,31 @@ function DischargeSummaryPanel({ note, mdm, noteId }) {
   );
 }
 
+// ─── Panel registry ─────────────────────────────────────────────────────────────
+const DEFAULT_PANELS = [
+  { id: "insight", label: "AI Clinical Insight", span: "full" },
+  { id: "differential", label: "Differential Diagnosis", span: "half" },
+  { id: "recommendations", label: "Clinical Recommendations", span: "half" },
+  { id: "risk", label: "Composite Risk", span: "third" },
+  { id: "medications", label: "Active Medications", span: "third" },
+  { id: "discharge", label: "Discharge Summary", span: "third" },
+  { id: "mdm_notes", label: "MDM Documentation", span: "full" },
+];
+
+const STORAGE_KEY = "mdm_layout_v1";
+
+function loadLayout() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return null;
+}
+
+function saveLayout(panels) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(panels));
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────────
 export default function MedicalDecisionMakingTab({ note, onUpdateNote, noteId }) {
   const parseMDM = () => {
@@ -710,6 +735,8 @@ export default function MedicalDecisionMakingTab({ note, onUpdateNote, noteId })
   };
 
   const [mdm, setMdm] = useState(parseMDM);
+  const [customizing, setCustomizing] = useState(false);
+  const [panels, setPanels] = useState(() => loadLayout() || DEFAULT_PANELS);
 
   const persist = async (updated) => {
     setMdm(updated);
@@ -734,39 +761,190 @@ export default function MedicalDecisionMakingTab({ note, onUpdateNote, noteId })
     toast.success("Entry updated");
   };
 
+  const toggleVisible = (id) => {
+    const next = panels.map(p => p.id === id ? { ...p, hidden: !p.hidden } : p);
+    setPanels(next);
+    saveLayout(next);
+  };
+
+  const changeSpan = (id, span) => {
+    const next = panels.map(p => p.id === id ? { ...p, span } : p);
+    setPanels(next);
+    saveLayout(next);
+  };
+
+  const onDragEnd = (result) => {
+    if (!result.destination) return;
+    const reordered = Array.from(panels);
+    const [removed] = reordered.splice(result.source.index, 1);
+    reordered.splice(result.destination.index, 0, removed);
+    setPanels(reordered);
+    saveLayout(reordered);
+  };
+
+  const resetLayout = () => {
+    setPanels(DEFAULT_PANELS);
+    localStorage.removeItem(STORAGE_KEY);
+    toast.success("Layout reset to default");
+  };
+
+  const renderPanel = (panel) => {
+    if (panel.hidden) return null;
+    switch (panel.id) {
+      case "insight": return <ClinicalInsightPanel note={note} />;
+      case "differential": return <DifferentialPanel note={note} />;
+      case "recommendations": return <RecommendationsPanel note={note} />;
+      case "risk": return <CompositeRiskPanel note={note} />;
+      case "medications": return <ActiveMedicationsPanel note={note} />;
+      case "discharge": return <DischargeSummaryPanel note={note} mdm={mdm} noteId={noteId} />;
+      case "mdm_notes": return <MDMNotesPanel note={note} mdm={mdm} onAdd={addEntry} onDelete={deleteEntry} onEdit={editEntry} />;
+      default: return null;
+    }
+  };
+
+  // Group visible panels into rows based on span
+  const visiblePanels = panels.filter(p => !p.hidden);
+
+  // Build layout rows
+  const rows = [];
+  let i = 0;
+  while (i < visiblePanels.length) {
+    const p = visiblePanels[i];
+    if (p.span === "full") {
+      rows.push({ type: "full", panels: [p] });
+      i++;
+    } else if (p.span === "half") {
+      const next = visiblePanels[i + 1];
+      if (next && next.span === "half") {
+        rows.push({ type: "halves", panels: [p, next] });
+        i += 2;
+      } else {
+        rows.push({ type: "full", panels: [p] });
+        i++;
+      }
+    } else if (p.span === "third") {
+      const two = visiblePanels[i + 1];
+      const three = visiblePanels[i + 2];
+      if (two && two.span === "third" && three && three.span === "third") {
+        rows.push({ type: "thirds", panels: [p, two, three] });
+        i += 3;
+      } else if (two && two.span === "third") {
+        rows.push({ type: "halves", panels: [p, two] });
+        i += 2;
+      } else {
+        rows.push({ type: "full", panels: [p] });
+        i++;
+      }
+    } else {
+      rows.push({ type: "full", panels: [p] });
+      i++;
+    }
+  }
+
   return (
     <div className="bg-slate-900 rounded-2xl p-4 md:p-6 space-y-4 min-h-screen">
-      {/* Dark theme header */}
-      <div className="flex items-center gap-3 mb-2">
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
-          <Brain className="w-4 h-4 text-white" />
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+            <Brain className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white">Medical Decision Making</h3>
+            <p className="text-xs text-slate-400">AI-powered clinical reasoning dashboard</p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-base font-bold text-white">Medical Decision Making</h3>
-          <p className="text-xs text-slate-400">AI-powered clinical reasoning dashboard</p>
+        <div className="flex items-center gap-2">
+          {customizing && (
+            <button onClick={resetLayout} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-slate-400 hover:text-white border border-slate-600 hover:border-slate-400 rounded-lg transition-colors">
+              <RotateCcw className="w-3 h-3" /> Reset
+            </button>
+          )}
+          <button
+            onClick={() => setCustomizing(c => !c)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+              customizing ? "bg-indigo-600 border-indigo-500 text-white" : "border-slate-600 text-slate-400 hover:text-white hover:border-slate-400"
+            }`}
+          >
+            <Settings className="w-3.5 h-3.5" />
+            {customizing ? "Done" : "Customize"}
+          </button>
         </div>
       </div>
 
-      {/* Top row: AI Insight (full width) */}
-      <ClinicalInsightPanel note={note} />
+      {/* Customize mode: drag-and-drop panel list */}
+      <AnimatePresence>
+        {customizing && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden">
+            <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-4 space-y-2">
+              <p className="text-xs text-slate-400 mb-3">Drag to reorder panels, toggle visibility, or change width.</p>
+              <DragDropContext onDragEnd={onDragEnd}>
+                <Droppable droppableId="mdm-panels">
+                  {(provided) => (
+                    <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2">
+                      {panels.map((panel, idx) => (
+                        <Draggable key={panel.id} draggableId={panel.id} index={idx}>
+                          {(prov) => (
+                            <div ref={prov.innerRef} {...prov.draggableProps}
+                              className="flex items-center gap-3 bg-slate-700/60 border border-slate-600 rounded-lg px-3 py-2">
+                              <div {...prov.dragHandleProps} className="text-slate-500 hover:text-slate-300 cursor-grab">
+                                <GripVertical className="w-4 h-4" />
+                              </div>
+                              <span className={`flex-1 text-sm ${panel.hidden ? "text-slate-500 line-through" : "text-slate-200"}`}>{panel.label}</span>
+                              {/* Width selector */}
+                              <div className="flex gap-1">
+                                {[
+                                  { span: "third", label: "1/3" },
+                                  { span: "half", label: "1/2" },
+                                  { span: "full", label: "Full" },
+                                ].map(opt => (
+                                  <button key={opt.span} onClick={() => changeSpan(panel.id, opt.span)}
+                                    className={`px-2 py-0.5 text-xs rounded border transition-colors ${panel.span === opt.span ? "bg-indigo-600 border-indigo-500 text-white" : "border-slate-600 text-slate-400 hover:border-slate-400"}`}>
+                                    {opt.label}
+                                  </button>
+                                ))}
+                              </div>
+                              {/* Visibility toggle */}
+                              <button onClick={() => toggleVisible(panel.id)}
+                                className={`p-1.5 rounded-md transition-colors ${panel.hidden ? "text-slate-600 hover:text-slate-300" : "text-slate-300 hover:text-white"}`}>
+                                {panel.hidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Middle row: Differential + Recommendations */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <DifferentialPanel note={note} />
-        <RecommendationsPanel note={note} />
-      </div>
-
-      {/* Bottom row: Risk + Meds + MDM Notes */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <CompositeRiskPanel note={note} />
-        <ActiveMedicationsPanel note={note} />
-        <div className="lg:col-span-1">
-          <DischargeSummaryPanel note={note} mdm={mdm} noteId={noteId} />
-        </div>
-      </div>
-
-      {/* MDM Documentation */}
-      <MDMNotesPanel note={note} mdm={mdm} onAdd={addEntry} onDelete={deleteEntry} onEdit={editEntry} />
+      {/* Rendered panels */}
+      {rows.map((row, ri) => {
+        if (row.type === "full") {
+          return <div key={ri}>{renderPanel(row.panels[0])}</div>;
+        }
+        if (row.type === "halves") {
+          return (
+            <div key={ri} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {row.panels.map(p => <div key={p.id}>{renderPanel(p)}</div>)}
+            </div>
+          );
+        }
+        if (row.type === "thirds") {
+          return (
+            <div key={ri} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {row.panels.map(p => <div key={p.id}>{renderPanel(p)}</div>)}
+            </div>
+          );
+        }
+        return null;
+      })}
     </div>
   );
 }

@@ -60,6 +60,7 @@ import NoteTemplates from './pages/NoteTemplates';
 import NotesLibrary from './pages/NotesLibrary';
 import PatientDashboard from './pages/PatientDashboard';
 import PatientHistory from './pages/PatientHistory';
+import SavedGuidelines from './pages/SavedGuidelines';
 import Search from './pages/Search';
 import SmartTemplates from './pages/SmartTemplates';
 import Snippets from './pages/Snippets';
@@ -67,7 +68,7 @@ import TemplateEditor from './pages/TemplateEditor';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
-import SavedGuidelines from './pages/SavedGuidelines';
+import OrdersQueue from './pages/OrdersQueue';
 import __Layout from './Layout.jsx';
 
 
@@ -85,6 +86,7 @@ export const PAGES = {
     "NotesLibrary": NotesLibrary,
     "PatientDashboard": PatientDashboard,
     "PatientHistory": PatientHistory,
+    "SavedGuidelines": SavedGuidelines,
     "Search": Search,
     "SmartTemplates": SmartTemplates,
     "Snippets": Snippets,
@@ -92,7 +94,7 @@ export const PAGES = {
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
-    "SavedGuidelines": SavedGuidelines,
+    "OrdersQueue": OrdersQueue,
 }
 
 export const pagesConfig = {

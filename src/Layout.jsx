@@ -231,9 +231,9 @@ export default function Layout({ children, currentPageName }) {
       }
 
       {/* Main Content */}
-      <main className={`flex-1 min-h-screen ${currentPageName === 'NoteDetail' ? 'bg-[#050f1e]' : currentPageName === 'Home' ? '' : 'bg-blue-100 pt-32 lg:pt-20'}`}
+      <main className={`flex-1 min-h-screen ${currentPageName === 'NoteDetail' ? 'bg-[#050f1e]' : currentPageName === 'Dashboard' ? 'bg-[#050f1e]' : currentPageName === 'Home' ? '' : 'pt-32 lg:pt-20'}`}
  style={{ marginLeft: showSidebar ? 64 : 0 }}>
-        <div className={currentPageName === 'NoteDetail' ? '' : 'p-4 md:p-8 max-w-7xl mx-auto'}>
+        <div className={currentPageName === 'NoteDetail' || currentPageName === 'Dashboard' ? '' : 'p-4 md:p-8 max-w-7xl mx-auto'}>
           {children}
         </div>
         {/* Draggable Notification Buttons */}

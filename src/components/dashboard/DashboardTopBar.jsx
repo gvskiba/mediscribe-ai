@@ -119,6 +119,40 @@ export default function DashboardTopBar({ user }) {
         </div>
       </div>
 
+      {/* Shift Time Bar */}
+      <div
+        style={{
+          height: "52px",
+          background: T.navy,
+          borderBottom: `1px solid ${T.border}`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          padding: "0 20px",
+          gap: "20px",
+        }}
+      >
+        <div style={{ textAlign: "right" }}>
+          <div
+            style={{
+              fontSize: "16px",
+              fontFamily: "JetBrains Mono, monospace",
+              color: T.teal,
+              fontWeight: 700,
+              letterSpacing: "0.05em",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+          >
+            🕐 {String(shiftStart).padStart(2, "0")}:00 → {String(shiftEndDisplay).padStart(2, "0")}:00
+          </div>
+          <div style={{ fontSize: "11px", color: T.teal, marginTop: "2px", fontWeight: 500 }}>
+            {formData.shift_type === "day" ? "Day" : "Night"} Shift — {formData.shift_duration} hrs
+          </div>
+        </div>
+      </div>
+
       {/* Welcome Bar with Stats */}
       <div
         style={{

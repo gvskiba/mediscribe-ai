@@ -23,7 +23,7 @@ export default function TabPageLayout({
   children,
 }) {
   return (
-    <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
+    <div className="w-full px-4 py-4 space-y-3">
       {/* Page Header */}
       {title && (
         <div>

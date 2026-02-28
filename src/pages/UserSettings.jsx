@@ -225,6 +225,13 @@ export default function UserSettings() {
         clinical_settings: updatedSettings,
       }));
       setSettings(updatedSettings);
+      setProfileData(prev => ({
+        ...prev,
+        first_name: profileData.first_name,
+        last_name: profileData.last_name,
+        provider_type: profileData.provider_type,
+        specialty: profileData.specialty,
+      }));
       setEditProfile(false);
       toast.success("Profile updated");
     } catch (error) {

@@ -23,7 +23,7 @@ export default function AppSidebar({ user }) {
     <div
       style={{
         width: 80,
-        minHeight: "calc(100vh - 52px)",
+        minHeight: "calc(100vh - 88px)",
         background: "linear-gradient(180deg, #0b1628 0%, #0d1f3c 100%)",
         display: "flex",
         flexDirection: "column",
@@ -33,7 +33,7 @@ export default function AppSidebar({ user }) {
         gap: 6,
         position: "fixed",
         left: 0,
-        top: 52,
+        top: 88,
         bottom: 0,
         zIndex: 50,
         borderRight: "1px solid rgba(255,255,255,0.06)",

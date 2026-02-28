@@ -945,9 +945,25 @@ const DEFAULT_PANELS = [
   { id: "mdm_notes",      label: "MDM Documentation",          span: "full" },
 ];
 
-const STORAGE_KEY = "mdm_layout_v2";
-function loadLayout() { try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : null; } catch { return null; } }
-function saveLayout(p) { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); }
+const STORAGE_KEY = "mdm_layout_v3";
+
+function loadLayout() {
+  // Clear any old keys to prevent stale data bugs
+  try { localStorage.removeItem("mdm_layout_v1"); } catch {}
+  try { localStorage.removeItem("mdm_layout_v2"); } catch {}
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    if (!Array.isArray(saved)) return null;
+    // Merge: keep saved order/settings but add any new panels missing from saved
+    const savedIds = new Set(saved.map(p => p.id));
+    const merged = [...saved, ...DEFAULT_PANELS.filter(p => !savedIds.has(p.id))];
+    return merged;
+  } catch { return null; }
+}
+
+function saveLayout(p) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); } catch {} }
 
 /* ── Main Export ──────────────────────────────────────────────────────────────── */
 export default function MedicalDecisionMakingTab({ note, onUpdateNote, noteId }) {

@@ -57,7 +57,8 @@ export default function TopBar() {
       color: "#e2e8f0"
     }}>
       {/* Left: Welcome */}
-      <div style={{ fontSize: "14px", fontWeight: 500, minWidth: "150px" }}>
+      <div style={{ fontSize: "14px", fontWeight: 500, minWidth: "150px", display: "flex", alignItems: "center", gap: "8px" }}>
+        <Calendar className="w-5 h-5" style={{ color: "#0ea5e9" }} />
         Welcome, {user?.full_name?.split(" ")[0]?.toLowerCase() || "user"}
       </div>
 

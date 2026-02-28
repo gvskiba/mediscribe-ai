@@ -28,6 +28,7 @@ export default function DashboardTopBar({ user }) {
     specialty: "",
     bay_number: "",
     shift_type: "day",
+    shift_duration: 12,
   });
 
   useEffect(() => {

@@ -250,8 +250,13 @@ Return structured literature review:
         add_context_from_internet: true,
         response_json_schema: schemaMap[tab]
       });
-      setResults({ ...result, _tab: tab, _query: searchQuery });
+      if (result && typeof result === 'object') {
+        setResults({ ...result, _tab: tab, _query: searchQuery });
+      } else {
+        toast.error("Invalid search response. Please try again.");
+      }
     } catch (error) {
+      console.error("Search error:", error);
       toast.error("Search failed. Please try again.");
     } finally {
       setLoading(false);

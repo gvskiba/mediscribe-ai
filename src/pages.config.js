@@ -70,6 +70,7 @@ import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
 import OrdersQueue from './pages/OrdersQueue';
 import ShiftHours from './pages/ShiftHours';
+import Calendar from './pages/Calendar';
 import __Layout from './Layout.jsx';
 
 
@@ -97,6 +98,7 @@ export const PAGES = {
     "UserSettings": UserSettings,
     "OrdersQueue": OrdersQueue,
     "ShiftHours": ShiftHours,
+    "Calendar": Calendar,
 }
 
 export const pagesConfig = {

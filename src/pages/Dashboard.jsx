@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search } from "lucide-react";
+import { Search, GripHorizontal } from "lucide-react";
 import { createPageUrl } from "../utils";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 import ClinicalGuidelinesPanel from "../components/dashboard/ClinicalGuidelinesPanel";
 import SavedGuidelinesWidget from "../components/dashboard/SavedGuidelinesWidget";
@@ -643,15 +644,15 @@ function NotesPanel() {
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
-  const [visibleWidgets, setVisibleWidgets] = useState(["welcome", "clock", "search", "guidelines", "news"]);
+  const [widgetOrder, setWidgetOrder] = useState(["clock", "search", "guidelines", "news", "notes"]);
 
   useEffect(() => {
     const load = async () => {
       try {
         const u = await base44.auth.me();
         setUser(u);
-        if (u?.preferences?.active_widgets) {
-          setVisibleWidgets(u.preferences.active_widgets);
+        if (u?.widget_positions) {
+          setWidgetOrder(u.widget_positions);
         }
       } catch {
         setUser(null);
@@ -660,6 +661,32 @@ export default function Dashboard() {
     load();
   }, []);
 
+  const handleDragEnd = async (result) => {
+    const { source, destination } = result;
+    if (!destination) return;
+    
+    const newOrder = Array.from(widgetOrder);
+    const [removed] = newOrder.splice(source.index, 1);
+    newOrder.splice(destination.index, 0, removed);
+    setWidgetOrder(newOrder);
+
+    try {
+      await base44.auth.updateMe({ widget_positions: newOrder });
+    } catch (error) {
+      console.error("Failed to save widget positions:", error);
+    }
+  };
+
+  const widgets = {
+    clock: { label: "Clock & Calendar", component: <ClockCalPanel /> },
+    search: { label: "Clinical Guidelines", component: <ClinicalGuidelinesPanel /> },
+    guidelines: { label: "Saved Guidelines", component: <SavedGuidelinesWidget /> },
+    news: { label: "Medical News", component: <NewsPanel /> },
+    notes: { label: "Recent Notes", component: <NotesPanel /> },
+  };
+
+  const visibleWidgets = widgetOrder.filter(w => widgets[w]);
+
   return (
     <div style={{ background: T.navy, width: "100%", height: "100%", fontFamily: "DM Sans, sans-serif", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       <style>{`
@@ -667,50 +694,73 @@ export default function Dashboard() {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.2; }
         }
+        .draggable-widget {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+        .widget-handle {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          cursor: grab;
+          z-index: 10;
+          padding: 4px;
+          color: rgba(200, 221, 240, 0.4);
+          transition: color 0.2s;
+        }
+        .widget-handle:hover {
+          color: rgba(200, 221, 240, 0.8);
+        }
+        .widget-handle:active {
+          cursor: grabbing;
+        }
       `}</style>
 
-      {/* Grid Layout */}
-      <div style={{ padding: "12px 16px", display: "grid", gridTemplateColumns: "240px 1fr 280px", gridTemplateRows: "1fr 1fr", gap: "10px", flex: 1, overflow: "hidden" }}>
-        {/* Welcome Bar - Full Width */}
-         {false && visibleWidgets.includes("welcome") && (
-          <div style={{ gridColumn: "1 / -1" }}>
-            <WelcomeBar user={user} />
-          </div>
-        )}
-
-        {/* Clock/Cal - Top Left */}
-        {visibleWidgets.includes("clock") && (
-          <div style={{ gridColumn: 1, gridRow: 1, overflow: "hidden" }}>
-            <ClockCalPanel />
-          </div>
-        )}
-
-        {/* Search Panel - Top Center */}
-        {visibleWidgets.includes("search") && (
-          <div style={{ gridColumn: 2, gridRow: 1, overflow: "hidden" }}>
-            <ClinicalGuidelinesPanel />
-          </div>
-        )}
-
-        {/* Saved Guidelines Widget - Top Right */}
-        {visibleWidgets.includes("guidelines") && (
-          <div style={{ gridColumn: 3, gridRow: 1, overflow: "hidden" }}>
-            <SavedGuidelinesWidget />
-          </div>
-        )}
-
-        {/* News Panel - Bottom Left */}
-        {visibleWidgets.includes("news") && (
-          <div style={{ gridColumn: 1, gridRow: 2, overflow: "hidden" }}>
-            <NewsPanel />
-          </div>
-        )}
-
-        {/* Notes Panel - Bottom Center & Right */}
-        <div style={{ gridColumn: "2 / -1", gridRow: 2, overflow: "hidden" }}>
-          <NotesPanel />
+      {/* Draggable Grid Layout */}
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <div style={{ padding: "12px 16px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "10px", flex: 1, overflow: "auto" }}>
+          <Droppable droppableId="widgets" type="WIDGET">
+            {(provided, snapshot) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                style={{ display: "contents", ...provided.droppableProps.style }}
+              >
+                {visibleWidgets.map((widgetId, index) => (
+                  <Draggable key={widgetId} draggableId={widgetId} index={index}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        style={{
+                          overflow: "hidden",
+                          ...provided.draggableProps.style,
+                          opacity: snapshot.isDragging ? 0.5 : 1,
+                          transition: "opacity 0.2s",
+                        }}
+                      >
+                        <div className="draggable-widget">
+                          <div
+                            className="widget-handle"
+                            {...provided.dragHandleProps}
+                            title="Drag to reorder"
+                          >
+                            <GripHorizontal className="w-4 h-4" />
+                          </div>
+                          {widgets[widgetId]?.component}
+                        </div>
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
         </div>
-      </div>
+      </DragDropContext>
     </div>
   );
 }

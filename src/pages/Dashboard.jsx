@@ -241,10 +241,15 @@ function ClockCalPanel() {
         <div style={{ fontFamily: "Playfair Display, serif", fontSize: "15px", color: T.bright, fontWeight: 500, marginBottom: "12px" }}>
           {time.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "6px" }}>
-          {calendarDays.map((day) => (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "6px" }}>
+          {["S", "M", "T", "W", "T", "F", "S"].map(d => (
+            <div key={d} style={{ fontSize: "10px", color: T.dim, fontWeight: 600, textAlign: "center", padding: "4px 0" }}>
+              {d}
+            </div>
+          ))}
+          {calendarDays.map((day, idx) => (
             <div
-              key={day}
+              key={idx}
               style={{
                 width: "32px",
                 height: "32px",
@@ -253,10 +258,10 @@ function ClockCalPanel() {
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: "12px",
-                cursor: "pointer",
+                cursor: day ? "pointer" : "default",
                 transition: "all 0.15s",
                 border: day === today ? `1px solid ${T.teal}` : `1px solid transparent`,
-                background: day === today ? T.teal : T.edge,
+                background: day === today ? T.teal : (day ? T.edge : "transparent"),
                 color: day === today ? T.navy : T.text,
                 fontWeight: day === today ? 700 : 400,
               }}

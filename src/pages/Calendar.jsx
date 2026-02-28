@@ -61,9 +61,10 @@ export default function CalendarPage() {
   });
 
   const getEventsForDate = (date) => {
-    return events.filter(
-      (e) => e.date.toDateString() === date.toDateString()
-    );
+    return events.filter((e) => {
+      const eventDate = new Date(e.date);
+      return eventDate.toDateString() === date.toDateString();
+    });
   };
 
   const handleAddEvent = (date) => {

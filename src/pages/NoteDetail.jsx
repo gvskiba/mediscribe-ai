@@ -1508,7 +1508,7 @@ Generated: ${new Date().toLocaleString()}
                  })()}
 
                  {/* Row 2: Group tabs — main navigation */}
-                 <div className="flex items-center bg-white px-2 justify-center gap-4">
+                 <div className="flex items-center px-2 justify-center gap-4" style={{ background: "#0b1d35" }}>
                    {/* Customize button on left */}
                    <div className="flex items-center gap-1 flex-shrink-0 py-1" style={{ pointerEvents: 'auto', zIndex: 10, position: 'relative' }}>
                      <button

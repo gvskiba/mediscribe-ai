@@ -521,7 +521,7 @@ function NotesPanel() {
 
 export default function Dashboard() {
   return (
-    <div style={{ background: T.navy, minHeight: "100vh", fontFamily: "DM Sans, sans-serif", padding: "18px 20px" }}>
+    <div style={{ background: T.navy, minHeight: "100vh", width: "100%", fontFamily: "DM Sans, sans-serif", padding: "18px 20px" }}>
       <style>{`
         @keyframes clockColon {
           0%, 100% { opacity: 1; }

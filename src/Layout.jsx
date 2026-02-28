@@ -103,7 +103,7 @@ export default function Layout({ children, currentPageName }) {
       {showSidebar && <AppSidebar user={user} />}
 
       {/* Desktop Header */}
-      <header className={`hidden lg:block fixed top-0 right-0 bg-white border-b border-slate-200 z-40 ${currentPageName === 'Home' || currentPageName === 'NoteDetail' || currentPageName === 'Dashboard' || currentPageName === 'Calendar' ? '!hidden' : ''}`} style={{ left: showSidebar ? 64 : 0, background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)' }}>
+      <header className={`hidden lg:block fixed top-0 right-0 bg-white border-b border-slate-200 z-40 ${currentPageName === 'Home' || currentPageName === 'NoteDetail' || currentPageName === 'Dashboard' ? '!hidden' : ''}`} style={{ left: showSidebar ? 64 : 0, background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)' }}>
         <div className="px-6 py-4">
           <div className="flex items-center justify-between gap-6">
             {/* Logo */}
@@ -170,7 +170,7 @@ export default function Layout({ children, currentPageName }) {
       </header>
 
       {/* Mobile Header */}
-      <div className={`lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-slate-200 text-slate-900 px-4 py-3 z-40 space-y-3 ${currentPageName === 'Home' || currentPageName === 'NoteDetail' || currentPageName === 'Dashboard' || currentPageName === 'Calendar' ? '!hidden' : ''}`} style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)' }}>
+      <div className={`lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-slate-200 text-slate-900 px-4 py-3 z-40 space-y-3 ${currentPageName === 'Home' || currentPageName === 'NoteDetail' || currentPageName === 'Dashboard' ? '!hidden' : ''}`} style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-200">

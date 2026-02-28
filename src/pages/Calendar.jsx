@@ -327,6 +327,38 @@ export default function CalendarPage() {
 
   return (
     <div style={{ background: config.colors.background, width: "100vw", height: "100vh", color: config.colors.text, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {/* Compact Header */}
+      <div style={{ height: "52px", background: config.colors.surface, borderBottom: `1px solid ${config.colors.border}`, padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <div style={{ fontSize: "16px", fontWeight: 700 }}>🩺 Provider Shift Calendar</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))} style={{ background: "none", border: "none", color: config.colors.text, cursor: "pointer", padding: "4px 8px" }}>
+            ‹
+          </button>
+          <button onClick={() => setCurrentDate(new Date())} style={{ padding: "4px 12px", background: "transparent", border: `1px solid ${config.colors.border}`, borderRadius: "4px", color: config.colors.text, fontSize: "11px", fontWeight: 600, cursor: "pointer" }}>
+            TODAY
+          </button>
+          <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))} style={{ background: "none", border: "none", color: config.colors.text, cursor: "pointer", padding: "4px 8px" }}>
+            ›
+          </button>
+          <div style={{ fontSize: "14px", fontWeight: 600, minWidth: "120px", textAlign: "center" }}>
+            {config.months[currentDate.getMonth()]} {currentDate.getFullYear()}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button onClick={() => { const ics = generateICS(shifts); download(ics, "provider-shifts.ics"); }} style={{ padding: "6px 10px", background: config.colors.dim, border: `1px solid ${config.colors.border}`, borderRadius: "4px", color: config.colors.text, cursor: "pointer", fontSize: "11px", fontWeight: 600 }}>
+            📥 IMPORT
+          </button>
+          <button onClick={() => { const ics = generateICS(shifts); download(ics, "provider-shifts.ics"); }} style={{ padding: "6px 10px", background: config.colors.dim, border: `1px solid ${config.colors.border}`, borderRadius: "4px", color: config.colors.text, cursor: "pointer", fontSize: "11px", fontWeight: 600 }}>
+            📤 EXPORT
+          </button>
+          <button onClick={() => openModalForDate(new Date())} style={{ padding: "6px 10px", background: config.colors.accent, border: "none", borderRadius: "4px", color: config.colors.background, fontWeight: 600, cursor: "pointer", fontSize: "11px" }}>
+            ✚ ADD SHIFT
+          </button>
+        </div>
+      </div>
+
       {/* Main Container */}
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         {/* Sidebar */}

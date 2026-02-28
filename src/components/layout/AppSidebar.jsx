@@ -87,29 +87,6 @@ export default function AppSidebar({ user }) {
         ))}
       </div>
 
-      {/* Calendar Link */}
-      <Link
-        to={createPageUrl("Calendar")}
-        title="Calendar"
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: 12,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 22,
-          cursor: "pointer",
-          textDecoration: "none",
-          transition: "background 0.15s",
-          background: "transparent",
-        }}
-        onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
-        onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
-      >
-        📅
-      </Link>
-
       {/* User Avatar */}
       {user && (
         <Link

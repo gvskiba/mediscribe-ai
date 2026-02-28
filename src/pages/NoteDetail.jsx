@@ -1464,7 +1464,7 @@ Generated: ${new Date().toLocaleString()}
        >
          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col">
                {/* ── Bottom Navigation Bar ── */}
-               <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-2xl z-50 flex flex-col">
+               <div className="fixed bottom-0 left-0 right-0 shadow-2xl z-50 flex flex-col" style={{ background: "#0b1d35", borderTop: "1px solid #1e3a5f" }}>
                  {/* Row 1: Sub-tabs for the active group (scrollable) */}
                  {(() => {
                    const activeGroup = tabGroups.find(g => g.tabs.some(t => t.id === activeTab));

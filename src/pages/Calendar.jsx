@@ -359,7 +359,7 @@ export default function CalendarPage() {
   const todayDate = today.getDate();
 
   return (
-    <div style={{ background: config.colors.background, color: config.colors.text, display: "flex", flexDirection: "column", gap: "24px", minHeight: "100vh", padding: "24px" }}>
+    <div style={{ background: config.colors.background, color: config.colors.text, display: "flex", flexDirection: "column", gap: "16px", minHeight: "100vh", padding: "0" }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>

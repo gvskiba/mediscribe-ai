@@ -219,10 +219,16 @@ export default function UserSettings() {
         full_name,
         clinical_settings: updatedSettings,
       });
+      setUser(prev => ({
+        ...prev,
+        full_name,
+        clinical_settings: updatedSettings,
+      }));
       setSettings(updatedSettings);
       setEditProfile(false);
       toast.success("Profile updated");
-    } catch {
+    } catch (error) {
+      console.error("Failed to save profile:", error);
       toast.error("Failed to update profile");
     } finally {
       setSaving(false);

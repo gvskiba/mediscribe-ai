@@ -661,7 +661,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div style={{ background: T.navy, height: "100vh", width: "100%", fontFamily: "DM Sans, sans-serif", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+    <div style={{ background: T.navy, width: "100%", height: "100%", fontFamily: "DM Sans, sans-serif", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       <style>{`
         @keyframes clockColon {
           0%, 100% { opacity: 1; }
@@ -670,7 +670,7 @@ export default function Dashboard() {
       `}</style>
 
       {/* Grid Layout */}
-      <div style={{ padding: "12px 16px", display: "grid", gridTemplateColumns: "240px 1fr 280px", gridTemplateRows: "1fr 1fr", gap: "10px", flex: 1, overflow: "hidden", maxWidth: "100%" }}>
+      <div style={{ padding: "12px 16px", display: "grid", gridTemplateColumns: "240px 1fr 280px", gridTemplateRows: "1fr 1fr", gap: "10px", flex: 1, overflow: "hidden" }}>
         {/* Welcome Bar - Full Width */}
          {false && visibleWidgets.includes("welcome") && (
           <div style={{ gridColumn: "1 / -1" }}>

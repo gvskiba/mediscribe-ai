@@ -1102,21 +1102,14 @@ export default function MedicalDecisionMakingTab({ note, onUpdateNote, noteId })
         )}
       </AnimatePresence>
 
-      {/* Panel rows */}
-      {rows.map((row, ri) => {
-        if (row.type === "full") return <div key={ri}>{renderPanel(row.panels[0])}</div>;
-        if (row.type === "halves") return (
-          <div key={ri} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {row.panels.map(p => <div key={p.id}>{renderPanel(p)}</div>)}
+      {/* Panel grid — each panel placed directly with its own col-span */}
+      <div className="grid grid-cols-12 gap-4 mt-4">
+        {visible.map(p => (
+          <div key={p.id} className={spanClass[p.span] || "col-span-12"}>
+            {renderPanel(p)}
           </div>
-        );
-        if (row.type === "thirds") return (
-          <div key={ri} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {row.panels.map(p => <div key={p.id}>{renderPanel(p)}</div>)}
-          </div>
-        );
-        return null;
-      })}
+        ))}
+      </div>
     </div>
   );
 }

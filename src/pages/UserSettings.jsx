@@ -206,6 +206,29 @@ export default function UserSettings() {
     }
   };
 
+  const handleSaveProfile = async () => {
+    setSaving(true);
+    try {
+      const full_name = `${profileData.first_name} ${profileData.last_name}`.trim();
+      const updatedSettings = {
+        ...settings,
+        provider_type: profileData.provider_type,
+        medical_specialty: profileData.specialty,
+      };
+      await base44.auth.updateMe({
+        full_name,
+        clinical_settings: updatedSettings,
+      });
+      setSettings(updatedSettings);
+      setEditProfile(false);
+      toast.success("Profile updated");
+    } catch {
+      toast.error("Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const toggleSection = (id) => setActiveSection(prev => prev === id ? null : id);
 
   if (loading) {

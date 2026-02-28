@@ -676,6 +676,10 @@ export default function Dashboard() {
     guidelines: { col: 3, row: 1, colSpan: 1, rowSpan: 1 },
     news: { col: 2, row: 2, colSpan: 1, rowSpan: 1 },
     notes: { col: 3, row: 2, colSpan: 1, rowSpan: 1 },
+    noteStatus: { col: 1, row: 3, colSpan: 1, rowSpan: 1 },
+    pendingSignatures: { col: 2, row: 3, colSpan: 1, rowSpan: 1 },
+    notesActivity: { col: 3, row: 3, colSpan: 1, rowSpan: 1 },
+    quickNoteCreator: { col: 1, row: 4, colSpan: 1, rowSpan: 1 },
   });
   const [resizing, setResizing] = useState(null);
 
@@ -710,6 +714,10 @@ export default function Dashboard() {
       guidelines: { col: 3, row: 1, colSpan: 1, rowSpan: 1 },
       news: { col: 2, row: 2, colSpan: 1, rowSpan: 1 },
       notes: { col: 3, row: 2, colSpan: 1, rowSpan: 1 },
+      noteStatus: { col: 1, row: 3, colSpan: 1, rowSpan: 1 },
+      pendingSignatures: { col: 2, row: 3, colSpan: 1, rowSpan: 1 },
+      notesActivity: { col: 3, row: 3, colSpan: 1, rowSpan: 1 },
+      quickNoteCreator: { col: 1, row: 4, colSpan: 1, rowSpan: 1 },
     });
   };
 
@@ -886,7 +894,7 @@ export default function Dashboard() {
           padding: "12px 16px",
           display: "grid",
           gridTemplateColumns: "repeat(3, 1fr)",
-          gridTemplateRows: "auto auto",
+          gridTemplateRows: "auto auto auto auto",
           gap: "10px",
           flex: 1,
           overflow: "auto",

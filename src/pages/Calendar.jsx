@@ -24,8 +24,29 @@ const T = {
 const CalendarEventEntity = "GuidelineQuery"; // Using existing entity for storing events
 
 export default function CalendarPage() {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(null);
+  const [currentDate, setCurrentDate] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const dateParam = params.get("date");
+    return dateParam ? new Date(dateParam) : new Date();
+  });
+  const [view, setView] = useState("month");
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const dateParam = params.get("date");
+    if (dateParam) {
+      const date = new Date(dateParam);
+      setTimeout(() => {
+        const handleAddEvent = (date) => {
+          setSelectedDate(date);
+          setEditingEvent(null);
+          setFormData({ title: "", time: "09:00", description: "" });
+          setShowEventModal(true);
+        };
+        handleAddEvent(date);
+      }, 0);
+    }
+    return null;
+  });
   const [showEventModal, setShowEventModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [formData, setFormData] = useState({

@@ -146,14 +146,41 @@ const pageData = {
 function WelcomeBar({ user }) {
   const provider = pageData.provider;
   const lastName = user?.full_name?.split(" ").pop() || "Reyes";
+  const specialties = {
+    emergency_medicine: "Emergency Medicine",
+    internal_medicine: "Internal Medicine",
+    family_medicine: "Family Medicine",
+    pediatrics: "Pediatrics",
+    cardiology: "Cardiology",
+    pulmonology: "Pulmonology",
+    neurology: "Neurology",
+    psychiatry: "Psychiatry",
+    surgery: "Surgery",
+    orthopedics: "Orthopedics",
+  };
+  const providerTypes = { md: "Dr.", do: "Dr.", pa: "PA", np: "NP", other: "" };
+  const specialty = user?.clinical_settings?.medical_specialty ? specialties[user.clinical_settings.medical_specialty] : null;
+  const prefix = providerTypes[user?.clinical_settings?.provider_type] || "Dr.";
   
   return (
     <div style={{ background: `linear-gradient(135deg, ${T.panel}, rgba(0,212,188,0.04))`, border: `1px solid ${T.border}`, borderRadius: "14px", padding: "16px 24px", display: "flex", alignItems: "center", gap: "20px", position: "relative", overflow: "hidden" }}>
       <div style={{ height: "3px", width: "100%", background: `linear-gradient(90deg, ${T.teal}, ${T.purple}, ${T.amber})`, position: "absolute", top: 0, left: 0 }} />
       <div style={{ position: "absolute", right: "-40px", top: "-40px", width: "180px", height: "180px", background: `radial-gradient(circle, rgba(0,212,188,0.06), transparent 70%)`, pointerEvents: "none" }} />
-      <div style={{ fontFamily: "Playfair Display, serif", fontSize: "22px", color: T.bright, fontWeight: 500 }}>
-        {provider.greeting}, <span style={{ color: T.teal }}>Dr. {lastName}</span>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontFamily: "Playfair Display, serif", fontSize: "22px", color: T.bright, fontWeight: 500 }}>
+          {provider.greeting}, <span style={{ color: T.teal }}>{prefix} {lastName}</span>
+        </div>
+        <div style={{ fontSize: "14px", color: T.teal, marginTop: "6px", fontWeight: 500 }}>
+          {user?.email}
+        </div>
       </div>
+      {specialty && (
+        <div style={{ background: "rgba(239,68,68,0.15)", border: `1px solid rgba(239,68,68,0.3)`, borderRadius: "12px", padding: "12px 16px", textAlign: "center" }}>
+          <div style={{ fontSize: "14px", color: "#ef4444", fontWeight: 600, lineHeight: "1.4" }}>
+            {specialty.split(" ").join("\n")}
+          </div>
+        </div>
+      )}
       <div style={{ padding: "4px 12px", borderRadius: "20px", background: "rgba(255,92,108,0.1)", color: "#ff8a95", border: "1px solid rgba(255,92,108,0.2)", fontSize: "12px", fontWeight: 600 }}>
         {provider.specialty}
       </div>

@@ -1,724 +1,513 @@
-import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Calendar, Plus, X, Clock, MapPin, Share2, Download } from "lucide-react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isToday, startOfDay, endOfDay, addDays } from "date-fns";
+import { useState, useEffect } from "react";
+import { Download, Upload, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
 
-const T = {
-  navy: "#050f1e",
-  slate: "#0b1d35",
-  panel: "#0e2340",
-  edge: "#162d4f",
-  border: "#1e3a5f",
-  muted: "#2a4d72",
-  dim: "#4a7299",
-  text: "#c8ddf0",
-  bright: "#e8f4ff",
-  teal: "#00d4bc",
-  teal2: "#00a896",
-  amber: "#f5a623",
-  red: "#ff5c6c",
-  purple: "#9b6dff",
+const config = {
+  colors: {
+    background: "#080b10",
+    surface: "#0e1320",
+    surface_2: "#141b2d",
+    card: "#111826",
+    border: "#1a2236",
+    border_active: "#243048",
+    text: "#dde2ef",
+    muted: "#4e5a78",
+    dim: "#2d3a56",
+    accent: "#00cca3",
+    accent_dim: "#00332a"
+  },
+  layout: {
+    header_height_px: 52,
+    sidebar_width_px: 180,
+    min_height_px: 560,
+    border_radius_px: 12,
+    max_pills_per_day: 4
+  },
+  shift_types: [
+    { id: "day", label: "Day", icon: "🌅", color: "#38bdf8", bg: "#0c2a3a", hours: 12 },
+    { id: "night", label: "Night", icon: "🌙", color: "#818cf8", bg: "#1a1840", hours: 12 },
+    { id: "call", label: "On-Call", icon: "📟", color: "#fb923c", bg: "#2a1800", hours: 24 },
+    { id: "split", label: "Split", icon: "⚡", color: "#00cca3", bg: "#00332a", hours: 12 },
+    { id: "admin", label: "Admin", icon: "🗂", color: "#34d399", bg: "#002a1a", hours: 8 },
+    { id: "cme", label: "CME", icon: "📚", color: "#facc15", bg: "#1f1800", hours: 8 },
+    { id: "pto", label: "PTO", icon: "🏖", color: "#f472b6", bg: "#2a0f1e", hours: 0 },
+    { id: "sick", label: "Sick", icon: "🤒", color: "#94a3b8", bg: "#1a1f2a", hours: 0 }
+  ],
+  departments: [
+    { id: "all", label: "All Departments" },
+    { id: "ed", label: "Emergency Dept." },
+    { id: "icu", label: "ICU / Critical Care" },
+    { id: "hosp", label: "Hospitalist" },
+    { id: "or", label: "OR / Surgery" },
+    { id: "ob", label: "OB / Labor & Delivery" },
+    { id: "clinic", label: "Outpatient Clinic" },
+    { id: "tele", label: "Telemedicine" },
+    { id: "other", label: "Other" }
+  ],
+  months: [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ],
+  days_of_week: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 };
 
-const CalendarEventEntity = "GuidelineQuery"; // Using existing entity for storing events
-
-export default function CalendarPage() {
-  const [currentDate, setCurrentDate] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    const dateParam = params.get("date");
-    return dateParam ? new Date(dateParam) : new Date();
-  });
-  const [view, setView] = useState("month");
-  const [selectedDate, setSelectedDate] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    const dateParam = params.get("date");
-    if (dateParam) {
-      const date = new Date(dateParam);
-      setTimeout(() => {
-        const handleAddEvent = (date) => {
-          setSelectedDate(date);
-          setEditingEvent(null);
-          setFormData({ title: "", time: "09:00", description: "" });
-          setShowEventModal(true);
-        };
-        handleAddEvent(date);
-      }, 0);
-    }
-    return null;
-  });
-  const [showEventModal, setShowEventModal] = useState(false);
-  const [editingEvent, setEditingEvent] = useState(null);
-  const [formData, setFormData] = useState({
-    title: "",
-    time: "09:00",
-    description: "",
-  });
-  const queryClient = useQueryClient();
-
-  const { data: events = [], isLoading } = useQuery({
-    queryKey: ["calendarEvents"],
-    queryFn: () => base44.entities.CalendarEvent.list(),
-  });
-
-  const createEventMutation = useMutation({
-    mutationFn: (eventData) => base44.entities.CalendarEvent.create(eventData),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["calendarEvents"] }),
-  });
-
-  const updateEventMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.CalendarEvent.update(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["calendarEvents"] }),
-  });
-
-  const deleteEventMutation = useMutation({
-    mutationFn: (id) => base44.entities.CalendarEvent.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["calendarEvents"] }),
-  });
-
-  const getDaysToDisplay = () => {
-    if (view === "month") {
-      return eachDayOfInterval({
-        start: startOfWeek(startOfMonth(currentDate)),
-        end: endOfWeek(endOfMonth(currentDate)),
-      });
-    } else if (view === "week") {
-      return eachDayOfInterval({
-        start: startOfWeek(currentDate),
-        end: endOfWeek(currentDate),
-      });
-    } else {
-      return [currentDate];
-    }
-  };
-
-  const daysToDisplay = getDaysToDisplay();
-
-  const getEventsForDate = (date) => {
-    return events.filter((e) => {
-      const eventDate = new Date(e.date);
-      return eventDate.toDateString() === date.toDateString();
-    });
-  };
-
-  const handleAddEvent = (date) => {
-    setSelectedDate(date);
-    setEditingEvent(null);
-    setFormData({ title: "", time: "09:00", description: "" });
-    setShowEventModal(true);
-  };
-
-  const handleSaveEvent = async () => {
-    if (!formData.title.trim()) return;
-
-    const eventData = {
-      title: formData.title,
-      date: format(selectedDate, "yyyy-MM-dd"),
-      time: formData.time,
-      description: formData.description,
-      color: T.teal,
-    };
-
-    if (editingEvent) {
-      await updateEventMutation.mutateAsync({ id: editingEvent.id, data: eventData });
-    } else {
-      await createEventMutation.mutateAsync(eventData);
-    }
-    setShowEventModal(false);
-  };
-
-  const handleDeleteEvent = async (id) => {
-    await deleteEventMutation.mutateAsync(id);
-  };
-
-  const generateICalURL = () => {
-    let ical = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//MedNu//Calendar//EN\n";
-    events.forEach((event) => {
-      const [hours, minutes] = event.time.split(":");
-      const eventDate = new Date(event.date);
-      eventDate.setHours(parseInt(hours), parseInt(minutes));
-      const dtstart = format(eventDate, "yyyyMMdd'T'HHmmss");
-      ical += `BEGIN:VEVENT\nDTSTART:${dtstart}\nSUMMARY:${event.title}\nDESCRIPTION:${
-        event.description || ""
-      }\nEND:VEVENT\n`;
-    });
-    ical += "END:VCALENDAR";
-    return "data:text/calendar;charset=utf-8," + encodeURIComponent(ical);
-  };
-
-  const generateGoogleCalendarURL = (event) => {
-    const [hours, minutes] = event.time.split(":");
-    const eventDate = new Date(event.date);
-    eventDate.setHours(parseInt(hours), parseInt(minutes));
-    const startTime = format(eventDate, "yyyyMMdd'T'HHmmss");
-    const endTime = format(new Date(eventDate.getTime() + 60 * 60 * 1000), "yyyyMMdd'T'HHmmss");
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
-      event.title
-    )}&dates=${startTime}/${endTime}&details=${encodeURIComponent(
-      event.description || ""
-    )}`;
-  };
-
-  const generateAppleCalendarURL = (event) => {
-    const [hours, minutes] = event.time.split(":");
-    const eventDate = new Date(event.date);
-    eventDate.setHours(parseInt(hours), parseInt(minutes));
-    return `webcal://calendar.apple.com/?event=${encodeURIComponent(
-      event.title
-    )}&dates=${format(eventDate, "yyyyMMdd'T'HHmmss")}`;
-  };
-
-  const downloadICalendar = () => {
-    const ical = generateICalURL().split(",")[1];
-    const link = document.createElement("a");
-    link.href = generateICalURL();
-    link.download = "calendar.ics";
-    link.click();
-  };
-
-  const upcomingEvents = events
-    .filter((e) => {
-      const eventDate = new Date(e.date);
-      return eventDate >= new Date();
-    })
-    .sort((a, b) => new Date(a.date) - new Date(b.date))
-    .slice(0, 5);
-
+function ShiftLegend() {
   return (
-    <div style={{ background: T.navy, minHeight: "100vh", padding: "20px", color: T.text }}>
-      {/* Header */}
-      <div style={{ marginBottom: "24px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
-          <Calendar className="w-6 h-6" style={{ color: T.teal }} />
-          <h1 style={{ fontSize: "28px", fontWeight: 700, color: T.bright, margin: 0 }}>
-            Calendar
-          </h1>
-        </div>
-
-        {/* View Toggle & Export Buttons */}
-        <div style={{ display: "flex", gap: "10px", marginTop: "12px", alignItems: "center" }}>
-          <div style={{ display: "flex", gap: "6px", background: T.edge, padding: "6px", borderRadius: "8px", border: `1px solid ${T.border}` }}>
-            {["day", "week", "month"].map((v) => (
-              <button
-                key={v}
-                onClick={() => setView(v)}
-                style={{
-                  padding: "6px 12px",
-                  background: view === v ? T.teal : "transparent",
-                  border: "none",
-                  borderRadius: "6px",
-                  color: view === v ? T.navy : T.text,
-                  fontSize: "11px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                  textTransform: "capitalize",
-                }}
-              >
-                {v}
-              </button>
-            ))}
+    <div style={{ background: config.colors.card, border: `1px solid ${config.colors.border}`, borderRadius: "8px", padding: "12px" }}>
+      <div style={{ fontSize: "12px", fontWeight: 600, color: config.colors.text, marginBottom: "8px" }}>Shift Types</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        {config.shift_types.map((type) => (
+          <div key={type.id} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "11px" }}>
+            <span style={{ fontSize: "14px" }}>{type.icon}</span>
+            <span style={{ color: config.colors.text }}>{type.label}</span>
+            {type.hours > 0 && <span style={{ color: config.colors.muted, marginLeft: "auto" }}>{type.hours}h</span>}
           </div>
-          <button
-            onClick={downloadICalendar}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "8px 12px",
-              background: T.edge,
-              border: `1px solid ${T.border}`,
-              borderRadius: "8px",
-              color: T.text,
-              fontSize: "12px",
-              fontWeight: 600,
-              cursor: "pointer",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.borderColor = T.teal)}
-            onMouseLeave={(e) => (e.currentTarget.style.borderColor = T.border)}
-          >
-            <Download className="w-3 h-3" />
-            Download .ics
-          </button>
-        </div>
+        ))}
       </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-        {/* Calendar Grid */}
-        <div style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: "12px", padding: "16px" }}>
-          {/* Navigation */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-            <button
-              onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: T.teal,
-                cursor: "pointer",
-                fontSize: "14px",
-                fontWeight: 600,
-              }}
-            >
-              ← Prev
-            </button>
-            <div style={{ fontSize: "16px", fontWeight: 700, color: T.bright }}>
-              {view === "day" ? format(currentDate, "MMMM dd, yyyy") : view === "week" ? `${format(startOfWeek(currentDate), "MMM dd")} - ${format(endOfWeek(currentDate), "MMM dd")}` : format(currentDate, "MMMM yyyy")}
-            </div>
-            <button
-              onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: T.teal,
-                cursor: "pointer",
-                fontSize: "14px",
-                fontWeight: 600,
-              }}
-            >
-              Next →
-            </button>
-          </div>
-
-          {view === "month" ? (
-            <>
-              {/* Month View */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "8px", marginBottom: "12px" }}>
-                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                  <div key={day} style={{ textAlign: "center", fontSize: "11px", fontWeight: 600, color: T.dim }}>
-                    {day}
-                  </div>
-                ))}
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "8px" }}>
-                {daysToDisplay.map((day, idx) => {
-                  const dayEvents = getEventsForDate(day);
-                  const isCurrentMonth = isSameMonth(day, currentDate);
-                  const isCurrentDay = isToday(day);
-
-                  return (
-                    <div
-                      key={idx}
-                      onClick={() => isCurrentMonth && handleAddEvent(day)}
-                      style={{
-                        padding: "8px",
-                        background: isCurrentDay ? T.teal : isCurrentMonth ? T.edge : T.slate,
-                        border: `1px solid ${isCurrentDay ? T.teal : T.border}`,
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        minHeight: "60px",
-                        position: "relative",
-                        opacity: isCurrentMonth ? 1 : 0.5,
-                        transition: "all 0.2s",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (isCurrentMonth) e.currentTarget.style.borderColor = T.teal;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = isCurrentDay ? T.teal : T.border;
-                      }}
-                    >
-                      <div style={{
-                        fontSize: "12px",
-                        fontWeight: 600,
-                        color: isCurrentDay ? T.navy : T.text,
-                        marginBottom: "4px",
-                      }}>
-                        {format(day, "d")}
-                      </div>
-                      {dayEvents.length > 0 && (
-                        <div style={{
-                          fontSize: "8px",
-                          color: T.dim,
-                          lineHeight: 1.2,
-                        }}>
-                          {dayEvents.length} event{dayEvents.length !== 1 ? "s" : ""}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          ) : view === "week" ? (
-            <>
-              {/* Week View */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "8px", marginBottom: "12px" }}>
-                {daysToDisplay.map((day) => (
-                  <div
-                    key={day.toDateString()}
-                    style={{ textAlign: "center", cursor: "pointer" }}
-                    onClick={() => handleAddEvent(day)}
-                  >
-                    <div style={{ fontSize: "11px", fontWeight: 600, color: T.dim, marginBottom: "4px" }}>
-                      {format(day, "EEE")}
-                    </div>
-                    <div
-                      style={{
-                        padding: "12px 8px",
-                        background: isToday(day) ? T.teal : T.edge,
-                        border: `1px solid ${isToday(day) ? T.teal : T.border}`,
-                        borderRadius: "8px",
-                        color: isToday(day) ? T.navy : T.text,
-                        fontSize: "14px",
-                        fontWeight: 700,
-                        transition: "all 0.2s",
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.borderColor = T.teal)}
-                      onMouseLeave={(e) => (e.currentTarget.style.borderColor = isToday(day) ? T.teal : T.border)}
-                    >
-                      {format(day, "d")}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "400px", overflowY: "auto" }}>
-                {daysToDisplay.map((day) => {
-                  const dayEvents = getEventsForDate(day);
-                  return (
-                    <div key={day.toDateString()}>
-                      {dayEvents.length > 0 ? dayEvents.map((event) => (
-                        <div
-                          key={event.id}
-                          onClick={() => {
-                            setSelectedDate(new Date(event.date));
-                            setEditingEvent(event);
-                            setFormData({ title: event.title, time: event.time, description: event.description });
-                            setShowEventModal(true);
-                          }}
-                          style={{
-                            padding: "8px",
-                            background: T.edge,
-                            border: `1px solid ${T.border}`,
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                            transition: "all 0.2s",
-                            marginBottom: "4px",
-                            fontSize: "10px",
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.borderColor = T.teal)}
-                          onMouseLeave={(e) => (e.currentTarget.style.borderColor = T.border)}
-                        >
-                          <div style={{ color: T.bright, fontWeight: 600 }}>{event.time}</div>
-                          <div style={{ color: T.dim }}>{event.title}</div>
-                        </div>
-                      )) : (
-                        <div style={{ padding: "8px", color: T.dim, fontSize: "10px", textAlign: "center" }}>—</div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Day View */}
-              <div style={{ marginBottom: "16px", textAlign: "center" }}>
-                <button
-                  onClick={() => handleAddEvent(currentDate)}
-                  style={{
-                    padding: "10px 16px",
-                    background: `linear-gradient(135deg, ${T.teal}, ${T.teal2})`,
-                    border: "none",
-                    borderRadius: "8px",
-                    color: T.navy,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    fontSize: "12px",
-                  }}
-                >
-                  + Add Event
-                </button>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "400px", overflowY: "auto" }}>
-                {getEventsForDate(currentDate).length > 0 ? (
-                  getEventsForDate(currentDate).map((event) => (
-                    <div
-                      key={event.id}
-                      onClick={() => {
-                        setSelectedDate(currentDate);
-                        setEditingEvent(event);
-                        setFormData({ title: event.title, time: event.time, description: event.description });
-                        setShowEventModal(true);
-                      }}
-                      style={{
-                        padding: "12px",
-                        background: T.edge,
-                        border: `1px solid ${T.border}`,
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        transition: "all 0.2s",
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.borderColor = T.teal)}
-                      onMouseLeave={(e) => (e.currentTarget.style.borderColor = T.border)}
-                    >
-                      <div style={{ fontSize: "12px", fontWeight: 600, color: T.bright, marginBottom: "4px" }}>
-                        {event.time} - {event.title}
-                      </div>
-                      {event.description && <div style={{ fontSize: "10px", color: T.dim }}>{event.description}</div>}
-                    </div>
-                  ))
-                ) : (
-                  <div style={{ color: T.dim, fontSize: "12px", textAlign: "center", padding: "20px 0" }}>
-                    No events scheduled for this day
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Upcoming Events */}
-        <div style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: "12px", padding: "16px" }}>
-          <div style={{ fontSize: "14px", fontWeight: 700, color: T.bright, marginBottom: "16px" }}>
-            Upcoming Events
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px", maxHeight: "500px", overflowY: "auto" }}>
-            {upcomingEvents.length === 0 ? (
-              <div style={{ color: T.dim, fontSize: "12px", textAlign: "center", padding: "20px 0" }}>
-                No upcoming events
-              </div>
-            ) : (
-              upcomingEvents.map((event) => (
-                <div
-                  key={event.id}
-                  onClick={() => {
-                    setSelectedDate(event.date);
-                    setEditingEvent(event);
-                    setFormData({ title: event.title, time: event.time, description: event.description });
-                    setShowEventModal(true);
-                  }}
-                  style={{
-                    padding: "12px",
-                    background: T.edge,
-                    border: `1px solid ${T.border}`,
-                    borderRadius: "8px",
-                    position: "relative",
-                    cursor: "pointer",
-                    transition: "all 0.2s",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = T.teal;
-                    e.currentTarget.style.background = T.border;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = T.border;
-                    e.currentTarget.style.background = T.edge;
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-                    <div
-                      style={{
-                        width: "8px",
-                        height: "8px",
-                        borderRadius: "50%",
-                        background: event.color,
-                        marginTop: "4px",
-                        flexShrink: 0,
-                      }}
-                    />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "10px", color: T.muted, marginBottom: "3px" }}>
-                        {format(event.date, "MMM dd")} • {event.time}
-                      </div>
-                      <div style={{ fontSize: "12px", fontWeight: 600, color: T.bright, marginBottom: "4px" }}>
-                        {event.title}
-                      </div>
-                      {event.description && (
-                        <div style={{ fontSize: "10px", color: T.dim }}>{event.description}</div>
-                      )}
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteEvent(event.id);
-                      }}
-                      style={{
-                        background: "transparent",
-                        border: "none",
-                        color: T.red,
-                        cursor: "pointer",
-                        padding: "4px",
-                        transition: "all 0.2s",
-                        fontSize: "16px",
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.8")}
-                      onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-                      title="Delete event"
-                    >
-                      ×
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Event Modal */}
-      {showEventModal && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0, 0, 0, 0.7)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 50,
-          }}
-          onClick={() => setShowEventModal(false)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: T.panel,
-              border: `1px solid ${T.border}`,
-              borderRadius: "12px",
-              padding: "20px",
-              width: "90%",
-              maxWidth: "400px",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h2 style={{ fontSize: "16px", fontWeight: 700, color: T.bright, margin: 0 }}>
-                {editingEvent ? "Edit Event" : "New Event"}
-              </h2>
-              <button
-                onClick={() => setShowEventModal(false)}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  color: T.text,
-                  cursor: "pointer",
-                }}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <div>
-                <label style={{ fontSize: "12px", color: T.dim, display: "block", marginBottom: "4px" }}>
-                  Date
-                </label>
-                <div style={{ fontSize: "13px", color: T.text }}>
-                  {selectedDate && format(selectedDate, "MMMM dd, yyyy")}
-                </div>
-              </div>
-
-              <div>
-                <label style={{ fontSize: "12px", color: T.dim, display: "block", marginBottom: "4px" }}>
-                  Event Title
-                </label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Event title"
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    background: T.edge,
-                    border: `1px solid ${T.border}`,
-                    borderRadius: "8px",
-                    color: T.text,
-                    fontSize: "13px",
-                    boxSizing: "border-box",
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: "12px", color: T.dim, display: "block", marginBottom: "4px" }}>
-                  Time
-                </label>
-                <input
-                  type="time"
-                  value={formData.time}
-                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    background: T.edge,
-                    border: `1px solid ${T.border}`,
-                    borderRadius: "8px",
-                    color: T.text,
-                    fontSize: "13px",
-                    boxSizing: "border-box",
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: "12px", color: T.dim, display: "block", marginBottom: "4px" }}>
-                  Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Add notes..."
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    background: T.edge,
-                    border: `1px solid ${T.border}`,
-                    borderRadius: "8px",
-                    color: T.text,
-                    fontSize: "13px",
-                    boxSizing: "border-box",
-                    minHeight: "80px",
-                    fontFamily: "inherit",
-                    resize: "none",
-                  }}
-                />
-              </div>
-
-              <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
-                <button
-                  onClick={handleSaveEvent}
-                  style={{
-                    flex: 1,
-                    padding: "10px",
-                    background: `linear-gradient(135deg, ${T.teal}, ${T.teal2})`,
-                    border: "none",
-                    borderRadius: "8px",
-                    color: T.navy,
-                    fontWeight: 600,
-                    fontSize: "13px",
-                    cursor: "pointer",
-                    transition: "all 0.2s",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
-                  onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-                >
-                  Save Event
-                </button>
-                <button
-                  onClick={() => setShowEventModal(false)}
-                  style={{
-                    flex: 1,
-                    padding: "10px",
-                    background: T.edge,
-                    border: `1px solid ${T.border}`,
-                    borderRadius: "8px",
-                    color: T.text,
-                    fontWeight: 600,
-                    fontSize: "13px",
-                    cursor: "pointer",
-                    transition: "all 0.2s",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = T.teal)}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = T.border)}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
+}
+
+function MonthlyStats({ shifts, selectedDept }) {
+  const filtered = selectedDept === "all" ? shifts : shifts.filter(s => s.dept === selectedDept);
+  const totalHours = filtered.reduce((sum, s) => sum + (s.hours || 0), 0);
+  const totalShifts = filtered.length;
+  const uniqueDates = new Set(filtered.map(s => s.date)).size;
+  const targetHours = 160;
+  const progress = Math.round((totalHours / targetHours) * 100);
+
+  return (
+    <div style={{ background: config.colors.card, border: `1px solid ${config.colors.border}`, borderRadius: "8px", padding: "12px" }}>
+      <div style={{ fontSize: "12px", fontWeight: 600, color: config.colors.text, marginBottom: "12px" }}>This Month</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
+          <span style={{ color: config.colors.muted }}>Total Shifts</span>
+          <span style={{ color: config.colors.text, fontWeight: 600 }}>{totalShifts}</span>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
+          <span style={{ color: config.colors.muted }}>Total Hours</span>
+          <span style={{ color: config.colors.accent, fontWeight: 600 }}>{totalHours}h</span>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
+          <span style={{ color: config.colors.muted }}>Days Worked</span>
+          <span style={{ color: config.colors.text, fontWeight: 600 }}>{uniqueDates}</span>
+        </div>
+        <div style={{ marginTop: "8px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px", marginBottom: "4px" }}>
+            <span style={{ color: config.colors.muted }}>Progress</span>
+            <span style={{ color: config.colors.text }}>{progress}%</span>
+          </div>
+          <div style={{ width: "100%", height: "6px", background: config.colors.dim, borderRadius: "3px", overflow: "hidden" }}>
+            <div style={{ width: `${Math.min(progress, 100)}%`, height: "100%", background: config.colors.accent, transition: "width 0.3s" }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ShiftModal({ isOpen, onClose, onSave, selectedDate, editingShift, selectedType }) {
+  const [formData, setFormData] = useState(editingShift || {
+    type: selectedType || "day",
+    title: "",
+    date: selectedDate,
+    dept: "all",
+    start: "",
+    end: "",
+    hours: 0,
+    location: "",
+    notes: ""
+  });
+
+  useEffect(() => {
+    if (editingShift) {
+      setFormData(editingShift);
+    } else if (selectedDate) {
+      const shiftType = config.shift_types.find(t => t.id === (selectedType || "day"));
+      setFormData({
+        type: selectedType || "day",
+        title: "",
+        date: selectedDate,
+        dept: "all",
+        start: "",
+        end: "",
+        hours: shiftType?.hours || 0,
+        location: "",
+        notes: ""
+      });
+    }
+  }, [editingShift, selectedDate, selectedType]);
+
+  const handleSave = () => {
+    if (!formData.date || !formData.type) return;
+    onSave(formData);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(0, 0, 0, 0.6)", display: "flex",
+      alignItems: "center", justifyContent: "center", zIndex: 50
+    }} onClick={onClose}>
+      <div style={{
+        background: config.colors.surface, border: `1px solid ${config.colors.border}`,
+        borderRadius: "12px", padding: "20px", width: "90%", maxWidth: "500px"
+      }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <h2 style={{ fontSize: "16px", fontWeight: 700, color: config.colors.text, margin: 0 }}>
+            {editingShift ? "Edit Shift" : "New Shift"}
+          </h2>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: config.colors.text, cursor: "pointer" }}>
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px", marginBottom: "16px" }}>
+          {config.shift_types.map((type) => (
+            <button
+              key={type.id}
+              onClick={() => setFormData({ ...formData, type: type.id })}
+              style={{
+                padding: "10px", background: formData.type === type.id ? type.bg : config.colors.dim,
+                border: `1px solid ${formData.type === type.id ? type.color : config.colors.border}`,
+                borderRadius: "6px", cursor: "pointer", color: config.colors.text, fontSize: "11px",
+                fontWeight: 600, transition: "all 0.2s"
+              }}
+            >
+              <div style={{ fontSize: "16px", marginBottom: "2px" }}>{type.icon}</div>
+              {type.label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div>
+            <label style={{ fontSize: "11px", color: config.colors.muted, display: "block", marginBottom: "4px" }}>Date</label>
+            <input
+              type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              style={{ width: "100%", padding: "8px", background: config.colors.card, border: `1px solid ${config.colors.border}`, borderRadius: "6px", color: config.colors.text, fontSize: "12px" }}
+            />
+          </div>
+
+          <div>
+            <label style={{ fontSize: "11px", color: config.colors.muted, display: "block", marginBottom: "4px" }}>Title (optional)</label>
+            <input
+              type="text" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Custom label"
+              style={{ width: "100%", padding: "8px", background: config.colors.card, border: `1px solid ${config.colors.border}`, borderRadius: "6px", color: config.colors.text, fontSize: "12px" }}
+            />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+            <div>
+              <label style={{ fontSize: "11px", color: config.colors.muted, display: "block", marginBottom: "4px" }}>Start</label>
+              <input
+                type="time" value={formData.start} onChange={(e) => setFormData({ ...formData, start: e.target.value })}
+                style={{ width: "100%", padding: "8px", background: config.colors.card, border: `1px solid ${config.colors.border}`, borderRadius: "6px", color: config.colors.text, fontSize: "12px" }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: "11px", color: config.colors.muted, display: "block", marginBottom: "4px" }}>End</label>
+              <input
+                type="time" value={formData.end} onChange={(e) => setFormData({ ...formData, end: e.target.value })}
+                style={{ width: "100%", padding: "8px", background: config.colors.card, border: `1px solid ${config.colors.border}`, borderRadius: "6px", color: config.colors.text, fontSize: "12px" }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label style={{ fontSize: "11px", color: config.colors.muted, display: "block", marginBottom: "4px" }}>Department</label>
+            <select value={formData.dept} onChange={(e) => setFormData({ ...formData, dept: e.target.value })} style={{ width: "100%", padding: "8px", background: config.colors.card, border: `1px solid ${config.colors.border}`, borderRadius: "6px", color: config.colors.text, fontSize: "12px" }}>
+              {config.departments.map((dept) => (
+                <option key={dept.id} value={dept.id}>{dept.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label style={{ fontSize: "11px", color: config.colors.muted, display: "block", marginBottom: "4px" }}>Location (optional)</label>
+            <input
+              type="text" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} placeholder="Unit or floor"
+              style={{ width: "100%", padding: "8px", background: config.colors.card, border: `1px solid ${config.colors.border}`, borderRadius: "6px", color: config.colors.text, fontSize: "12px" }}
+            />
+          </div>
+
+          <div>
+            <label style={{ fontSize: "11px", color: config.colors.muted, display: "block", marginBottom: "4px" }}>Notes (optional)</label>
+            <textarea value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} placeholder="Coverage details..."
+              style={{ width: "100%", padding: "8px", background: config.colors.card, border: `1px solid ${config.colors.border}`, borderRadius: "6px", color: config.colors.text, fontSize: "12px", minHeight: "60px", fontFamily: "inherit" }}
+            />
+          </div>
+
+          <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
+            <button onClick={handleSave} style={{ flex: 1, padding: "10px", background: config.colors.accent, color: config.colors.background, border: "none", borderRadius: "6px", fontWeight: 600, cursor: "pointer" }}>
+              Save Shift
+            </button>
+            <button onClick={onClose} style={{ flex: 1, padding: "10px", background: config.colors.dim, color: config.colors.text, border: "none", borderRadius: "6px", fontWeight: 600, cursor: "pointer" }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function CalendarPage() {
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [shifts, setShifts] = useState([]);
+  const [selectedDept, setSelectedDept] = useState("all");
+  const [showModal, setShowModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedType, setSelectedType] = useState(null);
+  const [editingShift, setEditingShift] = useState(null);
+
+  // Load shifts from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem("prov_shifts");
+    if (stored) {
+      try {
+        setShifts(JSON.parse(stored));
+      } catch (e) {
+        console.error("Failed to load shifts:", e);
+      }
+    }
+  }, []);
+
+  // Save shifts to localStorage
+  useEffect(() => {
+    localStorage.setItem("prov_shifts", JSON.stringify(shifts));
+  }, [shifts]);
+
+  const handleAddShift = (shiftData) => {
+    if (editingShift) {
+      setShifts(shifts.map(s => s.id === editingShift.id ? { ...shiftData, id: editingShift.id } : s));
+    } else {
+      setShifts([...shifts, { ...shiftData, id: Date.now().toString() }]);
+    }
+    setShowModal(false);
+    setEditingShift(null);
+    setSelectedDate(null);
+    setSelectedType(null);
+  };
+
+  const handleDeleteShift = (id) => {
+    setShifts(shifts.filter(s => s.id !== id));
+  };
+
+  const openModalForDate = (date, type = null) => {
+    setSelectedDate(date.toISOString().split("T")[0]);
+    setSelectedType(type);
+    setEditingShift(null);
+    setShowModal(true);
+  };
+
+  const openModalForShift = (shift) => {
+    setEditingShift(shift);
+    setSelectedDate(shift.date);
+    setShowModal(true);
+  };
+
+  const getShiftsForDate = (dateStr) => {
+    return shifts.filter(s => s.date === dateStr && (selectedDept === "all" || s.dept === selectedDept));
+  };
+
+  const getDaysInMonth = (date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  };
+
+  const monthDays = getDaysInMonth(currentDate);
+  const firstDay = getFirstDayOfMonth(currentDate);
+  const today = new Date();
+  const isCurrentMonth = currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
+  const todayDate = today.getDate();
+
+  return (
+    <div style={{ background: config.colors.background, minHeight: "100vh", color: config.colors.text, display: "flex" }}>
+      {/* Sidebar */}
+      <div style={{ width: "200px", background: config.colors.surface, borderRight: `1px solid ${config.colors.border}`, padding: "16px", overflowY: "auto" }}>
+        <div style={{ fontSize: "18px", fontWeight: 700, marginBottom: "16px" }}>🩺 Provider Shifts</div>
+        <ShiftLegend />
+        <div style={{ marginTop: "16px" }} />
+        <MonthlyStats shifts={shifts} selectedDept={selectedDept} />
+        <div style={{ marginTop: "16px" }}>
+          <div style={{ fontSize: "12px", fontWeight: 600, color: config.colors.text, marginBottom: "8px" }}>Department</div>
+          <select value={selectedDept} onChange={(e) => setSelectedDept(e.target.value)} style={{ width: "100%", padding: "8px", background: config.colors.card, border: `1px solid ${config.colors.border}`, borderRadius: "6px", color: config.colors.text, fontSize: "11px" }}>
+            {config.departments.map((d) => (
+              <option key={d.id} value={d.id}>{d.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div style={{ flex: 1, padding: "20px" }}>
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))} style={{ background: "none", border: "none", color: config.colors.accent, cursor: "pointer" }}>
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <h1 style={{ fontSize: "24px", fontWeight: 700, margin: 0 }}>
+              {config.months[currentDate.getMonth()]} {currentDate.getFullYear()}
+            </h1>
+            <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))} style={{ background: "none", border: "none", color: config.colors.accent, cursor: "pointer" }}>
+              <ChevronRight className="w-5 h-5" />
+            </button>
+            <button onClick={() => setCurrentDate(new Date())} style={{ marginLeft: "16px", padding: "6px 12px", background: config.colors.dim, border: "none", borderRadius: "6px", color: config.colors.text, fontSize: "11px", fontWeight: 600, cursor: "pointer" }}>
+              Today
+            </button>
+          </div>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button onClick={() => { const ics = generateICS(shifts); download(ics, "provider-shifts.ics"); }} style={{ padding: "8px 12px", background: config.colors.dim, border: `1px solid ${config.colors.border}`, borderRadius: "6px", color: config.colors.text, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", fontSize: "12px" }}>
+              <Download className="w-4 h-4" /> Export
+            </button>
+            <label style={{ padding: "8px 12px", background: config.colors.dim, border: `1px solid ${config.colors.border}`, borderRadius: "6px", color: config.colors.text, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", fontSize: "12px" }}>
+              <Upload className="w-4 h-4" /> Import
+              <input type="file" accept=".ics,.ical" onChange={(e) => handleImportICS(e.target.files?.[0], shifts, setShifts)} style={{ display: "none" }} />
+            </label>
+            <button onClick={() => openModalForDate(new Date())} style={{ padding: "8px 12px", background: config.colors.accent, border: "none", borderRadius: "6px", color: config.colors.background, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", fontSize: "12px" }}>
+              <Plus className="w-4 h-4" /> Add Shift
+            </button>
+          </div>
+        </div>
+
+        {/* Calendar Grid */}
+        <div style={{ background: config.colors.card, border: `1px solid ${config.colors.border}`, borderRadius: "12px", padding: "16px" }}>
+          {/* Day headers */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "8px", marginBottom: "12px" }}>
+            {config.days_of_week.map((day) => (
+              <div key={day} style={{ textAlign: "center", fontSize: "12px", fontWeight: 600, color: config.colors.muted, paddingBottom: "8px", borderBottom: `1px solid ${config.colors.border}` }}>
+                {day}
+              </div>
+            ))}
+          </div>
+
+          {/* Day cells */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "8px" }}>
+            {Array(firstDay).fill(null).map((_, i) => (
+              <div key={`empty-${i}`} style={{ aspectRatio: "1", background: config.colors.dim, borderRadius: "8px" }} />
+            ))}
+            {Array(monthDays).fill(null).map((_, i) => {
+              const date = i + 1;
+              const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}-${String(date).padStart(2, "0")}`;
+              const dayShifts = getShiftsForDate(dateStr);
+              const isToday = isCurrentMonth && date === todayDate;
+
+              return (
+                <div
+                  key={date}
+                  onClick={() => openModalForDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), date))}
+                  style={{
+                    aspectRatio: "1", background: isToday ? config.colors.accent_dim : config.colors.surface_2,
+                    border: `1px solid ${isToday ? config.colors.accent : config.colors.border}`,
+                    borderRadius: "8px", padding: "8px", cursor: "pointer", display: "flex",
+                    flexDirection: "column", transition: "all 0.2s", position: "relative"
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.borderColor = config.colors.accent}
+                  onMouseLeave={(e) => e.currentTarget.style.borderColor = isToday ? config.colors.accent : config.colors.border}
+                >
+                  <div style={{ fontSize: "13px", fontWeight: 700, color: isToday ? config.colors.accent : config.colors.text, marginBottom: "4px" }}>
+                    {date}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "2px", flex: 1, overflow: "hidden" }}>
+                    {dayShifts.slice(0, config.layout.max_pills_per_day).map((shift) => {
+                      const shiftType = config.shift_types.find(t => t.id === shift.type);
+                      return (
+                        <div
+                          key={shift.id}
+                          onClick={(e) => { e.stopPropagation(); openModalForShift(shift); }}
+                          style={{
+                            fontSize: "9px", padding: "2px 4px", background: shiftType.bg,
+                            border: `1px solid ${shiftType.color}`, borderRadius: "3px", color: shiftType.color,
+                            fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
+                          }}
+                        >
+                          {shiftType.icon} {shift.title || shiftType.label}
+                        </div>
+                      );
+                    })}
+                    {dayShifts.length > config.layout.max_pills_per_day && (
+                      <div style={{ fontSize: "8px", color: config.colors.muted }}>+{dayShifts.length - config.layout.max_pills_per_day}</div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <ShiftModal
+        isOpen={showModal}
+        onClose={() => { setShowModal(false); setEditingShift(null); }}
+        onSave={handleAddShift}
+        selectedDate={selectedDate}
+        editingShift={editingShift}
+        selectedType={selectedType}
+      />
+    </div>
+  );
+}
+
+function generateICS(shifts) {
+  let ics = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Provider Shift Calendar//EN\nCALSCALE:GREGORIAN\n`;
+  shifts.forEach((shift) => {
+    const shiftType = config.shift_types.find(t => t.id === shift.type);
+    const dtstart = shift.date.replace(/-/g, "") + (shift.start ? shift.start.replace(":", "") : "000000");
+    const dtend = shift.date.replace(/-/g, "") + (shift.end ? shift.end.replace(":", "") : "235959");
+    const summary = `${shiftType.icon} ${shift.title || shiftType.label}`;
+    const description = [shift.notes, `Department: ${shift.dept}`, `Hours: ${shift.hours}`].filter(Boolean).join("\n");
+    ics += `BEGIN:VEVENT\nUID:${shift.id}@providershiftcal\nDTSTART:${dtstart}\nDTEND:${dtend}\nSUMMARY:${summary}\nDESCRIPTION:${description}\nLOCATION:${shift.location || ""}\nEND:VEVENT\n`;
+  });
+  ics += "END:VCALENDAR";
+  return ics;
+}
+
+function download(content, filename) {
+  const link = document.createElement("a");
+  link.href = `data:text/calendar;charset=utf-8,${encodeURIComponent(content)}`;
+  link.download = filename;
+  link.click();
+}
+
+function handleImportICS(file, shifts, setShifts) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const ics = e.target.result;
+    const events = ics.split("BEGIN:VEVENT");
+    const imported = events.slice(1).map((evt) => {
+      const match = (regex, str) => str.match(regex)?.[1] || "";
+      const summary = match(/SUMMARY:(.+)/i, evt);
+      const dtstart = match(/DTSTART:(\d{8})/i, evt);
+      const location = match(/LOCATION:(.+)/i, evt);
+      const description = match(/DESCRIPTION:(.+)/i, evt);
+
+      if (!dtstart) return null;
+
+      const year = dtstart.substring(0, 4);
+      const month = dtstart.substring(4, 6);
+      const day = dtstart.substring(6, 8);
+
+      return {
+        id: Date.now().toString() + Math.random(),
+        type: "day",
+        title: summary.split(" ").slice(1).join(" "),
+        date: `${year}-${month}-${day}`,
+        dept: "other",
+        hours: 8,
+        location: location,
+        notes: description,
+        start: "",
+        end: ""
+      };
+    }).filter(Boolean);
+
+    setShifts([...shifts, ...imported]);
+  };
+  reader.readAsText(file);
 }

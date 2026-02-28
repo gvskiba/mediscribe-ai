@@ -857,10 +857,11 @@ export default function Dashboard() {
           padding: "12px 16px",
           display: "grid",
           gridTemplateColumns: "repeat(3, 1fr)",
-          gridTemplateRows: "repeat(2, 1fr)",
+          gridTemplateRows: "auto auto",
           gap: "10px",
           flex: 1,
           overflow: "auto",
+          minHeight: 0,
         }}
       >
         {Object.entries(widgets).map(([widgetId, { label, component }]) => {
@@ -872,13 +873,13 @@ export default function Dashboard() {
                 gridColumn: `${layout.col} / span ${layout.colSpan}`,
                 gridRow: `${layout.row} / span ${layout.rowSpan}`,
                 overflow: "hidden",
+                minHeight: 0,
               }}
             >
               <div
                 className="grid-widget"
                 onMouseMove={(e) => {
                   if (resizing) {
-                    const rect = e.currentTarget.getBoundingClientRect();
                     const deltaX = e.clientX - resizing.startX;
                     const deltaY = e.clientY - resizing.startY;
                     if (resizing.edge === "right" && Math.abs(deltaX) > 50) {
@@ -898,11 +899,11 @@ export default function Dashboard() {
                 </div>
                 <div
                   className="resize-handle right"
-                  onMouseDown={(e) => setResizing({ edge: "right", startX: e.clientX, startY: e.clientY })}
+                  onMouseDown={(e) => { e.preventDefault(); setResizing({ edge: "right", startX: e.clientX, startY: e.clientY }); }}
                 />
                 <div
                   className="resize-handle bottom"
-                  onMouseDown={(e) => setResizing({ edge: "bottom", startX: e.clientX, startY: e.clientY })}
+                  onMouseDown={(e) => { e.preventDefault(); setResizing({ edge: "bottom", startX: e.clientX, startY: e.clientY }); }}
                 />
                 {component}
               </div>

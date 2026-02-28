@@ -522,6 +522,12 @@ function NotesPanel() {
 }
 
 export default function Dashboard() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    base44.auth.me().then(u => setUser(u)).catch(() => setUser(null));
+  }, []);
+
   return (
     <div style={{ background: T.navy, minHeight: "100vh", width: "100%", fontFamily: "DM Sans, sans-serif", padding: "18px 20px" }}>
       <style>{`
@@ -535,7 +541,7 @@ export default function Dashboard() {
       <div style={{ display: "grid", gridTemplateColumns: "280px 1fr 300px", gridTemplateRows: "auto auto 1fr", gap: "14px", alignContent: "start", maxWidth: "100%" }}>
         {/* Welcome Bar - Full Width */}
         <div style={{ gridColumn: "1 / -1" }}>
-          <WelcomeBar />
+          <WelcomeBar user={user} />
         </div>
 
         {/* Clock/Cal - Left */}

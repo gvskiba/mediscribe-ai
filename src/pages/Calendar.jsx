@@ -419,7 +419,7 @@ export default function CalendarPage() {
           </div>
 
           {/* Day cells */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "10px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "10px", flex: 1, overflow: "auto" }}>
             {Array(firstDay).fill(null).map((_, i) => (
               <div key={`empty-${i}`} style={{ aspectRatio: "1", background: config.colors.dim, borderRadius: "8px" }} />
             ))}

@@ -78,32 +78,72 @@ Make sure to cite real, verifiable sources with URLs.`,
         <p style={{ fontSize: "11px", color: T.dim, margin: 0 }}>Trending topics & updates</p>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "12px 14px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "14px" }}>
         {loading ? (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", color: T.dim, fontSize: "12px", padding: "16px 0" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", color: T.dim, fontSize: "12px", padding: "24px 0" }}>
             <Loader2 className="w-3 h-3 animate-spin" />
             Loading insights…
           </div>
         ) : insights.length === 0 ? (
-          <div style={{ color: T.dim, fontSize: "12px", textAlign: "center", padding: "16px 0" }}>
+          <div style={{ color: T.dim, fontSize: "12px", textAlign: "center", padding: "24px 0" }}>
             No insights available
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {insights.map((insight, idx) => (
               <div
                 key={idx}
                 style={{
-                  padding: "10px 12px",
+                  padding: "12px 14px",
                   background: T.edge,
-                  borderLeft: `3px solid ${T.purple}`,
-                  borderRadius: "6px",
-                  fontSize: "12px",
+                  border: `1px solid ${T.border}`,
+                  borderRadius: "8px",
+                  fontSize: "11px",
                   color: T.text,
-                  lineHeight: 1.4,
+                  lineHeight: 1.5,
                 }}
               >
-                {insight.replace(/^[-•*]\s*/, "")}
+                {/* Main Insight */}
+                <div style={{ marginBottom: "8px", fontSize: "12px", fontWeight: 600, color: T.bright }}>
+                  {insight.insight}
+                </div>
+
+                {/* Guideline Citation */}
+                <div style={{ marginBottom: "8px", fontSize: "10px" }}>
+                  <span style={{ color: T.muted }}>Source: </span>
+                  {insight.source_url ? (
+                    <a
+                      href={insight.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        color: T.teal,
+                        textDecoration: "none",
+                        fontWeight: 500,
+                        cursor: "pointer"
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
+                      onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
+                    >
+                      {insight.guideline}
+                    </a>
+                  ) : (
+                    <span style={{ color: T.teal, fontWeight: 500 }}>{insight.guideline}</span>
+                  )}
+                </div>
+
+                {/* Recommendation */}
+                {insight.recommendation && (
+                  <div style={{
+                    paddingTop: "8px",
+                    borderTop: `1px solid ${T.muted}`,
+                    fontSize: "11px",
+                    color: T.dim
+                  }}>
+                    <span style={{ color: T.rose, fontWeight: 600 }}>💡 </span>
+                    {insight.recommendation}
+                  </div>
+                )}
               </div>
             ))}
           </div>

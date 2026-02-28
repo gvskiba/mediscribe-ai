@@ -1,368 +1,561 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { createPageUrl } from "../utils";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { FileText, BookOpen, Calculator, Layers, FileCode, X, Plus, GripVertical, Settings, Stethoscope } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import MedicalNewsSection from "../components/dashboard/MedicalNewsSection";
-import RecentNotesWidget from "../components/dashboard/RecentNotesWidget";
-import RecentGuidelinesWidget from "../components/dashboard/RecentGuidelinesWidget";
-import QuickStatsWidget from "../components/dashboard/QuickStatsWidget";
-import ClockWidget from "../components/dashboard/ClockWidget";
-import CalendarWidget from "../components/dashboard/CalendarWidget";
-import TaskListWidget from "../components/dashboard/TaskListWidget";
-import ProgressTrackerWidget from "../components/dashboard/ProgressTrackerWidget";
-import QuickLinksWidget from "../components/dashboard/QuickLinksWidget";
-import WorkflowAutomationWidget from "../components/dashboard/WorkflowAutomationWidget";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Search } from "lucide-react";
 
-const quickLinks = [
-  {
-    title: "Notes",
-    description: "View and manage clinical notes",
-    icon: FileText,
-    page: "NotesLibrary",
-    gradient: "from-blue-500 to-blue-600"
-  },
-  {
-    title: "Templates",
-    description: "Manage note templates",
-    icon: FileCode,
-    page: "NoteTemplates",
-    gradient: "from-purple-500 to-purple-600"
-  },
-  {
-    title: "Snippets",
-    description: "Quick text snippets",
-    icon: Layers,
-    page: "Snippets",
-    gradient: "from-emerald-500 to-emerald-600"
-  },
-  {
-    title: "Guidelines",
-    description: "Evidence-based clinical guidelines",
-    icon: BookOpen,
-    page: "Guidelines",
-    gradient: "from-indigo-500 to-indigo-600"
-  },
-  {
-    title: "Calculators",
-    description: "Medical calculators and tools",
-    icon: Calculator,
-    page: "Calculators",
-    gradient: "from-cyan-500 to-cyan-600"
-  }
-];
+const T = {
+  navy: "#050f1e",
+  slate: "#0b1d35",
+  panel: "#0e2340",
+  edge: "#162d4f",
+  border: "#1e3a5f",
+  muted: "#2a4d72",
+  dim: "#4a7299",
+  text: "#c8ddf0",
+  bright: "#e8f4ff",
+  teal: "#00d4bc",
+  teal2: "#00a896",
+  amber: "#f5a623",
+  red: "#ff5c6c",
+  green: "#2ecc71",
+  purple: "#9b6dff",
+  rose: "#f472b6",
+  gold: "#fbbf24",
+};
 
-const availableWidgets = [
-  { id: "quicklinks", name: "Quick Links", component: "QuickLinks" },
-  { id: "stats", name: "Quick Stats", component: "QuickStats" },
-  { id: "clock", name: "Clock", component: "Clock" },
-  { id: "recentnotes", name: "Recent Notes", component: "RecentNotes" },
-  { id: "recentguidelines", name: "Recent Guidelines", component: "RecentGuidelines" },
-  { id: "news", name: "Medical News", component: "MedicalNews" },
-  { id: "calendar", name: "Calendar", component: "Calendar" },
-  { id: "tasklist", name: "Task List", component: "TaskList" },
-  { id: "progress", name: "Progress Tracker", component: "ProgressTracker" },
-  { id: "workflow", name: "Workflow Automation", component: "WorkflowAutomation" }
-];
+const pageData = {
+  app: { name: "ClinAI", page: "Provider Dashboard", session: { status: "AI_ACTIVE" } },
+  provider: {
+    name: "Dr. Alexandra Reyes",
+    initials: "AR",
+    specialty: "Emergency Medicine",
+    role: "Attending Physician",
+    avatar: "👩‍⚕️",
+    greeting: "Good morning",
+    stats: [
+      { label: "Active Patients", value: "7", color: T.teal },
+      { label: "Notes Pending", value: "3", color: T.amber },
+      { label: "Orders Queue", value: "12", color: T.purple },
+      { label: "Shift Hours", value: "4.2", color: T.green },
+    ],
+  },
+  shift: {
+    start: "06:00",
+    end: "18:00",
+    type: "Day Shift",
+    unit: "Emergency Department — Bay 7",
+  },
+  calendar: {
+    shiftStart: "06:00",
+    upcomingEvents: [
+      { time: "10:30", label: "Trauma bay — incoming GSW", color: T.red },
+      { time: "12:00", label: "Team handoff / lunch huddle", color: T.amber },
+      { time: "14:00", label: "Procedure: LP — Bay 4", color: T.teal },
+    ],
+    onCallDays: [3, 7, 14, 21, 28],
+    markedDays: [
+      { day: 5, label: "CME — Airway Workshop", color: T.purple },
+      { day: 12, label: "Grand Rounds", color: T.teal },
+      { day: 19, label: "Board Review Session", color: T.amber },
+    ],
+  },
+  openEvidence: {
+    brandName: "OpenEvidence",
+    brandIcon: "⚡",
+    baseUrl: "https://www.openevidence.com/search?q=",
+    placeholder: "Search clinical evidence, guidelines, drug interactions…",
+    specialty: "Emergency Medicine",
+    recentQueries: [
+      "tPA contraindications ischemic stroke",
+      "ketamine RSI dosing renal failure",
+      "HEART score ACS risk stratification",
+      "sepsis lactate clearance targets",
+      "PE Wells criteria low probability",
+    ],
+    topicChips: [
+      { label: "RSI Protocols", query: "rapid sequence intubation protocol", color: "teal" },
+      { label: "Sepsis Bundles", query: "sepsis 1 hour bundle SSCG 2024", color: "red" },
+      { label: "STEMI Workup", query: "STEMI diagnosis management guidelines", color: "amber" },
+      { label: "Tox & Antidotes", query: "toxicology antidotes emergency", color: "purple" },
+      { label: "Airway Management", query: "difficult airway algorithm emergency", color: "teal" },
+      { label: "Stroke Thrombolysis", query: "tPA alteplase stroke contraindications", color: "rose" },
+      { label: "Fluid Resuscitation", query: "IV fluid resuscitation shock emergency", color: "green" },
+      { label: "Pain Management", query: "multimodal analgesia emergency medicine", color: "amber" },
+      { label: "DVT / PE", query: "VTE diagnosis treatment emergency", color: "purple" },
+      { label: "Pediatric EM", query: "pediatric emergency dosing resuscitation", color: "rose" },
+    ],
+  },
+  medicalNews: {
+    panelTitle: "EM Medical News",
+    filterTabs: [
+      { id: "all", label: "All", active: true },
+      { id: "resuscitation", label: "Resuscitation", active: false },
+      { id: "toxicology", label: "Toxicology", active: false },
+      { id: "trauma", label: "Trauma", active: false },
+      { id: "cardiology", label: "Cardiology", active: false },
+      { id: "airway", label: "Airway", active: false },
+    ],
+    articles: [
+      {
+        id: "n001",
+        title: "High-Flow Nasal Cannula vs. NIV in Acute Hypoxic Respiratory Failure",
+        source: "NEJM",
+        sourceBadgeColor: "rgba(255,92,108,0.15)",
+        sourceTextColor: "#ff8a95",
+        topic: "resuscitation",
+        topicColor: T.teal,
+        recency: "2h ago",
+        impact: "high",
+      },
+      {
+        id: "n002",
+        title: "Fentanyl Adulteration in Stimulant Supply: New Surveillance Data",
+        source: "Annals EM",
+        sourceBadgeColor: "rgba(155,109,255,0.15)",
+        sourceTextColor: "#b894ff",
+        topic: "toxicology",
+        topicColor: T.purple,
+        recency: "5h ago",
+        impact: "high",
+      },
+      {
+        id: "n003",
+        title: "AI-Guided Triage Scoring Reduces Door-to-ECG Time",
+        source: "JAMA EM",
+        sourceBadgeColor: "rgba(0,212,188,0.12)",
+        sourceTextColor: T.teal,
+        topic: "cardiology",
+        topicColor: T.amber,
+        recency: "8h ago",
+        impact: "featured",
+      },
+    ],
+  },
+  patientNotes: {
+    panelTitle: "Patient Notes",
+    notes: [
+      { id: "pn001", patientName: "Marcus Thornton", mrn: "PT-20847", avatar: "👨", noteType: "ER Note — Subjective", status: "urgent", statusLabel: "In Progress", bay: "Bay 7", time: "09:14" },
+      { id: "pn002", patientName: "Elena Vasquez", mrn: "PT-20831", avatar: "👩", noteType: "ER Note — Assessment", status: "active", statusLabel: "Active", bay: "Bay 3", time: "08:45" },
+      { id: "pn003", patientName: "Robert Kim", mrn: "PT-20819", avatar: "👨", noteType: "Discharge Summary", status: "active", statusLabel: "Pending Sign", bay: "Bay 11", time: "08:20" },
+      { id: "pn004", patientName: "Sarah Okonkwo", mrn: "PT-20808", avatar: "👩", noteType: "ER Note — Plan", status: "active", statusLabel: "Active", bay: "Bay 2", time: "07:55" },
+      { id: "pn005", patientName: "James Whitfield", mrn: "PT-20795", avatar: "👨", noteType: "ER Note — Objective", status: "stable", statusLabel: "Stable", bay: "Bay 5", time: "07:30" },
+      { id: "pn006", patientName: "Priya Nair", mrn: "PT-20781", avatar: "👩", noteType: "ER Note — Complete", status: "complete", statusLabel: "Signed", bay: "Discharged", time: "06:40" },
+    ],
+  },
+};
 
-export default function Dashboard() {
-  const [userPreferences, setUserPreferences] = React.useState(null);
-  const [activeWidgets, setActiveWidgets] = useState([]);
-  const [manageDialogOpen, setManageDialogOpen] = useState(false);
-  const [layout, setLayout] = useState("2x2");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
+function WelcomeBar() {
+  const provider = pageData.provider;
+  return (
+    <div style={{ background: `linear-gradient(135deg, ${T.panel}, rgba(0,212,188,0.04))`, border: `1px solid ${T.border}`, borderRadius: "14px", padding: "16px 24px", display: "flex", alignItems: "center", gap: "20px", position: "relative", overflow: "hidden" }}>
+      <div style={{ height: "3px", width: "100%", background: `linear-gradient(90deg, ${T.teal}, ${T.purple}, ${T.amber})`, position: "absolute", top: 0, left: 0 }} />
+      <div style={{ position: "absolute", right: "-40px", top: "-40px", width: "180px", height: "180px", background: `radial-gradient(circle, rgba(0,212,188,0.06), transparent 70%)`, pointerEvents: "none" }} />
+      <div style={{ fontFamily: "Playfair Display, serif", fontSize: "22px", color: T.bright, fontWeight: 500 }}>
+        {provider.greeting}, <span style={{ color: T.teal }}>{provider.name.split(" ")[0]}</span>
+      </div>
+      <div style={{ padding: "4px 12px", borderRadius: "20px", background: "rgba(255,92,108,0.1)", color: "#ff8a95", border: "1px solid rgba(255,92,108,0.2)", fontSize: "12px", fontWeight: 600 }}>
+        {provider.specialty}
+      </div>
+      <div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
+        {provider.stats.map((stat, i) => (
+          <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "8px 16px", background: T.edge, borderRadius: "10px", border: `1px solid ${T.border}` }}>
+            <div style={{ fontSize: "11px", color: T.dim, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              {stat.label}
+            </div>
+            <div style={{ fontSize: "18px", color: stat.color, fontWeight: 600, marginTop: "4px" }}>{stat.value}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
-  // Check authentication and load user preferences on mount
-  React.useEffect(() => {
-    const loadPreferences = async () => {
-      try {
-        const user = await base44.auth.me();
-        setIsAuthenticated(true);
-        
-        const prefs = user?.preferences || {
-          dashboard_layout: "2x2",
-          active_widgets: ["quicklinks", "recentnotes"]
-        };
-        setUserPreferences(prefs);
-        setLayout(prefs.dashboard_layout);
-        setActiveWidgets(prefs.active_widgets || ["quicklinks", "recentnotes"]);
-      } catch (error) {
-        setIsAuthenticated(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadPreferences();
+function ClockCalPanel() {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(interval);
   }, []);
 
-  const toggleWidget = (widgetId) => {
-    setActiveWidgets(prev => 
-      prev.includes(widgetId) 
-        ? prev.filter(id => id !== widgetId)
-        : [...prev, widgetId]
-    );
-  };
+  const hours = String(time.getHours()).padStart(2, "0");
+  const minutes = String(time.getMinutes()).padStart(2, "0");
+  const seconds = time.getSeconds();
+  const dateStr = time.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 
-  const handleLayoutChange = (newLayout) => {
-    setLayout(newLayout);
-  };
+  const calendarDays = Array.from({ length: 28 }, (_, i) => i + 1);
+  const today = time.getDate();
 
-  const layoutConfigs = {
-    "2x2": { cols: 2, name: "2x2 Grid" },
-    "3x3": { cols: 3, name: "3x3 Grid" },
-    "horizontal": { cols: 1, name: "Horizontal Stack" }
-  };
+  return (
+    <div style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: "14px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      {/* Clock Section */}
+      <div style={{ padding: "24px 20px 16px", background: `linear-gradient(180deg, rgba(0,212,188,0.04), transparent)`, borderBottom: `1px solid ${T.border}` }}>
+        <div style={{ fontFamily: "Playfair Display, serif", fontSize: "52px", color: T.bright, fontWeight: 400, lineHeight: 1, letterSpacing: "-0.02em" }}>
+          {hours}
+          <span style={{ animation: "clockColon 1s infinite", color: T.teal }}>:</span>
+          {minutes}
+        </div>
+        <svg width="56" height="56" viewBox="0 0 56 56" style={{ marginTop: "12px", transform: "rotate(-90deg)" }}>
+          <circle cx="28" cy="28" r="24" fill="none" stroke={T.edge} strokeWidth="3" />
+          <circle cx="28" cy="28" r="24" fill="none" stroke={T.teal} strokeWidth="3" strokeDasharray="150.8" strokeDashoffset={150.8 * (1 - seconds / 60)} />
+        </svg>
+        <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: "14px", color: T.dim, marginTop: "8px" }}>
+          {dateStr}
+        </div>
+        <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "11px", color: T.teal, background: `rgba(0,212,188,0.08)`, border: `1px solid rgba(0,212,188,0.15)`, borderRadius: "6px", padding: "3px 10px", display: "inline-block", marginTop: "6px" }}>
+          Shift: 4h 28m
+        </div>
+      </div>
 
-  const removeWidget = (widgetId) => {
-    setActiveWidgets(prev => prev.filter(id => id !== widgetId));
-  };
+      {/* Calendar Section */}
+      <div style={{ padding: "14px 16px" }}>
+        <div style={{ fontFamily: "Playfair Display, serif", fontSize: "15px", color: T.bright, fontWeight: 500, marginBottom: "12px" }}>
+          {time.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "6px" }}>
+          {calendarDays.map((day) => (
+            <div
+              key={day}
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "8px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "12px",
+                cursor: "pointer",
+                transition: "all 0.15s",
+                border: day === today ? `1px solid ${T.teal}` : `1px solid transparent`,
+                background: day === today ? T.teal : T.edge,
+                color: day === today ? T.navy : T.text,
+                fontWeight: day === today ? 700 : 400,
+              }}
+            >
+              {day}
+            </div>
+          ))}
+        </div>
+      </div>
 
-  const savePreferences = async () => {
-    try {
-      const user = await base44.auth.me();
-      if (user) {
-        await base44.auth.updateMe({
-          preferences: {
-            ...userPreferences,
-            dashboard_layout: layout,
-            active_widgets: activeWidgets
-          }
-        });
-      }
-    } catch (error) {
-      console.error("Failed to save preferences:", error);
+      {/* Upcoming Events */}
+      <div style={{ padding: "0 16px 14px" }}>
+        <div style={{ fontSize: "10px", color: T.dim, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>
+          Upcoming
+        </div>
+        {pageData.calendar.upcomingEvents.map((event, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "9px", padding: "8px 10px", borderRadius: "8px", background: T.edge, border: `1px solid ${T.border}`, marginBottom: "6px" }}>
+            <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: event.color, marginTop: "4px", flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "10px", color: T.dim }}>
+                {event.time}
+              </div>
+              <div style={{ fontSize: "12px", color: T.text }}>{event.label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SearchPanel() {
+  const [query, setQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
+
+  const handleSearch = (q) => {
+    if (q.trim()) {
+      window.open(`${pageData.openEvidence.baseUrl}${encodeURIComponent(q)}`, "_blank");
     }
   };
 
-  const handleDragEnd = (result) => {
-    const { source, destination } = result;
-    if (!destination) return;
-
-    const newWidgets = Array.from(activeWidgets);
-    const [removed] = newWidgets.splice(source.index, 1);
-    newWidgets.splice(destination.index, 0, removed);
-    setActiveWidgets(newWidgets);
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-slate-50 to-blue-50">
-        <div className="text-center max-w-md p-8 bg-white rounded-2xl shadow-lg border border-slate-200">
-          <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-4">
-            <Stethoscope className="w-8 h-8 text-blue-600" />
+  return (
+    <div style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: "14px", overflow: "hidden" }}>
+      {/* Brand Bar */}
+      <div style={{ padding: "13px 18px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ fontFamily: "Playfair Display, serif", fontSize: "15px", color: T.bright, display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ width: "26px", height: "26px", borderRadius: "7px", background: `linear-gradient(135deg, ${T.teal}, ${T.purple})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", color: "white" }}>
+            {pageData.openEvidence.brandIcon}
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Sign In Required</h2>
-          <p className="text-slate-600 mb-6">Please sign in to access your clinical dashboard and notes.</p>
-          <Button 
-            onClick={() => base44.auth.redirectToLogin()}
-            className="w-full bg-blue-600 hover:bg-blue-700"
-          >
-            Sign In to Continue
-          </Button>
+          {pageData.openEvidence.brandName}
         </div>
       </div>
-    );
-  }
+
+      {/* Search Bar */}
+      <div style={{ margin: "14px 16px", display: "flex", gap: "8px" }}>
+        <input
+          type="text"
+          placeholder={pageData.openEvidence.placeholder}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSearch(query)}
+          style={{
+            flex: 1,
+            background: T.edge,
+            border: `1px solid ${T.border}`,
+            borderRadius: "10px",
+            padding: "10px 14px",
+            color: T.bright,
+            fontSize: "14px",
+            outline: "none",
+            transition: "all 0.2s",
+          }}
+          onFocus={(e) => { e.target.style.borderColor = T.teal; e.target.style.boxShadow = `0 0 0 3px rgba(0,212,188,0.15)`; }}
+          onBlur={(e) => { e.target.style.borderColor = T.border; e.target.style.boxShadow = "none"; }}
+        />
+        <button onClick={() => handleSearch(query)} style={{ padding: "10px 18px", borderRadius: "10px", background: `linear-gradient(135deg, ${T.teal}, ${T.teal2})`, color: T.navy, fontWeight: 600, fontSize: "13px", cursor: "pointer", border: "none" }}>
+          Search
+        </button>
+      </div>
+
+      {/* Recent Queries */}
+      <div style={{ padding: "0 16px 10px" }}>
+        <div style={{ fontSize: "10px", color: T.dim, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>
+          Recent
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+          {pageData.openEvidence.recentQueries.map((q, i) => (
+            <button
+              key={i}
+              onClick={() => { setQuery(q); handleSearch(q); }}
+              style={{ padding: "4px 10px", borderRadius: "6px", background: T.edge, border: `1px solid ${T.border}`, color: T.text, fontSize: "12px", cursor: "pointer", transition: "all 0.15s" }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.teal; e.currentTarget.style.color = T.teal; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.text; }}
+            >
+              {q.substring(0, 20)}...
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Topic Chips */}
+      <div style={{ padding: "0 16px 14px" }}>
+        <div style={{ fontSize: "10px", color: T.dim, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>
+          Topics
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+          {pageData.openEvidence.topicChips.map((chip, i) => {
+            const colorMap = { teal: T.teal, amber: T.amber, purple: T.purple, rose: T.rose, red: T.red, green: T.green };
+            const chipColor = colorMap[chip.color] || T.teal;
+            return (
+              <button
+                key={i}
+                onClick={() => { setQuery(chip.query); handleSearch(chip.query); }}
+                style={{ padding: "5px 12px", borderRadius: "20px", fontSize: "11px", fontWeight: 500, cursor: "pointer", transition: "all 0.15s", background: `rgba(${parseInt(chipColor.slice(1, 3), 16)},${parseInt(chipColor.slice(3, 5), 16)},${parseInt(chipColor.slice(5, 7), 16)},0.1)`, color: chipColor, border: `1px solid rgba(${parseInt(chipColor.slice(1, 3), 16)},${parseInt(chipColor.slice(3, 5), 16)},${parseInt(chipColor.slice(5, 7), 16)},0.2)` }}
+              >
+                {chip.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NewsPanel() {
+  const [activeTab, setActiveTab] = useState("all");
+  const newsData = pageData.medicalNews;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between"
-      >
-        <div>
-         <h1 className="text-4xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
-         <p className="text-slate-600 mt-1">Your clinical workspace</p>
-        </div>
-        
-        <div className="flex gap-2">
-          <Dialog open={manageDialogOpen} onOpenChange={setManageDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Settings className="w-4 h-4" />
-                Manage Widgets
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Manage Dashboard Widgets</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900 mb-3">Layout</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {Object.entries(layoutConfigs).map(([key, config]) => (
-                        <Button
-                          key={key}
-                          variant={layout === key ? "default" : "outline"}
-                          className="text-xs h-9"
-                          onClick={() => handleLayoutChange(key)}
-                        >
-                          {config.name}
-                        </Button>
-                      ))}
-                  </div>
-                </div>
-                <div className="border-t pt-4">
-                  <p className="text-sm font-semibold text-slate-900 mb-3">Widgets</p>
-                  {availableWidgets.map(widget => (
-                    <div key={widget.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:bg-slate-50">
-                      <div>
-                        <p className="font-semibold text-slate-900">{widget.name}</p>
-                        <p className="text-xs text-slate-500">
-                          {activeWidgets.includes(widget.id) ? "Currently active" : "Currently hidden"}
-                        </p>
-                      </div>
-                      <input 
-                         type="checkbox"
-                         checked={activeWidgets.includes(widget.id)}
-                         onChange={(e) => {
-                           e.stopPropagation();
-                           toggleWidget(widget.id);
-                         }}
-                         onClick={(e) => e.stopPropagation()}
-                         className="rounded w-4 h-4 cursor-pointer"
-                       />
-                    </div>
-                  ))}
-                </div>
+    <div style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: "14px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      {/* Filter Tabs */}
+      <div style={{ display: "flex", gap: "4px", padding: "8px 14px", overflowX: "auto" }}>
+        {newsData.filterTabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              padding: "5px 12px",
+              borderRadius: "6px",
+              fontSize: "11px",
+              fontWeight: 500,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+              border: activeTab === tab.id ? `1px solid rgba(0,212,188,0.2)` : "1px solid transparent",
+              background: activeTab === tab.id ? "rgba(0,212,188,0.1)" : "transparent",
+              color: activeTab === tab.id ? T.teal : T.dim,
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => { if (activeTab !== tab.id) { e.currentTarget.style.background = T.edge; e.currentTarget.style.color = T.text; } }}
+            onMouseLeave={(e) => { if (activeTab !== tab.id) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = T.dim; } }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* News Cards */}
+      <div style={{ flex: 1, overflowY: "auto" }}>
+        {newsData.articles.slice(0, 3).map((article) => (
+          <div
+            key={article.id}
+            style={{
+              display: "flex",
+              gap: "12px",
+              padding: "12px 16px",
+              borderBottom: `1px solid ${T.border}`,
+              cursor: "pointer",
+              transition: "all 0.2s",
+              borderLeft: "3px solid transparent",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = `rgba(22,45,79,0.5)`; e.currentTarget.style.borderLeftColor = T.teal; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderLeftColor = "transparent"; }}
+          >
+            <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: article.topicColor, marginTop: "5px", flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: "13px", color: T.bright, fontWeight: 500, lineHeight: 1.4, marginBottom: "4px" }}>
+                {article.title}
               </div>
-              <div className="flex gap-2 mt-4 pt-4 border-t">
-                <Button variant="outline" onClick={() => setManageDialogOpen(false)}>
-                  Close
-                </Button>
-                <Button onClick={() => {
-                  savePreferences();
-                  setManageDialogOpen(false);
-                }} className="bg-blue-600 hover:bg-blue-700">
-                  Save Changes
-                </Button>
+              <div style={{ fontSize: "11px", color: T.dim, display: "flex", gap: "8px", alignItems: "center" }}>
+                <span style={{ padding: "2px 7px", borderRadius: "4px", fontSize: "9px", fontWeight: 600, background: article.sourceBadgeColor, color: article.sourceTextColor }}>
+                  {article.source}
+                </span>
+                <span style={{ fontFamily: "JetBrains Mono, monospace" }}>{article.recency}</span>
+                {article.impact && <span style={{ color: article.impact === "high" ? T.amber : T.teal }}>
+                  {article.impact === "high" ? "★ HIGH" : "✦ FEATURED"}
+                </span>}
               </div>
-              </DialogContent>
-              </Dialog>
-              </div>
-              </motion.div>
-
-      {/* Widgets Grid */}
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable droppableId="widgets" type="WIDGET">
-          {(provided, snapshot) => (
-            <div
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-              style={{ 
-                display: "grid", 
-                gridTemplateColumns: `repeat(${layoutConfigs[layout].cols}, minmax(0, 1fr))`,
-                gap: "1.5rem",
-                width: "100%",
-                backgroundColor: snapshot.isDraggingOver ? "rgba(59, 130, 246, 0.05)" : "transparent",
-                borderRadius: "0.5rem",
-                padding: "0.5rem",
-                transition: "background-color 0.2s",
-              }}
-            >
-              <AnimatePresence>
-                {activeWidgets.map((widgetId, index) => {
-                  const widget = availableWidgets.find(w => w.id === widgetId);
-                  if (!widget) return null;
-                  
-                  return (
-                    <Draggable key={widgetId} draggableId={widgetId} index={index}>
-                      {(provided, snapshot) => (
-                        <motion.div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          layout
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.9 }}
-                          className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all ${
-                            snapshot.isDragging ? "shadow-lg ring-2 ring-blue-500" : ""
-                          }`}
-                        >
-                <div className="flex items-center justify-between px-6 py-3 border-b border-slate-100 bg-slate-50 cursor-grab active:cursor-grabbing" {...provided.dragHandleProps}>
-                  <div className="flex items-center gap-2">
-                    <GripVertical className="w-4 h-4 text-slate-400" />
-                    <h3 className="text-sm font-semibold text-slate-900">
-                      {widget.name}
-                    </h3>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeWidget(widgetId)}
-                    className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                <div className="p-6">
-                  {widgetId === "quicklinks" && <QuickLinksWidget />}
-
-                  {widgetId === "stats" && <QuickStatsWidget />}
-
-                  {widgetId === "clock" && <ClockWidget />}
-
-                  {widgetId === "recentnotes" && <RecentNotesWidget />}
-
-                  {widgetId === "recentguidelines" && <RecentGuidelinesWidget />}
-
-                  {widgetId === "news" && (
-                    <MedicalNewsSection compact />
-                  )}
-
-                  {widgetId === "calendar" && <CalendarWidget />}
-
-                  {widgetId === "tasklist" && <TaskListWidget />}
-
-                  {widgetId === "progress" && <ProgressTrackerWidget />}
-
-                  {widgetId === "workflow" && <WorkflowAutomationWidget />}
-                </div>
-                        </motion.div>
-                      )}
-                    </Draggable>
-                  );
-                })}
-              </AnimatePresence>
-              {provided.placeholder}
             </div>
-          )}
-        </Droppable>
-      </DragDropContext>
-
-      {activeWidgets.length === 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center py-20"
-        >
-          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Plus className="w-8 h-8 text-slate-400" />
           </div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">No widgets added</h3>
-          <p className="text-slate-500 mb-4">Add widgets to customize your dashboard</p>
-        </motion.div>
-      )}
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function NotesPanel() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const notesData = pageData.patientNotes;
+
+  const statusColorMap = {
+    urgent: T.red,
+    active: T.amber,
+    stable: T.green,
+    complete: T.dim,
+  };
+
+  const filteredNotes = notesData.notes.filter((note) =>
+    note.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    note.mrn.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: "14px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      {/* Search Bar */}
+      <input
+        type="text"
+        placeholder="Filter notes…"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        style={{
+          margin: "10px 14px",
+          width: "calc(100% - 28px)",
+          background: T.edge,
+          border: `1px solid ${T.border}`,
+          borderRadius: "8px",
+          padding: "8px 12px",
+          color: T.text,
+          fontSize: "12px",
+          outline: "none",
+        }}
+      />
+
+      {/* Notes List */}
+      <div style={{ flex: 1, overflowY: "auto" }}>
+        {filteredNotes.map((note) => (
+          <div
+            key={note.id}
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "10px",
+              padding: "10px 14px",
+              borderBottom: `1px solid ${T.border}`,
+              cursor: "pointer",
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = `rgba(22,45,79,0.5)`; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+          >
+            <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: statusColorMap[note.status], marginTop: "4px", flexShrink: 0 }} />
+            <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: `linear-gradient(135deg, ${T.muted}, ${T.edge})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", flexShrink: 0 }}>
+              {note.avatar}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: "13px", color: T.bright, fontWeight: 500, marginBottom: "2px" }}>
+                {note.patientName}
+              </div>
+              <div style={{ fontSize: "11px", color: T.dim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {note.noteType}
+              </div>
+            </div>
+            <div style={{ marginLeft: "auto", fontSize: "10px", color: T.dim, fontFamily: "JetBrains Mono, monospace", flexShrink: 0 }}>
+              {note.time}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Action Bar */}
+      <div style={{ padding: "10px 14px", borderTop: `1px solid ${T.border}`, display: "flex", gap: "8px" }}>
+        <button
+          onClick={async () => {
+            const newNote = await base44.entities.ClinicalNote.create({
+              raw_note: "",
+              patient_name: "New Patient",
+              status: "draft",
+            });
+            window.location.href = `?page=NoteDetail&id=${newNote.id}`;
+          }}
+          style={{ flex: 1, padding: "8px", borderRadius: "6px", background: `linear-gradient(135deg, ${T.teal}, ${T.teal2})`, color: T.navy, fontSize: "12px", fontWeight: 600, cursor: "pointer", border: "none" }}
+        >
+          + New Note
+        </button>
+        <button style={{ flex: 1, padding: "8px", borderRadius: "6px", background: T.edge, color: T.text, fontSize: "12px", fontWeight: 600, cursor: "pointer", border: `1px solid ${T.border}` }}>
+          View All
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <div style={{ background: T.navy, minHeight: "100vh", fontFamily: "DM Sans, sans-serif", padding: "18px 20px" }}>
+      <style>{`
+        @keyframes clockColon {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.2; }
+        }
+      `}</style>
+
+      {/* Grid Layout */}
+      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr 300px", gridTemplateRows: "auto auto 1fr", gap: "14px", alignContent: "start", maxWidth: "100%" }}>
+        {/* Welcome Bar - Full Width */}
+        <div style={{ gridColumn: "1 / -1" }}>
+          <WelcomeBar />
+        </div>
+
+        {/* Clock/Cal - Left */}
+        <div style={{ gridColumn: 1, gridRow: "2 / 4" }}>
+          <ClockCalPanel />
+        </div>
+
+        {/* Search Panel - Center Top */}
+        <div style={{ gridColumn: 2, gridRow: 2 }}>
+          <SearchPanel />
+        </div>
+
+        {/* News Panel - Center Bottom */}
+        <div style={{ gridColumn: 2, gridRow: 3 }}>
+          <NewsPanel />
+        </div>
+
+        {/* Notes Panel - Right */}
+        <div style={{ gridColumn: 3, gridRow: "2 / 4" }}>
+          <NotesPanel />
+        </div>
+      </div>
     </div>
   );
 }

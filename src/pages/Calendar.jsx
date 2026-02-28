@@ -247,10 +247,10 @@ export default function CalendarPage() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
         {/* Calendar Grid */}
         <div style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: "12px", padding: "16px" }}>
-          {/* Month Navigation */}
+          {/* Navigation */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
             <button
-              onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))}
+              onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
               style={{
                 background: "transparent",
                 border: "none",
@@ -263,10 +263,10 @@ export default function CalendarPage() {
               ← Prev
             </button>
             <div style={{ fontSize: "16px", fontWeight: 700, color: T.bright }}>
-              {format(currentDate, "MMMM yyyy")}
+              {view === "day" ? format(currentDate, "MMMM dd, yyyy") : view === "week" ? `${format(startOfWeek(currentDate), "MMM dd")} - ${format(endOfWeek(currentDate), "MMM dd")}` : format(currentDate, "MMMM yyyy")}
             </div>
             <button
-              onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))}
+              onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
               style={{
                 background: "transparent",
                 border: "none",
@@ -280,65 +280,192 @@ export default function CalendarPage() {
             </button>
           </div>
 
-          {/* Day Headers */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "8px", marginBottom: "12px" }}>
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-              <div key={day} style={{ textAlign: "center", fontSize: "11px", fontWeight: 600, color: T.dim }}>
-                {day}
+          {view === "month" ? (
+            <>
+              {/* Month View */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "8px", marginBottom: "12px" }}>
+                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                  <div key={day} style={{ textAlign: "center", fontSize: "11px", fontWeight: 600, color: T.dim }}>
+                    {day}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "8px" }}>
+                {daysToDisplay.map((day, idx) => {
+                  const dayEvents = getEventsForDate(day);
+                  const isCurrentMonth = isSameMonth(day, currentDate);
+                  const isCurrentDay = isToday(day);
 
-          {/* Calendar Days */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "8px" }}>
-            {daysInMonth.map((day, idx) => {
-              const dayEvents = getEventsForDate(day);
-              const isCurrentMonth = isSameMonth(day, currentDate);
-              const isCurrentDay = isToday(day);
-
-              return (
-                <div
-                  key={idx}
-                  onClick={() => isCurrentMonth && handleAddEvent(day)}
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => isCurrentMonth && handleAddEvent(day)}
+                      style={{
+                        padding: "8px",
+                        background: isCurrentDay ? T.teal : isCurrentMonth ? T.edge : T.slate,
+                        border: `1px solid ${isCurrentDay ? T.teal : T.border}`,
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        minHeight: "60px",
+                        position: "relative",
+                        opacity: isCurrentMonth ? 1 : 0.5,
+                        transition: "all 0.2s",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (isCurrentMonth) e.currentTarget.style.borderColor = T.teal;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = isCurrentDay ? T.teal : T.border;
+                      }}
+                    >
+                      <div style={{
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        color: isCurrentDay ? T.navy : T.text,
+                        marginBottom: "4px",
+                      }}>
+                        {format(day, "d")}
+                      </div>
+                      {dayEvents.length > 0 && (
+                        <div style={{
+                          fontSize: "8px",
+                          color: T.dim,
+                          lineHeight: 1.2,
+                        }}>
+                          {dayEvents.length} event{dayEvents.length !== 1 ? "s" : ""}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : view === "week" ? (
+            <>
+              {/* Week View */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "8px", marginBottom: "12px" }}>
+                {daysToDisplay.map((day) => (
+                  <div
+                    key={day.toDateString()}
+                    style={{ textAlign: "center", cursor: "pointer" }}
+                    onClick={() => handleAddEvent(day)}
+                  >
+                    <div style={{ fontSize: "11px", fontWeight: 600, color: T.dim, marginBottom: "4px" }}>
+                      {format(day, "EEE")}
+                    </div>
+                    <div
+                      style={{
+                        padding: "12px 8px",
+                        background: isToday(day) ? T.teal : T.edge,
+                        border: `1px solid ${isToday(day) ? T.teal : T.border}`,
+                        borderRadius: "8px",
+                        color: isToday(day) ? T.navy : T.text,
+                        fontSize: "14px",
+                        fontWeight: 700,
+                        transition: "all 0.2s",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.borderColor = T.teal)}
+                      onMouseLeave={(e) => (e.currentTarget.style.borderColor = isToday(day) ? T.teal : T.border)}
+                    >
+                      {format(day, "d")}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "400px", overflowY: "auto" }}>
+                {daysToDisplay.map((day) => {
+                  const dayEvents = getEventsForDate(day);
+                  return (
+                    <div key={day.toDateString()}>
+                      {dayEvents.length > 0 ? dayEvents.map((event) => (
+                        <div
+                          key={event.id}
+                          onClick={() => {
+                            setSelectedDate(new Date(event.date));
+                            setEditingEvent(event);
+                            setFormData({ title: event.title, time: event.time, description: event.description });
+                            setShowEventModal(true);
+                          }}
+                          style={{
+                            padding: "8px",
+                            background: T.edge,
+                            border: `1px solid ${T.border}`,
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            transition: "all 0.2s",
+                            marginBottom: "4px",
+                            fontSize: "10px",
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.borderColor = T.teal)}
+                          onMouseLeave={(e) => (e.currentTarget.style.borderColor = T.border)}
+                        >
+                          <div style={{ color: T.bright, fontWeight: 600 }}>{event.time}</div>
+                          <div style={{ color: T.dim }}>{event.title}</div>
+                        </div>
+                      )) : (
+                        <div style={{ padding: "8px", color: T.dim, fontSize: "10px", textAlign: "center" }}>—</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Day View */}
+              <div style={{ marginBottom: "16px", textAlign: "center" }}>
+                <button
+                  onClick={() => handleAddEvent(currentDate)}
                   style={{
-                    padding: "8px",
-                    background: isCurrentDay ? T.teal : isCurrentMonth ? T.edge : T.slate,
-                    border: `1px solid ${isCurrentDay ? T.teal : T.border}`,
+                    padding: "10px 16px",
+                    background: `linear-gradient(135deg, ${T.teal}, ${T.teal2})`,
+                    border: "none",
                     borderRadius: "8px",
+                    color: T.navy,
+                    fontWeight: 600,
                     cursor: "pointer",
-                    minHeight: "60px",
-                    position: "relative",
-                    opacity: isCurrentMonth ? 1 : 0.5,
-                    transition: "all 0.2s",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (isCurrentMonth) e.currentTarget.style.borderColor = T.teal;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = isCurrentDay ? T.teal : T.border;
+                    fontSize: "12px",
                   }}
                 >
-                  <div style={{
-                    fontSize: "12px",
-                    fontWeight: 600,
-                    color: isCurrentDay ? T.navy : T.text,
-                    marginBottom: "4px",
-                  }}>
-                    {format(day, "d")}
-                  </div>
-                  {dayEvents.length > 0 && (
-                    <div style={{
-                      fontSize: "8px",
-                      color: T.dim,
-                      lineHeight: 1.2,
-                    }}>
-                      {dayEvents.length} event{dayEvents.length !== 1 ? "s" : ""}
+                  + Add Event
+                </button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "400px", overflowY: "auto" }}>
+                {getEventsForDate(currentDate).length > 0 ? (
+                  getEventsForDate(currentDate).map((event) => (
+                    <div
+                      key={event.id}
+                      onClick={() => {
+                        setSelectedDate(currentDate);
+                        setEditingEvent(event);
+                        setFormData({ title: event.title, time: event.time, description: event.description });
+                        setShowEventModal(true);
+                      }}
+                      style={{
+                        padding: "12px",
+                        background: T.edge,
+                        border: `1px solid ${T.border}`,
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.borderColor = T.teal)}
+                      onMouseLeave={(e) => (e.currentTarget.style.borderColor = T.border)}
+                    >
+                      <div style={{ fontSize: "12px", fontWeight: 600, color: T.bright, marginBottom: "4px" }}>
+                        {event.time} - {event.title}
+                      </div>
+                      {event.description && <div style={{ fontSize: "10px", color: T.dim }}>{event.description}</div>}
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                  ))
+                ) : (
+                  <div style={{ color: T.dim, fontSize: "12px", textAlign: "center", padding: "20px 0" }}>
+                    No events scheduled for this day
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Upcoming Events */}

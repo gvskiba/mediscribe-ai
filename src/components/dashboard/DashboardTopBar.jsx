@@ -123,42 +123,42 @@ export default function DashboardTopBar({ user }) {
           </div>
         </div>
 
-      {/* Middle: Stats */}
-      <div style={{ display: "flex", alignItems: "center", gap: "20px", flex: 1, justifyContent: "center" }}>
-        {stats.map((stat, idx) => (
-          <div key={idx} style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "12px", fontWeight: 600, color: stat.color }}>
-              {stat.value}
-            </div>
-            <div style={{ fontSize: "9px", color: T.dim, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              {stat.label}
-            </div>
-          </div>
-        ))}
-      </div>
+        {/* Middle: Stats */}
+        <div style={{ display: "flex", alignItems: "center", gap: "20px", flex: 1, justifyContent: "center" }}>
+         {stats.map((stat, idx) => (
+           <div key={idx} style={{ textAlign: "center" }}>
+             <div style={{ fontSize: "12px", fontWeight: 600, color: stat.color }}>
+               {stat.value}
+             </div>
+             <div style={{ fontSize: "9px", color: T.dim, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+               {stat.label}
+             </div>
+           </div>
+         ))}
+        </div>
 
-      {/* Right: Shift Time */}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: "fit-content", flex: 0 }}>
-        <div
-          style={{
-            padding: "8px 14px",
-            borderRadius: "8px",
-            background: "transparent",
-            border: `2px solid ${T.teal}`,
-            fontSize: "12px",
-            color: T.teal,
-            fontFamily: "JetBrains Mono, monospace",
-            fontWeight: 600,
-            whiteSpace: "nowrap",
-          }}
-        >
-          🕐 {hours}:{minutes} → 18:00
+        {/* Right: Shift Time */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: "fit-content", flex: 0 }}>
+         <div
+           style={{
+             padding: "8px 14px",
+             borderRadius: "8px",
+             background: "transparent",
+             border: `2px solid ${T.teal}`,
+             fontSize: "12px",
+             color: T.teal,
+             fontFamily: "JetBrains Mono, monospace",
+             fontWeight: 600,
+             whiteSpace: "nowrap",
+           }}
+         >
+           🕐 {hours}:{minutes} → 18:00
+         </div>
+         <div style={{ fontSize: "11px", color: T.text }}>
+           Day Shift — {formData.shift_duration} hrs
+         </div>
         </div>
-        <div style={{ fontSize: "11px", color: T.text }}>
-          Day Shift — {formData.shift_duration} hrs
         </div>
-      </div>
-      </div>
-    </div>
-  );
-}
+        </div>
+        );
+        }

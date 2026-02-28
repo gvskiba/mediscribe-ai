@@ -366,6 +366,7 @@ function SearchPanel() {
   };
 
   return (
+    <>
     <div style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: "14px", overflow: "hidden" }}>
       {/* Brand Bar */}
       <div style={{ padding: "13px 18px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>

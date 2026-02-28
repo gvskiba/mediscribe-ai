@@ -109,13 +109,13 @@ export default function DashboardTopBar({ user }) {
       {/* Welcome Bar with Stats */}
       <div
         style={{
-          height: "72px",
+          height: "auto",
           background: `linear-gradient(135deg, ${T.panel}, rgba(0,212,188,0.04))`,
           borderBottom: `1px solid ${T.border}`,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "0 20px",
+          padding: "12px 20px",
           gap: "16px",
         }}
       >

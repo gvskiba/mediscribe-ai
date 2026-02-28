@@ -648,29 +648,39 @@ export default function Dashboard() {
       {/* Grid Layout */}
       <div style={{ padding: "18px 20px", paddingTop: "100px", display: "grid", gridTemplateColumns: "280px 1fr 300px", gridTemplateRows: "auto auto 1fr", gap: "14px", alignContent: "start", maxWidth: "100%" }}>
         {/* Welcome Bar - Full Width */}
-        <div style={{ gridColumn: "1 / -1" }}>
-          <WelcomeBar user={user} />
-        </div>
+        {visibleWidgets.includes("welcome") && (
+          <div style={{ gridColumn: "1 / -1" }}>
+            <WelcomeBar user={user} />
+          </div>
+        )}
 
         {/* Clock/Cal - Left */}
-        <div style={{ gridColumn: 1, gridRow: "2 / 4" }}>
-          <ClockCalPanel />
-        </div>
+        {visibleWidgets.includes("clock") && (
+          <div style={{ gridColumn: 1, gridRow: visibleWidgets.includes("welcome") ? "2 / 4" : "1 / 3" }}>
+            <ClockCalPanel />
+          </div>
+        )}
 
         {/* Search Panel - Center Top */}
-        <div style={{ gridColumn: 2, gridRow: 2 }}>
-          <SearchPanel />
-        </div>
+        {visibleWidgets.includes("search") && (
+          <div style={{ gridColumn: 2, gridRow: visibleWidgets.includes("welcome") ? 2 : 1 }}>
+            <SearchPanel />
+          </div>
+        )}
 
         {/* News Panel - Center Bottom */}
-        <div style={{ gridColumn: 2, gridRow: 3 }}>
-          <NewsPanel />
-        </div>
+        {visibleWidgets.includes("news") && (
+          <div style={{ gridColumn: 2, gridRow: visibleWidgets.includes("welcome") ? 3 : 2 }}>
+            <NewsPanel />
+          </div>
+        )}
 
         {/* Saved Guidelines Widget - Right */}
-        <div style={{ gridColumn: 3, gridRow: "2 / 4" }}>
-          <SavedGuidelinesWidget />
-        </div>
+        {visibleWidgets.includes("guidelines") && (
+          <div style={{ gridColumn: 3, gridRow: visibleWidgets.includes("welcome") ? "2 / 4" : "1 / 3" }}>
+            <SavedGuidelinesWidget />
+          </div>
+        )}
       </div>
     </div>
   );

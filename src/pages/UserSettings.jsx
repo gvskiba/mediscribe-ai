@@ -595,23 +595,121 @@ export default function UserSettings() {
         <SettingSection
           id="account"
           title="Account"
-          subtitle="Your profile information"
+          subtitle="Your profile and provider information"
           icon={User}
           color="slate"
           active={activeSection === "account"}
           onClick={() => toggleSection("account")}
         >
-          <div className="space-y-3">
-            {[
-              { label: "Name", value: user?.full_name },
-              { label: "Email", value: user?.email },
-              { label: "Role", value: user?.role },
-            ].map(({ label, value }) => (
-              <div key={label} className="flex items-center justify-between py-1">
-                <span className="text-xs text-slate-500 font-medium uppercase tracking-wide">{label}</span>
-                <span className="text-sm font-semibold text-slate-900 capitalize">{value || "—"}</span>
+          <div className="space-y-4">
+            {!editProfile ? (
+              <>
+                <div className="space-y-3">
+                  {[
+                    { label: "Email", value: user?.email },
+                    { label: "Role", value: user?.role },
+                    { label: "First Name", value: profileData.first_name },
+                    { label: "Last Name", value: profileData.last_name },
+                    { label: "Provider Type", value: PROVIDER_TYPES.find(p => p.value === profileData.provider_type)?.label },
+                    { label: "Specialty", value: MEDICAL_SPECIALTIES.find(s => s.value === profileData.specialty)?.label },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="flex items-center justify-between py-2 border-b border-slate-100">
+                      <span className="text-xs text-slate-500 font-medium uppercase tracking-wide">{label}</span>
+                      <span className="text-sm font-semibold text-slate-900">{value || "—"}</span>
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  onClick={() => setEditProfile(true)}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  size="sm"
+                >
+                  Edit Profile
+                </Button>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-slate-700 block mb-1.5">First Name</label>
+                    <input
+                      type="text"
+                      value={profileData.first_name}
+                      onChange={(e) => setProfileData(p => ({ ...p, first_name: e.target.value }))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-700 block mb-1.5">Last Name</label>
+                    <input
+                      type="text"
+                      value={profileData.last_name}
+                      onChange={(e) => setProfileData(p => ({ ...p, last_name: e.target.value }))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-slate-700 block mb-2">Provider Type</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {PROVIDER_TYPES.map(pt => (
+                      <button
+                        key={pt.value}
+                        onClick={() => setProfileData(p => ({ ...p, provider_type: pt.value }))}
+                        className={`px-3 py-2 rounded-lg border text-xs transition-all ${
+                          profileData.provider_type === pt.value
+                            ? "bg-blue-600 border-blue-600 text-white font-medium"
+                            : "bg-white border-slate-200 text-slate-700 hover:border-blue-300"
+                        }`}
+                      >
+                        {pt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-slate-700 block mb-2">Specialty</label>
+                  <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+                    {MEDICAL_SPECIALTIES.map(spec => (
+                      <button
+                        key={spec.value}
+                        onClick={() => setProfileData(p => ({ ...p, specialty: spec.value }))}
+                        className={`px-3 py-2 rounded-lg border text-xs text-left transition-all ${
+                          profileData.specialty === spec.value
+                            ? "bg-blue-600 border-blue-600 text-white font-medium"
+                            : "bg-white border-slate-200 text-slate-700 hover:border-blue-300"
+                        }`}
+                      >
+                        <p className="font-medium">{spec.label}</p>
+                        <p className={profileData.specialty === spec.value ? "text-blue-100 text-xs" : "text-slate-400 text-xs"}>{spec.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    onClick={() => setEditProfile(false)}
+                    variant="outline"
+                    className="flex-1"
+                    size="sm"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSaveProfile}
+                    disabled={saving}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    size="sm"
+                  >
+                    {saving ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Check className="w-3 h-3 mr-1" />}
+                    Save Profile
+                  </Button>
+                </div>
               </div>
-            ))}
+            )}
           </div>
         </SettingSection>
       </motion.div>

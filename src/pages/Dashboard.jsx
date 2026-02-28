@@ -4,7 +4,6 @@ import { Search } from "lucide-react";
 import { createPageUrl } from "../utils";
 
 import ClinicalGuidelinesPanel from "../components/dashboard/ClinicalGuidelinesPanel";
-import OpenEvidenceSearchPanel from "../components/dashboard/OpenEvidenceSearchPanel";
 import SavedGuidelinesWidget from "../components/dashboard/SavedGuidelinesWidget";
 import RecentQueriesWidget from "../components/dashboard/RecentQueriesWidget";
 import SpecialtyInsightsWidget from "../components/dashboard/SpecialtyInsightsWidget";
@@ -673,7 +672,7 @@ export default function Dashboard() {
 
 
       {/* Grid Layout */}
-      <div style={{ padding: "18px 20px", display: "grid", gridTemplateColumns: "200px 1fr 300px", gridTemplateRows: "auto auto 1fr", gap: "14px", alignContent: "start", maxWidth: "100%" }}>
+      <div style={{ padding: "18px 20px", paddingTop: "20px", display: "grid", gridTemplateColumns: "200px 1fr 300px", gridTemplateRows: "auto auto 1fr", gap: "14px", alignContent: "start", maxWidth: "100%" }}>
         {/* Welcome Bar - Full Width */}
          {false && visibleWidgets.includes("welcome") && (
           <div style={{ gridColumn: "1 / -1" }}>

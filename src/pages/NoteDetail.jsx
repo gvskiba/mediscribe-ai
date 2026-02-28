@@ -1851,7 +1851,7 @@ Generated: ${new Date().toLocaleString()}
                              </TabsContent>
 
                              {/* Finalize Tab */}
-                             <TabsContent value="finalize" className="overflow-y-auto bg-slate-50">
+                             <TabsContent value="finalize" className="overflow-y-auto" style={{ background: "#050f1e" }}>
                                <FinalizeTab note={note} finalizeMutation={finalizeMutation} exportingFormat={exportingFormat} exportNote={exportNote} />
                              </TabsContent>
 

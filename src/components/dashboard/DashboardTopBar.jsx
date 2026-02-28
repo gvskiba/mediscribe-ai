@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Clock, Zap } from "lucide-react";
+import { Zap } from "lucide-react";
 
 const T = {
   navy: "#050f1e",
@@ -44,51 +44,43 @@ export default function DashboardTopBar({ user }) {
     specialties[user.clinical_settings.medical_specialty];
 
   const stats = [
-    { label: "Active Patients", value: "7" },
-    { label: "Active Orders", value: "3" },
-    { label: "Orders Queue", value: "12" },
-    { label: "Shift Hours", value: "4.2" },
+    { label: "Active Patients", value: "7", color: T.teal },
+    { label: "Notes Pending", value: "3", color: T.amber },
+    { label: "Orders Queue", value: "12", color: T.purple },
+    { label: "Shift Hours", value: "4.2", color: T.green },
   ];
 
   return (
     <div
       style={{
-        background: `linear-gradient(90deg, ${T.navy}, ${T.slate})`,
+        id: "topbar",
+        height: "58px",
+        background: "rgba(11,29,53,0.7)",
+        backdropFilter: "blur(12px)",
         borderBottom: `1px solid ${T.border}`,
-        padding: "12px 20px",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
+        padding: "0 20px",
         position: "fixed",
-        top: 64,
+        top: 0,
         left: 0,
         right: 0,
-        zIndex: 30,
+        zIndex: 40,
       }}
     >
-      {/* Left Section: Branding & Greeting */}
-      <div style={{ display: "flex", alignItems: "center", gap: "20px", flex: 1 }}>
-        <div>
-          <div
-            style={{
-              fontFamily: "Playfair Display, serif",
-              fontSize: "16px",
-              color: T.bright,
-              fontWeight: 600,
-            }}
-          >
-            Good morning, <span style={{ color: T.teal }}>{lastName}</span>
-          </div>
-          <div style={{ fontSize: "12px", color: T.dim }}>
-            {specialty && <span>{specialty}</span>}
-            {specialty && " • "}
-            <span>Emergency Department — Bay 7</span>
-          </div>
+      {/* App Name & Provider Greeting */}
+      <div style={{ display: "flex", alignItems: "center", gap: "24px", flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: "Playfair Display, serif", fontSize: "14px", color: T.dim, fontWeight: 500, whiteSpace: "nowrap" }}>
+          ClinAI — <span style={{ color: T.bright }}>Provider Dashboard</span>
+        </div>
+        <div style={{ fontSize: "11px", color: T.dim }}>
+          Emergency Medicine • Emergency Department — Bay 7
         </div>
       </div>
 
-      {/* Center Section: Stats */}
-      <div style={{ display: "flex", gap: "12px", flex: 1 }}>
+      {/* Center Stats Pills */}
+      <div style={{ display: "flex", gap: "10px", flex: 1, justifyContent: "center" }}>
         {stats.map((stat, i) => (
           <div
             key={i}
@@ -96,81 +88,85 @@ export default function DashboardTopBar({ user }) {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              padding: "8px 16px",
+              padding: "6px 14px",
               background: T.edge,
-              borderRadius: "10px",
+              borderRadius: "8px",
               border: `1px solid ${T.border}`,
             }}
           >
-            <div style={{ fontSize: "11px", color: T.dim, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <div style={{ fontSize: "10px", color: T.dim, textTransform: "uppercase", letterSpacing: "0.05em" }}>
               {stat.label}
             </div>
-            <div style={{ fontSize: "18px", color: T.teal, fontWeight: 600, marginTop: "2px" }}>
+            <div style={{ fontSize: "16px", color: stat.color, fontWeight: 700, marginTop: "2px" }}>
               {stat.value}
             </div>
           </div>
         ))}
       </div>
 
-      {/* Right Section: Controls & Time */}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+      {/* Right: Status Badges & Time */}
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1, justifyContent: "flex-end" }}>
         <div
           style={{
-            padding: "6px 12px",
-            borderRadius: "8px",
-            background: "rgba(239,68,68,0.15)",
-            border: "1px solid rgba(239,68,68,0.3)",
-            fontSize: "11px",
-            color: "#ef4444",
+            padding: "5px 11px",
+            borderRadius: "6px",
+            background: "rgba(255,92,108,0.1)",
+            border: "1px solid rgba(255,92,108,0.2)",
+            fontSize: "10px",
+            color: "#ff8a95",
             fontWeight: 600,
+            whiteSpace: "nowrap",
           }}
         >
-          Emergency Medicine
+          ⚕ Emergency Medicine
         </div>
 
         <div
           style={{
-            padding: "6px 12px",
-            borderRadius: "8px",
+            padding: "5px 11px",
+            borderRadius: "6px",
             background: T.edge,
             border: `1px solid ${T.border}`,
-            fontSize: "11px",
+            fontSize: "10px",
             color: T.text,
             fontFamily: "JetBrains Mono, monospace",
+            whiteSpace: "nowrap",
           }}
         >
-          {hours}:{minutes} — 18:00
+          🕐 {hours}:{minutes} — 18:00
         </div>
 
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "4px",
-            padding: "6px 12px",
-            borderRadius: "8px",
-            background: `rgba(46,204,113,0.15)`,
-            border: "1px solid rgba(46,204,113,0.3)",
-            fontSize: "11px",
+            gap: "5px",
+            padding: "5px 11px",
+            borderRadius: "6px",
+            background: "rgba(46,204,113,0.1)",
+            border: "1px solid rgba(46,204,113,0.2)",
+            fontSize: "10px",
             color: T.green,
             fontWeight: 600,
+            whiteSpace: "nowrap",
           }}
         >
-          <Zap style={{ width: "12px", height: "12px" }} />
+          <Zap style={{ width: "11px", height: "11px" }} />
           AI ACTIVE
         </div>
 
         <button
           style={{
-            padding: "6px 12px",
-            borderRadius: "8px",
-            background: T.edge,
+            padding: "5px 11px",
+            borderRadius: "6px",
+            background: "transparent",
             border: `1px solid ${T.border}`,
             color: T.text,
-            fontSize: "11px",
+            fontSize: "10px",
             fontWeight: 600,
             cursor: "pointer",
             transition: "all 0.2s",
+            whiteSpace: "nowrap",
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.borderColor = T.teal;
@@ -186,15 +182,16 @@ export default function DashboardTopBar({ user }) {
 
         <button
           style={{
-            padding: "6px 14px",
-            borderRadius: "8px",
+            padding: "5px 12px",
+            borderRadius: "6px",
             background: `linear-gradient(135deg, ${T.teal}, ${T.teal2})`,
             border: "none",
             color: T.navy,
-            fontSize: "11px",
+            fontSize: "10px",
             fontWeight: 600,
             cursor: "pointer",
             transition: "all 0.2s",
+            whiteSpace: "nowrap",
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.opacity = "0.9";

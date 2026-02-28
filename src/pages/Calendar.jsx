@@ -74,33 +74,27 @@ export default function CalendarPage() {
     setShowEventModal(true);
   };
 
-  const handleSaveEvent = () => {
+  const handleSaveEvent = async () => {
     if (!formData.title.trim()) return;
 
+    const eventData = {
+      title: formData.title,
+      date: format(selectedDate, "yyyy-MM-dd"),
+      time: formData.time,
+      description: formData.description,
+      color: T.teal,
+    };
+
     if (editingEvent) {
-      setEvents(
-        events.map((e) =>
-          e.id === editingEvent.id
-            ? { ...e, ...formData, date: selectedDate }
-            : e
-        )
-      );
+      await updateEventMutation.mutateAsync({ id: editingEvent.id, data: eventData });
     } else {
-      setEvents([
-        ...events,
-        {
-          id: Date.now(),
-          date: selectedDate,
-          ...formData,
-          color: T.teal,
-        },
-      ]);
+      await createEventMutation.mutateAsync(eventData);
     }
     setShowEventModal(false);
   };
 
-  const handleDeleteEvent = (id) => {
-    setEvents(events.filter((e) => e.id !== id));
+  const handleDeleteEvent = async (id) => {
+    await deleteEventMutation.mutateAsync(id);
   };
 
   const generateICalURL = () => {

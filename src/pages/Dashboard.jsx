@@ -228,10 +228,27 @@ function WelcomeBar({ user }) {
 
 function ClockCalPanel() {
   const [time, setTime] = useState(new Date());
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
 
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const loadEvents = async () => {
+      try {
+        const events = await base44.entities.CalendarEvent.list('-date', 10);
+        if (events && Array.isArray(events)) {
+          const today = new Date();
+          const upcoming = events.filter(e => new Date(e.date) >= today).slice(0, 3);
+          setUpcomingEvents(upcoming);
+        }
+      } catch (error) {
+        console.error("Failed to load calendar events:", error);
+      }
+    };
+    loadEvents();
   }, []);
 
   const hours = String(time.getHours()).padStart(2, "0");
@@ -335,17 +352,21 @@ function ClockCalPanel() {
         <div style={{ fontSize: "10px", color: T.dim, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>
           Upcoming
         </div>
-        {pageData.calendar.upcomingEvents.map((event, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "9px", padding: "8px 10px", borderRadius: "8px", background: T.edge, border: `1px solid ${T.border}`, marginBottom: "6px" }}>
-            <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: event.color, marginTop: "4px", flexShrink: 0 }} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "10px", color: T.dim }}>
-                {event.time}
+        {upcomingEvents.length === 0 ? (
+          <div style={{ fontSize: "11px", color: T.dim, padding: "8px", textAlign: "center" }}>No upcoming events</div>
+        ) : (
+          upcomingEvents.map((event) => (
+            <div key={event.id} style={{ display: "flex", alignItems: "flex-start", gap: "9px", padding: "8px 10px", borderRadius: "8px", background: T.edge, border: `1px solid ${T.border}`, marginBottom: "6px" }}>
+              <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: T.teal, marginTop: "4px", flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "10px", color: T.dim }}>
+                  {event.time}
+                </div>
+                <div style={{ fontSize: "12px", color: T.text }}>{event.title}</div>
               </div>
-              <div style={{ fontSize: "12px", color: T.text }}>{event.label}</div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

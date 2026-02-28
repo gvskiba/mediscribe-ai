@@ -1901,8 +1901,7 @@ Generated: ${new Date().toLocaleString()}
 
        </div>
 
-       {/* Autosave Toggle */}
-       <AutosaveToggle enabled={autosaveEnabled} onChange={setAutosaveEnabled} />
+
 
        {/* Floating AI Assistant Button */}
        <motion.button

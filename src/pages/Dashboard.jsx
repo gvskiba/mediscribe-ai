@@ -203,7 +203,16 @@ function ClockCalPanel() {
   const seconds = time.getSeconds();
   const dateStr = time.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 
-  const calendarDays = Array.from({ length: 28 }, (_, i) => i + 1);
+  // Get the current month and year, and calculate correct calendar days
+  const currentMonth = time.getMonth();
+  const currentYear = time.getFullYear();
+  const firstDay = new Date(currentYear, currentMonth, 1);
+  const lastDay = new Date(currentYear, currentMonth + 1, 0);
+  const daysInMonth = lastDay.getDate();
+  const startingDayOfWeek = firstDay.getDay();
+  
+  // Create array with empty slots for days before the first of the month
+  const calendarDays = Array(startingDayOfWeek).fill(null).concat(Array.from({ length: daysInMonth }, (_, i) => i + 1));
   const today = time.getDate();
 
   return (

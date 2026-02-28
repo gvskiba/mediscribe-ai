@@ -1,9 +1,6 @@
 import React from "react";
 import { base44 } from "@/api/base44Client";
-import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
 import { toast } from "sonner";
-import InlineSectionAI from "../ai/InlineSectionAI";
 import PhysicalExamEditor from "./PhysicalExamEditor";
 import TabPageLayout from "./TabPageLayout";
 

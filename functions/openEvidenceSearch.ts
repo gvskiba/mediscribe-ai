@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing query parameter' }, { status: 400 });
     }
 
-    return await searchOpenEvidence(query);
+    return await searchOpenEvidence(query, base44);
   } catch (error) {
     console.error('Error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

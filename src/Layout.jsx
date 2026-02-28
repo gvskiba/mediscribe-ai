@@ -54,6 +54,13 @@ const navSections = [
 
 export default function Layout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    base44.auth.me().then(u => setUser(u)).catch(() => setUser(null));
+  }, []);
+
+  const showSidebar = currentPageName !== 'Home';
 
   return (
     <div className="min-h-screen bg-white flex flex-col">

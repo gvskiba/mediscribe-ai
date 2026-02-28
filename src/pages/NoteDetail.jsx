@@ -1609,7 +1609,7 @@ Generated: ${new Date().toLocaleString()}
                         <div className="flex-1 overflow-hidden min-h-0">
 
                         {/* Subjective Tab */}
-                        <TabsContent value="patient_intake" className="overflow-y-auto bg-slate-50">
+                        <TabsContent value="patient_intake" className="overflow-y-auto" style={{ background: "#050f1e" }}>
                           <SubjectiveTab
                             note={note} noteId={noteId} queryClient={queryClient}
                             templates={templates} selectedTemplate={selectedTemplate} setSelectedTemplate={setSelectedTemplate}

@@ -97,6 +97,7 @@ import PhysicalExamTab from "../components/notes/PhysicalExamTab";
 import TreatmentPlanTab from "../components/notes/TreatmentPlanTab";
 import FinalizeTab from "../components/notes/FinalizeTab";
 import PatientEducationTab from "../components/notes/PatientEducationTab";
+import NoteTopBar from "../components/notes/NoteTopBar";
 
 const TAB_GROUPS = [
   {

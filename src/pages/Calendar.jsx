@@ -490,7 +490,6 @@ export default function CalendarPage() {
           </div>
         </div>
       </div>
-      </div>
 
       <ShiftModal
         isOpen={showModal}

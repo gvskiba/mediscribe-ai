@@ -102,11 +102,6 @@ export default function Layout({ children, currentPageName }) {
           .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         `}</style>
 
-        {/* App Sidebar */}
-        <div style={{ width: showSidebar ? '80px' : '0px', marginTop: showSidebar ? '88px' : '0px' }}>
-          {showSidebar && <AppSidebar user={user} />}
-        </div>
-
         {/* Mobile Nav Overlay */}
         {mobileOpen &&
         <div className="lg:hidden fixed inset-0 z-30 bg-black/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)}>

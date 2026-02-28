@@ -1640,7 +1640,7 @@ Generated: ${new Date().toLocaleString()}
                  </TabsContent>
 
            {/* Treatment Plan Tab */}
-             <TabsContent value="treatment_plan" className="overflow-y-auto bg-slate-50">
+             <TabsContent value="treatment_plan" className="overflow-y-auto" style={{ background: "#050f1e" }}>
                <TreatmentPlanTab note={note} noteId={noteId} queryClient={queryClient} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
              </TabsContent>
 

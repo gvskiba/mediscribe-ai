@@ -445,76 +445,96 @@ function NewsPanel() {
 }
 
 function NotesPanel() {
+  const [notes, setNotes] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const notesData = pageData.patientNotes;
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadNotes = async () => {
+      try {
+        const recentNotes = await base44.entities.ClinicalNote.list('-updated_date', 6);
+        setNotes(recentNotes || []);
+      } catch (error) {
+        console.error("Failed to load notes:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadNotes();
+  }, []);
 
   const statusColorMap = {
-    urgent: T.red,
-    active: T.amber,
-    stable: T.green,
-    complete: T.dim,
+    draft: T.dim,
+    finalized: T.green,
+    amended: T.amber,
   };
 
-  const filteredNotes = notesData.notes.filter((note) =>
-    note.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    note.mrn.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredNotes = notes.filter((note) =>
+    note.patient_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (note.patient_id && note.patient_id.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
     <div style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: "14px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-      {/* Search Bar */}
-      <input
-        type="text"
-        placeholder="Filter notes…"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        style={{
-          margin: "10px 14px",
-          width: "calc(100% - 28px)",
-          background: T.edge,
-          border: `1px solid ${T.border}`,
-          borderRadius: "8px",
-          padding: "8px 12px",
-          color: T.text,
-          fontSize: "12px",
-          outline: "none",
-        }}
-      />
+      <div style={{ padding: "12px 16px", borderBottom: `1px solid ${T.border}` }}>
+        <div style={{ fontSize: "13px", color: T.bright, fontWeight: 600, marginBottom: "8px" }}>Recent Notes</div>
+        <input
+          type="text"
+          placeholder="Filter notes…"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            width: "100%",
+            background: T.edge,
+            border: `1px solid ${T.border}`,
+            borderRadius: "8px",
+            padding: "8px 12px",
+            color: T.text,
+            fontSize: "12px",
+            outline: "none",
+            boxSizing: "border-box",
+          }}
+        />
+      </div>
 
       {/* Notes List */}
       <div style={{ flex: 1, overflowY: "auto" }}>
-        {filteredNotes.map((note) => (
-          <div
-            key={note.id}
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "10px",
-              padding: "10px 14px",
-              borderBottom: `1px solid ${T.border}`,
-              cursor: "pointer",
-              transition: "all 0.15s",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = `rgba(22,45,79,0.5)`; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-          >
-            <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: statusColorMap[note.status], marginTop: "4px", flexShrink: 0 }} />
-            <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: `linear-gradient(135deg, ${T.muted}, ${T.edge})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", flexShrink: 0 }}>
-              {note.avatar}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: "13px", color: T.bright, fontWeight: 500, marginBottom: "2px" }}>
-                {note.patientName}
+        {loading ? (
+          <div style={{ padding: "16px", textAlign: "center", color: T.dim, fontSize: "12px" }}>Loading notes...</div>
+        ) : filteredNotes.length === 0 ? (
+          <div style={{ padding: "16px", textAlign: "center", color: T.dim, fontSize: "12px" }}>No notes found</div>
+        ) : (
+          filteredNotes.map((note) => (
+            <div
+              key={note.id}
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "10px",
+                padding: "10px 14px",
+                borderBottom: `1px solid ${T.border}`,
+                cursor: "pointer",
+                transition: "all 0.15s",
+              }}
+              onClick={() => window.location.href = `?page=NoteDetail&id=${note.id}`}
+              onMouseEnter={(e) => { e.currentTarget.style.background = `rgba(22,45,79,0.5)`; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+            >
+              <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: statusColorMap[note.status] || T.dim, marginTop: "4px", flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: "13px", color: T.bright, fontWeight: 500, marginBottom: "2px" }}>
+                  {note.patient_name}
+                </div>
+                <div style={{ fontSize: "11px", color: T.dim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {note.note_type || "Note"} • {note.status}
+                </div>
               </div>
-              <div style={{ fontSize: "11px", color: T.dim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {note.noteType}
+              <div style={{ marginLeft: "auto", fontSize: "10px", color: T.dim, fontFamily: "JetBrains Mono, monospace", flexShrink: 0 }}>
+                {new Date(note.updated_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
               </div>
             </div>
-            <div style={{ marginLeft: "auto", fontSize: "10px", color: T.dim, fontFamily: "JetBrains Mono, monospace", flexShrink: 0 }}>
-              {note.time}
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* Action Bar */}
@@ -532,7 +552,9 @@ function NotesPanel() {
         >
           + New Note
         </button>
-        <button style={{ flex: 1, padding: "8px", borderRadius: "6px", background: T.edge, color: T.text, fontSize: "12px", fontWeight: 600, cursor: "pointer", border: `1px solid ${T.border}` }}>
+        <button 
+          onClick={() => window.location.href = "?page=NotesLibrary"}
+          style={{ flex: 1, padding: "8px", borderRadius: "6px", background: T.edge, color: T.text, fontSize: "12px", fontWeight: 600, cursor: "pointer", border: `1px solid ${T.border}` }}>
           View All
         </button>
       </div>

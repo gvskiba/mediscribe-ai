@@ -1727,7 +1727,7 @@ Generated: ${new Date().toLocaleString()}
            <TabsContent value="summary" className="hidden" />
 
              {/* Physical Exam Tab */}
-             <TabsContent value="physical_exam" className="overflow-y-auto bg-slate-50">
+             <TabsContent value="physical_exam" className="overflow-y-auto" style={{ background: "#050f1e" }}>
                <PhysicalExamTab note={note} noteId={noteId} queryClient={queryClient} physicalExamNormal={physicalExamNormal} setPhysicalExamNormal={setPhysicalExamNormal} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
              </TabsContent>
 

@@ -195,8 +195,30 @@ export default function CalendarPage() {
           </h1>
         </div>
 
-        {/* Export Buttons */}
-        <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
+        {/* View Toggle & Export Buttons */}
+        <div style={{ display: "flex", gap: "10px", marginTop: "12px", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "6px", background: T.edge, padding: "6px", borderRadius: "8px", border: `1px solid ${T.border}` }}>
+            {["day", "week", "month"].map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                style={{
+                  padding: "6px 12px",
+                  background: view === v ? T.teal : "transparent",
+                  border: "none",
+                  borderRadius: "6px",
+                  color: view === v ? T.navy : T.text,
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  textTransform: "capitalize",
+                }}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
           <button
             onClick={downloadICalendar}
             style={{

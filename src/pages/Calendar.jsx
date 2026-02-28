@@ -326,54 +326,59 @@ export default function CalendarPage() {
   const todayDate = today.getDate();
 
   return (
-    <div style={{ background: config.colors.background, minHeight: "100vh", color: config.colors.text, display: "flex" }}>
-      {/* Sidebar */}
-      <div style={{ width: "200px", background: config.colors.surface, borderRight: `1px solid ${config.colors.border}`, padding: "16px", overflowY: "auto" }}>
-        <div style={{ fontSize: "18px", fontWeight: 700, marginBottom: "16px" }}>🩺 Provider Shifts</div>
-        <ShiftLegend />
-        <div style={{ marginTop: "16px" }} />
-        <MonthlyStats shifts={shifts} selectedDept={selectedDept} />
-        <div style={{ marginTop: "16px" }}>
-          <div style={{ fontSize: "12px", fontWeight: 600, color: config.colors.text, marginBottom: "8px" }}>Department</div>
-          <select value={selectedDept} onChange={(e) => setSelectedDept(e.target.value)} style={{ width: "100%", padding: "8px", background: config.colors.card, border: `1px solid ${config.colors.border}`, borderRadius: "6px", color: config.colors.text, fontSize: "11px" }}>
+    <div style={{ background: config.colors.background, width: "100vw", height: "100vh", color: config.colors.text, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {/* Compact Header */}
+      <div style={{ height: "52px", background: config.colors.surface, borderBottom: `1px solid ${config.colors.border}`, padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <div style={{ fontSize: "16px", fontWeight: 700 }}>🩺 Provider Shift Calendar</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))} style={{ background: "none", border: "none", color: config.colors.text, cursor: "pointer", padding: "4px 8px" }}>
+            ‹
+          </button>
+          <button onClick={() => setCurrentDate(new Date())} style={{ padding: "4px 12px", background: "transparent", border: `1px solid ${config.colors.border}`, borderRadius: "4px", color: config.colors.text, fontSize: "11px", fontWeight: 600, cursor: "pointer" }}>
+            TODAY
+          </button>
+          <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))} style={{ background: "none", border: "none", color: config.colors.text, cursor: "pointer", padding: "4px 8px" }}>
+            ›
+          </button>
+          <div style={{ fontSize: "14px", fontWeight: 600, minWidth: "120px", textAlign: "center" }}>
+            {config.months[currentDate.getMonth()]} {currentDate.getFullYear()}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button onClick={() => { const ics = generateICS(shifts); download(ics, "provider-shifts.ics"); }} style={{ padding: "6px 10px", background: config.colors.dim, border: `1px solid ${config.colors.border}`, borderRadius: "4px", color: config.colors.text, cursor: "pointer", fontSize: "11px", fontWeight: 600 }}>
+            📥 IMPORT
+          </button>
+          <button onClick={() => { const ics = generateICS(shifts); download(ics, "provider-shifts.ics"); }} style={{ padding: "6px 10px", background: config.colors.dim, border: `1px solid ${config.colors.border}`, borderRadius: "4px", color: config.colors.text, cursor: "pointer", fontSize: "11px", fontWeight: 600 }}>
+            📤 EXPORT
+          </button>
+          <button onClick={() => openModalForDate(new Date())} style={{ padding: "6px 10px", background: config.colors.accent, border: "none", borderRadius: "4px", color: config.colors.background, fontWeight: 600, cursor: "pointer", fontSize: "11px" }}>
+            ✚ ADD SHIFT
+          </button>
+        </div>
+      </div>
+
+      {/* Main Container */}
+      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+        {/* Sidebar */}
+        <div style={{ width: "168px", background: config.colors.surface, borderRight: `1px solid ${config.colors.border}`, padding: "16px", overflowY: "auto", fontSize: "12px" }}>
+          <div style={{ fontSize: "10px", fontWeight: 700, color: config.colors.muted, textTransform: "uppercase", letterSpacing: "1px", marginBottom: "12px" }}>Shift Types</div>
+          <ShiftLegend />
+          <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: `1px solid ${config.colors.border}` }} />
+          <div style={{ fontSize: "10px", fontWeight: 700, color: config.colors.muted, textTransform: "uppercase", letterSpacing: "1px", marginBottom: "12px" }}>This Month</div>
+          <MonthlyStats shifts={shifts} selectedDept={selectedDept} />
+          <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: `1px solid ${config.colors.border}` }} />
+          <div style={{ fontSize: "10px", fontWeight: 700, color: config.colors.muted, textTransform: "uppercase", letterSpacing: "1px", marginBottom: "12px" }}>Department</div>
+          <select value={selectedDept} onChange={(e) => setSelectedDept(e.target.value)} style={{ width: "100%", padding: "6px", background: config.colors.card, border: `1px solid ${config.colors.border}`, borderRadius: "4px", color: config.colors.text, fontSize: "11px" }}>
             {config.departments.map((d) => (
               <option key={d.id} value={d.id}>{d.label}</option>
             ))}
           </select>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div style={{ flex: 1, padding: "20px" }}>
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))} style={{ background: "none", border: "none", color: config.colors.accent, cursor: "pointer" }}>
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <h1 style={{ fontSize: "24px", fontWeight: 700, margin: 0 }}>
-              {config.months[currentDate.getMonth()]} {currentDate.getFullYear()}
-            </h1>
-            <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))} style={{ background: "none", border: "none", color: config.colors.accent, cursor: "pointer" }}>
-              <ChevronRight className="w-5 h-5" />
-            </button>
-            <button onClick={() => setCurrentDate(new Date())} style={{ marginLeft: "16px", padding: "6px 12px", background: config.colors.dim, border: "none", borderRadius: "6px", color: config.colors.text, fontSize: "11px", fontWeight: 600, cursor: "pointer" }}>
-              Today
-            </button>
-          </div>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button onClick={() => { const ics = generateICS(shifts); download(ics, "provider-shifts.ics"); }} style={{ padding: "8px 12px", background: config.colors.dim, border: `1px solid ${config.colors.border}`, borderRadius: "6px", color: config.colors.text, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", fontSize: "12px" }}>
-              <Download className="w-4 h-4" /> Export
-            </button>
-            <label style={{ padding: "8px 12px", background: config.colors.dim, border: `1px solid ${config.colors.border}`, borderRadius: "6px", color: config.colors.text, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", fontSize: "12px" }}>
-              <Upload className="w-4 h-4" /> Import
-              <input type="file" accept=".ics,.ical" onChange={(e) => handleImportICS(e.target.files?.[0], shifts, setShifts)} style={{ display: "none" }} />
-            </label>
-            <button onClick={() => openModalForDate(new Date())} style={{ padding: "8px 12px", background: config.colors.accent, border: "none", borderRadius: "6px", color: config.colors.background, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", fontSize: "12px" }}>
-              <Plus className="w-4 h-4" /> Add Shift
-            </button>
-          </div>
-        </div>
+        {/* Calendar */}
+        <div style={{ flex: 1, padding: "16px", overflowY: "auto" }}
 
         {/* Calendar Grid */}
         <div style={{ background: config.colors.card, border: `1px solid ${config.colors.border}`, borderRadius: "12px", padding: "16px" }}>

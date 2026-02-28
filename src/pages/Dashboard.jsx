@@ -700,14 +700,21 @@ export default function Dashboard() {
     if (edge === "right") {
       setWidgetLayout(prev => ({
         ...prev,
-        [widgetId]: { ...prev[widgetId], colSpan: Math.max(1, prev[widgetId].colSpan + (delta > 0 ? 1 : -1)) }
+        [widgetId]: { ...prev[widgetId], colSpan: Math.max(1, Math.min(3, prev[widgetId].colSpan + (delta > 0 ? 1 : -1))) }
       }));
     } else if (edge === "bottom") {
       setWidgetLayout(prev => ({
         ...prev,
-        [widgetId]: { ...prev[widgetId], rowSpan: Math.max(1, prev[widgetId].rowSpan + (delta > 0 ? 1 : -1)) }
+        [widgetId]: { ...prev[widgetId], rowSpan: Math.max(1, Math.min(2, prev[widgetId].rowSpan + (delta > 0 ? 1 : -1))) }
       }));
     }
+  };
+
+  const handleWidgetMove = (widgetId, newCol, newRow) => {
+    setWidgetLayout(prev => ({
+      ...prev,
+      [widgetId]: { ...prev[widgetId], col: newCol, row: newRow }
+    }));
   };
 
   return (

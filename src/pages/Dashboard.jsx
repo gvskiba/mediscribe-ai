@@ -145,6 +145,33 @@ const pageData = {
 };
 
 function WelcomeBar({ user }) {
+  const [stats, setStats] = useState([
+    { label: "Active Patients", value: "—", color: T.teal },
+    { label: "Notes Pending", value: "—", color: T.amber },
+    { label: "Orders Queue", value: "—", color: T.purple },
+    { label: "Shift Hours", value: "—", color: T.green },
+  ]);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const notes = await base44.entities.ClinicalNote.list();
+        const draftNotes = notes?.filter(n => n.status === "draft")?.length || 0;
+        const pendingNotes = notes?.filter(n => n.status === "finalized")?.length || 0;
+
+        setStats([
+          { label: "Active Patients", value: String(draftNotes), color: T.teal },
+          { label: "Notes Pending", value: String(pendingNotes), color: T.amber },
+          { label: "Orders Queue", value: "—", color: T.purple },
+          { label: "Shift Hours", value: "4.2", color: T.green },
+        ]);
+      } catch (error) {
+        console.error("Failed to load stats:", error);
+      }
+    };
+    loadStats();
+  }, []);
+
   const provider = pageData.provider;
   const lastName = user?.full_name?.split(" ").pop() || "Reyes";
   const specialties = {

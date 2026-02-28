@@ -616,9 +616,21 @@ function NotesPanel() {
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
+  const [visibleWidgets, setVisibleWidgets] = useState(["welcome", "clock", "search", "guidelines", "news"]);
 
   useEffect(() => {
-    base44.auth.me().then(u => setUser(u)).catch(() => setUser(null));
+    const load = async () => {
+      try {
+        const u = await base44.auth.me();
+        setUser(u);
+        if (u?.preferences?.active_widgets) {
+          setVisibleWidgets(u.preferences.active_widgets);
+        }
+      } catch {
+        setUser(null);
+      }
+    };
+    load();
   }, []);
 
   return (

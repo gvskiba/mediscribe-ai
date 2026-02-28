@@ -1455,15 +1455,13 @@ Generated: ${new Date().toLocaleString()}
       )}
 
       {/* Patient Header Card */}
-      <PatientHeaderCard note={note} noteId={noteId} queryClient={queryClient} setLastSaved={setLastSaved} onNavigate={setActiveTab} />
-
-
+      {!isPhysicalExam && <PatientHeaderCard note={note} noteId={noteId} queryClient={queryClient} setLastSaved={setLastSaved} onNavigate={setActiveTab} />}
 
       {/* Tabbed Interface */}
        <motion.div
          initial={{ opacity: 0, y: 12 }}
          animate={{ opacity: 1, y: 0 }}
-         className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden pb-16"
+         className={isPhysicalExam ? "overflow-hidden" : "bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden pb-16"}
        >
          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col">
                {/* ── Bottom Navigation Bar ── */}

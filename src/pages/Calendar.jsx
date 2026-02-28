@@ -421,20 +421,20 @@ export default function CalendarPage() {
               return (
                 <div
                   key={date}
-                  onClick={() => openModalForDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), date))}
+                  onContextMenu={(e) => { e.preventDefault(); setQuickAddDate(dateStr); setShowQuickAdd(true); }}
                   style={{
                     aspectRatio: "1", background: isToday ? config.colors.accent_dim : config.colors.surface_2,
                     border: `1px solid ${isToday ? config.colors.accent : config.colors.border}`,
-                    borderRadius: "8px", padding: "8px", cursor: "pointer", display: "flex",
-                    flexDirection: "column", transition: "all 0.2s", position: "relative"
+                    borderRadius: config.layout.border_radius_px, padding: "10px", cursor: "pointer", display: "flex",
+                    flexDirection: "column", transition: "all 0.2s", position: "relative", overflow: "hidden"
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.borderColor = config.colors.accent}
                   onMouseLeave={(e) => e.currentTarget.style.borderColor = isToday ? config.colors.accent : config.colors.border}
                 >
-                  <div style={{ fontSize: "13px", fontWeight: 700, color: isToday ? config.colors.accent : config.colors.text, marginBottom: "4px" }}>
+                  <div style={{ fontSize: "14px", fontWeight: 700, color: isToday ? config.colors.accent : config.colors.text, marginBottom: "6px" }}>
                     {date}
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "2px", flex: 1, overflow: "hidden" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "3px", flex: 1, overflow: "hidden" }}>
                     {dayShifts.slice(0, config.layout.max_pills_per_day).map((shift) => {
                       const shiftType = config.shift_types.find(t => t.id === shift.type);
                       return (
@@ -442,19 +442,37 @@ export default function CalendarPage() {
                           key={shift.id}
                           onClick={(e) => { e.stopPropagation(); openModalForShift(shift); }}
                           style={{
-                            fontSize: "9px", padding: "2px 4px", background: shiftType.bg,
-                            border: `1px solid ${shiftType.color}`, borderRadius: "3px", color: shiftType.color,
-                            fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
+                            fontSize: "10px", padding: "3px 6px", background: shiftType.bg,
+                            border: `1px solid ${shiftType.color}`, borderRadius: "4px", color: shiftType.color,
+                            fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                            cursor: "pointer", transition: "all 0.15s"
                           }}
+                          onMouseEnter={(e) => e.currentTarget.style.opacity = "0.8"}
+                          onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
+                          title={shift.notes}
                         >
                           {shiftType.icon} {shift.title || shiftType.label}
                         </div>
                       );
                     })}
                     {dayShifts.length > config.layout.max_pills_per_day && (
-                      <div style={{ fontSize: "8px", color: config.colors.muted }}>+{dayShifts.length - config.layout.max_pills_per_day}</div>
+                      <div style={{ fontSize: "9px", color: config.colors.muted, fontWeight: 500 }}>
+                        +{dayShifts.length - config.layout.max_pills_per_day} more
+                      </div>
                     )}
                   </div>
+                  <button
+                    onClick={() => { setQuickAddDate(dateStr); setShowQuickAdd(true); }}
+                    style={{
+                      position: "absolute", bottom: "6px", right: "6px", width: "20px", height: "20px",
+                      background: config.colors.accent, border: "none", borderRadius: "4px", 
+                      color: config.colors.background, cursor: "pointer", fontSize: "12px", display: "flex",
+                      alignItems: "center", justifyContent: "center", opacity: "0", transition: "opacity 0.2s"
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.opacity = "1"}
+                  >
+                    +
+                  </button>
                 </div>
               );
             })}

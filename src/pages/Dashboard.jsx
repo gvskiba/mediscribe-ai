@@ -392,10 +392,14 @@ function NewsPanel() {
   const [activeTab, setActiveTab] = useState("all");
   const newsData = pageData.medicalNews;
 
+  const filteredArticles = newsData.articles.filter(article => 
+    activeTab === "all" || article.topic === activeTab
+  );
+
   return (
     <div style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: "14px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       {/* Filter Tabs */}
-      <div style={{ display: "flex", gap: "4px", padding: "8px 14px", overflowX: "auto" }}>
+      <div style={{ display: "flex", gap: "4px", padding: "8px 14px", overflowX: "auto", borderBottom: `1px solid ${T.border}` }}>
         {newsData.filterTabs.map((tab) => (
           <button
             key={tab.id}
@@ -407,8 +411,8 @@ function NewsPanel() {
               fontWeight: 500,
               cursor: "pointer",
               whiteSpace: "nowrap",
-              border: activeTab === tab.id ? `1px solid rgba(0,212,188,0.2)` : "1px solid transparent",
-              background: activeTab === tab.id ? "rgba(0,212,188,0.1)" : "transparent",
+              border: activeTab === tab.id ? `1px solid rgba(0,212,188,0.3)` : "1px solid transparent",
+              background: activeTab === tab.id ? "rgba(0,212,188,0.15)" : "transparent",
               color: activeTab === tab.id ? T.teal : T.dim,
               transition: "all 0.2s",
             }}
@@ -422,38 +426,44 @@ function NewsPanel() {
 
       {/* News Cards */}
       <div style={{ flex: 1, overflowY: "auto" }}>
-        {newsData.articles.slice(0, 3).map((article) => (
-          <div
-            key={article.id}
-            style={{
-              display: "flex",
-              gap: "12px",
-              padding: "12px 16px",
-              borderBottom: `1px solid ${T.border}`,
-              cursor: "pointer",
-              transition: "all 0.2s",
-              borderLeft: "3px solid transparent",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = `rgba(22,45,79,0.5)`; e.currentTarget.style.borderLeftColor = T.teal; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderLeftColor = "transparent"; }}
-          >
-            <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: article.topicColor, marginTop: "5px", flexShrink: 0 }} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: "13px", color: T.bright, fontWeight: 500, lineHeight: 1.4, marginBottom: "4px" }}>
-                {article.title}
-              </div>
-              <div style={{ fontSize: "11px", color: T.dim, display: "flex", gap: "8px", alignItems: "center" }}>
-                <span style={{ padding: "2px 7px", borderRadius: "4px", fontSize: "9px", fontWeight: 600, background: article.sourceBadgeColor, color: article.sourceTextColor }}>
-                  {article.source}
-                </span>
-                <span style={{ fontFamily: "JetBrains Mono, monospace" }}>{article.recency}</span>
-                {article.impact && <span style={{ color: article.impact === "high" ? T.amber : T.teal }}>
-                  {article.impact === "high" ? "★ HIGH" : "✦ FEATURED"}
-                </span>}
+        {filteredArticles.length === 0 ? (
+          <div style={{ padding: "16px", textAlign: "center", color: T.dim, fontSize: "12px" }}>
+            No articles in this category
+          </div>
+        ) : (
+          filteredArticles.map((article) => (
+            <div
+              key={article.id}
+              style={{
+                display: "flex",
+                gap: "12px",
+                padding: "12px 16px",
+                borderBottom: `1px solid ${T.border}`,
+                cursor: "pointer",
+                transition: "all 0.2s",
+                borderLeft: "3px solid transparent",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = `rgba(22,45,79,0.5)`; e.currentTarget.style.borderLeftColor = article.topicColor; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderLeftColor = "transparent"; }}
+            >
+              <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: article.topicColor, marginTop: "5px", flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: "13px", color: T.bright, fontWeight: 500, lineHeight: 1.4, marginBottom: "4px" }}>
+                  {article.title}
+                </div>
+                <div style={{ fontSize: "11px", color: T.dim, display: "flex", gap: "8px", alignItems: "center" }}>
+                  <span style={{ padding: "2px 7px", borderRadius: "4px", fontSize: "9px", fontWeight: 600, background: article.sourceBadgeColor, color: article.sourceTextColor }}>
+                    {article.source}
+                  </span>
+                  <span style={{ fontFamily: "JetBrains Mono, monospace" }}>{article.recency}</span>
+                  {article.impact && <span style={{ color: article.impact === "high" ? T.amber : T.teal }}>
+                    {article.impact === "high" ? "★ HIGH" : "✦ FEATURED"}
+                  </span>}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

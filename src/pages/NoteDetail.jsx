@@ -1635,7 +1635,7 @@ Generated: ${new Date().toLocaleString()}
                               {/* unused placeholder */}
 
                  {/* Labs & Imaging Tab */}
-                 <TabsContent value="labs_imaging" className="overflow-y-auto bg-slate-50">
+                 <TabsContent value="labs_imaging" className="overflow-y-auto" style={{ background: "#050f1e" }}>
                  <LabsImagingTab note={note} noteId={noteId} queryClient={queryClient} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
                  </TabsContent>
 

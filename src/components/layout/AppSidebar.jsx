@@ -89,7 +89,9 @@ export default function AppSidebar({ user }) {
 
       {/* User Avatar */}
       {user && (
-        <div
+        <Link
+          to={createPageUrl("UserSettings")}
+          title={user.full_name || user.email}
           style={{
             width: 36,
             height: 36,
@@ -102,12 +104,11 @@ export default function AppSidebar({ user }) {
             fontWeight: 700,
             color: "#fff",
             flexShrink: 0,
-            cursor: "default",
+            textDecoration: "none",
           }}
-          title={user.full_name || user.email}
         >
           {initials}
-        </div>
+        </Link>
       )}
     </div>
   );

@@ -205,7 +205,7 @@ function WelcomeBar({ user }) {
         </div>
       )}
       <div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
-        {provider.stats.map((stat, i) => (
+        {stats.map((stat, i) => (
           <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "8px 16px", background: T.edge, borderRadius: "10px", border: `1px solid ${T.border}` }}>
             <div style={{ fontSize: "11px", color: T.dim, textTransform: "uppercase", letterSpacing: "0.05em" }}>
               {stat.label}

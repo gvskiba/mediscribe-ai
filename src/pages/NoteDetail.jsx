@@ -1516,7 +1516,8 @@ Generated: ${new Date().toLocaleString()}
                        type="button"
                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setCustomizing(c => !c); }}
                        title={customizing ? "Done" : "Customize"}
-                       className={`p-1.5 rounded-md transition-colors cursor-pointer ${customizing ? 'bg-blue-100 text-blue-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+                       className={`p-1.5 rounded-md transition-colors cursor-pointer`}
+                      style={customizing ? { background: "rgba(0,212,188,0.15)", color: "#00d4bc" } : { color: "#4a7299" }}
                      >
                        <Settings className="w-3.5 h-3.5" />
                      </button>

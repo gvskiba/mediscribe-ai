@@ -463,11 +463,11 @@ const generateICS = (shifts) => {
     const dtend = shift.date.replace(/-/g, "") + (shift.end ? shift.end.replace(":", "") : "235959");
     const summary = `${shiftType.icon} ${shift.title || shiftType.label}`;
     const description = [shift.notes, `Department: ${shift.dept}`, `Hours: ${shift.hours}`].filter(Boolean).join("\n");
-    ics += `BEGIN:VEVENT\nUID:${shift.id}@providershiftcal\nDTSTART:${dtstart}\nDTEND:${dtend}\nSUMMARY:${summary}\nDESCRIPTION:${description}\nLOCATION:${shift.location || ""}\nEND:VEVENT\n`;
+    icsContent += `BEGIN:VEVENT\nUID:${shift.id}@providershiftcal\nDTSTART:${dtstart}\nDTEND:${dtend}\nSUMMARY:${summary}\nDESCRIPTION:${description}\nLOCATION:${shift.location || ""}\nEND:VEVENT\n`;
   });
-  ics += "END:VCALENDAR";
-  return ics;
-}
+  icsContent += "END:VCALENDAR";
+  return icsContent;
+};
 
 function download(content, filename) {
   const link = document.createElement("a");

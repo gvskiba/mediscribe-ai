@@ -74,6 +74,7 @@ const DEFAULT_SETTINGS = {
   default_template_id: null,
   auto_save: true,
   medical_specialty: "internal_medicine",
+  provider_type: "md",
   // AI behavior
   ai_verbosity: "standard",
   ai_auto_fill_ros: true,

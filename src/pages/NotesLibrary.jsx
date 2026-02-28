@@ -274,6 +274,31 @@ export default function NotesLibrary() {
             </div>
           </div>
 
+          {/* Time Filter Tabs */}
+          <div style={{ display: "flex", gap: "20px", padding: "14px 22px", borderBottom: `1px solid ${T.border}` }}>
+            {["all", "today", "week", "month"].map(tab => (
+              <button
+                key={tab}
+                onClick={() => setTimeFilter(tab)}
+                style={{
+                  fontFamily: "Geist Mono",
+                  fontSize: "9px",
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  padding: "8px 0",
+                  borderBottom: timeFilter === tab ? `2px solid ${T.teal}` : "transparent",
+                  color: timeFilter === tab ? T.teal : T.muted,
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "all 0.2s"
+                }}
+              >
+                {tab === "all" ? "All" : tab === "today" ? "Today" : tab === "week" ? "This Week" : "This Month"}
+              </button>
+            ))}
+          </div>
+
           {/* Notes List */}
           <div style={{ flex: 1, overflowY: "auto", padding: "12px 22px 24px" }}>
             {isLoading ? (

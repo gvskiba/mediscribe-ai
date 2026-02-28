@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Zap } from "lucide-react";
+import { Zap, Edit2, Check } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 
 const T = {
   navy: "#050f1e",
@@ -21,15 +22,32 @@ const T = {
 
 export default function DashboardTopBar({ user }) {
   const [time, setTime] = useState(new Date());
+  const [editMode, setEditMode] = useState(false);
+  const [editing, setEditing] = useState({});
+  const [formData, setFormData] = useState({
+    specialty: "",
+    bay_number: "",
+    shift_type: "day",
+  });
 
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (user?.clinical_settings) {
+      setFormData({
+        specialty: user.clinical_settings.medical_specialty || "",
+        bay_number: user.clinical_settings.bay_number || "",
+        shift_type: user.clinical_settings.shift_type || "day",
+      });
+    }
+  }, [user]);
+
   const hours = String(time.getHours()).padStart(2, "0");
   const minutes = String(time.getMinutes()).padStart(2, "0");
-  const lastName = user?.full_name?.split(" ").pop() || "Reyes";
+  const lastName = user?.full_name?.split(" ").pop() || "Provider";
 
   const specialties = {
     emergency_medicine: "Emergency Medicine",
@@ -39,9 +57,7 @@ export default function DashboardTopBar({ user }) {
     cardiology: "Cardiology",
   };
 
-  const specialty =
-    user?.clinical_settings?.medical_specialty &&
-    specialties[user.clinical_settings.medical_specialty];
+  const specialty = formData.specialty && specialties[formData.specialty];
 
   const stats = [
     { label: "Active Patients", value: "7", color: T.teal },
@@ -49,6 +65,23 @@ export default function DashboardTopBar({ user }) {
     { label: "Orders Queue", value: "12", color: T.purple },
     { label: "Shift Hours", value: "4.2", color: T.green },
   ];
+
+  const handleSave = async () => {
+    try {
+      await base44.auth.updateMe({
+        clinical_settings: {
+          ...user?.clinical_settings,
+          medical_specialty: formData.specialty,
+          bay_number: formData.bay_number,
+          shift_type: formData.shift_type,
+        },
+      });
+      setEditMode(false);
+      setEditing({});
+    } catch (error) {
+      console.error("Failed to save settings:", error);
+    }
+  };
 
   return (
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 40, background: T.navy }}>

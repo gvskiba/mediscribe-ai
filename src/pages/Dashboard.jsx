@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Search } from "lucide-react";
+import DashboardTopBar from "../components/dashboard/DashboardTopBar";
 
 const T = {
   navy: "#050f1e",

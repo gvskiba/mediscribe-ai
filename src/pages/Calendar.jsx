@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Download, Upload, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Download, Upload, Plus, X, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 
 const config = {
   colors: {

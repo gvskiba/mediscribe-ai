@@ -26,14 +26,14 @@ const QUICK_SEARCHES = {
 };
 
 const QUICK_DRUG_LINKS = [
-  { name: "Epocrates", url: "https://online.epocrates.com", icon: "💊" },
-  { name: "Drugs.com", url: "https://www.drugs.com", icon: "🔬" },
-  { name: "Micromedex", url: "https://www.micromedexsolutions.com", icon: "📋" },
-  { name: "FDA Drug DB", url: "https://www.accessdata.fda.gov/scripts/cder/daf/", icon: "🏛️" },
-  { name: "PubMed", url: "https://pubmed.ncbi.nlm.nih.gov", icon: "📚" },
-  { name: "Cochrane", url: "https://www.cochranelibrary.com", icon: "🔍" },
-  { name: "OpenEvidence", url: "https://www.openevidence.com", icon: "✨" },
-  { name: "UpToDate", url: "https://www.uptodate.com", icon: "📖" },
+  { name: "Epocrates", url: "https://online.epocrates.com/u/", icon: "💊" },
+  { name: "Drugs.com", url: "https://www.drugs.com/", icon: "🔬" },
+  { name: "Micromedex", url: "https://www.micromedexsolutions.com/home/dispatch", icon: "📋" },
+  { name: "FDA Drug DB", url: "https://www.fda.gov/drugs", icon: "🏛️" },
+  { name: "PubMed", url: "https://pubmed.ncbi.nlm.nih.gov/", icon: "📚" },
+  { name: "Cochrane", url: "https://www.cochranelibrary.com/", icon: "🔍" },
+  { name: "OpenEvidence", url: "https://www.openevidence.com/home", icon: "✨" },
+  { name: "UpToDate", url: "https://www.uptodate.com/home", icon: "📖" },
 ];
 
 function ResultCard({ title, content, color = "blue", expandable = false, defaultExpanded = true }) {

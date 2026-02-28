@@ -1420,11 +1420,9 @@ Generated: ${new Date().toLocaleString()}
     );
   }
 
-  const isPhysicalExam = activeTab === "physical_exam";
-
   return (
     <>
-      <div className={isPhysicalExam ? "" : "max-w-7xl mx-auto space-y-6"}>
+      <div className="min-h-screen" style={{ background: "#050f1e", fontFamily: "DM Sans, sans-serif" }}>
         {/* Back Nav */}
         <Link
         to={createPageUrl("NotesLibrary")}

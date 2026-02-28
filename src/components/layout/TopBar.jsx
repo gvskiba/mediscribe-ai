@@ -48,6 +48,11 @@ export default function TopBar() {
 
   return (
     <div style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 50,
       background: "linear-gradient(90deg, #0f172a 0%, #1e293b 100%)",
       borderBottom: "1px solid #334155",
       padding: "12px 20px",

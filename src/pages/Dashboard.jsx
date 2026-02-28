@@ -4,6 +4,10 @@ import { Search } from "lucide-react";
 import DashboardTopBar from "../components/dashboard/DashboardTopBar";
 import OpenEvidenceSearchPanel from "../components/dashboard/OpenEvidenceSearchPanel";
 import SavedGuidelinesWidget from "../components/dashboard/SavedGuidelinesWidget";
+import RecentQueriesWidget from "../components/dashboard/RecentQueriesWidget";
+import SpecialtyInsightsWidget from "../components/dashboard/SpecialtyInsightsWidget";
+import QuickCalculatorsWidget from "../components/dashboard/QuickCalculatorsWidget";
+import RecentProceduresWidget from "../components/dashboard/RecentProceduresWidget";
 
 const T = {
   navy: "#050f1e",

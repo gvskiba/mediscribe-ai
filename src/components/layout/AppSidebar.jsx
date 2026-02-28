@@ -10,6 +10,7 @@ const navItems = [
   { emoji: "🔬", label: "Guidelines", page: "Guidelines" },
   { emoji: "🫀", label: "Calculators", page: "Calculators" },
   { emoji: "💊", label: "Snippets", page: "Snippets" },
+  { emoji: "📅", label: "Calendar", page: "Calendar" },
   { emoji: "⚙️", label: "Settings", page: "UserSettings" },
 ];
 

@@ -57,6 +57,14 @@ const MEDICAL_SPECIALTIES = [
   { value: "orthopedics", label: "Orthopedics", desc: "Bones & joints" },
 ];
 
+const PROVIDER_TYPES = [
+  { value: "md", label: "MD", desc: "Medical Doctor" },
+  { value: "do", label: "DO", desc: "Doctor of Osteopathic Medicine" },
+  { value: "pa", label: "PA", desc: "Physician Assistant" },
+  { value: "np", label: "NP", desc: "Nurse Practitioner" },
+  { value: "other", label: "Other", desc: "Other provider type" },
+];
+
 const DEFAULT_SETTINGS = {
   // Clinical defaults
   ros_defaults: null,

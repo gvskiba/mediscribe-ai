@@ -148,7 +148,7 @@ export default function NotesLibrary() {
   };
 
   return (
-    <div style={{ display: "flex", background: T.bg, color: T.text, height: "100%", gap: 0 }}>
+    <div style={{ display: "flex", background: T.bg, color: T.text, gap: 0, flex: 1 }}>
       {/* Sidebar */}
       <div
         style={{
@@ -160,7 +160,8 @@ export default function NotesLibrary() {
           display: "flex",
           flexDirection: "column",
           gap: "20px",
-          flexShrink: 0
+          flexShrink: 0,
+          overflow: "hidden"
         }}
       >
           {/* Status Filter */}
@@ -235,87 +236,6 @@ export default function NotesLibrary() {
 
       {/* Main Content */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          {/* Page Header */}
-          <div
-            style={{
-              padding: "18px 22px",
-              borderBottom: `1px solid ${T.border}`,
-              background: T.bg
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "14px" }}>
-              <h1 style={{ fontFamily: "Instrument Serif", fontSize: "24px", fontStyle: "italic", color: T.text }}>
-                Clinical <span style={{ color: T.teal }}>Notes</span>
-              </h1>
-              <div style={{ display: "flex", gap: "7px" }}>
-                <button
-                  onClick={() => {}}
-                  style={{
-                    fontFamily: "Geist Mono",
-                    fontSize: "9px",
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    padding: "7px 13px",
-                    borderRadius: "6px",
-                    border: `1px solid ${T.border_2}`,
-                    color: T.muted,
-                    background: "transparent",
-                    cursor: "pointer",
-                    transition: "all 0.2s"
-                  }}
-                  onMouseEnter={(e) => { e.target.style.borderColor = T.teal; e.target.style.color = T.teal; }}
-                  onMouseLeave={(e) => { e.target.style.borderColor = T.border_2; e.target.style.color = T.muted; }}
-                >
-                  ↓ Export
-                </button>
-                <button
-                  onClick={() => setShowNewNoteModal(true)}
-                  style={{
-                    fontFamily: "Geist Mono",
-                    fontSize: "9px",
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    padding: "7px 13px",
-                    borderRadius: "6px",
-                    border: `1px solid ${T.teal}`,
-                    color: T.bg,
-                    background: T.teal,
-                    cursor: "pointer",
-                    transition: "all 0.2s"
-                  }}
-                  onMouseEnter={(e) => e.target.style.background = "#00efd8"}
-                  onMouseLeave={(e) => e.target.style.background = T.teal}
-                >
-                  + New Note
-                </button>
-              </div>
-            </div>
-
-            {/* Tab Bar */}
-            <div style={{ display: "flex", gap: "20px", borderTop: `1px solid ${T.border}`, paddingTop: "14px" }}>
-              {["all", "today", "week", "month"].map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setTimeFilter(tab)}
-                  style={{
-                    fontFamily: "Geist Mono",
-                    fontSize: "9px",
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    padding: "8px 0",
-                    borderBottom: timeFilter === tab ? `2px solid ${T.teal}` : "transparent",
-                    color: timeFilter === tab ? T.teal : T.muted,
-                    background: "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  {tab === "all" ? "All" : tab === "today" ? "Today" : tab === "week" ? "This Week" : "This Month"}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* Toolbar */}
           <div

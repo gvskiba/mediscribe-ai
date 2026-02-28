@@ -229,8 +229,42 @@ export default function DashboardTopBar({ user }) {
           )}
         </div>
 
+        {/* Center: Stats Buttons */}
+         <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: "fit-content", order: 3, flexBasis: "100%", justifyContent: "flex-start" }}>
+          {stats.map((stat) => (
+            <button
+              key={stat.label}
+              onClick={() => handleStatClick(stat.label)}
+              style={{
+                padding: "5px 11px",
+                borderRadius: "6px",
+                background: T.edge,
+                border: `1px solid ${T.border}`,
+                fontSize: "9px",
+                color: T.dim,
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.15s",
+                textAlign: "center",
+                minWidth: "70px",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = stat.color;
+                e.currentTarget.style.color = stat.color;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = T.border;
+                e.currentTarget.style.color = T.dim;
+              }}
+            >
+              <div>{stat.label}</div>
+              <div style={{ fontSize: "13px", fontWeight: 700, marginTop: "2px" }}>{stat.value}</div>
+            </button>
+          ))}
+         </div>
+
         {/* Right: Status & Actions */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: "fit-content" }}>
+         <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: "fit-content", order: 2 }}>
           <div
             style={{
               padding: "5px 11px",

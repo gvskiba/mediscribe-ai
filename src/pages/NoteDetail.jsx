@@ -1433,7 +1433,9 @@ Generated: ${new Date().toLocaleString()}
         <ArrowLeft className="w-4 h-4" /> Back to Notes
       </Link>
 
-      {/* Header Card */}
+      {/* Top Bar */}
+      <NoteTopBar note={note} noteId={noteId} queryClient={queryClient} onNext={handleNext} />
+
       {/* Guideline Review Prompt */}
       {showGuidelinePrompt && note?.linked_guidelines && (
         <GuidelineReviewPrompt

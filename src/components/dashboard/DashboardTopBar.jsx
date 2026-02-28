@@ -86,21 +86,8 @@ export default function DashboardTopBar({ user }) {
     }
   };
 
-  const shiftStart = formData.shift_type === "day" ? 6 : 18;
-  const shiftEnd = shiftStart + formData.shift_duration;
-  const shiftEndDisplay = shiftEnd > 24 ? shiftEnd - 24 : shiftEnd;
-
   return (
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 40, background: T.navy }}>
-      {/* Gradient Bar */}
-      <div
-        style={{
-          height: "4px",
-          background: "linear-gradient(90deg, #ff6b9d 0%, #c44569 25%, #f8b500 50%, #ffa500 75%, #ff6b6b 100%)",
-          width: "100%",
-        }}
-      />
-
       {/* Top Info Bar */}
       <div
         style={{
@@ -116,40 +103,6 @@ export default function DashboardTopBar({ user }) {
       >
         <div style={{ color: T.dim }}>
           <span style={{ color: T.bright }}>ClinAI</span> — Provider Dashboard
-        </div>
-      </div>
-
-      {/* Shift Time Bar */}
-      <div
-        style={{
-          height: "52px",
-          background: T.navy,
-          borderBottom: `1px solid ${T.border}`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "flex-end",
-          padding: "0 20px",
-          gap: "20px",
-        }}
-      >
-        <div style={{ textAlign: "right" }}>
-          <div
-            style={{
-              fontSize: "16px",
-              fontFamily: "JetBrains Mono, monospace",
-              color: T.teal,
-              fontWeight: 700,
-              letterSpacing: "0.05em",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-            }}
-          >
-            🕐 {String(shiftStart).padStart(2, "0")}:00 → {String(shiftEndDisplay).padStart(2, "0")}:00
-          </div>
-          <div style={{ fontSize: "11px", color: T.teal, marginTop: "2px", fontWeight: 500 }}>
-            {formData.shift_type === "day" ? "Day" : "Night"} Shift — {formData.shift_duration} hrs
-          </div>
         </div>
       </div>
 

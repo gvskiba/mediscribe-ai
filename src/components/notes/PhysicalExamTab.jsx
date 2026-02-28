@@ -3,6 +3,9 @@ import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import PhysicalExamEditor from "./PhysicalExamEditor";
 import TabPageLayout from "./TabPageLayout";
+import TabDataPreview from "./TabDataPreview";
+import ClinicalNotePreviewButton from "./ClinicalNotePreviewButton";
+import { ArrowLeft } from "lucide-react";
 
 export default function PhysicalExamTab({
   note, noteId, queryClient,

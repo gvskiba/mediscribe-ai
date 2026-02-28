@@ -176,9 +176,6 @@ function WelcomeBar({ user }) {
           </div>
         </div>
       )}
-      <div style={{ padding: "4px 12px", borderRadius: "20px", background: "rgba(255,92,108,0.1)", color: "#ff8a95", border: "1px solid rgba(255,92,108,0.2)", fontSize: "12px", fontWeight: 600 }}>
-        {provider.specialty}
-      </div>
       <div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
         {provider.stats.map((stat, i) => (
           <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "8px 16px", background: T.edge, borderRadius: "10px", border: `1px solid ${T.border}` }}>

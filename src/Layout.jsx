@@ -139,17 +139,17 @@ export default function Layout({ children, currentPageName }) {
         </div>
       }
 
-      {/* Main Content */}
-      <main className={`flex-1 ${currentPageName === 'NoteDetail' ? 'bg-[#050f1e]' : currentPageName === 'Dashboard' ? 'bg-[#050f1e]' : currentPageName === 'Home' ? '' : 'pt-32 lg:pt-20'}`}
- style={{ marginLeft: showSidebar ? 64 : 0, minHeight: '100vh' }}>
-        <div className={currentPageName === 'NoteDetail' || currentPageName === 'Dashboard' ? 'h-full' : 'p-4 md:p-8 max-w-7xl mx-auto'}>
-          {children}
-        </div>
-        {/* Draggable Notification Buttons */}
-        <DraggableNotificationButtons />
-        {/* Medical AI Chatbot */}
-        <MedicalChatbot />
-      </main>
+        {/* Main Content */}
+        <main className={`flex-1 ${currentPageName === 'NoteDetail' ? 'bg-[#050f1e]' : currentPageName === 'Dashboard' ? 'bg-[#050f1e]' : currentPageName === 'Home' ? '' : 'pt-32 lg:pt-20'}`}>
+          <div className={currentPageName === 'NoteDetail' || currentPageName === 'Dashboard' ? 'h-full' : 'p-4 md:p-8 max-w-7xl mx-auto'}>
+            {children}
+          </div>
+          {/* Draggable Notification Buttons */}
+          <DraggableNotificationButtons />
+          {/* Medical AI Chatbot */}
+          <MedicalChatbot />
+        </main>
+      </div>
     </div>);
 
 }

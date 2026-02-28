@@ -107,37 +107,37 @@ export default function Layout({ children, currentPageName }) {
 
 
 
-      {/* Mobile Nav Overlay */}
-      {mobileOpen &&
-      <div className="lg:hidden fixed inset-0 z-30 bg-black/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)}>
-          <div
-          className="absolute left-0 top-20 bottom-0 w-64 bg-white text-slate-900 p-4 space-y-2 border-r border-slate-200 overflow-y-auto"
-          onClick={(e) => e.stopPropagation()}>
-            {navSections.flatMap(section => section.items).map((item) => (
-              <Link
-                key={item.page}
-                to={createPageUrl(item.page)}
-                onClick={() => setMobileOpen(false)}
-                className={`nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium ${
-                  currentPageName === item.page ?
-                  "active text-blue-600 bg-blue-50" :
-                  "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                }`}
-              >
-                <item.icon className="w-5 h-5" />
-                {item.name}
-                </Link>
-                ))}
-                <button
-                onClick={() => base44.auth.logout()}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 w-full"
+        {/* Mobile Nav Overlay */}
+        {mobileOpen &&
+        <div className="lg:hidden fixed inset-0 z-30 bg-black/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)}>
+            <div
+            className="absolute left-0 top-20 bottom-0 w-64 bg-white text-slate-900 p-4 space-y-2 border-r border-slate-200 overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}>
+              {navSections.flatMap(section => section.items).map((item) => (
+                <Link
+                  key={item.page}
+                  to={createPageUrl(item.page)}
+                  onClick={() => setMobileOpen(false)}
+                  className={`nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium ${
+                    currentPageName === item.page ?
+                    "active text-blue-600 bg-blue-50" :
+                    "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                  }`}
                 >
-                <LogOut className="w-5 h-5" />
-                Sign Out
-                </button>
-                </div>
-        </div>
-      }
+                  <item.icon className="w-5 h-5" />
+                  {item.name}
+                  </Link>
+                  ))}
+                  <button
+                  onClick={() => base44.auth.logout()}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 w-full"
+                  >
+                  <LogOut className="w-5 h-5" />
+                  Sign Out
+                  </button>
+                  </div>
+          </div>
+        }
 
         {/* Main Content */}
         <main className={`flex-1 ${currentPageName === 'NoteDetail' ? 'bg-[#050f1e]' : currentPageName === 'Dashboard' ? 'bg-[#050f1e]' : currentPageName === 'Home' ? '' : 'pt-32 lg:pt-20'}`}>

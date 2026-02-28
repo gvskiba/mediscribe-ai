@@ -138,6 +138,7 @@ export default function DashboardTopBar({ user }) {
           justifyContent: "space-between",
           padding: "12px 20px",
           gap: "16px",
+          flexWrap: "wrap",
         }}
       >
         {/* Left: Editable Settings */}

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Search } from "lucide-react";
 import DashboardTopBar from "../components/dashboard/DashboardTopBar";
-import OpenEvidenceSearchPanel from "../components/dashboard/OpenEvidenceSearchPanel";
+import ClinicalGuidelinesPanel from "../components/dashboard/ClinicalGuidelinesPanel";
 import SavedGuidelinesWidget from "../components/dashboard/SavedGuidelinesWidget";
 import RecentQueriesWidget from "../components/dashboard/RecentQueriesWidget";
 import SpecialtyInsightsWidget from "../components/dashboard/SpecialtyInsightsWidget";
@@ -668,7 +668,7 @@ export default function Dashboard() {
         {/* Search Panel - Center Top */}
         {visibleWidgets.includes("search") && (
           <div style={{ gridColumn: 2, gridRow: visibleWidgets.includes("welcome") ? 2 : 1 }}>
-            <SearchPanel />
+            <ClinicalGuidelinesPanel />
           </div>
         )}
 

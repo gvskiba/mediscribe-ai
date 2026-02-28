@@ -1856,7 +1856,7 @@ Generated: ${new Date().toLocaleString()}
                              </TabsContent>
 
                              {/* AI Analysis Tab */}
-                             <TabsContent value="ai_analysis" className="overflow-y-auto bg-slate-50">
+                             <TabsContent value="ai_analysis" className="overflow-y-auto" style={{ background: "#050f1e" }}>
                              <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
                              <div><h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">AI Analysis</h2><p className="text-xs text-slate-400 mt-0.5">Comprehensive AI-powered analysis and insights</p></div>
                              <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-amber-500 shadow-sm overflow-hidden">

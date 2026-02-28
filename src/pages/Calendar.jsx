@@ -512,4 +512,4 @@ const handleImportICS = (file, shifts, setShifts) => {
     setShifts([...shifts, ...imported]);
   };
   reader.readAsText(file);
-}
+};

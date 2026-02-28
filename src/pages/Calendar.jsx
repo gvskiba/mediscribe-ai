@@ -52,15 +52,27 @@ const config = {
 
 function ShiftLegend() {
   return (
-    <div style={{ background: config.colors.card, border: `1px solid ${config.colors.border}`, borderRadius: "8px", padding: "12px" }}>
-      <div style={{ fontSize: "12px", fontWeight: 600, color: config.colors.text, marginBottom: "8px" }}>Shift Types</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+    <div style={{ background: config.colors.card, border: `1px solid ${config.colors.border}`, borderRadius: "8px", padding: "14px" }}>
+      <div style={{ fontSize: "13px", fontWeight: 700, color: config.colors.text, marginBottom: "10px" }}>Shift Types</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
         {config.shift_types.map((type) => (
-          <div key={type.id} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "11px" }}>
-            <span style={{ fontSize: "14px" }}>{type.icon}</span>
-            <span style={{ color: config.colors.text }}>{type.label}</span>
-            {type.hours > 0 && <span style={{ color: config.colors.muted, marginLeft: "auto" }}>{type.hours}h</span>}
-          </div>
+          <button
+            key={type.id}
+            onClick={() => {
+              const today = new Date();
+              const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+            }}
+            style={{
+              display: "flex", alignItems: "center", gap: "8px", fontSize: "11px", color: config.colors.text,
+              background: "transparent", border: "none", cursor: "pointer", padding: "4px 0", transition: "all 0.2s"
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.opacity = "0.8"}
+            onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
+          >
+            <span style={{ fontSize: "16px" }}>{type.icon}</span>
+            <span style={{ flex: 1, fontWeight: 500 }}>{type.label}</span>
+            {type.hours > 0 && <span style={{ color: config.colors.muted, fontSize: "10px" }}>{type.hours}h</span>}
+          </button>
         ))}
       </div>
     </div>

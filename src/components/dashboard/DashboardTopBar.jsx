@@ -108,7 +108,7 @@ export default function DashboardTopBar({ user }) {
   };
 
   return (
-    <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 40, background: T.navy }}>
+    <div style={{ position: "fixed", top: 0, left: 64, right: 0, zIndex: 40, background: T.navy }}>
       {/* Single Compact Top Bar */}
       <div
         style={{
@@ -117,24 +117,14 @@ export default function DashboardTopBar({ user }) {
           borderBottom: `1px solid ${T.border}`,
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent: "center",
           padding: "10px 20px",
           gap: "12px",
           flexWrap: "nowrap",
         }}
       >
-        {/* Left: User Info & Settings - Compact */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: "fit-content", flexShrink: 0 }}>
-          <div style={{ fontSize: "18px" }}>👩‍⚕️</div>
-          <div style={{ fontSize: "11px", color: T.dim, whiteSpace: "nowrap" }}>
-            <span style={{ color: T.amber, fontWeight: 600 }}>{specialty || "Set Specialty"}</span>
-            {" • "}
-            {formData.bay_number ? `Bay ${formData.bay_number}` : "Set Bay"}
-          </div>
-        </div>
-
-        {/* Stats Buttons - Compact */}
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: "fit-content", flexShrink: 0 }}>
+        {/* Stats Buttons - Centered */}
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           {stats.map((stat) => (
             <button
               key={stat.label}

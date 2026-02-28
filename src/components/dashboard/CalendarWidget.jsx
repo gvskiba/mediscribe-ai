@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,28 +12,28 @@ import { format } from "date-fns";
 
 export default function CalendarWidget() {
   const [date, setDate] = useState(new Date());
-  const [events, setEvents] = useState([
-    { id: 1, date: new Date(), title: "Team Meeting", time: "10:00 AM", type: "meeting" },
-    { id: 2, date: new Date(Date.now() + 86400000), title: "Note Review Deadline", time: "3:00 PM", type: "deadline" },
-  ]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [newEvent, setNewEvent] = useState({ title: "", time: "", type: "meeting" });
+  const [newEvent, setNewEvent] = useState({ title: "", time: "", description: "" });
 
-  const handleAddEvent = () => {
+  const { data: events = [] } = useQuery({
+    queryKey: ["calendarEvents"],
+    queryFn: () => base44.entities.CalendarEvent.list(),
+  });
+
+  const handleAddEvent = async () => {
     if (!newEvent.title) return;
-    setEvents([...events, { 
-      id: Date.now(), 
-      date: date, 
-      title: newEvent.title, 
+    await base44.entities.CalendarEvent.create({
+      title: newEvent.title,
+      date: format(date, "yyyy-MM-dd"),
       time: newEvent.time,
-      type: newEvent.type 
-    }]);
-    setNewEvent({ title: "", time: "", type: "meeting" });
+      description: newEvent.description,
+    });
+    setNewEvent({ title: "", time: "", description: "" });
     setDialogOpen(false);
   };
 
   const selectedDateEvents = events.filter(
-    event => format(event.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+    event => format(new Date(event.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
   );
 
   return (

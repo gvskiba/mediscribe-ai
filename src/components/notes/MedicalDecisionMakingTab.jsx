@@ -172,69 +172,117 @@ function RiskRing({ score = 0 }) {
 /* ── Patient Snapshot Panel ───────────────────────────────────────────────────── */
 function PatientSnapshotPanel({ note }) {
   const vitals = note.vital_signs || {};
-  const vitalItems = [
-    { label: "HR", value: vitals.heart_rate?.value ? `${vitals.heart_rate.value}` : "—", unit: "bpm", status: vitals.heart_rate?.value > 100 ? "warning" : "normal", icon: Heart },
-    { label: "BP", value: vitals.blood_pressure?.systolic ? `${vitals.blood_pressure.systolic}/${vitals.blood_pressure.diastolic}` : "—", unit: "mmHg", status: vitals.blood_pressure?.systolic > 140 ? "warning" : "normal", icon: Activity },
-    { label: "Temp", value: vitals.temperature?.value ? `${vitals.temperature.value}°` : "—", unit: vitals.temperature?.unit || "F", status: vitals.temperature?.value > 100.4 ? "warning" : "normal", icon: Thermometer },
-    { label: "SpO₂", value: vitals.oxygen_saturation?.value ? `${vitals.oxygen_saturation.value}%` : "—", unit: "", status: vitals.oxygen_saturation?.value < 95 ? "critical" : "normal", icon: Droplets },
-  ];
+
+  const bp = vitals.blood_pressure?.systolic
+    ? { value: `${vitals.blood_pressure.systolic}/${vitals.blood_pressure.diastolic}`, label: "BP", sub: "MMHG", status: vitals.blood_pressure.systolic > 140 ? "critical" : "normal" }
+    : { value: "—", label: "BP", sub: "MMHG", status: "normal" };
+
+  const hr = vitals.heart_rate?.value
+    ? { value: `${vitals.heart_rate.value}`, label: "HR", sub: "BPM", status: vitals.heart_rate.value > 100 ? "warning" : "normal" }
+    : { value: "—", label: "HR", sub: "BPM", status: "normal" };
+
+  const temp = vitals.temperature?.value
+    ? { value: `${vitals.temperature.value}°`, label: "TEMP", sub: `°${vitals.temperature.unit || "F"}`, status: vitals.temperature.value > 100.4 ? "warning" : "normal" }
+    : { value: "—", label: "TEMP", sub: "°F", status: "normal" };
+
+  const spo2 = vitals.oxygen_saturation?.value
+    ? { value: `${vitals.oxygen_saturation.value}%`, label: "SPO₂", sub: "%", status: vitals.oxygen_saturation.value < 95 ? "critical" : "normal" }
+    : { value: "—", label: "SPO₂", sub: "%", status: "normal" };
+
+  const vitalItems = [bp, hr, temp, spo2];
   const statusColor = { normal: T.bright, warning: T.amber, critical: T.red };
 
+  const genderEmoji = note.patient_gender === "female" ? "👩‍⚕️" : "👨‍⚕️";
+
   return (
-    <Panel>
-      <PanelHeader icon={Shield} iconColor={T.teal} title="Patient Snapshot" />
-      <div className="p-4 space-y-4">
-        {/* Patient info */}
-        <div>
-          <div className="text-base font-semibold" style={{ color: T.bright, fontFamily: "DM Sans, sans-serif" }}>
-            {note.patient_name || "Unknown Patient"}
-          </div>
-          <div className="text-xs mt-0.5 flex items-center gap-2" style={{ color: T.dim }}>
-            {note.patient_age && <span>{note.patient_age}y</span>}
-            {note.patient_gender && <span className="capitalize">{note.patient_gender}</span>}
-            {note.patient_id && <span style={{ fontFamily: "JetBrains Mono,monospace", color: T.muted }}>#{note.patient_id}</span>}
-          </div>
+    <div style={{
+      background: "linear-gradient(145deg, #0d1b2e 0%, #0a1628 100%)",
+      border: `1px solid ${T.border}`,
+      borderRadius: 18,
+      padding: "20px",
+      fontFamily: "DM Sans, sans-serif",
+      position: "relative",
+      overflow: "hidden",
+    }}>
+      {/* Gradient accent bar */}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${T.teal}, ${T.purple})` }} />
+
+      {/* Patient header */}
+      <div className="flex items-center gap-4 mb-4">
+        <div style={{
+          width: 60, height: 60, borderRadius: 14,
+          background: T.edge, border: `1px solid ${T.border}`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 28, flexShrink: 0,
+        }}>
+          {genderEmoji}
         </div>
-
-        {/* Chief complaint */}
-        {note.chief_complaint && (
-          <div style={{ background: T.edge, borderRadius: 10, padding: "10px 14px", border: `1px solid ${T.border}` }}>
-            <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: T.dim }}>Chief Complaint</div>
-            <p className="text-sm" style={{ color: T.text }}>{note.chief_complaint}</p>
+        <div className="flex-1 min-w-0">
+          <div className="text-xl font-bold leading-tight" style={{ color: T.bright }}>
+            {note.patient_age ? `${note.patient_age} yrs` : "Age Unknown"}
+            {note.patient_gender && (
+              <span className="ml-2 text-base font-normal capitalize" style={{ color: T.dim }}>· {note.patient_gender}</span>
+            )}
           </div>
-        )}
-
-        {/* Vitals */}
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: T.dim }}>Vitals</div>
-          <div className="grid grid-cols-4 gap-2">
-            {vitalItems.map((v) => (
-              <div key={v.label} style={{ background: T.edge, borderRadius: 8, padding: "8px 4px", textAlign: "center", border: `1px solid ${T.border}` }}>
-                <div className="text-xs font-bold" style={{ fontFamily: "JetBrains Mono,monospace", color: statusColor[v.status] || T.bright }}>{v.value}</div>
-                <div className="text-xs mt-0.5" style={{ color: T.dim, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em" }}>{v.label}</div>
-              </div>
-            ))}
-          </div>
+          {note.date_of_birth && (
+            <div className="text-sm mt-0.5" style={{ color: T.dim }}>
+              DOB: <span style={{ color: T.text }}>{note.date_of_birth}</span>
+            </div>
+          )}
+          {note.patient_id && (
+            <div className="text-sm" style={{ color: T.dim }}>
+              MRN: <span style={{ fontFamily: "JetBrains Mono,monospace", color: T.text }}>{note.patient_id}</span>
+              {note.specialty && <span style={{ color: T.dim }}> | Specialty: <span style={{ color: T.text }}>{note.specialty}</span></span>}
+            </div>
+          )}
+          {note.chief_complaint && (
+            <div className="text-xs mt-0.5" style={{ color: T.dim }}>
+              CC: <span style={{ color: T.text }}>{note.chief_complaint}</span>
+            </div>
+          )}
         </div>
-
-        {/* Diagnoses tags */}
-        {(note.diagnoses || []).length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {note.diagnoses.slice(0, 4).map((d, i) => {
-              const code = d.match(/^([A-Z0-9.]+)/)?.[1];
-              return <Tag key={i} color={i === 0 ? "teal" : i === 1 ? "purple" : "amber"}>{code || d.slice(0, 20)}</Tag>;
-            })}
-          </div>
-        )}
-
-        {/* Allergies */}
-        {(note.allergies || []).length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {note.allergies.map((a, i) => <Tag key={i} color="red">{a}</Tag>)}
-          </div>
-        )}
       </div>
-    </Panel>
+
+      {/* Tags row: allergies + conditions */}
+      {((note.allergies || []).length > 0 || (note.diagnoses || []).length > 0) && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {(note.allergies || []).map((a, i) => (
+            <span key={i} className="flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full"
+              style={{ background: "rgba(255,92,108,0.1)", color: "#ff8a95", border: "1px solid rgba(255,92,108,0.3)" }}>
+              ⚠ {a}
+            </span>
+          ))}
+          {(note.diagnoses || []).slice(0, 3).map((d, i) => {
+            const colors = [
+              { bg: "rgba(245,166,35,0.1)", color: "#f8c56d", border: "rgba(245,166,35,0.25)" },
+              { bg: "rgba(0,212,188,0.08)", color: T.teal, border: "rgba(0,212,188,0.2)" },
+              { bg: "rgba(155,109,255,0.1)", color: "#b894ff", border: "rgba(155,109,255,0.25)" },
+            ];
+            const c = colors[i % colors.length];
+            const label = d.replace(/^[A-Z0-9.]+ ?[-–]? ?/, "").slice(0, 18) || d.slice(0, 18);
+            return (
+              <span key={i} className="text-xs font-semibold px-3 py-1 rounded-full"
+                style={{ background: c.bg, color: c.color, border: `1px solid ${c.border}` }}>
+                {label}
+              </span>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Vitals grid */}
+      <div className="grid grid-cols-4 gap-2">
+        {vitalItems.map((v) => (
+          <div key={v.label} style={{ background: T.edge, borderRadius: 12, padding: "12px 8px", textAlign: "center", border: `1px solid ${T.border}` }}>
+            <div className="font-bold" style={{ fontFamily: "JetBrains Mono,monospace", fontSize: 18, lineHeight: 1, color: statusColor[v.status] }}>
+              {v.value}
+            </div>
+            <div className="mt-1 text-xs font-medium tracking-widest uppercase" style={{ color: T.dim, fontSize: 10 }}>{v.label}</div>
+            <div className="text-xs tracking-widest uppercase" style={{ color: T.muted, fontSize: 9 }}>{v.sub}</div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 

@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { Star } from "lucide-react";
+import SaveGuidelineModal from "./SaveGuidelineModal";
 
 const T = {
   navy: "#050f1e",

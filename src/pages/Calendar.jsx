@@ -377,7 +377,7 @@ export default function CalendarPage() {
       </div>
 
       {/* Main Content */}
-      <div style={{ flex: 1, padding: "20px" }}>
+      <div style={{ flex: 1, padding: "24px" }}>
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>

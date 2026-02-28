@@ -32,11 +32,9 @@ Deno.serve(async (req) => {
   }
 });
 
-async function searchOpenEvidence(query) {
+async function searchOpenEvidence(query, base44) {
   try {
     // Use LLM to search for medical guidelines with web context
-    const base44 = createClientFromRequest(new Request('https://dummy'));
-    
     const result = await base44.integrations.Core.InvokeLLM({
       prompt: `Search for clinical guidelines and evidence-based information about: "${query}"
       

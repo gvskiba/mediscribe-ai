@@ -66,6 +66,7 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
+      <TopBar />
       <style>{`
         :root {
           --primary: #2563eb;

@@ -34,33 +34,62 @@ Deno.serve(async (req) => {
 
 async function searchOpenEvidence(query) {
   try {
-    const encodedQuery = encodeURIComponent(query);
-    const searchUrl = `https://www.openevidence.com/search?q=${encodedQuery}`;
+    // Use LLM to search for medical guidelines with web context
+    const base44 = createClientFromRequest(new Request('https://dummy'));
+    
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Search for clinical guidelines and evidence-based information about: "${query}"
+      
+Return results as JSON with this structure:
+{
+  "results": [
+    {
+      "title": "Guideline title",
+      "description": "Brief description of the guideline",
+      "source": "Source name (e.g., ACCP, ATS, AHA)",
+      "url": "Link if available"
+    }
+  ]
+}
 
-    const response = await fetch(searchUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; GuidelinesBot/1.0)',
-        'Accept': 'application/json, text/html, */*',
-      },
+Provide 5-10 most relevant guidelines and clinical evidence.`,
+      add_context_from_internet: true,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          results: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                title: { type: "string" },
+                description: { type: "string" },
+                source: { type: "string" },
+                url: { type: "string" }
+              }
+            }
+          }
+        }
+      }
     });
 
-    const html = await response.text();
-    const guidelines = parseGuidelinesFromHtml(html);
+    const guidelines = result?.results || [];
 
     return Response.json({
       query,
       totalResults: guidelines.length,
       results: guidelines.slice(0, 10).map((g, i) => ({
         id: i + 1,
-        title: g.title,
-        url: g.url,
-        description: g.description,
-        source: 'OpenEvidence',
+        title: g.title || 'Untitled',
+        url: g.url || '#',
+        description: g.description || '',
+        source: g.source || 'Clinical Evidence',
       })),
     });
   } catch (error) {
+    console.error('Search error:', error);
     return Response.json({
-      error: 'Failed to query OpenEvidence',
+      error: 'Failed to search guidelines',
       message: error.message,
     }, { status: 500 });
   }

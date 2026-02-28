@@ -69,6 +69,7 @@ import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
 import OrdersQueue from './pages/OrdersQueue';
+import ShiftHours from './pages/ShiftHours';
 import __Layout from './Layout.jsx';
 
 
@@ -95,6 +96,7 @@ export const PAGES = {
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
     "OrdersQueue": OrdersQueue,
+    "ShiftHours": ShiftHours,
 }
 
 export const pagesConfig = {

@@ -571,7 +571,7 @@ export default function UserSettings() {
               <p className="text-sm font-semibold text-slate-800 mb-3">Visible Widgets</p>
               <p className="text-xs text-slate-500 mb-3">Enable/disable widgets that appear on your dashboard. Drag to reorder.</p>
               <div className="space-y-2">
-                {[{id:"welcome",l:"Welcome Bar"},{id:"clock",l:"Clock & Calendar"},{id:"search",l:"Evidence Search"},{id:"guidelines",l:"Saved Guidelines"},{id:"news",l:"Medical News"}].map((w, idx) => {
+                {[{id:"welcome",l:"Welcome Bar"},{id:"clock",l:"Clock & Calendar"},{id:"search",l:"Evidence Search"},{id:"guidelines",l:"Saved Guidelines"},{id:"news",l:"Medical News"},{id:"queries",l:"Recent Queries"},{id:"insights",l:"Specialty Insights"},{id:"calculators",l:"Quick Calculators"},{id:"procedures",l:"Recent Procedures"}].map((w, idx) => {
                   const active = (prefs.active_widgets || []).includes(w.id);
                   return (
                     <div

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Zap, Edit2, Check } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { createPageUrl } from "../../utils";
+import ActivePatientsDropdown from "./ActivePatientsDropdown";
 
 const T = {
   navy: "#050f1e",
@@ -129,38 +130,42 @@ export default function DashboardTopBar({ user }) {
         </div>
 
         {/* Stats Buttons - Centered */}
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: 1, justifyContent: "center" }}>
-          {stats.map((stat) => (
-            <button
-              key={stat.label}
-              onClick={() => handleStatClick(stat.label)}
-              style={{
-                padding: "4px 8px",
-                borderRadius: "6px",
-                background: T.edge,
-                border: `1px solid ${T.border}`,
-                fontSize: "8px",
-                color: T.dim,
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "all 0.15s",
-                textAlign: "center",
-                minWidth: "60px",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = stat.color;
-                e.currentTarget.style.color = stat.color;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = T.border;
-                e.currentTarget.style.color = T.dim;
-              }}
-            >
-              <div>{stat.label}</div>
-              <div style={{ fontSize: "11px", fontWeight: 700 }}>{stat.value}</div>
-            </button>
-          ))}
-        </div>
+         <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: 1, justifyContent: "center" }}>
+           {stats.map((stat) => 
+             stat.label === "Active Patients" ? (
+               <ActivePatientsDropdown key={stat.label} />
+             ) : (
+             <button
+               key={stat.label}
+               onClick={() => handleStatClick(stat.label)}
+               style={{
+                 padding: "4px 8px",
+                 borderRadius: "6px",
+                 background: T.edge,
+                 border: `1px solid ${T.border}`,
+                 fontSize: "8px",
+                 color: T.dim,
+                 fontWeight: 600,
+                 cursor: "pointer",
+                 transition: "all 0.15s",
+                 textAlign: "center",
+                 minWidth: "60px",
+               }}
+               onMouseEnter={(e) => {
+                 e.currentTarget.style.borderColor = stat.color;
+                 e.currentTarget.style.color = stat.color;
+               }}
+               onMouseLeave={(e) => {
+                 e.currentTarget.style.borderColor = T.border;
+                 e.currentTarget.style.color = T.dim;
+               }}
+             >
+               <div>{stat.label}</div>
+               <div style={{ fontSize: "11px", fontWeight: 700 }}>{stat.value}</div>
+             </button>
+             )
+           )}
+         </div>
 
         {/* Right: Status & Actions - Compact */}
         <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "auto", flexShrink: 0 }}>

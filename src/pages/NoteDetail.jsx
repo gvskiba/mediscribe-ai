@@ -1616,7 +1616,12 @@ Generated: ${new Date().toLocaleString()}
 
                         <div className="flex-1 overflow-hidden min-h-0">
 
-                        {/* Subjective Tab */}
+                        {/* Vital Signs Tab */}
+                        <TabsContent value="vital_signs" className="overflow-y-auto" style={{ background: "#050f1e" }}>
+                          <VitalSignsTab note={note} noteId={noteId} queryClient={queryClient} templates={templates} selectedTemplate={selectedTemplate} setSelectedTemplate={setSelectedTemplate} loadingVitalAnalysis={loadingVitalAnalysis} setLoadingVitalAnalysis={setLoadingVitalAnalysis} vitalSignsAnalysis={vitalSignsAnalysis} setVitalSignsAnalysis={setVitalSignsAnalysis} vitalSignsHistory={vitalSignsHistory} setVitalSignsHistory={setVitalSignsHistory} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
+                        </TabsContent>
+
+                           {/* Subjective Tab */}
                         <TabsContent value="patient_intake" className="overflow-y-auto" style={{ background: "#050f1e" }}>
                           <SubjectiveTab
                             note={note} noteId={noteId} queryClient={queryClient}

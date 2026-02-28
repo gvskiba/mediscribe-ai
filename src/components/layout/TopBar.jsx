@@ -1,7 +1,19 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { createPageUrl } from "../../utils";
 import { FileText, Calendar } from "lucide-react";
+
+const navItems = [
+  { emoji: "🧠", label: "Dashboard", page: "Dashboard" },
+  { emoji: "📋", label: "My Notes", page: "NotesLibrary" },
+  { emoji: "🏥", label: "Patient Dashboard", page: "PatientDashboard" },
+  { emoji: "🔬", label: "Guidelines", page: "Guidelines" },
+  { emoji: "🫀", label: "Calculators", page: "Calculators" },
+  { emoji: "💊", label: "Snippets", page: "Snippets" },
+  { emoji: "⚙️", label: "Settings", page: "UserSettings" },
+  { emoji: "📅", label: "Calendar", page: "Calendar" },
+];
 
 export default function TopBar() {
   const [user, setUser] = useState(null);

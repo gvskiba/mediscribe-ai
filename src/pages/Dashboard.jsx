@@ -281,9 +281,16 @@ function ClockCalPanel() {
               {d}
             </div>
           ))}
-          {calendarDays.map((day, idx) => (
+          {calendarDays.map((day, idx) => {
+            const dateStr = day ? format(new Date(currentYear, currentMonth, day), "yyyy-MM-dd") : null;
+            return (
             <div
               key={idx}
+              onClick={() => {
+                if (day) {
+                  window.location.href = `${createPageUrl("Calendar")}?date=${dateStr}`;
+                }
+              }}
               style={{
                 width: "32px",
                 height: "32px",
@@ -299,10 +306,17 @@ function ClockCalPanel() {
                 color: day === today ? T.navy : T.text,
                 fontWeight: day === today ? 700 : 400,
               }}
+              onMouseEnter={(e) => {
+                if (day) e.currentTarget.style.borderColor = T.teal;
+              }}
+              onMouseLeave={(e) => {
+                if (day) e.currentTarget.style.borderColor = "transparent";
+              }}
             >
               {day}
             </div>
-          ))}
+          );
+          })}
         </div>
       </div>
 

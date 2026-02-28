@@ -98,6 +98,8 @@ import TreatmentPlanTab from "../components/notes/TreatmentPlanTab";
 import FinalizeTab from "../components/notes/FinalizeTab";
 import PatientEducationTab from "../components/notes/PatientEducationTab";
 import NoteTopBar from "../components/notes/NoteTopBar";
+import NotePatientVitalsBar from "../components/notes/NotePatientVitalsBar";
+import NoteSOAPNav from "../components/notes/NoteSOAPNav";
 
 const TAB_GROUPS = [
   {

@@ -67,42 +67,43 @@ export default function Layout({ children, currentPageName }) {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <TopBar />
-      <style>{`
-        :root {
-          --primary: #2563eb;
-          --primary-dark: #1d4ed8;
-          --primary-light: #3b82f6;
-          --accent: #0891b2;
-          --bg-main: #ffffff;
-          --bg-secondary: #f8fafc;
-          --sidebar-bg: linear-gradient(165deg, #f8fafc 0%, #ffffff 100%);
-          --card-bg: #ffffff;
-          --border-subtle: rgba(15, 23, 42, 0.08);
-        }
-        body { 
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-          background: var(--bg-main);
-          color: #1f2937;
-        }
-        .nav-link { 
-          transition: all 0.2s ease;
-        }
-        .nav-link:hover { 
-          background: rgba(59, 130, 246, 0.08);
-          color: #2563eb;
-        }
-        .nav-link.active { 
-          background: rgba(59, 130, 246, 0.1);
-          color: #2563eb;
-          font-weight: 600;
-          border-bottom: 2px solid #2563eb;
-        }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
+      <div className="flex flex-1">
+        <style>{`
+          :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #3b82f6;
+            --accent: #0891b2;
+            --bg-main: #ffffff;
+            --bg-secondary: #f8fafc;
+            --sidebar-bg: linear-gradient(165deg, #f8fafc 0%, #ffffff 100%);
+            --card-bg: #ffffff;
+            --border-subtle: rgba(15, 23, 42, 0.08);
+          }
+          body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-main);
+            color: #1f2937;
+          }
+          .nav-link { 
+            transition: all 0.2s ease;
+          }
+          .nav-link:hover { 
+            background: rgba(59, 130, 246, 0.08);
+            color: #2563eb;
+          }
+          .nav-link.active { 
+            background: rgba(59, 130, 246, 0.1);
+            color: #2563eb;
+            font-weight: 600;
+            border-bottom: 2px solid #2563eb;
+          }
+          .scrollbar-hide::-webkit-scrollbar { display: none; }
+          .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        `}</style>
 
-      {/* App Sidebar */}
-      {showSidebar && <AppSidebar user={user} />}
+        {/* App Sidebar */}
+        {showSidebar && <AppSidebar user={user} />}
 
 
 

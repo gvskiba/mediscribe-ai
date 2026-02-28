@@ -41,8 +41,7 @@ export default function Home() {
               <span className="text-2xl font-bold text-[#2d2d4e]">med</span><span className="text-2xl font-bold text-[#7c3aed]">nu.</span>
             </div>
           </div>
-          {!loading && (
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" style={{ minWidth: 120, visibility: loading ? "hidden" : "visible" }}>
               {user ? (
                 <>
                   <Button

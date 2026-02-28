@@ -148,15 +148,11 @@ export default function NotesLibrary() {
   };
 
   return (
-    <div style={{ background: T.bg, color: T.text, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+    <div style={{ display: "flex", background: T.bg, color: T.text, height: "100%", gap: 0 }}>
       {/* Sidebar */}
       <div
         style={{
-          position: "fixed",
-          left: "64px",
-          top: "52px",
           width: "200px",
-          height: "calc(100vh - 52px)",
           background: T.surface,
           borderRight: `1px solid ${T.border}`,
           overflowY: "auto",
@@ -164,7 +160,7 @@ export default function NotesLibrary() {
           display: "flex",
           flexDirection: "column",
           gap: "20px",
-          zIndex: 40
+          flexShrink: 0
         }}
       >
           {/* Status Filter */}
@@ -238,7 +234,7 @@ export default function NotesLibrary() {
         </div>
 
       {/* Main Content */}
-      <div style={{ marginLeft: "264px", marginTop: "0px", flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           {/* Page Header */}
           <div
             style={{

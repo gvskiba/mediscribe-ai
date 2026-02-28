@@ -282,7 +282,10 @@ export default function OpenEvidenceSearchPanel() {
                     background: T.edge,
                     padding: "14px",
                     borderRadius: "6px",
-                    cursor: "pointer",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    gap: "12px",
                     transition: "all 0.2s",
                   }}
                   onMouseEnter={(e) => {
@@ -293,39 +296,66 @@ export default function OpenEvidenceSearchPanel() {
                     e.currentTarget.style.boxShadow = "none";
                     e.currentTarget.style.background = T.edge;
                   }}
-                  onClick={() => window.open(result.url, "_blank")}
                 >
-                  <h4
-                    style={{
-                      fontSize: "13px",
-                      color: T.bright,
-                      fontWeight: 600,
-                      marginBottom: "6px",
-                    }}
-                  >
-                    {result.title}
-                  </h4>
-                  {result.description && (
-                    <p
+                  <div style={{ flex: 1, cursor: "pointer" }} onClick={() => window.open(result.url, "_blank")}>
+                    <h4
                       style={{
-                        fontSize: "12px",
-                        color: T.text,
-                        marginBottom: "8px",
-                        lineHeight: 1.5,
+                        fontSize: "13px",
+                        color: T.bright,
+                        fontWeight: 600,
+                        marginBottom: "6px",
                       }}
                     >
-                      {result.description}
-                    </p>
-                  )}
-                  <span
+                      {result.title}
+                    </h4>
+                    {result.description && (
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: T.text,
+                          marginBottom: "8px",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {result.description}
+                      </p>
+                    )}
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        color: T.teal,
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      {result.source}
+                    </span>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedGuideline(result);
+                    }}
                     style={{
-                      fontSize: "10px",
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
                       color: T.teal,
-                      fontFamily: "monospace",
+                      padding: "4px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all 0.2s",
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.opacity = "0.7";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.opacity = "1";
                     }}
                   >
-                    {result.source}
-                  </span>
+                    <Star className="w-5 h-5" fill="currentColor" />
+                  </button>
                 </div>
               ))}
             </div>

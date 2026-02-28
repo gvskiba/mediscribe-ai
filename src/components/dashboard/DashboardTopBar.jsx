@@ -122,14 +122,80 @@ export default function DashboardTopBar({ user }) {
         {/* Left: Welcome Message */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
           <div style={{ fontSize: "28px" }}>👩‍⚕️</div>
-          <div>
+          <div style={{ flex: 1 }}>
             <div style={{ fontFamily: "Playfair Display, serif", fontSize: "20px", color: T.bright, fontWeight: 500 }}>
-              Good morning, <span style={{ color: T.teal }}>Reyes</span>
+              Good morning, <span style={{ color: T.teal }}>{lastName}</span>
             </div>
-            <div style={{ fontSize: "11px", color: T.dim }}>
-              <span style={{ color: T.amber }}>Emergency Medicine</span> • undefined • Day Shift • Emergency Department — Bay 7
+            <div style={{ fontSize: "11px", color: T.dim, display: "flex", alignItems: "center", gap: "4px" }}>
+              {editMode && editing.specialty ? (
+                <select
+                  value={formData.specialty}
+                  onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+                  style={{ padding: "2px 6px", borderRadius: "4px", background: T.edge, border: `1px solid ${T.border}`, color: T.text, fontSize: "11px" }}
+                >
+                  <option value="">Select Specialty</option>
+                  {Object.entries(specialties).map(([key, val]) => (
+                    <option key={key} value={key}>{val}</option>
+                  ))}
+                </select>
+              ) : (
+                <span style={{ color: T.amber, cursor: "pointer" }} onClick={() => { setEditMode(true); setEditing({ ...editing, specialty: true }); }}>
+                  {specialty || "Set Specialty"}
+                </span>
+              )}
+              {" • "}
+              {editMode && editing.bay ? (
+                <input
+                  type="text"
+                  value={formData.bay_number}
+                  onChange={(e) => setFormData({ ...formData, bay_number: e.target.value })}
+                  placeholder="Bay #"
+                  style={{ padding: "2px 6px", borderRadius: "4px", background: T.edge, border: `1px solid ${T.border}`, color: T.text, fontSize: "11px", width: "50px" }}
+                />
+              ) : (
+                <span style={{ cursor: "pointer" }} onClick={() => { setEditMode(true); setEditing({ ...editing, bay: true }); }}>
+                  {formData.bay_number ? `Bay ${formData.bay_number}` : "Set Bay"}
+                </span>
+              )}
+              {" • "}
+              {editMode && editing.shift ? (
+                <select
+                  value={formData.shift_type}
+                  onChange={(e) => setFormData({ ...formData, shift_type: e.target.value })}
+                  style={{ padding: "2px 6px", borderRadius: "4px", background: T.edge, border: `1px solid ${T.border}`, color: T.text, fontSize: "11px" }}
+                >
+                  <option value="day">Day Shift</option>
+                  <option value="night">Night Shift</option>
+                </select>
+              ) : (
+                <span style={{ cursor: "pointer" }} onClick={() => { setEditMode(true); setEditing({ ...editing, shift: true }); }}>
+                  {formData.shift_type === "day" ? "Day Shift" : "Night Shift"}
+                </span>
+              )}
+              {" • Emergency Department"}
             </div>
           </div>
+          {editMode && (
+            <button
+              onClick={handleSave}
+              style={{
+                padding: "5px 10px",
+                borderRadius: "6px",
+                background: T.teal,
+                border: "none",
+                color: T.navy,
+                fontSize: "10px",
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              <Check style={{ width: "12px", height: "12px" }} />
+              Save
+            </button>
+          )}
         </div>
 
         {/* Center: Stats Pills */}

@@ -455,8 +455,8 @@ export default function CalendarPage() {
   );
 }
 
-function generateICS(shifts) {
-  let ics = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Provider Shift Calendar//EN\nCALSCALE:GREGORIAN\n`;
+const generateICS = (shifts) => {
+  let icsContent = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Provider Shift Calendar//EN\nCALSCALE:GREGORIAN\n`;
   shifts.forEach((shift) => {
     const shiftType = config.shift_types.find(t => t.id === shift.type);
     const dtstart = shift.date.replace(/-/g, "") + (shift.start ? shift.start.replace(":", "") : "000000");

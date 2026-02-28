@@ -661,7 +661,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div style={{ background: T.navy, minHeight: "100vh", width: "100%", fontFamily: "DM Sans, sans-serif" }}>
+    <div style={{ background: T.navy, height: "100vh", width: "100%", fontFamily: "DM Sans, sans-serif", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       <style>{`
         @keyframes clockColon {
           0%, 100% { opacity: 1; }
@@ -670,7 +670,7 @@ export default function Dashboard() {
       `}</style>
 
       {/* Grid Layout */}
-      <div style={{ padding: "18px 20px", paddingTop: "18px", display: "grid", gridTemplateColumns: "280px 1fr 300px", gridTemplateRows: "auto auto 1fr", gap: "14px", alignContent: "start", maxWidth: "100%" }}>
+      <div style={{ padding: "12px 16px", display: "grid", gridTemplateColumns: "240px 1fr 280px", gridTemplateRows: "1fr 1fr", gap: "10px", flex: 1, overflow: "hidden", maxWidth: "100%" }}>
         {/* Welcome Bar - Full Width */}
          {false && visibleWidgets.includes("welcome") && (
           <div style={{ gridColumn: "1 / -1" }}>
@@ -678,43 +678,38 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Clock/Cal - Left */}
+        {/* Clock/Cal - Top Left */}
         {visibleWidgets.includes("clock") && (
-          <div style={{ gridColumn: 1, gridRow: visibleWidgets.includes("welcome") ? "2 / 4" : "1 / 3" }}>
+          <div style={{ gridColumn: 1, gridRow: 1, overflow: "hidden" }}>
             <ClockCalPanel />
           </div>
         )}
 
-        {/* Search Panel - Center Top */}
+        {/* Search Panel - Top Center */}
         {visibleWidgets.includes("search") && (
-          <div style={{ gridColumn: 2, gridRow: visibleWidgets.includes("welcome") ? 2 : 1 }}>
+          <div style={{ gridColumn: 2, gridRow: 1, overflow: "hidden" }}>
             <ClinicalGuidelinesPanel />
           </div>
         )}
 
-        {/* News Panel - Center Bottom */}
-        {visibleWidgets.includes("news") && (
-          <div style={{ gridColumn: 2, gridRow: visibleWidgets.includes("welcome") ? 3 : 2 }}>
-            <NewsPanel />
-          </div>
-        )}
-
-        {/* Saved Guidelines Widget - Right */}
+        {/* Saved Guidelines Widget - Top Right */}
         {visibleWidgets.includes("guidelines") && (
-          <div style={{ gridColumn: 3, gridRow: visibleWidgets.includes("welcome") ? "2 / 4" : "1 / 3" }}>
+          <div style={{ gridColumn: 3, gridRow: 1, overflow: "hidden" }}>
             <SavedGuidelinesWidget />
           </div>
         )}
 
-        {/* Additional Widgets - Below Main Grid */}
-        {(visibleWidgets.includes("queries") || visibleWidgets.includes("insights") || visibleWidgets.includes("calculators") || visibleWidgets.includes("procedures")) && (
-          <div style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "14px" }}>
-            {visibleWidgets.includes("queries") && <RecentQueriesWidget />}
-            {visibleWidgets.includes("insights") && <SpecialtyInsightsWidget />}
-            {visibleWidgets.includes("calculators") && <QuickCalculatorsWidget />}
-            {visibleWidgets.includes("procedures") && <RecentProceduresWidget />}
+        {/* News Panel - Bottom Left */}
+        {visibleWidgets.includes("news") && (
+          <div style={{ gridColumn: 1, gridRow: 2, overflow: "hidden" }}>
+            <NewsPanel />
           </div>
         )}
+
+        {/* Notes Panel - Bottom Center & Right */}
+        <div style={{ gridColumn: "2 / -1", gridRow: 2, overflow: "hidden" }}>
+          <NotesPanel />
+        </div>
       </div>
     </div>
   );

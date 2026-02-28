@@ -198,31 +198,6 @@ export default function DashboardTopBar({ user }) {
           )}
         </div>
 
-        {/* Center: Stats Pills */}
-        <div style={{ display: "flex", gap: "12px", flex: 1, justifyContent: "center", minWidth: "fit-content" }}>
-          {stats.map((stat, i) => (
-            <div
-              key={i}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                padding: "8px 16px",
-                background: T.edge,
-                borderRadius: "8px",
-                border: `1px solid ${T.border}`,
-              }}
-            >
-              <div style={{ fontSize: "16px", color: stat.color, fontWeight: 700 }}>
-                {stat.value}
-              </div>
-              <div style={{ fontSize: "9px", color: T.dim, textTransform: "uppercase", letterSpacing: "0.05em", marginTop: "2px" }}>
-                {stat.label}
-              </div>
-            </div>
-          ))}
-        </div>
-
         {/* Right: Status & Actions */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: "fit-content" }}>
           <div

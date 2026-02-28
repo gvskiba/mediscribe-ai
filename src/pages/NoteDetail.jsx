@@ -1545,10 +1545,11 @@ Generated: ${new Date().toLocaleString()}
                            key={group.id}
                            onClick={() => firstTabId && setActiveTab(firstTabId)}
                            className={`flex flex-col items-center gap-0.5 px-4 py-2 border-t-2 transition-all whitespace-nowrap flex-shrink-0 ${
-                             hasActive
-                               ? `${activeBorder[group.color]} ${activeText[group.color]}`
-                               : 'border-transparent text-slate-500 hover:text-slate-700'
-                           }`}
+                               hasActive
+                                 ? `${activeBorder[group.color]} ${activeText[group.color]}`
+                                 : 'border-transparent'
+                             }`}
+                           style={!hasActive ? { color: "#4a7299" } : {}}
                          >
                            <div className={`w-2 h-2 rounded-full ${accentDot[group.color]}`} />
                            <span className={`text-xs font-semibold`}>{group.label}</span>

@@ -88,14 +88,23 @@ export default function DashboardTopBar({ user }) {
 
   return (
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 40, background: T.navy }}>
-      {/* Gradient Top Bar */}
+      {/* Top Info Bar */}
       <div
         style={{
-          height: "4px",
-          background: "linear-gradient(90deg, #ff006e, #ff5c00, #f5a623, #2ecc71, #00d4bc)",
-          borderBottom: "none",
+          height: "22px",
+          background: `linear-gradient(90deg, ${T.navy}, ${T.slate})`,
+          borderBottom: `1px solid ${T.border}`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 20px",
+          fontSize: "11px",
         }}
-      />
+      >
+        <div style={{ color: T.dim }}>
+          <span style={{ color: T.bright }}>ClinAI</span> — Provider Dashboard
+        </div>
+      </div>
 
       {/* Welcome Bar with Stats */}
       <div
@@ -110,55 +119,209 @@ export default function DashboardTopBar({ user }) {
           gap: "16px",
         }}
       >
-        {/* Left: Greeting & Role */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0, flex: 0 }}>
-          <div style={{ fontSize: "18px" }}>👨‍⚕️</div>
-          <div>
-            <div style={{ fontSize: "13px", color: T.bright, fontWeight: 500 }}>
-              Good morning, <span style={{ color: T.teal }}>{lastName}</span>
-            </div>
-            <div style={{ fontSize: "10px", color: T.dim }}>
-              {specialty || "Set Specialty"} • Emergency Department
+        {/* Left: Editable Settings */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
+          <div style={{ fontSize: "28px" }}>👩‍⚕️</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: "11px", color: T.dim, display: "flex", alignItems: "center", gap: "4px" }}>
+              {editMode && editing.specialty ? (
+                <select
+                  value={formData.specialty}
+                  onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+                  style={{ padding: "2px 6px", borderRadius: "4px", background: T.edge, border: `1px solid ${T.border}`, color: T.text, fontSize: "11px" }}
+                >
+                  <option value="">Select Specialty</option>
+                  {Object.entries(specialties).map(([key, val]) => (
+                    <option key={key} value={key}>{val}</option>
+                  ))}
+                </select>
+              ) : (
+                <span style={{ color: T.amber, cursor: "pointer" }} onClick={() => { setEditMode(true); setEditing({ ...editing, specialty: true }); }}>
+                  {specialty || "Set Specialty"}
+                </span>
+              )}
+              {" • "}
+              {editMode && editing.bay ? (
+                <input
+                  type="text"
+                  value={formData.bay_number}
+                  onChange={(e) => setFormData({ ...formData, bay_number: e.target.value })}
+                  placeholder="Bay #"
+                  style={{ padding: "2px 6px", borderRadius: "4px", background: T.edge, border: `1px solid ${T.border}`, color: T.text, fontSize: "11px", width: "50px" }}
+                />
+              ) : (
+                <span style={{ cursor: "pointer" }} onClick={() => { setEditMode(true); setEditing({ ...editing, bay: true }); }}>
+                  {formData.bay_number ? `Bay ${formData.bay_number}` : "Set Bay"}
+                </span>
+              )}
+              {" • "}
+              {editMode && editing.shift ? (
+               <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+                 <select
+                   value={formData.shift_type}
+                   onChange={(e) => setFormData({ ...formData, shift_type: e.target.value })}
+                   style={{ padding: "2px 6px", borderRadius: "4px", background: T.edge, border: `1px solid ${T.border}`, color: T.text, fontSize: "11px" }}
+                 >
+                   <option value="day">Day Shift</option>
+                   <option value="night">Night Shift</option>
+                 </select>
+                 <span>•</span>
+                 <input
+                   type="number"
+                   min="1"
+                   max="24"
+                   value={formData.shift_duration}
+                   onChange={(e) => setFormData({ ...formData, shift_duration: parseInt(e.target.value) || 12 })}
+                   style={{ padding: "2px 6px", borderRadius: "4px", background: T.edge, border: `1px solid ${T.border}`, color: T.text, fontSize: "11px", width: "40px" }}
+                 />
+                 <span>hrs</span>
+               </div>
+              ) : (
+               <span style={{ cursor: "pointer" }} onClick={() => { setEditMode(true); setEditing({ ...editing, shift: true }); }}>
+                 {formData.shift_type === "day" ? "Day Shift" : "Night Shift"} • {formData.shift_duration}hrs
+               </span>
+              )}
+              {" • Emergency Department"}
             </div>
           </div>
+          {editMode && (
+            <button
+              onClick={handleSave}
+              style={{
+                padding: "5px 10px",
+                borderRadius: "6px",
+                background: T.teal,
+                border: "none",
+                color: T.navy,
+                fontSize: "10px",
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              <Check style={{ width: "12px", height: "12px" }} />
+              Save
+            </button>
+          )}
         </div>
 
-        {/* Middle: Stats */}
-        <div style={{ display: "flex", alignItems: "center", gap: "20px", flex: 1, justifyContent: "center" }}>
-         {stats.map((stat, idx) => (
-           <div key={idx} style={{ textAlign: "center" }}>
-             <div style={{ fontSize: "12px", fontWeight: 600, color: stat.color }}>
-               {stat.value}
-             </div>
-             <div style={{ fontSize: "9px", color: T.dim, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-               {stat.label}
-             </div>
-           </div>
-         ))}
-        </div>
+        {/* Right: Status & Actions */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: "fit-content" }}>
+          <div
+            style={{
+              padding: "5px 11px",
+              borderRadius: "6px",
+              background: "rgba(255,92,108,0.1)",
+              border: "1px solid rgba(255,92,108,0.2)",
+              fontSize: "10px",
+              color: "#ff8a95",
+              fontWeight: 600,
+              whiteSpace: "nowrap",
+            }}
+          >
+            🏥 Emergency Medicine
+          </div>
 
-        {/* Right: Shift Time */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: "fit-content", flex: 0 }}>
-         <div
-           style={{
-             padding: "8px 14px",
-             borderRadius: "8px",
-             background: "transparent",
-             border: `2px solid ${T.teal}`,
-             fontSize: "12px",
-             color: T.teal,
-             fontFamily: "JetBrains Mono, monospace",
-             fontWeight: 600,
-             whiteSpace: "nowrap",
-           }}
-         >
-           🕐 {hours}:{minutes} → 18:00
-         </div>
-         <div style={{ fontSize: "11px", color: T.text }}>
-           Day Shift — {formData.shift_duration} hrs
-         </div>
+          <div
+            style={{
+              padding: "5px 11px",
+              borderRadius: "6px",
+              background: T.edge,
+              border: `1px solid ${T.border}`,
+              fontSize: "10px",
+              color: T.teal,
+              fontFamily: "JetBrains Mono, monospace",
+              fontWeight: 600,
+              whiteSpace: "nowrap",
+            }}
+          >
+            🕐 {hours}:{minutes} — 18:00
+          </div>
+
+          <div
+            style={{
+              padding: "5px 11px",
+              borderRadius: "6px",
+              background: T.edge,
+              border: `1px solid ${T.border}`,
+              fontSize: "9px",
+              color: T.dim,
+              fontFamily: "JetBrains Mono, monospace",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Day Shift — 23hrs
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              padding: "5px 11px",
+              borderRadius: "6px",
+              background: "rgba(46,204,113,0.1)",
+              border: "1px solid rgba(46,204,113,0.2)",
+              fontSize: "10px",
+              color: T.green,
+              fontWeight: 600,
+              whiteSpace: "nowrap",
+            }}
+          >
+            ● AI ACTIVE
+          </div>
+
+          <button
+            style={{
+              padding: "5px 11px",
+              borderRadius: "6px",
+              background: "transparent",
+              border: `1px solid ${T.border}`,
+              color: T.text,
+              fontSize: "10px",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.2s",
+              whiteSpace: "nowrap",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = T.teal;
+              e.currentTarget.style.color = T.teal;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = T.border;
+              e.currentTarget.style.color = T.text;
+            }}
+          >
+            Preferences
+          </button>
+
+          <button
+            style={{
+              padding: "5px 12px",
+              borderRadius: "6px",
+              background: `linear-gradient(135deg, ${T.teal}, ${T.teal2})`,
+              border: "none",
+              color: T.navy,
+              fontSize: "10px",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.2s",
+              whiteSpace: "nowrap",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = "0.9";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = "1";
+            }}
+          >
+            + New Note
+          </button>
         </div>
-        </div>
-        </div>
-        );
-        }
+      </div>
+    </div>
+  );
+}

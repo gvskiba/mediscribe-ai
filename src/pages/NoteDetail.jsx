@@ -1420,9 +1420,11 @@ Generated: ${new Date().toLocaleString()}
     );
   }
 
+  const isPhysicalExam = activeTab === "physical_exam";
+
   return (
     <>
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className={isPhysicalExam ? "" : "max-w-7xl mx-auto space-y-6"}>
         {/* Back Nav */}
         <Link
         to={createPageUrl("NotesLibrary")}

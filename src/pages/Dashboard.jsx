@@ -324,11 +324,44 @@ function ClockCalPanel() {
 function SearchPanel() {
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const [searchResults, setSearchResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedResult, setSelectedResult] = useState(null);
+  const [modalContent, setModalContent] = useState("");
+  const [contentLoading, setContentLoading] = useState(false);
 
-  const handleSearch = (q) => {
-    if (q.trim()) {
-      const searchUrl = `https://www.openevidence.com/search?q=${encodeURIComponent(q)}`;
-      window.open(searchUrl, "_blank");
+  const handleSearch = async (q) => {
+    if (!q.trim()) return;
+    
+    try {
+      setLoading(true);
+      setSearchResults([]);
+      const { data } = await base44.functions.invoke('openEvidenceSearch', { q });
+      setSearchResults(data.results || []);
+    } catch (error) {
+      console.error("Search failed:", error);
+      setSearchResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResultClick = async (result) => {
+    if (!result.url) return;
+    try {
+      setContentLoading(true);
+      const { data } = await base44.functions.invoke('openEvidenceSearch', {
+        action: 'fetch',
+        url: result.url,
+      });
+      setModalContent(data.content || "No content available");
+      setSelectedResult(result);
+    } catch (error) {
+      console.error("Failed to fetch content:", error);
+      setModalContent("Failed to load content");
+      setSelectedResult(result);
+    } finally {
+      setContentLoading(false);
     }
   };
 

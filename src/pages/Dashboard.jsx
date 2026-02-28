@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Search } from "lucide-react";
 import { createPageUrl } from "../utils";
-import DashboardTopBar from "../components/dashboard/DashboardTopBar";
+
 import ClinicalGuidelinesPanel from "../components/dashboard/ClinicalGuidelinesPanel";
 import SavedGuidelinesWidget from "../components/dashboard/SavedGuidelinesWidget";
 import RecentQueriesWidget from "../components/dashboard/RecentQueriesWidget";
@@ -669,11 +669,10 @@ export default function Dashboard() {
         }
       `}</style>
 
-      {/* Top Bar */}
-      <DashboardTopBar user={user} />
+
 
       {/* Grid Layout */}
-      <div style={{ padding: "18px 20px", paddingTop: "120px", paddingLeft: "100px", display: "grid", gridTemplateColumns: "280px 1fr 300px", gridTemplateRows: "auto auto 1fr", gap: "14px", alignContent: "start", maxWidth: "100%" }}>
+      <div style={{ padding: "18px 20px", paddingTop: "20px", display: "grid", gridTemplateColumns: "200px 1fr 300px", gridTemplateRows: "auto auto 1fr", gap: "14px", alignContent: "start", maxWidth: "100%" }}>
         {/* Welcome Bar - Full Width */}
          {false && visibleWidgets.includes("welcome") && (
           <div style={{ gridColumn: "1 / -1" }}>

@@ -142,7 +142,7 @@ export default function DashboardTopBar({ user }) {
         }}
       >
         {/* Left: Editable Settings */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0, order: 1, flex: 1 }}>
           <div style={{ fontSize: "28px" }}>👩‍⚕️</div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: "11px", color: T.dim, display: "flex", alignItems: "center", gap: "4px" }}>

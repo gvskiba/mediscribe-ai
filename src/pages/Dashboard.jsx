@@ -676,10 +676,6 @@ export default function Dashboard() {
     guidelines: { col: 3, row: 1, colSpan: 1, rowSpan: 1 },
     news: { col: 2, row: 2, colSpan: 1, rowSpan: 1 },
     notes: { col: 3, row: 2, colSpan: 1, rowSpan: 1 },
-    noteStatus: { col: 1, row: 3, colSpan: 1, rowSpan: 1 },
-    pendingSignatures: { col: 2, row: 3, colSpan: 1, rowSpan: 1 },
-    notesActivity: { col: 3, row: 3, colSpan: 1, rowSpan: 1 },
-    quickNoteCreator: { col: 1, row: 4, colSpan: 1, rowSpan: 1 },
   });
   const [resizing, setResizing] = useState(null);
 
@@ -689,7 +685,7 @@ export default function Dashboard() {
         const u = await base44.auth.me();
         setUser(u);
         if (u?.dashboard_layout) {
-          setWidgetLayout(prev => ({ ...prev, ...u.dashboard_layout }));
+          setWidgetLayout(u.dashboard_layout);
         }
       } catch {
         setUser(null);
@@ -714,10 +710,6 @@ export default function Dashboard() {
       guidelines: { col: 3, row: 1, colSpan: 1, rowSpan: 1 },
       news: { col: 2, row: 2, colSpan: 1, rowSpan: 1 },
       notes: { col: 3, row: 2, colSpan: 1, rowSpan: 1 },
-      noteStatus: { col: 1, row: 3, colSpan: 1, rowSpan: 1 },
-      pendingSignatures: { col: 2, row: 3, colSpan: 1, rowSpan: 1 },
-      notesActivity: { col: 3, row: 3, colSpan: 1, rowSpan: 1 },
-      quickNoteCreator: { col: 1, row: 4, colSpan: 1, rowSpan: 1 },
     });
   };
 

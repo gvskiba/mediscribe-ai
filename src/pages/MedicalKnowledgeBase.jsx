@@ -108,13 +108,14 @@ Return comprehensive drug information including:
     }
 
     if (tab === "guidelines") {
-      return `You are a clinical evidence expert. Search major medical society guidelines and evidence databases for: "${q}"
+      return `You are a clinical evidence expert. Your primary source is OpenEvidence (openevidence.com), which aggregates clinical evidence and guidelines.
 
-Search:
-- ACEP, AAFP, ACC/AHA, ADA, IDSA, ATS/CHEST, AAN, AAP, ACOG, AGA, NICE, ESC guidelines
-- OpenEvidence (openevidence.com)
-- UpToDate
-- Cochrane Library
+Search OpenEvidence for: "${q}"
+
+Analyze and summarize the evidence found on OpenEvidence, including:
+- ACEP, AAFP, ACC/AHA, ADA, IDSA, and other major society guidelines
+- Best practice recommendations from the OpenEvidence platform
+- Current clinical consensus
 
 Return structured guideline information:
 - summary: Executive summary of key recommendations (3-4 sentences)

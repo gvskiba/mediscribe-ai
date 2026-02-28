@@ -33,6 +33,7 @@ export default function OpenEvidenceSearchPanel() {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [selectedGuideline, setSelectedGuideline] = useState(null);
 
   const handleSearch = async (searchQuery) => {
     if (!searchQuery.trim()) return;

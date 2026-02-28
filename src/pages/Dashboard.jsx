@@ -391,9 +391,95 @@ function SearchPanel() {
 
 function NewsPanel() {
   const [activeTab, setActiveTab] = useState("all");
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
   const newsData = pageData.medicalNews;
 
-  const filteredArticles = newsData.articles.filter(article => 
+  useEffect(() => {
+    const fetchNews = async () => {
+      try {
+        setLoading(true);
+        const result = await base44.integrations.Core.InvokeLLM({
+          prompt: `Search medical journals, publications, and clinical websites for the latest news and studies in these categories: Resuscitation, Toxicology, Trauma, Cardiology, and Airway. Focus on recent publications from NEJM, Annals of Emergency Medicine, JAMA EM, and other major medical journals published in the last 2 weeks.
+
+Return structured data as JSON:
+{
+  "articles": [
+    {
+      "title": "Article title",
+      "source": "Journal abbreviation (e.g., NEJM, Annals EM, JAMA EM)",
+      "topic": "resuscitation|toxicology|trauma|cardiology|airway",
+      "recency": "Xh ago or Xd ago",
+      "impact": "high|featured",
+      "summary": "One sentence summary"
+    }
+  ]
+}
+
+Return 5-8 articles total.`,
+          add_context_from_internet: true,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              articles: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    title: { type: "string" },
+                    source: { type: "string" },
+                    topic: { type: "string" },
+                    recency: { type: "string" },
+                    impact: { type: "string" },
+                    summary: { type: "string" }
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        if (result && result.articles && Array.isArray(result.articles)) {
+          const topicColorMap = {
+            resuscitation: T.teal,
+            toxicology: T.purple,
+            trauma: T.red,
+            cardiology: T.amber,
+            airway: T.rose,
+          };
+          const sourceBadgeMap = {
+            "NEJM": { bg: "rgba(255,92,108,0.15)", text: "#ff8a95" },
+            "Annals EM": { bg: "rgba(155,109,255,0.15)", text: "#b894ff" },
+            "JAMA EM": { bg: "rgba(0,212,188,0.12)", text: T.teal },
+            "Circulation": { bg: "rgba(244,114,182,0.15)", text: "#f472b6" },
+            "CHEST": { bg: "rgba(59,130,246,0.15)", text: "#60a5fa" },
+            "Lancet": { bg: "rgba(34,197,94,0.15)", text: "#22c55e" },
+          };
+
+          const processed = result.articles.map((article, idx) => ({
+            id: `n${idx}`,
+            title: article.title,
+            source: article.source,
+            sourceBadgeColor: sourceBadgeMap[article.source]?.bg || "rgba(42,77,114,0.15)",
+            sourceTextColor: sourceBadgeMap[article.source]?.text || T.dim,
+            topic: article.topic,
+            topicColor: topicColorMap[article.topic] || T.teal,
+            recency: article.recency,
+            impact: article.impact,
+          }));
+          setArticles(processed);
+        }
+      } catch (error) {
+        console.error("Failed to fetch news:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNews();
+  }, []);
+
+  const filteredArticles = articles.filter(article => 
     activeTab === "all" || article.topic === activeTab
   );
 
@@ -427,7 +513,9 @@ function NewsPanel() {
 
       {/* News Cards */}
       <div style={{ flex: 1, overflowY: "auto" }}>
-        {filteredArticles.length === 0 ? (
+        {loading ? (
+          <div style={{ padding: "16px", textAlign: "center", color: T.dim, fontSize: "12px" }}>Loading medical news...</div>
+        ) : filteredArticles.length === 0 ? (
           <div style={{ padding: "16px", textAlign: "center", color: T.dim, fontSize: "12px" }}>
             No articles in this category
           </div>

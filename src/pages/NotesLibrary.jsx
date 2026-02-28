@@ -148,7 +148,7 @@ export default function NotesLibrary() {
   };
 
   return (
-    <div style={{ display: "flex", background: T.bg, color: T.text, height: "100%", width: "100%" }}>
+    <div style={{ display: "flex", background: T.bg, color: T.text, height: "100%", gap: 0 }}>
       {/* Sidebar */}
       <div
         style={{
@@ -163,78 +163,159 @@ export default function NotesLibrary() {
           flexShrink: 0
         }}
       >
-        {/* Status Filter */}
-        <div>
-          <div style={{ fontFamily: "Geist Mono", fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase", color: T.dim, marginBottom: "10px" }}>
-            Status
+          {/* Status Filter */}
+          <div>
+            <div style={{ fontFamily: "Geist Mono", fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase", color: T.dim, marginBottom: "10px" }}>
+              Status
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              {[
+                { id: "all", label: "All Notes", icon: "📋", key: "all" },
+                { id: "draft", label: "Drafts", icon: "✏️", key: "draft" },
+                { id: "finalized", label: "Signed", icon: "✅", key: "finalized" },
+                { id: "amended", label: "Amended", icon: "🔄", key: "amended" }
+              ].map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => setStatusFilter(item.id)}
+                  style={{
+                    padding: "7px 10px",
+                    borderRadius: "6px",
+                    fontSize: "12px",
+                    border: statusFilter === item.id ? `1px solid ${T.teal}` : "transparent",
+                    background: statusFilter === item.id ? T.teal_dim : "transparent",
+                    color: statusFilter === item.id ? T.teal : T.muted,
+                    cursor: "pointer",
+                    textAlign: "left",
+                    transition: "all 0.2s",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center"
+                  }}
+                >
+                  <span>{item.icon} {item.label}</span>
+                  <span style={{ fontSize: "10px", fontFamily: "Geist Mono", color: statusFilter === item.id ? T.teal : T.dim }}>
+                    {statCounts[item.key]}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            {[
-              { id: "all", label: "All Notes", icon: "📋", key: "all" },
-              { id: "draft", label: "Drafts", icon: "✏️", key: "draft" },
-              { id: "finalized", label: "Signed", icon: "✅", key: "finalized" },
-              { id: "amended", label: "Amended", icon: "🔄", key: "amended" }
-            ].map(item => (
-              <button
-                key={item.id}
-                onClick={() => setStatusFilter(item.id)}
-                style={{
-                  padding: "7px 10px",
-                  borderRadius: "6px",
-                  fontSize: "12px",
-                  border: statusFilter === item.id ? `1px solid ${T.teal}` : "transparent",
-                  background: statusFilter === item.id ? T.teal_dim : "transparent",
-                  color: statusFilter === item.id ? T.teal : T.muted,
-                  cursor: "pointer",
-                  textAlign: "left",
-                  transition: "all 0.2s",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center"
-                }}
-              >
-                <span>{item.icon} {item.label}</span>
-                <span style={{ fontSize: "10px", fontFamily: "Geist Mono", color: statusFilter === item.id ? T.teal : T.dim }}>
-                  {statCounts[item.key]}
-                </span>
-              </button>
-            ))}
+
+          <div style={{ height: "1px", background: T.border, margin: "8px 0" }} />
+
+          {/* Type Filter */}
+          <div>
+            <div style={{ fontFamily: "Geist Mono", fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase", color: T.dim, marginBottom: "10px" }}>
+              Note Type
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              {[{ id: "all", label: "All Types", icon: "📄" }, ...NOTE_TYPES].map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => setTypeFilter(item.id)}
+                  style={{
+                    padding: "7px 10px",
+                    borderRadius: "6px",
+                    fontSize: "12px",
+                    border: typeFilter === item.id ? `1px solid ${T.teal}` : "transparent",
+                    background: typeFilter === item.id ? T.teal_dim : "transparent",
+                    color: typeFilter === item.id ? T.teal : T.muted,
+                    cursor: "pointer",
+                    textAlign: "left",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  {item.icon} {item.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-
-        <div style={{ height: "1px", background: T.border, margin: "8px 0" }} />
-
-        {/* Type Filter */}
-        <div>
-          <div style={{ fontFamily: "Geist Mono", fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase", color: T.dim, marginBottom: "10px" }}>
-            Note Type
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            {[{ id: "all", label: "All Types", icon: "📄" }, ...NOTE_TYPES].map(item => (
-              <button
-                key={item.id}
-                onClick={() => setTypeFilter(item.id)}
-                style={{
-                  padding: "7px 10px",
-                  borderRadius: "6px",
-                  fontSize: "12px",
-                  border: typeFilter === item.id ? `1px solid ${T.teal}` : "transparent",
-                  background: typeFilter === item.id ? T.teal_dim : "transparent",
-                  color: typeFilter === item.id ? T.teal : T.muted,
-                  cursor: "pointer",
-                  textAlign: "left",
-                  transition: "all 0.2s"
-                }}
-              >
-                {item.icon} {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
 
       {/* Main Content */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          {/* Page Header */}
+          <div
+            style={{
+              padding: "18px 22px",
+              borderBottom: `1px solid ${T.border}`,
+              background: T.bg
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "14px" }}>
+              <h1 style={{ fontFamily: "Instrument Serif", fontSize: "24px", fontStyle: "italic", color: T.text }}>
+                Clinical <span style={{ color: T.teal }}>Notes</span>
+              </h1>
+              <div style={{ display: "flex", gap: "7px" }}>
+                <button
+                  onClick={() => {}}
+                  style={{
+                    fontFamily: "Geist Mono",
+                    fontSize: "9px",
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    padding: "7px 13px",
+                    borderRadius: "6px",
+                    border: `1px solid ${T.border_2}`,
+                    color: T.muted,
+                    background: "transparent",
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
+                  onMouseEnter={(e) => { e.target.style.borderColor = T.teal; e.target.style.color = T.teal; }}
+                  onMouseLeave={(e) => { e.target.style.borderColor = T.border_2; e.target.style.color = T.muted; }}
+                >
+                  ↓ Export
+                </button>
+                <button
+                  onClick={() => setShowNewNoteModal(true)}
+                  style={{
+                    fontFamily: "Geist Mono",
+                    fontSize: "9px",
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    padding: "7px 13px",
+                    borderRadius: "6px",
+                    border: `1px solid ${T.teal}`,
+                    color: T.bg,
+                    background: T.teal,
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
+                  onMouseEnter={(e) => e.target.style.background = "#00efd8"}
+                  onMouseLeave={(e) => e.target.style.background = T.teal}
+                >
+                  + New Note
+                </button>
+              </div>
+            </div>
+
+            {/* Tab Bar */}
+            <div style={{ display: "flex", gap: "20px", borderTop: `1px solid ${T.border}`, paddingTop: "14px" }}>
+              {["all", "today", "week", "month"].map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setTimeFilter(tab)}
+                  style={{
+                    fontFamily: "Geist Mono",
+                    fontSize: "9px",
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    padding: "8px 0",
+                    borderBottom: timeFilter === tab ? `2px solid ${T.teal}` : "transparent",
+                    color: timeFilter === tab ? T.teal : T.muted,
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  {tab === "all" ? "All" : tab === "today" ? "Today" : tab === "week" ? "This Week" : "This Month"}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Toolbar */}
           <div

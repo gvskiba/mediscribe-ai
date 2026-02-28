@@ -1489,10 +1489,11 @@ Generated: ${new Date().toLocaleString()}
                              key={tab.id}
                              value={tab.id}
                              className={`flex-shrink-0 px-3 py-1 text-xs font-medium rounded-md border transition-all whitespace-nowrap ${
-                               isActive
-                                 ? `${activeTabBg[activeGroup.color]} border-transparent shadow-sm`
-                                 : `text-slate-600 border-transparent hover:bg-white hover:text-slate-900 hover:border-slate-200 bg-transparent`
-                             }`}
+                                 isActive
+                                   ? `${activeTabBg[activeGroup.color]} border-transparent shadow-sm`
+                                   : `border-transparent bg-transparent`
+                               }`}
+                             style={!isActive ? { color: "#4a7299" } : {}}
                            >
                              {tab.label}
                            </TabsTrigger>

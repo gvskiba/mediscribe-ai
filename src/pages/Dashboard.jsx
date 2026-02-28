@@ -596,7 +596,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div style={{ background: T.navy, minHeight: "100vh", width: "100%", fontFamily: "DM Sans, sans-serif", padding: "18px 20px" }}>
+    <div style={{ background: T.navy, minHeight: "100vh", width: "100%", fontFamily: "DM Sans, sans-serif" }}>
       <style>{`
         @keyframes clockColon {
           0%, 100% { opacity: 1; }
@@ -604,8 +604,11 @@ export default function Dashboard() {
         }
       `}</style>
 
+      {/* Top Bar */}
+      <DashboardTopBar user={user} />
+
       {/* Grid Layout */}
-      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr 300px", gridTemplateRows: "auto auto 1fr", gap: "14px", alignContent: "start", maxWidth: "100%" }}>
+      <div style={{ padding: "18px 20px", paddingTop: "90px", display: "grid", gridTemplateColumns: "280px 1fr 300px", gridTemplateRows: "auto auto 1fr", gap: "14px", alignContent: "start", maxWidth: "100%" }}>
         {/* Welcome Bar - Full Width */}
         <div style={{ gridColumn: "1 / -1" }}>
           <WelcomeBar user={user} />

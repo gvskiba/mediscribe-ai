@@ -42,6 +42,7 @@ export default function DashboardTopBar({ user }) {
         specialty: user.clinical_settings.medical_specialty || "",
         bay_number: user.clinical_settings.bay_number || "",
         shift_type: user.clinical_settings.shift_type || "day",
+        shift_duration: user.clinical_settings.shift_duration || 12,
       });
     }
   }, [user]);

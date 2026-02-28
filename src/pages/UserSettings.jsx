@@ -142,6 +142,8 @@ export default function UserSettings() {
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState("clinical_defaults");
   const [templates, setTemplates] = useState([]);
+  const [editProfile, setEditProfile] = useState(false);
+  const [profileData, setProfileData] = useState({ first_name: "", last_name: "", provider_type: "md", specialty: "" });
 
   useEffect(() => {
     const load = async () => {

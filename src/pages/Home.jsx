@@ -33,6 +33,47 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50 to-white">
+      {/* Header */}
+      <header className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-200 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center">
+              <span className="text-2xl font-bold text-[#2d2d4e]">med</span><span className="text-2xl font-bold text-[#7c3aed]">nu.</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2" style={{ minWidth: 120, visibility: loading ? "hidden" : "visible" }}>
+              {user ? (
+                <>
+                  <Button
+                    onClick={() => window.location.href = createPageUrl('Dashboard')}
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    Dashboard
+                  </Button>
+                  <Button
+                    onClick={handleLogout}
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={() => base44.auth.redirectToLogin()}
+                  className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                >
+                  Sign In
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+      </header>
+
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-32">
         <div className="text-center space-y-8">

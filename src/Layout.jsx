@@ -17,7 +17,6 @@ import GlobalSearchBar from "./components/search/GlobalSearchBar";
 import RecentNotesDropdown from "./components/notes/RecentNotesDropdown";
 import NotificationButtons from "./components/layout/NotificationButtons";
 import AppSidebar from "./components/layout/AppSidebar";
-import TopBar from "./components/layout/TopBar";
 
 import { Settings } from "lucide-react";
 import ReturnToNoteButton from "./components/notes/ReturnToNoteButton";
@@ -66,7 +65,6 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <TopBar />
       <style>{`
         :root {
           --primary: #2563eb;
@@ -104,7 +102,102 @@ export default function Layout({ children, currentPageName }) {
       {/* App Sidebar */}
       {showSidebar && <AppSidebar user={user} />}
 
+      {/* Desktop Header */}
+      <header className={`hidden lg:block fixed top-0 right-0 bg-white border-b border-slate-200 z-40 ${currentPageName === 'Home' || currentPageName === 'NoteDetail' || currentPageName === 'Dashboard' ? '!hidden' : ''}`} style={{ left: showSidebar ? 64 : 0, background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)' }}>
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between gap-6">
+            {/* Logo */}
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-200">
+                <Stethoscope className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-base font-bold tracking-tight text-slate-900">MedNu. AI</h1>
+                <p className="text-xs text-slate-600">Clinical AI Assistant</p>
+              </div>
+            </div>
 
+            {/* Search Bar */}
+            <div className="flex-1 max-w-md">
+              <GlobalSearchBar />
+            </div>
+
+            {/* Navigation Links */}
+            <nav className="flex items-center gap-1">
+              {navSections.flatMap(section => section.items).map((item) => (
+                <Link
+                  key={item.page}
+                  to={createPageUrl(item.page)}
+                  className={`nav-link group flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    currentPageName === item.page ?
+                    "active text-blue-600 bg-blue-50" :
+                    "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 whitespace-nowrap">{item.name}</span>
+                </Link>
+              ))}
+            </nav>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <ReturnToNoteButton currentPage={currentPageName} />
+              <RecentNotesDropdown />
+              <button
+                onClick={async () => {
+                  const newNote = await base44.entities.ClinicalNote.create({
+                    raw_note: "",
+                    patient_name: "New Patient",
+                    status: "draft"
+                  });
+                  window.location.href = createPageUrl(`NoteDetail?id=${newNote.id}`);
+                }}
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg px-4 py-2 font-semibold text-sm transition-all shadow-sm flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                New Note
+              </button>
+              <button
+                onClick={() => base44.auth.logout()}
+                className="text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg p-2 transition-all"
+                title="Sign Out"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile Header */}
+      <div className={`lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-slate-200 text-slate-900 px-4 py-3 z-40 space-y-3 ${currentPageName === 'Home' || currentPageName === 'NoteDetail' || currentPageName === 'Dashboard' ? '!hidden' : ''}`} style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)' }}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-200">
+              <Stethoscope className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-bold text-sm truncate">MedNu. AI</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={async () => {
+                const newNote = await base44.entities.ClinicalNote.create({
+                  raw_note: "",
+                  patient_name: "New Patient",
+                  status: "draft"
+                });
+                window.location.href = createPageUrl(`NoteDetail?id=${newNote.id}`);
+              }}
+              className="bg-blue-600 hover:bg-blue-700 rounded-lg p-2 transition-all shadow-sm text-white">
+              <FileText className="w-4 h-4" />
+            </button>
+            <button onClick={() => setMobileOpen(!mobileOpen)} className="hover:bg-slate-100 rounded-lg p-1 transition-colors">
+              {mobileOpen ? <XCircle className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+        <GlobalSearchBar />
+      </div>
 
       {/* Mobile Nav Overlay */}
       {mobileOpen &&

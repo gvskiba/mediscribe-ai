@@ -58,18 +58,18 @@ import NewNote from './pages/NewNote';
 import NoteDetail from './pages/NoteDetail';
 import NoteTemplates from './pages/NoteTemplates';
 import NotesLibrary from './pages/NotesLibrary';
-import OrdersQueue from './pages/OrdersQueue';
 import PatientDashboard from './pages/PatientDashboard';
 import PatientHistory from './pages/PatientHistory';
 import SavedGuidelines from './pages/SavedGuidelines';
 import Search from './pages/Search';
-import ShiftHours from './pages/ShiftHours';
 import SmartTemplates from './pages/SmartTemplates';
 import Snippets from './pages/Snippets';
 import TemplateEditor from './pages/TemplateEditor';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
+import OrdersQueue from './pages/OrdersQueue';
+import ShiftHours from './pages/ShiftHours';
 import Calendar from './pages/Calendar';
 import __Layout from './Layout.jsx';
 
@@ -86,18 +86,18 @@ export const PAGES = {
     "NoteDetail": NoteDetail,
     "NoteTemplates": NoteTemplates,
     "NotesLibrary": NotesLibrary,
-    "OrdersQueue": OrdersQueue,
     "PatientDashboard": PatientDashboard,
     "PatientHistory": PatientHistory,
     "SavedGuidelines": SavedGuidelines,
     "Search": Search,
-    "ShiftHours": ShiftHours,
     "SmartTemplates": SmartTemplates,
     "Snippets": Snippets,
     "TemplateEditor": TemplateEditor,
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
+    "OrdersQueue": OrdersQueue,
+    "ShiftHours": ShiftHours,
     "Calendar": Calendar,
 }
 

@@ -11,6 +11,7 @@ const navItems = [
   { emoji: "🫀", label: "Calculators", page: "Calculators" },
   { emoji: "💊", label: "Snippets", page: "Snippets" },
   { emoji: "⚙️", label: "Settings", page: "UserSettings" },
+  { emoji: "📅", label: "Calendar", page: "Calendar" },
 ];
 
 export default function AppSidebar({ user }) {

@@ -326,9 +326,9 @@ export default function CalendarPage() {
   const todayDate = today.getDate();
 
   return (
-    <div style={{ background: config.colors.background, width: "100%", height: "calc(100vh - 88px)", marginTop: "88px", marginLeft: "80px", color: config.colors.text, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div style={{ background: config.colors.background, width: "100vw", height: "100vh", color: config.colors.text, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       {/* Compact Header */}
-      <div style={{ height: "0px", background: config.colors.surface, borderBottom: `1px solid ${config.colors.border}`, padding: "0 20px", display: "none", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+      <div style={{ height: "52px", background: config.colors.surface, borderBottom: `1px solid ${config.colors.border}`, padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <div style={{ fontSize: "16px", fontWeight: 700 }}>🩺 Provider Shift Calendar</div>
         </div>

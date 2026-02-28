@@ -408,7 +408,7 @@ export default function CalendarPage() {
         </div>
 
         {/* Calendar Grid */}
-        <div style={{ background: config.colors.card, border: `1px solid ${config.colors.border}`, borderRadius: config.layout.border_radius_px, padding: "20px" }}>
+        <div style={{ background: config.colors.card, border: `1px solid ${config.colors.border}`, borderRadius: config.layout.border_radius_px, padding: "20px", display: "flex", flexDirection: "column", overflow: "hidden" }}>
           {/* Day headers */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "10px", marginBottom: "16px" }}>
             {config.days_of_week.map((day) => (

@@ -685,6 +685,16 @@ export default function Dashboard() {
             <SavedGuidelinesWidget />
           </div>
         )}
+
+        {/* Additional Widgets - Below Main Grid */}
+        {(visibleWidgets.includes("queries") || visibleWidgets.includes("insights") || visibleWidgets.includes("calculators") || visibleWidgets.includes("procedures")) && (
+          <div style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "14px" }}>
+            {visibleWidgets.includes("queries") && <RecentQueriesWidget />}
+            {visibleWidgets.includes("insights") && <SpecialtyInsightsWidget />}
+            {visibleWidgets.includes("calculators") && <QuickCalculatorsWidget />}
+            {visibleWidgets.includes("procedures") && <RecentProceduresWidget />}
+          </div>
+        )}
       </div>
     </div>
   );

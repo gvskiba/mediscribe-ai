@@ -288,12 +288,28 @@ export default function CalendarPage() {
               upcomingEvents.map((event) => (
                 <div
                   key={event.id}
+                  onClick={() => {
+                    setSelectedDate(event.date);
+                    setEditingEvent(event);
+                    setFormData({ title: event.title, time: event.time, description: event.description });
+                    setShowEventModal(true);
+                  }}
                   style={{
                     padding: "12px",
                     background: T.edge,
                     border: `1px solid ${T.border}`,
                     borderRadius: "8px",
                     position: "relative",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = T.teal;
+                    e.currentTarget.style.background = T.border;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = T.border;
+                    e.currentTarget.style.background = T.edge;
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
@@ -317,90 +333,27 @@ export default function CalendarPage() {
                       {event.description && (
                         <div style={{ fontSize: "10px", color: T.dim }}>{event.description}</div>
                       )}
-                      {/* Quick Export Links */}
-                      <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-                        <a
-                          href={generateGoogleCalendarURL(event)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            fontSize: "9px",
-                            padding: "3px 6px",
-                            background: T.border,
-                            color: T.text,
-                            borderRadius: "4px",
-                            textDecoration: "none",
-                            transition: "all 0.2s",
-                            cursor: "pointer",
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.background = T.teal)}
-                          onMouseLeave={(e) => (e.currentTarget.style.background = T.border)}
-                        >
-                          Google
-                        </a>
-                        <button
-                          onClick={() => {
-                            const link = document.createElement("a");
-                            link.href = generateAppleCalendarURL(event);
-                            link.click();
-                          }}
-                          style={{
-                            fontSize: "9px",
-                            padding: "3px 6px",
-                            background: T.border,
-                            color: T.text,
-                            borderRadius: "4px",
-                            border: "none",
-                            cursor: "pointer",
-                            transition: "all 0.2s",
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.background = T.teal)}
-                          onMouseLeave={(e) => (e.currentTarget.style.background = T.border)}
-                        >
-                          Apple
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedDate(event.date);
-                            setEditingEvent(event);
-                            setFormData({ title: event.title, time: event.time, description: event.description });
-                            setShowEventModal(true);
-                          }}
-                          style={{
-                            fontSize: "9px",
-                            padding: "3px 6px",
-                            background: T.border,
-                            color: T.text,
-                            borderRadius: "4px",
-                            border: "none",
-                            cursor: "pointer",
-                            transition: "all 0.2s",
-                            marginLeft: "auto",
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.background = T.amber)}
-                          onMouseLeave={(e) => (e.currentTarget.style.background = T.border)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteEvent(event.id)}
-                          style={{
-                            fontSize: "9px",
-                            padding: "3px 6px",
-                            background: T.border,
-                            color: T.text,
-                            borderRadius: "4px",
-                            border: "none",
-                            cursor: "pointer",
-                            transition: "all 0.2s",
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.background = T.red)}
-                          onMouseLeave={(e) => (e.currentTarget.style.background = T.border)}
-                        >
-                          Delete
-                        </button>
-                      </div>
                     </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteEvent(event.id);
+                      }}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        color: T.red,
+                        cursor: "pointer",
+                        padding: "4px",
+                        transition: "all 0.2s",
+                        fontSize: "16px",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.8")}
+                      onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+                      title="Delete event"
+                    >
+                      ×
+                    </button>
                   </div>
                 </div>
               ))

@@ -41,21 +41,22 @@ export default function OpenEvidenceSearchPanel() {
 
     try {
       const response = await base44.functions.invoke("openEvidenceSearch", {
-        action: "search",
-        query: searchQuery,
+        q: searchQuery,
       });
 
       const data = response.data;
       if (data && data.results) {
         setResults(
           data.results.map((r, idx) => ({
-            id: idx,
+            id: r.id || idx,
             title: r.title || "Untitled",
             description: r.description || "",
             source: r.source || "OpenEvidence",
             url: r.url || "#",
           }))
         );
+      } else {
+        setResults([]);
       }
     } catch (error) {
       console.error("Search failed:", error);

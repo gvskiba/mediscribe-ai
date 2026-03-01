@@ -147,8 +147,6 @@ export default function Layout({ children, currentPageName }) {
         <div className={currentPageName === 'NoteDetail' || currentPageName === 'Dashboard' || currentPageName === 'Calendar' || currentPageName === 'NotesLibrary' ? 'h-full w-full p-0' : 'p-4 md:p-8 max-w-7xl mx-auto'}>
           {children}
         </div>
-        {/* Draggable Notification Buttons */}
-        <DraggableNotificationButtons />
         {/* Medical AI Chatbot */}
         <MedicalChatbot />
       </main>

@@ -57,7 +57,7 @@ export default function ClinicalNotePreview({ note, selectedNoteType, selectedTe
   const completionPct = Math.round((requiredSections / sections.length) * 100);
 
   return (
-    <div className="flex flex-col h-full bg-[#050f1e] rounded-lg border border-[#1e3a5f] overflow-hidden">
+    <div className="flex flex-col h-full bg-[#050f1e] rounded-lg border border-[#1e3a5f] overflow-hidden" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       {/* Header */}
       <div className="sticky top-0 px-4 py-3 border-b border-[#1e3a5f] bg-[#0b1d35] z-10">
         <div className="flex items-center justify-between">
@@ -85,7 +85,7 @@ export default function ClinicalNotePreview({ note, selectedNoteType, selectedTe
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ overflowY: "auto" }}>
         {!selectedNoteType || !selectedTemplate ? (
           <div className="h-full flex flex-col items-center justify-center space-y-6">
             <div className="text-6xl">✒️</div>

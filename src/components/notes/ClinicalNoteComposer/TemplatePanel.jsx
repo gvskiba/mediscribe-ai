@@ -23,7 +23,7 @@ export default function TemplatePanel({ selectedNoteType, onSelect }) {
   );
 
   return (
-    <div className="rounded-lg border border-[#1e3a5f] bg-[#0e2340] p-3 flex flex-col h-full">
+    <div className="rounded-lg border border-[#1e3a5f] bg-[#0e2340] p-3 flex flex-col flex-1 overflow-hidden" style={{ minHeight: 0 }}>
       <h3 className="text-xs font-semibold text-[#e8f4ff] mb-2">🗂️ Templates</h3>
       
       <div className="space-y-2 mb-3">
@@ -48,7 +48,7 @@ export default function TemplatePanel({ selectedNoteType, onSelect }) {
         </label>
       </div>
 
-      <div className="space-y-1 overflow-y-auto flex-1">
+      <div className="space-y-1 overflow-y-auto flex-1" style={{ overflowY: "auto" }}>
         {filtered.length === 0 ? (
           <p className="text-xs text-[#2a4d72] text-center py-4">No templates found</p>
         ) : (

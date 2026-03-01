@@ -340,9 +340,7 @@ export default function PatientDashboard() {
         </div>
       )}
 
-      {/* Main Content Grid */}
-      <div style={{ flex: 1, overflow: "hidden", padding: "11px 16px", display: "flex", flexDirection: "column" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "290px 1fr 272px", gap: "11px", flex: 1, overflow: "hidden" }}>
+
           {/* Left: Vitals + Diagnoses */}
           <div style={{ display: "flex", flexDirection: "column", gap: "11px", overflow: "auto" }}>
             {/* Vitals Panel */}

@@ -40,7 +40,9 @@ export default function AppSidebar({ user }) {
       }}
     >
       {/* Logo */}
-      <div
+      <Link
+        to={createPageUrl("AppSettings")}
+        title="App Settings"
         style={{
           width: 48,
           height: 40,
@@ -52,13 +54,17 @@ export default function AppSidebar({ user }) {
           marginBottom: 20,
           flexShrink: 0,
           boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          cursor: "pointer",
+          textDecoration: "none",
+          transition: "all 0.15s",
         }}
-        title="MedNu. AI"
+        onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 12px rgba(109,40,217,0.3)"; }}
+        onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)"; }}
       >
         <span style={{ fontSize: 14, fontWeight: 800, color: "#1e1b4b", letterSpacing: "-0.5px" }}>
           medn<span style={{ color: "#6d28d9" }}>u.</span>
         </span>
-      </div>
+      </Link>
 
       {/* Nav Items */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flex: 1 }}>

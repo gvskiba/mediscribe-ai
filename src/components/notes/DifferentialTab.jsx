@@ -493,8 +493,15 @@ Return ONLY valid JSON with this structure:
           }
         }
       });
-      setAiInitialSuggestions(result.initial_differential || []);
-      setAiFinalSuggestions(result.final_diagnoses || null);
+      const initial = result.initial_differential || [];
+      const final_dx = result.final_diagnoses || null;
+      setAiInitialSuggestions(initial);
+      setAiFinalSuggestions(final_dx);
+      // Pre-select all suggestions
+      setSelectedInitialSuggestions(new Set(initial.map((_, i) => i)));
+      if (final_dx) {
+        setSelectedFinalSuggestions({ primary: true, secondary: new Set((final_dx.secondary || []).map((_, i) => i)) });
+      }
       setAiState("done");
       toast.success("✨ AI analysis complete — review suggestions");
     } catch {

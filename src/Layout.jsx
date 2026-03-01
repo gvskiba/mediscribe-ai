@@ -60,7 +60,16 @@ export default function Layout({ children, currentPageName }) {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    base44.auth.me().then(u => setUser(u)).catch(() => setUser(null));
+    const checkAuth = async () => {
+      try {
+        const u = await base44.auth.me();
+        setUser(u);
+      } catch (error) {
+        setUser(null);
+        console.error("Authentication check failed in Layout:", error);
+      }
+    };
+    checkAuth();
   }, []);
 
   const showSidebar = currentPageName !== 'Home';

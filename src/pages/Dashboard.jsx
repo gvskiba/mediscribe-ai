@@ -879,17 +879,26 @@ export default function Dashboard() {
 
       {/* Grid */}
       <div style={{ flex: 1, overflow: "auto", padding: "12px 16px", minHeight: 0 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", alignItems: "start" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", alignItems: "start", autoRows: "auto" }}>
           {Array.from({ length: TOTAL_CELLS }).map((_, cellIdx) => {
             const widgetId = grid[cellIdx] || null;
             const def = widgetId ? widgetDefs[widgetId] : null;
             const isSelected = isEditMode && selectedCell === cellIdx;
+            const size = widgetSizes[cellIdx] || [1, 1];
+            const colSpan = size[0];
+            const rowSpan = size[1];
 
             return (
               <div
                 key={cellIdx}
                 onClick={() => isEditMode && setSelectedCell(isSelected ? null : cellIdx)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  if (isEditMode && def) cycleWidgetSize(cellIdx);
+                }}
                 style={{
+                  gridColumn: `span ${colSpan}`,
+                  gridRow: `span ${rowSpan}`,
                   borderRadius: "14px",
                   border: isEditMode
                     ? `2px ${isSelected ? "solid" : "dashed"} ${isSelected ? T.teal : "rgba(0,212,188,0.25)"}`

@@ -129,107 +129,39 @@ function SearchPanel({ query, setQuery, filters, setFilters, analysisMode, setAn
       </div>
 
       {/* Filters */}
-      <div style={{ paddingTop: "12px", borderTop: `1px solid ${T.border}` }}>
-        <div style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: T.dim, marginBottom: "10px", display: "flex", alignItems: "center", gap: "6px" }}>
+      <div className="pt-3 border-t border-[#1e3a5f]">
+        <div className="text-xs font-bold uppercase tracking-wide text-[#4a7299] mb-2.5 flex items-center gap-1.5">
           <Filter size={12} /> FILTERS
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "10px" }}>
-          <div>
+        <div className="grid grid-cols-2 gap-2 mb-2.5">
+          {[
+            { value: filters.specialty, onChange: (v) => setFilters({ ...filters, specialty: v }), options: SPECIALTIES },
+            { value: filters.source, onChange: (v) => setFilters({ ...filters, source: v }), options: ["All Sources", ...GUIDELINE_SOURCES.map(s => s.name)] },
+            { value: filters.yearFrom, onChange: (v) => setFilters({ ...filters, yearFrom: v }), options: ["Any Year", "2024+", "2023+", "2022+"] },
+            { value: filters.evidenceLevel, onChange: (v) => setFilters({ ...filters, evidenceLevel: v }), options: ["Any Level", "A - Strong", "B - Moderate", "C - Weak"] },
+          ].map((item, idx) => (
             <select
-              value={filters.specialty}
-              onChange={(e) => setFilters({ ...filters, specialty: e.target.value })}
-              style={{
-                width: "100%",
-                padding: "8px",
-                borderRadius: "6px",
-                border: `1px solid ${T.border}`,
-                background: T.edge,
-                color: T.bright,
-                fontSize: "11px",
-              }}
+              key={idx}
+              value={item.value}
+              onChange={(e) => item.onChange(e.target.value)}
+              className="w-full px-2 py-2 rounded-md border border-[#1e3a5f] bg-[#162d4f] text-[#e8f4ff] text-xs"
             >
-              {SPECIALTIES.map((s) => <option key={s} value={s}>{s}</option>)}
+              {item.options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
             </select>
-          </div>
-          <div>
-            <select
-              value={filters.source}
-              onChange={(e) => setFilters({ ...filters, source: e.target.value })}
-              style={{
-                width: "100%",
-                padding: "8px",
-                borderRadius: "6px",
-                border: `1px solid ${T.border}`,
-                background: T.edge,
-                color: T.bright,
-                fontSize: "11px",
-              }}
-            >
-              <option value="">All Sources</option>
-              {GUIDELINE_SOURCES.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <select
-              value={filters.yearFrom}
-              onChange={(e) => setFilters({ ...filters, yearFrom: e.target.value })}
-              style={{
-                width: "100%",
-                padding: "8px",
-                borderRadius: "6px",
-                border: `1px solid ${T.border}`,
-                background: T.edge,
-                color: T.bright,
-                fontSize: "11px",
-              }}
-            >
-              <option value="">Any Year</option>
-              <option value="2024">2024+</option>
-              <option value="2023">2023+</option>
-              <option value="2022">2022+</option>
-            </select>
-          </div>
-          <div>
-            <select
-              value={filters.evidenceLevel}
-              onChange={(e) => setFilters({ ...filters, evidenceLevel: e.target.value })}
-              style={{
-                width: "100%",
-                padding: "8px",
-                borderRadius: "6px",
-                border: `1px solid ${T.border}`,
-                background: T.edge,
-                color: T.bright,
-                fontSize: "11px",
-              }}
-            >
-              <option value="">Any Level</option>
-              <option value="A">A - Strong</option>
-              <option value="B">B - Moderate</option>
-              <option value="C">C - Weak</option>
-            </select>
-          </div>
+          ))}
         </div>
 
         {/* Patient Context Toggle */}
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          padding: "10px",
-          background: T.edge,
-          borderRadius: "6px",
-          border: `1px solid ${T.border}`,
-        }}>
+        <div className="flex items-center gap-2 p-2.5 bg-[#162d4f] rounded-md border border-[#1e3a5f]">
           <input
             type="checkbox"
             checked={applyContext}
             onChange={(e) => setApplyContext(e.target.checked)}
-            style={{ cursor: "pointer" }}
+            className="cursor-pointer"
           />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: "11px", fontWeight: 600, color: T.text }}>Apply Patient Context</div>
-            <div style={{ fontSize: "9px", color: T.dim }}>Contextualizes analysis to active encounter via Base44</div>
+          <div className="flex-1">
+            <div className="text-xs font-semibold text-[#c8ddf0]">Apply Patient Context</div>
+            <div className="text-xs text-[#4a7299]">Contextualizes analysis to active encounter via Base44</div>
           </div>
         </div>
       </div>

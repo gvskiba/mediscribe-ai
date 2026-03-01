@@ -574,7 +574,7 @@ function NotesPanel() {
   };
 
   const filteredNotes = notes.filter((note) =>
-    note.patient_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (note.patient_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (note.patient_id && note.patient_id.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 

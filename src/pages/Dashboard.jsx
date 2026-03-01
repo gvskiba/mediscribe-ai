@@ -380,13 +380,14 @@ function SearchPanel() {
    return <OpenEvidenceSearchPanel />;
  }
 
-      function NewsPanel() {
+function NewsPanel() {
   const [activeTab, setActiveTab] = useState("all");
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const newsData = pageData.medicalNews;
 
-  const fetchNews = async () => {
+  useEffect(() => {
+    const fetchNews = async () => {
       try {
         setLoading(true);
         const result = await base44.integrations.Core.InvokeLLM({

@@ -338,36 +338,46 @@ function SepsisProtocolTab() {
 
   return (
     <div className="space-y-3">
-      <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+      {/* Sub-nav */}
+      <div className="flex gap-1 p-1 rounded-lg" style={{ background: T.border }}>
         {[{ id: "bundle", label: "Hour-1 Bundle" }, { id: "empiric", label: "Empiric Antibiotics" }, { id: "criteria", label: "Sepsis Criteria" }].map(s => (
-          <button key={s.id} onClick={() => setActiveSection(s.id)} className={`flex-1 text-xs font-semibold px-2 py-1.5 rounded-md transition-all ${activeSection === s.id ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>{s.label}</button>
+          <button
+            key={s.id}
+            onClick={() => setActiveSection(s.id)}
+            className="flex-1 text-xs font-semibold px-2 py-1.5 rounded-md transition-all"
+            style={activeSection === s.id ? { background: T.card, color: T.text } : { background: "transparent", color: T.muted }}
+          >{s.label}</button>
         ))}
       </div>
 
       {activeSection === "bundle" && (
         <div className="space-y-2">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 rounded-full bg-red-500" />
-            <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">Surviving Sepsis Campaign 2018 — Hour-1 Bundle</span>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-2 h-2 rounded-full" style={{ background: T.red }} />
+            <span className="text-xs font-bold uppercase tracking-wide" style={{ color: T.text }}>Surviving Sepsis Campaign 2018 — Hour-1 Bundle</span>
           </div>
           {SEPSIS_BUNDLE_STEPS.map(s => (
-            <div key={s.step} className={`rounded-lg border p-3 ${s.priority === "critical" ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50"}`}>
+            <div key={s.step} className="rounded-lg border p-3" style={s.priority === "critical"
+              ? { borderColor: `${T.red}50`, background: T.red_dim }
+              : { borderColor: `${T.amber}50`, background: T.amber_dim }
+            }>
               <div className="flex items-start gap-3">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${s.priority === "critical" ? "bg-red-600 text-white" : "bg-amber-500 text-white"}`}>{s.step}</div>
+                <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                  style={{ background: s.priority === "critical" ? T.red : T.amber, color: T.bg }}>{s.step}</div>
                 <div>
-                  <p className={`text-xs font-bold ${s.priority === "critical" ? "text-red-800" : "text-amber-900"}`}>{s.action}</p>
-                  <p className={`text-xs mt-0.5 ${s.priority === "critical" ? "text-red-700" : "text-amber-800"}`}>{s.detail}</p>
+                  <p className="text-xs font-bold" style={{ color: s.priority === "critical" ? "#fca5a5" : "#fcd34d" }}>{s.action}</p>
+                  <p className="text-xs mt-0.5" style={{ color: s.priority === "critical" ? "#fca5a5" + "cc" : T.amber + "cc" }}>{s.detail}</p>
                 </div>
               </div>
             </div>
           ))}
-          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mt-2">
-            <p className="text-xs font-bold text-slate-700 mb-1.5">Lactate Targets</p>
-            <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
-              <div><span className="font-semibold">Recheck:</span> q2h</div>
-              <div><span className="font-semibold">Target clearance:</span> ≥ 10% at 2 hr</div>
-              <div><span className="font-semibold">High-risk:</span> ≥ 4 mmol/L</div>
-              <div><span className="font-semibold">Preferred fluid:</span> LR (SMART trial)</div>
+          <div className="rounded-lg p-3" style={{ background: T.card, border: `1px solid ${T.border2}` }}>
+            <p className="text-xs font-bold mb-1.5" style={{ color: T.text }}>Lactate Targets</p>
+            <div className="grid grid-cols-2 gap-2 text-xs" style={{ color: T.muted }}>
+              <div><span className="font-semibold" style={{ color: T.text }}>Recheck:</span> q2h</div>
+              <div><span className="font-semibold" style={{ color: T.text }}>Target clearance:</span> ≥ 10% at 2 hr</div>
+              <div><span className="font-semibold" style={{ color: T.text }}>High-risk:</span> ≥ 4 mmol/L</div>
+              <div><span className="font-semibold" style={{ color: T.text }}>Preferred fluid:</span> LR (SMART trial)</div>
             </div>
           </div>
         </div>
@@ -375,20 +385,28 @@ function SepsisProtocolTab() {
 
       {activeSection === "empiric" && (
         <div className="space-y-3">
-          <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
+          <div className="px-3 py-2 rounded-lg text-xs" style={{ background: T.blue_dim, border: `1px solid ${T.blue}40`, color: T.blue }}>
             <span className="font-bold">Timing:</span> Within 1 hr of recognition. Obtain ≥ 2 blood culture sets before antibiotics — do not delay &gt; 45 min for cultures.
           </div>
           {SEPSIS_EMPIRIC.map((r, i) => (
-            <div key={i} className="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2">
-              <p className="text-xs font-bold text-slate-800 border-b border-slate-100 pb-2">{r.severity}</p>
+            <div key={i} className="rounded-xl p-3.5 space-y-2" style={{ background: T.card, border: `1px solid ${T.border2}` }}>
+              <p className="text-xs font-bold pb-2" style={{ color: T.text, borderBottom: `1px solid ${T.border}` }}>{r.severity}</p>
               <div className="space-y-1.5 text-xs">
-                <div className="flex items-start gap-2"><span className="text-emerald-600 font-semibold flex-shrink-0">Primary:</span><span className="text-slate-800 font-mono">{r.primary_regimen}</span></div>
-                {r.additional_coverage && <div className="flex items-start gap-2"><span className="text-blue-600 font-semibold flex-shrink-0">Add:</span><span className="text-slate-700">{r.additional_coverage}</span></div>}
-                <div className="text-slate-500 italic text-xs mt-1">{r.notes}</div>
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold flex-shrink-0" style={{ color: T.green }}>Primary:</span>
+                  <span className="font-mono" style={{ color: T.text }}>{r.primary_regimen}</span>
+                </div>
+                {r.additional_coverage && (
+                  <div className="flex items-start gap-2">
+                    <span className="font-semibold flex-shrink-0" style={{ color: T.blue }}>Add:</span>
+                    <span style={{ color: T.muted }}>{r.additional_coverage}</span>
+                  </div>
+                )}
+                <div className="text-xs italic" style={{ color: T.muted }}>{r.notes}</div>
               </div>
             </div>
           ))}
-          <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800">
+          <div className="px-3 py-2 rounded-lg text-xs" style={{ background: T.amber_dim, border: `1px solid ${T.amber}40`, color: T.amber }}>
             <span className="font-bold">De-escalation:</span> Reassess regimen at 48–72 hr based on culture/sensitivity results; de-escalate to narrowest effective spectrum.
           </div>
         </div>
@@ -396,31 +414,40 @@ function SepsisProtocolTab() {
 
       {activeSection === "criteria" && (
         <div className="space-y-3">
-          <div className="bg-white border border-slate-200 rounded-xl p-3.5">
-            <p className="text-xs font-bold text-slate-800 mb-2">Sepsis-3 (2016)</p>
-            <p className="text-xs text-slate-600 mb-2">Life-threatening organ dysfunction caused by a dysregulated host response to infection</p>
-            <p className="text-xs font-semibold text-slate-700 mb-1">Criteria: Suspected/confirmed infection + SOFA score ≥ 2 from baseline</p>
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 mt-2">
-              <p className="text-xs font-bold text-slate-600 mb-1.5">qSOFA (bedside screen — score ≥ 2 = high risk)</p>
+          <div className="rounded-xl p-3.5" style={{ background: T.card, border: `1px solid ${T.border2}` }}>
+            <p className="text-xs font-bold mb-2" style={{ color: T.text }}>Sepsis-3 (2016)</p>
+            <p className="text-xs mb-2" style={{ color: T.muted }}>Life-threatening organ dysfunction caused by a dysregulated host response to infection</p>
+            <p className="text-xs font-semibold mb-1" style={{ color: T.text }}>Criteria: Suspected/confirmed infection + SOFA score ≥ 2 from baseline</p>
+            <div className="rounded-lg p-2.5 mt-2" style={{ background: T.surface, border: `1px solid ${T.border}` }}>
+              <p className="text-xs font-bold mb-1.5" style={{ color: T.muted, fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase" }}>qSOFA (bedside screen — score ≥ 2 = high risk)</p>
               {[{ name: "Respiratory Rate", value: "≥ 22 breaths/min" }, { name: "Altered Mental Status", value: "GCS < 15" }, { name: "Systolic BP", value: "≤ 100 mmHg" }].map((p, i) => (
-                <div key={i} className="flex justify-between text-xs py-0.5"><span className="text-slate-700">{p.name}</span><span className="font-mono text-blue-700">{p.value} (+1)</span></div>
+                <div key={i} className="flex justify-between text-xs py-0.5">
+                  <span style={{ color: T.muted }}>{p.name}</span>
+                  <span className="font-mono" style={{ color: T.blue }}>{p.value} (+1)</span>
+                </div>
               ))}
             </div>
           </div>
-          <div className="bg-white border border-red-200 rounded-xl p-3.5">
-            <p className="text-xs font-bold text-red-700 mb-2">Septic Shock (Sepsis-3)</p>
-            <p className="text-xs text-slate-600 mb-2">Sepsis + vasopressor requirement to maintain MAP ≥ 65 mmHg AND serum lactate &gt; 2 mmol/L despite adequate fluid resuscitation</p>
+          <div className="rounded-xl p-3.5" style={{ background: T.card, border: `1px solid ${T.red}40` }}>
+            <p className="text-xs font-bold mb-2" style={{ color: T.red }}>Septic Shock (Sepsis-3)</p>
+            <p className="text-xs mb-2" style={{ color: T.muted }}>Sepsis + vasopressor requirement to maintain MAP ≥ 65 mmHg AND serum lactate &gt; 2 mmol/L despite adequate fluid resuscitation</p>
             <div className="grid grid-cols-3 gap-2 text-xs mt-2">
               {[{ name: "MAP", value: "< 65 mmHg" }, { name: "Lactate", value: "> 2 mmol/L" }, { name: "Mortality", value: "> 40%" }].map((t, i) => (
-                <div key={i} className="bg-red-50 border border-red-200 rounded-lg p-2 text-center"><div className="font-bold text-red-700">{t.value}</div><div className="text-red-600 mt-0.5">{t.name}</div></div>
+                <div key={i} className="rounded-lg p-2 text-center" style={{ background: T.red_dim, border: `1px solid ${T.red}40` }}>
+                  <div className="font-bold" style={{ color: T.red }}>{t.value}</div>
+                  <div className="mt-0.5" style={{ color: T.muted }}>{t.name}</div>
+                </div>
               ))}
             </div>
           </div>
-          <div className="bg-white border border-purple-200 rounded-xl p-3.5">
-            <p className="text-xs font-bold text-purple-700 mb-1">PHOENIX Sepsis Criteria (2024) — Pediatric</p>
-            <p className="text-xs text-slate-500 mb-2">JAMA 2024; Schlapbach et al. — PHOENIX Sepsis Score ≥ 2 with suspected/confirmed infection</p>
+          <div className="rounded-xl p-3.5" style={{ background: T.card, border: `1px solid ${T.purple}40` }}>
+            <p className="text-xs font-bold mb-1" style={{ color: T.purple }}>PHOENIX Sepsis Criteria (2024) — Pediatric</p>
+            <p className="text-xs mb-2" style={{ color: T.muted }}>JAMA 2024; Schlapbach et al. — PHOENIX Sepsis Score ≥ 2 with suspected/confirmed infection</p>
             {[{ domain: "Respiratory", criteria: "SpO₂/FiO₂ < 292" }, { domain: "Cardiovascular", criteria: "Vasoactive infusion and/or lactate ≥ 5 mmol/L" }, { domain: "Coagulation", criteria: "INR ≥ 1.3, D-dimer ≥ 2 mg/L, or Plt < 100" }, { domain: "Neurological", criteria: "GCS ≤ 10 or AVPU = P/U" }].map((d, i) => (
-              <div key={i} className="flex justify-between text-xs py-1 border-b border-purple-100 last:border-0"><span className="font-semibold text-purple-800">{d.domain}</span><span className="text-purple-600">{d.criteria}</span></div>
+              <div key={i} className="flex justify-between text-xs py-1" style={{ borderBottom: i < 3 ? `1px solid ${T.purple}30` : "none" }}>
+                <span className="font-semibold" style={{ color: T.purple }}>{d.domain}</span>
+                <span style={{ color: T.muted }}>{d.criteria}</span>
+              </div>
             ))}
           </div>
         </div>

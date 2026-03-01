@@ -53,6 +53,19 @@ export default function DashboardTopBar({ user }) {
   const specialtyRef = useRef(null);
   const shiftRef = useRef(null);
 
+  // Fetch hospital settings
+  const { data: hospitalSettings } = useQuery({
+    queryKey: ["hospitalSettings"],
+    queryFn: async () => {
+      const results = await base44.entities.HospitalSettings.list();
+      return results.length > 0 ? results[0] : null;
+    },
+  });
+
+  const defaultAttending = hospitalSettings?.attendings?.find(
+    (a) => a.id === hospitalSettings?.default_attending_id
+  );
+
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(interval);

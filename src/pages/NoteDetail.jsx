@@ -88,6 +88,7 @@ import DischargeSummaryTabNew from "../components/notes/DischargeSummaryTab";
 import VitalSignsPasteAnalyzer from "../components/notes/VitalSignsPasteAnalyzer";
 import DispositionPlanner from "../components/notes/DispositionPlanner";
 import ERDispositionTab from "../components/notes/ERDispositionTab";
+import NoteAbnormalFindingsAnalyzer from "../components/notes/NoteAbnormalFindingsAnalyzer";
 
 import VitalSignsHistory from "../components/notes/VitalSignsHistory";
 import AIStructuredNotePreview from "../components/notes/AIStructuredNotePreview";

@@ -1427,15 +1427,6 @@ Generated: ${new Date().toLocaleString()}
   return (
     <>
       <div style={{ background: "#050f1e", fontFamily: "DM Sans, sans-serif", height: "calc(100vh - 80px)", display: "flex", flexDirection: "column" }}>
-        {/* Back Nav */}
-        <Link
-        to={createPageUrl("NotesLibrary")}
-        className="inline-flex items-center gap-2 text-sm transition-colors px-4 pt-4"
-        style={{ color: "#4a7299" }}
-      >
-        <ArrowLeft className="w-4 h-4" /> Back to Notes
-      </Link>
-
       {/* Top Bar */}
       <NoteTopBar note={note} noteId={noteId} queryClient={queryClient} onNext={handleNext} />
       {/* Patient Vitals Bar */}

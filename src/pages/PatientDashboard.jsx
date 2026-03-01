@@ -123,76 +123,34 @@ export default function PatientDashboard() {
 
   return (
     <div style={{ background: "#050f1e", fontFamily: "DM Sans, sans-serif", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* Top Bar */}
-      <div style={{ background: "#0b1d35", borderBottom: "1px solid #1e3a5f", padding: "13px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", height: "58px", flexShrink: 0 }}>
-        <div>
-          <h1 style={{ color: "#e8f4ff", fontSize: "16px", fontWeight: 600, margin: 0 }}>Clinical Overview</h1>
-          <p style={{ color: "#4a7299", fontSize: "11px", margin: "4px 0 0 0" }}>ClinAI / ER Note / Overview</p>
-        </div>
-        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          {lastUpdated && (
-            <span style={{ color: "#4a7299", fontSize: "11px" }}>
-              {minutesSinceUpdate === 0 ? "Just now" : `${minutesSinceUpdate}m ago`}
-            </span>
-          )}
-          <button
-            onClick={handleRefresh}
-            style={{
-              background: "#00d4bc",
-              color: "#050f1e",
-              border: "none",
-              padding: "6px 10px",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontSize: "11px",
-              fontWeight: 600,
-              display: "flex",
-              alignItems: "center",
-              gap: "4px",
-            }}
-          >
-            <RotateCw size={12} /> Refresh
-          </button>
-          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#c8ddf0", cursor: "pointer" }}>
-            <input
-              type="checkbox"
-              checked={isAutoRefreshEnabled}
-              onChange={(e) => setIsAutoRefreshEnabled(e.target.checked)}
-              style={{ cursor: "pointer" }}
-            />
-            Live
-          </label>
-        </div>
-      </div>
+      {/* Patient Strip with Top Gradient Border */}
+      {patient && encounter && (
+        <PatientStrip patient={patient} encounter={encounter} vitals={vitals[0]} />
+      )}
+
+      {/* Quick Stats */}
+      {encounter && (
+        <QuickStats encounter={encounter} vitals={vitals[0]} />
+      )}
 
       {/* Content */}
-      <div style={{ flex: 1, overflow: "hidden", padding: "13px 16px", display: "flex", flexDirection: "column", gap: "11px" }}>
-        {/* Patient Strip */}
-        {patient && encounter && (
-          <PatientStrip patient={patient} encounter={encounter} vitals={vitals[0]} />
-        )}
-
-        {/* Quick Stats */}
-        {encounter && (
-          <QuickStats encounter={encounter} vitals={vitals[0]} />
-        )}
-
+      <div style={{ flex: 1, overflow: "hidden", padding: "11px 16px", display: "flex", flexDirection: "column", gap: "11px" }}>
         {/* Main Grid */}
         <div style={{ display: "grid", gridTemplateColumns: "290px 1fr 272px", gap: "11px", flex: 1, overflow: "hidden" }}>
           {/* Left Column: Vitals + Diagnoses */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "11px", overflow: "hidden" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "11px", overflow: "auto" }}>
             <VitalsPanel vitals={vitals} />
             <DiagnosesPanel assessment={assessment} dischargeSummary={dischargeSummary} />
           </div>
 
           {/* Center Column: Clinical Summary + Abnormal Findings */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "11px", overflow: "hidden" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "11px", overflow: "auto" }}>
             {encounter && <ClinicalSummaryPanel encounter={encounter} />}
             <AbnormalFindingsPanel vitals={vitals} labs={labs} imaging={imaging} />
           </div>
 
           {/* Right Column: Medications, Labs, Imaging (scrollable) */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "11px", overflow: "auto", paddingRight: "4px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "11px", overflow: "auto" }}>
             <MedicationsPanel medications={medications} />
             <LabsPanel labs={labs} />
             <ImagingPanel imaging={imaging} />

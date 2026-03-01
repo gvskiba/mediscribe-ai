@@ -15,24 +15,23 @@ export default function PatientStrip({ patient, encounter, vitals }) {
   return (
     <div
       style={{
+        background: "#0b1d35",
+        borderBottom: "1px solid #1e3a5f",
         borderTop: "3px solid",
         borderImage: "linear-gradient(90deg, #00d4bc, #9b6dff, #f5a623) 1",
-        background: "#0e2340",
-        border: "1px solid #1e3a5f",
-        borderTopWidth: "3px",
-        borderRadius: "8px",
-        padding: "12px",
+        padding: "12px 16px",
         display: "flex",
         gap: "16px",
-        alignItems: "flex-start",
+        alignItems: "center",
+        justifyContent: "space-between",
       }}
     >
-      {/* Avatar & Name */}
-      <div style={{ display: "flex", gap: "10px", minWidth: "180px" }}>
+      {/* Left: Avatar & Name */}
+      <div style={{ display: "flex", gap: "10px", minWidth: "200px" }}>
         <div
           style={{
-            width: "44px",
-            height: "44px",
+            width: "40px",
+            height: "40px",
             borderRadius: "50%",
             background: "#162d4f",
             display: "flex",
@@ -40,92 +39,48 @@ export default function PatientStrip({ patient, encounter, vitals }) {
             justifyContent: "center",
             color: "#e8f4ff",
             fontWeight: 600,
-            fontSize: "18px",
+            fontSize: "16px",
             flexShrink: 0,
           }}
         >
           {patient?.name?.charAt(0) || "P"}
         </div>
         <div>
-          <p style={{ color: "#e8f4ff", fontSize: "13px", fontWeight: 600, margin: 0 }}>
-            {patient?.name}
+          <p style={{ color: "#e8f4ff", fontSize: "12px", fontWeight: 600, margin: "0 0 2px 0" }}>
+            {patient?.name || "—"} — from Base44 Patient entity
           </p>
-          <p style={{ color: "#4a7299", fontSize: "11px", margin: "2px 0 0 0" }}>
-            MRN: {patient?.mrn} | {age}y | {patient?.sex}
+          <p style={{ color: "#4a7299", fontSize: "10px", margin: 0 }}>
+            MRN: {patient?.mrn || "—"} | Age: {age} | DOB: {patient?.dob || "—"}
           </p>
         </div>
       </div>
 
-      {/* Chief Complaint */}
-      <div style={{ flex: 1 }}>
-        <p style={{ color: "#4a7299", fontSize: "10px", margin: "0 0 2px 0", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-          Chief Complaint
-        </p>
-        <p style={{ color: "#c8ddf0", fontSize: "12px", margin: 0 }}>
-          {encounter?.chiefComplaint || "—"}
-        </p>
-      </div>
-
-      {/* Code Status */}
-      <div>
-        <span
-          style={{
-            background: codeStatusColors[patient?.codeStatus] || "#4a7299",
-            color: patient?.codeStatus === "Full Code" ? "#050f1e" : "#fff",
-            padding: "4px 8px",
-            borderRadius: "4px",
-            fontSize: "10px",
-            fontWeight: 600,
-          }}
-        >
-          {patient?.codeStatus || "Unknown"}
-        </span>
-      </div>
-
-      {/* Allergies */}
-      {allergies.length > 0 && (
-        <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-          {allergies.slice(0, 3).map((allergy, idx) => (
-            <span
-              key={idx}
-              style={{
-                background: "#ff5c6c",
-                color: "#fff",
-                padding: "3px 6px",
-                borderRadius: "3px",
-                fontSize: "9px",
-                fontWeight: 600,
-              }}
-            >
-              {allergy}
-            </span>
-          ))}
-          {allergies.length > 3 && (
-            <span style={{ color: "#4a7299", fontSize: "10px" }}>+{allergies.length - 3}</span>
-          )}
-        </div>
-      )}
-
-      {/* Key Vitals Badges */}
+      {/* Center: Vital Signs Pills */}
       {vitals && (
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
           {[
-            { label: "BP", value: `${vitals.systolicBP}/${vitals.diastolicBP}` },
-            { label: "HR", value: `${vitals.heartRate}` },
-            { label: "T", value: `${vitals.temperature}°F` },
-            { label: "O₂", value: `${vitals.spo2}%` },
+            { label: "SYSTOLIC", value: vitals.systolicBP || "—" },
+            { label: "DIASTOLIC", value: vitals.diastolicBP || "—" },
+            { label: "HEART", value: vitals.heartRate || "—" },
+            { label: "RESP", value: vitals.respiratoryRate || "—" },
+            { label: "TEMPERATURE", value: vitals.temperature || "—" },
+            { label: "SPO₂", value: vitals.spo2 || "—" },
           ].map((v, idx) => (
             <div
               key={idx}
               style={{
                 background: "#162d4f",
-                padding: "4px 6px",
-                borderRadius: "4px",
+                border: "1px solid #1e3a5f",
+                padding: "6px 10px",
+                borderRadius: "6px",
                 textAlign: "center",
+                minWidth: "70px",
               }}
             >
-              <p style={{ color: "#4a7299", fontSize: "9px", margin: 0 }}>{v.label}</p>
-              <p style={{ color: "#e8f4ff", fontSize: "11px", fontWeight: 600, margin: 0 }}>
+              <p style={{ color: "#4a7299", fontSize: "8px", margin: "0 0 2px 0", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>
+                {v.label}
+              </p>
+              <p style={{ color: "#c8ddf0", fontSize: "10px", fontWeight: 600, margin: 0 }}>
                 {v.value}
               </p>
             </div>
@@ -133,27 +88,23 @@ export default function PatientStrip({ patient, encounter, vitals }) {
         </div>
       )}
 
-      {/* Arrival Time */}
-      <div style={{ textAlign: "right", minWidth: "80px" }}>
-        <p style={{ color: "#4a7299", fontSize: "10px", margin: "0 0 2px 0", textTransform: "uppercase" }}>
-          Arrival
-        </p>
-        <p style={{ color: "#c8ddf0", fontSize: "11px", margin: 0 }}>
-          {encounter?.arrivalDateTime
-            ? format(new Date(encounter.arrivalDateTime), "HH:mm")
-            : "—"}
-        </p>
-      </div>
-
-      {/* Status Badge */}
-      <div>
+      {/* Right: Allergies & Status */}
+      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+        {allergies.length > 0 ? (
+          <span style={{ background: "#ff5c6c", color: "#fff", padding: "4px 8px", borderRadius: "4px", fontSize: "9px", fontWeight: 600 }}>
+            {allergies[0]}
+          </span>
+        ) : (
+          <span style={{ color: "#4a7299", fontSize: "10px" }}>No Allergies</span>
+        )}
+        <span style={{ color: "#4a7299", fontSize: "10px" }}>Arrived: {encounter?.arrivalDateTime ? format(new Date(encounter.arrivalDateTime), "—") : "—"}</span>
         <span
           style={{
-            background: encounter?.encounterStatus === "active" ? "#00d4bc" : "#4a7299",
-            color: encounter?.encounterStatus === "active" ? "#050f1e" : "#fff",
+            background: encounter?.encounterStatus === "active" ? "rgba(0,212,188,0.2)" : "#162d4f",
+            color: "#c8ddf0",
             padding: "4px 8px",
             borderRadius: "4px",
-            fontSize: "10px",
+            fontSize: "9px",
             fontWeight: 600,
           }}
         >

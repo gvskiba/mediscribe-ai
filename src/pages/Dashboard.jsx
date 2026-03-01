@@ -690,15 +690,15 @@ export default function Dashboard() {
   const [selectedCell, setSelectedCell] = useState(null); // index of clicked cell in edit mode
 
   const widgetDefs = {
-    clock: { label: "Clock & Calendar", component: <ClockCalPanel /> },
-    search: { label: "Clinical Guidelines", component: <ClinicalGuidelinesPanel /> },
-    guidelines: { label: "Saved Guidelines", component: <SavedGuidelinesWidget /> },
-    news: { label: "Medical News", component: <NewsPanel /> },
-    notes: { label: "Recent Notes", component: <NotesPanel /> },
-    noteStatus: { label: "Note Status", component: <NoteStatusWidget /> },
-    pendingSignatures: { label: "Awaiting Signature", component: <PendingSignaturesWidget /> },
-    notesActivity: { label: "Recent Activity", component: <NotesActivityWidget /> },
-    quickNoteCreator: { label: "Quick Note", component: <QuickNoteCreatorWidget /> },
+    clock: { label: "Clock & Calendar", Comp: ClockCalPanel },
+    search: { label: "Clinical Guidelines", Comp: ClinicalGuidelinesPanel },
+    guidelines: { label: "Saved Guidelines", Comp: SavedGuidelinesWidget },
+    news: { label: "Medical News", Comp: NewsPanel },
+    notes: { label: "Recent Notes", Comp: NotesPanel },
+    noteStatus: { label: "Note Status", Comp: NoteStatusWidget },
+    pendingSignatures: { label: "Awaiting Signature", Comp: PendingSignaturesWidget },
+    notesActivity: { label: "Recent Activity", Comp: NotesActivityWidget },
+    quickNoteCreator: { label: "Quick Note", Comp: QuickNoteCreatorWidget },
   };
 
   useEffect(() => {

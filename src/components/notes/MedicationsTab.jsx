@@ -519,28 +519,37 @@ function DrugInteractionPanel({ note, noteId, queryClient }) {
   if (!note.medications?.length || note.medications.length < 2) return null;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-orange-500 shadow-sm overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
+    <div className="rounded-xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border2}`, borderLeft: `4px solid ${T.orange}` }}>
+      <div className="px-4 py-2.5 flex items-center justify-between" style={{ borderBottom: `1px solid ${T.border}` }}>
         <div className="flex items-center gap-2.5">
-          <div className="w-2 h-2 rounded-full bg-orange-500" />
-          <span className="text-sm font-semibold text-slate-800">Drug Interaction Check</span>
+          <div className="w-2 h-2 rounded-full" style={{ background: T.orange }} />
+          <span className="text-sm font-semibold" style={{ color: T.text }}>Drug Interaction Check</span>
         </div>
         {!loading ? (
-          <Button onClick={check} size="sm" variant="outline" className="text-xs h-6 px-2 gap-1 border-orange-200 text-orange-700 hover:bg-orange-50"><Sparkles className="w-3 h-3" />Check</Button>
-        ) : <Loader2 className="w-4 h-4 animate-spin text-orange-500" />}
+          <button
+            onClick={check}
+            className="flex items-center gap-1 text-xs px-2 h-6 rounded font-semibold transition-all"
+            style={{ border: `1px solid ${T.orange}40`, color: T.orange, background: "transparent" }}
+            onMouseEnter={e => { e.currentTarget.style.background = T.orange; e.currentTarget.style.color = T.bg; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = T.orange; }}
+          ><Sparkles className="w-3 h-3" />Check</button>
+        ) : <Loader2 className="w-4 h-4 animate-spin" style={{ color: T.orange }} />}
       </div>
       {interactions.length > 0 && (
         <div className="p-4 space-y-2">
-          {interactions.map((ix, idx) => (
-            <div key={idx} className={`rounded-lg border px-3 py-2 flex items-start justify-between gap-2 ${sevColor[ix.severity] || "bg-slate-50 border-slate-200"}`}>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-slate-800">{ix.drug_pair}</p>
-                <p className="text-xs text-slate-600 mt-0.5">{ix.mechanism}</p>
-                <p className="text-xs text-slate-700 mt-0.5 italic">{ix.recommendation}</p>
+          {interactions.map((ix, idx) => {
+            const c = { severe: { border: `${T.red}50`, bg: T.red_dim, textColor: "#fca5a5" }, moderate: { border: `${T.amber}50`, bg: T.amber_dim, textColor: "#fcd34d" }, mild: { border: `${T.blue}50`, bg: T.blue_dim, textColor: T.blue } }[ix.severity] || { border: T.border, bg: T.surface, textColor: T.muted };
+            return (
+              <div key={idx} className="rounded-lg px-3 py-2 flex items-start justify-between gap-2" style={{ border: `1px solid ${c.border}`, background: c.bg }}>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold" style={{ color: T.text }}>{ix.drug_pair}</p>
+                  <p className="text-xs mt-0.5" style={{ color: T.muted }}>{ix.mechanism}</p>
+                  <p className="text-xs mt-0.5 italic" style={{ color: T.muted }}>{ix.recommendation}</p>
+                </div>
+                <span className="text-xs ml-2 flex-shrink-0 px-2 py-0.5 rounded font-mono uppercase" style={{ color: c.textColor, background: c.border }}>{ix.severity}</span>
               </div>
-              <Badge className={`text-xs ml-2 flex-shrink-0 ${sevBadge[ix.severity] || "bg-slate-600 text-white"}`}>{ix.severity}</Badge>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

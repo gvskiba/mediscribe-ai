@@ -770,12 +770,12 @@ export default function ClinicalGuidelines() {
         flex: 1,
         display: "grid",
         gridTemplateColumns: "320px 1fr",
-        gap: "11px",
-        padding: "13px 16px",
+        gap: "12px",
+        padding: "12px 16px",
         overflow: "hidden",
       }}>
         {/* Left Column */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px", overflow: "hidden" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px", overflow: "hidden", minWidth: 0 }}>
           <SearchPanel
             query={query}
             setQuery={setQuery}
@@ -796,14 +796,16 @@ export default function ClinicalGuidelines() {
         </div>
 
         {/* Right Column */}
-        <AnalysisPanel
-          analysis={analysis}
-          loading={loading}
-          selectedSections={selectedSections}
-          onToggleSection={(id) => setSelectedSections((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
-          onAddToNote={handleAddToNote}
-          onSave={handleSave}
-        />
+        <div style={{ overflow: "hidden" }}>
+          <AnalysisPanel
+            analysis={analysis}
+            loading={loading}
+            selectedSections={selectedSections}
+            onToggleSection={(id) => setSelectedSections((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
+            onAddToNote={handleAddToNote}
+            onSave={handleSave}
+          />
+        </div>
       </div>
 
       <style>{`

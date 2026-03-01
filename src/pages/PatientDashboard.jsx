@@ -305,6 +305,13 @@ export default function PatientDashboard() {
       {/* Quick Stats */}
       {encounter && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "11px", padding: "11px 16px 0 16px" }}>
+          <></>
+        </div>
+      )}
+
+      {/* Main Content Grid - Refactored */}
+      <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", padding: 0 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "290px 1fr 272px", gap: "0", flex: 1, overflow: "hidden", padding: "11px 16px" }}>
           {[
             { icon: "⏱", label: "LENGTH OF STAY", value: "Active encounter" },
             { icon: "🚦", label: "TRIAGE / ESI", value: "Not assigned" },

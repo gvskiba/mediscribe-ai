@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Settings, Save, X, ChevronDown } from "lucide-react";
 import { createPageUrl } from "../utils";

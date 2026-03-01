@@ -478,8 +478,8 @@ Return 5-8 articles total.`,
 
   return (
     <div style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: "14px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-      {/* Filter Tabs */}
-      <div style={{ display: "flex", gap: "4px", padding: "8px 14px", overflowX: "auto", borderBottom: `1px solid ${T.border}` }}>
+    {/* Filter Tabs */}
+    <div style={{ display: "flex", gap: "4px", padding: "8px 14px", overflowX: "auto", borderBottom: `1px solid ${T.border}`, alignItems: "center" }}>
         {newsData.filterTabs.map((tab) => (
           <button
             key={tab.id}

@@ -675,9 +675,9 @@ export default function ClinicalGuidelines() {
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ fontSize: "16px", fontWeight: 700, color: T.bright }}>ClinAI</span>
-          <span style={{ fontSize: "12px", color: T.purple, fontWeight: 600 }}>—</span>
+          <span style={{ fontSize: "12px", color: T.text, fontWeight: 500 }}>—</span>
           <span style={{ fontSize: "12px", color: T.purple, fontWeight: 600 }}>Clinical Guidelines Search</span>
-          <span style={{ fontSize: "10px", color: T.dim, marginLeft: "8px" }}>AI-powered · Based44 · ACC/AHA · ACEP · IDSA · Cochrane · USPSTF · +10 sources</span>
+          <span style={{ fontSize: "10px", color: T.dim, marginLeft: "8px" }}>AI-powered · Base44 · ACC/AHA · ACEP · IDSA · Cochrane · USPSTF · +10 sources</span>
         </div>
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           <button style={{ padding: "6px 10px", borderRadius: "6px", fontSize: "10px", border: `1px solid ${T.border}`, background: T.edge, color: T.dim, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>

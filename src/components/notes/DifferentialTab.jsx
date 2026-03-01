@@ -759,16 +759,54 @@ Return ONLY valid JSON with this structure:
 
         {/* Scrollable content */}
         <div style={{ flex: 1, overflowY: "auto", padding: "16px 22px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
-          {/* AI Banner */}
+          {/* AI Final Suggestions Panel */}
           <AnimatePresence>
             {aiFinalSuggestions && (
               <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                style={{ background: "rgba(0,204,163,0.08)", border: `1px solid ${T.teal}26`, borderRadius: 8, padding: "12px 14px", display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 14 }}>✨</span>
-                <div style={{ fontFamily: "Geist Mono, monospace", fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: T.teal }}>AI suggested</div>
-                <div style={{ fontFamily: "Geist Mono, monospace", fontSize: "10px", color: T.muted, flex: 1 }}>{(aiFinalSuggestions.secondary?.length || 0) + 1} diagnoses after full note review</div>
-                <button onClick={acceptAllFinal} style={{ fontFamily: "Geist Mono, monospace", fontSize: "9px", padding: "4px 10px", borderRadius: 4, background: T.teal, color: T.bg, border: `1px solid ${T.teal}`, cursor: "pointer" }}>Accept All</button>
-                <button onClick={() => setAiFinalSuggestions(null)} style={{ fontFamily: "Geist Mono, monospace", fontSize: "9px", padding: "4px 10px", borderRadius: 4, border: `1px solid ${T.border_2}`, color: T.muted, background: "transparent", cursor: "pointer" }}>Dismiss</button>
+                style={{ background: "rgba(0,204,163,0.06)", border: `1px solid ${T.teal}30`, borderRadius: 8, padding: "12px 14px", marginBottom: 4 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                  <span style={{ fontSize: 14 }}>✨</span>
+                  <div style={{ fontFamily: "Geist Mono, monospace", fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: T.teal }}>AI Suggested Final Diagnoses</div>
+                  <div style={{ flex: 1 }} />
+                  <button onClick={acceptSelectedFinal} style={{ fontFamily: "Geist Mono, monospace", fontSize: "9px", padding: "4px 10px", borderRadius: 4, background: T.teal, color: T.bg, border: `1px solid ${T.teal}`, cursor: "pointer" }}>Apply Selected</button>
+                  <button onClick={() => setAiFinalSuggestions(null)} style={{ fontFamily: "Geist Mono, monospace", fontSize: "9px", padding: "4px 8px", borderRadius: 4, border: `1px solid ${T.border_2}`, color: T.muted, background: "transparent", cursor: "pointer" }}>✕</button>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {/* Primary */}
+                  {aiFinalSuggestions.primary?.name && (
+                    <div onClick={toggleFinalPrimary}
+                      style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "9px 11px", borderRadius: 6, cursor: "pointer", border: `1px solid ${selectedFinalSuggestions.primary ? T.teal + "55" : T.border}`, background: selectedFinalSuggestions.primary ? "rgba(0,204,163,0.08)" : T.card, transition: "all 0.12s" }}>
+                      <div style={{ width: 16, height: 16, borderRadius: 3, border: `1.5px solid ${selectedFinalSuggestions.primary ? T.teal : T.border_2}`, background: selectedFinalSuggestions.primary ? T.teal : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+                        {selectedFinalSuggestions.primary && <span style={{ color: T.bg, fontSize: 10, fontWeight: 700 }}>✓</span>}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: "9px", fontFamily: "Geist Mono, monospace", color: T.teal, textTransform: "uppercase", letterSpacing: "0.1em" }}>Primary</span>
+                          <span style={{ fontSize: 13, fontWeight: 500, color: T.text }}>{aiFinalSuggestions.primary.name}</span>
+                          {aiFinalSuggestions.primary.icd10 && <span style={{ fontFamily: "Geist Mono, monospace", fontSize: "10px", color: T.teal, background: T.teal_dim, border: `1px solid ${T.teal}33`, padding: "1px 6px", borderRadius: 3 }}>{aiFinalSuggestions.primary.icd10}</span>}
+                        </div>
+                        {aiFinalSuggestions.primary.notes && <div style={{ fontSize: 11, color: T.muted, marginTop: 3 }}>{aiFinalSuggestions.primary.notes}</div>}
+                      </div>
+                    </div>
+                  )}
+                  {/* Secondary */}
+                  {(aiFinalSuggestions.secondary || []).map((s, i) => (
+                    <div key={i} onClick={() => toggleFinalSecondary(i)}
+                      style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "9px 11px", borderRadius: 6, cursor: "pointer", border: `1px solid ${selectedFinalSuggestions.secondary.has(i) ? T.blue + "55" : T.border}`, background: selectedFinalSuggestions.secondary.has(i) ? "rgba(59,130,246,0.07)" : T.card, transition: "all 0.12s" }}>
+                      <div style={{ width: 16, height: 16, borderRadius: 3, border: `1.5px solid ${selectedFinalSuggestions.secondary.has(i) ? T.blue : T.border_2}`, background: selectedFinalSuggestions.secondary.has(i) ? T.blue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+                        {selectedFinalSuggestions.secondary.has(i) && <span style={{ color: "white", fontSize: 10, fontWeight: 700 }}>✓</span>}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: "9px", fontFamily: "Geist Mono, monospace", color: T.muted, textTransform: "uppercase", letterSpacing: "0.1em" }}>Secondary</span>
+                          <span style={{ fontSize: 13, fontWeight: 500, color: T.text }}>{s.name}</span>
+                          {s.icd10 && <span style={{ fontFamily: "Geist Mono, monospace", fontSize: "10px", color: T.blue, background: T.blue_dim, border: `1px solid ${T.blue}33`, padding: "1px 6px", borderRadius: 3 }}>{s.icd10}</span>}
+                          {s.type && <span style={{ fontFamily: "Geist Mono, monospace", fontSize: "9px", color: T.muted, padding: "1px 5px", border: `1px solid ${T.border_2}`, borderRadius: 3 }}>{s.type}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

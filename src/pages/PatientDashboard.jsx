@@ -441,23 +441,23 @@ Return JSON with:
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "10px" }}>
                 <div>
                   <p style={{ color: colors.dim, fontSize: "9px", margin: "0 0 2px 0", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>☐ CHIEF COMPLAINT</p>
-                  <p style={{ color: colors.text, margin: 0, minHeight: "16px" }}>{currentNote?.chief_complaint || "Not documented"}</p>
+                  <p style={{ color: colors.text, margin: 0, minHeight: "16px" }}>{clinicalSummary?.chief_complaint || currentNote?.chief_complaint || "Not documented"}</p>
                 </div>
                 <div>
                   <p style={{ color: colors.dim, fontSize: "9px", margin: "0 0 2px 0", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>☐ BRIEF HPI</p>
-                  <p style={{ color: colors.text, margin: 0, minHeight: "16px", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{currentNote?.history_of_present_illness || "Not documented"}</p>
+                  <p style={{ color: colors.text, margin: 0, minHeight: "16px", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{clinicalSummary?.hpi || currentNote?.history_of_present_illness || "Not documented"}</p>
                 </div>
                 <div>
                   <p style={{ color: colors.dim, fontSize: "9px", margin: "0 0 2px 0", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>🔑 KEY FINDINGS</p>
-                  <p style={{ color: colors.text, margin: 0, minHeight: "16px", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{currentNote?.physical_exam || "Not documented"}</p>
+                  <p style={{ color: colors.text, margin: 0, minHeight: "16px", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{clinicalSummary?.key_findings || "Click AI Refresh to analyze"}</p>
                 </div>
                 <div>
                   <p style={{ color: colors.dim, fontSize: "9px", margin: "0 0 2px 0", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>🔬 WORKUP SUMMARY</p>
-                  <p style={{ color: colors.text, margin: 0, minHeight: "16px" }}>{currentNote?.lab_findings?.length > 0 || currentNote?.imaging_findings?.length > 0 ? `${currentNote?.lab_findings?.length || 0} labs, ${currentNote?.imaging_findings?.length || 0} imaging` : "No workup documented"}</p>
+                  <p style={{ color: colors.text, margin: 0, minHeight: "16px" }}>{clinicalSummary?.workup_summary || (currentNote?.lab_findings?.length > 0 || currentNote?.imaging_findings?.length > 0 ? `${currentNote?.lab_findings?.length || 0} labs, ${currentNote?.imaging_findings?.length || 0} imaging` : "No workup documented")}</p>
                 </div>
                 <div>
                   <p style={{ color: colors.dim, fontSize: "9px", margin: "0 0 2px 0", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>📈 CLINICAL COURSE</p>
-                  <p style={{ color: colors.text, margin: 0, minHeight: "16px", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{currentNote?.plan || "Not documented"}</p>
+                  <p style={{ color: colors.text, margin: 0, minHeight: "16px", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{clinicalSummary?.clinical_course || currentNote?.plan || "Not documented"}</p>
                 </div>
                 <div>
                   <p style={{ color: colors.dim, fontSize: "9px", margin: "0 0 2px 0", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>🔴 CURRENT STATUS</p>

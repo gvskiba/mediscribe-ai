@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Sparkles, Loader2, Check, AlertTriangle, Copy, ChevronDown, ChevronUp, Plus, Zap, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import VitalSignsDisplayPanel from "./VitalSignsDisplayPanel";
 
 /* ── Theme ─────────────────────────────────────────────── */
 const T = {

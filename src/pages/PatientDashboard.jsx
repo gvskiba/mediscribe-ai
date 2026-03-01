@@ -391,22 +391,112 @@ Return JSON with:
       {/* Encounter Info Bar */}
       <div style={{ background: colors.slate, borderBottom: `1px solid ${colors.border}`, padding: "11px 16px", display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "11px" }}>
         {[
-          { icon: "⏱️", label: "LENGTH OF STAY", value: "Active encounter" },
-          { icon: "🔢", label: "TRIAGE / ESI", value: "Not assigned" },
-          { icon: "👨‍⚕️", label: "ATTENDING", value: defaultAttending?.name || "No resident" },
-          { icon: "🚪", label: "STATUS", value: "No disposition yet" },
+          { icon: "⏱️", label: "LENGTH OF STAY", value: "Active encounter", isDropdown: false },
+          { icon: "🔢", label: "TRIAGE / ESI", value: "Not assigned", isDropdown: false },
+          { icon: "👨‍⚕️", label: "ATTENDING", value: selectedAttending?.name || "No resident", isDropdown: true },
+          { icon: "🚪", label: "STATUS", value: "No disposition yet", isDropdown: false },
         ].map((item, idx) => (
-          <div key={idx} style={{ background: colors.panel, border: `1px solid ${colors.border}`, borderRadius: "8px", padding: "12px", display: "flex", gap: "10px", alignItems: "flex-start" }}>
-            <span style={{ fontSize: "16px", minWidth: "20px" }}>{item.icon}</span>
-            <div>
-              <p style={{ fontSize: "9px", color: colors.dim, margin: "0 0 3px 0", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>
-                {item.label}
-              </p>
-              <p style={{ fontSize: "11px", color: colors.text, margin: 0, fontWeight: 500 }}>
-                {item.value}
-              </p>
+          item.isDropdown && item.label === "ATTENDING" ? (
+            <div key={idx} ref={attendingRef} style={{ position: "relative" }}>
+              <button
+                onClick={() => setAttendingDropdownOpen(!attendingDropdownOpen)}
+                style={{
+                  width: "100%",
+                  background: colors.panel,
+                  border: `1px solid ${attendingDropdownOpen ? colors.teal : colors.border}`,
+                  borderRadius: "8px",
+                  padding: "12px",
+                  display: "flex",
+                  gap: "10px",
+                  alignItems: "flex-start",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = colors.teal;
+                  e.currentTarget.style.background = "rgba(0,212,188,0.05)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = attendingDropdownOpen ? colors.teal : colors.border;
+                  e.currentTarget.style.background = attendingDropdownOpen ? "rgba(0,212,188,0.05)" : colors.panel;
+                }}
+              >
+                <span style={{ fontSize: "16px", minWidth: "20px" }}>{item.icon}</span>
+                <div style={{ flex: 1, textAlign: "left" }}>
+                  <p style={{ fontSize: "9px", color: colors.dim, margin: "0 0 3px 0", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>
+                    {item.label}
+                  </p>
+                  <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                    <p style={{ fontSize: "11px", color: colors.text, margin: 0, fontWeight: 500 }}>
+                      {item.value}
+                    </p>
+                    <ChevronDown size={14} style={{ color: colors.dim, transform: attendingDropdownOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+                  </div>
+                </div>
+              </button>
+
+              {attendingDropdownOpen && hospitalSettings?.attendings && (
+                <div style={{
+                  position: "absolute",
+                  top: "calc(100% + 6px)",
+                  left: 0,
+                  right: 0,
+                  zIndex: 100,
+                  background: colors.panel,
+                  border: `1px solid ${colors.border}`,
+                  borderRadius: "8px",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+                  overflow: "hidden",
+                }}>
+                  {hospitalSettings.attendings.map((attending) => (
+                    <button
+                      key={attending.id}
+                      onClick={() => {
+                        setSelectedAttendingId(attending.id);
+                        setAttendingDropdownOpen(false);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        border: "none",
+                        background: selectedAttendingId === attending.id || (!selectedAttendingId && defaultAttending?.id === attending.id) ? "rgba(0,212,188,0.15)" : "transparent",
+                        color: colors.text,
+                        textAlign: "left",
+                        cursor: "pointer",
+                        fontSize: "11px",
+                        fontWeight: 500,
+                        transition: "background 0.1s",
+                        borderBottom: `1px solid ${colors.border}`,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "rgba(0,212,188,0.1)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = selectedAttendingId === attending.id || (!selectedAttendingId && defaultAttending?.id === attending.id) ? "rgba(0,212,188,0.15)" : "transparent";
+                      }}
+                    >
+                      <div>
+                        <p style={{ margin: 0, fontWeight: 500 }}>{attending.name}</p>
+                        <p style={{ margin: "2px 0 0 0", color: colors.dim, fontSize: "9px" }}>{attending.specialty}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
+          ) : (
+            <div key={idx} style={{ background: colors.panel, border: `1px solid ${colors.border}`, borderRadius: "8px", padding: "12px", display: "flex", gap: "10px", alignItems: "flex-start" }}>
+              <span style={{ fontSize: "16px", minWidth: "20px" }}>{item.icon}</span>
+              <div>
+                <p style={{ fontSize: "9px", color: colors.dim, margin: "0 0 3px 0", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>
+                  {item.label}
+                </p>
+                <p style={{ fontSize: "11px", color: colors.text, margin: 0, fontWeight: 500 }}>
+                  {item.value}
+                </p>
+              </div>
+            </div>
+          )
         ))}
       </div>
 

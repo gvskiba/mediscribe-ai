@@ -508,38 +508,65 @@ Return JSON with:
 
           {/* Left: Vitals + Diagnoses */}
           <div style={{ display: "flex", flexDirection: "column", gap: "11px", overflow: "auto" }}>
-            {/* Vitals Panel */}
-            <div style={{ background: colors.panel, border: `1px solid ${colors.border}`, borderLeft: `3px solid ${colors.teal}`, borderRadius: "8px", padding: "10px", overflow: "auto" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                <h3 style={{ fontSize: "12px", fontWeight: 600, margin: 0, display: "flex", gap: "4px" }}>📊 VITAL SIGNS</h3>
-                <span style={{ color: colors.dim, fontSize: "9px" }}>Trends 0 readings</span>
-              </div>
-              {vitals?.[0] ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  {[
-                    { icon: "💓", label: "Systolic BP", value: vitals[0].systolicBP, unit: "mmHg" },
-                    { icon: "💓", label: "Diastolic BP", value: vitals[0].diastolicBP, unit: "mmHg" },
-                    { icon: "🫀", label: "Heart Rate", value: vitals[0].heartRate, unit: "bpm" },
-                    { icon: "🫁", label: "Resp Rate", value: vitals[0].respiratoryRate, unit: "/min" },
-                    { icon: "🌡️", label: "Temperature", value: vitals[0].temperature, unit: "°F" },
-                    { icon: "💨", label: "SpO₂", value: vitals[0].spo2, unit: "%" },
-                    { icon: "😣", label: "Pain Score", value: vitals[0].painScore, unit: "/10" },
-                    { icon: "🧠", label: "GCS", value: vitals[0].gcs, unit: "/15" },
-                  ].map((v, idx) => (
-                    <div key={idx} style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                      <span style={{ fontSize: "13px", minWidth: "14px" }}>{v.icon}</span>
-                      <div style={{ flex: 1 }}>
-                        <p style={{ color: colors.dim, fontSize: "10px", margin: 0 }}>{v.label}</p>
-                        <p style={{ color: colors.text, fontSize: "12px", fontWeight: 600, margin: 0 }}>
-                          {v.value || "Awaiting data"} {v.unit}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+            {/* Vitals Panel - Redesigned */}
+            <div style={{ background: colors.panel, border: `1px solid ${colors.border}`, borderLeft: `3px solid ${colors.teal}`, borderRadius: "8px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+              {/* Header */}
+              <div style={{ padding: "12px 16px", borderBottom: `1px solid ${colors.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "16px" }}>📊</span>
+                  <span style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", color: colors.text }}>VITAL SIGNS</span>
                 </div>
-              ) : (
-                <p style={{ color: colors.dim, fontSize: "10px", margin: 0, fontStyle: "italic" }}>No vitals recorded — pull from Objective page</p>
-              )}
+                <span style={{ fontSize: "10px", color: colors.dim }}>📈 Trends 0 readings</span>
+              </div>
+
+              {/* Vital Rows */}
+              <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: "8px", flex: 1 }}>
+                {[
+                  { icon: "❤️", label: "Systolic BP", getValue: () => vitals?.[0]?.systolicBP ? `${vitals[0].systolicBP}` : "Awaiting data" },
+                  { icon: "❤️", label: "Diastolic BP", getValue: () => vitals?.[0]?.diastolicBP ? `${vitals[0].diastolicBP}` : "Awaiting data" },
+                  { icon: "🫀", label: "Heart Rate", getValue: () => vitals?.[0]?.heartRate ? `${vitals[0].heartRate}` : "Awaiting data" },
+                  { icon: "🫁", label: "Resp Rate", getValue: () => vitals?.[0]?.respiratoryRate ? `${vitals[0].respiratoryRate}` : "Awaiting data" },
+                  { icon: "🌡️", label: "Temperature", getValue: () => vitals?.[0]?.temperature ? `${vitals[0].temperature}` : "Awaiting data" },
+                  { icon: "💨", label: "SpO₂", getValue: () => vitals?.[0]?.spo2 ? `${vitals[0].spo2}` : "Awaiting data" },
+                  { icon: "😣", label: "Pain Score", getValue: () => vitals?.[0]?.painScore ? `${vitals[0].painScore}` : "Awaiting data" },
+                  { icon: "🧠", label: "GCS", getValue: () => vitals?.[0]?.gcs ? `${vitals[0].gcs}` : "Awaiting data" },
+                ].map((v, idx) => (
+                  <div key={idx} style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    padding: "12px",
+                    background: colors.edge,
+                    border: `1px solid ${colors.border}`,
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = colors.teal;
+                    e.currentTarget.style.background = "rgba(0,212,188,0.05)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = colors.border;
+                    e.currentTarget.style.background = colors.edge;
+                  }}>
+                    <span style={{ fontSize: "18px" }}>{v.icon}</span>
+                    <span style={{ flex: 1, fontSize: "11px", fontWeight: 500, color: colors.text }}>{v.label}</span>
+                    <span style={{ fontSize: "11px", color: colors.dim, textAlign: "right" }}>{v.getValue()}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Footer */}
+              <div style={{
+                padding: "10px 16px",
+                borderTop: `1px solid ${colors.border}`,
+                fontSize: "10px",
+                color: colors.dim,
+                fontStyle: "italic",
+              }}>
+                No vitals recorded — pull from Objective page
+              </div>
             </div>
 
             {/* Diagnoses Panel */}

@@ -12,9 +12,7 @@ export default function ClinicalNoteComposer({ note, noteId, queryClient }) {
       {/* Left Column: Note Type + Templates */}
       <div className="w-72 flex flex-col gap-3 overflow-hidden">
         <NoteTypePanel selectedType={selectedNoteType} onSelect={setSelectedNoteType} />
-        {selectedNoteType && (
-          <TemplatePanel selectedNoteType={selectedNoteType} onSelect={setSelectedTemplate} />
-        )}
+        <TemplatePanel selectedNoteType={selectedNoteType} onSelect={setSelectedTemplate} />
       </div>
 
       {/* Right Column: Clinical Note Preview */}

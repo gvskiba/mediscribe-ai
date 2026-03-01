@@ -666,12 +666,16 @@ function NotesPanel() {
   );
 }
 
-const DEFAULT_ORDER = ["clock", "search", "guidelines", "news", "notes", "noteStatus", "pendingSignatures", "notesActivity", "quickNoteCreator"];
+// 3 columns × 3 rows = 9 cells
+const TOTAL_CELLS = 9;
+const DEFAULT_GRID = ["clock", "search", "guidelines", "news", "notes", "noteStatus", "pendingSignatures", "notesActivity", "quickNoteCreator"];
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [widgetOrder, setWidgetOrder] = useState(DEFAULT_ORDER);
+  // grid: array of 9 slots, each is a widgetId or null
+  const [grid, setGrid] = useState(DEFAULT_GRID);
+  const [selectedCell, setSelectedCell] = useState(null); // index of clicked cell in edit mode
 
   const widgetDefs = {
     clock: { label: "Clock & Calendar", component: <ClockCalPanel /> },
@@ -690,8 +694,8 @@ export default function Dashboard() {
       try {
         const u = await base44.auth.me();
         setUser(u);
-        if (u?.dashboard_widget_order && Array.isArray(u.dashboard_widget_order)) {
-          setWidgetOrder(u.dashboard_widget_order);
+        if (u?.dashboard_grid && Array.isArray(u.dashboard_grid)) {
+          setGrid(u.dashboard_grid);
         }
       } catch {
         setUser(null);
@@ -702,46 +706,55 @@ export default function Dashboard() {
 
   const saveLayout = async () => {
     try {
-      await base44.auth.updateMe({ dashboard_widget_order: widgetOrder });
+      await base44.auth.updateMe({ dashboard_grid: grid });
       setIsEditMode(false);
+      setSelectedCell(null);
     } catch (error) {
       console.error("Failed to save layout:", error);
     }
   };
 
-  const resetLayout = () => setWidgetOrder(DEFAULT_ORDER);
+  const resetLayout = () => { setGrid(DEFAULT_GRID); setSelectedCell(null); };
 
-  const onDragEnd = (result) => {
-    if (!result.destination) return;
-    const newOrder = Array.from(widgetOrder);
-    const [moved] = newOrder.splice(result.source.index, 1);
-    newOrder.splice(result.destination.index, 0, moved);
-    setWidgetOrder(newOrder);
+  const assignWidget = (widgetId) => {
+    if (selectedCell === null) return;
+    const newGrid = [...grid];
+    // If widget is already somewhere else, clear it
+    const prevIdx = newGrid.indexOf(widgetId);
+    if (prevIdx !== -1 && prevIdx !== selectedCell) newGrid[prevIdx] = null;
+    newGrid[selectedCell] = widgetId;
+    setGrid(newGrid);
+    setSelectedCell(null);
   };
+
+  const clearCell = (cellIdx) => {
+    const newGrid = [...grid];
+    newGrid[cellIdx] = null;
+    setGrid(newGrid);
+    setSelectedCell(null);
+  };
+
+  // Widgets not yet placed in the grid
+  const unplacedWidgets = Object.keys(widgetDefs).filter(id => !grid.includes(id));
 
   return (
     <div style={{ background: T.navy, width: "100%", height: "100%", fontFamily: "DM Sans, sans-serif", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-      <style>{`
-        @keyframes clockColon { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
-      `}</style>
+      <style>{`@keyframes clockColon { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }`}</style>
 
       {/* Header */}
       <div style={{ padding: "10px 16px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-        {isEditMode && (
+        {isEditMode ? (
           <>
-            <span style={{ color: T.dim, fontSize: "11px", marginRight: "auto" }}>Drag widgets to reorder</span>
-            <button onClick={resetLayout} style={{ padding: "5px 10px", background: "transparent", border: `1px solid ${T.border}`, borderRadius: "6px", color: T.dim, fontSize: "11px", cursor: "pointer" }}>
-              Reset
-            </button>
+            <span style={{ color: T.dim, fontSize: "11px", marginRight: "auto" }}>Click a cell to assign a widget</span>
+            <button onClick={resetLayout} style={{ padding: "5px 10px", background: "transparent", border: `1px solid ${T.border}`, borderRadius: "6px", color: T.dim, fontSize: "11px", cursor: "pointer" }}>Reset</button>
             <button onClick={saveLayout} style={{ display: "flex", alignItems: "center", gap: "5px", padding: "5px 12px", background: `linear-gradient(135deg, ${T.teal}, ${T.teal2})`, border: "none", borderRadius: "6px", color: T.navy, fontSize: "11px", fontWeight: 700, cursor: "pointer" }}>
               <Save className="w-3 h-3" /> Save
             </button>
-            <button onClick={() => setIsEditMode(false)} style={{ padding: "5px 8px", background: T.edge, border: `1px solid ${T.border}`, borderRadius: "6px", color: T.text, fontSize: "11px", cursor: "pointer" }}>
+            <button onClick={() => { setIsEditMode(false); setSelectedCell(null); }} style={{ padding: "5px 8px", background: T.edge, border: `1px solid ${T.border}`, borderRadius: "6px", color: T.text, fontSize: "11px", cursor: "pointer" }}>
               <X className="w-4 h-4" />
             </button>
           </>
-        )}
-        {!isEditMode && (
+        ) : (
           <button
             onClick={() => setIsEditMode(true)}
             style={{ display: "flex", alignItems: "center", gap: "6px", padding: "5px 12px", background: T.edge, border: `1px solid ${T.border}`, borderRadius: "6px", color: T.text, fontSize: "11px", fontWeight: 600, cursor: "pointer" }}
@@ -753,75 +766,85 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Widget Grid */}
-      <div style={{ flex: 1, overflow: "auto", padding: "12px 16px", minHeight: 0 }}>
-        <DragDropContext onDragEnd={onDragEnd}>
-          <Droppable droppableId="dashboard" direction="horizontal">
-            {(provided) => (
-              <div
-                ref={provided.innerRef}
-                {...provided.droppableProps}
+      {/* Widget Picker (shown in edit mode when a cell is selected) */}
+      {isEditMode && selectedCell !== null && (
+        <div style={{ background: T.slate, borderBottom: `1px solid ${T.border}`, padding: "10px 16px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", flexShrink: 0 }}>
+          <span style={{ fontSize: "10px", color: T.teal, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginRight: "4px" }}>
+            Cell {selectedCell + 1} →
+          </span>
+          {Object.entries(widgetDefs).map(([id, def]) => {
+            const isCurrentCell = grid[selectedCell] === id;
+            const isUsedElsewhere = grid.includes(id) && !isCurrentCell;
+            return (
+              <button
+                key={id}
+                onClick={() => assignWidget(id)}
+                disabled={isUsedElsewhere}
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(3, 1fr)",
-                  gap: "10px",
-                  alignItems: "start",
+                  padding: "5px 12px", borderRadius: "6px", fontSize: "11px", fontWeight: 500, cursor: isUsedElsewhere ? "not-allowed" : "pointer",
+                  border: `1px solid ${isCurrentCell ? T.teal : isUsedElsewhere ? T.border : T.muted}`,
+                  background: isCurrentCell ? "rgba(0,212,188,0.15)" : "transparent",
+                  color: isCurrentCell ? T.teal : isUsedElsewhere ? T.muted : T.text,
+                  opacity: isUsedElsewhere ? 0.4 : 1,
+                  transition: "all 0.15s",
                 }}
               >
-                {widgetOrder.map((widgetId, index) => {
-                  const def = widgetDefs[widgetId];
-                  if (!def) return null;
-                  return (
-                    <Draggable key={widgetId} draggableId={widgetId} index={index} isDragDisabled={!isEditMode}>
-                      {(prov, snapshot) => (
-                        <div
-                          ref={prov.innerRef}
-                          {...prov.draggableProps}
-                          style={{
-                            ...prov.draggableProps.style,
-                            opacity: snapshot.isDragging ? 0.85 : 1,
-                            outline: isEditMode ? `2px dashed rgba(0,212,188,${snapshot.isDragging ? 0.8 : 0.3})` : "none",
-                            borderRadius: "14px",
-                            transition: snapshot.isDragging ? "none" : "outline 0.2s",
-                            position: "relative",
-                          }}
-                        >
-                          {isEditMode && (
-                            <div
-                              {...prov.dragHandleProps}
-                              style={{
-                                position: "absolute",
-                                top: "8px",
-                                right: "8px",
-                                zIndex: 20,
-                                cursor: "grab",
-                                background: "rgba(0,212,188,0.15)",
-                                border: "1px solid rgba(0,212,188,0.3)",
-                                borderRadius: "5px",
-                                padding: "4px 6px",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "4px",
-                                color: T.teal,
-                                fontSize: "9px",
-                                fontWeight: 600,
-                              }}
-                            >
-                              <GripHorizontal className="w-3 h-3" />
-                            </div>
-                          )}
-                          {!isEditMode && <div {...prov.dragHandleProps} style={{ position: "absolute", top: 0, left: 0 }} />}
-                          {def.component}
-                        </div>
-                      )}
-                    </Draggable>
-                  );
-                })}
-                {provided.placeholder}
+                {def.label}
+              </button>
+            );
+          })}
+          <button
+            onClick={() => clearCell(selectedCell)}
+            style={{ padding: "5px 12px", borderRadius: "6px", fontSize: "11px", border: `1px solid ${T.red}44`, color: T.red, background: "transparent", cursor: "pointer", marginLeft: "auto" }}
+          >
+            Clear cell
+          </button>
+        </div>
+      )}
+
+      {/* Grid */}
+      <div style={{ flex: 1, overflow: "auto", padding: "12px 16px", minHeight: 0 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", alignItems: "start" }}>
+          {Array.from({ length: TOTAL_CELLS }).map((_, cellIdx) => {
+            const widgetId = grid[cellIdx] || null;
+            const def = widgetId ? widgetDefs[widgetId] : null;
+            const isSelected = isEditMode && selectedCell === cellIdx;
+
+            return (
+              <div
+                key={cellIdx}
+                onClick={() => isEditMode && setSelectedCell(isSelected ? null : cellIdx)}
+                style={{
+                  borderRadius: "14px",
+                  border: isEditMode
+                    ? `2px ${isSelected ? "solid" : "dashed"} ${isSelected ? T.teal : "rgba(0,212,188,0.25)"}`
+                    : "none",
+                  cursor: isEditMode ? "pointer" : "default",
+                  minHeight: def ? 0 : (isEditMode ? "80px" : 0),
+                  background: isEditMode && !def ? "rgba(0,212,188,0.03)" : "transparent",
+                  transition: "border 0.15s",
+                  position: "relative",
+                  overflow: "hidden",
+                }}
+              >
+                {isEditMode && isSelected && (
+                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,212,188,0.06)", zIndex: 1, borderRadius: "12px", pointerEvents: "none" }} />
+                )}
+                {isEditMode && def && (
+                  <div style={{ position: "absolute", top: "8px", right: "8px", zIndex: 10, background: isSelected ? T.teal : "rgba(0,212,188,0.15)", color: isSelected ? T.navy : T.teal, fontSize: "9px", fontWeight: 700, padding: "2px 7px", borderRadius: "4px", textTransform: "uppercase", letterSpacing: "0.06em", pointerEvents: "none" }}>
+                    {isSelected ? "✓ Selected" : def.label}
+                  </div>
+                )}
+                {isEditMode && !def && (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "80px", color: T.dim, fontSize: "11px" }}>
+                    {isSelected ? <span style={{ color: T.teal }}>↑ Choose a widget above</span> : <span>+ Empty</span>}
+                  </div>
+                )}
+                {def && <div style={{ position: "relative", zIndex: isEditMode ? 0 : "auto" }}>{def.component}</div>}
               </div>
-            )}
-          </Droppable>
-        </DragDropContext>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

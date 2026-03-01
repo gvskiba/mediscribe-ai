@@ -67,72 +67,32 @@ function SearchPanel({ query, setQuery, filters, setFilters, analysisMode, setAn
   return (
     <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-xl p-4 flex flex-col gap-3.5">
       {/* Section Header */}
-      <div style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: T.purple, display: "flex", alignItems: "center", gap: "6px" }}>
-        <span>●</span> GUIDELINE SEARCH
-      </div>
+       <div className="text-xs font-bold uppercase tracking-wide text-[#9b6dff] flex items-center gap-1.5">
+         <span>●</span> GUIDELINE SEARCH
+       </div>
 
-      {/* Search Bar */}
-      <div style={{
-        display: "flex",
-        gap: "6px",
-        alignItems: "center",
-        background: T.edge,
-        border: `1px solid ${T.border}`,
-        borderRadius: "8px",
-        padding: "10px 12px",
-      }}>
-        <Search size={14} style={{ color: T.dim }} />
-        <input
-          type="text"
-          placeholder="Enter clinical question, condition…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && onSearch()}
-          style={{
-            flex: 1,
-            background: "transparent",
-            border: "none",
-            color: T.bright,
-            fontSize: "13px",
-            outline: "none",
-            fontFamily: "DM Sans, sans-serif",
-          }}
-        />
-        <button style={{
-          background: T.purple,
-          color: "#fff",
-          border: "none",
-          borderRadius: "4px",
-          padding: "4px 8px",
-          fontSize: "9px",
-          fontWeight: 600,
-          cursor: "pointer",
-        }}>AI</button>
-      </div>
+       {/* Search Bar */}
+       <div className="flex gap-1.5 items-center bg-[#162d4f] border border-[#1e3a5f] rounded-lg p-3">
+         <Search size={14} className="text-[#4a7299]" />
+         <input
+           type="text"
+           placeholder="Enter clinical question, condition…"
+           value={query}
+           onChange={(e) => setQuery(e.target.value)}
+           onKeyDown={(e) => e.key === "Enter" && onSearch()}
+           className="flex-1 bg-transparent border-none text-[#e8f4ff] text-sm outline-none"
+         />
+         <button className="bg-[#9b6dff] text-white border-none rounded px-2 py-1 text-xs font-semibold cursor-pointer">AI</button>
+       </div>
 
-      {/* Search Button */}
-      <button
-        onClick={onSearch}
-        disabled={loading}
-        style={{
-          padding: "12px",
-          borderRadius: "8px",
-          fontSize: "12px",
-          fontWeight: 700,
-          border: "none",
-          background: `linear-gradient(135deg, ${T.purple}, #8b5cf6)`,
-          color: "#fff",
-          cursor: loading ? "not-allowed" : "pointer",
-          transition: "all 0.2s",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "6px",
-          opacity: loading ? 0.7 : 1,
-        }}
-      >
-        <Plus size={14} /> Search Clinical Guidelines
-      </button>
+       {/* Search Button */}
+       <button
+         onClick={onSearch}
+         disabled={loading}
+         className="px-3 py-3 rounded-lg text-sm font-bold border-none bg-gradient-to-br from-[#9b6dff] to-[#8b5cf6] text-white cursor-pointer hover:opacity-90 transition-all flex items-center justify-center gap-1.5 disabled:opacity-70"
+       >
+         <Plus size={14} /> Search Clinical Guidelines
+       </button>
 
       {/* Analysis Mode */}
       <div>

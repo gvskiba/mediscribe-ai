@@ -211,35 +211,101 @@ export default function DashboardTopBar({ user }) {
 
         {/* Right: Status & Actions - Compact */}
         <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "auto", flexShrink: 0 }}>
-          <div
-            style={{
-              padding: "4px 8px",
-              borderRadius: "6px",
-              background: "rgba(255,92,108,0.1)",
-              border: "1px solid rgba(255,92,108,0.2)",
-              fontSize: "8px",
-              color: "#ff8a95",
-              fontWeight: 600,
-              whiteSpace: "nowrap",
-            }}
-          >
-            Emergency Medicine
+          {/* Specialty Dropdown */}
+          <div ref={specialtyRef} style={{ position: "relative" }}>
+            <button
+              onClick={() => setSpecialtyOpen(o => !o)}
+              style={{
+                padding: "4px 8px",
+                borderRadius: "6px",
+                background: "rgba(255,92,108,0.1)",
+                border: `1px solid ${specialtyOpen ? "rgba(255,92,108,0.6)" : "rgba(255,92,108,0.2)"}`,
+                fontSize: "8px",
+                color: "#ff8a95",
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              {specialty || "Select Specialty"}
+              <ChevronDown size={10} style={{ transform: specialtyOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+            </button>
+            {specialtyOpen && (
+              <div style={{
+                position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 200,
+                background: T.panel, border: `1px solid ${T.border}`, borderRadius: "8px",
+                minWidth: "180px", overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+              }}>
+                {SPECIALTIES.map(s => (
+                  <button key={s.value} onClick={() => saveSpecialty(s.value)}
+                    style={{
+                      display: "block", width: "100%", textAlign: "left",
+                      padding: "8px 12px", fontSize: "11px", cursor: "pointer",
+                      background: formData.specialty === s.value ? "rgba(255,92,108,0.15)" : "transparent",
+                      color: formData.specialty === s.value ? "#ff8a95" : T.text,
+                      border: "none", transition: "background 0.1s",
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                    onMouseLeave={e => e.currentTarget.style.background = formData.specialty === s.value ? "rgba(255,92,108,0.15)" : "transparent"}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div
-            style={{
-              padding: "4px 8px",
-              borderRadius: "6px",
-              background: T.edge,
-              border: `1px solid ${T.border}`,
-              fontSize: "8px",
-              color: T.teal,
-              fontFamily: "JetBrains Mono, monospace",
-              fontWeight: 600,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {hours}:{minutes}
+          {/* Time + Shift Dropdown */}
+          <div ref={shiftRef} style={{ position: "relative" }}>
+            <button
+              onClick={() => setShiftOpen(o => !o)}
+              style={{
+                padding: "4px 8px",
+                borderRadius: "6px",
+                background: T.edge,
+                border: `1px solid ${shiftOpen ? T.teal : T.border}`,
+                fontSize: "8px",
+                color: T.teal,
+                fontFamily: "JetBrains Mono, monospace",
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              {hours}:{minutes}
+              <ChevronDown size={10} style={{ transform: shiftOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+            </button>
+            {shiftOpen && (
+              <div style={{
+                position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 200,
+                background: T.panel, border: `1px solid ${T.border}`, borderRadius: "8px",
+                minWidth: "200px", padding: "12px", boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+              }}>
+                <div style={{ fontSize: "9px", color: T.dim, fontFamily: "monospace", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "10px" }}>Shift Times</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <div>
+                    <label style={{ fontSize: "9px", color: T.dim, display: "block", marginBottom: "4px" }}>Shift Start</label>
+                    <input type="time" value={shiftStart} onChange={e => setShiftStart(e.target.value)}
+                      style={{ width: "100%", background: T.edge, border: `1px solid ${T.border}`, borderRadius: "5px", color: T.teal, fontSize: "12px", padding: "5px 8px", outline: "none", fontFamily: "monospace" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "9px", color: T.dim, display: "block", marginBottom: "4px" }}>Shift End</label>
+                    <input type="time" value={shiftEnd} onChange={e => setShiftEnd(e.target.value)}
+                      style={{ width: "100%", background: T.edge, border: `1px solid ${T.border}`, borderRadius: "5px", color: T.teal, fontSize: "12px", padding: "5px 8px", outline: "none", fontFamily: "monospace" }} />
+                  </div>
+                  <button onClick={saveShift}
+                    style={{ marginTop: "4px", padding: "6px", borderRadius: "5px", background: T.teal, border: "none", color: T.navy, fontSize: "10px", fontWeight: 700, cursor: "pointer" }}>
+                    Save Shift
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div

@@ -657,7 +657,7 @@ function NotesPanel() {
           + New Note
         </button>
         <button 
-          onClick={() => window.location.href = "?page=NotesLibrary"}
+          onClick={() => window.location.href = createPageUrl("NotesLibrary")}
           style={{ flex: 1, padding: "8px", borderRadius: "6px", background: T.edge, color: T.text, fontSize: "12px", fontWeight: 600, cursor: "pointer", border: `1px solid ${T.border}` }}>
           View All
         </button>

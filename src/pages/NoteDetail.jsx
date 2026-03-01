@@ -1614,7 +1614,7 @@ Generated: ${new Date().toLocaleString()}
                  )}
                </div>
 
-                        <div style={{ flex: 1, overflow: "hidden", minHeight: 0, height: "calc(100% - 80px)" }}>
+                        <div style={{ flex: 1, minHeight: 0 }}>
 
                         {/* Vital Signs Tab */}
                         <TabsContent value="vital_signs" className="overflow-y-auto" style={{ background: "#050f1e", height: "100%" }}>

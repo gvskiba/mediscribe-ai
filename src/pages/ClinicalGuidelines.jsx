@@ -65,15 +65,7 @@ function SearchPanel({ query, setQuery, filters, setFilters, analysisMode, setAn
   ];
 
   return (
-    <div style={{
-      background: T.panel,
-      border: `1px solid ${T.border}`,
-      borderRadius: "12px",
-      padding: "16px",
-      display: "flex",
-      flexDirection: "column",
-      gap: "14px",
-    }}>
+    <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-xl p-4 flex flex-col gap-3.5">
       {/* Section Header */}
       <div style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: T.purple, display: "flex", alignItems: "center", gap: "6px" }}>
         <span>●</span> GUIDELINE SEARCH

@@ -150,62 +150,98 @@ export default function DischargeSummaryTab({
 
     setGeneratingInstructions(true);
     try {
-      const medsText = dischargeData.dischargeMedications
-        .map((m) => `${m.name} ${m.dose} ${m.frequency}`)
+      const medicationsDetail = dischargeData.dischargeMedications
+        .map((m) => `• ${m.name} ${m.dose} ${m.route}, ${m.frequency} (${m.purpose || "take as directed"})${m.importantNotes ? ` - ${m.importantNotes}` : ""}`)
         .join("\n");
 
-      const medsText2 = dischargeData.dischargeMedications
-        .map((m) => `${m.name} - ${m.purpose || "see medication list for details"}`)
+      const followUpDetail = dischargeData.followUpPlan
+        .map((f) => `• ${f.providerType}${f.providerName ? ` (${f.providerName})` : ""} - ${f.timeframe} - ${f.reason}${f.phone ? ` - ${f.phone}` : ""}`)
         .join("\n");
 
-      const prompt = `Generate plain-language discharge instructions for a patient. Use ${readingLevel} reading level.
+      const prompt = `You are generating detailed, patient-friendly discharge instructions. Use a ${readingLevel} reading level and simple, everyday language.
 
-PRIMARY DIAGNOSIS: ${dischargeData.finalImpression.primaryDx}
+PATIENT DIAGNOSIS & CLINICAL CONTEXT:
+Primary Diagnosis: ${dischargeData.finalImpression.primaryDx}
 ICD-10: ${dischargeData.finalImpression.icd10}
-SECONDARY DIAGNOSES: ${dischargeData.finalImpression.secondaryDx || "None"}
-CLINICAL SUMMARY: ${dischargeData.finalImpression.clinicalSummary}
+Secondary Diagnoses: ${dischargeData.finalImpression.secondaryDx || "None"}
+Clinical Summary: ${dischargeData.finalImpression.clinicalSummary}
+Condition at Discharge: ${dischargeData.finalImpression.conditionAtDischarge}
 
-WORKUP PERFORMED:
-Labs: ${dischargeData.workupPerformed.labResults || "See clinical summary"}
-Imaging: ${dischargeData.workupPerformed.imagingResults || "See clinical summary"}
+CLINICAL WORKUP:
+Labs: ${dischargeData.workupPerformed.labResults || "Per clinical evaluation"}
+Imaging: ${dischargeData.workupPerformed.imagingResults || "None or per clinical evaluation"}
 Procedures: ${dischargeData.workupPerformed.procedures || "None"}
 
-TREATMENT PROVIDED:
-Medications: ${dischargeData.treatmentProvided.medicationsGivenInED || "See discharge medications"}
+TREATMENT IN FACILITY:
+Medications Given: ${dischargeData.treatmentProvided.medicationsGivenInED || "See discharge medications"}
 IV Fluids: ${dischargeData.treatmentProvided.ivFluids || "None"}
-Response: ${dischargeData.treatmentProvided.responseToTreatment || "Improved"}
+Response to Treatment: ${dischargeData.treatmentProvided.responseToTreatment || "Improved"}
 
-DISCHARGE MEDICATIONS:
-${medsText}
+DISCHARGE MEDICATIONS (with purposes):
+${medicationsDetail || "None"}
 
-Generate in this structure:
+PLANNED FOLLOW-UP:
+${followUpDetail || "As needed"}
+
+Generate comprehensive discharge instructions in this JSON structure:
 {
   "diagnosis": {
-    "patientFriendlyName": "Simple name for patient",
-    "patientExplanation": "2-3 sentences explaining in simple language"
+    "patientFriendlyName": "Simple, everyday name for the condition (e.g., 'heart strain' instead of 'acute heart failure')",
+    "patientExplanation": "2-3 sentences explaining WHAT this condition is in simple terms a non-medical person would understand"
   },
-  "whatWeFound": "Plain language summary of test/exam findings",
-  "treatmentReceived": "What was done in the ED",
-  "activityInstructions": {
-    "generalActivity": "Activity recommendations",
-    "workStatus": "Work restrictions if any",
-    "drivingStatus": "Driving restrictions if any",
-    "exerciseGuidance": "Exercise recommendations"
+  "whatWeFound": "Plain language summary of tests/exams performed and key findings - explain WHY tests were done and what they showed",
+  "treatmentReceived": "What was done to help the patient in plain language - medications given, treatments, procedures",
+  
+  "medicationInstructions": {
+    "takeAtHome": [
+      {
+        "medicationName": "Drug name",
+        "dosing": "How much and how often (e.g., 'One tablet twice daily')",
+        "whyTaking": "Patient-friendly reason (e.g., 'to help your heart pump better')",
+        "howToTake": "Special instructions (with food, on empty stomach, at bedtime, etc.)",
+        "possibleSideEffects": ["Side effect 1", "Side effect 2"],
+        "importantNotes": "Any critical tips (e.g., 'do not stop taking without calling doctor')"
+      }
+    ],
+    "continueMedicationsFromHome": "List of medications to continue (if any)",
+    "doNotTake": "Medications to avoid or stop (if any)"
   },
+  
+  "activityGuidelines": {
+    "generalActivity": "What patient can and cannot do in plain language",
+    "workStatus": "Can they work? Any restrictions? Timeline?",
+    "drivingStatus": "Can they drive? When can they resume?",
+    "exerciseGuidance": "What exercise is safe? Timeline for resuming normal activity?",
+    "sexualActivity": "Guidance on when safe to resume (if relevant)"
+  },
+  
   "dietInstructions": {
-    "generalDiet": "General diet guidance",
-    "specificRestrictions": ["Restriction 1", "Restriction 2"],
-    "fluidGuidance": "Fluid guidance"
+    "generalDiet": "Overall diet approach in simple language",
+    "specificFoodsToAvoid": ["Food 1", "Food 2"],
+    "specificFoodsToEat": ["Beneficial food 1", "Beneficial food 2"],
+    "fluidGuidance": "Any fluid restrictions or recommendations",
+    "alcoholGuidance": "Alcohol use guidance"
   },
+  
+  "conditionSpecificEducation": [
+    {
+      "icon": "💡",
+      "topic": "Important tip or fact",
+      "content": "Patient-friendly explanation of why this matters"
+    }
+  ],
+  
   "returnPrecautions": {
-    "call911For": ["Symptom 1 requiring emergency", "Symptom 2"],
-    "returnERFor": ["Concern requiring ER", "Another concern"],
-    "callDoctorFor": ["Issue to call doctor about", "Another issue"]
+    "call911For": ["Severe symptom requiring immediate ER visit (e.g., 'chest pain or pressure')", "Another emergency symptom"],
+    "returnERFor": ["Moderate concern that needs ER (e.g., 'pain that doesn\\'t go away with medication')", "Another concern"],
+    "callDoctorFor": ["Mild concern to report at next visit (e.g., 'mild swelling that slowly gets worse')", "Another issue"]
   },
-  "patientEducation": [
-    {"icon": "💡", "topic": "Topic name", "content": "Brief explanation"},
-    {"icon": "💊", "topic": "Medication tips", "content": "Guidance"}
-  ]
+  
+  "followUpPlans": {
+    "appointments": ["Follow-up appointment details (provider, timeframe, reason)"],
+    "labsOrImagingNeeded": ["Any tests that need to be done", "Timeline for tests"],
+    "medications": "Any new prescriptions or changes to medications"
+  }
 }`;
 
       const result = await base44.integrations.Core.InvokeLLM({
@@ -222,32 +258,48 @@ Generate in this structure:
             },
             whatWeFound: { type: "string" },
             treatmentReceived: { type: "string" },
-            activityInstructions: {
+            medicationInstructions: {
+              type: "object",
+              properties: {
+                takeAtHome: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      medicationName: { type: "string" },
+                      dosing: { type: "string" },
+                      whyTaking: { type: "string" },
+                      howToTake: { type: "string" },
+                      possibleSideEffects: { type: "array", items: { type: "string" } },
+                      importantNotes: { type: "string" },
+                    },
+                  },
+                },
+                continueMedicationsFromHome: { type: "string" },
+                doNotTake: { type: "string" },
+              },
+            },
+            activityGuidelines: {
               type: "object",
               properties: {
                 generalActivity: { type: "string" },
                 workStatus: { type: "string" },
                 drivingStatus: { type: "string" },
                 exerciseGuidance: { type: "string" },
+                sexualActivity: { type: "string" },
               },
             },
             dietInstructions: {
               type: "object",
               properties: {
                 generalDiet: { type: "string" },
-                specificRestrictions: { type: "array", items: { type: "string" } },
+                specificFoodsToAvoid: { type: "array", items: { type: "string" } },
+                specificFoodsToEat: { type: "array", items: { type: "string" } },
                 fluidGuidance: { type: "string" },
+                alcoholGuidance: { type: "string" },
               },
             },
-            returnPrecautions: {
-              type: "object",
-              properties: {
-                call911For: { type: "array", items: { type: "string" } },
-                returnERFor: { type: "array", items: { type: "string" } },
-                callDoctorFor: { type: "array", items: { type: "string" } },
-              },
-            },
-            patientEducation: {
+            conditionSpecificEducation: {
               type: "array",
               items: {
                 type: "object",
@@ -258,12 +310,28 @@ Generate in this structure:
                 },
               },
             },
+            returnPrecautions: {
+              type: "object",
+              properties: {
+                call911For: { type: "array", items: { type: "string" } },
+                returnERFor: { type: "array", items: { type: "string" } },
+                callDoctorFor: { type: "array", items: { type: "string" } },
+              },
+            },
+            followUpPlans: {
+              type: "object",
+              properties: {
+                appointments: { type: "array", items: { type: "string" } },
+                labsOrImagingNeeded: { type: "array", items: { type: "string" } },
+                medications: { type: "string" },
+              },
+            },
           },
         },
       });
 
       setPatientInstructions(result);
-      toast.success("Patient instructions generated");
+      toast.success("Comprehensive patient instructions generated");
     } catch (error) {
       console.error("Failed to generate instructions:", error);
       toast.error("Failed to generate instructions");

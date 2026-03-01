@@ -1617,7 +1617,7 @@ Generated: ${new Date().toLocaleString()}
                         <div style={{ flex: 1, overflow: "hidden", minHeight: 0, height: "calc(100% - 80px)" }}>
 
                         {/* Vital Signs Tab */}
-                        <TabsContent value="vital_signs" className="overflow-y-auto" style={{ background: "#050f1e" }}>
+                        <TabsContent value="vital_signs" className="overflow-y-auto" style={{ background: "#050f1e", height: "100%" }}>
                           <VitalSignsTab note={note} noteId={noteId} queryClient={queryClient} templates={templates} selectedTemplate={selectedTemplate} setSelectedTemplate={setSelectedTemplate} loadingVitalAnalysis={loadingVitalAnalysis} setLoadingVitalAnalysis={setLoadingVitalAnalysis} vitalSignsAnalysis={vitalSignsAnalysis} setVitalSignsAnalysis={setVitalSignsAnalysis} vitalSignsHistory={vitalSignsHistory} setVitalSignsHistory={setVitalSignsHistory} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
                         </TabsContent>
 

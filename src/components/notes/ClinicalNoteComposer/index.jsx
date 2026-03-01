@@ -19,9 +19,7 @@ export default function ClinicalNoteComposer({ note, noteId, queryClient }) {
           <NoteTypePanel selectedType={selectedNoteType} onSelect={setSelectedNoteType} />
         </div>
         <div style={{ flex: "1", overflowY: "auto", minHeight: 0 }}>
-          <div className="space-y-3 h-full overflow-y-auto">
-            <TemplatePanel selectedNoteType={selectedNoteType} onSelect={setSelectedTemplate} />
-          </div>
+          <TemplatePanel selectedNoteType={selectedNoteType} onSelect={setSelectedTemplate} />
         </div>
       </div>
 

@@ -16,10 +16,12 @@ export default function PatientSearchPanel({ onSelectPatient, selectedPatient })
 
     setIsSearching(true);
     try {
-      const results = await base44.entities.Patient.filter({
-        patient_name: { $regex: query, $options: "i" }
-      }, "-updated_date", 5);
-      setSearchResults(results);
+      const results = await base44.entities.Patient.list("-updated_date", 100);
+      const filtered = results.filter(p => 
+        p.patient_name?.toLowerCase().includes(query.toLowerCase()) || 
+        p.patient_id?.toLowerCase().includes(query.toLowerCase())
+      ).slice(0, 5);
+      setSearchResults(filtered);
     } catch (error) {
       console.error("Failed to search patients:", error);
     } finally {

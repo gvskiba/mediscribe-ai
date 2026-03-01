@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Zap, Edit2, Check } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Zap, Edit2, Check, ChevronDown, Clock } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { createPageUrl } from "../../utils";
 import ActivePatientsDropdown from "./ActivePatientsDropdown";

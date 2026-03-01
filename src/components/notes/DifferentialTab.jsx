@@ -659,16 +659,43 @@ Return ONLY valid JSON with this structure:
 
         {/* Scrollable content */}
         <div style={{ flex: 1, overflowY: "auto", padding: "16px 22px 32px", display: "flex", flexDirection: "column", gap: 10 }}>
-          {/* AI Banner */}
+          {/* AI Suggestions Panel */}
           <AnimatePresence>
             {aiInitialSuggestions.length > 0 && (
               <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                style={{ background: "rgba(0,204,163,0.08)", border: `1px solid ${T.teal}26`, borderRadius: 8, padding: "12px 14px", display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                <span style={{ fontSize: 14 }}>✨</span>
-                <div style={{ fontFamily: "Geist Mono, monospace", fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: T.teal }}>AI suggested</div>
-                <div style={{ fontFamily: "Geist Mono, monospace", fontSize: "10px", color: T.muted, flex: 1 }}>{aiInitialSuggestions.length} diagnoses based on your note</div>
-                <button onClick={acceptAllInitial} style={{ fontFamily: "Geist Mono, monospace", fontSize: "9px", padding: "4px 10px", borderRadius: 4, background: T.teal, color: T.bg, border: `1px solid ${T.teal}`, cursor: "pointer" }}>Accept All</button>
-                <button onClick={() => setAiInitialSuggestions([])} style={{ fontFamily: "Geist Mono, monospace", fontSize: "9px", padding: "4px 10px", borderRadius: 4, border: `1px solid ${T.border_2}`, color: T.muted, background: "transparent", cursor: "pointer" }}>Dismiss</button>
+                style={{ background: "rgba(0,204,163,0.06)", border: `1px solid ${T.teal}30`, borderRadius: 8, padding: "12px 14px", marginBottom: 4 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                  <span style={{ fontSize: 14 }}>✨</span>
+                  <div style={{ fontFamily: "Geist Mono, monospace", fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: T.teal }}>AI Suggested — {selectedInitialSuggestions.size}/{aiInitialSuggestions.length} selected</div>
+                  <div style={{ flex: 1 }} />
+                  <button onClick={() => setSelectedInitialSuggestions(new Set(aiInitialSuggestions.map((_, i) => i)))} style={{ fontFamily: "Geist Mono, monospace", fontSize: "9px", padding: "3px 8px", borderRadius: 4, border: `1px solid ${T.border_2}`, color: T.muted, background: "transparent", cursor: "pointer" }}>All</button>
+                  <button onClick={() => setSelectedInitialSuggestions(new Set())} style={{ fontFamily: "Geist Mono, monospace", fontSize: "9px", padding: "3px 8px", borderRadius: 4, border: `1px solid ${T.border_2}`, color: T.muted, background: "transparent", cursor: "pointer" }}>None</button>
+                  <button onClick={acceptSelectedInitial} disabled={selectedInitialSuggestions.size === 0} style={{ fontFamily: "Geist Mono, monospace", fontSize: "9px", padding: "4px 10px", borderRadius: 4, background: selectedInitialSuggestions.size > 0 ? T.teal : T.surface_2, color: selectedInitialSuggestions.size > 0 ? T.bg : T.dim, border: `1px solid ${selectedInitialSuggestions.size > 0 ? T.teal : T.border_2}`, cursor: selectedInitialSuggestions.size > 0 ? "pointer" : "not-allowed" }}>Add Selected</button>
+                  <button onClick={() => setAiInitialSuggestions([])} style={{ fontFamily: "Geist Mono, monospace", fontSize: "9px", padding: "4px 8px", borderRadius: 4, border: `1px solid ${T.border_2}`, color: T.muted, background: "transparent", cursor: "pointer" }}>✕</button>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {aiInitialSuggestions.map((s, i) => {
+                    const lkOpt = LIKELIHOOD_OPTIONS.find(o => o.value === s.likelihood) || LIKELIHOOD_OPTIONS[1];
+                    const selected = selectedInitialSuggestions.has(i);
+                    return (
+                      <div key={i} onClick={() => toggleInitialSuggestion(i)}
+                        style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "9px 11px", borderRadius: 6, cursor: "pointer", border: `1px solid ${selected ? T.teal + "55" : T.border}`, background: selected ? "rgba(0,204,163,0.08)" : T.card, transition: "all 0.12s" }}>
+                        <div style={{ width: 16, height: 16, borderRadius: 3, border: `1.5px solid ${selected ? T.teal : T.border_2}`, background: selected ? T.teal : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+                          {selected && <span style={{ color: T.bg, fontSize: 10, fontWeight: 700 }}>✓</span>}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            <span style={{ fontSize: 13, fontWeight: 500, color: T.text }}>{s.name}</span>
+                            {s.icd10 && <span style={{ fontFamily: "Geist Mono, monospace", fontSize: "10px", color: T.blue, background: T.blue_dim, border: `1px solid ${T.blue}33`, padding: "1px 6px", borderRadius: 3 }}>{s.icd10}</span>}
+                            <span style={{ fontFamily: "Geist Mono, monospace", fontSize: "9px", color: lkOpt.color, background: lkOpt.bg, padding: "1px 6px", borderRadius: 3 }}>{lkOpt.label}</span>
+                            {s.confidence != null && <span style={{ fontFamily: "Geist Mono, monospace", fontSize: "9px", color: T.teal }}>{s.confidence}%</span>}
+                          </div>
+                          {s.reasoning && <div style={{ fontSize: 11, color: T.muted, marginTop: 3, lineHeight: 1.4 }}>{s.reasoning}</div>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

@@ -1636,7 +1636,10 @@ Generated: ${new Date().toLocaleString()}
 
                  {/* Labs & Imaging Tab */}
                  <TabsContent value="labs_imaging" className="overflow-y-auto" style={{ background: "#050f1e" }}>
-                 <LabsImagingTab note={note} noteId={noteId} queryClient={queryClient} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
+                 <div style={{ maxWidth: "900px", margin: "0 auto", padding: "20px 16px", display: "flex", flexDirection: "column", gap: "20px" }}>
+                   <NoteAbnormalFindingsAnalyzer note={note} noteId={noteId} queryClient={queryClient} />
+                   <LabsImagingTab note={note} noteId={noteId} queryClient={queryClient} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
+                 </div>
                  </TabsContent>
 
            {/* Treatment Plan Tab */}

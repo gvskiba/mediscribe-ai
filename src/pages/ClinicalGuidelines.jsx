@@ -455,37 +455,26 @@ export default function ClinicalGuidelines() {
       {/* Main Grid */}
       <div className="flex-1 grid grid-cols-[320px_1fr] gap-3 p-3 overflow-hidden">
         {/* Left Column */}
-        <div className="flex flex-col gap-3 overflow-hidden min-w-0 min-h-0">
-          <SearchPanel
-            query={query}
-            setQuery={setQuery}
-            filters={filters}
-            setFilters={setFilters}
-            analysisMode={analysisMode}
-            setAnalysisMode={setAnalysisMode}
-            onSearch={handleSearch}
-            loading={loading}
-          />
-          <ResultsPanel
-            results={results}
-            loading={loading}
-            onAnalyze={handleAnalyze}
-            selectedForCompare={selectedForCompare}
-            onToggleCompare={(id) => setSelectedForCompare((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
-          />
-        </div>
+        <SearchPanel
+          query={query}
+          setQuery={setQuery}
+          filters={filters}
+          setFilters={setFilters}
+          analysisMode={analysisMode}
+          setAnalysisMode={setAnalysisMode}
+          onSearch={handleSearch}
+          loading={loading}
+        />
 
         {/* Right Column */}
-        <div className="overflow-hidden min-h-0 flex-1">
-          <AnalysisPanel
-            analysis={analysis}
-            loading={loading}
-            selectedSections={selectedSections}
-            onToggleSection={(id) => setSelectedSections((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
-            onAddToNote={handleAddToNote}
-            onSave={handleSave}
-          />
-        </div>
+        <AnalysisPanel
+          analysis={analysis}
+          loading={loading}
+          selectedSections={selectedSections}
+          onToggleSection={(id) => setSelectedSections((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
+          onAddToNote={handleAddToNote}
+          onSave={handleSave}
+        />
       </div>
 
       <style>{`

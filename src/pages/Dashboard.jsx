@@ -848,11 +848,11 @@ export default function Dashboard() {
                   </div>
                 )}
                 {isEditMode && !def && (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "80px", color: T.dim, fontSize: "11px" }}>
-                    {isSelected ? <span style={{ color: T.teal }}>↑ Choose a widget above</span> : <span>+ Empty</span>}
-                  </div>
-                )}
-                {def && <div style={{ position: "relative", zIndex: isEditMode ? 0 : "auto" }}>{def.component}</div>}
+                   <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "80px", color: T.dim, fontSize: "11px" }}>
+                     {isSelected ? <span style={{ color: T.teal }}>↑ Choose a widget above</span> : <span>+ Empty</span>}
+                   </div>
+                 )}
+                 {def && <div style={{ position: "relative", zIndex: isEditMode ? 0 : "auto" }}><def.Comp /></div>}
               </div>
             );
           })}

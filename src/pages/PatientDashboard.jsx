@@ -104,6 +104,12 @@ export default function PatientDashboard() {
     enabled: !!encounterId,
   });
 
+  const { data: currentNote } = useQuery({
+    queryKey: ["note", noteId],
+    queryFn: () => base44.entities.ClinicalNote.get(noteId),
+    enabled: !!noteId,
+  });
+
   const handleRefresh = async () => {
     setLastUpdated(new Date());
     await Promise.all([

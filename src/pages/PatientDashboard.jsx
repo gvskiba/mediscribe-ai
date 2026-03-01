@@ -359,6 +359,28 @@ Return JSON with:
         </div>
       )}
 
+      {/* Encounter Info Bar */}
+      <div style={{ background: colors.slate, borderBottom: `1px solid ${colors.border}`, padding: "11px 16px", display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "11px" }}>
+        {[
+          { icon: "⏱️", label: "LENGTH OF STAY", value: "Active encounter" },
+          { icon: "🔢", label: "TRIAGE / ESI", value: "Not assigned" },
+          { icon: "👨‍⚕️", label: "ATTENDING", value: "No resident" },
+          { icon: "🚪", label: "STATUS", value: "No disposition yet" },
+        ].map((item, idx) => (
+          <div key={idx} style={{ background: colors.panel, border: `1px solid ${colors.border}`, borderRadius: "8px", padding: "12px", display: "flex", gap: "10px", alignItems: "flex-start" }}>
+            <span style={{ fontSize: "16px", minWidth: "20px" }}>{item.icon}</span>
+            <div>
+              <p style={{ fontSize: "9px", color: colors.dim, margin: "0 0 3px 0", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>
+                {item.label}
+              </p>
+              <p style={{ fontSize: "11px", color: colors.text, margin: 0, fontWeight: 500 }}>
+                {item.value}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* Main Content Grid */}
       <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", padding: "11px 16px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "290px 1fr 272px", gap: "11px", flex: 1, overflow: "hidden" }}>

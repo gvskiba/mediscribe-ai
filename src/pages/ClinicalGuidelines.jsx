@@ -665,7 +665,7 @@ export default function ClinicalGuidelines() {
 
       {/* Topbar */}
       <div style={{
-        height: "58px",
+        height: "64px",
         background: T.slate,
         borderBottom: `1px solid ${T.border}`,
         padding: "0 16px",
@@ -673,13 +673,27 @@ export default function ClinicalGuidelines() {
         alignItems: "center",
         justifyContent: "space-between",
       }}>
-        <div style={{ fontSize: "14px", fontWeight: 600, color: T.bright }}>Clinical Guidelines</div>
-        <div style={{ display: "flex", gap: "12px" }}>
-          <button style={{ padding: "6px 12px", borderRadius: "4px", fontSize: "10px", border: `1px solid ${T.border}`, background: T.edge, color: T.dim, cursor: "pointer" }}>
-            Print
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontSize: "16px", fontWeight: 700, color: T.bright }}>ClinAI</span>
+          <span style={{ fontSize: "12px", color: T.purple, fontWeight: 600 }}>—</span>
+          <span style={{ fontSize: "12px", color: T.purple, fontWeight: 600 }}>Clinical Guidelines Search</span>
+          <span style={{ fontSize: "10px", color: T.dim, marginLeft: "8px" }}>AI-powered · Based44 · ACC/AHA · ACEP · IDSA · Cochrane · USPSTF · +10 sources</span>
+        </div>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <button style={{ padding: "6px 10px", borderRadius: "6px", fontSize: "10px", border: `1px solid ${T.border}`, background: T.edge, color: T.dim, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+            <Clock size={12} /> 0 Recent
           </button>
-          <button style={{ padding: "6px 12px", borderRadius: "4px", fontSize: "10px", border: `1px solid ${T.border}`, background: T.edge, color: T.dim, cursor: "pointer" }}>
-            Share
+          <button style={{ padding: "6px 10px", borderRadius: "6px", fontSize: "10px", border: `1px solid ${T.border}`, background: T.edge, color: T.gold, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+            <Star size={12} /> 0 Saved
+          </button>
+          <button style={{ padding: "6px 10px", borderRadius: "6px", fontSize: "10px", border: `1px solid ${T.teal}`, background: `rgba(0,212,188,0.1)`, color: T.teal, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", fontWeight: 600 }}>
+            <Zap size={12} /> AI ACTIVE
+          </button>
+          <button style={{ padding: "6px 10px", borderRadius: "6px", fontSize: "10px", border: `1px solid ${T.border}`, background: T.edge, color: T.dim, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+            🖨️ Print
+          </button>
+          <button style={{ padding: "6px 12px", borderRadius: "6px", fontSize: "10px", border: "none", background: T.teal, color: T.navy, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", fontWeight: 600 }}>
+            <Save size={12} /> Save Analysis
           </button>
         </div>
       </div>

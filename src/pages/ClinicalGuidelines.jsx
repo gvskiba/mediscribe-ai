@@ -55,32 +55,44 @@ const ANALYSIS_SECTIONS = [
 ];
 
 function SearchPanel({ query, setQuery, filters, setFilters, analysisMode, setAnalysisMode, onSearch, loading }) {
-  const [showFilters, setShowFilters] = useState(false);
+  const [applyContext, setApplyContext] = useState(false);
+
+  const analysisModes = [
+    { id: "full_analysis", label: "Full Analysis", icon: "📋", desc: "Complete structured analysis with all sections" },
+    { id: "quick_summary", label: "Quick Summary", icon: "⚡", desc: "Key points and top recommendations only" },
+    { id: "patient_specific", label: "Patient-Specific", icon: "👤", desc: "Contextualized to active encounter via Base44" },
+    { id: "comparative", label: "Compare Guidelines", icon: "⚖️", desc: "Side-by-side comparison of selected guidelines" },
+  ];
 
   return (
     <div style={{
       background: T.panel,
       border: `1px solid ${T.border}`,
-      borderRadius: "8px",
-      padding: "12px",
+      borderRadius: "12px",
+      padding: "16px",
       display: "flex",
       flexDirection: "column",
-      gap: "10px",
+      gap: "14px",
     }}>
+      {/* Section Header */}
+      <div style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: T.purple, display: "flex", alignItems: "center", gap: "6px" }}>
+        <span>●</span> GUIDELINE SEARCH
+      </div>
+
       {/* Search Bar */}
       <div style={{
         display: "flex",
-        gap: "8px",
+        gap: "6px",
         alignItems: "center",
         background: T.edge,
         border: `1px solid ${T.border}`,
-        borderRadius: "6px",
-        padding: "8px 12px",
+        borderRadius: "8px",
+        padding: "10px 12px",
       }}>
-        {loading ? <Loader2 size={16} style={{ color: T.teal, animation: "spin 1s linear infinite" }} /> : <Search size={16} style={{ color: T.dim }} />}
+        <Search size={14} style={{ color: T.dim }} />
         <input
           type="text"
-          placeholder="Search guidelines by condition, drug, procedure…"
+          placeholder="Enter clinical question, condition…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && onSearch()}
@@ -89,98 +101,120 @@ function SearchPanel({ query, setQuery, filters, setFilters, analysisMode, setAn
             background: "transparent",
             border: "none",
             color: T.bright,
-            fontSize: "12px",
+            fontSize: "13px",
             outline: "none",
             fontFamily: "DM Sans, sans-serif",
           }}
         />
+        <button style={{
+          background: T.purple,
+          color: "#fff",
+          border: "none",
+          borderRadius: "4px",
+          padding: "4px 8px",
+          fontSize: "9px",
+          fontWeight: 600,
+          cursor: "pointer",
+        }}>AI</button>
       </div>
 
-      {/* Mode Selection */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        gap: "6px",
-      }}>
-        {["full_analysis", "quick_summary"].map((mode) => (
-          <button
-            key={mode}
-            onClick={() => setAnalysisMode(mode)}
-            style={{
-              padding: "6px 10px",
-              borderRadius: "4px",
-              fontSize: "10px",
-              fontWeight: 600,
-              border: analysisMode === mode ? `1px solid ${T.teal}` : `1px solid ${T.border}`,
-              background: analysisMode === mode ? `rgba(0,212,188,0.1)` : T.edge,
-              color: analysisMode === mode ? T.teal : T.dim,
-              cursor: "pointer",
-              transition: "all 0.2s",
-            }}
-          >
-            {mode === "full_analysis" ? "Full Analysis" : "Quick Summary"}
-          </button>
-        ))}
+      {/* Search Button */}
+      <button
+        onClick={onSearch}
+        disabled={loading}
+        style={{
+          padding: "12px",
+          borderRadius: "8px",
+          fontSize: "12px",
+          fontWeight: 700,
+          border: "none",
+          background: `linear-gradient(135deg, ${T.purple}, #8b5cf6)`,
+          color: "#fff",
+          cursor: loading ? "not-allowed" : "pointer",
+          transition: "all 0.2s",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "6px",
+          opacity: loading ? 0.7 : 1,
+        }}
+      >
+        <Plus size={14} /> Search Clinical Guidelines
+      </button>
+
+      {/* Analysis Mode */}
+      <div>
+        <div style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: T.dim, marginBottom: "10px" }}>Analysis Mode</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+          {analysisModes.map((mode) => (
+            <button
+              key={mode.id}
+              onClick={() => setAnalysisMode(mode.id)}
+              style={{
+                padding: "10px",
+                borderRadius: "8px",
+                fontSize: "11px",
+                fontWeight: 600,
+                border: analysisMode === mode.id ? `1px solid ${T.purple}` : `1px solid ${T.border}`,
+                background: analysisMode === mode.id ? `rgba(155,109,255,0.15)` : T.edge,
+                color: T.text,
+                cursor: "pointer",
+                transition: "all 0.2s",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                gap: "4px",
+              }}
+            >
+              <span style={{ fontSize: "14px" }}>{mode.icon}</span>
+              <span>{mode.label}</span>
+              <span style={{ fontSize: "9px", color: T.dim, fontWeight: 400 }}>{mode.desc}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Quick Topics */}
-      <div style={{ fontSize: "9px", color: T.dim, fontWeight: 600, marginTop: "4px" }}>Quick Topics</div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-        {QUICK_TOPICS.slice(0, 5).map((topic) => (
-          <button
-            key={topic}
-            onClick={() => { setQuery(topic); onSearch(); }}
-            style={{
-              padding: "4px 8px",
-              borderRadius: "4px",
-              fontSize: "10px",
-              background: `rgba(0,212,188,0.1)`,
-              border: `1px solid ${T.teal}`,
-              color: T.teal,
-              cursor: "pointer",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = `rgba(0,212,188,0.2)`; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = `rgba(0,212,188,0.1)`; }}
-          >
-            {topic}
-          </button>
-        ))}
+      <div>
+        <div style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: T.dim, marginBottom: "8px" }}>Quick Topics</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+          {QUICK_TOPICS.map((topic) => (
+            <button
+              key={topic}
+              onClick={() => { setQuery(topic); onSearch(); }}
+              style={{
+                padding: "6px 10px",
+                borderRadius: "6px",
+                fontSize: "11px",
+                background: `rgba(155,109,255,0.1)`,
+                border: `1px solid rgba(155,109,255,0.3)`,
+                color: T.purple,
+                cursor: "pointer",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = `rgba(155,109,255,0.2)`; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = `rgba(155,109,255,0.1)`; }}
+            >
+              {topic}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Filters Toggle */}
-      <button
-        onClick={() => setShowFilters(!showFilters)}
-        style={{
-          padding: "6px 10px",
-          borderRadius: "4px",
-          fontSize: "10px",
-          fontWeight: 600,
-          border: `1px solid ${T.border}`,
-          background: showFilters ? `rgba(0,212,188,0.1)` : T.edge,
-          color: showFilters ? T.teal : T.dim,
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          transition: "all 0.2s",
-        }}
-      >
-        <Filter size={12} /> Filters {showFilters ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-      </button>
-
       {/* Filters */}
-      {showFilters && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingTop: "8px", borderTop: `1px solid ${T.border}` }}>
+      <div style={{ paddingTop: "12px", borderTop: `1px solid ${T.border}` }}>
+        <div style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: T.dim, marginBottom: "10px", display: "flex", alignItems: "center", gap: "6px" }}>
+          <Filter size={12} /> FILTERS
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "10px" }}>
           <div>
-            <label style={{ fontSize: "9px", color: T.dim, fontWeight: 600, display: "block", marginBottom: "4px" }}>Specialty</label>
             <select
               value={filters.specialty}
               onChange={(e) => setFilters({ ...filters, specialty: e.target.value })}
               style={{
                 width: "100%",
-                padding: "6px 8px",
-                borderRadius: "4px",
+                padding: "8px",
+                borderRadius: "6px",
                 border: `1px solid ${T.border}`,
                 background: T.edge,
                 color: T.bright,
@@ -190,16 +224,14 @@ function SearchPanel({ query, setQuery, filters, setFilters, analysisMode, setAn
               {SPECIALTIES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
-
           <div>
-            <label style={{ fontSize: "9px", color: T.dim, fontWeight: 600, display: "block", marginBottom: "4px" }}>Source</label>
             <select
               value={filters.source}
               onChange={(e) => setFilters({ ...filters, source: e.target.value })}
               style={{
                 width: "100%",
-                padding: "6px 8px",
-                borderRadius: "4px",
+                padding: "8px",
+                borderRadius: "6px",
                 border: `1px solid ${T.border}`,
                 background: T.edge,
                 color: T.bright,
@@ -210,16 +242,14 @@ function SearchPanel({ query, setQuery, filters, setFilters, analysisMode, setAn
               {GUIDELINE_SOURCES.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
-
           <div>
-            <label style={{ fontSize: "9px", color: T.dim, fontWeight: 600, display: "block", marginBottom: "4px" }}>Year</label>
             <select
               value={filters.yearFrom}
               onChange={(e) => setFilters({ ...filters, yearFrom: e.target.value })}
               style={{
                 width: "100%",
-                padding: "6px 8px",
-                borderRadius: "4px",
+                padding: "8px",
+                borderRadius: "6px",
                 border: `1px solid ${T.border}`,
                 background: T.edge,
                 color: T.bright,
@@ -230,19 +260,16 @@ function SearchPanel({ query, setQuery, filters, setFilters, analysisMode, setAn
               <option value="2024">2024+</option>
               <option value="2023">2023+</option>
               <option value="2022">2022+</option>
-              <option value="2020">2020+</option>
             </select>
           </div>
-
           <div>
-            <label style={{ fontSize: "9px", color: T.dim, fontWeight: 600, display: "block", marginBottom: "4px" }}>Evidence Level</label>
             <select
               value={filters.evidenceLevel}
               onChange={(e) => setFilters({ ...filters, evidenceLevel: e.target.value })}
               style={{
                 width: "100%",
-                padding: "6px 8px",
-                borderRadius: "4px",
+                padding: "8px",
+                borderRadius: "6px",
                 border: `1px solid ${T.border}`,
                 background: T.edge,
                 color: T.bright,
@@ -256,7 +283,29 @@ function SearchPanel({ query, setQuery, filters, setFilters, analysisMode, setAn
             </select>
           </div>
         </div>
-      )}
+
+        {/* Patient Context Toggle */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          padding: "10px",
+          background: T.edge,
+          borderRadius: "6px",
+          border: `1px solid ${T.border}`,
+        }}>
+          <input
+            type="checkbox"
+            checked={applyContext}
+            onChange={(e) => setApplyContext(e.target.checked)}
+            style={{ cursor: "pointer" }}
+          />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: "11px", fontWeight: 600, color: T.text }}>Apply Patient Context</div>
+            <div style={{ fontSize: "9px", color: T.dim }}>Contextualizes analysis to active encounter via Base44</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

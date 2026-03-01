@@ -65,14 +65,14 @@ function SearchPanel({ query, setQuery, filters, setFilters, analysisMode, setAn
   ];
 
   return (
-    <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-xl p-4 flex flex-col gap-3.5">
+    <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-xl p-4 flex flex-col gap-4">
       {/* Section Header */}
        <div className="text-xs font-bold uppercase tracking-wide text-[#9b6dff] flex items-center gap-1.5">
          <span>●</span> GUIDELINE SEARCH
        </div>
 
        {/* Search Bar */}
-       <div className="flex gap-1.5 items-center bg-[#162d4f] border border-[#1e3a5f] rounded-lg p-3">
+       <div className="flex gap-2 items-center bg-[#162d4f] border border-[#1e3a5f] rounded-lg p-3">
          <Search size={14} className="text-[#4a7299]" />
          <input
            type="text"
@@ -80,33 +80,33 @@ function SearchPanel({ query, setQuery, filters, setFilters, analysisMode, setAn
            value={query}
            onChange={(e) => setQuery(e.target.value)}
            onKeyDown={(e) => e.key === "Enter" && onSearch()}
-           className="flex-1 bg-transparent border-none text-[#e8f4ff] text-sm outline-none"
+           className="flex-1 bg-transparent border-none text-[#e8f4ff] text-sm outline-none placeholder:text-[#4a7299]"
          />
-         <button className="bg-[#9b6dff] text-white border-none rounded px-2 py-1 text-xs font-semibold cursor-pointer">AI</button>
+         <button className="bg-[#9b6dff] text-white border-none rounded px-2 py-1 text-xs font-semibold cursor-pointer hover:bg-[#8b5cf6] transition-all">AI</button>
        </div>
 
        {/* Search Button */}
        <button
          onClick={onSearch}
          disabled={loading}
-         className="px-3 py-3 rounded-lg text-sm font-bold border-none bg-gradient-to-br from-[#9b6dff] to-[#8b5cf6] text-white cursor-pointer hover:opacity-90 transition-all flex items-center justify-center gap-1.5 disabled:opacity-70"
+         className="px-3 py-3 rounded-lg text-sm font-bold border-none bg-gradient-to-br from-[#9b6dff] to-[#8b5cf6] text-white cursor-pointer hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
        >
-         <Plus size={14} /> Search Clinical Guidelines
+         <Plus size={16} /> Search Clinical Guidelines
        </button>
 
       {/* Analysis Mode */}
       <div>
-        <div className="text-xs font-bold uppercase tracking-wide text-[#4a7299] mb-2.5">Analysis Mode</div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="text-xs font-bold uppercase tracking-wide text-[#4a7299] mb-3">Analysis Mode</div>
+        <div className="grid grid-cols-2 gap-2.5">
           {analysisModes.map((mode) => (
             <button
               key={mode.id}
               onClick={() => setAnalysisMode(mode.id)}
-              className={`px-2.5 py-2.5 rounded-lg text-xs font-semibold cursor-pointer transition-all flex flex-col items-start gap-1 ${analysisMode === mode.id ? "border border-[#9b6dff] bg-[rgba(155,109,255,0.15)]" : "border border-[#1e3a5f] bg-[#162d4f]"} text-[#c8ddf0]`}
+              className={`px-3 py-3 rounded-lg text-xs font-semibold cursor-pointer transition-all flex flex-col items-start gap-2 text-left ${analysisMode === mode.id ? "border border-[#9b6dff] bg-[rgba(155,109,255,0.15)]" : "border border-[#1e3a5f] bg-[#162d4f] hover:border-[#2a4d72]"}`}
             >
-              <span className="text-base">{mode.icon}</span>
-              <span>{mode.label}</span>
-              <span className="text-xs text-[#4a7299] font-normal">{mode.desc}</span>
+              <span className="text-lg">{mode.icon}</span>
+              <span className="text-[#e8f4ff] font-semibold leading-tight">{mode.label}</span>
+              <span className="text-xs text-[#4a7299] font-normal leading-tight">{mode.desc}</span>
             </button>
           ))}
         </div>
@@ -114,13 +114,13 @@ function SearchPanel({ query, setQuery, filters, setFilters, analysisMode, setAn
 
       {/* Quick Topics */}
       <div>
-        <div className="text-xs font-bold uppercase tracking-wide text-[#4a7299] mb-2">Quick Topics</div>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="text-xs font-bold uppercase tracking-wide text-[#4a7299] mb-2.5">Quick Topics</div>
+        <div className="flex flex-wrap gap-2">
           {QUICK_TOPICS.map((topic) => (
             <button
               key={topic}
               onClick={() => { setQuery(topic); onSearch(); }}
-              className="px-2.5 py-1.5 rounded-md text-xs bg-[rgba(155,109,255,0.1)] border border-[rgba(155,109,255,0.3)] text-[#9b6dff] cursor-pointer transition-all hover:bg-[rgba(155,109,255,0.2)]"
+              className="px-3 py-2 rounded-md text-xs border border-[#4a7299] bg-transparent text-[#4a7299] cursor-pointer transition-all hover:border-[#9b6dff] hover:text-[#9b6dff]"
             >
               {topic}
             </button>
@@ -130,38 +130,35 @@ function SearchPanel({ query, setQuery, filters, setFilters, analysisMode, setAn
 
       {/* Filters */}
       <div className="pt-3 border-t border-[#1e3a5f]">
-        <div className="text-xs font-bold uppercase tracking-wide text-[#4a7299] mb-2.5 flex items-center gap-1.5">
-          <Filter size={12} /> FILTERS
+        <div className="text-xs font-bold uppercase tracking-wide text-[#4a7299] mb-3 flex items-center gap-1.5">
+          ⚙️ FILTERS
         </div>
-        <div className="grid grid-cols-2 gap-2 mb-2.5">
-          {[
-            { value: filters.specialty, onChange: (v) => setFilters({ ...filters, specialty: v }), options: SPECIALTIES },
-            { value: filters.source, onChange: (v) => setFilters({ ...filters, source: v }), options: ["All Sources", ...GUIDELINE_SOURCES.map(s => s.name)] },
-            { value: filters.yearFrom, onChange: (v) => setFilters({ ...filters, yearFrom: v }), options: ["Any Year", "2024+", "2023+", "2022+"] },
-            { value: filters.evidenceLevel, onChange: (v) => setFilters({ ...filters, evidenceLevel: v }), options: ["Any Level", "A - Strong", "B - Moderate", "C - Weak"] },
-          ].map((item, idx) => (
-            <select
-              key={idx}
-              value={item.value}
-              onChange={(e) => item.onChange(e.target.value)}
-              className="w-full px-2 py-2 rounded-md border border-[#1e3a5f] bg-[#162d4f] text-[#e8f4ff] text-xs"
-            >
-              {item.options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-            </select>
-          ))}
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          <button className="w-full px-3 py-2.5 rounded-lg border border-[#1e3a5f] bg-[#162d4f] text-[#e8f4ff] text-xs font-semibold cursor-pointer hover:border-[#2a4d72] transition-all text-left">
+            {filters.specialty || "All Specialties"}
+          </button>
+          <button className="w-full px-3 py-2.5 rounded-lg border border-[#1e3a5f] bg-[#162d4f] text-[#e8f4ff] text-xs font-semibold cursor-pointer hover:border-[#2a4d72] transition-all text-left">
+            {filters.source || "All Sources"}
+          </button>
+          <button className="w-full px-3 py-2.5 rounded-lg border border-[#1e3a5f] bg-[#162d4f] text-[#e8f4ff] text-xs font-semibold cursor-pointer hover:border-[#2a4d72] transition-all text-left">
+            {filters.yearFrom || "Any Year"}
+          </button>
+          <button className="w-full px-3 py-2.5 rounded-lg border border-[#1e3a5f] bg-[#162d4f] text-[#e8f4ff] text-xs font-semibold cursor-pointer hover:border-[#2a4d72] transition-all text-left">
+            {filters.evidenceLevel || "Any Level"}
+          </button>
         </div>
 
         {/* Patient Context Toggle */}
-        <div className="flex items-center gap-2 p-2.5 bg-[#162d4f] rounded-md border border-[#1e3a5f]">
+        <div className="flex items-start gap-3 p-3 bg-[#162d4f] rounded-lg border border-[#1e3a5f]">
           <input
             type="checkbox"
             checked={applyContext}
             onChange={(e) => setApplyContext(e.target.checked)}
-            className="cursor-pointer"
+            className="cursor-pointer mt-1 accent-[#9b6dff]"
           />
           <div className="flex-1">
-            <div className="text-xs font-semibold text-[#c8ddf0]">Apply Patient Context</div>
-            <div className="text-xs text-[#4a7299]">Contextualizes analysis to active encounter via Base44</div>
+            <div className="text-xs font-semibold text-[#e8f4ff]">Apply Patient Context</div>
+            <div className="text-xs text-[#4a7299] mt-0.5">Contextualizes analysis to active encounter via Base44</div>
           </div>
         </div>
       </div>

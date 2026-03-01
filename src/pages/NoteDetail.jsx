@@ -1468,9 +1468,9 @@ Generated: ${new Date().toLocaleString()}
        <motion.div
          initial={{ opacity: 0, y: 12 }}
          animate={{ opacity: 1, y: 0 }}
-         className="overflow-hidden"
+         style={{ flex: 1, overflow: "hidden", minHeight: 0 }}
        >
-         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col">
+         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col" style={{ height: "100%" }}>
                {/* ── Bottom Navigation Bar ── */}
                <div className="fixed bottom-0 left-0 right-0 shadow-2xl z-50 flex flex-col" style={{ background: "#0b1d35", borderTop: "1px solid #1e3a5f" }}>
                  {/* Row 1: Sub-tabs for the active group (scrollable) */}

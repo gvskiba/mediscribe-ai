@@ -56,7 +56,6 @@ const ANALYSIS_SECTIONS = [
 ];
 
 function SearchPanel({ query, setQuery, filters, setFilters, analysisMode, setAnalysisMode, onSearch, loading }) {
-  const [applyContext, setApplyContext] = useState(false);
 
   const analysisModes = [
     { id: "full_analysis", label: "Full Analysis", icon: "📋", desc: "Complete structured analysis with all sections" },

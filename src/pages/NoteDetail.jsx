@@ -1765,33 +1765,17 @@ Generated: ${new Date().toLocaleString()}
                      </TabsContent>
 
                          {/* Discharge Summary Tab */}
-                     <TabsContent value="discharge_summary" className="overflow-y-auto" style={{ background: "#050f1e" }}>
-                       <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
-                         <div><h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Discharge Summary</h2><p className="text-xs text-slate-400 mt-0.5">AI-generated discharge instructions</p></div>
-
-                         <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-indigo-500 shadow-sm overflow-hidden">
-                           <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-indigo-500" /><span className="text-sm font-semibold text-slate-800">AI Discharge Instructions</span></div>
-                           <div className="p-4">
-                             <Button onClick={async () => { setLoadingDischargeSummary(true); try { const r = await base44.integrations.Core.InvokeLLM({ prompt: `Generate concise discharge instructions. PATIENT: ${note.patient_name}, DIAGNOSES: ${note.diagnoses?.join(", ") || "N/A"}, PLAN: ${note.plan || "N/A"}. Format as clear actionable instructions only.`, add_context_from_internet: false }); queryClient.setQueryData(["note", noteId], o => ({ ...o, discharge_summary: r })); toast.success("Generated"); } catch { toast.error("Failed"); } finally { setLoadingDischargeSummary(false); } }} disabled={loadingDischargeSummary} size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 text-xs h-7 px-3">
-                               {loadingDischargeSummary ? <><Loader2 className="w-3 h-3 animate-spin" />Generating...</> : <><Sparkles className="w-3 h-3" />Generate Instructions</>}
-                             </Button>
-                             </div>
-                             </div>
-                             {note.discharge_summary && (
-                             <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-slate-400 shadow-sm overflow-hidden">
-                             <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-slate-400" /><span className="text-sm font-semibold text-slate-800">Edit Instructions</span></div>
-                             <div className="p-4 space-y-3">
-                               <Textarea value={note.discharge_summary || ""} onChange={(e) => queryClient.setQueryData(["note", noteId], o => ({ ...o, discharge_summary: e.target.value }))} placeholder="Edit discharge instructions..." className="min-h-[200px] text-sm resize-none border-slate-200" />
-                               <Button onClick={async () => { await base44.entities.ClinicalNote.update(noteId, { discharge_summary: note.discharge_summary }); toast.success("Saved"); }} size="sm" className="bg-slate-700 hover:bg-slate-800 text-white gap-1 text-xs h-7"><Check className="w-3 h-3" />Save</Button>
-                             </div>
-                             </div>
-                             )}
-                             <div className="flex justify-between items-center pt-1 border-t border-slate-100">
-                             <div className="flex gap-2"><TabDataPreview tabId="discharge_summary" note={note} /><ClinicalNotePreviewButton note={note} /></div>
-                             <div className="flex items-center gap-1.5">{!isFirstTab() && <button onClick={handleBack} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"><ArrowLeft className="w-3.5 h-3.5" />Back</button>}{!isLastTab() && <button onClick={handleNext} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">Next<ArrowLeft className="w-3.5 h-3.5 rotate-180" /></button>}</div>
-                             </div>
-                             </div>
-                             </TabsContent>
+                     <TabsContent value="discharge_summary" className="overflow-y-auto" style={{ background: "#050f1e", height: "calc(100vh - 200px)" }}>
+                       <DischargeSummaryTabNew
+                         note={note}
+                         noteId={noteId}
+                         queryClient={queryClient}
+                         isFirstTab={isFirstTab}
+                         isLastTab={isLastTab}
+                         handleBack={handleBack}
+                         handleNext={handleNext}
+                       />
+                     </TabsContent>
 
                              {/* Patient Education Tab */}
                              <TabsContent value="patient_education" className="overflow-y-auto" style={{ background: "#050f1e" }}>

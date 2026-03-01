@@ -83,6 +83,7 @@ import AISidebar from "../components/ai/AISidebar";
 import InlineSectionAI from "../components/ai/InlineSectionAI";
 import NoteTypeAndTemplateSelector from "../components/notes/NoteTypeAndTemplateSelector";
 import MedicalDecisionMakingTab from "../components/notes/MedicalDecisionMakingTab";
+import DischargeSummaryTabNew from "../components/notes/DischargeSummaryTab";
 import VitalSignsPasteAnalyzer from "../components/notes/VitalSignsPasteAnalyzer";
 import DispositionPlanner from "../components/notes/DispositionPlanner";
 import ERDispositionTab from "../components/notes/ERDispositionTab";

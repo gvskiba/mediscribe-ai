@@ -1,61 +1,68 @@
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { Sparkles, Loader2, Download, ArrowLeft } from "lucide-react";
+import React, { useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import TabDataPreview from "./TabDataPreview";
 import ClinicalNotePreviewButton from "./ClinicalNotePreviewButton";
-import PatientEducationGenerator from "./PatientEducationGenerator";
 import FollowUpSuggestions from "./FollowUpSuggestions";
+import EducationMaterialGenerator from "../../components/education/EducationMaterialGenerator";
+import EducationMaterialViewer from "../../components/education/EducationMaterialViewer";
+import EducationLibrary from "../../components/education/EducationLibrary";
 
-export default function PatientEducationTab({ note, patientEducation, generatingEducation, generatePatientEducation, downloadPatientEducation, onAddToNote, isFirstTab, isLastTab, handleBack, handleNext }) {
+export default function PatientEducationTab({ note, onAddToNote, isFirstTab, isLastTab, handleBack, handleNext }) {
+  const [view, setView] = useState("generate"); // generate | library
+  const [lastGenerated, setLastGenerated] = useState(null);
+
+  const diagnosesList = (note.diagnoses || []).join(", ");
+  const planText = note.plan || "";
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
-      <div><h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Patient Education</h2><p className="text-xs text-slate-400 mt-0.5">Generate patient-friendly education materials for discharge</p></div>
-      
-      <div className="grid sm:grid-cols-2 gap-3">
-        {/* AI Generated Materials */}
-        <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-teal-500 shadow-sm overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-teal-500" /><span className="text-sm font-semibold text-slate-800">AI-Generated Materials</span></div>
-          <div className="p-4"><PatientEducationGenerator note={note} onGenerationComplete={(materials) => { /* materials generated and ready for download */ }} /></div>
-        </div>
+      <div><h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Patient Education</h2><p className="text-xs text-slate-400 mt-0.5">AI-generated guides in 5 languages — printable & saveable</p></div>
 
-        {/* Existing Materials */}
-        <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-blue-500 shadow-sm overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
-            <div className="flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-blue-500" /><span className="text-sm font-semibold text-slate-800">Alternative Generation</span></div>
-          </div>
-          <div className="p-4">
-            <p className="text-xs text-slate-600 mb-3">Use this option to generate materials with different settings or format.</p>
-            <Button onClick={generatePatientEducation} disabled={generatingEducation || !note.diagnoses?.length} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 text-xs h-7 px-3">
-              {generatingEducation ? <><Loader2 className="w-3 h-3 animate-spin" />Generating...</> : <><Sparkles className="w-3 h-3" />Generate Legacy</>}
-            </Button>
-            {!note.diagnoses?.length && <p className="text-xs text-slate-400 mt-2">Add diagnoses first to generate education materials.</p>}
-          </div>
-        </div>
-      </div>
-      {/* AI Follow-up Suggestions */}
-      <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-indigo-500 shadow-sm overflow-hidden">
-        <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5">
-          <div className="w-2 h-2 rounded-full bg-indigo-500" />
-          <span className="text-sm font-semibold text-slate-800">Follow-up Suggestions</span>
-        </div>
-        <div className="p-4">
-          <FollowUpSuggestions note={note} onAddToNote={onAddToNote} />
-        </div>
+      {/* Sub-nav */}
+      <div className="flex gap-2">
+        {["generate", "library"].map(v => (
+          <button key={v} onClick={() => setView(v)}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${view === v ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
+            {v === "generate" ? "✨ Generate" : "📚 Library"}
+          </button>
+        ))}
       </div>
 
-      {patientEducation?.length > 0 && patientEducation.map((m, i) => (
-        <div key={i} className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-cyan-500 shadow-sm overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
-            <div className="flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-cyan-500" /><span className="text-sm font-semibold text-slate-800">{m.diagnosis}</span></div>
-            <Button onClick={() => downloadPatientEducation('txt')} size="sm" variant="outline" className="text-xs h-6 px-2"><Download className="w-3 h-3" /></Button>
+      {view === "generate" && (
+        <>
+          <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-teal-500 shadow-sm overflow-hidden">
+            <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-teal-500" /><span className="text-sm font-semibold text-slate-800">Generate Education Material</span></div>
+            <div className="p-4">
+              <EducationMaterialGenerator
+                initialDiagnosis={diagnosesList}
+                initialPlan={planText}
+                patientName={note.patient_name || ""}
+                noteId={note.id || ""}
+                onGenerated={(m) => { setLastGenerated(m); }}
+              />
+            </div>
           </div>
-          <div className="p-4 space-y-3 text-xs text-slate-700">
-            {m.what_is_it && <div><p className="font-semibold text-slate-800 mb-1">What Is It?</p><p className="leading-relaxed">{m.what_is_it}</p></div>}
-            {m.symptoms_to_watch?.length > 0 && <div><p className="font-semibold text-slate-800 mb-1">Symptoms to Watch</p><ul className="space-y-0.5">{m.symptoms_to_watch.map((s, j) => <li key={j} className="flex gap-1.5"><span className="text-slate-400 flex-shrink-0">•</span>{s}</li>)}</ul></div>}
-            {m.when_to_seek_help?.length > 0 && <div className="bg-red-50 border border-red-100 rounded-lg px-3 py-2"><p className="font-semibold text-red-800 mb-1">⚠ When to Seek Help</p><ul className="space-y-0.5">{m.when_to_seek_help.map((h, j) => <li key={j} className="text-red-700">{h}</li>)}</ul></div>}
+
+          {lastGenerated && (
+            <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-blue-500 shadow-sm overflow-hidden">
+              <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-blue-500" /><span className="text-sm font-semibold text-slate-800">Generated Material</span></div>
+              <div className="p-4"><EducationMaterialViewer material={lastGenerated} onUpdate={setLastGenerated} /></div>
+            </div>
+          )}
+
+          <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-indigo-500 shadow-sm overflow-hidden">
+            <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-indigo-500" /><span className="text-sm font-semibold text-slate-800">Follow-up Suggestions</span></div>
+            <div className="p-4"><FollowUpSuggestions note={note} onAddToNote={onAddToNote} /></div>
           </div>
+        </>
+      )}
+
+      {view === "library" && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-slate-400" /><span className="text-sm font-semibold text-slate-800">Saved Materials</span></div>
+          <div className="p-4"><EducationLibrary onCreateNew={() => setView("generate")} /></div>
         </div>
-      ))}
+      )}
       <div className="flex justify-between items-center pt-1 border-t border-slate-100">
         <div className="flex gap-2"><TabDataPreview tabId="patient_education" note={note} /><ClinicalNotePreviewButton note={note} /></div>
         <div className="flex items-center gap-1.5">

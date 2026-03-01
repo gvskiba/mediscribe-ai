@@ -608,19 +608,20 @@ Return JSON with:
               </div>
             </div>
 
-            {/* Abnormal Findings */}
-            <div style={{ background: colors.panel, border: `1px solid ${colors.border}`, borderLeft: `3px solid ${colors.red}`, borderRadius: "8px", padding: "10px", overflow: "auto", flex: 1, minHeight: 0 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                <h3 style={{ fontSize: "12px", fontWeight: 600, margin: 0, display: "flex", gap: "4px" }}>⚠️ ABNORMAL FINDINGS</h3>
-                <button style={{ background: "rgba(155,109,255,0.2)", border: `1px solid ${colors.purple}`, color: colors.purple, padding: "4px 6px", borderRadius: "4px", fontSize: "8px", fontWeight: 600, cursor: "pointer" }}>
-                  🔄 Refresh
-                </button>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "10px", padding: "30px 10px", textAlign: "center" }}>
-                <p style={{ fontSize: "30px" }}>✓</p>
-                <p style={{ color: colors.dim, fontSize: "10px", margin: 0 }}>No significant abnormal findings detected — or awaiting data from other pages</p>
-              </div>
-            </div>
+            {/* Abnormal Findings + AI Review */}
+             <div style={{ background: colors.panel, border: `1px solid ${colors.border}`, borderLeft: `3px solid ${colors.red}`, borderRadius: "8px", padding: "10px", overflow: "auto", flex: 1, minHeight: 0 }}>
+               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                 <h3 style={{ fontSize: "12px", fontWeight: 600, margin: 0, display: "flex", gap: "4px" }}>⚠️ ABNORMAL FINDINGS & AI REVIEW</h3>
+               </div>
+               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                 <LabsImagingAIReview 
+                   labs={labs || []} 
+                   imaging={imaging || []} 
+                   assessment={assessment}
+                   patient={patient}
+                 />
+               </div>
+             </div>
           </div>
 
           {/* Right: Medications + Labs + Imaging */}

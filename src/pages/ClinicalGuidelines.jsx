@@ -184,83 +184,45 @@ function ResultsPanel({ results, loading, onAnalyze, selectedForCompare, onToggl
         )}
 
         {results.map((result) => (
-          <div
-            key={result.id}
-            style={{
-              background: T.edge,
-              border: `1px solid ${T.border}`,
-              borderRadius: "6px",
-              padding: "10px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "6px",
-              cursor: "pointer",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.teal; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px" }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: "10px", fontWeight: 600, color: T.bright }}>{result.title}</div>
-                <div style={{ fontSize: "9px", color: T.dim, marginTop: "2px" }}>{result.source} · {result.publicationYear}</div>
-              </div>
-              <div style={{
-                width: "24px",
-                height: "24px",
-                borderRadius: "4px",
-                border: `1px solid ${selectedForCompare.includes(result.id) ? T.teal : T.border}`,
-                background: selectedForCompare.includes(result.id) ? `rgba(0,212,188,0.1)` : "transparent",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                transition: "all 0.2s",
-              }}
-              onClick={(e) => { e.stopPropagation(); onToggleCompare(result.id); }}>
-                {selectedForCompare.includes(result.id) && <Check size={12} style={{ color: T.teal }} />}
-              </div>
-            </div>
+           <div
+             key={result.id}
+             className="bg-[#162d4f] border border-[#1e3a5f] rounded-md p-2.5 flex flex-col gap-1.5 cursor-pointer transition-all hover:border-[#00d4bc]"
+           >
+             <div className="flex justify-between items-start gap-2">
+               <div className="flex-1">
+                 <div className="text-xs font-semibold text-[#e8f4ff]">{result.title}</div>
+                 <div className="text-xs text-[#4a7299] mt-0.5">{result.source} · {result.publicationYear}</div>
+               </div>
+               <div
+                 className={`w-6 h-6 rounded border flex items-center justify-center cursor-pointer transition-all ${selectedForCompare.includes(result.id) ? "border-[#00d4bc] bg-[rgba(0,212,188,0.1)]" : "border-[#1e3a5f]"}`}
+                 onClick={(e) => { e.stopPropagation(); onToggleCompare(result.id); }}
+               >
+                 {selectedForCompare.includes(result.id) && <Check size={12} className="text-[#00d4bc]" />}
+               </div>
+             </div>
 
-            {result.evidenceLevel && (
-              <div style={{
-                display: "flex",
-                gap: "4px",
-                alignItems: "center",
-              }}>
-                <div style={{
-                  padding: "2px 6px",
-                  borderRadius: "3px",
-                  fontSize: "8px",
-                  fontWeight: 600,
-                  background: EVIDENCE_COLORS[result.evidenceLevel].bg,
-                  color: EVIDENCE_COLORS[result.evidenceLevel].color,
-                }}>
-                  {EVIDENCE_COLORS[result.evidenceLevel].label}
-                </div>
-              </div>
-            )}
+             {result.evidenceLevel && (
+               <div className="flex gap-1 items-center">
+                 <div
+                   className="px-1.5 py-0.5 rounded text-xs font-semibold"
+                   style={{
+                     background: EVIDENCE_COLORS[result.evidenceLevel].bg,
+                     color: EVIDENCE_COLORS[result.evidenceLevel].color,
+                   }}
+                 >
+                   {EVIDENCE_COLORS[result.evidenceLevel].label}
+                 </div>
+               </div>
+             )}
 
-            <button
-              onClick={() => onAnalyze(result)}
-              style={{
-                padding: "4px 8px",
-                borderRadius: "4px",
-                fontSize: "9px",
-                fontWeight: 600,
-                border: `1px solid ${T.teal}`,
-                background: `rgba(0,212,188,0.1)`,
-                color: T.teal,
-                cursor: "pointer",
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = `rgba(0,212,188,0.2)`; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = `rgba(0,212,188,0.1)`; }}
-            >
-              Analyze
-            </button>
-          </div>
-        ))}
+             <button
+               onClick={() => onAnalyze(result)}
+               className="px-2 py-1 rounded text-xs font-semibold border border-[#00d4bc] bg-[rgba(0,212,188,0.1)] text-[#00d4bc] cursor-pointer transition-all hover:bg-[rgba(0,212,188,0.2)]"
+             >
+               Analyze
+             </button>
+           </div>
+         ))}
       </div>
     </div>
   );

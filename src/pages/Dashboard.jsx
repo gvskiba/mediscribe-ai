@@ -383,14 +383,14 @@ function SearchPanel() {
 function NewsPanel() {
   const [activeTab, setActiveTab] = useState("all");
   const [articles, setArticles] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const newsData = pageData.medicalNews;
 
-  useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        setLoading(true);
-        const result = await base44.integrations.Core.InvokeLLM({
+  const fetchNews = async () => {
+    try {
+      setLoading(true);
+      const result = await base44.integrations.Core.InvokeLLM({
           prompt: `Search medical journals, publications, and clinical websites for the latest news and studies in these categories: Resuscitation, Toxicology, Trauma, Cardiology, and Airway. Focus on recent publications from NEJM, Annals of Emergency Medicine, JAMA EM, and other major medical journals published in the last 2 weeks.
 
 Return structured data as JSON:

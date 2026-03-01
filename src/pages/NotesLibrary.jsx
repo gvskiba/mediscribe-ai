@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "../utils";
-import { Search, Download, Plus, ChevronRight, FileText } from "lucide-react";
+import { Search, Download, Plus, ChevronRight, FileText, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
@@ -147,6 +147,23 @@ export default function NotesLibrary() {
     createNoteMutation.mutate(newNoteData);
   };
 
+  const handleDeleteSelected = () => {
+    if (selectedNotes.length === 0) {
+      toast.error("Please select notes to delete");
+      return;
+    }
+    if (window.confirm(`Are you sure you want to delete ${selectedNotes.length} selected note(s)? This cannot be undone.`)) {
+      bulkDeleteMutation.mutate(selectedNotes);
+    }
+  };
+
+  const handleDeleteSingleNote = (noteId, e) => {
+    e.stopPropagation();
+    if (window.confirm("Are you sure you want to delete this note? This cannot be undone.")) {
+      bulkDeleteMutation.mutate([noteId]);
+    }
+  };
+
   return (
     <div style={{ display: "flex", background: T.bg, color: T.text, gap: 0, flex: 1 }}>
       {/* Sidebar */}
@@ -272,7 +289,35 @@ export default function NotesLibrary() {
             <div style={{ marginLeft: "auto", fontFamily: "Geist Mono", fontSize: "11px", color: T.muted }}>
               Showing <span style={{ color: T.text }}>{filtered.length}</span> of <span style={{ color: T.text }}>{notes.length}</span> notes
             </div>
-          </div>
+            {selectedNotes.length > 0 && (
+              <button
+                onClick={handleDeleteSelected}
+                disabled={bulkDeleteMutation.isPending}
+                style={{
+                  padding: "7px 13px",
+                  borderRadius: "6px",
+                  border: `1px solid ${T.red}`,
+                  color: T.bg,
+                  background: T.red,
+                  fontFamily: "Geist Mono",
+                  fontSize: "9px",
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  cursor: bulkDeleteMutation.isPending ? "not-allowed" : "pointer",
+                  opacity: bulkDeleteMutation.isPending ? 0.6 : 1,
+                  transition: "all 0.2s"
+                }}
+                onMouseEnter={(e) => !bulkDeleteMutation.isPending && (e.currentTarget.style.background = "#ef4444")}
+                onMouseLeave={(e) => e.currentTarget.style.background = T.red}
+              >
+                <Trash2 size={12} />
+                {bulkDeleteMutation.isPending ? "Deleting..." : `Delete (${selectedNotes.length})`}
+              </button>
+            )}
+            </div>
 
           {/* Time Filter Tabs */}
           <div style={{ display: "flex", gap: "20px", padding: "14px 22px", borderBottom: `1px solid ${T.border}` }}>
@@ -427,7 +472,27 @@ export default function NotesLibrary() {
                         </div>
                       </div>
                       <ChevronRight size={13} style={{ color: T.dim, flexShrink: 0, marginTop: "2px" }} />
-                    </motion.div>
+                      <button
+                        onClick={(e) => handleDeleteSingleNote(note.id, e)}
+                        style={{
+                          padding: "5px 6px",
+                          borderRadius: "4px",
+                          background: "transparent",
+                          border: "none",
+                          color: T.muted,
+                          cursor: "pointer",
+                          flexShrink: 0,
+                          transition: "all 0.2s",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center"
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.color = T.red}
+                        onMouseLeave={(e) => e.currentTarget.style.color = T.muted}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                      </motion.div>
                   ))}
                 </AnimatePresence>
               </div>

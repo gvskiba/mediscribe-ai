@@ -84,15 +84,26 @@ export default function DashboardTopBar({ user }) {
   const minutes = String(time.getMinutes()).padStart(2, "0");
   const lastName = user?.full_name?.split(" ").pop() || "Provider";
 
-  const specialties = {
-    emergency_medicine: "Emergency Medicine",
-    internal_medicine: "Internal Medicine",
-    family_medicine: "Family Medicine",
-    pediatrics: "Pediatrics",
-    cardiology: "Cardiology",
+  const specialty = formData.specialty && SPECIALTIES.find(s => s.value === formData.specialty)?.label;
+
+  const saveSpecialty = async (value) => {
+    setFormData(p => ({ ...p, specialty: value }));
+    setSpecialtyOpen(false);
+    try {
+      await base44.auth.updateMe({
+        clinical_settings: { ...user?.clinical_settings, medical_specialty: value },
+      });
+    } catch (e) { console.error(e); }
   };
 
-  const specialty = formData.specialty && specialties[formData.specialty];
+  const saveShift = async () => {
+    setShiftOpen(false);
+    try {
+      await base44.auth.updateMe({
+        clinical_settings: { ...user?.clinical_settings, shift_start: shiftStart, shift_end: shiftEnd },
+      });
+    } catch (e) { console.error(e); }
+  };
 
   const handleStatClick = (label) => {
     const today = new Date().toISOString().split("T")[0];

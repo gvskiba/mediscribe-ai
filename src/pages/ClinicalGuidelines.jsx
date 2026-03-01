@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, Filter, Loader2, ChevronDown, ChevronUp, Plus, Check, Save, Share2 } from "lucide-react";
+import { Search, Filter, Loader2, ChevronDown, ChevronUp, Plus, Check, Save, Share2, Clock, Star, Zap, BarChart3, User, Scale, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 
 const T = {

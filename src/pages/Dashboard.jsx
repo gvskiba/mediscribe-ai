@@ -771,6 +771,17 @@ export default function Dashboard() {
     setSelectedCell(null);
   };
 
+  const cycleWidgetSize = (cellIdx) => {
+    const sizes = [[1, 1], [2, 1], [1, 2], [2, 2]];
+    const currentSize = widgetSizes[cellIdx] || [1, 1];
+    const currentIdx = sizes.findIndex(s => s[0] === currentSize[0] && s[1] === currentSize[1]);
+    const nextIdx = (currentIdx + 1) % sizes.length;
+    const newSizes = { ...widgetSizes };
+    if (nextIdx === 0) delete newSizes[cellIdx];
+    else newSizes[cellIdx] = sizes[nextIdx];
+    setWidgetSizes(newSizes);
+  };
+
   // Widgets not yet placed in the grid
   const unplacedWidgets = Object.keys(widgetDefs).filter(id => !grid.includes(id));
 

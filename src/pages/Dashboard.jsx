@@ -469,7 +469,7 @@ Return 5-8 articles total.`,
     fetchNews();
   };
 
-  useEffect(() => { fetchNews(); }, []);
+  useEffect(() => { fetchNews(); }, []);  // eslint-disable-line
 
   const filteredArticles = articles.filter(article => 
     activeTab === "all" || article.topic === activeTab

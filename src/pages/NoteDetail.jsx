@@ -1756,20 +1756,12 @@ Generated: ${new Date().toLocaleString()}
                    </TabsContent>
 
                      {/* Disposition Tab */}
-                     <TabsContent value="disposition_plan" className="overflow-y-auto" style={{ background: "#050f1e" }}>
-                       <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
-                         <div><h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Disposition Plan</h2><p className="text-xs text-slate-400 mt-0.5">Patient disposition, follow-up care, and discharge</p></div>
-                         <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-purple-500 shadow-sm overflow-hidden">
-                           <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-purple-500" /><span className="text-sm font-semibold text-slate-800">Disposition Planner</span></div>
-                           <div className="p-4">
-                             <DispositionPlanner note={note} onSave={async (d) => { const t = `DISPOSITION PLAN\n\nTYPE: ${d.disposition_type.toUpperCase()}\nLOCATION: ${d.location}${d.accepting_provider ? `\nACCEPTING PROVIDER: ${d.accepting_provider}` : ""}${d.admission_time ? `\nADMISSION TIME: ${d.admission_time}` : ""}\n\nADDITIONAL INSTRUCTIONS:\n${d.additional_notes || "None"}`.trim(); await base44.entities.ClinicalNote.update(noteId, { disposition_plan: t }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); toast.success("Saved"); }} />
-                           </div>
-                         </div>
-                         <div className="flex justify-between items-center pt-1 border-t border-slate-100">
-                           <div className="flex gap-2"><TabDataPreview tabId="disposition_plan" note={note} /><ClinicalNotePreviewButton note={note} /></div>
-                           <div className="flex items-center gap-1.5">{!isFirstTab() && <button onClick={handleBack} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"><ArrowLeft className="w-3.5 h-3.5" />Back</button>}{!isLastTab() && <button onClick={handleNext} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">Next<ArrowLeft className="w-3.5 h-3.5 rotate-180" /></button>}</div>
-                         </div>
-                       </div>
+                     <TabsContent value="disposition_plan" style={{ background: "#050f1e", height: "calc(100vh - 200px)" }}>
+                       <ERDispositionTab
+                         note={note} noteId={noteId} queryClient={queryClient}
+                         finalizeMutation={finalizeMutation} exportNote={exportNote} exportingFormat={exportingFormat}
+                         isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext}
+                       />
                      </TabsContent>
 
                          {/* Discharge Summary Tab */}

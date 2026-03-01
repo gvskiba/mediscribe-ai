@@ -138,78 +138,119 @@ function MedCard({ med, catColor, onAdd, weightKg }) {
     return `${capped.toFixed(1)} ${med.pediatric_dose.unit} ${med.pediatric_dose.route}`;
   }, [med, weightKg]);
 
+  const pregColors = PREG_COLORS[med.pregnancy_category] || { color: T.muted, bg: T.card };
+
   return (
-    <div className={`rounded-xl border transition-all ${open ? "border-blue-300 shadow-md" : "border-slate-200 hover:border-slate-300"} bg-white overflow-hidden`}>
-      <div className="flex items-start gap-3 p-3 cursor-pointer" onClick={() => setOpen(v => !v)} style={{ borderLeft: `3px solid ${catColor}` }}>
+    <div style={{ background: T.card, border: `1px solid ${open ? T.blue + "60" : T.border}`, borderRadius: 8, overflow: "hidden", transition: "border-color 0.15s" }}>
+      <div
+        className="flex items-start gap-3 p-3 cursor-pointer"
+        onClick={() => setOpen(v => !v)}
+        style={{ borderLeft: `3px solid ${catColor}` }}
+        onMouseEnter={e => e.currentTarget.style.background = T.surface}
+        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+      >
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-1.5 mb-1">
-            <span className="font-semibold text-slate-900 text-sm">{med.name}</span>
-            <span className={`text-xs px-1.5 py-0.5 rounded ${line.bg}`}>{line.label}</span>
-            {med.pregnancy_category && <span className={`text-xs px-1.5 py-0.5 rounded font-bold ${PREG_COLORS[med.pregnancy_category] || "bg-slate-100 text-slate-600"}`}>Preg {med.pregnancy_category}</span>}
-            {med.renal_adjustment && <span className="text-xs px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">Renal ↓</span>}
-            {med.hepatic_adjustment && <span className="text-xs px-1.5 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">Hepatic ↓</span>}
+            <span className="font-semibold text-sm" style={{ color: T.text }}>{med.name}</span>
+            <span className="text-xs px-1.5 py-0.5 rounded font-mono" style={{ color: line.color, background: line.bg, fontSize: "9px", letterSpacing: "0.08em" }}>{line.label.toUpperCase()}</span>
+            {med.pregnancy_category && <span className="text-xs px-1.5 py-0.5 rounded font-mono" style={{ color: pregColors.color, background: pregColors.bg, fontSize: "9px" }}>PREG {med.pregnancy_category}</span>}
+            {med.renal_adjustment && <span className="text-xs px-1.5 py-0.5 rounded font-mono" style={{ color: T.purple, background: T.purple_dim, fontSize: "9px" }}>RENAL ↓</span>}
+            {med.hepatic_adjustment && <span className="text-xs px-1.5 py-0.5 rounded font-mono" style={{ color: T.orange, background: "#2a1000", fontSize: "9px" }}>HEPATIC ↓</span>}
           </div>
           <div className="flex flex-wrap gap-1 mb-1">
-            {med.indications.slice(0, 3).map((ind, i) => <span key={i} className="text-xs bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">{ind}</span>)}
+            {med.indications.slice(0, 3).map((ind, i) => (
+              <span key={i} className="text-xs px-1.5 py-0.5 rounded" style={{ background: T.border, color: T.muted }}>{ind}</span>
+            ))}
           </div>
-          <p className="text-xs text-slate-700 font-mono truncate"><span className="font-semibold text-slate-500">Adult:</span> {med.adult_dose}</p>
-          {weightKg && pedDose && <p className="text-xs text-blue-700 font-mono truncate mt-0.5"><span className="font-semibold">Peds ({weightKg}kg):</span> {pedDose}</p>}
+          <p className="text-xs font-mono truncate" style={{ color: T.muted }}>
+            <span style={{ color: T.muted, fontWeight: 600 }}>Adult: </span>
+            <span style={{ color: T.text }}>{med.adult_dose}</span>
+          </p>
+          {weightKg && pedDose && (
+            <p className="text-xs font-mono truncate mt-0.5" style={{ color: T.teal }}>
+              <span style={{ fontWeight: 600 }}>Peds ({weightKg}kg): </span>{pedDose}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
-          <button onClick={e => { e.stopPropagation(); onAdd(med); }} className="p-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors" title="Add to note"><Plus className="w-3.5 h-3.5" /></button>
-          {open ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+          <button
+            onClick={e => { e.stopPropagation(); onAdd(med); }}
+            className="p-1 rounded transition-colors"
+            style={{ background: T.blue_dim, color: T.blue }}
+            onMouseEnter={e => { e.currentTarget.style.background = T.blue; e.currentTarget.style.color = "#fff"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = T.blue_dim; e.currentTarget.style.color = T.blue; }}
+            title="Add to note"
+          ><Plus className="w-3.5 h-3.5" /></button>
+          {open ? <ChevronUp className="w-4 h-4" style={{ color: T.muted }} /> : <ChevronDown className="w-4 h-4" style={{ color: T.muted }} />}
         </div>
       </div>
 
       <AnimatePresence>
         {open && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-            <div className="px-4 pb-4 pt-2 border-t border-slate-100 space-y-3">
+            <div className="px-4 pb-4 pt-2 space-y-3" style={{ borderTop: `1px solid ${T.border}` }}>
               {/* Timing */}
-              <div className="flex flex-wrap gap-4 text-xs">
-                <div><span className="text-slate-400 font-semibold uppercase tracking-wide">Onset</span><br /><span className="text-slate-800">{med.onset}</span></div>
-                <div><span className="text-slate-400 font-semibold uppercase tracking-wide">Duration</span><br /><span className="text-slate-800">{med.duration}</span></div>
-                {med.reversal && <div><span className="text-slate-400 font-semibold uppercase tracking-wide">Reversal</span><br /><span className="text-emerald-700 font-medium">{med.reversal}</span></div>}
+              <div className="flex flex-wrap gap-5 text-xs">
+                {[["Onset", med.onset], ["Duration", med.duration]].map(([label, val]) => (
+                  <div key={label}>
+                    <span style={{ color: T.muted, fontWeight: 700, fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase" }}>{label}</span>
+                    <br /><span style={{ color: T.text }}>{val}</span>
+                  </div>
+                ))}
+                {med.reversal && (
+                  <div>
+                    <span style={{ color: T.muted, fontWeight: 700, fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Reversal</span>
+                    <br /><span style={{ color: T.green, fontWeight: 600 }}>{med.reversal}</span>
+                  </div>
+                )}
               </div>
 
               {/* Pediatric dosing */}
               {med.pediatric_dose && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-2.5">
-                  <p className="text-xs font-bold text-blue-700 uppercase tracking-wide flex items-center gap-1 mb-1.5"><Baby className="w-3 h-3" /> Pediatric Dosing</p>
-                  <p className="text-xs text-blue-800 font-mono">
-                    {med.pediatric_dose.mg_per_kg ? `${med.pediatric_dose.mg_per_kg} ${med.pediatric_dose.unit}/kg ${med.pediatric_dose.route}` : `Fixed: see notes`}
+                <div className="rounded-lg p-2.5" style={{ background: T.blue_dim, border: `1px solid ${T.blue}40` }}>
+                  <p className="flex items-center gap-1 mb-1.5" style={{ color: T.blue, fontWeight: 700, fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase" }}><Baby className="w-3 h-3" /> Pediatric Dosing</p>
+                  <p className="font-mono text-xs" style={{ color: T.text }}>
+                    {med.pediatric_dose.mg_per_kg ? `${med.pediatric_dose.mg_per_kg} ${med.pediatric_dose.unit}/kg ${med.pediatric_dose.route}` : "Fixed: see notes"}
                     {med.pediatric_dose.max_dose_mg && ` (max ${med.pediatric_dose.max_dose_mg} ${med.pediatric_dose.unit})`}
                   </p>
-                  {med.pediatric_dose.notes && <p className="text-xs text-blue-700 mt-1">{med.pediatric_dose.notes}</p>}
-                  {weightKg && pedDose && <p className="text-xs font-bold text-blue-900 mt-1.5 pt-1.5 border-t border-blue-200">Calculated ({weightKg} kg): {pedDose}</p>}
+                  {med.pediatric_dose.notes && <p className="text-xs mt-1" style={{ color: T.muted }}>{med.pediatric_dose.notes}</p>}
+                  {weightKg && pedDose && <p className="text-xs font-mono font-bold mt-1.5 pt-1.5" style={{ color: T.teal, borderTop: `1px solid ${T.blue}40` }}>Calculated ({weightKg} kg): {pedDose}</p>}
                 </div>
               )}
 
               {/* Contraindications */}
               {med.contraindications?.length > 0 && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-2.5">
-                  <p className="text-xs font-bold text-red-600 uppercase tracking-wide flex items-center gap-1 mb-1.5"><AlertTriangle className="w-3 h-3" /> Contraindications</p>
-                  <ul className="space-y-0.5">{med.contraindications.map((c, i) => <li key={i} className="text-xs text-red-700 flex items-start gap-1"><span className="text-red-400 mt-0.5">•</span>{c}</li>)}</ul>
+                <div className="rounded-lg p-2.5" style={{ background: T.red_dim, border: `1px solid ${T.red}40` }}>
+                  <p className="flex items-center gap-1 mb-1.5" style={{ color: T.red, fontWeight: 700, fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase" }}><AlertTriangle className="w-3 h-3" /> Contraindications</p>
+                  <ul className="space-y-0.5">{med.contraindications.map((c, i) => <li key={i} className="text-xs flex items-start gap-1" style={{ color: "#fca5a5" }}><span style={{ color: T.red }}>•</span>{c}</li>)}</ul>
                 </div>
               )}
 
               {/* Warnings */}
               {med.warnings?.length > 0 && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5">
-                  <p className="text-xs font-bold text-amber-700 uppercase tracking-wide flex items-center gap-1 mb-1.5"><Shield className="w-3 h-3" /> Warnings</p>
-                  <ul className="space-y-0.5">{med.warnings.map((w, i) => <li key={i} className="text-xs text-amber-800 flex items-start gap-1"><span className="text-amber-400 mt-0.5">•</span>{w}</li>)}</ul>
+                <div className="rounded-lg p-2.5" style={{ background: T.amber_dim, border: `1px solid ${T.amber}40` }}>
+                  <p className="flex items-center gap-1 mb-1.5" style={{ color: T.amber, fontWeight: 700, fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase" }}><Shield className="w-3 h-3" /> Warnings</p>
+                  <ul className="space-y-0.5">{med.warnings.map((w, i) => <li key={i} className="text-xs flex items-start gap-1" style={{ color: "#fcd34d" }}><span style={{ color: T.amber }}>•</span>{w}</li>)}</ul>
                 </div>
               )}
 
               {/* Monitoring */}
               {med.monitoring?.length > 0 && (
                 <div>
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 flex items-center gap-1"><Activity className="w-3 h-3" /> Monitoring</p>
-                  <div className="flex flex-wrap gap-1.5">{med.monitoring.map((m, i) => <span key={i} className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full">{m}</span>)}</div>
+                  <p className="flex items-center gap-1 mb-1.5" style={{ color: T.muted, fontWeight: 700, fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase" }}><Activity className="w-3 h-3" /> Monitoring</p>
+                  <div className="flex flex-wrap gap-1.5">{med.monitoring.map((m, i) => (
+                    <span key={i} className="text-xs px-2 py-0.5 rounded-full" style={{ background: T.blue_dim, color: T.blue, border: `1px solid ${T.blue}40` }}>{m}</span>
+                  ))}</div>
                 </div>
               )}
 
-              <button onClick={() => onAdd(med)} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors">
+              <button
+                onClick={() => onAdd(med)}
+                className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all"
+                style={{ background: T.teal_dim, color: T.teal, border: `1px solid ${T.teal}40` }}
+                onMouseEnter={e => { e.currentTarget.style.background = T.teal; e.currentTarget.style.color = T.bg; }}
+                onMouseLeave={e => { e.currentTarget.style.background = T.teal_dim; e.currentTarget.style.color = T.teal; }}
+              >
                 <Plus className="w-3.5 h-3.5" /> Add to Note
               </button>
             </div>

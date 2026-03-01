@@ -919,6 +919,11 @@ export default function Dashboard() {
                     {isSelected ? "✓ Selected" : def.label}
                   </div>
                 )}
+                {isEditMode && def && isSelected && (
+                  <div style={{ position: "absolute", bottom: "8px", right: "8px", fontSize: "9px", color: T.dim, background: T.edge, padding: "3px 6px", borderRadius: "4px", pointerEvents: "none" }}>
+                    Right-click to resize ({size[0]}×{size[1]})
+                  </div>
+                )}
                 {isEditMode && !def && (
                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "80px", color: T.dim, fontSize: "11px" }}>
                      {isSelected ? <span style={{ color: T.teal }}>↑ Choose a widget above</span> : <span>+ Empty</span>}

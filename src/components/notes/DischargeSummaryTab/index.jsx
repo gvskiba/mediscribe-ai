@@ -4,7 +4,6 @@ import { Sparkles, Printer, Send, Download, CheckCircle2, ArrowLeft } from "luci
 import { toast } from "sonner";
 import SummaryPanel from "./SummaryPanel";
 import ActionsPanel from "./ActionsPanel";
-import "./styles.css";
 
 export default function DischargeSummaryTab({
   note,

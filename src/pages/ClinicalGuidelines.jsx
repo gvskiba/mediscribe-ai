@@ -171,24 +171,14 @@ function SearchPanel({ query, setQuery, filters, setFilters, analysisMode, setAn
 
 function ResultsPanel({ results, loading, onAnalyze, selectedForCompare, onToggleCompare }) {
   return (
-    <div style={{
-      background: T.panel,
-      border: `1px solid ${T.border}`,
-      borderRadius: "8px",
-      padding: "12px",
-      display: "flex",
-      flexDirection: "column",
-      gap: "10px",
-      flex: 1,
-      overflow: "hidden",
-    }}>
-      <div style={{ fontSize: "11px", fontWeight: 600, color: T.text, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-        Results {results.length > 0 && <span style={{ color: T.dim }}>({results.length})</span>}
+    <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-lg p-3 flex flex-col gap-2.5 flex-1 overflow-hidden h-full">
+      <div className="text-xs font-semibold text-[#c8ddf0] uppercase tracking-wider">
+        Results {results.length > 0 && <span className="text-[#4a7299]">({results.length})</span>}
       </div>
 
-      <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column", gap: "8px" }}>
+      <div className="flex-1 overflow-auto flex flex-col gap-2">
         {!loading && results.length === 0 && (
-          <div style={{ textAlign: "center", color: T.dim, fontSize: "11px", padding: "20px 10px" }}>
+          <div className="text-center text-[#4a7299] text-xs py-5 px-2.5">
             🔍 Enter a clinical question to search guidelines
           </div>
         )}

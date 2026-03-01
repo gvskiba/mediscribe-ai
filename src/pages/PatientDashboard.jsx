@@ -127,6 +127,20 @@ export default function PatientDashboard() {
     (a) => a.id === hospitalSettings?.default_attending_id
   );
 
+  const selectedAttending = hospitalSettings?.attendings?.find(
+    (a) => a.id === selectedAttendingId
+  ) || defaultAttending;
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (attendingRef.current && !attendingRef.current.contains(e.target)) {
+        setAttendingDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
   const handleRefresh = async () => {
     setLastUpdated(new Date());
     await Promise.all([

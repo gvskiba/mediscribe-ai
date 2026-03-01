@@ -1454,9 +1454,9 @@ Generated: ${new Date().toLocaleString()}
        <motion.div
          initial={{ opacity: 0, y: 12 }}
          animate={{ opacity: 1, y: 0 }}
-         style={{ flex: 1, paddingBottom: "120px" }}
+         style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}
        >
-         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col" style={{ height: "100%" }}>
+         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col" style={{ flex: 1, minHeight: 0 }}>
                {/* ── Bottom Navigation Bar ── */}
                <div className="fixed bottom-0 left-0 right-0 shadow-2xl z-50 flex flex-col" style={{ background: "#0b1d35", borderTop: "1px solid #1e3a5f" }}>
                  {/* Row 1: Sub-tabs for the active group (scrollable) */}
@@ -1600,10 +1600,10 @@ Generated: ${new Date().toLocaleString()}
                  )}
                </div>
 
-                        <div style={{ flex: 1, minHeight: 0 }}>
+                        <div style={{ flex: 1, minHeight: 0, overflow: "auto", paddingBottom: "120px" }}>
 
                         {/* Vital Signs Tab */}
-                        <TabsContent value="vital_signs" className="overflow-y-auto" style={{ background: "#050f1e", height: "100%" }}>
+                        <TabsContent value="vital_signs" className="overflow-y-auto" style={{ background: "#050f1e" }}>
                           <VitalSignsTab note={note} noteId={noteId} queryClient={queryClient} templates={templates} selectedTemplate={selectedTemplate} setSelectedTemplate={setSelectedTemplate} loadingVitalAnalysis={loadingVitalAnalysis} setLoadingVitalAnalysis={setLoadingVitalAnalysis} vitalSignsAnalysis={vitalSignsAnalysis} setVitalSignsAnalysis={setVitalSignsAnalysis} vitalSignsHistory={vitalSignsHistory} setVitalSignsHistory={setVitalSignsHistory} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
                         </TabsContent>
 
@@ -1654,7 +1654,7 @@ Generated: ${new Date().toLocaleString()}
              </TabsContent>
 
            {/* Clinical Note Tab */}
-             <TabsContent value="clinical_note" className="overflow-hidden" style={{ background: "#050f1e", height: "calc(100vh - 200px)" }}>
+             <TabsContent value="clinical_note" className="overflow-y-auto" style={{ background: "#050f1e" }}>
                <ClinicalNoteComposer note={note} noteId={noteId} queryClient={queryClient} />
              </TabsContent>
 
@@ -1673,7 +1673,7 @@ Generated: ${new Date().toLocaleString()}
 
 
                      {/* Disposition Tab */}
-                     <TabsContent value="disposition_plan" style={{ background: "#050f1e", height: "calc(100vh - 200px)" }}>
+                     <TabsContent value="disposition_plan" className="overflow-y-auto" style={{ background: "#050f1e" }}>
                        <ERDispositionTab
                          note={note} noteId={noteId} queryClient={queryClient}
                          finalizeMutation={finalizeMutation} exportNote={exportNote} exportingFormat={exportingFormat}
@@ -1682,8 +1682,8 @@ Generated: ${new Date().toLocaleString()}
                      </TabsContent>
 
                          {/* Discharge Summary Tab */}
-                     <TabsContent value="discharge_summary" className="overflow-y-auto" style={{ background: "#050f1e", height: "calc(100vh - 200px)" }}>
-                       <DischargeSummaryTabNew
+                         <TabsContent value="discharge_summary" className="overflow-y-auto" style={{ background: "#050f1e" }}>
+                         <DischargeSummaryTabNew
                          note={note}
                          noteId={noteId}
                          queryClient={queryClient}

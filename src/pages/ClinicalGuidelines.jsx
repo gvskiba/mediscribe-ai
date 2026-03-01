@@ -233,100 +233,49 @@ function AnalysisPanel({ analysis, loading, selectedSections, onToggleSection, o
 
   if (loading) {
     return (
-      <div style={{
-        background: T.panel,
-        border: `1px solid ${T.border}`,
-        borderRadius: "8px",
-        padding: "24px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "12px",
-        flex: 1,
-      }}>
-        <Loader2 size={20} style={{ color: T.teal, animation: "spin 1s linear infinite" }} />
-        <span style={{ fontSize: "12px", color: T.dim }}>Analyzing guideline…</span>
+      <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-lg p-6 flex items-center justify-center gap-3 h-full">
+        <Loader2 size={20} className="text-[#00d4bc] animate-spin" />
+        <span className="text-sm text-[#4a7299]">Analyzing guideline…</span>
       </div>
     );
   }
 
   if (!analysis) {
     return (
-      <div style={{
-        background: T.panel,
-        border: `1px solid ${T.border}`,
-        borderRadius: "12px",
-        padding: "40px 24px",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "20px",
-        flex: 1,
-      }}>
+      <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-xl p-10 flex flex-col items-center justify-center gap-5 h-full">
         {/* Section Header */}
-        <div style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: T.purple, display: "flex", alignItems: "center", gap: "6px", alignSelf: "flex-start", paddingLeft: "16px", marginTop: "-24px" }}>
+        <div className="text-xs font-bold uppercase tracking-wide text-[#9b6dff] flex items-center gap-1.5 self-start -mt-6">
           <span>◆</span> CLINICAL ANALYSIS
         </div>
 
         {/* Book Icon */}
-        <div style={{
-          width: "100px",
-          height: "100px",
-          borderRadius: "50%",
-          border: `2px solid ${T.border}`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: "50px",
-          background: `rgba(0,212,188,0.05)`,
-        }}>
+        <div className="w-24 h-24 rounded-full border-2 border-[#1e3a5f] flex items-center justify-center text-6xl bg-[rgba(0,212,188,0.05)]">
           📖
         </div>
 
         {/* Title */}
-        <div style={{ fontSize: "24px", fontWeight: 600, color: T.bright, textAlign: "center" }}>
+        <div className="text-2xl font-semibold text-[#e8f4ff] text-center">
           AI Clinical Analysis
         </div>
 
         {/* Instructions */}
-        <div style={{ fontSize: "12px", color: T.dim, textAlign: "center", maxWidth: "280px", lineHeight: "1.6" }}>
-          Search for a guideline or clinical question on the left, then click <span style={{ color: T.purple, fontWeight: 600 }}>Analyze</span> to generate a structured clinical analysis formatted for provider use and clinical note insertion.
+        <div className="text-sm text-[#4a7299] text-center max-w-xs leading-relaxed">
+          Search for a guideline or clinical question on the left, then click <span className="text-[#9b6dff] font-semibold">Analyze</span> to generate a structured clinical analysis formatted for provider use and clinical note insertion.
         </div>
 
         {/* Steps */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", width: "100%", marginTop: "20px" }}>
+        <div className="grid grid-cols-2 gap-3 w-full mt-5">
           {[
             { num: 1, text: "Enter a clinical question or search a condition" },
             { num: 2, text: "Select a guideline result and click Analyze" },
             { num: 3, text: "Review the structured provider analysis" },
             { num: 4, text: "Select sections and add directly to your clinical note" },
           ].map((step) => (
-            <div key={step.num} style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "8px",
-              padding: "12px",
-              background: T.edge,
-              border: `1px solid ${T.border}`,
-              borderRadius: "8px",
-            }}>
-              <div style={{
-                width: "32px",
-                height: "32px",
-                borderRadius: "50%",
-                border: `2px solid ${T.purple}`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "14px",
-                fontWeight: 700,
-                color: T.purple,
-              }}>
+            <div key={step.num} className="flex flex-col items-center gap-2 p-3 bg-[#162d4f] border border-[#1e3a5f] rounded-lg">
+              <div className="w-8 h-8 rounded-full border-2 border-[#9b6dff] flex items-center justify-center text-base font-bold text-[#9b6dff]">
                 {step.num}
               </div>
-              <span style={{ fontSize: "10px", color: T.text, textAlign: "center" }}>{step.text}</span>
+              <span className="text-xs text-[#c8ddf0] text-center">{step.text}</span>
             </div>
           ))}
         </div>
@@ -335,109 +284,54 @@ function AnalysisPanel({ analysis, loading, selectedSections, onToggleSection, o
   }
 
   return (
-    <div style={{
-      background: T.panel,
-      border: `1px solid ${T.border}`,
-      borderRadius: "8px",
-      padding: "12px",
-      display: "flex",
-      flexDirection: "column",
-      gap: "10px",
-      flex: 1,
-      overflow: "hidden",
-    }}>
+    <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-lg p-3 flex flex-col gap-2.5 h-full overflow-hidden">
       {/* Toolbar */}
-      <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        paddingBottom: "10px",
-        borderBottom: `1px solid ${T.border}`,
-      }}>
-        <div style={{ fontSize: "11px", fontWeight: 600, color: T.text, textTransform: "uppercase" }}>
+      <div className="flex justify-between items-center pb-2.5 border-b border-[#1e3a5f]">
+        <div className="text-xs font-semibold text-[#c8ddf0] uppercase">
           Analysis
         </div>
-        <div style={{ display: "flex", gap: "6px" }}>
+        <div className="flex gap-1.5">
           <button
             onClick={() => onAddToNote(selectedSections)}
-            style={{
-              padding: "4px 10px",
-              borderRadius: "4px",
-              fontSize: "9px",
-              fontWeight: 600,
-              border: `1px solid ${T.teal}`,
-              background: `rgba(0,212,188,0.1)`,
-              color: T.teal,
-              cursor: "pointer",
-            }}
+            className="px-2.5 py-1 rounded text-xs font-semibold border border-[#00d4bc] bg-[rgba(0,212,188,0.1)] text-[#00d4bc] cursor-pointer hover:bg-[rgba(0,212,188,0.2)] transition-all"
           >
-            <Plus size={10} style={{ display: "inline", marginRight: "4px" }} /> Add to Note
+            <Plus size={10} className="inline mr-1" /> Add to Note
           </button>
           <button
             onClick={onSave}
-            style={{
-              padding: "4px 10px",
-              borderRadius: "4px",
-              fontSize: "9px",
-              fontWeight: 600,
-              border: `1px solid ${T.border}`,
-              background: T.edge,
-              color: T.dim,
-              cursor: "pointer",
-            }}
+            className="px-2.5 py-1 rounded text-xs font-semibold border border-[#1e3a5f] bg-[#162d4f] text-[#4a7299] cursor-pointer hover:bg-[rgba(155,109,255,0.1)]"
           >
-            <Save size={10} style={{ display: "inline", marginRight: "4px" }} /> Save
+            <Save size={10} className="inline mr-1" /> Save
           </button>
         </div>
       </div>
 
       {/* Sections */}
-      <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column", gap: "8px" }}>
+      <div className="flex-1 overflow-auto flex flex-col gap-2">
         {ANALYSIS_SECTIONS.map((section) => (
           <div
             key={section.id}
-            style={{
-              background: T.edge,
-              border: `1px solid ${selectedSections.includes(section.id) ? T.teal : T.border}`,
-              borderRadius: "6px",
-              overflow: "hidden",
-              transition: "all 0.2s",
-            }}
+            className={`bg-[#162d4f] border rounded-md overflow-hidden transition-all ${selectedSections.includes(section.id) ? "border-[#00d4bc]" : "border-[#1e3a5f]"}`}
           >
             <div
               onClick={() => setExpandedSections((prev) => ({ ...prev, [section.id]: !prev[section.id] }))}
-              style={{
-                padding: "10px 12px",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                cursor: "pointer",
-                background: expandedSections[section.id] ? `rgba(0,212,188,0.05)` : "transparent",
-              }}
+              className={`px-3 py-2.5 flex items-center gap-2 cursor-pointer transition-all ${expandedSections[section.id] ? "bg-[rgba(0,212,188,0.05)]" : ""}`}
             >
               <input
                 type="checkbox"
                 checked={selectedSections.includes(section.id)}
                 onChange={() => onToggleSection(section.id)}
                 onClick={(e) => e.stopPropagation()}
-                style={{ cursor: "pointer" }}
+                className="cursor-pointer"
               />
-              <span style={{ fontSize: "14px" }}>{section.icon}</span>
-              <span style={{ flex: 1, fontSize: "10px", fontWeight: 600, color: T.text }}>{section.title}</span>
-              {expandedSections[section.id] ? <ChevronUp size={12} style={{ color: T.dim }} /> : <ChevronDown size={12} style={{ color: T.dim }} />}
+              <span className="text-base">{section.icon}</span>
+              <span className="flex-1 text-xs font-semibold text-[#c8ddf0]">{section.title}</span>
+              {expandedSections[section.id] ? <ChevronUp size={12} className="text-[#4a7299]" /> : <ChevronDown size={12} className="text-[#4a7299]" />}
             </div>
 
             {expandedSections[section.id] && (
-              <div style={{
-                padding: "10px 12px",
-                borderTop: `1px solid ${T.border}`,
-                fontSize: "11px",
-                color: T.text,
-                lineHeight: "1.5",
-                maxHeight: "200px",
-                overflow: "auto",
-              }}>
-                <p style={{ margin: 0 }}>
+              <div className="px-3 py-2.5 border-t border-[#1e3a5f] text-xs text-[#c8ddf0] leading-relaxed max-h-48 overflow-auto">
+                <p className="m-0">
                   {section.id === "executive_summary" && "Summary of guideline scope and key clinical recommendations…"}
                   {section.id === "key_recommendations" && "1. Primary intervention recommended\n2. Secondary monitoring suggested\n3. Special considerations for comorbidities…"}
                   {section.id === "diagnostic_criteria" && "Clinical criteria, scoring systems, and diagnostic algorithms…"}

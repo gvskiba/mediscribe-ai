@@ -123,6 +123,48 @@ export default function PatientDashboard() {
     ]);
   };
 
+  const generateAIClinicalSummary = async () => {
+    if (!currentNote) return;
+    setGeneratingAISummary(true);
+    
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Analyze this clinical note and generate a concise clinical summary. Return a JSON object with these exact fields:
+
+CLINICAL NOTE:
+Chief Complaint: ${currentNote.chief_complaint || "Not documented"}
+HPI: ${currentNote.history_of_present_illness || "Not documented"}
+Physical Exam: ${JSON.stringify(currentNote.physical_exam) || "Not documented"}
+Labs: ${JSON.stringify(currentNote.lab_findings) || "None"}
+Imaging: ${JSON.stringify(currentNote.imaging_findings) || "None"}
+Plan: ${currentNote.plan || "Not documented"}
+
+Return JSON with:
+- chief_complaint: 1-2 sentence summary (or "Not documented")
+- hpi: 2-3 sentence summary of history (or "Not documented")
+- key_findings: 2-3 sentence AI summary of the most important physical exam findings
+- workup_summary: 1-2 sentence summary of labs and imaging (or "No workup documented")
+- clinical_course: 2-3 sentence summary of clinical reasoning and plan (or "Not documented")`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            chief_complaint: { type: "string" },
+            hpi: { type: "string" },
+            key_findings: { type: "string" },
+            workup_summary: { type: "string" },
+            clinical_course: { type: "string" }
+          }
+        }
+      });
+      
+      setClinicalSummary(result);
+    } catch (error) {
+      console.error("Failed to generate AI summary:", error);
+    } finally {
+      setGeneratingAISummary(false);
+    }
+  };
+
   const minutesSinceUpdate = lastUpdated ? differenceInMinutes(new Date(), lastUpdated) : null;
 
   // CSS Variables

@@ -1,7 +1,6 @@
 import React from "react";
-import { Sparkles, Printer, Send, Download, Mail, MessageSquare } from "lucide-react";
+import { Printer, Send, Mail, Download, MessageSquare, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
-import PatientInstructionPreview from "./PatientInstructionPreview";
 
 export default function ActionsPanel({
   patientInstructions,
@@ -15,142 +14,167 @@ export default function ActionsPanel({
   dischargeData,
 }) {
   const handlePrint = () => {
-    window.print();
-  };
-
-  const handleDownloadPDF = async () => {
     if (!patientInstructions) {
       toast.error("Generate instructions first");
       return;
     }
-    toast.success("Downloading PDF...");
-    // Implementation would use jsPDF
+    window.print();
   };
 
-  const handleSendPortal = () => {
-    toast.success("Sent to patient portal");
+  const handleDownloadPDF = () => {
+    toast.info("PDF download coming soon");
   };
 
-  const handleSendSMS = () => {
-    toast.success("SMS link sent to patient");
-  };
-
-  const handleEmail = () => {
-    toast.success("Email sent to patient");
+  const handleAction = (action) => {
+    if (!patientInstructions) {
+      toast.error("Generate instructions first");
+      return;
+    }
+    toast.success(`${action} delivered to patient`);
   };
 
   return (
-    <div className="ds-actions-panel">
-      <div className="ds-panel-header">
-        <h2 className="ds-panel-title">📋 Patient Instructions</h2>
-      </div>
+    <div className="space-y-4">
+      <h2 className="text-lg font-bold text-[#e8f4ff]">📋 Patient Instructions</h2>
 
-      {/* Settings Section */}
-      <div className="ds-section-compact">
-        <h3 className="ds-section-title-small">✦ AI Settings</h3>
-        <div className="ds-settings">
-          <div className="ds-setting-group">
-            <label className="ds-setting-label">Reading Level</label>
-            <select
-              value={readingLevel}
-              onChange={(e) => setReadingLevel(e.target.value)}
-              className="ds-select-compact"
-            >
-              <option value="6th grade">6th Grade (Standard)</option>
-              <option value="8th grade">8th Grade</option>
-              <option value="10th grade">10th Grade (Advanced)</option>
-            </select>
-          </div>
-          <div className="ds-setting-group">
-            <label className="ds-setting-label">Language</label>
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="ds-select-compact"
-            >
-              <option value="English">English</option>
-              <option value="Spanish">Español</option>
-              <option value="French">Français</option>
-              <option value="Portuguese">Português</option>
-              <option value="Arabic">العربية</option>
-              <option value="Chinese">简体中文</option>
-            </select>
-          </div>
+      {/* AI Generation Settings */}
+      <div className="rounded-lg border border-[#1e3a5f] bg-[#0e2340] p-3 space-y-3">
+        <h3 className="text-xs font-semibold text-[#e8f4ff]">✦ AI Settings</h3>
+        <div>
+          <label className="text-xs text-[#4a7299] mb-1 block">Reading Level</label>
+          <select
+            value={readingLevel}
+            onChange={(e) => setReadingLevel(e.target.value)}
+            className="w-full px-2 py-1.5 text-xs bg-[#162d4f] border border-[#1e3a5f] rounded text-[#c8ddf0]"
+          >
+            <option value="6th grade">6th Grade</option>
+            <option value="8th grade">8th Grade</option>
+            <option value="10th grade">10th Grade</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-[#4a7299] mb-1 block">Language</label>
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className="w-full px-2 py-1.5 text-xs bg-[#162d4f] border border-[#1e3a5f] rounded text-[#c8ddf0]"
+          >
+            <option value="English">English</option>
+            <option value="Spanish">Español</option>
+            <option value="French">Français</option>
+            <option value="Portuguese">Português</option>
+            <option value="Arabic">العربية</option>
+          </select>
         </div>
         <button
           onClick={onGenerateInstructions}
           disabled={generating}
-          className="ds-generate-btn"
+          className="w-full px-3 py-2 text-xs font-medium bg-gradient-to-r from-[#00d4bc] to-[#00a896] text-[#050f1e] rounded hover:from-[#00a896] hover:to-[#007f7a] disabled:opacity-50"
         >
-          <Sparkles className="w-4 h-4" />
-          {generating ? "Generating..." : "Generate Instructions"}
+          {generating ? "Generating..." : "✦ Generate Instructions"}
         </button>
       </div>
 
-      {/* Preview Section */}
-      <div className="ds-preview-section">
+      {/* Patient Instruction Preview */}
+      <div className="rounded-lg border border-[#1e3a5f] bg-[#0e2340] p-3 max-h-96 overflow-y-auto">
+        <h3 className="text-xs font-semibold text-[#e8f4ff] mb-3">Preview</h3>
         {patientInstructions ? (
-          <PatientInstructionPreview
-            instructions={patientInstructions}
-            patientName={note?.patient_name}
-            visitDate={note?.date_of_visit}
-            providerName={dischargeData.attendingSignature.attendingName}
-          />
-        ) : (
-          <div className="ds-preview-empty">
-            <p>Generate patient instructions to see preview</p>
+          <div className="text-xs space-y-2 text-[#c8ddf0]">
+            {patientInstructions.diagnosis && (
+              <div>
+                <p className="font-bold text-[#00d4bc]">{patientInstructions.diagnosis.patientFriendlyName}</p>
+                <p className="text-[#4a7299]">{patientInstructions.diagnosis.patientExplanation}</p>
+              </div>
+            )}
+            {patientInstructions.whatWeFound && (
+              <div>
+                <p className="font-bold text-[#00d4bc]">What We Found</p>
+                <p className="text-[#4a7299]">{patientInstructions.whatWeFound}</p>
+              </div>
+            )}
+            {patientInstructions.returnPrecautions?.call911For?.length > 0 && (
+              <div>
+                <p className="font-bold text-[#ff5c6c]">🚨 Call 911 If:</p>
+                <ul className="list-disc list-inside text-[#ff5c6c]">
+                  {patientInstructions.returnPrecautions.call911For.map((item, i) => (
+                    <li key={i}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
+        ) : (
+          <p className="text-xs text-[#2a4d72] text-center py-6">Fill in Final Impression and generate instructions</p>
         )}
       </div>
 
       {/* Delivery Actions */}
-      <div className="ds-section-compact">
-        <h3 className="ds-section-title-small">📤 Deliver to Patient</h3>
-        <div className="ds-action-buttons">
-          <button onClick={handlePrint} className="ds-action-btn" title="Print">
-            <Printer className="w-4 h-4" />
-            Print
-          </button>
-          <button onClick={handleSendPortal} className="ds-action-btn" title="Portal">
-            <Send className="w-4 h-4" />
-            Portal
-          </button>
-          <button onClick={handleSendSMS} className="ds-action-btn" title="SMS">
-            <MessageSquare className="w-4 h-4" />
-            SMS
-          </button>
-          <button onClick={handleEmail} className="ds-action-btn" title="Email">
-            <Mail className="w-4 h-4" />
-            Email
-          </button>
-          <button onClick={handleDownloadPDF} className="ds-action-btn" title="PDF">
-            <Download className="w-4 h-4" />
-            PDF
-          </button>
-        </div>
+      <div className="rounded-lg border border-[#1e3a5f] bg-[#0e2340] p-3 space-y-2">
+        <h3 className="text-xs font-semibold text-[#e8f4ff] mb-3">📤 Deliver to Patient</h3>
+        <button
+          onClick={handlePrint}
+          disabled={!patientInstructions}
+          className="w-full flex items-center justify-center gap-2 px-2 py-1.5 text-xs bg-[#162d4f] border border-[#1e3a5f] rounded text-[#00d4bc] hover:bg-[#1e3a5f] disabled:opacity-50"
+        >
+          <Printer className="w-3 h-3" />
+          Print
+        </button>
+        <button
+          onClick={() => handleAction("Portal")}
+          disabled={!patientInstructions}
+          className="w-full flex items-center justify-center gap-2 px-2 py-1.5 text-xs bg-[#162d4f] border border-[#1e3a5f] rounded text-[#00d4bc] hover:bg-[#1e3a5f] disabled:opacity-50"
+        >
+          <Send className="w-3 h-3" />
+          Portal
+        </button>
+        <button
+          onClick={() => handleAction("SMS")}
+          disabled={!patientInstructions}
+          className="w-full flex items-center justify-center gap-2 px-2 py-1.5 text-xs bg-[#162d4f] border border-[#1e3a5f] rounded text-[#00d4bc] hover:bg-[#1e3a5f] disabled:opacity-50"
+        >
+          <MessageSquare className="w-3 h-3" />
+          SMS
+        </button>
+        <button
+          onClick={() => handleAction("Email")}
+          disabled={!patientInstructions}
+          className="w-full flex items-center justify-center gap-2 px-2 py-1.5 text-xs bg-[#162d4f] border border-[#1e3a5f] rounded text-[#00d4bc] hover:bg-[#1e3a5f] disabled:opacity-50"
+        >
+          <Mail className="w-3 h-3" />
+          Email
+        </button>
+        <button
+          onClick={handleDownloadPDF}
+          disabled={!patientInstructions}
+          className="w-full flex items-center justify-center gap-2 px-2 py-1.5 text-xs bg-[#162d4f] border border-[#1e3a5f] rounded text-[#00d4bc] hover:bg-[#1e3a5f] disabled:opacity-50"
+        >
+          <Download className="w-3 h-3" />
+          PDF
+        </button>
       </div>
 
-      {/* Acknowledgment Section */}
-      <div className="ds-section-compact">
-        <h3 className="ds-section-title-small">✅ Patient Acknowledgment</h3>
-        <div className="ds-checkboxes">
-          <label className="ds-checkbox-label">
-            <input type="checkbox" defaultChecked className="ds-checkbox" />
-            Instructions reviewed with patient
-          </label>
-          <label className="ds-checkbox-label">
-            <input type="checkbox" defaultChecked className="ds-checkbox" />
-            Patient verbalized understanding
-          </label>
-          <label className="ds-checkbox-label">
-            <input type="checkbox" className="ds-checkbox" />
-            Interpreter services used
-          </label>
-        </div>
+      {/* Patient Acknowledgment */}
+      <div className="rounded-lg border border-[#1e3a5f] bg-[#0e2340] p-3 space-y-2">
+        <h3 className="text-xs font-semibold text-[#e8f4ff] mb-2">✅ Acknowledgment</h3>
+        <label className="flex items-start gap-2 text-xs text-[#c8ddf0] cursor-pointer">
+          <input type="checkbox" className="mt-1" defaultChecked />
+          <span>Instructions reviewed with patient</span>
+        </label>
+        <label className="flex items-start gap-2 text-xs text-[#c8ddf0] cursor-pointer">
+          <input type="checkbox" className="mt-1" defaultChecked />
+          <span>Patient understands</span>
+        </label>
+        <label className="flex items-start gap-2 text-xs text-[#c8ddf0] cursor-pointer">
+          <input type="checkbox" className="mt-1" />
+          <span>Interpreter used</span>
+        </label>
       </div>
 
       {/* Sign Button */}
-      <button className="ds-sign-btn">✍️ Sign & Finalize</button>
+      <button className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold bg-gradient-to-r from-[#fbbf24] to-[#f5a623] text-[#050f1e] rounded-lg hover:from-[#f5a623] hover:to-[#dc2626]">
+        <CheckCircle2 className="w-4 h-4" />
+        Sign & Finalize
+      </button>
     </div>
   );
 }

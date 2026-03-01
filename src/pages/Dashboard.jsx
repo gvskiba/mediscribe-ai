@@ -464,9 +464,12 @@ Return 5-8 articles total.`,
         console.error("Failed to fetch news:", error);
       } finally {
         setLoading(false);
+        setLoaded(true);
       }
     };
-    fetchNews();
+
+  useEffect(() => {
+    // Don't auto-fetch on mount - wait for user interaction
   }, []);
 
   const filteredArticles = articles.filter(article => 

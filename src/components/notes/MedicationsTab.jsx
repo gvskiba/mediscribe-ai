@@ -82,12 +82,32 @@ const SEPSIS_EMPIRIC = [
   { severity: "High ESBL Risk / HAP / Recent Antibiotics", primary_regimen: "Meropenem 1–2 g IV q8h (extended infusion over 3 hr preferred)", additional_coverage: "Vancomycin 25–30 mg/kg IV load if MRSA risk", mrsa_coverage: "Vancomycin as additional coverage", notes: "Reserve carbapenem for true ESBL/MDR risk; reassess and de-escalate at 48–72 hr; stewardship consultation" },
 ];
 
-const LINE_STYLE = {
-  first: { bg: "bg-emerald-100 text-emerald-700 border border-emerald-200", label: "First-line" },
-  second: { bg: "bg-amber-100 text-amber-700 border border-amber-200", label: "Second-line" },
+// ─── Dark Theme (matches rest of NoteDetail) ───────────────────────────────────
+const T = {
+  bg: "#050f1e", surface: "#0b1829", card: "#0f1e30",
+  border: "#1a2d45", border2: "#1e3555",
+  text: "#d8e4f0", muted: "#4a7299", dim: "#1e3555",
+  green: "#34d399", green_dim: "#002a1a",
+  amber: "#f59e0b", amber_dim: "#2a1a00",
+  red: "#f87171", red_dim: "#2a0f0f",
+  blue: "#3b82f6", blue_dim: "#0d2040",
+  purple: "#a78bfa", purple_dim: "#1a1040",
+  teal: "#00cca3", teal_dim: "#003328",
+  orange: "#fb923c",
 };
 
-const PREG_COLORS = { A: "text-emerald-700 bg-emerald-50", B: "text-blue-700 bg-blue-50", C: "text-amber-700 bg-amber-50", D: "text-orange-700 bg-orange-50", X: "text-red-700 bg-red-50" };
+const LINE_STYLE = {
+  first: { color: T.green, bg: T.green_dim, label: "First-line" },
+  second: { color: T.amber, bg: T.amber_dim, label: "Second-line" },
+};
+
+const PREG_COLORS = {
+  A: { color: T.green, bg: T.green_dim },
+  B: { color: T.teal, bg: T.teal_dim },
+  C: { color: T.amber, bg: T.amber_dim },
+  D: { color: T.orange, bg: "#2a1000" },
+  X: { color: T.red, bg: T.red_dim },
+};
 
 // ─── Category Pill ─────────────────────────────────────────────────────────────
 function CategoryPill({ cat, active, onClick }) {

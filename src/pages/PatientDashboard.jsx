@@ -112,6 +112,18 @@ export default function PatientDashboard() {
     enabled: !!noteId,
   });
 
+  const { data: hospitalSettings } = useQuery({
+    queryKey: ["hospitalSettings"],
+    queryFn: async () => {
+      const results = await base44.entities.HospitalSettings.list();
+      return results.length > 0 ? results[0] : null;
+    },
+  });
+
+  const defaultAttending = hospitalSettings?.attendings?.find(
+    (a) => a.id === hospitalSettings?.default_attending_id
+  );
+
   const handleRefresh = async () => {
     setLastUpdated(new Date());
     await Promise.all([

@@ -575,16 +575,21 @@ export default function MedicationsTab({ note, noteId, queryClient, isFirstTab, 
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
+    <div className="max-w-3xl mx-auto px-4 py-4 space-y-3" style={{ background: T.bg, minHeight: "100%" }}>
       <div>
-        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Medications</h2>
-        <p className="text-xs text-slate-400 mt-0.5">ER reference · AI recommendations · Sepsis protocol · Interaction checks</p>
+        <h2 className="text-xs font-bold uppercase tracking-wide" style={{ color: T.text }}>Medications</h2>
+        <p className="text-xs mt-0.5" style={{ color: T.muted }}>ER reference · AI recommendations · Sepsis protocol · Interaction checks</p>
       </div>
 
       {/* Tab switcher */}
-      <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+      <div className="flex gap-1 p-1 rounded-lg" style={{ background: T.border }}>
         {TABS.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${activeTab === tab.id ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-semibold transition-all"
+            style={activeTab === tab.id ? { background: T.card, color: T.text } : { background: "transparent", color: T.muted }}
+          >
             <tab.icon className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{tab.label}</span>
           </button>
@@ -594,10 +599,10 @@ export default function MedicationsTab({ note, noteId, queryClient, isFirstTab, 
       {/* AI tab */}
       {activeTab === "ai" && (
         <div className="space-y-3">
-          <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-blue-500 shadow-sm overflow-hidden">
-            <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
-              <span className="text-sm font-semibold text-slate-800">AI Recommendations</span>
+          <div className="rounded-xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border2}`, borderLeft: `4px solid ${T.blue}` }}>
+            <div className="px-4 py-2.5 flex items-center gap-2.5" style={{ borderBottom: `1px solid ${T.border}` }}>
+              <div className="w-2 h-2 rounded-full" style={{ background: T.blue }} />
+              <span className="text-sm font-semibold" style={{ color: T.text }}>AI Recommendations</span>
             </div>
             <div className="p-4">
               <MedicationRecommendations note={note} onAddMedications={async (meds) => {
@@ -615,9 +620,9 @@ export default function MedicationsTab({ note, noteId, queryClient, isFirstTab, 
       {/* ER Reference tab */}
       {activeTab === "reference" && (
         <div className="space-y-3">
-          <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-800">Clinical decision support only. Verify all doses independently. Not a substitute for clinical judgment.</p>
+          <div className="flex items-start gap-2 px-3 py-2 rounded-lg" style={{ background: T.amber_dim, border: `1px solid ${T.amber}40` }}>
+            <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: T.amber }} />
+            <p className="text-xs" style={{ color: T.amber }}>Clinical decision support only. Verify all doses independently. Not a substitute for clinical judgment.</p>
           </div>
           <MedReferenceTab onAddMed={handleAddMed} />
           <CurrentMedsPanel note={note} noteId={noteId} queryClient={queryClient} />
@@ -629,19 +634,31 @@ export default function MedicationsTab({ note, noteId, queryClient, isFirstTab, 
       {activeTab === "sepsis" && <SepsisProtocolTab />}
 
       {/* Footer nav */}
-      <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+      <div className="flex justify-between items-center pt-1" style={{ borderTop: `1px solid ${T.border}` }}>
         <div className="flex gap-2">
           <TabDataPreview tabId="medications" note={note} />
           <ClinicalNotePreviewButton note={note} />
         </div>
         <div className="flex items-center gap-1.5">
           {!isFirstTab() && (
-            <button onClick={handleBack} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-all"
+              style={{ background: T.surface, color: T.muted, border: `1px solid ${T.border2}` }}
+              onMouseEnter={e => e.currentTarget.style.color = T.text}
+              onMouseLeave={e => e.currentTarget.style.color = T.muted}
+            >
               <ArrowLeft className="w-3.5 h-3.5" /> Back
             </button>
           )}
           {!isLastTab() && (
-            <button onClick={handleNext} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+            <button
+              onClick={handleNext}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-all"
+              style={{ background: T.teal_dim, color: T.teal, border: `1px solid ${T.teal}40` }}
+              onMouseEnter={e => { e.currentTarget.style.background = T.teal; e.currentTarget.style.color = T.bg; }}
+              onMouseLeave={e => { e.currentTarget.style.background = T.teal_dim; e.currentTarget.style.color = T.teal; }}
+            >
               Next <ArrowLeft className="w-3.5 h-3.5 rotate-180" />
             </button>
           )}

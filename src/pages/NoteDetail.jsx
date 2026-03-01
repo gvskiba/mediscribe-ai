@@ -142,14 +142,7 @@ const TAB_GROUPS = [
       { id: 'procedures', label: 'Procedures', icon: Activity },
     ]
   },
-  {
-    id: 'finalize',
-    label: 'Finalize',
-    color: 'indigo',
-    tabs: [
-      { id: 'finalize', label: 'Review & Export', icon: Check },
-    ]
-  },
+
   {
     id: 'disposition',
     label: 'Disposition',
@@ -1742,10 +1735,7 @@ Generated: ${new Date().toLocaleString()}
                              </div>
                              </TabsContent>
 
-                             {/* Finalize Tab */}
-                             <TabsContent value="finalize" className="overflow-y-auto" style={{ background: "#050f1e" }}>
-                               <FinalizeTab note={note} finalizeMutation={finalizeMutation} exportingFormat={exportingFormat} exportNote={exportNote} />
-                             </TabsContent>
+
 
                              {/* AI Analysis Tab */}
                              <TabsContent value="ai_analysis" className="overflow-y-auto" style={{ background: "#050f1e" }}>

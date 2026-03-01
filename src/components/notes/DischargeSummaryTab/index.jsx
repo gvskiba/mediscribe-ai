@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { Sparkles, Printer, Send, Download, CheckCircle2, ArrowLeft } from "lucide-react";
+import { Sparkles, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import SummaryPanel from "./SummaryPanel";
 import ActionsPanel from "./ActionsPanel";
@@ -17,51 +17,129 @@ export default function DischargeSummaryTab({
   const [dischargeData, setDischargeData] = useState({
     finalImpression: {
       primaryDx: note?.assessment || "",
-      icd10: note?.diagnoses?.[0] || "",
+      icd10: note?.diagnoses?.[0]?.split(" - ")[0] || "",
       secondaryDx: note?.diagnoses?.slice(1).join("\n") || "",
       clinicalSummary: note?.summary || "",
-      conditionAtDx: "Stable",
+      conditionAtDischarge: "Stable",
+      mdmLevel: "99283",
     },
-    workupSummary: {
+    workupPerformed: {
       labResults: "",
       imagingResults: "",
       procedures: "",
       consults: "",
     },
-    treatmentSummary: {
-      medsGiven: "",
+    treatmentProvided: {
+      medicationsGivenInED: "",
       ivFluids: "",
-      oxygen: "None — Room air throughout",
-      response: "",
+      oxygenTherapy: "None — Room air throughout",
+      responseToTreatment: "",
     },
-    dischargeMedications: note?.medications || [],
+    dischargeMedications: [],
     followUpPlan: [],
-    mdmAndCoding: {
-      mdmLevel: "99283 — Moderate Complexity",
-      losMinutes: 0,
+    patientAcknowledgment: {
+      instructionsExplained: false,
+      patientUnderstands: false,
+      interpreterUsed: false,
+      languageUsed: "English",
+      nurseInitials: "",
     },
-    attendingSignature: {
-      attendingName: "",
-      npi: "",
-      residentName: "",
-      attestation: "I have reviewed the history, physical examination, diagnostic workup, and clinical course for this patient.",
-    },
+    attendingPhysician: "",
+    npi: "",
+    residentPhysician: "",
+    attestation: "I have reviewed the history, physical examination, diagnostic workup, and clinical course for this patient. The discharge summary and instructions have been reviewed and accurately represent the clinical encounter.",
+    signedAt: null,
+    status: "draft",
   });
 
   const [patientInstructions, setPatientInstructions] = useState(null);
   const [generatingInstructions, setGeneratingInstructions] = useState(false);
   const [readingLevel, setReadingLevel] = useState("6th grade");
   const [language, setLanguage] = useState("English");
-  const [showPreview, setShowPreview] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const autosaveTimeoutRef = useRef(null);
 
-  const handleUpdateDischargeData = (section, field, value) => {
-    setDischargeData((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value,
-      },
-    }));
+  // Autosave function
+  const autosaveField = async (updatedData) => {
+    if (autosaveTimeoutRef.current) {
+      clearTimeout(autosaveTimeoutRef.current);
+    }
+    
+    setSaving(true);
+    autosaveTimeoutRef.current = setTimeout(async () => {
+      try {
+        await base44.entities.ClinicalNote.update(noteId, {
+          discharge_summary: JSON.stringify(updatedData),
+        });
+        setSaving(false);
+      } catch (error) {
+        console.error("Autosave failed:", error);
+        setSaving(false);
+      }
+    }, 800);
+  };
+
+  // Handle nested field updates with autosave
+  const handleUpdateField = (path, value) => {
+    const keys = path.split(".");
+    const newData = JSON.parse(JSON.stringify(dischargeData));
+    let current = newData;
+    
+    for (let i = 0; i < keys.length - 1; i++) {
+      current = current[keys[i]];
+    }
+    current[keys[keys.length - 1]] = value;
+    
+    setDischargeData(newData);
+    autosaveField(newData);
+  };
+
+  // Handle array updates (medications, followups)
+  const handleArrayUpdate = (arrayPath, index, field, value) => {
+    const newData = JSON.parse(JSON.stringify(dischargeData));
+    const arr = newData[arrayPath];
+    if (arr && arr[index]) {
+      arr[index][field] = value;
+    }
+    setDischargeData(newData);
+    autosaveField(newData);
+  };
+
+  const handleAddRow = (arrayPath) => {
+    const newData = JSON.parse(JSON.stringify(dischargeData));
+    if (arrayPath === "dischargeMedications") {
+      newData[arrayPath].push({
+        name: "",
+        brandName: "",
+        dose: "",
+        route: "By mouth (PO)",
+        frequency: "",
+        duration: "",
+        purpose: "",
+        isNew: false,
+        importantNotes: "",
+        controlled: false,
+      });
+    } else if (arrayPath === "followUpPlan") {
+      newData[arrayPath].push({
+        providerType: "",
+        providerName: "",
+        timeframe: "",
+        reason: "",
+        phone: "",
+        scheduled: false,
+        appointmentDateTime: "",
+      });
+    }
+    setDischargeData(newData);
+    autosaveField(newData);
+  };
+
+  const handleRemoveRow = (arrayPath, index) => {
+    const newData = JSON.parse(JSON.stringify(dischargeData));
+    newData[arrayPath].splice(index, 1);
+    setDischargeData(newData);
+    autosaveField(newData);
   };
 
   const generateInstructions = async () => {

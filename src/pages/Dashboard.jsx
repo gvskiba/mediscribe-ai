@@ -790,10 +790,10 @@ export default function Dashboard() {
       <style>{`@keyframes clockColon { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }`}</style>
 
       {/* Header */}
-      <div style={{ padding: "10px 16px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+      <div style={{ padding: "10px 16px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "8px", flexShrink: 0, position: "relative" }}>
         {isEditMode ? (
           <>
-            <span style={{ color: T.dim, fontSize: "11px", marginRight: "auto" }}>Click a cell to assign a widget</span>
+            <span style={{ color: T.dim, fontSize: "11px", marginRight: "auto" }}>Click cell for widget • Right-click for size</span>
             <button onClick={resetLayout} style={{ padding: "5px 10px", background: "transparent", border: `1px solid ${T.border}`, borderRadius: "6px", color: T.dim, fontSize: "11px", cursor: "pointer" }}>Reset</button>
             <button onClick={saveLayout} style={{ display: "flex", alignItems: "center", gap: "5px", padding: "5px 12px", background: `linear-gradient(135deg, ${T.teal}, ${T.teal2})`, border: "none", borderRadius: "6px", color: T.navy, fontSize: "11px", fontWeight: 700, cursor: "pointer" }}>
               <Save className="w-3 h-3" /> Save
@@ -803,14 +803,41 @@ export default function Dashboard() {
             </button>
           </>
         ) : (
-          <button
-            onClick={() => setIsEditMode(true)}
-            style={{ display: "flex", alignItems: "center", gap: "6px", padding: "5px 12px", background: T.edge, border: `1px solid ${T.border}`, borderRadius: "6px", color: T.text, fontSize: "11px", fontWeight: 600, cursor: "pointer" }}
-            onMouseEnter={(e) => e.currentTarget.style.borderColor = T.teal}
-            onMouseLeave={(e) => e.currentTarget.style.borderColor = T.border}
-          >
-            <Settings className="w-3 h-3" /> Customize
-          </button>
+          <>
+            <div style={{ position: "relative" }}>
+              <button
+                onClick={() => setShowLayoutMenu(!showLayoutMenu)}
+                style={{ display: "flex", alignItems: "center", gap: "6px", padding: "5px 12px", background: T.edge, border: `1px solid ${T.border}`, borderRadius: "6px", color: T.text, fontSize: "11px", fontWeight: 600, cursor: "pointer", marginRight: "8px" }}
+                onMouseEnter={(e) => e.currentTarget.style.borderColor = T.teal}
+                onMouseLeave={(e) => e.currentTarget.style.borderColor = T.border}
+              >
+                <ChevronDown className="w-3 h-3" /> Layouts
+              </button>
+              {showLayoutMenu && (
+                <div style={{ position: "absolute", top: "100%", left: 0, marginTop: "4px", background: T.panel, border: `1px solid ${T.border}`, borderRadius: "8px", minWidth: "180px", zIndex: 1000, boxShadow: "0 8px 16px rgba(0,0,0,0.3)" }}>
+                  {Object.entries(PRESET_LAYOUTS).map(([key, layout]) => (
+                    <button
+                      key={key}
+                      onClick={() => loadPresetLayout(key)}
+                      style={{ display: "block", width: "100%", padding: "8px 12px", textAlign: "left", background: "transparent", border: "none", color: T.text, fontSize: "11px", cursor: "pointer", borderBottom: `1px solid ${T.border}` }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = T.edge}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                    >
+                      {layout.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => setIsEditMode(true)}
+              style={{ display: "flex", alignItems: "center", gap: "6px", padding: "5px 12px", background: T.edge, border: `1px solid ${T.border}`, borderRadius: "6px", color: T.text, fontSize: "11px", fontWeight: 600, cursor: "pointer" }}
+              onMouseEnter={(e) => e.currentTarget.style.borderColor = T.teal}
+              onMouseLeave={(e) => e.currentTarget.style.borderColor = T.border}
+            >
+              <Settings className="w-3 h-3" /> Customize
+            </button>
+          </>
         )}
       </div>
 

@@ -476,7 +476,7 @@ export default function ClinicalGuidelines() {
         </div>
 
         {/* Right Column */}
-        <div className="overflow-hidden h-full">
+        <div className="overflow-hidden min-h-0 flex-1">
           <AnalysisPanel
             analysis={analysis}
             loading={loading}

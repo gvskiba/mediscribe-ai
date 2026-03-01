@@ -480,6 +480,15 @@ Return 5-8 articles total.`,
     <div style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: "14px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
     {/* Filter Tabs */}
     <div style={{ display: "flex", gap: "4px", padding: "8px 14px", overflowX: "auto", borderBottom: `1px solid ${T.border}`, alignItems: "center" }}>
+        {!loaded && (
+          <button
+            onClick={fetchNews}
+            disabled={loading}
+            style={{ marginLeft: "auto", padding: "4px 10px", borderRadius: "6px", background: "rgba(0,212,188,0.12)", border: `1px solid rgba(0,212,188,0.25)`, color: T.teal, fontSize: "10px", fontWeight: 600, cursor: loading ? "not-allowed" : "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
+          >
+            {loading ? "Loading…" : "Load News"}
+          </button>
+        )}
         {newsData.filterTabs.map((tab) => (
           <button
             key={tab.id}

@@ -182,7 +182,7 @@ export default function DashboardTopBar({ user }) {
       >
         {/* Left: Welcome */}
         <div style={{ fontSize: "11px", color: T.text, fontWeight: 500, whiteSpace: "nowrap", flexShrink: 0 }}>
-          Welcome, {lastName}
+          Welcome, {lastName}{defaultAttending ? ` • Attending: ${defaultAttending.name}` : ""}
         </div>
 
         {/* Stats Buttons - Centered */}

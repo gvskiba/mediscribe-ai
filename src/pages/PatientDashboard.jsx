@@ -12,6 +12,9 @@ export default function PatientDashboard() {
   const [isAutoRefreshEnabled, setIsAutoRefreshEnabled] = useState(true);
   const [clinicalSummary, setClinicalSummary] = useState(null);
   const [generatingAISummary, setGeneratingAISummary] = useState(false);
+  const [selectedAttendingId, setSelectedAttendingId] = useState(null);
+  const [attendingDropdownOpen, setAttendingDropdownOpen] = useState(false);
+  const attendingRef = useRef(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

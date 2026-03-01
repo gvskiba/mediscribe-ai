@@ -8,11 +8,15 @@ export default function ClinicalNoteComposer({ note, noteId, queryClient }) {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
 
   return (
-    <div className="h-full bg-[#050f1e] p-4 flex gap-3 overflow-hidden" style={{ display: "flex", height: "100%" }}>
+    <div className="h-full bg-[#050f1e] p-4 flex gap-3" style={{ display: "flex", height: "100%", minHeight: 0 }}>
       {/* Left Column: Note Type + Templates */}
-      <div className="w-72 flex flex-col gap-3 overflow-hidden" style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
-        <NoteTypePanel selectedType={selectedNoteType} onSelect={setSelectedNoteType} />
-        <TemplatePanel selectedNoteType={selectedNoteType} onSelect={setSelectedTemplate} />
+      <div className="w-72 flex flex-col gap-3 overflow-hidden" style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: "0 0 auto" }}>
+        <div style={{ flex: "0 0 auto", overflowY: "auto", maxHeight: "fit-content" }}>
+          <NoteTypePanel selectedType={selectedNoteType} onSelect={setSelectedNoteType} />
+        </div>
+        <div style={{ flex: "1", overflowY: "auto", minHeight: 0 }}>
+          <TemplatePanel selectedNoteType={selectedNoteType} onSelect={setSelectedTemplate} />
+        </div>
       </div>
 
       {/* Right Column: Clinical Note Preview */}

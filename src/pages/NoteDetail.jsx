@@ -1460,7 +1460,7 @@ Generated: ${new Date().toLocaleString()}
        <motion.div
          initial={{ opacity: 0, y: 12 }}
          animate={{ opacity: 1, y: 0 }}
-         style={{ flex: 1, minHeight: 0, overflowY: "auto" }}
+         style={{ flex: 1, paddingBottom: "120px" }}
        >
          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col" style={{ height: "100%" }}>
                {/* ── Bottom Navigation Bar ── */}

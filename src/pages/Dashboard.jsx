@@ -620,7 +620,7 @@ function NotesPanel() {
                 cursor: "pointer",
                 transition: "all 0.15s",
               }}
-              onClick={() => window.location.href = `?page=NoteDetail&id=${note.id}`}
+              onClick={() => window.location.href = createPageUrl(`NoteDetail?id=${note.id}`)}
               onMouseEnter={(e) => { e.currentTarget.style.background = `rgba(22,45,79,0.5)`; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
             >

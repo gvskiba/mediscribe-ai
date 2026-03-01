@@ -143,8 +143,8 @@ export default function DischargeSummaryTab({
   };
 
   const generateInstructions = async () => {
-    if (!dischargeData.finalImpression.primaryDx) {
-      toast.error("Primary diagnosis required to generate instructions");
+    if (!dischargeData.finalImpression.primaryDx || !dischargeData.finalImpression.icd10) {
+      toast.error("Primary diagnosis and ICD-10 code required");
       return;
     }
 
@@ -154,7 +154,11 @@ export default function DischargeSummaryTab({
         .map((m) => `${m.name} ${m.dose} ${m.frequency}`)
         .join("\n");
 
-      const prompt = `Generate plain-language discharge instructions for a patient with the following clinical information:
+      const medsText2 = dischargeData.dischargeMedications
+        .map((m) => `${m.name} - ${m.purpose || "see medication list for details"}`)
+        .join("\n");
+
+      const prompt = `Generate plain-language discharge instructions for a patient. Use ${readingLevel} reading level.
 
 PRIMARY DIAGNOSIS: ${dischargeData.finalImpression.primaryDx}
 ICD-10: ${dischargeData.finalImpression.icd10}
@@ -162,67 +166,109 @@ SECONDARY DIAGNOSES: ${dischargeData.finalImpression.secondaryDx || "None"}
 CLINICAL SUMMARY: ${dischargeData.finalImpression.clinicalSummary}
 
 WORKUP PERFORMED:
-Labs: ${dischargeData.workupSummary.labResults}
-Imaging: ${dischargeData.workupSummary.imagingResults}
-Procedures: ${dischargeData.workupSummary.procedures}
+Labs: ${dischargeData.workupPerformed.labResults || "See clinical summary"}
+Imaging: ${dischargeData.workupPerformed.imagingResults || "See clinical summary"}
+Procedures: ${dischargeData.workupPerformed.procedures || "None"}
 
 TREATMENT PROVIDED:
-Medications: ${dischargeData.treatmentSummary.medsGiven}
-IV Fluids: ${dischargeData.treatmentSummary.ivFluids}
+Medications: ${dischargeData.treatmentProvided.medicationsGivenInED || "See discharge medications"}
+IV Fluids: ${dischargeData.treatmentProvided.ivFluids || "None"}
+Response: ${dischargeData.treatmentProvided.responseToTreatment || "Improved"}
 
 DISCHARGE MEDICATIONS:
 ${medsText}
 
-Generate comprehensive patient discharge instructions including:
-1. Patient-friendly diagnosis explanation (2-3 sentences)
-2. What we found (plain language)
-3. Activity instructions (specific to diagnosis)
-4. Diet instructions
-5. Medication purposes explained in lay language
-6. Follow-up appointments needed
-7. Return precautions (call 911, go to ER, call doctor)
-8. 3-5 condition-specific education tips
-
-Use ${readingLevel} reading level. Plain language, avoid medical jargon.`;
+Generate in this structure:
+{
+  "diagnosis": {
+    "patientFriendlyName": "Simple name for patient",
+    "patientExplanation": "2-3 sentences explaining in simple language"
+  },
+  "whatWeFound": "Plain language summary of test/exam findings",
+  "treatmentReceived": "What was done in the ED",
+  "activityInstructions": {
+    "generalActivity": "Activity recommendations",
+    "workStatus": "Work restrictions if any",
+    "drivingStatus": "Driving restrictions if any",
+    "exerciseGuidance": "Exercise recommendations"
+  },
+  "dietInstructions": {
+    "generalDiet": "General diet guidance",
+    "specificRestrictions": ["Restriction 1", "Restriction 2"],
+    "fluidGuidance": "Fluid guidance"
+  },
+  "returnPrecautions": {
+    "call911For": ["Symptom 1 requiring emergency", "Symptom 2"],
+    "returnERFor": ["Concern requiring ER", "Another concern"],
+    "callDoctorFor": ["Issue to call doctor about", "Another issue"]
+  },
+  "patientEducation": [
+    {"icon": "💡", "topic": "Topic name", "content": "Brief explanation"},
+    {"icon": "💊", "topic": "Medication tips", "content": "Guidance"}
+  ]
+}`;
 
       const result = await base44.integrations.Core.InvokeLLM({
         prompt,
         response_json_schema: {
           type: "object",
           properties: {
-            diagnosisFriendly: { type: "string" },
+            diagnosis: {
+              type: "object",
+              properties: {
+                patientFriendlyName: { type: "string" },
+                patientExplanation: { type: "string" },
+              },
+            },
             whatWeFound: { type: "string" },
-            activityInstructions: { type: "string" },
-            dietInstructions: { type: "string" },
-            medicationPurposes: { type: "array", items: { type: "string" } },
-            followUpNeeded: { type: "array", items: { type: "string" } },
-            returnImmediately: { type: "array", items: { type: "string" } },
-            callDoctor: { type: "array", items: { type: "string" } },
-            educationTips: { type: "array", items: { type: "string" } },
+            treatmentReceived: { type: "string" },
+            activityInstructions: {
+              type: "object",
+              properties: {
+                generalActivity: { type: "string" },
+                workStatus: { type: "string" },
+                drivingStatus: { type: "string" },
+                exerciseGuidance: { type: "string" },
+              },
+            },
+            dietInstructions: {
+              type: "object",
+              properties: {
+                generalDiet: { type: "string" },
+                specificRestrictions: { type: "array", items: { type: "string" } },
+                fluidGuidance: { type: "string" },
+              },
+            },
+            returnPrecautions: {
+              type: "object",
+              properties: {
+                call911For: { type: "array", items: { type: "string" } },
+                returnERFor: { type: "array", items: { type: "string" } },
+                callDoctorFor: { type: "array", items: { type: "string" } },
+              },
+            },
+            patientEducation: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  icon: { type: "string" },
+                  topic: { type: "string" },
+                  content: { type: "string" },
+                },
+              },
+            },
           },
         },
       });
 
       setPatientInstructions(result);
-      toast.success("Patient instructions generated successfully");
+      toast.success("Patient instructions generated");
     } catch (error) {
       console.error("Failed to generate instructions:", error);
       toast.error("Failed to generate instructions");
     } finally {
       setGeneratingInstructions(false);
-    }
-  };
-
-  const saveDischargeSummary = async () => {
-    try {
-      await base44.entities.ClinicalNote.update(noteId, {
-        discharge_summary: JSON.stringify(dischargeData),
-      });
-      queryClient.invalidateQueries({ queryKey: ["note", noteId] });
-      toast.success("Discharge summary saved");
-    } catch (error) {
-      console.error("Failed to save:", error);
-      toast.error("Failed to save");
     }
   };
 

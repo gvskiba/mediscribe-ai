@@ -15,7 +15,7 @@ const T = {
 };
 
 export default function QuickNoteCreatorWidget() {
-  const [patientName, setPatientName] = useState("");
+  const [ageGender, setAgeGender] = useState("");
   const [noteType, setNoteType] = useState("progress_note");
   const [creating, setCreating] = useState(false);
 
@@ -27,12 +27,12 @@ export default function QuickNoteCreatorWidget() {
   ];
 
   const handleCreateNote = async () => {
-    if (!patientName.trim()) return;
+    if (!ageGender.trim()) return;
     try {
       setCreating(true);
       const newNote = await base44.entities.ClinicalNote.create({
         raw_note: "",
-        patient_name: patientName,
+        patient_age: ageGender,
         status: "draft",
         note_type: noteType,
       });
@@ -54,13 +54,13 @@ export default function QuickNoteCreatorWidget() {
         <div>
           <label style={{ fontSize: "11px", color: T.dim, display: "block", marginBottom: "4px" }}>
             <User className="w-3 h-3 inline mr-1" />
-            Patient Name
+            Age & Gender
           </label>
           <input
             type="text"
-            placeholder="Enter patient name"
-            value={patientName}
-            onChange={(e) => setPatientName(e.target.value)}
+            placeholder="e.g., 45yo M"
+            value={ageGender}
+            onChange={(e) => setAgeGender(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && handleCreateNote()}
             style={{
               width: "100%",
@@ -103,22 +103,22 @@ export default function QuickNoteCreatorWidget() {
 
         <button
           onClick={handleCreateNote}
-          disabled={!patientName.trim() || creating}
+          disabled={!ageGender.trim() || creating}
           style={{
             marginTop: "auto",
             padding: "10px",
-            background: patientName.trim() ? `linear-gradient(135deg, ${T.teal}, ${T.teal2})` : T.dim,
+            background: ageGender.trim() ? `linear-gradient(135deg, ${T.teal}, ${T.teal2})` : T.dim,
             border: "none",
             borderRadius: "8px",
-            color: patientName.trim() ? T.panel : T.dim,
+            color: ageGender.trim() ? T.panel : T.dim,
             fontSize: "12px",
             fontWeight: 600,
-            cursor: patientName.trim() ? "pointer" : "not-allowed",
+            cursor: ageGender.trim() ? "pointer" : "not-allowed",
             transition: "all 0.2s",
             opacity: creating ? 0.6 : 1,
           }}
         >
-          {creating ? "Creating..." : "Create Note"}
+          {creating ? "Creating..." : "New Quick Note"}
         </button>
       </div>
     </div>

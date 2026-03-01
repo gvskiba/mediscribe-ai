@@ -1,17 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, AlertCircle, Pill, Beaker, Heart, RotateCw, Clock } from "lucide-react";
+import { RotateCw } from "lucide-react";
 import { format, differenceInMinutes } from "date-fns";
-import PatientStrip from "../components/dashboard/PatientStrip";
-import QuickStats from "../components/dashboard/QuickStats";
-import VitalsPanel from "../components/dashboard/VitalsPanel";
-import DiagnosesPanel from "../components/dashboard/DiagnosesPanel";
-import ClinicalSummaryPanel from "../components/dashboard/ClinicalSummaryPanel";
-import AbnormalFindingsPanel from "../components/dashboard/AbnormalFindingsPanel";
-import MedicationsPanel from "../components/dashboard/MedicationsPanel";
-import LabsPanel from "../components/dashboard/LabsPanel";
-import ImagingPanel from "../components/dashboard/ImagingPanel";
 
 export default function PatientDashboard() {
   const [encounterId, setEncounterId] = useState(null);
@@ -21,13 +12,11 @@ export default function PatientDashboard() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const eid = params.get("encounterId");
-    const pid = params.get("patientId");
-    setEncounterId(eid);
-    setPatientId(pid);
+    setEncounterId(params.get("encounterId"));
+    setPatientId(params.get("patientId"));
   }, []);
 
-  // Data fetching
+  // Parallel data fetching per schema dataLoadSequence
   const { data: patient } = useQuery({
     queryKey: ["patient", patientId],
     queryFn: () => base44.entities.Patient.get(patientId),
@@ -121,39 +110,331 @@ export default function PatientDashboard() {
 
   const minutesSinceUpdate = lastUpdated ? differenceInMinutes(new Date(), lastUpdated) : null;
 
+  // CSS Variables
+  const colors = {
+    navy: "#050f1e",
+    slate: "#0b1d35",
+    panel: "#0e2340",
+    edge: "#162d4f",
+    border: "#1e3a5f",
+    muted: "#2a4d72",
+    dim: "#4a7299",
+    text: "#c8ddf0",
+    bright: "#e8f4ff",
+    teal: "#00d4bc",
+    amber: "#f5a623",
+    red: "#ff5c6c",
+    green: "#2ecc71",
+    purple: "#9b6dff",
+    rose: "#f472b6",
+  };
+
   return (
-    <div style={{ background: "#050f1e", fontFamily: "DM Sans, sans-serif", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* Patient Strip with Top Gradient Border */}
+    <div style={{ background: colors.navy, fontFamily: "DM Sans, sans-serif", minHeight: "100vh", display: "flex", flexDirection: "column", color: colors.text }}>
+      {/* Patient Strip */}
       {patient && encounter && (
-        <PatientStrip patient={patient} encounter={encounter} vitals={vitals[0]} />
+        <div
+          style={{
+            background: colors.slate,
+            borderBottom: `1px solid ${colors.border}`,
+            borderTop: "3px solid",
+            borderImage: "linear-gradient(90deg, #00d4bc, #9b6dff, #f5a623) 1",
+            padding: "12px 16px",
+            display: "flex",
+            gap: "16px",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          {/* Avatar & Name */}
+          <div style={{ display: "flex", gap: "10px", minWidth: "200px" }}>
+            <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: colors.edge, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: "16px", flexShrink: 0 }}>
+              {patient?.name?.charAt(0) || "P"}
+            </div>
+            <div>
+              <p style={{ fontSize: "12px", fontWeight: 600, margin: "0 0 2px 0", color: colors.bright }}>
+                {patient?.name} — from Base44 Patient entity
+              </p>
+              <p style={{ fontSize: "10px", margin: 0, color: colors.dim }}>
+                MRN: {patient?.mrn || "—"} | Age: {patient?.age || "—"} | DOB: {patient?.dob || "—"}
+              </p>
+            </div>
+          </div>
+
+          {/* Vital Pills */}
+          {vitals?.[0] && (
+            <div style={{ display: "flex", gap: "6px" }}>
+              {[
+                { label: "SYSTOLIC", value: vitals[0].systolicBP || "—" },
+                { label: "DIASTOLIC", value: vitals[0].diastolicBP || "—" },
+                { label: "HEART", value: vitals[0].heartRate || "—" },
+                { label: "RESP", value: vitals[0].respiratoryRate || "—" },
+                { label: "TEMPERATURE", value: vitals[0].temperature || "—" },
+                { label: "SPO₂", value: vitals[0].spo2 || "—" },
+              ].map((v, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    background: colors.edge,
+                    border: `1px solid ${colors.border}`,
+                    padding: "6px 10px",
+                    borderRadius: "6px",
+                    textAlign: "center",
+                    minWidth: "70px",
+                  }}
+                >
+                  <p style={{ fontSize: "8px", margin: "0 0 2px 0", color: colors.dim, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>
+                    {v.label}
+                  </p>
+                  <p style={{ fontSize: "10px", fontWeight: 600, margin: 0, color: colors.text }}>
+                    {v.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Right: Allergies & Status */}
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            {patient?.allergies?.length > 0 ? (
+              <span style={{ background: colors.red, color: "#fff", padding: "4px 8px", borderRadius: "4px", fontSize: "9px", fontWeight: 600 }}>
+                {patient.allergies[0]}
+              </span>
+            ) : (
+              <span style={{ color: colors.dim, fontSize: "10px" }}>No Allergies</span>
+            )}
+            <span style={{ color: colors.dim, fontSize: "10px" }}>Arrived: —</span>
+            <span
+              style={{
+                background: encounter?.encounterStatus === "active" ? "rgba(0,212,188,0.2)" : colors.edge,
+                color: colors.text,
+                padding: "4px 8px",
+                borderRadius: "4px",
+                fontSize: "9px",
+                fontWeight: 600,
+              }}
+            >
+              {encounter?.encounterStatus?.toUpperCase() || "—"}
+            </span>
+          </div>
+        </div>
       )}
 
       {/* Quick Stats */}
       {encounter && (
-        <QuickStats encounter={encounter} vitals={vitals[0]} />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "11px", padding: "11px 16px 0 16px" }}>
+          {[
+            { icon: "⏱", label: "LENGTH OF STAY", value: "Active encounter" },
+            { icon: "🚦", label: "TRIAGE / ESI", value: "Not assigned" },
+            { icon: "👨‍⚕️", label: "ATTENDING", value: "No resident" },
+            { icon: "📍", label: "STATUS", value: "No disposition yet" },
+          ].map((chip, idx) => (
+            <div
+              key={idx}
+              style={{
+                background: colors.panel,
+                border: `1px solid ${colors.border}`,
+                borderRadius: "8px",
+                padding: "10px",
+                textAlign: "center",
+              }}
+            >
+              <p style={{ fontSize: "16px", margin: "0 0 4px 0" }}>{chip.icon}</p>
+              <p style={{ color: colors.dim, fontSize: "10px", margin: "0 0 4px 0", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>
+                {chip.label}
+              </p>
+              <p style={{ fontSize: "13px", fontWeight: 600, margin: 0, color: colors.text }}>
+                {chip.value}
+              </p>
+            </div>
+          ))}
+        </div>
       )}
 
-      {/* Content */}
-      <div style={{ flex: 1, overflow: "hidden", padding: "11px 16px", display: "flex", flexDirection: "column", gap: "11px" }}>
-        {/* Main Grid */}
+      {/* Main Content Grid */}
+      <div style={{ flex: 1, overflow: "hidden", padding: "11px 16px", display: "flex", flexDirection: "column" }}>
         <div style={{ display: "grid", gridTemplateColumns: "290px 1fr 272px", gap: "11px", flex: 1, overflow: "hidden" }}>
-          {/* Left Column: Vitals + Diagnoses */}
+          {/* Left: Vitals + Diagnoses */}
           <div style={{ display: "flex", flexDirection: "column", gap: "11px", overflow: "auto" }}>
-            <VitalsPanel vitals={vitals} />
-            <DiagnosesPanel assessment={assessment} dischargeSummary={dischargeSummary} />
+            {/* Vitals Panel */}
+            <div style={{ background: colors.panel, border: `1px solid ${colors.border}`, borderLeft: `3px solid ${colors.teal}`, borderRadius: "8px", padding: "10px", overflow: "auto" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                <h3 style={{ fontSize: "12px", fontWeight: 600, margin: 0, display: "flex", gap: "4px" }}>📊 VITAL SIGNS</h3>
+                <span style={{ color: colors.dim, fontSize: "9px" }}>Trends 0 readings</span>
+              </div>
+              {vitals?.[0] ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  {[
+                    { icon: "💓", label: "Systolic BP", value: vitals[0].systolicBP, unit: "mmHg" },
+                    { icon: "💓", label: "Diastolic BP", value: vitals[0].diastolicBP, unit: "mmHg" },
+                    { icon: "🫀", label: "Heart Rate", value: vitals[0].heartRate, unit: "bpm" },
+                    { icon: "🫁", label: "Resp Rate", value: vitals[0].respiratoryRate, unit: "/min" },
+                    { icon: "🌡️", label: "Temperature", value: vitals[0].temperature, unit: "°F" },
+                    { icon: "💨", label: "SpO₂", value: vitals[0].spo2, unit: "%" },
+                    { icon: "😣", label: "Pain Score", value: vitals[0].painScore, unit: "/10" },
+                    { icon: "🧠", label: "GCS", value: vitals[0].gcs, unit: "/15" },
+                  ].map((v, idx) => (
+                    <div key={idx} style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                      <span style={{ fontSize: "13px", minWidth: "14px" }}>{v.icon}</span>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ color: colors.dim, fontSize: "10px", margin: 0 }}>{v.label}</p>
+                        <p style={{ color: colors.text, fontSize: "12px", fontWeight: 600, margin: 0 }}>
+                          {v.value || "Awaiting data"} {v.unit}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: colors.dim, fontSize: "10px", margin: 0, fontStyle: "italic" }}>No vitals recorded — pull from Objective page</p>
+              )}
+            </div>
+
+            {/* Diagnoses Panel */}
+            <div style={{ background: colors.panel, border: `1px solid ${colors.border}`, borderLeft: `3px solid ${colors.rose}`, borderRadius: "8px", padding: "10px", overflow: "auto", flex: 1, minHeight: 0 }}>
+              <h3 style={{ fontSize: "12px", fontWeight: 600, margin: "0 0 8px 0", display: "flex", gap: "4px" }}>🧠 DIAGNOSES</h3>
+              <div style={{ marginBottom: "10px", paddingBottom: "10px", borderBottom: `1px solid ${colors.border}` }}>
+                <p style={{ color: colors.amber, fontSize: "10px", fontWeight: 600, margin: "0 0 4px 0", textTransform: "uppercase" }}>INITIAL IMPRESSION</p>
+                {assessment?.initialDiagnosis ? (
+                  <>
+                    <p style={{ color: colors.text, fontSize: "11px", margin: "0 0 4px 0", fontWeight: 500 }}>{assessment.initialDiagnosis}</p>
+                    {assessment.initialIcd10 && <p style={{ color: colors.dim, fontSize: "9px", margin: 0, fontFamily: "JetBrains Mono" }}>{assessment.initialIcd10}</p>}
+                  </>
+                ) : (
+                  <p style={{ color: colors.dim, fontSize: "10px", margin: 0, fontStyle: "italic" }}>Assessment page not yet completed</p>
+                )}
+              </div>
+              <div>
+                <p style={{ color: colors.green, fontSize: "10px", fontWeight: 600, margin: "0 0 4px 0", textTransform: "uppercase" }}>FINAL DIAGNOSIS</p>
+                {dischargeSummary?.finalDiagnosis ? (
+                  <>
+                    <p style={{ color: colors.text, fontSize: "11px", margin: "0 0 4px 0", fontWeight: 500 }}>{dischargeSummary.finalDiagnosis}</p>
+                    {dischargeSummary.finalIcd10 && <p style={{ color: colors.dim, fontSize: "9px", margin: 0, fontFamily: "JetBrains Mono" }}>{dischargeSummary.finalIcd10}</p>}
+                  </>
+                ) : (
+                  <p style={{ color: colors.dim, fontSize: "10px", margin: 0, fontStyle: "italic" }}>⏳ Pending</p>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Center Column: Clinical Summary + Abnormal Findings */}
+          {/* Center: Clinical Summary + Abnormal Findings */}
           <div style={{ display: "flex", flexDirection: "column", gap: "11px", overflow: "auto" }}>
-            {encounter && <ClinicalSummaryPanel encounter={encounter} />}
-            <AbnormalFindingsPanel vitals={vitals} labs={labs} imaging={imaging} />
+            {/* Clinical Summary */}
+            <div style={{ background: colors.panel, border: `1px solid ${colors.border}`, borderLeft: `3px solid ${colors.teal}`, borderRadius: "8px", padding: "10px", overflow: "auto", flex: 1, minHeight: 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                <h3 style={{ fontSize: "12px", fontWeight: 600, margin: 0, display: "flex", gap: "4px" }}>📋 CLINICAL SUMMARY</h3>
+                <button style={{ background: "rgba(155,109,255,0.2)", border: `1px solid ${colors.purple}`, color: colors.purple, padding: "4px 8px", borderRadius: "4px", fontSize: "9px", fontWeight: 600, cursor: "pointer" }}>
+                  ⚡ AI Refresh
+                </button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "10px" }}>
+                <div>
+                  <p style={{ color: colors.dim, fontSize: "9px", margin: "0 0 2px 0", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>☐ CHIEF COMPLAINT</p>
+                  <p style={{ color: colors.text, margin: 0 }}>Pull from Encounter.chiefComplaint</p>
+                </div>
+                <div>
+                  <p style={{ color: colors.dim, fontSize: "9px", margin: "0 0 2px 0", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>☐ BRIEF HPI</p>
+                  <p style={{ color: colors.text, margin: 0 }}>Pull from SubjectiveNote.hpi</p>
+                </div>
+                <div>
+                  <p style={{ color: colors.dim, fontSize: "9px", margin: "0 0 2px 0", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>🔑 KEY FINDINGS</p>
+                  <p style={{ color: colors.text, margin: 0 }}>Pull from ObjectiveNote</p>
+                </div>
+                <div>
+                  <p style={{ color: colors.dim, fontSize: "9px", margin: "0 0 2px 0", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>🔬 WORKUP SUMMARY</p>
+                  <p style={{ color: colors.text, margin: 0 }}>Pull from Labs + Imaging</p>
+                </div>
+                <div>
+                  <p style={{ color: colors.dim, fontSize: "9px", margin: "0 0 2px 0", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>📈 CLINICAL COURSE</p>
+                  <p style={{ color: colors.text, margin: 0 }}>Pull from AI-assembled from Plan + MAR</p>
+                </div>
+                <div>
+                  <p style={{ color: colors.dim, fontSize: "9px", margin: "0 0 2px 0", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>🔴 CURRENT STATUS</p>
+                  <p style={{ color: colors.text, margin: 0 }}>Pull from Encounter status + Vitals</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Abnormal Findings */}
+            <div style={{ background: colors.panel, border: `1px solid ${colors.border}`, borderLeft: `3px solid ${colors.red}`, borderRadius: "8px", padding: "10px", overflow: "auto", flex: 1, minHeight: 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                <h3 style={{ fontSize: "12px", fontWeight: 600, margin: 0, display: "flex", gap: "4px" }}>⚠️ ABNORMAL FINDINGS</h3>
+                <button style={{ background: "rgba(155,109,255,0.2)", border: `1px solid ${colors.purple}`, color: colors.purple, padding: "4px 6px", borderRadius: "4px", fontSize: "8px", fontWeight: 600, cursor: "pointer" }}>
+                  🔄 Refresh
+                </button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "10px", padding: "30px 10px", textAlign: "center" }}>
+                <p style={{ fontSize: "30px" }}>✓</p>
+                <p style={{ color: colors.dim, fontSize: "10px", margin: 0 }}>No significant abnormal findings detected — or awaiting data from other pages</p>
+              </div>
+            </div>
           </div>
 
-          {/* Right Column: Medications, Labs, Imaging (scrollable) */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "11px", overflow: "auto" }}>
-            <MedicationsPanel medications={medications} />
-            <LabsPanel labs={labs} />
-            <ImagingPanel imaging={imaging} />
+          {/* Right: Medications + Labs + Imaging */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "11px", overflow: "auto", paddingRight: "4px" }}>
+            {/* Medications */}
+            <div style={{ background: colors.panel, border: `1px solid ${colors.border}`, borderLeft: `3px solid ${colors.rose}`, borderRadius: "8px", padding: "10px", minHeight: "120px" }}>
+              <h3 style={{ fontSize: "12px", fontWeight: 600, margin: "0 0 8px 0", display: "flex", gap: "4px" }}>💊 MEDICATIONS GIVEN</h3>
+              {medications?.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "10px" }}>
+                  {medications.slice(0, 3).map((med, idx) => (
+                    <div key={idx} style={{ background: med.isControlled ? "rgba(245,166,35,0.1)" : "transparent", padding: "6px", borderRadius: "4px", borderLeft: med.isControlled ? `2px solid ${colors.amber}` : "none" }}>
+                      <p style={{ color: colors.text, margin: "0 0 2px 0", fontWeight: 500 }}>
+                        {med.drugName} {med.isControlled && <span style={{ color: colors.amber, marginLeft: "4px" }}>⚠</span>}
+                      </p>
+                      <p style={{ color: colors.dim, margin: "0 0 1px 0" }}>{med.dose} {med.route}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: colors.dim, fontSize: "10px", margin: 0, fontStyle: "italic" }}>No medications administered yet</p>
+              )}
+            </div>
+
+            {/* Labs */}
+            <div style={{ background: colors.panel, border: `1px solid ${colors.border}`, borderLeft: `3px solid ${colors.purple}`, borderRadius: "8px", padding: "10px", minHeight: "120px" }}>
+              <h3 style={{ fontSize: "12px", fontWeight: 600, margin: "0 0 8px 0", display: "flex", gap: "4px" }}>🔬 LABS ORDERED</h3>
+              {labs?.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "10px" }}>
+                  {labs.slice(0, 3).map((lab, idx) => (
+                    <div key={idx}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
+                        <p style={{ color: colors.text, margin: 0, fontWeight: 500 }}>{lab.panelName}</p>
+                        <span style={{ background: lab.resultStatus === "critical" ? colors.red : colors.dim, color: lab.resultStatus === "critical" ? "#fff" : colors.text, padding: "2px 6px", borderRadius: "3px", fontSize: "8px", fontWeight: 600 }}>
+                          {lab.resultStatus?.toUpperCase()}
+                        </span>
+                      </div>
+                      {lab.criticalFlag && <p style={{ color: colors.red, fontSize: "9px", margin: 0 }}>🚨 Critical</p>}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: colors.dim, fontSize: "10px", margin: 0, fontStyle: "italic" }}>No lab orders yet</p>
+              )}
+            </div>
+
+            {/* Imaging */}
+            <div style={{ background: colors.panel, border: `1px solid ${colors.border}`, borderLeft: `3px solid ${colors.red}`, borderRadius: "8px", padding: "10px", minHeight: "120px" }}>
+              <h3 style={{ fontSize: "12px", fontWeight: 600, margin: "0 0 8px 0", display: "flex", gap: "4px" }}>🫀 IMAGING ORDERED</h3>
+              {imaging?.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "10px" }}>
+                  {imaging.slice(0, 3).map((img, idx) => (
+                    <div key={idx}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
+                        <p style={{ color: colors.text, margin: 0, fontWeight: 500 }}>{img.studyName}</p>
+                        <span style={{ background: img.readStatus === "critical" ? colors.red : colors.dim, color: img.readStatus === "critical" ? "#fff" : colors.text, padding: "2px 6px", borderRadius: "3px", fontSize: "8px", fontWeight: 600 }}>
+                          {img.readStatus?.toUpperCase()}
+                        </span>
+                      </div>
+                      {img.impression && <p style={{ color: colors.dim, fontSize: "9px", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{img.impression}</p>}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: colors.dim, fontSize: "10px", margin: 0, fontStyle: "italic" }}>No imaging ordered yet</p>
+              )}
+            </div>
           </div>
         </div>
       </div>

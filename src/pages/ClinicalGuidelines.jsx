@@ -775,7 +775,7 @@ export default function ClinicalGuidelines() {
         overflow: "hidden",
       }}>
         {/* Left Column */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "11px", overflow: "hidden" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px", overflow: "hidden" }}>
           <SearchPanel
             query={query}
             setQuery={setQuery}

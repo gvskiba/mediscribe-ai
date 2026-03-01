@@ -283,13 +283,27 @@ function MedReferenceTab({ onAddMed }) {
     <div className="space-y-3">
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-          <Input placeholder="Search by name or indication…" value={search} onChange={e => setSearch(e.target.value)} className="pl-8 text-sm h-8 border-slate-200" />
-          {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"><X className="w-3.5 h-3.5" /></button>}
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: T.muted }} />
+          <input
+            placeholder="Search by name or indication…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-8 pr-8 text-xs h-8 rounded-lg outline-none"
+            style={{ background: T.card, border: `1px solid ${T.border2}`, color: T.text, fontSize: 12 }}
+          />
+          {search && <button onClick={() => setSearch("")} style={{ color: T.muted }} className="absolute right-3 top-1/2 -translate-y-1/2"><X className="w-3.5 h-3.5" /></button>}
         </div>
         <div className="relative w-28">
-          <Baby className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-blue-400" />
-          <Input type="number" placeholder="Wt (kg)" value={weightKg} onChange={e => setWeightKg(e.target.value)} className="pl-8 text-sm h-8 border-blue-200 focus:border-blue-400" title="Enter patient weight for pediatric dose calculation" />
+          <Baby className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: T.teal }} />
+          <input
+            type="number"
+            placeholder="Wt (kg)"
+            value={weightKg}
+            onChange={e => setWeightKg(e.target.value)}
+            className="w-full pl-8 text-xs h-8 rounded-lg outline-none"
+            style={{ background: T.card, border: `1px solid ${T.teal}50`, color: T.text, fontSize: 12 }}
+            title="Enter patient weight for pediatric dose calculation"
+          />
         </div>
       </div>
 
@@ -297,13 +311,17 @@ function MedReferenceTab({ onAddMed }) {
         {CATEGORIES.map(cat => <CategoryPill key={cat.id} cat={cat} active={activeCat === cat.id} onClick={() => setActiveCat(cat.id)} />)}
       </div>
 
-      {wt && <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700"><Baby className="w-3.5 h-3.5" /><span>Showing calculated pediatric doses for <strong>{wt} kg</strong></span></div>}
+      {wt && (
+        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs" style={{ background: T.teal_dim, border: `1px solid ${T.teal}40`, color: T.teal }}>
+          <Baby className="w-3.5 h-3.5" /><span>Showing calculated pediatric doses for <strong>{wt} kg</strong></span>
+        </div>
+      )}
 
-      <p className="text-xs text-slate-400">{filtered.length} medication{filtered.length !== 1 ? "s" : ""}</p>
+      <p className="text-xs" style={{ color: T.muted }}>{filtered.length} medication{filtered.length !== 1 ? "s" : ""}</p>
 
-      <div className="space-y-2 max-h-[calc(100vh-420px)] overflow-y-auto pr-1">
+      <div className="space-y-2 max-h-[calc(100vh-440px)] overflow-y-auto pr-1">
         {filtered.length === 0
-          ? <p className="text-sm text-center text-slate-400 py-10">No medications found</p>
+          ? <p className="text-sm text-center py-10" style={{ color: T.muted }}>No medications found</p>
           : filtered.map(med => {
               const cat = CATEGORIES.find(c => c.id === med.category);
               return <MedCard key={med.id} med={med} catColor={cat?.color || "#6b7280"} onAdd={onAddMed} weightKg={wt} />;

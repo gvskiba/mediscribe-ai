@@ -667,61 +667,14 @@ function NotesPanel() {
   );
 }
 
+const DEFAULT_ORDER = ["clock", "search", "guidelines", "news", "notes", "noteStatus", "pendingSignatures", "notesActivity", "quickNoteCreator"];
+
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [widgetLayout, setWidgetLayout] = useState({
-    clock: { col: 1, row: 1, colSpan: 1, rowSpan: 2 },
-    search: { col: 2, row: 1, colSpan: 1, rowSpan: 1 },
-    guidelines: { col: 3, row: 1, colSpan: 1, rowSpan: 1 },
-    news: { col: 2, row: 2, colSpan: 1, rowSpan: 1 },
-    notes: { col: 3, row: 2, colSpan: 1, rowSpan: 1 },
-    noteStatus: { col: 1, row: 3, colSpan: 1, rowSpan: 1 },
-    pendingSignatures: { col: 2, row: 3, colSpan: 1, rowSpan: 1 },
-    notesActivity: { col: 3, row: 3, colSpan: 1, rowSpan: 1 },
-    quickNoteCreator: { col: 1, row: 4, colSpan: 1, rowSpan: 1 },
-  });
-  const [resizing, setResizing] = useState(null);
+  const [widgetOrder, setWidgetOrder] = useState(DEFAULT_ORDER);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const u = await base44.auth.me();
-        setUser(u);
-        if (u?.dashboard_layout) {
-          setWidgetLayout(u.dashboard_layout);
-        }
-      } catch {
-        setUser(null);
-      }
-    };
-    load();
-  }, []);
-
-  const saveLayout = async () => {
-    try {
-      await base44.auth.updateMe({ dashboard_layout: widgetLayout });
-      setIsEditMode(false);
-    } catch (error) {
-      console.error("Failed to save layout:", error);
-    }
-  };
-
-  const resetLayout = () => {
-    setWidgetLayout({
-      clock: { col: 1, row: 1, colSpan: 1, rowSpan: 2 },
-      search: { col: 2, row: 1, colSpan: 1, rowSpan: 1 },
-      guidelines: { col: 3, row: 1, colSpan: 1, rowSpan: 1 },
-      news: { col: 2, row: 2, colSpan: 1, rowSpan: 1 },
-      notes: { col: 3, row: 2, colSpan: 1, rowSpan: 1 },
-      noteStatus: { col: 1, row: 3, colSpan: 1, rowSpan: 1 },
-      pendingSignatures: { col: 2, row: 3, colSpan: 1, rowSpan: 1 },
-      notesActivity: { col: 3, row: 3, colSpan: 1, rowSpan: 1 },
-      quickNoteCreator: { col: 1, row: 4, colSpan: 1, rowSpan: 1 },
-    });
-  };
-
-  const widgets = {
+  const widgetDefs = {
     clock: { label: "Clock & Calendar", component: <ClockCalPanel /> },
     search: { label: "Clinical Guidelines", component: <ClinicalGuidelinesPanel /> },
     guidelines: { label: "Saved Guidelines", component: <SavedGuidelinesWidget /> },
@@ -733,221 +686,143 @@ export default function Dashboard() {
     quickNoteCreator: { label: "Quick Note", component: <QuickNoteCreatorWidget /> },
   };
 
-  const handleWidgetResize = (widgetId, edge, delta) => {
-    if (edge === "right") {
-      setWidgetLayout(prev => ({
-        ...prev,
-        [widgetId]: { ...prev[widgetId], colSpan: Math.max(1, Math.min(3, prev[widgetId].colSpan + (delta > 0 ? 1 : -1))) }
-      }));
-    } else if (edge === "bottom") {
-      setWidgetLayout(prev => ({
-        ...prev,
-        [widgetId]: { ...prev[widgetId], rowSpan: Math.max(1, Math.min(2, prev[widgetId].rowSpan + (delta > 0 ? 1 : -1))) }
-      }));
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const u = await base44.auth.me();
+        setUser(u);
+        if (u?.dashboard_widget_order && Array.isArray(u.dashboard_widget_order)) {
+          setWidgetOrder(u.dashboard_widget_order);
+        }
+      } catch {
+        setUser(null);
+      }
+    };
+    load();
+  }, []);
+
+  const saveLayout = async () => {
+    try {
+      await base44.auth.updateMe({ dashboard_widget_order: widgetOrder });
+      setIsEditMode(false);
+    } catch (error) {
+      console.error("Failed to save layout:", error);
     }
   };
 
-  const handleWidgetMove = (widgetId, newCol, newRow) => {
-    setWidgetLayout(prev => ({
-      ...prev,
-      [widgetId]: { ...prev[widgetId], col: newCol, row: newRow }
-    }));
+  const resetLayout = () => setWidgetOrder(DEFAULT_ORDER);
+
+  const onDragEnd = (result) => {
+    if (!result.destination) return;
+    const newOrder = Array.from(widgetOrder);
+    const [moved] = newOrder.splice(result.source.index, 1);
+    newOrder.splice(result.destination.index, 0, moved);
+    setWidgetOrder(newOrder);
   };
 
   return (
     <div style={{ background: T.navy, width: "100%", height: "100%", fontFamily: "DM Sans, sans-serif", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       <style>{`
-        @keyframes clockColon {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.2; }
-        }
-        .grid-widget {
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          border: ${isEditMode ? "2px dashed rgba(0,212,188,0.3)" : "none"};
-          transition: border 0.2s;
-        }
-        .widget-handle {
-          position: absolute;
-          top: 8px;
-          right: 8px;
-          cursor: grab;
-          z-index: 10;
-          padding: 4px;
-          color: rgba(200, 221, 240, 0.4);
-          transition: color 0.2s;
-          display: ${isEditMode ? "flex" : "none"};
-        }
-        .widget-handle:hover {
-          color: rgba(200, 221, 240, 0.8);
-        }
-        .resize-handle {
-          position: absolute;
-          z-index: 5;
-          background: rgba(0, 212, 188, 0.3);
-          cursor: resize;
-          display: ${isEditMode ? "block" : "none"};
-        }
-        .resize-handle.right {
-          right: 0;
-          top: 0;
-          bottom: 0;
-          width: 4px;
-          cursor: col-resize;
-        }
-        .resize-handle.bottom {
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 4px;
-          cursor: row-resize;
-        }
-        .resize-handle:hover {
-          background: rgba(0, 212, 188, 0.6);
-        }
+        @keyframes clockColon { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
       `}</style>
 
-      {/* Header with Edit Button */}
-      {!isEditMode ? (
-        <div style={{ padding: "12px 16px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "flex-end" }}>
-          <button
-            onClick={() => setIsEditMode(true)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "6px 12px",
-              background: T.edge,
-              border: `1px solid ${T.border}`,
-              borderRadius: "6px",
-              color: T.text,
-              fontSize: "12px",
-              fontWeight: 600,
-              cursor: "pointer",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = T.border; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = T.edge; }}
-          >
-            <Settings className="w-4 h-4" /> Customize
-          </button>
-        </div>
-      ) : (
-        <div style={{ padding: "12px 16px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ color: T.text, fontSize: "12px", fontWeight: 600 }}>Edit Dashboard Layout</span>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              onClick={resetLayout}
-              style={{
-                padding: "6px 12px",
-                background: T.dim,
-                border: `1px solid ${T.border}`,
-                borderRadius: "6px",
-                color: T.text,
-                fontSize: "11px",
-                cursor: "pointer",
-              }}
-            >
+      {/* Header */}
+      <div style={{ padding: "10px 16px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+        {isEditMode && (
+          <>
+            <span style={{ color: T.dim, fontSize: "11px", marginRight: "auto" }}>Drag widgets to reorder</span>
+            <button onClick={resetLayout} style={{ padding: "5px 10px", background: "transparent", border: `1px solid ${T.border}`, borderRadius: "6px", color: T.dim, fontSize: "11px", cursor: "pointer" }}>
               Reset
             </button>
-            <button
-              onClick={saveLayout}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "6px 12px",
-                background: "linear-gradient(135deg, #00d4bc, #00a896)",
-                border: "none",
-                borderRadius: "6px",
-                color: T.navy,
-                fontSize: "12px",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              <Save className="w-4 h-4" /> Save Layout
+            <button onClick={saveLayout} style={{ display: "flex", alignItems: "center", gap: "5px", padding: "5px 12px", background: `linear-gradient(135deg, ${T.teal}, ${T.teal2})`, border: "none", borderRadius: "6px", color: T.navy, fontSize: "11px", fontWeight: 700, cursor: "pointer" }}>
+              <Save className="w-3 h-3" /> Save
             </button>
-            <button
-              onClick={() => setIsEditMode(false)}
-              style={{
-                padding: "6px 12px",
-                background: T.edge,
-                border: `1px solid ${T.border}`,
-                borderRadius: "6px",
-                color: T.text,
-                fontSize: "12px",
-                cursor: "pointer",
-              }}
-            >
+            <button onClick={() => setIsEditMode(false)} style={{ padding: "5px 8px", background: T.edge, border: `1px solid ${T.border}`, borderRadius: "6px", color: T.text, fontSize: "11px", cursor: "pointer" }}>
               <X className="w-4 h-4" />
             </button>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+        {!isEditMode && (
+          <button
+            onClick={() => setIsEditMode(true)}
+            style={{ display: "flex", alignItems: "center", gap: "6px", padding: "5px 12px", background: T.edge, border: `1px solid ${T.border}`, borderRadius: "6px", color: T.text, fontSize: "11px", fontWeight: 600, cursor: "pointer" }}
+            onMouseEnter={(e) => e.currentTarget.style.borderColor = T.teal}
+            onMouseLeave={(e) => e.currentTarget.style.borderColor = T.border}
+          >
+            <Settings className="w-3 h-3" /> Customize
+          </button>
+        )}
+      </div>
 
-      {/* Grid Layout */}
-      <div
-        style={{
-          padding: "12px 16px",
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gridTemplateRows: "auto auto auto auto",
-          gap: "10px",
-          flex: 1,
-          overflow: "auto",
-          minHeight: 0,
-        }}
-      >
-        {Object.entries(widgets).map(([widgetId, { label, component }]) => {
-           const layout = widgetLayout[widgetId];
-           if (!layout) return null;
-           return (
-             <div
-               key={widgetId}
-               style={{
-                 gridColumn: `${layout.col} / span ${layout.colSpan}`,
-                 gridRow: `${layout.row} / span ${layout.rowSpan}`,
-                overflow: "hidden",
-                minHeight: 0,
-              }}
-            >
+      {/* Widget Grid */}
+      <div style={{ flex: 1, overflow: "auto", padding: "12px 16px", minHeight: 0 }}>
+        <DragDropContext onDragEnd={onDragEnd}>
+          <Droppable droppableId="dashboard" direction="horizontal">
+            {(provided) => (
               <div
-                className="grid-widget"
-                onMouseMove={(e) => {
-                  if (resizing) {
-                    const deltaX = e.clientX - resizing.startX;
-                    const deltaY = e.clientY - resizing.startY;
-                    if (resizing.edge === "right" && Math.abs(deltaX) > 50) {
-                      handleWidgetResize(widgetId, "right", deltaX);
-                      setResizing({ ...resizing, startX: e.clientX });
-                    } else if (resizing.edge === "bottom" && Math.abs(deltaY) > 50) {
-                      handleWidgetResize(widgetId, "bottom", deltaY);
-                      setResizing({ ...resizing, startY: e.clientY });
-                    }
-                  }
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gap: "10px",
+                  alignItems: "start",
                 }}
-                onMouseUp={() => setResizing(null)}
-                onMouseLeave={() => setResizing(null)}
               >
-                <div className="widget-handle">
-                  <GripHorizontal className="w-4 h-4" />
-                </div>
-                <div
-                  className="resize-handle right"
-                  onMouseDown={(e) => { e.preventDefault(); setResizing({ edge: "right", startX: e.clientX, startY: e.clientY }); }}
-                />
-                <div
-                  className="resize-handle bottom"
-                  onMouseDown={(e) => { e.preventDefault(); setResizing({ edge: "bottom", startX: e.clientX, startY: e.clientY }); }}
-                />
-                {component}
+                {widgetOrder.map((widgetId, index) => {
+                  const def = widgetDefs[widgetId];
+                  if (!def) return null;
+                  return (
+                    <Draggable key={widgetId} draggableId={widgetId} index={index} isDragDisabled={!isEditMode}>
+                      {(prov, snapshot) => (
+                        <div
+                          ref={prov.innerRef}
+                          {...prov.draggableProps}
+                          style={{
+                            ...prov.draggableProps.style,
+                            opacity: snapshot.isDragging ? 0.85 : 1,
+                            outline: isEditMode ? `2px dashed rgba(0,212,188,${snapshot.isDragging ? 0.8 : 0.3})` : "none",
+                            borderRadius: "14px",
+                            transition: snapshot.isDragging ? "none" : "outline 0.2s",
+                            position: "relative",
+                          }}
+                        >
+                          {isEditMode && (
+                            <div
+                              {...prov.dragHandleProps}
+                              style={{
+                                position: "absolute",
+                                top: "8px",
+                                right: "8px",
+                                zIndex: 20,
+                                cursor: "grab",
+                                background: "rgba(0,212,188,0.15)",
+                                border: "1px solid rgba(0,212,188,0.3)",
+                                borderRadius: "5px",
+                                padding: "4px 6px",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                color: T.teal,
+                                fontSize: "9px",
+                                fontWeight: 600,
+                              }}
+                            >
+                              <GripHorizontal className="w-3 h-3" />
+                            </div>
+                          )}
+                          {!isEditMode && <div {...prov.dragHandleProps} style={{ position: "absolute", top: 0, left: 0 }} />}
+                          {def.component}
+                        </div>
+                      )}
+                    </Draggable>
+                  );
+                })}
+                {provided.placeholder}
               </div>
-            </div>
-          );
-        })}
+            )}
+          </Droppable>
+        </DragDropContext>
       </div>
     </div>
   );

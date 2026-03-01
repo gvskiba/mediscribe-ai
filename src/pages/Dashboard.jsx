@@ -650,7 +650,7 @@ function NotesPanel() {
               patient_name: "New Patient",
               status: "draft",
             });
-            window.location.href = `?page=NoteDetail&id=${newNote.id}`;
+            window.location.href = createPageUrl(`NoteDetail?id=${newNote.id}`);
           }}
           style={{ flex: 1, padding: "8px", borderRadius: "6px", background: `linear-gradient(135deg, ${T.teal}, ${T.teal2})`, color: T.navy, fontSize: "12px", fontWeight: 600, cursor: "pointer", border: "none" }}
         >

@@ -130,7 +130,7 @@ export default function PatientDashboard() {
   };
 
   return (
-    <div style={{ background: colors.navy, fontFamily: "DM Sans, sans-serif", minHeight: "100vh", display: "flex", flexDirection: "column", color: colors.text, marginLeft: "64px" }}>
+    <div style={{ background: colors.navy, fontFamily: "DM Sans, sans-serif", minHeight: "100vh", display: "flex", flexDirection: "column", color: colors.text, marginLeft: 0, marginTop: 0 }}>
       {/* Top Navigation Bar */}
       <div style={{ background: colors.slate, borderBottom: `1px solid ${colors.border}`, padding: "12px 16px", display: "flex", flexDirection: "column", gap: "8px" }}>
         {/* Row 1: Patient Info + Vitals */}

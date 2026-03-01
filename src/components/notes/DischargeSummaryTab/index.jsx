@@ -273,18 +273,23 @@ Generate in this structure:
   };
 
   return (
-    <div className="discharge-summary-container">
-      <div className="discharge-grid">
-        {/* Left Panel - Summary */}
+    <div className="flex h-full bg-[#050f1e]" style={{ color: "#c8ddf0" }}>
+      {/* Left Panel - Summary */}
+      <div className="flex-1 overflow-y-auto p-4">
         <SummaryPanel
           data={dischargeData}
-          onUpdate={handleUpdateDischargeData}
+          onUpdateField={handleUpdateField}
+          onArrayUpdate={handleArrayUpdate}
+          onAddRow={handleAddRow}
+          onRemoveRow={handleRemoveRow}
           onGenerateInstructions={generateInstructions}
           generating={generatingInstructions}
-          onSave={saveDischargeSummary}
+          saving={saving}
         />
+      </div>
 
-        {/* Right Panel - Actions */}
+      {/* Right Panel - Actions */}
+      <div className="w-80 border-l border-[#1e3a5f] overflow-y-auto p-4">
         <ActionsPanel
           patientInstructions={patientInstructions}
           readingLevel={readingLevel}
@@ -293,14 +298,13 @@ Generate in this structure:
           setLanguage={setLanguage}
           onGenerateInstructions={generateInstructions}
           generating={generatingInstructions}
-          showPreview={showPreview}
           note={note}
           dischargeData={dischargeData}
         />
       </div>
 
       {/* Bottom Navigation */}
-      <div className="discharge-nav-bar">
+      <div className="fixed bottom-0 left-0 right-0 flex justify-between items-center px-6 py-3 border-t border-[#1e3a5f] bg-[#0b1d35]" style={{ zIndex: 40 }}>
         <div className="flex items-center gap-2">
           {!isFirstTab() && (
             <button
@@ -313,6 +317,7 @@ Generate in this structure:
           )}
         </div>
         <div className="flex items-center gap-2">
+          {saving && <span className="text-xs text-[#4a7299]">Saving...</span>}
           {!isLastTab() && (
             <button
               onClick={handleNext}

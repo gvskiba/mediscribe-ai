@@ -65,7 +65,7 @@ function SearchPanel({ query, setQuery, filters, setFilters, analysisMode, setAn
   ];
 
   return (
-    <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-xl p-4 flex flex-col gap-4">
+    <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-xl p-4 flex flex-col gap-4 overflow-y-auto scrollbar-hide">
       {/* Section Header */}
        <div className="text-xs font-bold uppercase tracking-wide text-[#9b6dff] flex items-center gap-1.5">
          <span>●</span> GUIDELINE SEARCH

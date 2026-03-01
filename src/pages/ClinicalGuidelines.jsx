@@ -168,7 +168,7 @@ function SearchPanel({ query, setQuery, filters, setFilters, analysisMode, setAn
 
 function ResultsPanel({ results, loading, onAnalyze, selectedForCompare, onToggleCompare }) {
   return (
-    <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-lg p-3 flex flex-col gap-2.5 flex-1 overflow-hidden h-full">
+    <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-lg p-3 flex flex-col gap-2.5 flex-1 overflow-hidden min-h-0">
       <div className="text-xs font-semibold text-[#c8ddf0] uppercase tracking-wider">
         Results {results.length > 0 && <span className="text-[#4a7299]">({results.length})</span>}
       </div>

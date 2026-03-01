@@ -7,6 +7,7 @@ import { format, differenceInMinutes } from "date-fns";
 export default function PatientDashboard() {
   const [encounterId, setEncounterId] = useState(null);
   const [patientId, setPatientId] = useState(null);
+  const [noteId, setNoteId] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [isAutoRefreshEnabled, setIsAutoRefreshEnabled] = useState(true);
 
@@ -14,6 +15,12 @@ export default function PatientDashboard() {
     const params = new URLSearchParams(window.location.search);
     setEncounterId(params.get("encounterId"));
     setPatientId(params.get("patientId"));
+    
+    // Check for current open note in localStorage
+    const currentNote = localStorage.getItem('currentOpenNote');
+    if (currentNote) {
+      setNoteId(currentNote);
+    }
   }, []);
 
   // Parallel data fetching per schema dataLoadSequence

@@ -1641,7 +1641,7 @@ Generated: ${new Date().toLocaleString()}
                         </TabsContent>
 
                               {/* Differential Diagnosis Tab */}
-                              <TabsContent value="differential" className="overflow-y-auto" style={{ background: "#050f1e" }}>
+                              <TabsContent value="differential" style={{ background: "#050f1e", height: "100%", overflow: "hidden" }}>
                               <DifferentialTab note={note} noteId={noteId} queryClient={queryClient} templates={templates} selectedTemplate={selectedTemplate} setSelectedTemplate={setSelectedTemplate} loadingDifferential={loadingDifferential} generateDifferentialDiagnosis={generateDifferentialDiagnosis} differentialDiagnosis={differentialDiagnosis} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
                               </TabsContent>
 

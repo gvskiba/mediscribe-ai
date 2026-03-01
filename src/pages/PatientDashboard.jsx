@@ -10,6 +10,8 @@ export default function PatientDashboard() {
   const [noteId, setNoteId] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [isAutoRefreshEnabled, setIsAutoRefreshEnabled] = useState(true);
+  const [clinicalSummary, setClinicalSummary] = useState(null);
+  const [generatingAISummary, setGeneratingAISummary] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

@@ -217,23 +217,28 @@ export default function UserSettings() {
         provider_type: profileData.provider_type,
         medical_specialty: profileData.specialty,
       };
+      // Save first_name and last_name explicitly in preferences so they survive full_name re-splits
+      const updatedPrefs = {
+        ...prefs,
+        first_name: profileData.first_name,
+        last_name: profileData.last_name,
+      };
       await base44.auth.updateMe({
         full_name,
         clinical_settings: updatedSettings,
+        preferences: updatedPrefs,
       });
 
       // Reload fresh user data from server
       const freshUser = await base44.auth.me();
       setUser(freshUser);
       setSettings(updatedSettings);
-      
-      // Update profileData with fresh values from server
-      const nameParts = (freshUser?.full_name || "").split(" ");
+      setPrefs(updatedPrefs);
       setProfileData({
-        first_name: nameParts[0] || "",
-        last_name: nameParts.slice(1).join(" ") || "",
-        provider_type: freshUser?.clinical_settings?.provider_type || "md",
-        specialty: freshUser?.clinical_settings?.medical_specialty || "",
+        first_name: profileData.first_name,
+        last_name: profileData.last_name,
+        provider_type: updatedSettings.provider_type || "md",
+        specialty: updatedSettings.medical_specialty || "",
       });
       
       setEditProfile(false);

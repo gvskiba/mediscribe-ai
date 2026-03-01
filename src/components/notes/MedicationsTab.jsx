@@ -256,7 +256,6 @@ function MedReferenceTab({ onAddMed }) {
 
 // ─── Current Medications Panel ─────────────────────────────────────────────────
 function CurrentMedsPanel({ note, noteId, queryClient }) {
-  const { base44: b44 } = { base44 };
 
   const handleRemove = async (idx) => {
     const updated = note.medications.filter((_, i) => i !== idx);

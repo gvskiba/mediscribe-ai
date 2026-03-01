@@ -102,7 +102,7 @@ export default function QuickNoteCreatorWidget() {
         </div>
 
         <button
-          onClick={handleCreateNote}
+          onClick={() => !creating && handleCreateNote()}
           disabled={!ageGender.trim() || creating}
           style={{
             marginTop: "auto",
@@ -113,9 +113,10 @@ export default function QuickNoteCreatorWidget() {
             color: ageGender.trim() ? T.panel : T.dim,
             fontSize: "12px",
             fontWeight: 600,
-            cursor: ageGender.trim() ? "pointer" : "not-allowed",
+            cursor: ageGender.trim() && !creating ? "pointer" : "not-allowed",
             transition: "all 0.2s",
             opacity: creating ? 0.6 : 1,
+            width: "100%",
           }}
         >
           {creating ? "Creating..." : "New Quick Note"}

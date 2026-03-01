@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, GripHorizontal, Settings, Save, X } from "lucide-react";
+import { Settings, Save, X, ChevronDown } from "lucide-react";
 import { createPageUrl } from "../utils";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 import ClinicalGuidelinesPanel from "../components/dashboard/ClinicalGuidelinesPanel";
 import SavedGuidelinesWidget from "../components/dashboard/SavedGuidelinesWidget";

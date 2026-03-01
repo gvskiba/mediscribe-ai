@@ -2,16 +2,16 @@ import React, { useState } from "react";
 import { Search, Star } from "lucide-react";
 
 const TEMPLATES_DATA = [
-  { id: "tmpl-er-hp-001", name: "ER H&P", noteType: "history_physical", specialty: "Emergency Medicine", usageCount: 4821, isDefault: true },
-  { id: "tmpl-im-hp-001", name: "Internal Medicine H&P", noteType: "history_physical", specialty: "Internal Medicine", usageCount: 3210 },
-  { id: "tmpl-cards-hp-001", name: "Cardiology H&P", noteType: "history_physical", specialty: "Cardiology", usageCount: 1870 },
-  { id: "tmpl-soap-daily-001", name: "Daily SOAP", noteType: "progress_note", specialty: "General", usageCount: 9104, isDefault: true },
-  { id: "tmpl-soap-icu-001", name: "ICU SOAP", noteType: "progress_note", specialty: "Critical Care", usageCount: 2230 },
-  { id: "tmpl-ds-er-001", name: "ER Discharge Summary", noteType: "discharge_summary", specialty: "Emergency Medicine", usageCount: 3991, isDefault: true },
-  { id: "tmpl-consult-gen-001", name: "General Consultation", noteType: "consultation", specialty: "General", usageCount: 1540, isDefault: true },
-  { id: "tmpl-proc-lp-001", name: "Lumbar Puncture", noteType: "procedure_note", specialty: "Emergency Medicine", usageCount: 410 },
-  { id: "tmpl-cc-001", name: "Critical Care Note", noteType: "critical_care", specialty: "Critical Care", usageCount: 1123, isDefault: true },
-  { id: "tmpl-ama-001", name: "AMA Departure", noteType: "ama", specialty: "Emergency Medicine", usageCount: 294, isDefault: true },
+  { id: "tmpl-er-hp-001", name: "ER History & Physical", noteType: "history_physical", specialty: "Emergency Medicine", sectionCount: 13, usageCount: 4821, isDefault: true, tags: ["ER", "Adult", "ACEP", "MDM"] },
+  { id: "tmpl-im-hp-001", name: "Internal Medicine H&P", noteType: "history_physical", specialty: "Internal Medicine", sectionCount: 15, usageCount: 3210, isDefault: false, tags: ["Inpatient", "Adult"] },
+  { id: "tmpl-cards-hp-001", name: "Cardiology H&P", noteType: "history_physical", specialty: "Cardiology", sectionCount: 13, usageCount: 1870, isDefault: false, tags: ["Cardiology", "Chest Pain"] },
+  { id: "tmpl-soap-daily-001", name: "Daily SOAP Progress Note", noteType: "progress_note", specialty: "General", sectionCount: 4, usageCount: 9104, isDefault: true, tags: ["Daily", "Inpatient"] },
+  { id: "tmpl-soap-icu-001", name: "ICU SOAP", noteType: "progress_note", specialty: "Critical Care", sectionCount: 10, usageCount: 2230, isDefault: false, tags: ["ICU", "Ventilator"] },
+  { id: "tmpl-ds-er-001", name: "ER Discharge Summary", noteType: "discharge_summary", specialty: "Emergency Medicine", sectionCount: 8, usageCount: 3991, isDefault: true, tags: ["ER", "Instructions"] },
+  { id: "tmpl-consult-gen-001", name: "General Consultation", noteType: "consultation", specialty: "General", sectionCount: 7, usageCount: 1540, isDefault: true, tags: ["Consult"] },
+  { id: "tmpl-proc-lp-001", name: "Lumbar Puncture", noteType: "procedure_note", specialty: "Emergency Medicine", sectionCount: 6, usageCount: 410, isDefault: false, tags: ["LP", "Procedure"] },
+  { id: "tmpl-cc-001", name: "Critical Care Note", noteType: "critical_care", specialty: "Critical Care", sectionCount: 9, usageCount: 1123, isDefault: true, tags: ["ICU", "Time-Based"] },
+  { id: "tmpl-ama-001", name: "AMA Departure Note", noteType: "ama", specialty: "Emergency Medicine", sectionCount: 7, usageCount: 294, isDefault: true, tags: ["AMA", "Medicolegal"] },
 ];
 
 export default function TemplatePanel({ selectedNoteType, onSelect }) {

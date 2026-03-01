@@ -536,7 +536,7 @@ Return ONLY valid JSON with this structure:
   );
 
   return (
-    <div style={{ display: "flex", height: "calc(100vh - 120px)", overflow: "hidden", background: T.bg, fontFamily: "sans-serif" }}>
+    <div style={{ position: "relative", display: "flex", height: "100%", overflow: "hidden", background: T.bg, fontFamily: "sans-serif" }}>
 
       {/* AI Loading Overlay */}
       <AnimatePresence>

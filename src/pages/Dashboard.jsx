@@ -466,11 +466,8 @@ Return 5-8 articles total.`,
         setLoading(false);
       }
     };
-
     fetchNews();
-  };
-
-  useEffect(() => { fetchNews(); }, []);  // eslint-disable-line
+  }, []);
 
   const filteredArticles = articles.filter(article => 
     activeTab === "all" || article.topic === activeTab

@@ -14,6 +14,7 @@ import NoteStatusWidget from "../components/dashboard/NoteStatusWidget";
 import PendingSignaturesWidget from "../components/dashboard/PendingSignaturesWidget";
 import NotesActivityWidget from "../components/dashboard/NotesActivityWidget";
 import QuickNoteCreatorWidget from "../components/dashboard/QuickNoteCreatorWidget";
+import QuickSearchWidget from "../components/dashboard/QuickSearchWidget";
 
 const T = {
   navy: "#050f1e",
@@ -682,12 +683,21 @@ function NotesPanel() {
 const TOTAL_CELLS = 9;
 const DEFAULT_GRID = ["clock", "search", "guidelines", "news", "notes", "noteStatus", "pendingSignatures", "notesActivity", "quickNoteCreator"];
 
+const PRESET_LAYOUTS = {
+  layout1: { name: "Default", grid: ["clock", "search", "guidelines", "news", "notes", "noteStatus", "pendingSignatures", "notesActivity", "quickNoteCreator"], sizes: {} },
+  layout2: { name: "Focused Notes", grid: ["notes", "quickSearch", "quickNoteCreator", "noteStatus", "clock", "news", null, null, null], sizes: { 0: [2, 2], 1: [1, 1], 2: [1, 1] } },
+  layout3: { name: "Guidelines First", grid: ["search", "guidelines", "news", "clock", "quickSearch", "notes", "noteStatus", "pendingSignatures", null], sizes: { 0: [2, 1], 1: [1, 2], 5: [2, 1] } },
+  layout4: { name: "Minimal", grid: ["clock", "quickSearch", "notes", null, null, null, null, null, null], sizes: { 0: [1, 1], 1: [2, 2], 2: [1, 2] } },
+  layout5: { name: "Complete Workflow", grid: ["clock", "search", "guidelines", "quickSearch", "notes", "noteStatus", "pendingSignatures", "notesActivity", "quickNoteCreator"], sizes: {} },
+};
+
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  // grid: array of 9 slots, each is a widgetId or null
   const [grid, setGrid] = useState(DEFAULT_GRID);
-  const [selectedCell, setSelectedCell] = useState(null); // index of clicked cell in edit mode
+  const [selectedCell, setSelectedCell] = useState(null);
+  const [widgetSizes, setWidgetSizes] = useState({});
+  const [showLayoutMenu, setShowLayoutMenu] = useState(false);
 
   const widgetDefs = {
     clock: { label: "Clock & Calendar", Comp: ClockCalPanel },
@@ -699,6 +709,7 @@ export default function Dashboard() {
     pendingSignatures: { label: "Awaiting Signature", Comp: PendingSignaturesWidget },
     notesActivity: { label: "Recent Activity", Comp: NotesActivityWidget },
     quickNoteCreator: { label: "Quick Note", Comp: QuickNoteCreatorWidget },
+    quickSearch: { label: "Quick Search", Comp: QuickSearchWidget },
   };
 
   useEffect(() => {
@@ -709,6 +720,9 @@ export default function Dashboard() {
         if (u?.dashboard_grid && Array.isArray(u.dashboard_grid)) {
           setGrid(u.dashboard_grid);
         }
+        if (u?.dashboard_sizes && typeof u.dashboard_sizes === "object") {
+          setWidgetSizes(u.dashboard_sizes);
+        }
       } catch {
         setUser(null);
       }
@@ -718,7 +732,7 @@ export default function Dashboard() {
 
   const saveLayout = async () => {
     try {
-      await base44.auth.updateMe({ dashboard_grid: grid });
+      await base44.auth.updateMe({ dashboard_grid: grid, dashboard_sizes: widgetSizes });
       setIsEditMode(false);
       setSelectedCell(null);
     } catch (error) {
@@ -726,7 +740,18 @@ export default function Dashboard() {
     }
   };
 
-  const resetLayout = () => { setGrid(DEFAULT_GRID); setSelectedCell(null); };
+  const loadPresetLayout = (layoutKey) => {
+    const preset = PRESET_LAYOUTS[layoutKey];
+    setGrid(preset.grid);
+    setWidgetSizes(preset.sizes || {});
+    setShowLayoutMenu(false);
+  };
+
+  const resetLayout = () => { 
+    setGrid(DEFAULT_GRID); 
+    setWidgetSizes({});
+    setSelectedCell(null); 
+  };
 
   const assignWidget = (widgetId) => {
     if (selectedCell === null) return;

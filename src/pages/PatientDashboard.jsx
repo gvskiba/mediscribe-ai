@@ -131,6 +131,88 @@ export default function PatientDashboard() {
 
   return (
     <div style={{ background: colors.navy, fontFamily: "DM Sans, sans-serif", minHeight: "100vh", display: "flex", flexDirection: "column", color: colors.text, marginLeft: 0 }}>
+      {/* Top Navigation Bar */}
+      <div style={{ background: colors.slate, borderBottom: `1px solid ${colors.border}`, padding: "12px 16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+        {/* Row 1: Patient Info + Vitals */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: colors.purple, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 600, fontSize: "14px" }}>
+              {patient?.name?.charAt(0) || "P"}
+            </div>
+            <div>
+              <p style={{ fontSize: "12px", fontWeight: 600, margin: "0 0 2px 0", color: colors.bright }}>{patient?.name || "Patient"}</p>
+              <p style={{ fontSize: "10px", margin: 0, color: colors.dim }}>MRN: {patient?.mrn || "—"}</p>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: "12px" }}>
+            {[
+              { label: "BP", value: vitals?.[0]?.systolicBP ? `${vitals[0].systolicBP}/${vitals[0].diastolicBP}` : "—" },
+              { label: "HR", value: vitals?.[0]?.heartRate || "—" },
+              { label: "RR", value: vitals?.[0]?.respiratoryRate || "—" },
+              { label: "TEMP", value: vitals?.[0]?.temperature || "—" },
+              { label: "SPO₂", value: vitals?.[0]?.spo2 || "—" },
+              { label: "PAIN", value: vitals?.[0]?.painScore || "—" },
+            ].map((v, idx) => (
+              <div key={idx} style={{ textAlign: "center", minWidth: "50px" }}>
+                <p style={{ fontSize: "9px", color: colors.dim, margin: "0 0 2px 0", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>
+                  {v.label}
+                </p>
+                <p style={{ fontSize: "10px", fontWeight: 600, margin: 0, color: colors.text }}>—</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Row 2: Section Tabs */}
+        <div style={{ display: "flex", gap: "8px", borderTop: `1px solid ${colors.border}`, paddingTop: "8px" }}>
+          {[
+            { icon: "S", label: "Subjective", subtext: "HPI · ROS · Vitals", color: colors.teal },
+            { icon: "O", label: "Objective", subtext: "Exam · Labs · Imaging", color: colors.dim },
+            { icon: "A", label: "Assessment", subtext: "Diagnosis · DDx", color: colors.dim },
+            { icon: "P", label: "Plan", subtext: "Orders · Medications", color: colors.dim },
+          ].map((tab, idx) => (
+            <div
+              key={idx}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "8px 12px",
+                borderRadius: "6px",
+                background: idx === 0 ? "rgba(0,212,188,0.15)" : "transparent",
+                border: idx === 0 ? `1px solid ${colors.teal}` : "none",
+                cursor: "pointer",
+              }}
+            >
+              <div
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "50%",
+                  background: idx === 0 ? colors.teal : colors.edge,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: idx === 0 ? colors.navy : colors.text,
+                  fontWeight: 600,
+                  fontSize: "12px",
+                }}
+              >
+                {tab.icon}
+              </div>
+              <div>
+                <p style={{ fontSize: "11px", fontWeight: 600, margin: "0 0 1px 0", color: colors.text }}>
+                  {tab.label}
+                </p>
+                <p style={{ fontSize: "9px", margin: 0, color: colors.dim }}>
+                  {tab.subtext}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Patient Strip */}
       {patient && encounter && (
         <div

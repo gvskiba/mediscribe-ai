@@ -544,7 +544,33 @@ Return ONLY valid JSON with this structure:
     setSecondaryDx(combined);
     saveFinalToNote(primary, combined, finalImpression);
     setAiFinalSuggestions(null);
+    setSelectedFinalSuggestions({ primary: false, secondary: new Set() });
     toast.success("✅ Final diagnoses applied");
+  };
+
+  const acceptSelectedFinal = () => {
+    if (!aiFinalSuggestions) return;
+    let newPrimary = primaryDx;
+    if (selectedFinalSuggestions.primary && aiFinalSuggestions.primary?.name) {
+      newPrimary = { ...primaryDx, name: aiFinalSuggestions.primary.name, icd10: aiFinalSuggestions.primary.icd10 || "", notes: aiFinalSuggestions.primary.notes || "", source: "ai" };
+      setPrimaryDx(newPrimary);
+    }
+    const newSec = (aiFinalSuggestions.secondary || []).filter((_, i) => selectedFinalSuggestions.secondary.has(i)).map(s => ({ id: uid(), name: s.name, icd10: s.icd10 || "", type: s.type || "", source: "ai" }));
+    const combined = [...secondaryDx, ...newSec];
+    setSecondaryDx(combined);
+    saveFinalToNote(newPrimary, combined, finalImpression);
+    setAiFinalSuggestions(null);
+    setSelectedFinalSuggestions({ primary: false, secondary: new Set() });
+    toast.success("✅ Selected diagnoses applied");
+  };
+
+  const toggleFinalPrimary = () => setSelectedFinalSuggestions(prev => ({ ...prev, primary: !prev.primary }));
+  const toggleFinalSecondary = (idx) => {
+    setSelectedFinalSuggestions(prev => {
+      const next = new Set(prev.secondary);
+      if (next.has(idx)) next.delete(idx); else next.add(idx);
+      return { ...prev, secondary: next };
+    });
   };
 
   // ── Save ──────────────────────────────────────────────────────────────────

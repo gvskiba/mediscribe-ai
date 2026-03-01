@@ -114,24 +114,13 @@ function SearchPanel({ query, setQuery, filters, setFilters, analysisMode, setAn
 
       {/* Quick Topics */}
       <div>
-        <div style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: T.dim, marginBottom: "8px" }}>Quick Topics</div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+        <div className="text-xs font-bold uppercase tracking-wide text-[#4a7299] mb-2">Quick Topics</div>
+        <div className="flex flex-wrap gap-1.5">
           {QUICK_TOPICS.map((topic) => (
             <button
               key={topic}
               onClick={() => { setQuery(topic); onSearch(); }}
-              style={{
-                padding: "6px 10px",
-                borderRadius: "6px",
-                fontSize: "11px",
-                background: `rgba(155,109,255,0.1)`,
-                border: `1px solid rgba(155,109,255,0.3)`,
-                color: T.purple,
-                cursor: "pointer",
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = `rgba(155,109,255,0.2)`; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = `rgba(155,109,255,0.1)`; }}
+              className="px-2.5 py-1.5 rounded-md text-xs bg-[rgba(155,109,255,0.1)] border border-[rgba(155,109,255,0.3)] text-[#9b6dff] cursor-pointer transition-all hover:bg-[rgba(155,109,255,0.2)]"
             >
               {topic}
             </button>

@@ -152,8 +152,8 @@ function SearchPanel({ query, setQuery, filters, setFilters, analysisMode, setAn
         <div className="flex items-start gap-3 p-3 bg-[#162d4f] rounded-lg border border-[#1e3a5f]">
           <input
             type="checkbox"
-            checked={applyContext}
-            onChange={(e) => setApplyContext(e.target.checked)}
+            checked={analysisMode === "patient_specific"}
+            onChange={() => setAnalysisMode(analysisMode === "patient_specific" ? "full_analysis" : "patient_specific")}
             className="cursor-pointer mt-1 accent-[#9b6dff]"
           />
           <div className="flex-1">

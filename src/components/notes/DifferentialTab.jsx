@@ -389,6 +389,8 @@ export default function DifferentialTab({ note, noteId, queryClient }) {
   const [aiFinalSuggestions, setAiFinalSuggestions] = useState(null);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState(null);
+  const [selectedInitialSuggestions, setSelectedInitialSuggestions] = useState(new Set());
+  const [selectedFinalSuggestions, setSelectedFinalSuggestions] = useState({ primary: false, secondary: new Set() });
 
   // Sync from note on load
   useEffect(() => {

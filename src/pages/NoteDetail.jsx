@@ -95,6 +95,7 @@ import DifferentialTab from "../components/notes/DifferentialTab";
 import LabsImagingTab from "../components/notes/LabsImagingTab";
 import PhysicalExamTab from "../components/notes/PhysicalExamTab";
 import TreatmentPlanTab from "../components/notes/TreatmentPlanTab";
+import MedicationsTab from "../components/notes/MedicationsTab";
 import FinalizeTab from "../components/notes/FinalizeTab";
 import PatientEducationTab from "../components/notes/PatientEducationTab";
 import NoteTopBar from "../components/notes/NoteTopBar";

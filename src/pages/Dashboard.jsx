@@ -386,8 +386,7 @@ function SearchPanel() {
   const [loading, setLoading] = useState(true);
   const newsData = pageData.medicalNews;
 
-  useEffect(() => {
-    const fetchNews = async () => {
+  const fetchNews = async () => {
       try {
         setLoading(true);
         const result = await base44.integrations.Core.InvokeLLM({

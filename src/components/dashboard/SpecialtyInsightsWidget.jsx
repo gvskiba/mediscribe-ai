@@ -19,7 +19,7 @@ const T = {
 
 export default function SpecialtyInsightsWidget() {
   const [insights, setInsights] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [specialty, setSpecialty] = useState("");
 
   useEffect(() => {
@@ -27,7 +27,17 @@ export default function SpecialtyInsightsWidget() {
       try {
         const user = await base44.auth.me();
         setSpecialty(user?.clinical_settings?.medical_specialty || "emergency_medicine");
+      } catch (error) {
+        console.error("Failed to load user:", error);
+      }
+    };
+    load();
+  }, []);
 
+  const fetchInsights = async () => {
+    setLoading(true);
+    try {
+        const user = await base44.auth.me();
         const result = await base44.integrations.Core.InvokeLLM({
           prompt: `Find 3-4 recent clinical insights relevant to ${user?.clinical_settings?.medical_specialty || "emergency medicine"}. For each insight:
 1. Provide the key clinical point or recent development

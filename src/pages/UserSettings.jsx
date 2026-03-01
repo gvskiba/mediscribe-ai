@@ -158,10 +158,12 @@ export default function UserSettings() {
           setSettings(prev => ({ ...prev, ...currentUser.clinical_settings }));
         }
         
-        // Parse full_name into first and last
+        const savedPrefs = currentUser?.preferences || {};
+
+        // Parse first/last name: prefer saved values, fall back to full_name split
         const nameParts = (currentUser?.full_name || "").split(" ");
-        const firstName = nameParts[0] || "";
-        const lastName = nameParts.slice(1).join(" ") || "";
+        const firstName = savedPrefs.first_name || nameParts[0] || "";
+        const lastName = savedPrefs.last_name || nameParts.slice(1).join(" ") || "";
         
         setProfileData({
           first_name: firstName,
@@ -180,7 +182,7 @@ export default function UserSettings() {
           notifications_email: true,
           notifications_inapp: true,
           notify_on_save: false,
-          ...(currentUser?.preferences || {}),
+          ...savedPrefs,
         });
       } catch {
         toast.error("Failed to load settings");

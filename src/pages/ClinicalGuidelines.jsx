@@ -425,62 +425,40 @@ export default function ClinicalGuidelines() {
   };
 
   return (
-    <div style={{
-      display: "flex",
-      flexDirection: "column",
-      height: "100vh",
-      background: T.navy,
-      fontFamily: "DM Sans, sans-serif",
-      color: T.text,
-    }}>
+    <div className="flex flex-col h-screen bg-[#050f1e] text-[#c8ddf0]">
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" />
 
       {/* Topbar */}
-      <div style={{
-        height: "64px",
-        background: T.slate,
-        borderBottom: `1px solid ${T.border}`,
-        padding: "0 16px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "16px", fontWeight: 700, color: T.bright }}>ClinAI</span>
-          <span style={{ fontSize: "12px", color: T.text, fontWeight: 500 }}>—</span>
-          <span style={{ fontSize: "12px", color: T.purple, fontWeight: 600 }}>Clinical Guidelines Search</span>
-          <span style={{ fontSize: "10px", color: T.dim, marginLeft: "8px" }}>AI-powered · Base44 · ACC/AHA · ACEP · IDSA · Cochrane · USPSTF · +10 sources</span>
+      <div className="h-16 bg-[#0b1d35] border-b border-[#1e3a5f] px-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-base font-bold text-[#e8f4ff]">ClinAI</span>
+          <span className="text-sm text-[#c8ddf0] font-medium">—</span>
+          <span className="text-sm text-[#9b6dff] font-semibold">Clinical Guidelines Search</span>
+          <span className="text-xs text-[#4a7299] ml-2">AI-powered · Base44 · ACC/AHA · ACEP · IDSA · Cochrane · USPSTF · +10 sources</span>
         </div>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <button style={{ padding: "6px 10px", borderRadius: "6px", fontSize: "10px", border: `1px solid ${T.border}`, background: T.edge, color: T.dim, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+        <div className="flex gap-2 items-center">
+          <button className="px-2.5 py-1.5 rounded-md text-xs border border-[#1e3a5f] bg-[#162d4f] text-[#4a7299] cursor-pointer flex items-center gap-1 hover:bg-[rgba(155,109,255,0.1)]">
             <Clock size={12} /> 0 Recent
           </button>
-          <button style={{ padding: "6px 10px", borderRadius: "6px", fontSize: "10px", border: `1px solid ${T.border}`, background: T.edge, color: T.gold, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+          <button className="px-2.5 py-1.5 rounded-md text-xs border border-[#1e3a5f] bg-[#162d4f] text-[#fbbf24] cursor-pointer flex items-center gap-1 hover:bg-[rgba(155,109,255,0.1)]">
             <Star size={12} /> 0 Saved
           </button>
-          <button style={{ padding: "6px 10px", borderRadius: "6px", fontSize: "10px", border: `1px solid ${T.teal}`, background: `rgba(0,212,188,0.1)`, color: T.teal, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", fontWeight: 600 }}>
+          <button className="px-2.5 py-1.5 rounded-md text-xs border border-[#00d4bc] bg-[rgba(0,212,188,0.1)] text-[#00d4bc] cursor-pointer flex items-center gap-1 font-semibold">
             <Zap size={12} /> AI ACTIVE
           </button>
-          <button style={{ padding: "6px 10px", borderRadius: "6px", fontSize: "10px", border: `1px solid ${T.border}`, background: T.edge, color: T.dim, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+          <button className="px-2.5 py-1.5 rounded-md text-xs border border-[#1e3a5f] bg-[#162d4f] text-[#4a7299] cursor-pointer flex items-center gap-1 hover:bg-[rgba(155,109,255,0.1)]">
             🖨️ Print
           </button>
-          <button style={{ padding: "6px 12px", borderRadius: "6px", fontSize: "10px", border: "none", background: T.teal, color: T.navy, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", fontWeight: 600 }}>
+          <button className="px-3 py-1.5 rounded-md text-xs border-none bg-[#00d4bc] text-[#050f1e] cursor-pointer flex items-center gap-1 font-semibold hover:bg-[#00a896]">
             <Save size={12} /> Save Analysis
           </button>
         </div>
       </div>
 
       {/* Main Grid */}
-      <div style={{
-        flex: 1,
-        display: "grid",
-        gridTemplateColumns: "320px 1fr",
-        gap: "12px",
-        padding: "12px 16px",
-        overflow: "hidden",
-      }}>
+      <div className="flex-1 grid grid-cols-[320px_1fr] gap-3 p-3 overflow-hidden">
         {/* Left Column */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px", overflow: "hidden", minWidth: 0 }}>
+        <div className="flex flex-col gap-3 overflow-hidden min-w-0 h-full">
           <SearchPanel
             query={query}
             setQuery={setQuery}
@@ -501,7 +479,7 @@ export default function ClinicalGuidelines() {
         </div>
 
         {/* Right Column */}
-        <div style={{ overflow: "hidden" }}>
+        <div className="overflow-hidden h-full">
           <AnalysisPanel
             analysis={analysis}
             loading={loading}

@@ -14,6 +14,14 @@ export default function NoteAbnormalFindingsAnalyzer({ note, noteId, queryClient
     setError(null);
 
     try {
+      const labText = note.lab_findings && note.lab_findings.length > 0 
+        ? note.lab_findings.map(l => `${l.test_name}: ${l.result} ${l.unit || ''} (Normal: ${l.reference_range || 'N/A'}) - Status: ${l.status}`).join('\n')
+        : "No labs";
+
+      const imagingText = note.imaging_findings && note.imaging_findings.length > 0
+        ? note.imaging_findings.map(i => `${i.study_type}: ${i.findings} - Impression: ${i.impression}`).join('\n')
+        : "No imaging";
+
       const prompt = `Analyze this complete clinical note and extract ALL abnormal findings, critical values, and red flags from every section. Look across ALL sections - not just labs/imaging.
 
 PATIENT: ${note.patient_name || "Unknown"} | AGE: ${note.patient_age || "—"}
@@ -34,10 +42,10 @@ VITAL SIGNS:
 ${note.vital_signs ? JSON.stringify(note.vital_signs, null, 2) : "Not documented"}
 
 LAB FINDINGS:
-${note.lab_findings && note.lab_findings.length > 0 ? note.lab_findings.map(l => \`\${l.test_name}: \${l.result} \${l.unit || ''} (Normal: \${l.reference_range || 'N/A'}) - Status: \${l.status}\`).join('\\n') : "No labs"}
+${labText}
 
 IMAGING FINDINGS:
-${note.imaging_findings && note.imaging_findings.length > 0 ? note.imaging_findings.map(i => \`\${i.study_type}: \${i.findings} - Impression: \${i.impression}\`).join('\\n') : "No imaging"}
+${imagingText}
 
 ASSESSMENT:
 ${note.assessment || "Not documented"}

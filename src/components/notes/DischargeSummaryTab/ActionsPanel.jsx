@@ -76,30 +76,61 @@ export default function ActionsPanel({
       </div>
 
       {/* Patient Instruction Preview */}
-      <div className="rounded-lg border border-[#1e3a5f] bg-[#0e2340] p-3 max-h-96 overflow-y-auto">
-        <h3 className="text-xs font-semibold text-[#e8f4ff] mb-3">Preview</h3>
+      <div className="rounded-lg border border-[#1e3a5f] bg-[#0e2340] p-3 max-h-96 overflow-y-auto space-y-3">
+        <h3 className="text-xs font-semibold text-[#e8f4ff] sticky top-0 bg-[#0e2340]">Preview</h3>
         {patientInstructions ? (
-          <div className="text-xs space-y-2 text-[#c8ddf0]">
+          <div className="text-xs space-y-3 text-[#c8ddf0]">
             {patientInstructions.diagnosis && (
-              <div>
+              <div className="border-b border-[#1e3a5f] pb-2">
                 <p className="font-bold text-[#00d4bc]">{patientInstructions.diagnosis.patientFriendlyName}</p>
-                <p className="text-[#4a7299]">{patientInstructions.diagnosis.patientExplanation}</p>
+                <p className="text-[#4a7299] text-xs">{patientInstructions.diagnosis.patientExplanation}</p>
               </div>
             )}
-            {patientInstructions.whatWeFound && (
-              <div>
-                <p className="font-bold text-[#00d4bc]">What We Found</p>
-                <p className="text-[#4a7299]">{patientInstructions.whatWeFound}</p>
+            {patientInstructions.medicationInstructions?.takeAtHome?.length > 0 && (
+              <div className="border-b border-[#1e3a5f] pb-2">
+                <p className="font-bold text-[#00d4bc]">💊 Medications:</p>
+                {patientInstructions.medicationInstructions.takeAtHome.map((med, i) => (
+                  <div key={i} className="text-[#4a7299] ml-2">
+                    <p className="font-semibold text-[#c8ddf0]">{med.medicationName}</p>
+                    <p className="text-xs">Take: {med.dosing}</p>
+                    <p className="text-xs">Why: {med.whyTaking}</p>
+                  </div>
+                ))}
               </div>
             )}
-            {patientInstructions.returnPrecautions?.call911For?.length > 0 && (
+            {patientInstructions.activityGuidelines && (
+              <div className="border-b border-[#1e3a5f] pb-2">
+                <p className="font-bold text-[#00d4bc]">🚶 Activity:</p>
+                <p className="text-[#4a7299] text-xs">{patientInstructions.activityGuidelines.generalActivity}</p>
+              </div>
+            )}
+            {patientInstructions.dietInstructions && (
+              <div className="border-b border-[#1e3a5f] pb-2">
+                <p className="font-bold text-[#00d4bc]">🥗 Diet:</p>
+                <p className="text-[#4a7299] text-xs">{patientInstructions.dietInstructions.generalDiet}</p>
+              </div>
+            )}
+            {patientInstructions.returnPrecautions && (
               <div>
-                <p className="font-bold text-[#ff5c6c]">🚨 Call 911 If:</p>
-                <ul className="list-disc list-inside text-[#ff5c6c]">
-                  {patientInstructions.returnPrecautions.call911For.map((item, i) => (
-                    <li key={i}>{item}</li>
-                  ))}
-                </ul>
+                <p className="font-bold text-[#ff5c6c]">🚨 Return If:</p>
+                {patientInstructions.returnPrecautions.call911For?.length > 0 && (
+                  <div className="text-[#ff5c6c] text-xs ml-2">
+                    <p className="font-semibold">Call 911:</p>
+                    <ul className="list-disc list-inside">
+                      {patientInstructions.returnPrecautions.call911For.slice(0, 2).map((item, i) => (
+                        <li key={i}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+            {patientInstructions.followUpPlans?.appointments?.length > 0 && (
+              <div className="border-t border-[#1e3a5f] pt-2">
+                <p className="font-bold text-[#00d4bc]">📅 Follow-up:</p>
+                {patientInstructions.followUpPlans.appointments.slice(0, 2).map((apt, i) => (
+                  <p key={i} className="text-[#4a7299] text-xs">{apt}</p>
+                ))}
               </div>
             )}
           </div>

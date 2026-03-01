@@ -96,31 +96,17 @@ function SearchPanel({ query, setQuery, filters, setFilters, analysisMode, setAn
 
       {/* Analysis Mode */}
       <div>
-        <div style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: T.dim, marginBottom: "10px" }}>Analysis Mode</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+        <div className="text-xs font-bold uppercase tracking-wide text-[#4a7299] mb-2.5">Analysis Mode</div>
+        <div className="grid grid-cols-2 gap-2">
           {analysisModes.map((mode) => (
             <button
               key={mode.id}
               onClick={() => setAnalysisMode(mode.id)}
-              style={{
-                padding: "10px",
-                borderRadius: "8px",
-                fontSize: "11px",
-                fontWeight: 600,
-                border: analysisMode === mode.id ? `1px solid ${T.purple}` : `1px solid ${T.border}`,
-                background: analysisMode === mode.id ? `rgba(155,109,255,0.15)` : T.edge,
-                color: T.text,
-                cursor: "pointer",
-                transition: "all 0.2s",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                gap: "4px",
-              }}
+              className={`px-2.5 py-2.5 rounded-lg text-xs font-semibold cursor-pointer transition-all flex flex-col items-start gap-1 ${analysisMode === mode.id ? "border border-[#9b6dff] bg-[rgba(155,109,255,0.15)]" : "border border-[#1e3a5f] bg-[#162d4f]"} text-[#c8ddf0]`}
             >
-              <span style={{ fontSize: "14px" }}>{mode.icon}</span>
+              <span className="text-base">{mode.icon}</span>
               <span>{mode.label}</span>
-              <span style={{ fontSize: "9px", color: T.dim, fontWeight: 400 }}>{mode.desc}</span>
+              <span className="text-xs text-[#4a7299] font-normal">{mode.desc}</span>
             </button>
           ))}
         </div>

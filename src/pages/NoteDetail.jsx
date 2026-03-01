@@ -1425,7 +1425,7 @@ Generated: ${new Date().toLocaleString()}
 
   return (
     <>
-      <div style={{ background: "#050f1e", fontFamily: "DM Sans, sans-serif", height: "calc(100vh - 80px)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div style={{ background: "#050f1e", fontFamily: "DM Sans, sans-serif", height: "calc(100vh - 80px)", display: "flex", flexDirection: "column" }}>
         {/* Back Nav */}
         <Link
         to={createPageUrl("NotesLibrary")}

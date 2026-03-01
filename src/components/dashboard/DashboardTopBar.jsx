@@ -22,6 +22,19 @@ const T = {
   purple: "#9b6dff",
 };
 
+const SPECIALTIES = [
+  { value: "emergency_medicine", label: "Emergency Medicine" },
+  { value: "internal_medicine", label: "Internal Medicine" },
+  { value: "family_medicine", label: "Family Medicine" },
+  { value: "pediatrics", label: "Pediatrics" },
+  { value: "cardiology", label: "Cardiology" },
+  { value: "pulmonology", label: "Pulmonology" },
+  { value: "neurology", label: "Neurology" },
+  { value: "psychiatry", label: "Psychiatry" },
+  { value: "surgery", label: "Surgery" },
+  { value: "orthopedics", label: "Orthopedics" },
+];
+
 export default function DashboardTopBar({ user }) {
   const [time, setTime] = useState(new Date());
   const [editMode, setEditMode] = useState(false);
@@ -32,6 +45,12 @@ export default function DashboardTopBar({ user }) {
     shift_type: "day",
     shift_duration: 12,
   });
+  const [specialtyOpen, setSpecialtyOpen] = useState(false);
+  const [shiftOpen, setShiftOpen] = useState(false);
+  const [shiftStart, setShiftStart] = useState(user?.clinical_settings?.shift_start || "");
+  const [shiftEnd, setShiftEnd] = useState(user?.clinical_settings?.shift_end || "");
+  const specialtyRef = useRef(null);
+  const shiftRef = useRef(null);
 
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);

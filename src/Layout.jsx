@@ -49,7 +49,8 @@ const navSections = [
       {
               title: "Settings",
               items: [
-                { name: "Settings", icon: Settings, page: "UserSettings" },
+                { name: "App Settings", icon: Settings, page: "AppSettings" },
+                { name: "User Settings", icon: Settings, page: "UserSettings" },
               ]
             }
     ];

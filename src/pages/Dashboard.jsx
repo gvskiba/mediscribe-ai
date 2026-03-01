@@ -517,6 +517,10 @@ Return 5-8 articles total.`,
       <div style={{ flex: 1, overflowY: "auto" }}>
         {loading ? (
           <div style={{ padding: "16px", textAlign: "center", color: T.dim, fontSize: "12px" }}>Loading medical news...</div>
+        ) : !loaded ? (
+          <div style={{ padding: "24px 16px", textAlign: "center", color: T.dim, fontSize: "12px" }}>
+            Click "Load News" to fetch the latest medical articles.
+          </div>
         ) : filteredArticles.length === 0 ? (
           <div style={{ padding: "16px", textAlign: "center", color: T.dim, fontSize: "12px" }}>
             No articles in this category

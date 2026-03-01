@@ -444,14 +444,81 @@ function AnalysisPanel({ analysis, loading, selectedSections, onToggleSection, o
       <div style={{
         background: T.panel,
         border: `1px solid ${T.border}`,
-        borderRadius: "8px",
-        padding: "24px",
+        borderRadius: "12px",
+        padding: "40px 24px",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
+        gap: "20px",
         flex: 1,
       }}>
-        <span style={{ fontSize: "12px", color: T.dim }}>📋 Select a guideline to analyze</span>
+        {/* Section Header */}
+        <div style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: T.purple, display: "flex", alignItems: "center", gap: "6px", alignSelf: "flex-start", paddingLeft: "16px", marginTop: "-24px" }}>
+          <span>◆</span> CLINICAL ANALYSIS
+        </div>
+
+        {/* Book Icon */}
+        <div style={{
+          width: "100px",
+          height: "100px",
+          borderRadius: "50%",
+          border: `2px solid ${T.border}`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "50px",
+          background: `rgba(0,212,188,0.05)`,
+        }}>
+          📖
+        </div>
+
+        {/* Title */}
+        <div style={{ fontSize: "24px", fontWeight: 600, color: T.bright, textAlign: "center" }}>
+          AI Clinical Analysis
+        </div>
+
+        {/* Instructions */}
+        <div style={{ fontSize: "12px", color: T.dim, textAlign: "center", maxWidth: "280px", lineHeight: "1.6" }}>
+          Search for a guideline or clinical question on the left, then click <span style={{ color: T.purple, fontWeight: 600 }}>Analyze</span> to generate a structured clinical analysis formatted for provider use and clinical note insertion.
+        </div>
+
+        {/* Steps */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", width: "100%", marginTop: "20px" }}>
+          {[
+            { num: 1, text: "Enter a clinical question or search a condition" },
+            { num: 2, text: "Select a guideline result and click Analyze" },
+            { num: 3, text: "Review the structured provider analysis" },
+            { num: 4, text: "Select sections and add directly to your clinical note" },
+          ].map((step) => (
+            <div key={step.num} style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "8px",
+              padding: "12px",
+              background: T.edge,
+              border: `1px solid ${T.border}`,
+              borderRadius: "8px",
+            }}>
+              <div style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                border: `2px solid ${T.purple}`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "14px",
+                fontWeight: 700,
+                color: T.purple,
+              }}>
+                {step.num}
+              </div>
+              <span style={{ fontSize: "10px", color: T.text, textAlign: "center" }}>{step.text}</span>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

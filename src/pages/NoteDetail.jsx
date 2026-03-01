@@ -69,6 +69,7 @@ import RichTextNoteEditor from "../components/notes/RichTextNoteEditor";
 import ClinicalNotePreviewButton from "../components/notes/ClinicalNotePreviewButton";
 import TabDataPreview from "../components/notes/TabDataPreview";
 import ClinicalNoteView from "../components/notes/ClinicalNoteView";
+import ClinicalNoteComposer from "../components/notes/ClinicalNoteComposer";
 import SmartTemplateApplicator from "../components/templates/SmartTemplateApplicator";
 import AIMDMAnalyzer from "../components/notes/AIMDMAnalyzer";
 import PhysicalExamEditor from "../components/notes/PhysicalExamEditor";
@@ -1653,33 +1654,8 @@ Generated: ${new Date().toLocaleString()}
              </TabsContent>
 
            {/* Clinical Note Tab */}
-             <TabsContent value="clinical_note" className="overflow-y-auto" style={{ background: "#050f1e" }}>
-               <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
-                 <div><h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Clinical Note</h2><p className="text-xs text-slate-400 mt-0.5">Templates, structured view, and note generation</p></div>
-                 <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-slate-400 shadow-sm overflow-hidden">
-                   <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-slate-400" /><span className="text-sm font-semibold text-slate-800">Template & Type</span></div>
-                   <div className="p-4">
-                     <NoteTypeAndTemplateSelector note={note} templates={templates} selectedTemplate={selectedTemplate} onNoteTypeChange={async (t) => { await base44.entities.ClinicalNote.update(noteId, { note_type: t }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); toast.success("Updated"); }} onTemplateSelect={setSelectedTemplate} onApplyTemplate={async (templateId) => { const s = templates.find(t => t.id === templateId); if (s) { const u = { note_type: s.note_type || note.note_type }; if (s.sections) s.sections.forEach(sec => { if (sec.content_template) { const fm = { chief_complaint:"chief_complaint", hpi:"history_of_present_illness", ros:"review_of_systems", physical_exam:"physical_exam", assessment:"assessment", plan:"plan" }; if (fm[sec.id]) u[fm[sec.id]] = sec.content_template; } }); await base44.entities.ClinicalNote.update(noteId, u); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); toast.success("Template applied"); } }} />
-                   </div>
-                 </div>
-                 <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-blue-500 shadow-sm overflow-hidden">
-                   <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-blue-500" /><span className="text-sm font-semibold text-slate-800">Structured Note View</span></div>
-                   <div className="p-4"><ClinicalNoteView note={note} onUpdate={async (field, value) => { await base44.entities.ClinicalNote.update(noteId, { [field]: value }); queryClient.invalidateQueries({ queryKey: ["note", noteId] }); toast.success("Updated"); }} noteTypes={templates} differentialDiagnosis={differentialDiagnosis} /></div>
-                 </div>
-                 <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-purple-500 shadow-sm overflow-hidden">
-                   <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
-                     <div className="flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-purple-500" /><span className="text-sm font-semibold text-slate-800">AI Note Tools</span></div>
-                   </div>
-                   <div className="p-4 space-y-2">
-                     <p className="text-xs text-slate-500">Use the AI Assistance Hub to generate a consolidated note, suggest ICD-10 codes, create treatment plans, and more.</p>
-                     <Button onClick={() => setAiSidebarOpen(true)} size="sm" className="bg-purple-600 hover:bg-purple-700 text-white gap-1.5 text-xs h-7 px-3"><Sparkles className="w-3 h-3" />Open AI Hub</Button>
-                   </div>
-                 </div>
-                 <div className="flex justify-between items-center pt-1 border-t border-slate-100">
-                   <div className="flex gap-2"><TabDataPreview tabId="clinical_note" note={note} /><ClinicalNotePreviewButton note={note} /></div>
-                   <div className="flex items-center gap-1.5">{!isFirstTab() && <button onClick={handleBack} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"><ArrowLeft className="w-3.5 h-3.5" />Back</button>}{!isLastTab() && <button onClick={handleNext} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">Next<ArrowLeft className="w-3.5 h-3.5 rotate-180" /></button>}</div>
-                 </div>
-               </div>
+             <TabsContent value="clinical_note" className="overflow-hidden" style={{ background: "#050f1e", height: "calc(100vh - 200px)" }}>
+               <ClinicalNoteComposer note={note} noteId={noteId} queryClient={queryClient} />
              </TabsContent>
 
            {/* Old tabs removed - replaced by sidebar */}

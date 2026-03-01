@@ -65,8 +65,20 @@ export default function DashboardTopBar({ user }) {
         shift_type: user.clinical_settings.shift_type || "day",
         shift_duration: user.clinical_settings.shift_duration || 12,
       });
+      setShiftStart(user.clinical_settings.shift_start || "");
+      setShiftEnd(user.clinical_settings.shift_end || "");
     }
   }, [user]);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (specialtyRef.current && !specialtyRef.current.contains(e.target)) setSpecialtyOpen(false);
+      if (shiftRef.current && !shiftRef.current.contains(e.target)) setShiftOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const hours = String(time.getHours()).padStart(2, "0");
   const minutes = String(time.getMinutes()).padStart(2, "0");

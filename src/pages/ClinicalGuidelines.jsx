@@ -173,7 +173,7 @@ function ResultsPanel({ results, loading, onAnalyze, selectedForCompare, onToggl
         Results {results.length > 0 && <span className="text-[#4a7299]">({results.length})</span>}
       </div>
 
-      <div className="flex-1 overflow-auto flex flex-col gap-2">
+      <div className="flex-1 overflow-y-auto scrollbar-hide flex flex-col gap-2">
         {!loading && results.length === 0 && (
           <div className="text-center text-[#4a7299] text-xs py-5 px-2.5">
             🔍 Enter a clinical question to search guidelines

@@ -130,7 +130,7 @@ export default function PatientDashboard() {
   };
 
   return (
-    <div style={{ background: colors.navy, fontFamily: "DM Sans, sans-serif", minHeight: "100vh", display: "flex", flexDirection: "column", color: colors.text }}>
+    <div style={{ background: colors.navy, fontFamily: "DM Sans, sans-serif", minHeight: "100vh", display: "flex", flexDirection: "column", color: colors.text, marginLeft: 0 }}>
       {/* Patient Strip */}
       {patient && encounter && (
         <div
@@ -252,7 +252,7 @@ export default function PatientDashboard() {
       )}
 
       {/* Main Content Grid */}
-      <div style={{ flex: 1, overflow: "hidden", padding: "11px 16px", display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1, overflow: "hidden", padding: "11px 16px", display: "flex", flexDirection: "column", maxHeight: "calc(100vh - 58px - 47px - 22px)" }}>
         <div style={{ display: "grid", gridTemplateColumns: "290px 1fr 272px", gap: "11px", flex: 1, overflow: "hidden" }}>
           {/* Left: Vitals + Diagnoses */}
           <div style={{ display: "flex", flexDirection: "column", gap: "11px", overflow: "auto" }}>

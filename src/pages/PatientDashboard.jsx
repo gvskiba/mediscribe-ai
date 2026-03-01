@@ -302,43 +302,9 @@ export default function PatientDashboard() {
         </div>
       )}
 
-      {/* Quick Stats */}
-      {encounter && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "11px", padding: "11px 16px 0 16px" }}>
-          <></>
-        </div>
-      )}
-
-      {/* Main Content Grid - Refactored */}
-      <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", padding: 0 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "290px 1fr 272px", gap: "0", flex: 1, overflow: "hidden", padding: "11px 16px" }}>
-          {[
-            { icon: "⏱", label: "LENGTH OF STAY", value: "Active encounter" },
-            { icon: "🚦", label: "TRIAGE / ESI", value: "Not assigned" },
-            { icon: "👨‍⚕️", label: "ATTENDING", value: "No resident" },
-            { icon: "📍", label: "STATUS", value: "No disposition yet" },
-          ].map((chip, idx) => (
-            <div
-              key={idx}
-              style={{
-                background: colors.panel,
-                border: `1px solid ${colors.border}`,
-                borderRadius: "8px",
-                padding: "10px",
-                textAlign: "center",
-              }}
-            >
-              <p style={{ fontSize: "16px", margin: "0 0 4px 0" }}>{chip.icon}</p>
-              <p style={{ color: colors.dim, fontSize: "10px", margin: "0 0 4px 0", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>
-                {chip.label}
-              </p>
-              <p style={{ fontSize: "13px", fontWeight: 600, margin: 0, color: colors.text }}>
-                {chip.value}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Main Content Grid */}
+      <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", padding: "11px 16px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "290px 1fr 272px", gap: "11px", flex: 1, overflow: "hidden" }}>
 
 
           {/* Left: Vitals + Diagnoses */}

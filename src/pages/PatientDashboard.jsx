@@ -434,8 +434,8 @@ Return JSON with:
             <div style={{ background: colors.panel, border: `1px solid ${colors.border}`, borderLeft: `3px solid ${colors.teal}`, borderRadius: "8px", padding: "10px", overflow: "auto", flex: 1, minHeight: 0 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                 <h3 style={{ fontSize: "12px", fontWeight: 600, margin: 0, display: "flex", gap: "4px" }}>📋 CLINICAL SUMMARY</h3>
-                <button style={{ background: "rgba(155,109,255,0.2)", border: `1px solid ${colors.purple}`, color: colors.purple, padding: "4px 8px", borderRadius: "4px", fontSize: "9px", fontWeight: 600, cursor: "pointer" }}>
-                  ⚡ AI Refresh
+                <button onClick={generateAIClinicalSummary} disabled={generatingAISummary} style={{ background: generatingAISummary ? "rgba(155,109,255,0.1)" : "rgba(155,109,255,0.2)", border: `1px solid ${colors.purple}`, color: colors.purple, padding: "4px 8px", borderRadius: "4px", fontSize: "9px", fontWeight: 600, cursor: generatingAISummary ? "not-allowed" : "pointer", opacity: generatingAISummary ? 0.6 : 1 }}>
+                  {generatingAISummary ? "⏳ Generating..." : "⚡ AI Refresh"}
                 </button>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "10px" }}>

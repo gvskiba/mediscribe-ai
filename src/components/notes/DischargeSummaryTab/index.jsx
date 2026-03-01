@@ -73,6 +73,10 @@ export default function DischargeSummaryTab({
 
     setGeneratingInstructions(true);
     try {
+      const medsText = dischargeData.dischargeMedications
+        .map((m) => `${m.name} ${m.dose} ${m.frequency}`)
+        .join("\n");
+
       const prompt = `Generate plain-language discharge instructions for a patient with the following clinical information:
 
 PRIMARY DIAGNOSIS: ${dischargeData.finalImpression.primaryDx}
@@ -90,7 +94,7 @@ Medications: ${dischargeData.treatmentSummary.medsGiven}
 IV Fluids: ${dischargeData.treatmentSummary.ivFluids}
 
 DISCHARGE MEDICATIONS:
-${dischargeData.dischargeMedications.map(m => \`\${m.name} \${m.dose} \${m.frequency}\`).join("\n")}
+${medsText}
 
 Generate comprehensive patient discharge instructions including:
 1. Patient-friendly diagnosis explanation (2-3 sentences)

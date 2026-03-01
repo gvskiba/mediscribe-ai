@@ -388,7 +388,7 @@ export default function CreateTemplateFromNote({ open, onClose, note, onSuccess 
         {/* Step Indicator */}
         <div className="flex items-center gap-2 mt-2">
           {[{ n: 1, label: "Template Info" }, { n: 2, label: "Select Sections" }].map(({ n, label }) => (
-            <React.Fragment key={n}>
+            <div key={n} className="contents">
               <div
                 className={`flex items-center gap-2 cursor-pointer ${step === n ? "text-blue-600" : step > n ? "text-emerald-600" : "text-slate-400"}`}
                 onClick={() => n < step && setStep(n)}
@@ -399,7 +399,7 @@ export default function CreateTemplateFromNote({ open, onClose, note, onSuccess 
                 <span className="text-sm font-medium">{label}</span>
               </div>
               {n < 2 && <div className="flex-1 h-px bg-slate-200" />}
-            </React.Fragment>
+            </div>
           ))}
         </div>
 

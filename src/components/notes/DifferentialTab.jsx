@@ -514,7 +514,25 @@ Return ONLY valid JSON with this structure:
     const newDiffs = aiInitialSuggestions.map(s => ({ id: uid(), name: s.name, icd10: s.icd10 || "", likelihood: s.likelihood || "possible", reasoning: s.reasoning || "", source: "ai", confidence: s.confidence || null }));
     updateNote({ differentials: [...differentials, ...newDiffs] });
     setAiInitialSuggestions([]);
+    setSelectedInitialSuggestions(new Set());
     toast.success("✅ Differential applied");
+  };
+
+  const acceptSelectedInitial = () => {
+    const selected = aiInitialSuggestions.filter((_, i) => selectedInitialSuggestions.has(i));
+    const newDiffs = selected.map(s => ({ id: uid(), name: s.name, icd10: s.icd10 || "", likelihood: s.likelihood || "possible", reasoning: s.reasoning || "", source: "ai", confidence: s.confidence || null }));
+    updateNote({ differentials: [...differentials, ...newDiffs] });
+    setAiInitialSuggestions([]);
+    setSelectedInitialSuggestions(new Set());
+    toast.success(`✅ ${newDiffs.length} diagnosis added`);
+  };
+
+  const toggleInitialSuggestion = (idx) => {
+    setSelectedInitialSuggestions(prev => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx); else next.add(idx);
+      return next;
+    });
   };
 
   const acceptAllFinal = () => {

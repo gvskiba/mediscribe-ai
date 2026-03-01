@@ -376,7 +376,7 @@ Return JSON with:
         {[
           { icon: "⏱️", label: "LENGTH OF STAY", value: "Active encounter" },
           { icon: "🔢", label: "TRIAGE / ESI", value: "Not assigned" },
-          { icon: "👨‍⚕️", label: "ATTENDING", value: "No resident" },
+          { icon: "👨‍⚕️", label: "ATTENDING", value: defaultAttending?.name || "No resident" },
           { icon: "🚪", label: "STATUS", value: "No disposition yet" },
         ].map((item, idx) => (
           <div key={idx} style={{ background: colors.panel, border: `1px solid ${colors.border}`, borderRadius: "8px", padding: "12px", display: "flex", gap: "10px", alignItems: "flex-start" }}>

@@ -37,7 +37,7 @@ export default function SpecialtyInsightsWidget() {
   const fetchInsights = async () => {
     setLoading(true);
     try {
-        const user = await base44.auth.me();
+        const u = await base44.auth.me();
         const result = await base44.integrations.Core.InvokeLLM({
           prompt: `Find 3-4 recent clinical insights relevant to ${user?.clinical_settings?.medical_specialty || "emergency medicine"}. For each insight:
 1. Provide the key clinical point or recent development

@@ -467,7 +467,9 @@ Return 5-8 articles total.`,
     };
 
     fetchNews();
-  }, []);
+  };
+
+  useEffect(() => { fetchNews(); }, []);
 
   const filteredArticles = articles.filter(article => 
     activeTab === "all" || article.topic === activeTab

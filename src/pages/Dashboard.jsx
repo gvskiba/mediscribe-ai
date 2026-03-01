@@ -852,7 +852,12 @@ export default function Dashboard() {
                      {isSelected ? <span style={{ color: T.teal }}>↑ Choose a widget above</span> : <span>+ Empty</span>}
                    </div>
                  )}
-                 {def && <div style={{ position: "relative", zIndex: isEditMode ? 0 : "auto" }}><def.Comp /></div>}
+                 {def && <div style={{ position: "relative", zIndex: isEditMode ? 0 : "auto" }}>
+                   {(() => {
+                     const CompTag = def.Comp;
+                     return <CompTag />;
+                   })()}
+                 </div>}
               </div>
             );
           })}

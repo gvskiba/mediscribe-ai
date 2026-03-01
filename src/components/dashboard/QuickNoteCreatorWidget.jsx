@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { createPageUrl } from "@/utils";
 import { Plus, User } from "lucide-react";
 
 const T = {
@@ -35,7 +36,7 @@ export default function QuickNoteCreatorWidget() {
         status: "draft",
         note_type: noteType,
       });
-      window.location.href = `?page=NoteDetail&id=${newNote.id}`;
+      window.location.href = createPageUrl(`NoteDetail?id=${newNote.id}`);
     } catch (error) {
       console.error("Failed to create note:", error);
       setCreating(false);

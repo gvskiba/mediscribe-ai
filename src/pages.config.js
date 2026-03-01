@@ -50,6 +50,7 @@
 import AppSettings from './pages/AppSettings';
 import Calculators from './pages/Calculators';
 import Calendar from './pages/Calendar';
+import ClinicalGuidelines from './pages/ClinicalGuidelines';
 import Customize from './pages/Customize';
 import Dashboard from './pages/Dashboard';
 import GuidelineDetail from './pages/GuidelineDetail';
@@ -73,7 +74,6 @@ import TemplateEditor from './pages/TemplateEditor';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
-import ClinicalGuidelines from './pages/ClinicalGuidelines';
 import __Layout from './Layout.jsx';
 
 
@@ -81,6 +81,7 @@ export const PAGES = {
     "AppSettings": AppSettings,
     "Calculators": Calculators,
     "Calendar": Calendar,
+    "ClinicalGuidelines": ClinicalGuidelines,
     "Customize": Customize,
     "Dashboard": Dashboard,
     "GuidelineDetail": GuidelineDetail,
@@ -104,7 +105,6 @@ export const PAGES = {
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
-    "ClinicalGuidelines": ClinicalGuidelines,
 }
 
 export const pagesConfig = {

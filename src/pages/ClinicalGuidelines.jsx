@@ -455,7 +455,7 @@ export default function ClinicalGuidelines() {
       {/* Main Grid */}
       <div className="flex-1 grid grid-cols-[320px_1fr] gap-3 p-3 overflow-hidden">
         {/* Left Column */}
-        <div className="flex flex-col gap-3 overflow-hidden min-w-0 h-full">
+        <div className="flex flex-col gap-3 overflow-hidden min-w-0 min-h-0">
           <SearchPanel
             query={query}
             setQuery={setQuery}

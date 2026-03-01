@@ -112,7 +112,14 @@ const PREG_COLORS = {
 // ─── Category Pill ─────────────────────────────────────────────────────────────
 function CategoryPill({ cat, active, onClick }) {
   return (
-    <button onClick={onClick} className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${active ? "text-white border-transparent shadow-sm" : "bg-transparent border-slate-200 text-slate-500 hover:border-slate-400"}`} style={active ? { background: cat.color, borderColor: cat.color } : {}}>
+    <button
+      onClick={onClick}
+      className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border"
+      style={active
+        ? { background: cat.color, borderColor: cat.color, color: "#fff" }
+        : { background: "transparent", borderColor: T.border2, color: T.muted }
+      }
+    >
       {cat.label}
     </button>
   );

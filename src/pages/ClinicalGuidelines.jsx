@@ -41,6 +41,7 @@ const SPECIALTIES = [
 const QUICK_TOPICS = [
   "STEMI", "Sepsis 3.0", "PE / DVT", "Stroke / tPA", "ACS / NSTEMI",
   "Atrial Fibrillation", "Heart Failure", "CAP / Pneumonia", "DKA", "Hypertensive Emergency",
+  "Anaphylaxis", "COPD Exacerbation", "Acute Kidney Injury", "Hyponatremia", "Subarachnoid Hemorrhage", "GI Bleed"
 ];
 
 const ANALYSIS_SECTIONS = [

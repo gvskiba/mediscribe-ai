@@ -4,6 +4,7 @@ import { Settings, Save, X, ChevronDown } from "lucide-react";
 import { createPageUrl } from "../utils";
 
 import ClinicalGuidelinesPanel from "../components/dashboard/ClinicalGuidelinesPanel";
+import OpenEvidenceSearchPanel from "../components/dashboard/OpenEvidenceSearchPanel";
 import SavedGuidelinesWidget from "../components/dashboard/SavedGuidelinesWidget";
 import RecentQueriesWidget from "../components/dashboard/RecentQueriesWidget";
 import SpecialtyInsightsWidget from "../components/dashboard/SpecialtyInsightsWidget";

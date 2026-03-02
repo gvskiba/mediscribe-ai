@@ -327,7 +327,40 @@ function ResultsPanel({ results, loading, onAnalyze, selectedForCompare, onToggl
   );
 }
 
-function AnalysisPanel({ analysis, loading, selectedSections, onToggleSection, onAddToNote, onSave }) {
+function AnalysisPanel({ analysis, loading, results, selectedSections, onToggleSection, onAddToNote, onSave, onAnalyze, selectedForCompare, onToggleCompare }) {
+  const [expandedSections, setExpandedSections] = useState({});
+
+  return (
+    <div className="flex gap-3 h-full overflow-hidden">
+      {/* Results column - shown when there are results */}
+      {(results && results.length > 0) && (
+        <div className="w-64 shrink-0">
+          <ResultsPanel
+            results={results}
+            loading={false}
+            onAnalyze={onAnalyze}
+            selectedForCompare={selectedForCompare}
+            onToggleCompare={onToggleCompare}
+          />
+        </div>
+      )}
+
+      {/* Analysis column */}
+      <div className="flex-1 overflow-hidden">
+        <AnalysisPanelInner
+          analysis={analysis}
+          loading={loading}
+          selectedSections={selectedSections}
+          onToggleSection={onToggleSection}
+          onAddToNote={onAddToNote}
+          onSave={onSave}
+        />
+      </div>
+    </div>
+  );
+}
+
+function AnalysisPanelInner({ analysis, loading, selectedSections, onToggleSection, onAddToNote, onSave }) {
   const [expandedSections, setExpandedSections] = useState({});
 
   if (loading) {

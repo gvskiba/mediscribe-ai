@@ -270,8 +270,26 @@ function ResultsPanel({ results, loading, onAnalyze, selectedForCompare, onToggl
            >
              <div className="flex justify-between items-start gap-2">
                <div className="flex-1">
-                 <div className="text-xs font-semibold text-[#e8f4ff]">{result.title}</div>
-                 <div className="text-xs text-[#4a7299] mt-0.5">{result.source} · {result.publicationYear}</div>
+                <div className="text-xs font-semibold text-[#e8f4ff]">{result.title}</div>
+                <div className="text-xs text-[#4a7299] mt-0.5 flex items-center flex-wrap gap-1">
+                  <span className="font-medium text-[#c8ddf0]">{result.source_abbreviation || result.source_name}</span>
+                  <span>·</span>
+                  <span>{result.publicationYear}</span>
+                  {result.source_url && (
+                    <a
+                      href={result.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-[#00d4bc] hover:underline ml-1"
+                    >
+                      View Source ↗
+                    </a>
+                  )}
+                </div>
+                {result.source_name && result.source_abbreviation && (
+                  <div className="text-xs text-[#4a7299] mt-0.5 italic">{result.source_name}</div>
+                )}
                </div>
                <div
                  className={`w-6 h-6 rounded border flex items-center justify-center cursor-pointer transition-all ${selectedForCompare.includes(result.id) ? "border-[#00d4bc] bg-[rgba(0,212,188,0.1)]" : "border-[#1e3a5f]"}`}

@@ -642,14 +642,42 @@ Be specific, clinically precise, and use medical terminology appropriate for phy
         />
 
         {/* Right Column */}
-        <AnalysisPanel
-          analysis={analysis}
-          loading={loading}
-          selectedSections={selectedSections}
-          onToggleSection={(id) => setSelectedSections((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
-          onAddToNote={handleAddToNote}
-          onSave={handleSave}
-        />
+        <div className="flex flex-col gap-0 overflow-hidden">
+          {/* Tab bar */}
+          <div className="flex items-center gap-0 mb-3">
+            <button
+              onClick={() => setRightTab("analysis")}
+              className={`px-4 py-2 text-xs font-bold rounded-l-lg border transition-all ${rightTab === "analysis" ? "border-[#9b6dff] bg-[rgba(155,109,255,0.15)] text-[#9b6dff]" : "border-[#1e3a5f] bg-[#0e2340] text-[#4a7299] hover:text-[#c8ddf0]"}`}
+            >
+              Clinical Analysis
+            </button>
+            <button
+              onClick={() => setRightTab("foryou")}
+              className={`px-4 py-2 text-xs font-bold rounded-r-lg border-t border-r border-b transition-all flex items-center gap-1.5 ${rightTab === "foryou" ? "border-[#9b6dff] bg-[rgba(155,109,255,0.15)] text-[#9b6dff]" : "border-[#1e3a5f] bg-[#0e2340] text-[#4a7299] hover:text-[#c8ddf0]"}`}
+            >
+              <Sparkles size={11} /> For You
+            </button>
+          </div>
+
+          {/* Tab content */}
+          <div className="flex-1 overflow-hidden min-h-0" style={{ height: "calc(100vh - 160px)" }}>
+            {rightTab === "analysis" ? (
+              <AnalysisPanel
+                analysis={analysis}
+                loading={loading}
+                selectedSections={selectedSections}
+                onToggleSection={(id) => setSelectedSections((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
+                onAddToNote={handleAddToNote}
+                onSave={handleSave}
+              />
+            ) : (
+              <ForYouPanel
+                onSearch={(q) => { setQuery(q); setRightTab("analysis"); setTimeout(handleSearch, 50); }}
+                onAnalyzeRecommendation={(rec) => { setQuery(rec.search_query); setRightTab("analysis"); }}
+              />
+            )}
+          </div>
+        </div>
       </div>
 
       <style>{`

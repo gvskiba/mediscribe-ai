@@ -214,6 +214,10 @@ function ArticleCard({ article, saved, onSave }) {
         </div>
       </div>
     </motion.div>
+    <AnimatePresence>
+      {showShare && <ArticleShareModal article={article} onClose={() => setShowShare(false)} />}
+    </AnimatePresence>
+    </>
   );
 }
 

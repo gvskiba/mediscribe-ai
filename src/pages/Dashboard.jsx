@@ -15,6 +15,7 @@ import PendingSignaturesWidget from "../components/dashboard/PendingSignaturesWi
 import NotesActivityWidget from "../components/dashboard/NotesActivityWidget";
 import QuickNoteCreatorWidget from "../components/dashboard/QuickNoteCreatorWidget";
 import QuickSearchWidget from "../components/dashboard/QuickSearchWidget";
+import NewsSummaryWidget from "../components/dashboard/NewsSummaryWidget";
 
 const T = {
   navy: "#050f1e",

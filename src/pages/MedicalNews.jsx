@@ -218,6 +218,7 @@ function AISummaryButton({ article, onOpen }) {
 // ── Article Card ──────────────────────────────────────────────────────────────
 function ArticleCard({ article, saved, onSave }) {
   const [showShare, setShowShare] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const timeAgo = relativeTime(article.publishedAt);
   const sourceColor = SOURCE_COLORS[article.sourceName] || { border: "#64748b", text: "#94a3b8" };
   const catClass = CATEGORY_COLORS[article.category] || "bg-slate-700/40 text-slate-300 border-slate-600";
@@ -230,78 +231,86 @@ function ArticleCard({ article, saved, onSave }) {
         <div className="bg-[#0d1f3c]/60 border border-white/8 rounded-xl p-4 hover:border-white/20 hover:bg-[#0d1f3c]/80 transition-all">
           {/* Top row */}
           <div className="flex items-start justify-between gap-2 mb-2">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {article.sourceName && (
-              <span className="text-xs font-bold px-2 py-0.5 rounded border"
-                style={{ borderColor: sourceColor.border, color: sourceColor.text, background: `${sourceColor.border}15` }}>
-                {article.sourceName}
-              </span>
-            )}
-            {article.category && (
-              <span className={`text-xs px-2 py-0.5 rounded border ${catClass}`}>{article.category}</span>
-            )}
-            {impact !== "low" && (
-              <span className={`text-xs font-semibold flex items-center gap-0.5 ${impactStyle[impact]}`}>
-                <Zap className="w-2.5 h-2.5" />
-                {impact.toUpperCase()}
-              </span>
-            )}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {article.sourceName && (
+                <span className="text-xs font-bold px-2 py-0.5 rounded border"
+                  style={{ borderColor: sourceColor.border, color: sourceColor.text, background: `${sourceColor.border}15` }}>
+                  {article.sourceName}
+                </span>
+              )}
+              {article.category && (
+                <span className={`text-xs px-2 py-0.5 rounded border ${catClass}`}>{article.category}</span>
+              )}
+              {impact !== "low" && (
+                <span className={`text-xs font-semibold flex items-center gap-0.5 ${impactStyle[impact]}`}>
+                  <Zap className="w-2.5 h-2.5" />
+                  {impact.toUpperCase()}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowSummary(true); }}
+                title="View AI summary"
+                className="shrink-0 transition-colors cursor-pointer text-slate-600 hover:text-purple-400 opacity-0 group-hover:opacity-100"
+              >
+                <Sparkles className="w-4 h-4" />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowShare(true); }}
+                title="Share article"
+                className="shrink-0 transition-colors cursor-pointer text-slate-600 hover:text-blue-400 opacity-0 group-hover:opacity-100"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onSave(article); }}
+                title={saved ? "Remove from saved" : "Save for later"}
+                className={`shrink-0 transition-colors cursor-pointer ${saved ? "text-amber-400" : "text-slate-600 hover:text-amber-400 opacity-0 group-hover:opacity-100"}`}
+              >
+                {saved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowShare(true); }}
-              title="Share article"
-              className="shrink-0 transition-colors cursor-pointer text-slate-600 hover:text-blue-400 opacity-0 group-hover:opacity-100"
-            >
-              <Share2 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onSave(article); }}
-              title={saved ? "Remove from saved" : "Save for later"}
-              className={`shrink-0 transition-colors cursor-pointer ${saved ? "text-amber-400" : "text-slate-600 hover:text-amber-400 opacity-0 group-hover:opacity-100"}`}
-            >
-              {saved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
-            </button>
+
+          {/* Title */}
+          <a
+            href={article.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block font-semibold text-white text-sm leading-snug mb-1.5 hover:text-blue-400 transition-colors"
+            onClick={e => e.stopPropagation()}
+          >
+            {article.title}
+          </a>
+
+          {/* Description */}
+          {article.originalDescription && (
+            <p className="text-xs text-slate-400 leading-relaxed mb-2.5 line-clamp-2">{article.originalDescription}</p>
+          )}
+
+          {/* Footer */}
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-3">
+              {timeAgo && <span className="text-xs text-slate-500">{timeAgo}</span>}
+              <a href={article.url} target="_blank" rel="noopener noreferrer"
+                onClick={e => e.stopPropagation()}
+                className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors font-medium">
+                <ExternalLink className="w-3 h-3" />
+                Read article
+              </a>
+            </div>
+            <AISummaryButton article={article} onOpen={() => setShowSummary(true)} />
           </div>
         </div>
-
-        {/* Title */}
-        <a
-          href={article.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block font-semibold text-white text-sm leading-snug mb-1.5 hover:text-blue-400 transition-colors"
-          onClick={e => e.stopPropagation()}
-        >
-          {article.title}
-        </a>
-
-        {/* Description */}
-        {article.originalDescription && (
-          <p className="text-xs text-slate-400 leading-relaxed mb-2.5 line-clamp-2">{article.originalDescription}</p>
-        )}
-
-        {/* Footer */}
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-3">
-            {timeAgo && <span className="text-xs text-slate-500">{timeAgo}</span>}
-            <a href={article.url} target="_blank" rel="noopener noreferrer"
-              onClick={e => e.stopPropagation()}
-              className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors font-medium">
-              <ExternalLink className="w-3 h-3" />
-              Read article
-            </a>
-          </div>
-          <AISummary article={article} />
-          </div>
-          </div>
-          </motion.div>
-          <AnimatePresence>
-          {showShare && <ArticleShareModal article={article} onClose={() => setShowShare(false)} />}
-          </AnimatePresence>
-          </>
-          );
-          }
+      </motion.div>
+      <AnimatePresence>
+        {showSummary && <AISummaryModal article={article} isOpen={showSummary} onClose={() => setShowSummary(false)} />}
+        {showShare && <ArticleShareModal article={article} onClose={() => setShowShare(false)} />}
+      </AnimatePresence>
+    </>
+  );
+}
 
 // ── Preferences Panel ─────────────────────────────────────────────────────────
 function PreferencesPanel({ prefs, onSave, onClose }) {

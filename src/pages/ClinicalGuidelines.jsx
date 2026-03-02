@@ -461,6 +461,7 @@ export default function ClinicalGuidelines() {
   const [loading, setLoading] = useState(false);
   const [selectedSections, setSelectedSections] = useState([]);
   const [selectedForCompare, setSelectedForCompare] = useState([]);
+  const [rightTab, setRightTab] = useState("analysis"); // "analysis" | "foryou"
 
   const handleSearch = useCallback(async () => {
     if (!query.trim()) return;

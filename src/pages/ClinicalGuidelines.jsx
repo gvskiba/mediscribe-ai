@@ -432,7 +432,7 @@ function AnalysisPanel({ analysis, loading, selectedSections, onToggleSection, o
 
 export default function ClinicalGuidelines() {
   const [query, setQuery] = useState("");
-  const [filters, setFilters] = useState({ specialty: "All Specialties", source: "", yearFrom: "", evidenceLevel: "" });
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [analysisMode, setAnalysisMode] = useState("full_analysis");
   const [results, setResults] = useState([]);
   const [analysis, setAnalysis] = useState(null);

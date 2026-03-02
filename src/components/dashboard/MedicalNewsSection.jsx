@@ -47,7 +47,7 @@ For each story, provide:
 - Clinical relevance or impact
 - Source information
 
-Focus on stories that have direct clinical implications or are practice-changing.`,
+Focus on stories that have direct clinical implications or are practice-changing. For each story, include a direct URL to the original article or source page (e.g., PubMed, NEJM, JAMA, CDC, FDA website).`,
         add_context_from_internet: true,
         response_json_schema: {
           type: "object",

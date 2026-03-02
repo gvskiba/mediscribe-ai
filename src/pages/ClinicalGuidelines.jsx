@@ -551,17 +551,24 @@ Year: ${result.publicationYear}
 Evidence Level: ${result.evidenceLevel}
 Background: ${result.summary}
 
-Provide a detailed, structured clinical analysis with the following sections:
-1. executive_summary: A concise 3-4 sentence overview of the guideline scope and most critical recommendations.
-2. key_recommendations: A numbered list of the top 5-7 key clinical recommendations from this guideline.
-3. diagnostic_criteria: Specific diagnostic criteria, scoring systems, thresholds, and algorithms recommended.
-4. treatment_algorithm: Step-by-step clinical decision pathway for treatment, including first-line, second-line, and escalation options.
-5. medication_guidance: Specific drug recommendations with drug names, dosing regimens, routes, and monitoring parameters.
-6. monitoring_parameters: Key clinical, laboratory, and imaging parameters to monitor, with intervals and target values.
-7. special_populations: Adjustments and considerations for elderly patients, pregnancy, renal/hepatic impairment, pediatrics, and other special groups.
-8. contraindications: Absolute and relative contraindications, black box warnings, and important cautions.
+IMPORTANT FORMATTING RULES:
+- Do NOT use markdown syntax (no asterisks *, no bold **, no italics, no hashtags #, no dashes -)
+- Write in plain text only
+- Use numbers (1. 2. 3.) for lists
+- Separate items with line breaks
 
-Be specific, clinically precise, and use medical terminology appropriate for physicians and advanced practice providers.`;
+Provide a detailed, structured clinical analysis with the following 8 sections. Every section MUST have substantive content - do not leave any section empty or with placeholder text:
+
+1. executive_summary: A concise 3-4 sentence plain-text overview of the guideline scope and most critical recommendations.
+2. key_recommendations: A plain-text numbered list of the top 5-7 key clinical recommendations from this guideline. Each on its own line.
+3. diagnostic_criteria: Plain-text description of specific diagnostic criteria, scoring systems, thresholds, and clinical algorithms recommended by this guideline.
+4. treatment_algorithm: Plain-text step-by-step clinical decision pathway for treatment, including first-line, second-line, and escalation options. Number each step.
+5. medication_guidance: Plain-text list of specific drug recommendations with drug names, dosing regimens, routes, and monitoring parameters. Number each drug.
+6. monitoring_parameters: Plain-text list of key clinical, laboratory, and imaging parameters to monitor, with intervals and target values. Number each parameter.
+7. special_populations: Plain-text description of adjustments and considerations for elderly patients, pregnancy, renal or hepatic impairment, pediatrics, and other special groups.
+8. contraindications: Plain-text list of absolute and relative contraindications, black box warnings, and important clinical cautions.
+
+Be specific, clinically precise, and use medical terminology appropriate for physicians and advanced practice providers. Every field must contain complete, useful clinical information.`;
 
     const response = await base44.integrations.Core.InvokeLLM({
       prompt,

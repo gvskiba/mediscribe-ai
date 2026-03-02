@@ -20,7 +20,7 @@ const CATEGORIES = [
   { id: "Associations", label: "Associations & Colleges", icon: "🏛️" },
 ];
 
-const ALL_SOURCES = ["WHO", "CDC", "NIH", "NEJM", "MedlinePlus", "Lancet"];
+const ALL_SOURCES = ["WHO", "CDC", "NIH", "NEJM", "MedlinePlus", "Lancet", "ACEP", "AAP", "AAFP", "ACA", "ACC"];
 
 const SOURCE_COLORS = {
   WHO:         { border: "#14b8a6", text: "#14b8a6" },

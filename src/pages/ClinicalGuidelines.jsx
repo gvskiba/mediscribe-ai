@@ -608,12 +608,12 @@ Be specific, clinically precise, and use medical terminology appropriate for phy
     if (!q || !q.trim()) return;
     setSearchLoading(true);
     setResults([]);
-    const prompt = `Search for clinical guidelines related to "${q}" from reputable professional medical associations and colleges. Prioritize authoritative sources such as ACC/AHA, ACEP, IDSA, ATS, ASA, USPSTF, NIH, WHO, Cochrane, UpToDate, SCCM, ACOG, ACS.
+    const prompt = `Search for clinical guidelines and systematic reviews related to "${q}". Query across: PubMed/MEDLINE, USPSTF, WHO IRIS, NICE, Europe PMC, Cochrane, ACC/AHA, ACEP, IDSA, ATS, ASA, SCCM, ACOG, ACS, NIH, UpToDate.
 
 For each relevant guideline found, return an object with:
-1. title, 2. publicationYear (number), 3. summary (2-3 sentences), 4. evidenceLevel (A/B/C/D/I), 5. guidelineType, 6. source_name, 7. source_abbreviation, 8. source_url
+1. title, 2. publicationYear (number), 3. summary (2-3 sentences), 4. evidenceLevel (A/B/C/D/I), 5. guidelineType, 6. source_name (full name), 7. source_abbreviation, 8. source_url (direct link to guideline or PubMed entry)
 
-Return 3-6 of the most relevant, current guidelines.`;
+Return 4-8 of the most relevant, current guidelines from diverse sources. Prioritize guidelines published after 2018.`;
     const response = await base44.integrations.Core.InvokeLLM({
       prompt,
       add_context_from_internet: true,

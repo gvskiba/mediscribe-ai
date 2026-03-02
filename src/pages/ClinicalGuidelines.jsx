@@ -584,6 +584,46 @@ Be specific, clinically precise, and use medical terminology appropriate for phy
     setRightTab("analysis");
   };
 
+  const handleSearchWithQuery = useCallback(async (q) => {
+    if (!q || !q.trim()) return;
+    setLoading(true);
+    setResults([]);
+    const prompt = `Search for clinical guidelines related to "${q}" from reputable professional medical associations and colleges. Prioritize authoritative sources such as ACC/AHA, ACEP, IDSA, ATS, ASA, USPSTF, NIH, WHO, Cochrane, UpToDate, SCCM, ACOG, ACS.
+
+For each relevant guideline found, return an object with:
+1. title, 2. publicationYear (number), 3. summary (2-3 sentences), 4. evidenceLevel (A/B/C/D/I), 5. guidelineType, 6. source_name, 7. source_abbreviation, 8. source_url
+
+Return 3-6 of the most relevant, current guidelines.`;
+    const response = await base44.integrations.Core.InvokeLLM({
+      prompt,
+      add_context_from_internet: true,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          guidelines: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                title: { type: "string" },
+                publicationYear: { type: "number" },
+                summary: { type: "string" },
+                evidenceLevel: { type: "string", enum: ["A", "B", "C", "D", "I"] },
+                guidelineType: { type: "string" },
+                source_name: { type: "string" },
+                source_abbreviation: { type: "string" },
+                source_url: { type: "string" },
+              },
+            },
+          },
+        },
+      },
+    });
+    setResults((response?.guidelines || []).map((g, i) => ({ ...g, id: String(i + 1) })));
+    setLoading(false);
+    recordSearch(q.trim());
+  }, []);
+
   const handleAddToNote = (sections) => {
     if (sections.length === 0) {
       toast.error("Select at least one section");

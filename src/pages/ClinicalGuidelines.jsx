@@ -530,7 +530,7 @@ Return 3-6 of the most relevant, current guidelines. Prioritize the most recent 
 
     const rawResults = (response?.guidelines || []).map((g, i) => ({ ...g, id: String(i + 1) }));
     setResults(rawResults);
-    setLoading(false);
+    setSearchLoading(false);
     if (query.trim()) recordSearch(query.trim());
   }, [query, filters]);
 

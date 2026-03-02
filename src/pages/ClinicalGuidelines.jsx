@@ -587,7 +587,7 @@ Be specific, clinically precise, and use medical terminology appropriate for phy
       sections: response,
     });
     setSelectedSections([]);
-    setLoading(false);
+    setAnalyzeLoading(false);
     recordAnalyzed(result.title, result.source_abbreviation || result.source_name);
     setRightTab("analysis");
   };

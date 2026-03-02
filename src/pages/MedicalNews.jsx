@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { RefreshCw, Bookmark, BookmarkCheck, ExternalLink, Sparkles, ChevronDown, ChevronUp, Loader2, X, Star, Newspaper } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import {
+  RefreshCw, Bookmark, BookmarkCheck, ExternalLink, Sparkles,
+  ChevronDown, ChevronUp, Loader2, X, Star, Newspaper, Settings2,
+  Filter, Calendar, Zap, Check
+} from "lucide-react";
+import { formatDistanceToNow, subDays, isAfter } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 
@@ -15,7 +19,7 @@ const CATEGORIES = [
   { id: "Health News", label: "Health News", icon: "🏥" },
 ];
 
-const SOURCES = ["WHO", "CDC", "NIH", "NEJM", "MedlinePlus", "Lancet"];
+const ALL_SOURCES = ["WHO", "CDC", "NIH", "NEJM", "MedlinePlus", "Lancet"];
 
 const SOURCE_COLORS = {
   WHO:         { border: "#14b8a6", text: "#14b8a6" },
@@ -34,6 +38,39 @@ const CATEGORY_COLORS = {
   "Health News":       "bg-cyan-900/40 text-cyan-300 border-cyan-700",
   "Medical News":      "bg-rose-900/40 text-rose-300 border-rose-700",
 };
+
+const DATE_RANGES = [
+  { id: "all", label: "Any Time" },
+  { id: "1d", label: "Last 24h", days: 1 },
+  { id: "7d", label: "Last 7 Days", days: 7 },
+  { id: "30d", label: "Last 30 Days", days: 30 },
+];
+
+// Simple heuristic: longer title + has description = higher impact
+function getImpactLevel(article) {
+  if (article.impact) return article.impact;
+  if (article.summary && article.originalDescription) return "high";
+  if (article.originalDescription) return "medium";
+  return "low";
+}
+
+const IMPACT_LEVELS = [
+  { id: "all", label: "All Impact" },
+  { id: "high", label: "High", color: "text-red-400" },
+  { id: "medium", label: "Medium", color: "text-amber-400" },
+  { id: "low", label: "Low", color: "text-slate-400" },
+];
+
+const PREFS_KEY = "news_prefs_v2";
+const SAVED_KEY = "news_saved_v2";
+
+function getPrefs() {
+  try { return JSON.parse(localStorage.getItem(PREFS_KEY) || "{}"); } catch { return {}; }
+}
+function savePrefs(p) { localStorage.setItem(PREFS_KEY, JSON.stringify(p)); }
+function getSaved() {
+  try { return JSON.parse(localStorage.getItem(SAVED_KEY) || "[]"); } catch { return []; }
+}
 
 function relativeTime(dateStr) {
   if (!dateStr) return "";
@@ -93,6 +130,8 @@ function ArticleCard({ article, saved, onSave }) {
   const timeAgo = relativeTime(article.publishedAt);
   const sourceColor = SOURCE_COLORS[article.sourceName] || { border: "#64748b", text: "#94a3b8" };
   const catClass = CATEGORY_COLORS[article.category] || "bg-slate-700/40 text-slate-300 border-slate-600";
+  const impact = getImpactLevel(article);
+  const impactStyle = { high: "text-red-400", medium: "text-amber-400", low: "text-slate-500" };
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="group">
@@ -109,9 +148,16 @@ function ArticleCard({ article, saved, onSave }) {
             {article.category && (
               <span className={`text-xs px-2 py-0.5 rounded border ${catClass}`}>{article.category}</span>
             )}
+            {impact !== "low" && (
+              <span className={`text-xs font-semibold flex items-center gap-0.5 ${impactStyle[impact]}`}>
+                <Zap className="w-2.5 h-2.5" />
+                {impact.toUpperCase()}
+              </span>
+            )}
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); onSave(article); }}
+            title={saved ? "Remove from saved" : "Save for later"}
             className={`shrink-0 transition-colors cursor-pointer ${saved ? "text-amber-400" : "text-slate-600 hover:text-amber-400 opacity-0 group-hover:opacity-100"}`}
           >
             {saved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
@@ -152,6 +198,90 @@ function ArticleCard({ article, saved, onSave }) {
   );
 }
 
+// ── Preferences Panel ─────────────────────────────────────────────────────────
+function PreferencesPanel({ prefs, onSave, onClose }) {
+  const [draft, setDraft] = useState({
+    sources: prefs.sources || ALL_SOURCES,
+    topics: prefs.topics || CATEGORIES.filter(c => c.id !== "all").map(c => c.id),
+  });
+
+  const toggleSource = (s) =>
+    setDraft(p => ({ ...p, sources: p.sources.includes(s) ? p.sources.filter(x => x !== s) : [...p.sources, s] }));
+  const toggleTopic = (t) =>
+    setDraft(p => ({ ...p, topics: p.topics.includes(t) ? p.topics.filter(x => x !== t) : [...p.topics, t] }));
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-[#0e1f38] border border-white/15 rounded-2xl shadow-2xl p-6 w-[420px] max-w-[95vw]"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h3 className="font-bold text-white text-base">News Preferences</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Customize your news feed sources and topics</p>
+          </div>
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-300 cursor-pointer"><X className="w-4 h-4" /></button>
+        </div>
+
+        {/* Sources */}
+        <div className="mb-5">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2.5">News Sources</p>
+          <div className="flex flex-wrap gap-2">
+            {ALL_SOURCES.map(src => {
+              const color = SOURCE_COLORS[src] || { border: "#64748b", text: "#94a3b8" };
+              const active = draft.sources.includes(src);
+              return (
+                <button key={src} onClick={() => toggleSource(src)}
+                  style={{ borderColor: color.border, color: active ? "#fff" : color.text, background: active ? `${color.border}30` : "transparent" }}
+                  className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition-all cursor-pointer">
+                  {active && <Check className="w-3 h-3" />}
+                  {src}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Topics */}
+        <div className="mb-6">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2.5">Topics</p>
+          <div className="flex flex-wrap gap-2">
+            {CATEGORIES.filter(c => c.id !== "all").map(cat => {
+              const active = draft.topics.includes(cat.id);
+              return (
+                <button key={cat.id} onClick={() => toggleTopic(cat.id)}
+                  className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                    active ? "border-emerald-500/60 bg-emerald-900/30 text-emerald-300" : "border-white/10 bg-white/5 text-slate-400 hover:border-white/20"
+                  }`}>
+                  {active && <Check className="w-3 h-3" />}
+                  {cat.icon} {cat.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => { onSave(draft); onClose(); toast.success("Preferences saved"); }}
+            className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-lg px-4 py-2.5 transition-colors cursor-pointer"
+          >
+            Save Preferences
+          </button>
+          <button
+            onClick={() => { const all = { sources: ALL_SOURCES, topics: CATEGORIES.filter(c => c.id !== "all").map(c => c.id) }; onSave(all); onClose(); }}
+            className="px-4 py-2.5 rounded-lg border border-white/10 text-slate-400 text-sm hover:bg-white/5 cursor-pointer transition-colors"
+          >
+            Reset
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function MedicalNews() {
   const [articles, setArticles] = useState([]);
@@ -159,20 +289,21 @@ export default function MedicalNews() {
   const [error, setError] = useState(null);
   const [fetchedAt, setFetchedAt] = useState(null);
   const [activeCategory, setActiveCategory] = useState("all");
-  const [activeSources, setActiveSources] = useState([]); // empty = all
-  const [savedUrls, setSavedUrls] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("news_saved_v1") || "[]"); } catch { return []; }
-  });
+  const [activeSources, setActiveSources] = useState([]);
+  const [dateRange, setDateRange] = useState("all");
+  const [impactFilter, setImpactFilter] = useState("all");
+  const [savedArticles, setSavedArticles] = useState(() => getSaved());
   const [showSaved, setShowSaved] = useState(false);
+  const [showPrefs, setShowPrefs] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [prefs, setPrefs] = useState(() => getPrefs());
   const [clock, setClock] = useState("");
   const timerRef = useRef(null);
 
-  // Live clock
+  const savedUrls = useMemo(() => savedArticles.map(a => a.url), [savedArticles]);
+
   useEffect(() => {
-    const tick = () => {
-      const now = new Date();
-      setClock(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
-    };
+    const tick = () => setClock(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
@@ -182,17 +313,17 @@ export default function MedicalNews() {
     setLoading(true);
     setError(null);
     try {
-      const resp = await base44.functions.invoke('fetchMedicalNews', { forceRefresh, limit: 30 });
+      const resp = await base44.functions.invoke('fetchMedicalNews', { forceRefresh, limit: 40 });
       const data = resp.data;
       setArticles(data.articles || []);
       setFetchedAt(data.fetchedAt);
     } catch {
       try {
-        const cached = await base44.entities.MedicalNewsCache.list('-publishedAt', 30);
+        const cached = await base44.entities.MedicalNewsCache.list('-publishedAt', 40);
         setArticles(cached);
-        setError("Unable to load news feeds. Check network connection.");
+        setError("Live feed unavailable — showing cached articles.");
       } catch {
-        setError("Unable to load news feeds. Check network connection.");
+        setError("Unable to load news. Check your connection.");
       }
     }
     setLoading(false);
@@ -205,27 +336,63 @@ export default function MedicalNews() {
   }, []);
 
   const handleSave = (article) => {
-    const isAlreadySaved = savedUrls.includes(article.url);
-    const next = isAlreadySaved ? savedUrls.filter(u => u !== article.url) : [...savedUrls, article.url];
-    setSavedUrls(next);
-    localStorage.setItem("news_saved_v1", JSON.stringify(next));
-    toast(isAlreadySaved ? "Removed from saved" : "Saved!");
+    const alreadySaved = savedUrls.includes(article.url);
+    const next = alreadySaved
+      ? savedArticles.filter(a => a.url !== article.url)
+      : [...savedArticles, { url: article.url, title: article.title, sourceName: article.sourceName, publishedAt: article.publishedAt, savedAt: new Date().toISOString() }];
+    setSavedArticles(next);
+    localStorage.setItem(SAVED_KEY, JSON.stringify(next));
+    toast(alreadySaved ? "Removed from saved" : "Saved for later!");
   };
 
-  const toggleSource = (src) => {
-    setActiveSources(prev => prev.includes(src) ? prev.filter(s => s !== src) : [...prev, src]);
+  const handleSavePrefs = (newPrefs) => {
+    setPrefs(newPrefs);
+    savePrefs(newPrefs);
   };
+
+  const toggleSource = (src) =>
+    setActiveSources(prev => prev.includes(src) ? prev.filter(s => s !== src) : [...prev, src]);
+
+  const activeFilterCount = [
+    activeCategory !== "all",
+    activeSources.length > 0,
+    dateRange !== "all",
+    impactFilter !== "all",
+  ].filter(Boolean).length;
 
   const filtered = useMemo(() => {
     let list = articles;
+
+    // Pref-based source filter (show only preferred sources unless manually overridden)
+    const prefSources = prefs.sources || ALL_SOURCES;
+    list = list.filter(a => prefSources.includes(a.sourceName) || !a.sourceName);
+
+    // Pref-based topic filter
+    const prefTopics = prefs.topics || CATEGORIES.filter(c => c.id !== "all").map(c => c.id);
+    if (prefTopics.length > 0 && prefTopics.length < CATEGORIES.length - 1) {
+      list = list.filter(a => !a.category || prefTopics.includes(a.category));
+    }
+
     if (activeCategory !== "all") list = list.filter(a => a.category === activeCategory);
     if (activeSources.length > 0) list = list.filter(a => activeSources.includes(a.sourceName));
     if (showSaved) list = list.filter(a => savedUrls.includes(a.url));
+
+    if (dateRange !== "all") {
+      const dr = DATE_RANGES.find(d => d.id === dateRange);
+      if (dr?.days) {
+        const cutoff = subDays(new Date(), dr.days);
+        list = list.filter(a => a.publishedAt && isAfter(new Date(a.publishedAt), cutoff));
+      }
+    }
+
+    if (impactFilter !== "all") {
+      list = list.filter(a => getImpactLevel(a) === impactFilter);
+    }
+
     return list;
-  }, [articles, activeCategory, activeSources, savedUrls, showSaved]);
+  }, [articles, activeCategory, activeSources, savedUrls, showSaved, dateRange, impactFilter, prefs]);
 
   const updatedLabel = fetchedAt ? relativeTime(fetchedAt) : "just now";
-  const activeSourceNames = SOURCES.filter(s => articles.some(a => a.sourceName === s));
 
   return (
     <div className="min-h-screen bg-[#050f1e] text-white flex flex-col">
@@ -237,9 +404,7 @@ export default function MedicalNews() {
           </div>
           <div>
             <h1 className="font-bold text-white text-lg leading-none">Medical News</h1>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Updated {updatedLabel} · {activeSourceNames.join(" · ")}
-            </p>
+            <p className="text-xs text-slate-400 mt-0.5">Updated {updatedLabel} · {filtered.length} articles</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -248,6 +413,13 @@ export default function MedicalNews() {
             LIVE
           </span>
           <span className="text-sm font-mono text-slate-300 bg-slate-800 px-3 py-1 rounded-lg">{clock}</span>
+          <button
+            onClick={() => setShowPrefs(true)}
+            className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 border border-white/10 transition-colors cursor-pointer"
+            title="News Preferences"
+          >
+            <Settings2 className="w-4 h-4 text-slate-300" />
+          </button>
           <button
             onClick={() => loadNews(true)}
             disabled={loading}
@@ -274,31 +446,103 @@ export default function MedicalNews() {
         ))}
       </div>
 
-      {/* ── Source Filters ── */}
+      {/* ── Source Filters + Filter Toggle ── */}
       <div className="border-b border-white/8 bg-[#071224]/40 px-6 py-2.5 flex items-center gap-3 shrink-0 overflow-x-auto scrollbar-hide">
         <span className="text-xs font-semibold text-slate-500 tracking-widest shrink-0">SOURCES:</span>
-        {SOURCES.map(src => {
+        {ALL_SOURCES.map(src => {
           const color = SOURCE_COLORS[src] || { border: "#64748b", text: "#94a3b8" };
           const active = activeSources.includes(src);
           return (
             <button key={src} onClick={() => toggleSource(src)}
-              style={{
-                borderColor: color.border,
-                color: active ? "#fff" : color.text,
-                background: active ? `${color.border}30` : "transparent",
-              }}
+              style={{ borderColor: color.border, color: active ? "#fff" : color.text, background: active ? `${color.border}30` : "transparent" }}
               className="shrink-0 text-xs font-bold px-3 py-1 rounded border transition-all cursor-pointer">
               {src}
             </button>
           );
         })}
+        <div className="ml-auto shrink-0 flex items-center gap-2">
+          <button
+            onClick={() => setShowFilters(s => !s)}
+            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+              showFilters || activeFilterCount > 0
+                ? "border-blue-500/50 bg-blue-900/20 text-blue-300"
+                : "border-white/10 bg-white/5 text-slate-400 hover:border-white/20"
+            }`}
+          >
+            <Filter className="w-3 h-3" />
+            Filters {activeFilterCount > 0 && <span className="bg-blue-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">{activeFilterCount}</span>}
+          </button>
+        </div>
       </div>
+
+      {/* ── Advanced Filters Panel ── */}
+      <AnimatePresence>
+        {showFilters && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden border-b border-white/8 bg-[#071224]/60 shrink-0"
+          >
+            <div className="px-6 py-4 flex flex-wrap gap-6">
+              {/* Date Range */}
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                  <Calendar className="w-3 h-3" /> Date Range
+                </p>
+                <div className="flex gap-1.5">
+                  {DATE_RANGES.map(dr => (
+                    <button key={dr.id} onClick={() => setDateRange(dr.id)}
+                      className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer font-medium ${
+                        dateRange === dr.id
+                          ? "border-blue-500/60 bg-blue-900/30 text-blue-300"
+                          : "border-white/10 bg-white/5 text-slate-400 hover:border-white/20"
+                      }`}>
+                      {dr.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Impact Level */}
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                  <Zap className="w-3 h-3" /> Impact Level
+                </p>
+                <div className="flex gap-1.5">
+                  {IMPACT_LEVELS.map(il => (
+                    <button key={il.id} onClick={() => setImpactFilter(il.id)}
+                      className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer font-medium ${
+                        impactFilter === il.id
+                          ? "border-white/40 bg-white/10 text-white"
+                          : "border-white/10 bg-white/5 text-slate-400 hover:border-white/20"
+                      }`}>
+                      {il.id !== "all" && <span className={`${il.color} mr-1`}>●</span>}
+                      {il.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Reset */}
+              {activeFilterCount > 0 && (
+                <div className="flex items-end">
+                  <button
+                    onClick={() => { setActiveCategory("all"); setActiveSources([]); setDateRange("all"); setImpactFilter("all"); setShowSaved(false); }}
+                    className="text-xs text-red-400 hover:text-red-300 border border-red-500/30 px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
+                  >
+                    <X className="w-3 h-3 inline mr-1" />
+                    Clear All
+                  </button>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Error Bar ── */}
       {error && (
         <div className="border-b border-amber-700/40 bg-amber-900/20 px-6 py-2 flex items-center justify-between">
           <span className="text-xs text-amber-400 flex items-center gap-2"><span>⚠</span>{error}</span>
-          <span className="text-xs text-slate-500">{clock}</span>
         </div>
       )}
 
@@ -326,10 +570,10 @@ export default function MedicalNews() {
             <div className="text-6xl mb-4 opacity-40">📰</div>
             <h3 className="text-lg font-semibold text-white mb-2">No articles found</h3>
             <p className="text-sm text-slate-400 mb-6 max-w-xs">
-              No news matched the current filters. Try selecting different categories or sources.
+              {showSaved ? "You haven't saved any articles yet." : "No news matched the current filters."}
             </p>
             <button
-              onClick={() => { setActiveCategory("all"); setActiveSources([]); setShowSaved(false); }}
+              onClick={() => { setActiveCategory("all"); setActiveSources([]); setDateRange("all"); setImpactFilter("all"); setShowSaved(false); }}
               className="flex items-center gap-2 bg-emerald-700/30 hover:bg-emerald-700/50 border border-emerald-600/50 text-emerald-300 text-sm font-medium px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
             >
               <RefreshCw className="w-4 h-4" />
@@ -343,7 +587,7 @@ export default function MedicalNews() {
       <div className="border-t border-white/10 bg-[#071224] px-6 py-2 flex items-center justify-between shrink-0">
         <span className="text-xs text-slate-500 flex items-center gap-1.5">
           <Newspaper className="w-3.5 h-3.5" />
-          Medical News Widget · Base44
+          {articles.length} total · {filtered.length} shown
         </span>
         <button
           onClick={() => setShowSaved(s => !s)}
@@ -353,10 +597,17 @@ export default function MedicalNews() {
               : "border-white/10 bg-white/5 text-slate-400 hover:text-slate-200"
           }`}
         >
-          <Star className="w-3.5 h-3.5" />
-          Saved ({savedUrls.length})
+          {showSaved ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
+          Saved ({savedArticles.length})
         </button>
       </div>
+
+      {/* ── Preferences Modal ── */}
+      <AnimatePresence>
+        {showPrefs && (
+          <PreferencesPanel prefs={prefs} onSave={handleSavePrefs} onClose={() => setShowPrefs(false)} />
+        )}
+      </AnimatePresence>
 
       <style>{`
         .scrollbar-hide::-webkit-scrollbar { display: none; }

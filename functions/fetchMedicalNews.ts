@@ -150,33 +150,8 @@ Deno.serve(async (req) => {
       })
     );
 
-    // Also try NewsAPI if key is set (optional — skip silently if not configured)
+    // NewsAPI is optional — skip if not configured
     let newsApiArticles = [];
-    let newsApiKey;
-    try { newsApiKey = Deno.env.get("NEWSAPI_KEY"); } catch { newsApiKey = null; }
-    if (newsApiKey) {
-      try {
-        const url = `https://newsapi.org/v2/everything?q=medicine+OR+clinical+OR+"FDA+approval"+OR+"clinical+trial"&language=en&sortBy=publishedAt&pageSize=8&apiKey=${newsApiKey}`;
-        const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-        if (res.ok) {
-          const data = await res.json();
-          newsApiArticles = (data.articles || [])
-            .filter(a => a.title && a.url && !a.title.includes('[Removed]'))
-            .map(a => ({
-              sourceId: 'newsapi_medical',
-              sourceName: a.source?.name || 'NewsAPI',
-              category: 'Medical News',
-              title: a.title.slice(0, 250),
-              url: a.url,
-              originalDescription: (a.description || '').replace(/<[^>]+>/g, '').slice(0, 600),
-              imageUrl: a.urlToImage || null,
-              author: a.author || null,
-              publishedAt: a.publishedAt || new Date().toISOString(),
-              cachedAt: new Date().toISOString(),
-            }));
-        }
-      } catch { /* skip newsapi */ }
-    }
 
     // Collect successful RSS results
     const rssArticles = results

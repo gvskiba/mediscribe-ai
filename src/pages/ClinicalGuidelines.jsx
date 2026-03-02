@@ -69,6 +69,40 @@ const ANALYSIS_SECTIONS = [
   { id: "contraindications", title: "Contraindications & Cautions", icon: "⛔" },
 ];
 
+function FilterSelect({ label, value, options, onChange, renderOption }) {
+  const [open, setOpen] = useState(false);
+  const displayLabel = value ? (renderOption ? renderOption(value) : value) : label;
+  const isActive = !!value;
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className={`w-full px-3 py-2.5 rounded-lg border text-xs font-semibold cursor-pointer transition-all text-left flex items-center justify-between gap-1 ${isActive ? "border-[#9b6dff] bg-[rgba(155,109,255,0.1)] text-[#9b6dff]" : "border-[#1e3a5f] bg-[#162d4f] text-[#c8ddf0] hover:border-[#2a4d72]"}`}
+      >
+        <span className="truncate">{displayLabel}</span>
+        <ChevronDown size={10} className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-[#0e2340] border border-[#1e3a5f] rounded-lg shadow-xl max-h-44 overflow-y-auto scrollbar-hide">
+          {options.map((opt) => {
+            const isEmpty = opt === label || opt === "All Specialties" || opt === "All Sources" || opt === "Any Year" || opt === "Any Level" || opt === "Any Type";
+            const val = isEmpty ? "" : opt;
+            return (
+              <button
+                key={opt}
+                onClick={() => { onChange(val); setOpen(false); }}
+                className={`w-full text-left px-3 py-2 text-xs hover:bg-[#162d4f] transition-all ${value === val ? "text-[#9b6dff] font-semibold" : "text-[#c8ddf0]"}`}
+              >
+                {renderOption && !isEmpty ? renderOption(opt) : opt}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SearchPanel({ query, setQuery, filters, setFilters, analysisMode, setAnalysisMode, onSearch, loading }) {
 
   const analysisModes = [

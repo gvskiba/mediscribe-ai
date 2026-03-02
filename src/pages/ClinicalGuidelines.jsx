@@ -663,10 +663,10 @@ Return 3-6 of the most relevant, current guidelines.`;
       {/* Topbar */}
       <div className="h-16 bg-[#0b1d35] border-b border-[#1e3a5f] px-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-base font-bold text-[#e8f4ff]">ClinAI</span>
+          <span className="text-base font-bold text-[#e8f4ff]">Clinical Guidelines</span>
           <span className="text-sm text-[#c8ddf0] font-medium">—</span>
-          <span className="text-sm text-[#9b6dff] font-semibold">Clinical Guidelines Search</span>
-          <span className="text-xs text-[#4a7299] ml-2">AI-powered · Base44 · ACC/AHA · ACEP · IDSA · Cochrane · USPSTF · +10 sources</span>
+          <span className="text-sm text-[#9b6dff] font-semibold">AI-Powered Search</span>
+          <span className="text-xs text-[#4a7299] ml-2">Live · PubMed · USPSTF · WHO · NICE · Cochrane · Europe PMC · ACC/AHA · ACEP · IDSA · +more</span>
         </div>
         <div className="flex gap-2 items-center">
           <button className="px-2.5 py-1.5 rounded-md text-xs border border-[#1e3a5f] bg-[#162d4f] text-[#4a7299] cursor-pointer flex items-center gap-1 hover:bg-[rgba(155,109,255,0.1)]">

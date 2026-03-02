@@ -150,9 +150,9 @@ Deno.serve(async (req) => {
       })
     );
 
-    // Also try NewsAPI if key is set
+    // Also try NewsAPI if key is set (optional — no error if missing)
     let newsApiArticles = [];
-    const newsApiKey = Deno.env.get("NEWSAPI_KEY");
+    const newsApiKey = Deno.env.get("NEWSAPI_KEY") || null;
     if (newsApiKey) {
       try {
         const url = `https://newsapi.org/v2/everything?q=medicine+OR+clinical+OR+"FDA+approval"+OR+"clinical+trial"&language=en&sortBy=publishedAt&pageSize=8&apiKey=${newsApiKey}`;

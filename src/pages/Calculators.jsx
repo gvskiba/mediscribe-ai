@@ -326,9 +326,9 @@ function initValues(fields) {
 }
 
 // ─── Calculator Card ──────────────────────────────────────────────────────────
-function CalculatorCard({ calc }) {
+function CalculatorCard({ calc, initialExpanded = false }) {
   const [values, setValues] = useState(() => initValues(calc.fields));
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(initialExpanded);
   const [saved, setSaved] = useState(false);
 
   const score = useMemo(() => {

@@ -370,7 +370,7 @@ function AnalysisPanel({ analysis, loading, searchLoading, results, selectedSect
       )}
 
       {/* Analysis content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-y-auto">
         {searchLoading ? (
           <div className="flex items-center justify-center gap-3 h-full">
             <Loader2 size={20} className="text-[#9b6dff] animate-spin" />

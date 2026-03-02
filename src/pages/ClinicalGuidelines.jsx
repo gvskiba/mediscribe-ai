@@ -594,7 +594,7 @@ Be specific, clinically precise, and use medical terminology appropriate for phy
 
   const handleSearchWithQuery = useCallback(async (q) => {
     if (!q || !q.trim()) return;
-    setLoading(true);
+    setSearchLoading(true);
     setResults([]);
     const prompt = `Search for clinical guidelines related to "${q}" from reputable professional medical associations and colleges. Prioritize authoritative sources such as ACC/AHA, ACEP, IDSA, ATS, ASA, USPSTF, NIH, WHO, Cochrane, UpToDate, SCCM, ACOG, ACS.
 

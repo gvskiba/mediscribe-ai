@@ -135,6 +135,7 @@ function AISummary({ article }) {
 
 // ── Article Card ──────────────────────────────────────────────────────────────
 function ArticleCard({ article, saved, onSave }) {
+  const [showShare, setShowShare] = useState(false);
   const timeAgo = relativeTime(article.publishedAt);
   const sourceColor = SOURCE_COLORS[article.sourceName] || { border: "#64748b", text: "#94a3b8" };
   const catClass = CATEGORY_COLORS[article.category] || "bg-slate-700/40 text-slate-300 border-slate-600";

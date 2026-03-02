@@ -29,6 +29,11 @@ const SOURCE_COLORS = {
   NEJM:        { border: "#22c55e", text: "#22c55e" },
   MedlinePlus: { border: "#f97316", text: "#f97316" },
   Lancet:      { border: "#ef4444", text: "#ef4444" },
+  ACEP:        { border: "#f59e0b", text: "#f59e0b" },
+  AAP:         { border: "#8b5cf6", text: "#8b5cf6" },
+  AAFP:        { border: "#06b6d4", text: "#06b6d4" },
+  ACA:         { border: "#84cc16", text: "#84cc16" },
+  ACC:         { border: "#ec4899", text: "#ec4899" },
 };
 
 const CATEGORY_COLORS = {

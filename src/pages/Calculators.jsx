@@ -740,7 +740,8 @@ export default function Calculators() {
           </div>
 
           {/* Tab content */}
-          <div className="flex-1 overflow-y-auto scrollbar-hide flex flex-col gap-2.5">
+          <div className="flex-1 overflow-y-auto scrollbar-hide">
+            <div className="flex flex-col gap-2.5 pb-4">
             {activeTab === "calculators" && filtered.map(calc => (
               <CalculatorCard
                 key={calc.id}

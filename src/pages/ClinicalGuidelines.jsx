@@ -473,10 +473,17 @@ export default function ClinicalGuidelines() {
   const handleSearch = useCallback(() => {
     setLoading(true);
     setTimeout(() => {
-      setResults(query ? mockResults : []);
+      let filtered = query ? mockResults : [];
+      if (filters.source) filtered = filtered.filter((r) => r.source === filters.source);
+      if (filters.specialty) filtered = filtered.filter((r) => r.specialty === filters.specialty);
+      if (filters.evidenceLevel) filtered = filtered.filter((r) => r.evidenceLevel === filters.evidenceLevel);
+      if (filters.guidelineType) filtered = filtered.filter((r) => r.guidelineType === filters.guidelineType);
+      if (filters.yearFrom) filtered = filtered.filter((r) => r.publicationYear >= Number(filters.yearFrom));
+      if (filters.yearTo) filtered = filtered.filter((r) => r.publicationYear <= Number(filters.yearTo));
+      setResults(filtered);
       setLoading(false);
     }, 500);
-  }, [query]);
+  }, [query, filters]);
 
   const handleAnalyze = (result) => {
     setLoading(true);

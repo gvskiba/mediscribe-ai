@@ -143,10 +143,11 @@ function ArticleCard({ article, saved, onSave }) {
   const impactStyle = { high: "text-red-400", medium: "text-amber-400", low: "text-slate-500" };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="group">
-      <div className="bg-[#0d1f3c]/60 border border-white/8 rounded-xl p-4 hover:border-white/20 hover:bg-[#0d1f3c]/80 transition-all">
-        {/* Top row */}
-        <div className="flex items-start justify-between gap-2 mb-2">
+    <>
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="group">
+        <div className="bg-[#0d1f3c]/60 border border-white/8 rounded-xl p-4 hover:border-white/20 hover:bg-[#0d1f3c]/80 transition-all">
+          {/* Top row */}
+          <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex items-center gap-1.5 flex-wrap">
             {article.sourceName && (
               <span className="text-xs font-bold px-2 py-0.5 rounded border"

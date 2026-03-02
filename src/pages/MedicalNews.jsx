@@ -164,13 +164,22 @@ function ArticleCard({ article, saved, onSave }) {
               </span>
             )}
           </div>
-          <button
-            onClick={(e) => { e.stopPropagation(); onSave(article); }}
-            title={saved ? "Remove from saved" : "Save for later"}
-            className={`shrink-0 transition-colors cursor-pointer ${saved ? "text-amber-400" : "text-slate-600 hover:text-amber-400 opacity-0 group-hover:opacity-100"}`}
-          >
-            {saved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowShare(true); }}
+              title="Share article"
+              className="shrink-0 transition-colors cursor-pointer text-slate-600 hover:text-blue-400 opacity-0 group-hover:opacity-100"
+            >
+              <Share2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onSave(article); }}
+              title={saved ? "Remove from saved" : "Save for later"}
+              className={`shrink-0 transition-colors cursor-pointer ${saved ? "text-amber-400" : "text-slate-600 hover:text-amber-400 opacity-0 group-hover:opacity-100"}`}
+            >
+              {saved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
 
         {/* Title */}

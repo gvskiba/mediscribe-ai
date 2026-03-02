@@ -523,11 +523,90 @@ Provide a concise, clinically actionable AI analysis with:
   );
 }
 
+// ─── Local storage helpers ────────────────────────────────────────────────────
+const FAVORITES_KEY = "calc_favorites_v1";
+const SAVED_RESULTS_KEY = "calc_saved_results_v1";
+
+function getFavorites() {
+  try { return JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]"); } catch { return []; }
+}
+function toggleFavoriteStorage(calcId) {
+  const favs = getFavorites();
+  const next = favs.includes(calcId) ? favs.filter(f => f !== calcId) : [...favs, calcId];
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
+  return next;
+}
+function getSavedResults() {
+  try { return JSON.parse(localStorage.getItem(SAVED_RESULTS_KEY) || "[]"); } catch { return []; }
+}
+function saveResult(entry) {
+  const results = getSavedResults();
+  results.unshift(entry);
+  localStorage.setItem(SAVED_RESULTS_KEY, JSON.stringify(results.slice(0, 50))); // keep last 50
+}
+function deleteResult(id) {
+  const results = getSavedResults().filter(r => r.id !== id);
+  localStorage.setItem(SAVED_RESULTS_KEY, JSON.stringify(results));
+}
+
+// ─── Saved Results Panel ──────────────────────────────────────────────────────
+function SavedResultsPanel({ onClose }) {
+  const [results, setResults] = useState(getSavedResults);
+
+  const handleDelete = (id) => {
+    deleteResult(id);
+    setResults(getSavedResults());
+  };
+
+  return (
+    <div className="flex flex-col gap-3 h-full">
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-bold uppercase tracking-wide text-[#00d4bc] flex items-center gap-1.5">
+          <Clock size={12} /> Saved Results ({results.length})
+        </div>
+        <button onClick={onClose} className="text-xs text-[#4a7299] hover:text-[#c8ddf0] cursor-pointer">✕ Close</button>
+      </div>
+      {results.length === 0 ? (
+        <div className="text-center text-[#4a7299] text-xs py-10">No saved results yet.<br/>Use "Save Result" after calculating a score.</div>
+      ) : (
+        <div className="flex flex-col gap-2 overflow-y-auto scrollbar-hide">
+          {results.map(r => {
+            const ec = EVIDENCE_COLORS[r.resultColor] || EVIDENCE_COLORS.green;
+            return (
+              <div key={r.id} className="bg-[#0e2340] border border-[#1e3a5f] rounded-xl p-3 flex flex-col gap-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-xs font-bold text-[#e8f4ff]">{r.calcName}</div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-xs text-[#4a7299]">{r.savedAt}</div>
+                    <button onClick={() => handleDelete(r.id)} className="text-[#4a7299] hover:text-[#ff5c6c] cursor-pointer transition-all">
+                      <Trash2 size={11} />
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="px-2 py-0.5 rounded text-xs font-bold" style={{ background: ec.bg, color: ec.color }}>
+                    Score: {r.score} — {r.resultLabel}
+                  </div>
+                </div>
+                <p className="text-xs text-[#a8c4e0] leading-relaxed">{r.resultAction}</p>
+                {r.note && <p className="text-xs text-[#4a7299] italic border-t border-[#1e3a5f] pt-1 mt-0.5">{r.note}</p>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Calculator Card ──────────────────────────────────────────────────────────
-function CalculatorCard({ calc, initialExpanded = false }) {
+function CalculatorCard({ calc, initialExpanded = false, favorites, onToggleFavorite, onResultSaved }) {
   const [values, setValues] = useState(() => initValues(calc.fields));
   const [expanded, setExpanded] = useState(initialExpanded);
-  const [saved, setSaved] = useState(false);
+  const [saveNote, setSaveNote] = useState("");
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+
+  const isFav = favorites.includes(calc.id);
 
   const score = useMemo(() => {
     try { return calc.score(values); } catch { return 0; }
@@ -540,21 +619,47 @@ function CalculatorCard({ calc, initialExpanded = false }) {
 
   const handleReset = () => {
     setValues(initValues(calc.fields));
-    setSaved(false);
+    setShowSaveDialog(false);
+    setSaveNote("");
+  };
+
+  const handleSaveResult = () => {
+    const entry = {
+      id: Date.now().toString(),
+      calcId: calc.id,
+      calcName: calc.name,
+      score,
+      resultLabel: result.label,
+      resultAction: result.action,
+      resultColor: result.color,
+      note: saveNote.trim(),
+      savedAt: new Date().toLocaleString(),
+    };
+    saveResult(entry);
+    setShowSaveDialog(false);
+    setSaveNote("");
+    toast.success(`${calc.name} result saved`);
+    onResultSaved?.();
   };
 
   return (
     <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-xl transition-all">
       {/* Header */}
-      <div
-        className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-[#162d4f] transition-all"
+      <div className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-[#162d4f] transition-all"
         onClick={() => setExpanded(e => !e)}
       >
-        <div>
+        <div className="flex-1 min-w-0">
           <div className="text-sm font-bold text-[#e8f4ff]">{calc.name}</div>
-          <div className="text-xs text-[#4a7299] mt-0.5">{calc.description}</div>
+          <div className="text-xs text-[#4a7299] mt-0.5 truncate">{calc.description}</div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 ml-2">
+          <button
+            onClick={e => { e.stopPropagation(); onToggleFavorite(calc.id); }}
+            className={`transition-all cursor-pointer ${isFav ? "text-[#fbbf24]" : "text-[#2a4d72] hover:text-[#4a7299]"}`}
+            title={isFav ? "Remove from favorites" : "Add to favorites"}
+          >
+            <Star size={14} fill={isFav ? "#fbbf24" : "none"} />
+          </button>
           {expanded && (
             <div className="px-2 py-1 rounded text-xs font-bold" style={{ background: ec.bg, color: ec.color }}>
               {score} — {result.label}
@@ -575,21 +680,12 @@ function CalculatorCard({ calc, initialExpanded = false }) {
               <div key={f.id} className="flex items-center justify-between gap-2">
                 <label className="text-xs text-[#c8ddf0] flex-1">{f.label}</label>
                 {f.type === "checkbox" ? (
-                  <input
-                    type="checkbox"
-                    checked={!!values[f.id]}
-                    onChange={e => handleChange(f.id, e.target.checked)}
-                    className="w-4 h-4 cursor-pointer accent-[#9b6dff]"
-                  />
+                  <input type="checkbox" checked={!!values[f.id]} onChange={e => handleChange(f.id, e.target.checked)}
+                    className="w-4 h-4 cursor-pointer accent-[#9b6dff]" />
                 ) : (
-                  <select
-                    value={values[f.id]}
-                    onChange={e => handleChange(f.id, Number(e.target.value))}
-                    className="bg-[#162d4f] border border-[#1e3a5f] text-[#c8ddf0] text-xs rounded px-2 py-1 cursor-pointer outline-none max-w-[55%]"
-                  >
-                    {f.options.map(o => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
+                  <select value={values[f.id]} onChange={e => handleChange(f.id, Number(e.target.value))}
+                    className="bg-[#162d4f] border border-[#1e3a5f] text-[#c8ddf0] text-xs rounded px-2 py-1 cursor-pointer outline-none max-w-[55%]">
+                    {f.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                 )}
               </div>
@@ -605,20 +701,45 @@ function CalculatorCard({ calc, initialExpanded = false }) {
             <p className="text-xs leading-relaxed" style={{ color: ec.color }}>{result.action}</p>
           </div>
 
+          {/* Save dialog */}
+          <AnimatePresence>
+            {showSaveDialog && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                <div className="bg-[#162d4f] border border-[#1e3a5f] rounded-lg p-3 flex flex-col gap-2">
+                  <div className="text-xs font-semibold text-[#c8ddf0]">Add note (optional)</div>
+                  <input
+                    type="text"
+                    placeholder="e.g. Patient: J. Doe, 65F with ACS…"
+                    value={saveNote}
+                    onChange={e => setSaveNote(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleSaveResult()}
+                    className="bg-[#0e2340] border border-[#1e3a5f] rounded px-2 py-1.5 text-xs text-[#e8f4ff] outline-none placeholder:text-[#4a7299]"
+                  />
+                  <div className="flex gap-2">
+                    <button onClick={handleSaveResult} className="px-3 py-1.5 rounded text-xs border-none bg-[#00d4bc] text-[#050f1e] font-bold cursor-pointer hover:bg-[#00a896] transition-all flex items-center gap-1">
+                      <Save size={10} /> Save
+                    </button>
+                    <button onClick={() => setShowSaveDialog(false)} className="px-3 py-1.5 rounded text-xs border border-[#1e3a5f] bg-transparent text-[#4a7299] cursor-pointer hover:text-[#c8ddf0] transition-all">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Actions */}
           <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={handleReset}
-              className="px-3 py-1.5 rounded text-xs border border-[#1e3a5f] bg-[#162d4f] text-[#4a7299] hover:text-[#c8ddf0] transition-all cursor-pointer"
-            >
+            <button onClick={handleReset}
+              className="px-3 py-1.5 rounded text-xs border border-[#1e3a5f] bg-[#162d4f] text-[#4a7299] hover:text-[#c8ddf0] transition-all cursor-pointer">
               Reset
             </button>
-            <button
-              onClick={() => { setSaved(true); toast.success("Result saved to note"); }}
-              className="px-3 py-1.5 rounded text-xs border border-[#00d4bc] bg-[rgba(0,212,188,0.1)] text-[#00d4bc] hover:bg-[rgba(0,212,188,0.2)] transition-all cursor-pointer flex items-center gap-1"
-            >
-              <Plus size={10} /> {saved ? "Saved ✓" : "Add to Note"}
-            </button>
+            {!showSaveDialog && (
+              <button onClick={() => setShowSaveDialog(true)}
+                className="px-3 py-1.5 rounded text-xs border border-[#00d4bc] bg-[rgba(0,212,188,0.1)] text-[#00d4bc] hover:bg-[rgba(0,212,188,0.2)] transition-all cursor-pointer flex items-center gap-1">
+                <Save size={10} /> Save Result
+              </button>
+            )}
             <AIInsightPanel calc={calc} values={values} score={score} result={result} />
           </div>
         </div>

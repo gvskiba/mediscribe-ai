@@ -756,6 +756,7 @@ export default function Calculators() {
               </div>
             )}
             {activeTab === "peddosing" && <PedDosingCalc />}
+            </div>
           </div>
         </div>
       </div>

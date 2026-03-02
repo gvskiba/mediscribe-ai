@@ -627,137 +627,309 @@ function CalculatorCard({ calc, initialExpanded = false }) {
   );
 }
 
+// ─── BSA Formula (Mosteller) ──────────────────────────────────────────────────
+function calcBSA(weightKg, heightCm) {
+  const w = parseFloat(weightKg);
+  const h = parseFloat(heightCm);
+  if (!w || !h || w <= 0 || h <= 0) return null;
+  return Math.sqrt((w * h) / 3600);
+}
+
+// ─── Schwartz CrCl ────────────────────────────────────────────────────────────
+function calcCrCl(heightCm, serumCr) {
+  const h = parseFloat(heightCm);
+  const scr = parseFloat(serumCr);
+  if (!h || !scr || h <= 0 || scr <= 0) return null;
+  // Bedside Schwartz formula: CrCl = 0.413 × Height(cm) / SCr
+  return (0.413 * h) / scr;
+}
+
+const DRUG_CATEGORIES = [
+  { id:"all", label:"All Drugs" },
+  { id:"analgesic_antipyretic", label:"Analgesics" },
+  { id:"antibiotic", label:"Antibiotics" },
+  { id:"antiviral", label:"Antivirals" },
+  { id:"antiemetic", label:"Antiemetics" },
+  { id:"respiratory", label:"Respiratory" },
+  { id:"emergency", label:"Emergency" },
+  { id:"oncology", label:"Oncology (BSA)" },
+];
+
 // ─── Pediatric Dosing Calculator ──────────────────────────────────────────────
 function PedDosingCalc() {
   const [weightKg, setWeightKg] = useState("");
+  const [heightCm, setHeightCm] = useState("");
+  const [serumCr, setSerumCr] = useState("");
   const [search, setSearch] = useState("");
   const [selectedDrug, setSelectedDrug] = useState(null);
+  const [drugCategory, setDrugCategory] = useState("all");
+
+  const bsa = useMemo(() => calcBSA(weightKg, heightCm), [weightKg, heightCm]);
+  const crCl = useMemo(() => calcCrCl(heightCm, serumCr), [heightCm, serumCr]);
 
   const filteredDrugs = useMemo(() => {
-    if (!search.trim()) return PED_DRUGS;
+    let drugs = PED_DRUGS;
+    if (drugCategory !== "all") drugs = drugs.filter(d => d.category === drugCategory);
+    if (!search.trim()) return drugs;
     const q = search.toLowerCase();
-    return PED_DRUGS.filter(d =>
+    return drugs.filter(d =>
       d.name.toLowerCase().includes(q) ||
       d.indications.toLowerCase().includes(q) ||
       d.category.toLowerCase().includes(q)
     );
-  }, [search]);
+  }, [search, drugCategory]);
 
   const calcDose = (drug) => {
     const w = parseFloat(weightKg);
+    if (drug.doseMode === "bsa") {
+      if (!bsa) return null;
+      const minDose = drug.dosePerBSA.min * bsa;
+      const maxDose = drug.dosePerBSA.max * bsa;
+      const capMin = drug.maxSingle && drug.maxSingle !== Infinity ? Math.min(minDose, drug.maxSingle) : minDose;
+      const capMax = drug.maxSingle && drug.maxSingle !== Infinity ? Math.min(maxDose, drug.maxSingle) : maxDose;
+      return { minDose: capMin.toFixed(2), maxDose: capMax.toFixed(2), capped: maxDose > (drug.maxSingle||Infinity), bsaUsed: bsa.toFixed(2), mode: "bsa" };
+    }
+    if (drug.doseMode === "crcl") {
+      const weightDose = w > 0 ? (() => {
+        const mn = drug.dosePerKg.min * w;
+        const mx = drug.dosePerKg.max * w;
+        return { min: Math.min(mn, drug.maxSingle||mn).toFixed(2), max: Math.min(mx, drug.maxSingle||mx).toFixed(2) };
+      })() : null;
+      const crClTier = crCl && drug.doseByCrCl ? drug.doseByCrCl.find(t => crCl <= t.maxCrCl) : null;
+      return { weightDose, crClTier, crClValue: crCl ? crCl.toFixed(1) : null, mode: "crcl" };
+    }
+    // weight-based (default)
     if (!w || w <= 0) return null;
     const minDose = drug.dosePerKg.min * w;
     const maxDose = drug.dosePerKg.max * w;
     const capMin = drug.maxSingle ? Math.min(minDose, drug.maxSingle) : minDose;
     const capMax = drug.maxSingle ? Math.min(maxDose, drug.maxSingle) : maxDose;
-    return { minDose: capMin.toFixed(2), maxDose: capMax.toFixed(2), capped: maxDose > (drug.maxSingle||Infinity) };
+    return { minDose: capMin.toFixed(2), maxDose: capMax.toFixed(2), capped: maxDose > (drug.maxSingle||Infinity), mode: "weight" };
+  };
+
+  const DosePreview = ({ drug }) => {
+    const dose = calcDose(drug);
+    if (!dose) {
+      const needsBSA = drug.doseMode === "bsa";
+      const needsCrCl = drug.doseMode === "crcl";
+      return <div className="text-xs text-[#4a7299]">{needsBSA ? "Enter wt+ht" : needsCrCl ? "Enter inputs" : "Enter weight"}</div>;
+    }
+    if (dose.mode === "bsa") {
+      return (
+        <div className="text-right shrink-0">
+          <div className="text-sm font-bold text-[#9b6dff]">
+            {dose.minDose === dose.maxDose ? dose.minDose : `${dose.minDose}–${dose.maxDose}`} {drug.unit.replace("/m²","")}
+          </div>
+          <div className="text-xs text-[#4a7299]">BSA {dose.bsaUsed} m²</div>
+          {dose.capped && <div className="text-xs text-[#f5a623]">Max capped</div>}
+        </div>
+      );
+    }
+    if (dose.mode === "crcl") {
+      return (
+        <div className="text-right shrink-0">
+          {dose.crClTier ? (
+            <div className="text-sm font-bold text-[#f5a623]">{dose.crClTier.dose}</div>
+          ) : dose.weightDose ? (
+            <div className="text-sm font-bold text-[#00d4bc]">{dose.weightDose.min === dose.weightDose.max ? dose.weightDose.min : `${dose.weightDose.min}–${dose.weightDose.max}`} {drug.unit.replace("/kg","")}</div>
+          ) : null}
+          {dose.crClValue && <div className="text-xs text-[#4a7299]">CrCl {dose.crClValue} mL/min</div>}
+        </div>
+      );
+    }
+    return (
+      <div className="text-right shrink-0">
+        <div className="text-sm font-bold text-[#00d4bc]">
+          {dose.minDose === dose.maxDose ? dose.minDose : `${dose.minDose}–${dose.maxDose}`} {drug.unit.replace("/kg","").replace("/kg/day","")}
+        </div>
+        {dose.capped && <div className="text-xs text-[#f5a623]">Max capped</div>}
+      </div>
+    );
   };
 
   return (
-    <div className="flex flex-col gap-4 h-full">
-      {/* Weight input */}
-      <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-xl p-4">
-        <div className="text-xs font-bold uppercase tracking-wide text-[#9b6dff] mb-3">Patient Weight</div>
-        <div className="flex items-center gap-3">
-          <input
-            type="number"
-            min="0"
-            step="0.1"
-            placeholder="Enter weight…"
-            value={weightKg}
-            onChange={e => setWeightKg(e.target.value)}
-            className="flex-1 bg-[#162d4f] border border-[#1e3a5f] rounded-lg px-3 py-2 text-sm text-[#e8f4ff] outline-none placeholder:text-[#4a7299]"
-          />
-          <span className="text-sm font-bold text-[#c8ddf0]">kg</span>
-          {weightKg && (
-            <span className="text-xs text-[#4a7299]">= {(parseFloat(weightKg) * 2.2).toFixed(1)} lbs</span>
-          )}
+    <div className="flex flex-col gap-3 h-full">
+      {/* Patient Parameters */}
+      <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-xl p-4 flex flex-col gap-3">
+        <div className="text-xs font-bold uppercase tracking-wide text-[#9b6dff]">Patient Parameters</div>
+
+        {/* Weight + Height */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-[#4a7299] mb-1 block">Weight</label>
+            <div className="flex items-center gap-1.5 bg-[#162d4f] border border-[#1e3a5f] rounded-lg px-2 py-1.5">
+              <input type="number" min="0" step="0.1" placeholder="0.0" value={weightKg} onChange={e => setWeightKg(e.target.value)}
+                className="flex-1 bg-transparent border-none outline-none text-sm text-[#e8f4ff] placeholder:text-[#4a7299] w-0" />
+              <span className="text-xs text-[#4a7299] shrink-0">kg</span>
+            </div>
+            {weightKg && <div className="text-xs text-[#4a7299] mt-0.5">= {(parseFloat(weightKg)*2.205).toFixed(1)} lbs</div>}
+          </div>
+          <div>
+            <label className="text-xs text-[#4a7299] mb-1 block">Height</label>
+            <div className="flex items-center gap-1.5 bg-[#162d4f] border border-[#1e3a5f] rounded-lg px-2 py-1.5">
+              <input type="number" min="0" step="1" placeholder="0" value={heightCm} onChange={e => setHeightCm(e.target.value)}
+                className="flex-1 bg-transparent border-none outline-none text-sm text-[#e8f4ff] placeholder:text-[#4a7299] w-0" />
+              <span className="text-xs text-[#4a7299] shrink-0">cm</span>
+            </div>
+            {heightCm && <div className="text-xs text-[#4a7299] mt-0.5">= {(parseFloat(heightCm)/2.54).toFixed(1)} in</div>}
+          </div>
         </div>
+
+        {/* Serum Creatinine */}
+        <div>
+          <label className="text-xs text-[#4a7299] mb-1 block">Serum Creatinine <span className="text-[#2a4d72]">(for CrCl dosing)</span></label>
+          <div className="flex items-center gap-1.5 bg-[#162d4f] border border-[#1e3a5f] rounded-lg px-2 py-1.5 max-w-[180px]">
+            <input type="number" min="0" step="0.01" placeholder="0.00" value={serumCr} onChange={e => setSerumCr(e.target.value)}
+              className="flex-1 bg-transparent border-none outline-none text-sm text-[#e8f4ff] placeholder:text-[#4a7299] w-0" />
+            <span className="text-xs text-[#4a7299] shrink-0">mg/dL</span>
+          </div>
+        </div>
+
+        {/* Derived values */}
+        {(bsa || crCl) && (
+          <div className="flex gap-3 flex-wrap">
+            {bsa && (
+              <div className="flex items-center gap-2 bg-[rgba(155,109,255,0.1)] border border-[#9b6dff]/30 rounded-lg px-3 py-1.5">
+                <span className="text-xs text-[#4a7299]">BSA (Mosteller):</span>
+                <span className="text-sm font-bold text-[#9b6dff]">{bsa.toFixed(2)} m²</span>
+              </div>
+            )}
+            {crCl && (
+              <div className="flex items-center gap-2 bg-[rgba(245,166,35,0.1)] border border-[#f5a623]/30 rounded-lg px-3 py-1.5">
+                <span className="text-xs text-[#4a7299]">CrCl (Schwartz):</span>
+                <span className="text-sm font-bold text-[#f5a623]">{crCl.toFixed(1)} mL/min</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Drug search */}
-      <div className="flex items-center gap-2 bg-[#0e2340] border border-[#1e3a5f] rounded-lg px-3 py-2">
-        <Search size={13} className="text-[#4a7299]" />
-        <input
-          type="text"
-          placeholder="Search drug, indication…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="flex-1 bg-transparent border-none outline-none text-xs text-[#e8f4ff] placeholder:text-[#4a7299]"
-        />
+      {/* Search + Category Filter */}
+      <div className="flex gap-2">
+        <div className="flex items-center gap-2 bg-[#0e2340] border border-[#1e3a5f] rounded-lg px-3 py-2 flex-1">
+          <Search size={13} className="text-[#4a7299] shrink-0" />
+          <input type="text" placeholder="Search drug, indication…" value={search} onChange={e => setSearch(e.target.value)}
+            className="flex-1 bg-transparent border-none outline-none text-xs text-[#e8f4ff] placeholder:text-[#4a7299]" />
+        </div>
+        <select value={drugCategory} onChange={e => setDrugCategory(e.target.value)}
+          className="bg-[#0e2340] border border-[#1e3a5f] text-[#c8ddf0] text-xs rounded-lg px-2 py-2 outline-none cursor-pointer">
+          {DRUG_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+        </select>
+      </div>
+
+      {/* Legend */}
+      <div className="flex gap-3 text-xs text-[#4a7299]">
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#00d4bc] inline-block" /> Weight-based</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#9b6dff] inline-block" /> BSA-based</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#f5a623] inline-block" /> Renal-adjusted</span>
       </div>
 
       {/* Drug list */}
       <div className="flex-1 overflow-y-auto scrollbar-hide flex flex-col gap-2">
         {filteredDrugs.map(drug => {
-          const dose = calcDose(drug);
           const isSelected = selectedDrug?.id === drug.id;
+          const modeColor = drug.doseMode === "bsa" ? "#9b6dff" : drug.doseMode === "crcl" ? "#f5a623" : "#00d4bc";
           return (
-            <div
-              key={drug.id}
-              className={`bg-[#0e2340] border rounded-xl overflow-hidden transition-all ${isSelected ? "border-[#9b6dff]" : "border-[#1e3a5f]"}`}
-            >
-              <div
-                className="px-4 py-3 cursor-pointer hover:bg-[#162d4f] transition-all"
-                onClick={() => setSelectedDrug(isSelected ? null : drug)}
-              >
+            <div key={drug.id} className={`bg-[#0e2340] border rounded-xl overflow-hidden transition-all`}
+              style={{ borderColor: isSelected ? modeColor : "#1e3a5f" }}>
+              <div className="px-4 py-3 cursor-pointer hover:bg-[#162d4f] transition-all" onClick={() => setSelectedDrug(isSelected ? null : drug)}>
                 <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <div className="text-sm font-bold text-[#e8f4ff]">{drug.name}</div>
-                    <div className="text-xs text-[#4a7299] mt-0.5">{drug.indications}</div>
-                  </div>
-                  {dose ? (
-                    <div className="text-right shrink-0">
-                      <div className="text-sm font-bold text-[#00d4bc]">
-                        {dose.minDose === dose.maxDose ? `${dose.minDose}` : `${dose.minDose}–${dose.maxDose}`} {drug.unit.replace("/kg","").replace("/kg/day","")}
-                      </div>
-                      {dose.capped && <div className="text-xs text-[#f5a623]">Max dose capped</div>}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <div className="text-sm font-bold text-[#e8f4ff] truncate">{drug.name}</div>
+                      <span className="text-xs px-1.5 py-0.5 rounded font-bold shrink-0" style={{ background: modeColor + "20", color: modeColor }}>
+                        {drug.doseMode === "bsa" ? "BSA" : drug.doseMode === "crcl" ? "CrCl" : "Wt"}
+                      </span>
                     </div>
-                  ) : (
-                    <div className="text-xs text-[#4a7299]">Enter weight</div>
-                  )}
-                  {isSelected ? <ChevronUp size={12} className="text-[#4a7299] shrink-0" /> : <ChevronDown size={12} className="text-[#4a7299] shrink-0" />}
+                    <div className="text-xs text-[#4a7299] mt-0.5 truncate">{drug.indications}</div>
+                  </div>
+                  <DosePreview drug={drug} />
+                  {isSelected ? <ChevronUp size={12} className="text-[#4a7299] shrink-0 ml-1" /> : <ChevronDown size={12} className="text-[#4a7299] shrink-0 ml-1" />}
                 </div>
               </div>
 
-              {isSelected && (
-                <div className="border-t border-[#1e3a5f] px-4 py-3 flex flex-col gap-2">
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                    <div><span className="text-[#4a7299]">Route:</span> <span className="text-[#c8ddf0] font-medium">{drug.route}</span></div>
-                    <div><span className="text-[#4a7299]">Frequency:</span> <span className="text-[#c8ddf0] font-medium">{drug.frequency}</span></div>
-                    <div><span className="text-[#4a7299]">Dose Range:</span> <span className="text-[#c8ddf0] font-medium">{drug.dosePerKg.min}–{drug.dosePerKg.max} {drug.unit}</span></div>
-                    <div><span className="text-[#4a7299]">Max Single:</span> <span className="text-[#c8ddf0] font-medium">{drug.maxSingle} {drug.unit.replace("/kg","").replace("/kg/day","")}</span></div>
-                    <div className="col-span-2"><span className="text-[#4a7299]">Formulation:</span> <span className="text-[#c8ddf0] font-medium">{drug.form}</span></div>
-                    {drug.ageRestriction && <div className="col-span-2"><span className="text-[#4a7299]">Age:</span> <span className="text-[#f5a623] font-medium">{drug.ageRestriction}</span></div>}
-                  </div>
-                  {dose && weightKg && (
-                    <div className="rounded-lg p-2.5 bg-[rgba(0,212,188,0.08)] border border-[rgba(0,212,188,0.2)] mt-1">
-                      <div className="text-xs font-bold text-[#00d4bc] mb-1">Calculated Dose for {weightKg} kg</div>
-                      <div className="text-sm font-bold text-[#e8f4ff]">
-                        {dose.minDose === dose.maxDose
-                          ? `${dose.minDose} ${drug.unit.replace("/kg","").replace("/kg/day","")}`
-                          : `${dose.minDose} – ${dose.maxDose} ${drug.unit.replace("/kg","").replace("/kg/day","")}`
-                        }
-                      </div>
-                      {dose.capped && <div className="text-xs text-[#f5a623] mt-0.5">⚠ Capped at maximum single dose</div>}
+              {isSelected && (() => {
+                const dose = calcDose(drug);
+                return (
+                  <div className="border-t border-[#1e3a5f] px-4 py-3 flex flex-col gap-2">
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                      <div><span className="text-[#4a7299]">Route:</span> <span className="text-[#c8ddf0] font-medium">{drug.route}</span></div>
+                      <div><span className="text-[#4a7299]">Frequency:</span> <span className="text-[#c8ddf0] font-medium">{drug.frequency}</span></div>
+                      {drug.dosePerBSA && <div className="col-span-2"><span className="text-[#4a7299]">BSA Range:</span> <span className="text-[#c8ddf0] font-medium">{drug.dosePerBSA.min}–{drug.dosePerBSA.max} {drug.unit}</span></div>}
+                      {drug.dosePerKg && !drug.dosePerBSA && <div className="col-span-2"><span className="text-[#4a7299]">Dose Range:</span> <span className="text-[#c8ddf0] font-medium">{drug.dosePerKg.min}–{drug.dosePerKg.max} {drug.unit}</span></div>}
+                      {drug.maxSingle && drug.maxSingle !== Infinity && <div className="col-span-2"><span className="text-[#4a7299]">Max Single:</span> <span className="text-[#c8ddf0] font-medium">{drug.maxSingle} {drug.unit.replace("/kg","").replace("/m²","")}</span></div>}
+                      <div className="col-span-2"><span className="text-[#4a7299]">Formulation:</span> <span className="text-[#c8ddf0] font-medium">{drug.form}</span></div>
+                      {drug.ageRestriction && <div className="col-span-2"><span className="text-[#4a7299]">Age:</span> <span className="text-[#f5a623] font-medium">{drug.ageRestriction}</span></div>}
                     </div>
-                  )}
-                  {drug.pearls && drug.pearls.length > 0 && (
-                    <div>
-                      <div className="text-xs font-semibold text-[#9b6dff] mb-1">Clinical Pearls</div>
-                      {drug.pearls.map((p,i) => (
-                        <div key={i} className="text-xs text-[#c8ddf0] flex gap-1.5 mb-0.5">
-                          <span className="text-[#9b6dff] shrink-0">•</span>
-                          <span>{p}</span>
+
+                    {/* Calculated dose box */}
+                    {dose && dose.mode === "weight" && (
+                      <div className="rounded-lg p-2.5 bg-[rgba(0,212,188,0.08)] border border-[rgba(0,212,188,0.2)]">
+                        <div className="text-xs font-bold text-[#00d4bc] mb-1">Calculated Dose ({weightKg} kg)</div>
+                        <div className="text-sm font-bold text-[#e8f4ff]">
+                          {dose.minDose === dose.maxDose ? `${dose.minDose}` : `${dose.minDose} – ${dose.maxDose}`} {drug.unit.replace("/kg","").replace("/kg/day","")}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+                        {dose.capped && <div className="text-xs text-[#f5a623] mt-0.5">⚠ Capped at maximum single dose</div>}
+                      </div>
+                    )}
+
+                    {dose && dose.mode === "bsa" && (
+                      <div className="rounded-lg p-2.5 bg-[rgba(155,109,255,0.08)] border border-[rgba(155,109,255,0.3)]">
+                        <div className="text-xs font-bold text-[#9b6dff] mb-1">BSA-Calculated Dose (BSA = {dose.bsaUsed} m²)</div>
+                        <div className="text-sm font-bold text-[#e8f4ff]">
+                          {dose.minDose === dose.maxDose ? `${dose.minDose}` : `${dose.minDose} – ${dose.maxDose}`} {drug.unit.replace("/m²","")}
+                        </div>
+                        {dose.capped && <div className="text-xs text-[#f5a623] mt-0.5">⚠ Capped at maximum dose</div>}
+                      </div>
+                    )}
+
+                    {dose && dose.mode === "crcl" && (
+                      <div className="flex flex-col gap-2">
+                        {dose.weightDose && (
+                          <div className="rounded-lg p-2.5 bg-[rgba(0,212,188,0.08)] border border-[rgba(0,212,188,0.2)]">
+                            <div className="text-xs font-bold text-[#00d4bc] mb-1">Weight-Based Dose ({weightKg} kg)</div>
+                            <div className="text-sm font-bold text-[#e8f4ff]">
+                              {dose.weightDose.min === dose.weightDose.max ? dose.weightDose.min : `${dose.weightDose.min} – ${dose.weightDose.max}`} {drug.unit.replace("/kg","")}
+                            </div>
+                          </div>
+                        )}
+                        {drug.doseByCrCl && (
+                          <div className="rounded-lg p-2.5 bg-[rgba(245,166,35,0.08)] border border-[rgba(245,166,35,0.3)]">
+                            <div className="text-xs font-bold text-[#f5a623] mb-2">Renal Dose Adjustment {dose.crClValue ? `(CrCl ${dose.crClValue} mL/min)` : ""}</div>
+                            <div className="flex flex-col gap-1">
+                              {drug.doseByCrCl.map((tier, i) => (
+                                <div key={i} className={`flex items-center justify-between rounded px-2 py-1 text-xs ${dose.crClTier === tier ? "bg-[rgba(245,166,35,0.2)] border border-[#f5a623]/40" : ""}`}>
+                                  <span className="text-[#4a7299]">CrCl ≤ {tier.maxCrCl === 999 ? "normal" : tier.maxCrCl}</span>
+                                  <span className={`font-semibold ${dose.crClTier === tier ? "text-[#f5a623]" : "text-[#c8ddf0]"}`}>{tier.dose}</span>
+                                </div>
+                              ))}
+                            </div>
+                            {!crCl && <div className="text-xs text-[#4a7299] mt-1.5">Enter height + serum creatinine above to highlight recommended tier</div>}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {drug.pearls && drug.pearls.length > 0 && (
+                      <div>
+                        <div className="text-xs font-semibold text-[#9b6dff] mb-1">Clinical Pearls</div>
+                        {drug.pearls.map((p,i) => (
+                          <div key={i} className="text-xs text-[#c8ddf0] flex gap-1.5 mb-0.5">
+                            <span className="text-[#9b6dff] shrink-0">•</span>
+                            <span>{p}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           );
         })}
+        {filteredDrugs.length === 0 && (
+          <div className="text-center text-[#4a7299] text-xs py-8">No drugs found</div>
+        )}
       </div>
     </div>
   );

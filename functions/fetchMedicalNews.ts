@@ -42,6 +42,41 @@ const RSS_SOURCES = [
     label: "The Lancet",
     url: "https://www.thelancet.com/rssfeed/lancet_online.xml",
     category: "Clinical Research"
+  },
+  {
+    id: "acep",
+    name: "ACEP",
+    label: "American College of Emergency Physicians",
+    url: "https://www.acep.org/rss/newsroom/",
+    category: "Associations"
+  },
+  {
+    id: "aap",
+    name: "AAP",
+    label: "American Academy of Pediatrics",
+    url: "https://www.aap.org/en/news-room/aap-rss-feeds/news/",
+    category: "Associations"
+  },
+  {
+    id: "aafp",
+    name: "AAFP",
+    label: "American Academy of Family Physicians",
+    url: "https://www.aafp.org/news.rss",
+    category: "Associations"
+  },
+  {
+    id: "aca",
+    name: "ACA",
+    label: "American Chiropractic Association",
+    url: "https://www.acatoday.org/feed/",
+    category: "Associations"
+  },
+  {
+    id: "acc",
+    name: "ACC",
+    label: "American College of Cardiology",
+    url: "https://www.acc.org/latest-in-cardiology/rss",
+    category: "Associations"
   }
 ];
 

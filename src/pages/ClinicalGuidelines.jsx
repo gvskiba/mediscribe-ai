@@ -712,8 +712,9 @@ Return 3-6 of the most relevant, current guidelines.`;
             {rightTab === "analysis" ? (
               <AnalysisPanel
                 analysis={analysis}
-                loading={loading}
+                loading={analyzeLoading}
                 results={results}
+                searchLoading={searchLoading}
                 selectedSections={selectedSections}
                 onToggleSection={(id) => setSelectedSections((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
                 onAddToNote={handleAddToNote}

@@ -330,123 +330,130 @@ function ResultsPanel({ results, loading, onAnalyze, selectedForCompare, onToggl
 function AnalysisPanel({ analysis, loading, results, selectedSections, onToggleSection, onAddToNote, onSave, onAnalyze, selectedForCompare, onToggleCompare }) {
   const [expandedSections, setExpandedSections] = useState({});
 
-  if (loading) {
-    return (
-      <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-lg p-6 flex items-center justify-center gap-3 h-full">
-        <Loader2 size={20} className="text-[#00d4bc] animate-spin" />
-        <span className="text-sm text-[#4a7299]">Analyzing guideline…</span>
-      </div>
-    );
-  }
-
-  if (!analysis) {
-    return (
-      <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-xl p-10 flex flex-col items-center justify-center gap-5 h-full">
-        {/* Section Header */}
-        <div className="text-xs font-bold uppercase tracking-wide text-[#9b6dff] flex items-center gap-1.5 self-start -mt-6">
-          <span>◆</span> CLINICAL ANALYSIS
-        </div>
-
-        {/* Book Icon */}
-        <div className="w-24 h-24 rounded-full border-2 border-[#1e3a5f] flex items-center justify-center text-6xl bg-[rgba(0,212,188,0.05)]">
-          📖
-        </div>
-
-        {/* Title */}
-        <div className="text-2xl font-semibold text-[#e8f4ff] text-center">
-          AI Clinical Analysis
-        </div>
-
-        {/* Instructions */}
-        <div className="text-sm text-[#4a7299] text-center max-w-xs leading-relaxed">
-          Search for a guideline or clinical question on the left, then click <span className="text-[#9b6dff] font-semibold">Analyze</span> to generate a structured clinical analysis formatted for provider use and clinical note insertion.
-        </div>
-
-        {/* Steps */}
-        <div className="grid grid-cols-2 gap-3 w-full mt-5">
-          {[
-            { num: 1, text: "Enter a clinical question or search a condition" },
-            { num: 2, text: "Select a guideline result and click Analyze" },
-            { num: 3, text: "Review the structured provider analysis" },
-            { num: 4, text: "Select sections and add directly to your clinical note" },
-          ].map((step) => (
-            <div key={step.num} className="flex flex-col items-center gap-2 p-3 bg-[#162d4f] border border-[#1e3a5f] rounded-lg">
-              <div className="w-8 h-8 rounded-full border-2 border-[#9b6dff] flex items-center justify-center text-base font-bold text-[#9b6dff]">
-                {step.num}
-              </div>
-              <span className="text-xs text-[#c8ddf0] text-center">{step.text}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const hasResults = results && results.length > 0;
 
   return (
-    <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-lg p-3 flex flex-col gap-2.5 h-full overflow-hidden">
-      {/* Toolbar */}
-      <div className="flex justify-between items-center pb-2.5 border-b border-[#1e3a5f]">
-        <div className="flex flex-col gap-0.5">
-          <div className="text-xs font-semibold text-[#c8ddf0] uppercase">Analysis</div>
-          {analysis.source_name && (
-            <div className="text-xs text-[#4a7299] flex items-center gap-1">
-              <span className="font-medium text-[#9b6dff]">{analysis.source_abbreviation || analysis.source_name}</span>
-              <span>·</span>
-              <span>{analysis.source_name}</span>
-              {analysis.source_url && (
-                <a href={analysis.source_url} target="_blank" rel="noopener noreferrer" className="text-[#00d4bc] hover:underline ml-1">
-                  ↗ Official Source
-                </a>
-              )}
-            </div>
-          )}
+    <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-lg h-full overflow-hidden flex">
+      {/* Results sub-column */}
+      {hasResults && (
+        <div className="w-56 shrink-0 border-r border-[#1e3a5f] flex flex-col overflow-hidden">
+          <div className="px-3 pt-3 pb-2 text-xs font-semibold text-[#c8ddf0] uppercase tracking-wider shrink-0">
+            Results <span className="text-[#4a7299]">({results.length})</span>
+          </div>
+          <div className="flex-1 overflow-y-auto scrollbar-hide px-2 pb-2 flex flex-col gap-2">
+            {results.map((result) => (
+              <div key={result.id} className="bg-[#162d4f] border border-[#1e3a5f] rounded-md p-2 flex flex-col gap-1.5 hover:border-[#00d4bc] transition-all">
+                <div className="text-xs font-semibold text-[#e8f4ff] leading-snug">{result.title}</div>
+                <div className="text-xs text-[#4a7299] flex items-center flex-wrap gap-1">
+                  <span className="font-medium text-[#c8ddf0]">{result.source_abbreviation || result.source_name}</span>
+                  <span>·</span>
+                  <span>{result.publicationYear}</span>
+                </div>
+                {result.evidenceLevel && (
+                  <div
+                    className="px-1.5 py-0.5 rounded text-xs font-semibold self-start"
+                    style={{ background: EVIDENCE_COLORS[result.evidenceLevel].bg, color: EVIDENCE_COLORS[result.evidenceLevel].color }}
+                  >
+                    {EVIDENCE_COLORS[result.evidenceLevel].label}
+                  </div>
+                )}
+                <button
+                  onClick={() => onAnalyze(result)}
+                  className="px-2 py-1 rounded text-xs font-semibold border border-[#00d4bc] bg-[rgba(0,212,188,0.1)] text-[#00d4bc] cursor-pointer transition-all hover:bg-[rgba(0,212,188,0.2)]"
+                >
+                  Analyze
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="flex gap-1.5">
-          <button
-            onClick={() => onAddToNote(selectedSections)}
-            className="px-2.5 py-1 rounded text-xs font-semibold border border-[#00d4bc] bg-[rgba(0,212,188,0.1)] text-[#00d4bc] cursor-pointer hover:bg-[rgba(0,212,188,0.2)] transition-all"
-          >
-            <Plus size={10} className="inline mr-1" /> Add to Note
-          </button>
-          <button
-            onClick={onSave}
-            className="px-2.5 py-1 rounded text-xs font-semibold border border-[#1e3a5f] bg-[#162d4f] text-[#4a7299] cursor-pointer hover:bg-[rgba(155,109,255,0.1)]"
-          >
-            <Save size={10} className="inline mr-1" /> Save
-          </button>
-        </div>
-      </div>
+      )}
 
-      {/* Sections */}
-      <div className="flex-1 overflow-auto flex flex-col gap-2">
-        {ANALYSIS_SECTIONS.map((section) => (
-          <div
-            key={section.id}
-            className={`bg-[#162d4f] border rounded-md overflow-hidden transition-all ${selectedSections.includes(section.id) ? "border-[#00d4bc]" : "border-[#1e3a5f]"}`}
-          >
-            <div
-              onClick={() => setExpandedSections((prev) => ({ ...prev, [section.id]: !prev[section.id] }))}
-              className={`px-3 py-2.5 flex items-center gap-2 cursor-pointer transition-all ${expandedSections[section.id] ? "bg-[rgba(0,212,188,0.05)]" : ""}`}
-            >
-              <input
-                type="checkbox"
-                checked={selectedSections.includes(section.id)}
-                onChange={() => onToggleSection(section.id)}
-                onClick={(e) => e.stopPropagation()}
-                className="cursor-pointer"
-              />
-              <span className="text-base">{section.icon}</span>
-              <span className="flex-1 text-xs font-semibold text-[#c8ddf0]">{section.title}</span>
-              {expandedSections[section.id] ? <ChevronUp size={12} className="text-[#4a7299]" /> : <ChevronDown size={12} className="text-[#4a7299]" />}
+      {/* Analysis content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center gap-3 h-full">
+            <Loader2 size={20} className="text-[#00d4bc] animate-spin" />
+            <span className="text-sm text-[#4a7299]">Analyzing guideline…</span>
+          </div>
+        ) : !analysis ? (
+          <div className="flex flex-col items-center justify-center gap-5 h-full p-10">
+            <div className="text-xs font-bold uppercase tracking-wide text-[#9b6dff] flex items-center gap-1.5 self-start">
+              <span>◆</span> CLINICAL ANALYSIS
             </div>
-
-            {expandedSections[section.id] && (
-              <div className="px-3 py-2.5 border-t border-[#1e3a5f] text-xs text-[#c8ddf0] leading-relaxed max-h-64 overflow-auto whitespace-pre-wrap">
-                {analysis.sections?.[section.id] || <span className="text-[#4a7299] italic">No data available for this section.</span>}
+            <div className="w-24 h-24 rounded-full border-2 border-[#1e3a5f] flex items-center justify-center text-6xl bg-[rgba(0,212,188,0.05)]">📖</div>
+            <div className="text-2xl font-semibold text-[#e8f4ff] text-center">AI Clinical Analysis</div>
+            <div className="text-sm text-[#4a7299] text-center max-w-xs leading-relaxed">
+              {hasResults
+                ? <>Click <span className="text-[#00d4bc] font-semibold">Analyze</span> on any result to generate a structured clinical analysis.</>
+                : <>Search for a guideline or clinical question on the left, then click <span className="text-[#9b6dff] font-semibold">Analyze</span> to generate a structured clinical analysis.</>
+              }
+            </div>
+            {!hasResults && (
+              <div className="grid grid-cols-2 gap-3 w-full mt-5">
+                {[
+                  { num: 1, text: "Enter a clinical question or search a condition" },
+                  { num: 2, text: "Select a guideline result and click Analyze" },
+                  { num: 3, text: "Review the structured provider analysis" },
+                  { num: 4, text: "Select sections and add directly to your clinical note" },
+                ].map((step) => (
+                  <div key={step.num} className="flex flex-col items-center gap-2 p-3 bg-[#162d4f] border border-[#1e3a5f] rounded-lg">
+                    <div className="w-8 h-8 rounded-full border-2 border-[#9b6dff] flex items-center justify-center text-base font-bold text-[#9b6dff]">{step.num}</div>
+                    <span className="text-xs text-[#c8ddf0] text-center">{step.text}</span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
-        ))}
+        ) : (
+          <div className="flex flex-col gap-2.5 p-3 h-full overflow-hidden">
+            {/* Toolbar */}
+            <div className="flex justify-between items-center pb-2.5 border-b border-[#1e3a5f] shrink-0">
+              <div className="flex flex-col gap-0.5">
+                <div className="text-xs font-semibold text-[#c8ddf0] uppercase">Analysis</div>
+                {analysis.source_name && (
+                  <div className="text-xs text-[#4a7299] flex items-center gap-1">
+                    <span className="font-medium text-[#9b6dff]">{analysis.source_abbreviation || analysis.source_name}</span>
+                    <span>·</span>
+                    <span>{analysis.source_name}</span>
+                    {analysis.source_url && (
+                      <a href={analysis.source_url} target="_blank" rel="noopener noreferrer" className="text-[#00d4bc] hover:underline ml-1">↗ Official Source</a>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-1.5">
+                <button onClick={() => onAddToNote(selectedSections)} className="px-2.5 py-1 rounded text-xs font-semibold border border-[#00d4bc] bg-[rgba(0,212,188,0.1)] text-[#00d4bc] cursor-pointer hover:bg-[rgba(0,212,188,0.2)] transition-all">
+                  <Plus size={10} className="inline mr-1" /> Add to Note
+                </button>
+                <button onClick={onSave} className="px-2.5 py-1 rounded text-xs font-semibold border border-[#1e3a5f] bg-[#162d4f] text-[#4a7299] cursor-pointer hover:bg-[rgba(155,109,255,0.1)]">
+                  <Save size={10} className="inline mr-1" /> Save
+                </button>
+              </div>
+            </div>
+            {/* Sections */}
+            <div className="flex-1 overflow-auto flex flex-col gap-2">
+              {ANALYSIS_SECTIONS.map((section) => (
+                <div key={section.id} className={`bg-[#162d4f] border rounded-md overflow-hidden transition-all ${selectedSections.includes(section.id) ? "border-[#00d4bc]" : "border-[#1e3a5f]"}`}>
+                  <div
+                    onClick={() => setExpandedSections((prev) => ({ ...prev, [section.id]: !prev[section.id] }))}
+                    className={`px-3 py-2.5 flex items-center gap-2 cursor-pointer transition-all ${expandedSections[section.id] ? "bg-[rgba(0,212,188,0.05)]" : ""}`}
+                  >
+                    <input type="checkbox" checked={selectedSections.includes(section.id)} onChange={() => onToggleSection(section.id)} onClick={(e) => e.stopPropagation()} className="cursor-pointer" />
+                    <span className="text-base">{section.icon}</span>
+                    <span className="flex-1 text-xs font-semibold text-[#c8ddf0]">{section.title}</span>
+                    {expandedSections[section.id] ? <ChevronUp size={12} className="text-[#4a7299]" /> : <ChevronDown size={12} className="text-[#4a7299]" />}
+                  </div>
+                  {expandedSections[section.id] && (
+                    <div className="px-3 py-2.5 border-t border-[#1e3a5f] text-xs text-[#c8ddf0] leading-relaxed max-h-64 overflow-auto whitespace-pre-wrap">
+                      {analysis.sections?.[section.id] || <span className="text-[#4a7299] italic">No data available for this section.</span>}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

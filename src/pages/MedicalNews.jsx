@@ -86,51 +86,132 @@ function relativeTime(dateStr) {
   try { return formatDistanceToNow(new Date(dateStr), { addSuffix: true }); } catch { return ""; }
 }
 
-// ── AI Summary ────────────────────────────────────────────────────────────────
-function AISummary({ article }) {
-  const [open, setOpen] = useState(false);
+// ── AI Summary Modal ───────────────────────────────────────────────────────────
+function AISummaryModal({ article, isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
-  const [summary, setSummary] = useState(article.summary || null);
+  const [summary, setSummary] = useState(article?.summary || null);
+  const [error, setError] = useState(null);
 
-  const toggle = async (e) => {
-    e.stopPropagation();
-    if (open) { setOpen(false); return; }
-    setOpen(true);
-    if (summary) return;
+  const fetchSummary = useCallback(async () => {
+    if (summary || !article) return;
     setLoading(true);
+    setError(null);
     try {
       const resp = await base44.integrations.Core.InvokeLLM({
-        prompt: `Summarize this medical article in 2 concise clinical sentences for a physician. Title: "${article.title}". Description: "${article.originalDescription || ''}"`,
-        response_json_schema: { type: "object", properties: { summary: { type: "string" } } }
+        prompt: `Provide a comprehensive but concise summary of this medical article for a physician. Include key findings, clinical relevance, and implications. Title: "${article.title}". Description: "${article.originalDescription || ''}"`,
+        response_json_schema: { 
+          type: "object", 
+          properties: { 
+            summary: { type: "string" },
+            keyPoints: { type: "array", items: { type: "string" } },
+            clinicalRelevance: { type: "string" }
+          } 
+        }
       });
       setSummary(resp?.summary || article.originalDescription || "No summary available.");
       if (article.id) base44.entities.MedicalNewsCache.update(article.id, { summary: resp?.summary }).catch(() => {});
-    } catch {
+    } catch (err) {
+      setError("Failed to generate summary. Please try again.");
       setSummary(article.originalDescription || "No summary available.");
     }
     setLoading(false);
-  };
+  }, [article, summary]);
+
+  useEffect(() => {
+    if (isOpen && !summary && article) {
+      fetchSummary();
+    }
+  }, [isOpen, summary, article, fetchSummary]);
+
+  if (!isOpen || !article) return null;
 
   return (
-    <div>
-      <button onClick={toggle} className="flex items-center gap-1 text-xs font-semibold text-purple-400 hover:text-purple-300 transition-colors">
-        <Sparkles className="w-3 h-3" />
-        AI Summary
-        {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-      </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-            <div className="mt-2 pt-2 border-t border-white/10">
-              {loading
-                ? <div className="flex items-center gap-2 py-1"><Loader2 className="w-3 h-3 animate-spin text-purple-400" /><span className="text-xs text-slate-400">Generating…</span></div>
-                : <p className="text-xs text-slate-300 leading-relaxed">{summary}</p>
-              }
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-[#0e1f38] border border-white/15 rounded-2xl shadow-2xl p-6 w-[520px] max-w-[95vw] max-h-[80vh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div className="flex items-start gap-3 flex-1">
+            <div className="bg-purple-500/20 p-2 rounded-lg shrink-0">
+              <Sparkles className="w-5 h-5 text-purple-400" />
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-white text-lg leading-snug">AI-Powered Summary</h3>
+              <p className="text-xs text-slate-400 mt-1 line-clamp-2">{article.title}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-300 cursor-pointer shrink-0">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="border-t border-white/10 pt-4">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-purple-400 mb-3" />
+              <p className="text-sm text-slate-400">Generating AI summary...</p>
+            </div>
+          ) : error ? (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+              <p className="text-sm text-red-400">{error}</p>
+              <button 
+                onClick={fetchSummary}
+                className="mt-3 text-xs bg-red-500/20 hover:bg-red-500/30 text-red-300 px-3 py-1.5 rounded transition-colors cursor-pointer"
+              >
+                Retry
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wide mb-2">Summary</h4>
+                <p className="text-sm text-slate-300 leading-relaxed bg-white/5 p-3 rounded-lg border border-white/10">{summary}</p>
+              </div>
+              <div className="flex items-center gap-2 pt-2 border-t border-white/10">
+                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                <p className="text-xs text-slate-500">This summary was generated by AI to save you reading time.</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-2 mt-6 pt-4 border-t border-white/10">
+          <a 
+            href={article.url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Read Full Article
+          </a>
+          <button 
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-lg border border-white/10 text-slate-400 text-sm hover:bg-white/5 cursor-pointer transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </motion.div>
     </div>
+  );
+}
+
+// ── AI Summary Button ───────────────────────────────────────────────────────────
+function AISummaryButton({ article, onOpen }) {
+  return (
+    <button 
+      onClick={(e) => { e.stopPropagation(); onOpen(); }}
+      className="flex items-center gap-1.5 text-xs font-semibold text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 px-2.5 py-1 rounded transition-all"
+      title="View AI-generated summary"
+    >
+      <Sparkles className="w-3.5 h-3.5" />
+      AI Summary
+    </button>
   );
 }
 

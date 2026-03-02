@@ -211,15 +211,15 @@ function ArticleCard({ article, saved, onSave }) {
             </a>
           </div>
           <AISummary article={article} />
-        </div>
-      </div>
-    </motion.div>
-    <AnimatePresence>
-      {showShare && <ArticleShareModal article={article} onClose={() => setShowShare(false)} />}
-    </AnimatePresence>
-    </>
-  );
-}
+          </div>
+          </div>
+          </motion.div>
+          <AnimatePresence>
+          {showShare && <ArticleShareModal article={article} onClose={() => setShowShare(false)} />}
+          </AnimatePresence>
+          </>
+          );
+          }
 
 // ── Preferences Panel ─────────────────────────────────────────────────────────
 function PreferencesPanel({ prefs, onSave, onClose }) {

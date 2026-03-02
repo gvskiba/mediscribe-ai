@@ -450,7 +450,7 @@ function AnalysisPanel({ analysis, loading, searchLoading, results, selectedSect
                     {expandedSections[section.id] ? <ChevronUp size={12} className="text-[#4a7299]" /> : <ChevronDown size={12} className="text-[#4a7299]" />}
                   </div>
                   {expandedSections[section.id] && (
-                    <div className="px-3 py-2.5 border-t border-[#1e3a5f] text-xs text-[#c8ddf0] leading-relaxed whitespace-pre-wrap">
+                    <div className="px-3 py-2.5 border-t border-[#1e3a5f] text-xs text-[#c8ddf0] leading-relaxed whitespace-pre-wrap overflow-visible">
                       {analysis.sections?.[section.id] || <span className="text-[#4a7299] italic">No data available for this section.</span>}
                     </div>
                   )}

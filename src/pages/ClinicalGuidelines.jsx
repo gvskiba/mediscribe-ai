@@ -38,6 +38,20 @@ const SPECIALTIES = [
   "Infectious Disease", "Critical Care", "Internal Medicine", "Surgery",
 ];
 
+const EVIDENCE_LEVELS = ["Any Level", "A", "B", "C", "D", "I"];
+const GUIDELINE_TYPES = ["Any Type", "guideline", "systematic_review", "meta_analysis", "consensus_statement", "clinical_pathway"];
+const GUIDELINE_TYPE_LABELS = {
+  guideline: "Guideline",
+  systematic_review: "Systematic Review",
+  meta_analysis: "Meta-Analysis",
+  consensus_statement: "Consensus Statement",
+  clinical_pathway: "Clinical Pathway",
+};
+const YEAR_OPTIONS = ["Any Year", ...Array.from({ length: 15 }, (_, i) => String(2025 - i))];
+const SOURCE_OPTIONS = ["All Sources", ...GUIDELINE_SOURCES.map((s) => s.name)];
+
+const DEFAULT_FILTERS = { specialty: "", source: "", yearFrom: "", yearTo: "", evidenceLevel: "", guidelineType: "" };
+
 const QUICK_TOPICS = [
   "STEMI", "Sepsis 3.0", "PE / DVT", "Stroke / tPA", "ACS / NSTEMI",
   "Atrial Fibrillation", "Heart Failure", "CAP / Pneumonia", "DKA", "Hypertensive Emergency",

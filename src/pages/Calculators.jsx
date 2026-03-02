@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, Loader2, ChevronDown, ChevronUp, Sparkles, Star, Plus, AlertTriangle } from "lucide-react";
+import { Search, Loader2, ChevronDown, ChevronUp, Sparkles, Star, Plus, AlertTriangle, Save, Clock, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 

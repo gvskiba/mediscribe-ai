@@ -346,7 +346,7 @@ function CalculatorCard({ calc, initialExpanded = false }) {
   };
 
   return (
-    <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-xl overflow-hidden transition-all">
+    <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-xl transition-all">
       {/* Header */}
       <div
         className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-[#162d4f] transition-all"

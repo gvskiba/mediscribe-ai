@@ -705,6 +705,7 @@ export default function Dashboard() {
     search: { label: "Clinical Guidelines", Comp: ClinicalGuidelinesPanel },
     guidelines: { label: "Saved Guidelines", Comp: SavedGuidelinesWidget },
     news: { label: "Medical News", Comp: NewsPanel },
+    newsSummary: { label: "AI News Briefing", Comp: NewsSummaryWidget },
     notes: { label: "Recent Notes", Comp: NotesPanel },
     noteStatus: { label: "Note Status", Comp: NoteStatusWidget },
     pendingSignatures: { label: "Awaiting Signature", Comp: PendingSignaturesWidget },

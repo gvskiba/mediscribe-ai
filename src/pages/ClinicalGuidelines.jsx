@@ -628,7 +628,7 @@ Return 3-6 of the most relevant, current guidelines.`;
       },
     });
     setResults((response?.guidelines || []).map((g, i) => ({ ...g, id: String(i + 1) })));
-    setLoading(false);
+    setSearchLoading(false);
     recordSearch(q.trim());
   }, []);
 

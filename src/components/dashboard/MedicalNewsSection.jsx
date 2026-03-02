@@ -141,7 +141,10 @@ Focus on stories that have direct clinical implications or are practice-changing
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.03 }}
               >
-                <Card className="p-3 hover:shadow-md transition-shadow">
+                <Card
+                  className={`p-3 transition-all ${story.url ? "hover:shadow-md hover:border-blue-200 cursor-pointer" : "hover:shadow-md"}`}
+                  onClick={() => story.url && window.open(story.url, "_blank", "noopener,noreferrer")}
+                >
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <Badge 
                       variant="outline" 
@@ -149,8 +152,9 @@ Focus on stories that have direct clinical implications or are practice-changing
                     >
                       {story.category}
                     </Badge>
+                    {story.url && <ExternalLink className="w-3 h-3 text-slate-400 shrink-0 mt-0.5" />}
                   </div>
-                  <h3 className="font-semibold text-slate-900 mb-1 leading-snug text-sm">
+                  <h3 className={`font-semibold text-slate-900 mb-1 leading-snug text-sm ${story.url ? "group-hover:text-blue-600" : ""}`}>
                     {story.title}
                   </h3>
                   <p className="text-xs text-slate-600 leading-relaxed mb-2 line-clamp-2">

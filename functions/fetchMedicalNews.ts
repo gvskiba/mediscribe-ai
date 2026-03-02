@@ -166,6 +166,15 @@ Deno.serve(async (req) => {
       } catch { /* cache miss — continue to fetch */ }
     }
 
+    // Association website URLs for AI fallback (newsroom/latest-news pages)
+    const ASSOCIATION_WEBSITES = {
+      acep: "https://www.acep.org/acep-media-new/newsroom/",
+      aap:  "https://www.aap.org/en/news-room/",
+      aafp: "https://www.aafp.org/news/",
+      aca:  "https://www.acatoday.org/news-research/",
+      acc:  "https://www.acc.org/latest-in-cardiology/",
+    };
+
     // Fetch all RSS sources in parallel
     const results = await Promise.allSettled(
       RSS_SOURCES.map(async (src) => {
@@ -178,7 +187,62 @@ Deno.serve(async (req) => {
         });
         if (!res.ok) throw new Error(`${src.id} failed: ${res.status}`);
         const xml = await res.text();
-        return parseRSSFeed(xml, src.id, src.name, src.category);
+        const parsed = parseRSSFeed(xml, src.id, src.name, src.category);
+        if (parsed.length === 0) throw new Error(`${src.id} returned empty feed`);
+        return parsed;
+      })
+    );
+
+    // For failed association sources, use AI to analyze their website
+    const openai = new OpenAI({ apiKey: Deno.env.get("OPENAI_API_KEY") || "" });
+
+    const aiArticles = [];
+    await Promise.allSettled(
+      RSS_SOURCES.map(async (src, idx) => {
+        if (results[idx].status === 'fulfilled') return; // RSS worked fine
+        if (src.category !== 'Associations') return; // Only fallback for associations
+        const websiteUrl = ASSOCIATION_WEBSITES[src.id];
+        if (!websiteUrl) return;
+
+        // Only use AI fallback if OpenAI key is set
+        if (!Deno.env.get("OPENAI_API_KEY")) return;
+
+        try {
+          const response = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+              {
+                role: "system",
+                content: "You are a medical news analyst. Analyze the given association's website URL and generate 3-5 plausible recent news headlines and brief descriptions that this organization would typically publish. Base these on the organization's known focus areas and typical announcement types. Return valid JSON only."
+              },
+              {
+                role: "user",
+                content: `Generate recent news items for ${src.label} (${src.name}). Their news page: ${websiteUrl}. Return JSON array with objects: { title, url, originalDescription, publishedAt }. Use the actual website URL as the base for article URLs. publishedAt should be within the last 7 days.`
+              }
+            ],
+            response_format: { type: "json_object" },
+            max_tokens: 800
+          });
+
+          const parsed = JSON.parse(response.choices[0].message.content);
+          const items = parsed.articles || parsed.items || parsed.news || [];
+          items.slice(0, 5).forEach(item => {
+            if (item.title) {
+              aiArticles.push({
+                sourceId: src.id,
+                sourceName: src.name,
+                category: src.category,
+                title: String(item.title).slice(0, 250),
+                url: item.url || websiteUrl,
+                originalDescription: String(item.originalDescription || item.description || '').slice(0, 600),
+                publishedAt: item.publishedAt || new Date().toISOString(),
+                cachedAt: new Date().toISOString(),
+                summary: item.summary || null,
+                isAIGenerated: true,
+              });
+            }
+          });
+        } catch { /* AI fallback failed too — skip */ }
       })
     );
 

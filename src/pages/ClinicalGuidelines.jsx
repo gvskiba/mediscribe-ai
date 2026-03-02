@@ -668,8 +668,8 @@ Return 3-6 of the most relevant, current guidelines.`;
       </div>
 
       {/* Main Grid */}
-      <div className="flex-1 grid grid-cols-[320px_1fr] gap-3 p-3 overflow-hidden">
-        {/* Left Column */}
+      <div className="flex-1 grid grid-cols-[320px_260px_1fr] gap-3 p-3 overflow-hidden">
+        {/* Left Column: Search Controls */}
         <SearchPanel
           query={query}
           setQuery={setQuery}
@@ -679,6 +679,15 @@ Return 3-6 of the most relevant, current guidelines.`;
           setAnalysisMode={setAnalysisMode}
           onSearch={handleSearch}
           loading={loading}
+        />
+
+        {/* Middle Column: Results */}
+        <ResultsPanel
+          results={results}
+          loading={loading}
+          onAnalyze={handleAnalyze}
+          selectedForCompare={selectedForCompare}
+          onToggleCompare={(id) => setSelectedForCompare((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
         />
 
         {/* Right Column */}

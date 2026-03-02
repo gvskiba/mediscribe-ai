@@ -473,7 +473,7 @@ export default function ClinicalGuidelines() {
 
   const handleSearch = useCallback(async () => {
     if (!query.trim()) return;
-    setLoading(true);
+    setSearchLoading(true);
     setResults([]);
 
     const filterInstructions = [

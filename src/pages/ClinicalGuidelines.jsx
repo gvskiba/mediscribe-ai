@@ -465,7 +465,8 @@ export default function ClinicalGuidelines() {
   const [analysisMode, setAnalysisMode] = useState("full_analysis");
   const [results, setResults] = useState([]);
   const [analysis, setAnalysis] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [analyzeLoading, setAnalyzeLoading] = useState(false);
   const [selectedSections, setSelectedSections] = useState([]);
   const [selectedForCompare, setSelectedForCompare] = useState([]);
   const [rightTab, setRightTab] = useState("analysis"); // "analysis" | "foryou"

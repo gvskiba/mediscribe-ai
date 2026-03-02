@@ -580,6 +580,8 @@ Be specific, clinically precise, and use medical terminology appropriate for phy
     });
     setSelectedSections([]);
     setLoading(false);
+    recordAnalyzed(result.title, result.source_abbreviation || result.source_name);
+    setRightTab("analysis");
   };
 
   const handleAddToNote = (sections) => {

@@ -672,8 +672,8 @@ Be specific, clinically precise, and use medical terminology appropriate for phy
               />
             ) : (
               <ForYouPanel
-                onSearch={(q) => { setQuery(q); setRightTab("analysis"); setTimeout(handleSearch, 50); }}
-                onAnalyzeRecommendation={(rec) => { setQuery(rec.search_query); setRightTab("analysis"); }}
+                onSearch={(q) => { setQuery(q); setRightTab("analysis"); handleSearchWithQuery(q); }}
+                onAnalyzeRecommendation={(rec) => { setQuery(rec.search_query); setRightTab("analysis"); handleSearchWithQuery(rec.search_query); }}
               />
             )}
           </div>

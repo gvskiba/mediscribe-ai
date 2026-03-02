@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, Filter, Loader2, ChevronDown, ChevronUp, Plus, Check, Save, Share2, Clock, Star, Zap, BarChart3, User, Scale, BookOpen } from "lucide-react";
+import { Search, Filter, Loader2, ChevronDown, ChevronUp, Plus, Check, Save, Share2, Clock, Star, Zap, BarChart3, User, Scale, BookOpen, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import ForYouPanel, { recordSearch, recordAnalyzed } from "../components/guidelines/ForYouPanel";
 
 const T = {
   navy: "#050f1e", slate: "#0b1d35", panel: "#0e2340",

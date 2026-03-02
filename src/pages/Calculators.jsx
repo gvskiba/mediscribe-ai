@@ -1128,20 +1128,37 @@ export default function Calculators() {
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [expandedCalcId, setExpandedCalcId] = useState(null);
+  const [favorites, setFavorites] = useState(getFavorites);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
+  const [savedCount, setSavedCount] = useState(() => getSavedResults().length);
+
+  const handleToggleFavorite = useCallback((calcId) => {
+    const next = toggleFavoriteStorage(calcId);
+    setFavorites(next);
+    const isFav = !next.includes(calcId); // was it removed?
+    toast(isFav ? "Removed from favorites" : "⭐ Added to favorites");
+  }, []);
+
+  const handleResultSaved = useCallback(() => {
+    setSavedCount(getSavedResults().length);
+  }, []);
 
   const filtered = useMemo(() => {
     return CALCULATORS.filter(c => {
       const matchCat = category === "all" || c.category === category;
+      const matchFav = !showFavoritesOnly || favorites.includes(c.id);
       const matchSearch = !search.trim() ||
         c.name.toLowerCase().includes(search.toLowerCase()) ||
         c.description.toLowerCase().includes(search.toLowerCase());
-      return matchCat && matchSearch;
+      return matchCat && matchFav && matchSearch;
     });
-  }, [category, search]);
+  }, [category, search, showFavoritesOnly, favorites]);
 
   const handleSelectCalc = (calcId) => {
     setCategory("all");
     setSearch("");
+    setShowFavoritesOnly(false);
     setActiveTab("calculators");
     setTimeout(() => setExpandedCalcId(calcId), 100);
   };
@@ -1161,7 +1178,13 @@ export default function Calculators() {
           <span>·</span>
           <span>{PED_DRUGS.length} Pediatric Drugs</span>
           <span>·</span>
-          <span className="text-[#00d4bc] font-semibold">All calculations client-side · Validated formulas</span>
+          <span className="text-[#00d4bc] font-semibold">Validated formulas</span>
+          <button
+            onClick={() => setShowSaved(s => !s)}
+            className={`ml-2 flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border cursor-pointer transition-all ${showSaved ? "border-[#00d4bc] bg-[rgba(0,212,188,0.15)] text-[#00d4bc]" : "border-[#1e3a5f] bg-[#162d4f] text-[#4a7299] hover:text-[#c8ddf0]"}`}
+          >
+            <Clock size={11} /> Saved Results {savedCount > 0 && <span className="bg-[#00d4bc] text-[#050f1e] rounded-full px-1.5 font-bold">{savedCount}</span>}
+          </button>
         </div>
       </div>
 
@@ -1170,17 +1193,27 @@ export default function Calculators() {
 
         {/* Left Column */}
         <div className="flex flex-col gap-3 overflow-hidden">
-          {/* AI Search */}
           <AISearchPanel onSelectCalc={handleSelectCalc} />
 
           {/* Category browser */}
-          <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-xl p-3 flex flex-col gap-2 overflow-y-auto scrollbar-hide flex-1">
+          <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-xl p-3 flex flex-col gap-1.5 overflow-y-auto scrollbar-hide flex-1">
             <div className="text-xs font-bold uppercase tracking-wide text-[#4a7299] mb-1">Categories</div>
+
+            {/* Favorites shortcut */}
+            <button
+              onClick={() => { setShowFavoritesOnly(f => !f); setActiveTab("calculators"); }}
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-all text-left ${showFavoritesOnly ? "border border-[#fbbf24] bg-[rgba(251,191,36,0.12)] text-[#fbbf24]" : "border border-transparent text-[#4a7299] hover:bg-[#162d4f] hover:text-[#c8ddf0]"}`}
+            >
+              <Star size={13} fill={showFavoritesOnly ? "#fbbf24" : "none"} className={showFavoritesOnly ? "text-[#fbbf24]" : ""} />
+              <span>Favorites</span>
+              <span className="ml-auto text-[#2a4d72]">{favorites.length}</span>
+            </button>
+
             {CATEGORIES.map(cat => (
               <button
                 key={cat.id}
-                onClick={() => { setCategory(cat.id); setActiveTab("calculators"); }}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-all text-left ${category === cat.id && activeTab === "calculators" ? "border border-[#9b6dff] bg-[rgba(155,109,255,0.15)] text-[#9b6dff]" : "border border-transparent text-[#4a7299] hover:bg-[#162d4f] hover:text-[#c8ddf0]"}`}
+                onClick={() => { setCategory(cat.id); setShowFavoritesOnly(false); setActiveTab("calculators"); }}
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-all text-left ${category === cat.id && activeTab === "calculators" && !showFavoritesOnly ? "border border-[#9b6dff] bg-[rgba(155,109,255,0.15)] text-[#9b6dff]" : "border border-transparent text-[#4a7299] hover:bg-[#162d4f] hover:text-[#c8ddf0]"}`}
               >
                 <span>{cat.icon}</span>
                 <span>{cat.label}</span>
@@ -1205,19 +1238,19 @@ export default function Calculators() {
           {/* Tab bar */}
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setActiveTab("calculators")}
-              className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all ${activeTab === "calculators" ? "border-[#9b6dff] bg-[rgba(155,109,255,0.15)] text-[#9b6dff]" : "border-[#1e3a5f] bg-[#0e2340] text-[#4a7299] hover:text-[#c8ddf0]"}`}
+              onClick={() => { setActiveTab("calculators"); setShowSaved(false); }}
+              className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all ${activeTab === "calculators" && !showSaved ? "border-[#9b6dff] bg-[rgba(155,109,255,0.15)] text-[#9b6dff]" : "border-[#1e3a5f] bg-[#0e2340] text-[#4a7299] hover:text-[#c8ddf0]"}`}
             >
               Clinical Calculators
             </button>
             <button
-              onClick={() => setActiveTab("peddosing")}
-              className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all ${activeTab === "peddosing" ? "border-[#00d4bc] bg-[rgba(0,212,188,0.12)] text-[#00d4bc]" : "border-[#1e3a5f] bg-[#0e2340] text-[#4a7299] hover:text-[#c8ddf0]"}`}
+              onClick={() => { setActiveTab("peddosing"); setShowSaved(false); }}
+              className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all ${activeTab === "peddosing" && !showSaved ? "border-[#00d4bc] bg-[rgba(0,212,188,0.12)] text-[#00d4bc]" : "border-[#1e3a5f] bg-[#0e2340] text-[#4a7299] hover:text-[#c8ddf0]"}`}
             >
               👶 Pediatric Dosing
             </button>
 
-            {activeTab === "calculators" && (
+            {activeTab === "calculators" && !showSaved && (
               <div className="flex items-center gap-2 ml-auto bg-[#0e2340] border border-[#1e3a5f] rounded-lg px-3 py-1.5">
                 <Search size={12} className="text-[#4a7299]" />
                 <input
@@ -1234,20 +1267,36 @@ export default function Calculators() {
           {/* Tab content */}
           <div className="flex-1 overflow-y-auto scrollbar-hide">
             <div className="flex flex-col gap-2.5 pb-4">
-            {activeTab === "calculators" && filtered.map(calc => (
-              <CalculatorCard
-                key={calc.id}
-                calc={calc}
-                initialExpanded={calc.id === expandedCalcId}
-              />
-            ))}
-            {activeTab === "calculators" && filtered.length === 0 && (
-              <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-                <div className="text-4xl">🔍</div>
-                <div className="text-sm text-[#4a7299]">No calculators found for &quot;{search}&quot;</div>
-              </div>
-            )}
-            {activeTab === "peddosing" && <PedDosingCalc />}
+              {showSaved ? (
+                <SavedResultsPanel onClose={() => { setShowSaved(false); setSavedCount(getSavedResults().length); }} />
+              ) : activeTab === "calculators" ? (
+                <>
+                  {showFavoritesOnly && favorites.length === 0 && (
+                    <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+                      <div className="text-4xl">⭐</div>
+                      <div className="text-sm text-[#4a7299]">No favorites yet.<br/>Click the <Star size={12} className="inline" /> icon on any calculator to add it.</div>
+                    </div>
+                  )}
+                  {filtered.map(calc => (
+                    <CalculatorCard
+                      key={calc.id}
+                      calc={calc}
+                      initialExpanded={calc.id === expandedCalcId}
+                      favorites={favorites}
+                      onToggleFavorite={handleToggleFavorite}
+                      onResultSaved={handleResultSaved}
+                    />
+                  ))}
+                  {!showFavoritesOnly && filtered.length === 0 && (
+                    <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+                      <div className="text-4xl">🔍</div>
+                      <div className="text-sm text-[#4a7299]">No calculators found for &quot;{search}&quot;</div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <PedDosingCalc />
+              )}
             </div>
           </div>
         </div>

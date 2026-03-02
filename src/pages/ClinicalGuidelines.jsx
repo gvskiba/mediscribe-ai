@@ -333,7 +333,7 @@ function AnalysisPanel({ analysis, loading, searchLoading, results, selectedSect
   const hasResults = results && results.length > 0;
 
   return (
-    <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-lg h-full overflow-hidden flex">
+    <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-lg h-full overflow-y-auto flex">
       {/* Results sub-column */}
       {hasResults && (
         <div className="w-56 shrink-0 border-r border-[#1e3a5f] flex flex-col overflow-hidden">
@@ -713,7 +713,7 @@ Return 3-6 of the most relevant, current guidelines.`;
           </div>
 
           {/* Tab content */}
-          <div className="flex-1 overflow-hidden min-h-0" style={{ height: "calc(100vh - 160px)" }}>
+          <div className="flex-1 overflow-y-auto min-h-0" style={{ height: "calc(100vh - 160px)" }}>
             {rightTab === "analysis" ? (
               <AnalysisPanel
                 analysis={analysis}

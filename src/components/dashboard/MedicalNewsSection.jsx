@@ -61,7 +61,8 @@ Focus on stories that have direct clinical implications or are practice-changing
                   summary: { type: "string" },
                   category: { type: "string" },
                   relevance: { type: "string" },
-                  source: { type: "string" }
+                  source: { type: "string" },
+                  url: { type: "string" }
                 }
               }
             }

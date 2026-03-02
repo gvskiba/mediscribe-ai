@@ -327,7 +327,7 @@ function ResultsPanel({ results, loading, onAnalyze, selectedForCompare, onToggl
   );
 }
 
-function AnalysisPanel({ analysis, loading, results, selectedSections, onToggleSection, onAddToNote, onSave, onAnalyze, selectedForCompare, onToggleCompare }) {
+function AnalysisPanel({ analysis, loading, searchLoading, results, selectedSections, onToggleSection, onAddToNote, onSave, onAnalyze, selectedForCompare, onToggleCompare }) {
   const [expandedSections, setExpandedSections] = useState({});
 
   const hasResults = results && results.length > 0;

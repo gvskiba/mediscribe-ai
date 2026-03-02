@@ -535,7 +535,7 @@ Return 3-6 of the most relevant, current guidelines. Prioritize the most recent 
   }, [query, filters]);
 
   const handleAnalyze = async (result) => {
-    setLoading(true);
+    setAnalyzeLoading(true);
     setAnalysis(null);
 
     const prompt = `Perform a comprehensive clinical analysis of the following guideline for healthcare providers:

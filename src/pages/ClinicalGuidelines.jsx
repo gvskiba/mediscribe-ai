@@ -178,22 +178,57 @@ function SearchPanel({ query, setQuery, filters, setFilters, analysisMode, setAn
 
       {/* Filters */}
       <div className="pt-3 border-t border-[#1e3a5f]">
-        <div className="text-xs font-bold uppercase tracking-wide text-[#4a7299] mb-3 flex items-center gap-1.5">
-          ⚙️ FILTERS
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-xs font-bold uppercase tracking-wide text-[#4a7299] flex items-center gap-1.5">
+            ⚙️ FILTERS
+          </div>
+          {Object.values(filters).some(Boolean) && (
+            <button
+              onClick={() => setFilters(DEFAULT_FILTERS)}
+              className="text-xs text-[#ff5c6c] hover:text-[#ff8a95] transition-all font-semibold flex items-center gap-1"
+            >
+              ✕ Clear All
+            </button>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-2 mb-3">
-          <button className="w-full px-3 py-2.5 rounded-lg border border-[#1e3a5f] bg-[#162d4f] text-[#e8f4ff] text-xs font-semibold cursor-pointer hover:border-[#2a4d72] transition-all text-left">
-            {filters.specialty || "All Specialties"}
-          </button>
-          <button className="w-full px-3 py-2.5 rounded-lg border border-[#1e3a5f] bg-[#162d4f] text-[#e8f4ff] text-xs font-semibold cursor-pointer hover:border-[#2a4d72] transition-all text-left">
-            {filters.source || "All Sources"}
-          </button>
-          <button className="w-full px-3 py-2.5 rounded-lg border border-[#1e3a5f] bg-[#162d4f] text-[#e8f4ff] text-xs font-semibold cursor-pointer hover:border-[#2a4d72] transition-all text-left">
-            {filters.yearFrom || "Any Year"}
-          </button>
-          <button className="w-full px-3 py-2.5 rounded-lg border border-[#1e3a5f] bg-[#162d4f] text-[#e8f4ff] text-xs font-semibold cursor-pointer hover:border-[#2a4d72] transition-all text-left">
-            {filters.evidenceLevel || "Any Level"}
-          </button>
+          <FilterSelect
+            label="All Specialties"
+            value={filters.specialty}
+            options={SPECIALTIES}
+            onChange={(v) => setFilters((f) => ({ ...f, specialty: v }))}
+          />
+          <FilterSelect
+            label="All Sources"
+            value={filters.source}
+            options={SOURCE_OPTIONS}
+            onChange={(v) => setFilters((f) => ({ ...f, source: v }))}
+          />
+          <FilterSelect
+            label="Year From"
+            value={filters.yearFrom}
+            options={YEAR_OPTIONS}
+            onChange={(v) => setFilters((f) => ({ ...f, yearFrom: v }))}
+          />
+          <FilterSelect
+            label="Year To"
+            value={filters.yearTo}
+            options={YEAR_OPTIONS}
+            onChange={(v) => setFilters((f) => ({ ...f, yearTo: v }))}
+          />
+          <FilterSelect
+            label="Any Level"
+            value={filters.evidenceLevel}
+            options={EVIDENCE_LEVELS}
+            onChange={(v) => setFilters((f) => ({ ...f, evidenceLevel: v }))}
+          />
+          <FilterSelect
+            label="Any Type"
+            value={filters.guidelineType}
+            options={GUIDELINE_TYPES}
+            renderOption={(v) => GUIDELINE_TYPE_LABELS[v] || v}
+            onChange={(v) => setFilters((f) => ({ ...f, guidelineType: v }))}
+          />
         </div>
 
         {/* Patient Context Toggle */}

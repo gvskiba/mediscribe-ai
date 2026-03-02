@@ -490,7 +490,7 @@ export default function ClinicalGuidelines() {
       filters.guidelineType ? `Guideline type: ${filters.guidelineType}.` : "",
     ].filter(Boolean).join(" ");
 
-    const prompt = `Search for clinical guidelines related to "${query}" from reputable professional medical associations and colleges. Prioritize authoritative sources such as ACC/AHA (American College of Cardiology / American Heart Association), ACEP (American College of Emergency Physicians), IDSA (Infectious Diseases Society of America), ATS (American Thoracic Society), ASA (American Stroke Association), USPSTF, NIH, WHO, Cochrane, UpToDate, SCCM, ACOG, ACS, and other recognized professional medical societies and academic institutions.
+    const prompt = `Search for clinical guidelines and systematic reviews related to "${query}". Query across these live sources: PubMed/MEDLINE (pubmed.ncbi.nlm.nih.gov), USPSTF (uspreventiveservicestaskforce.org), WHO IRIS (iris.who.int), NICE (nice.org.uk), Europe PMC (europepmc.org), Cochrane Library, ACC/AHA, ACEP, IDSA, ATS, ASA, SCCM, ACOG, ACS, NIH, and UpToDate.
 
 ${filterInstructions ? `Apply these filters: ${filterInstructions}` : ""}
 
@@ -498,13 +498,13 @@ For each relevant guideline found, return an object with:
 1. title: Official guideline title
 2. publicationYear: Year published or last updated (number)
 3. summary: Concise 2-3 sentence executive summary of key recommendations
-4. evidenceLevel: Highest evidence level (A, B, C, D, or I)
+4. evidenceLevel: Highest evidence level (A, B, C, D, or I based on USPSTF/ACC/AHA grading)
 5. guidelineType: One of "clinical_practice_guideline", "consensus_statement", "systematic_review", "meta_analysis", "expert_opinion"
-6. source_name: Full name of the publishing professional association or college
-7. source_abbreviation: Abbreviation (e.g., ACC/AHA, ACEP)
-8. source_url: Direct URL to the guideline on the official organization website
+6. source_name: Full name of the publishing organization (e.g., "National Institute for Health and Care Excellence", "World Health Organization")
+7. source_abbreviation: Abbreviation (e.g., "NICE", "WHO", "ACC/AHA", "USPSTF")
+8. source_url: Direct URL to the guideline on the official organization website or PubMed (e.g., https://pubmed.ncbi.nlm.nih.gov/PMID/)
 
-Return 3-6 of the most relevant, current guidelines. Prioritize the most recent versions.`;
+Return 4-8 of the most relevant, current guidelines from diverse sources. Prioritize the most recent versions published after 2018.`;
 
     const response = await base44.integrations.Core.InvokeLLM({
       prompt,

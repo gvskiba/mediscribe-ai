@@ -385,8 +385,20 @@ function AnalysisPanel({ analysis, loading, selectedSections, onToggleSection, o
     <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-lg p-3 flex flex-col gap-2.5 h-full overflow-hidden">
       {/* Toolbar */}
       <div className="flex justify-between items-center pb-2.5 border-b border-[#1e3a5f]">
-        <div className="text-xs font-semibold text-[#c8ddf0] uppercase">
-          Analysis
+        <div className="flex flex-col gap-0.5">
+          <div className="text-xs font-semibold text-[#c8ddf0] uppercase">Analysis</div>
+          {analysis.source_name && (
+            <div className="text-xs text-[#4a7299] flex items-center gap-1">
+              <span className="font-medium text-[#9b6dff]">{analysis.source_abbreviation || analysis.source_name}</span>
+              <span>·</span>
+              <span>{analysis.source_name}</span>
+              {analysis.source_url && (
+                <a href={analysis.source_url} target="_blank" rel="noopener noreferrer" className="text-[#00d4bc] hover:underline ml-1">
+                  ↗ Official Source
+                </a>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex gap-1.5">
           <button

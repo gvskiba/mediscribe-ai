@@ -380,10 +380,14 @@ Focus on stories with direct clinical implications or that are practice-changing
                     </div>
                   </div>
 
-                  <h3 className={`font-semibold text-slate-900 mb-1 leading-snug text-sm ${story.url ? "cursor-pointer hover:text-blue-600 transition-colors" : ""}`}
-                    onClick={() => story.url && window.open(story.url, "_blank", "noopener,noreferrer")}>
-                    {story.title}
-                  </h3>
+                  {story.url ? (
+                    <a href={story.url} target="_blank" rel="noopener noreferrer"
+                      className="block font-semibold text-slate-900 mb-1 leading-snug text-sm hover:text-blue-600 transition-colors cursor-pointer">
+                      {story.title}
+                    </a>
+                  ) : (
+                    <h3 className="font-semibold text-slate-900 mb-1 leading-snug text-sm">{story.title}</h3>
+                  )}
 
                   <p className="text-xs text-slate-600 leading-relaxed mb-2 line-clamp-2">{story.summary}</p>
 

@@ -120,13 +120,13 @@ Deno.serve(async (req) => {
     const limit = body.limit || 20;
     const REFRESH_MINUTES = 30;
 
-    // Check cache first
+    // Check cache first (always attempt — NEWSAPI_KEY not required)
     if (!forceRefresh) {
       try {
         const cached = await base44.entities.MedicalNewsCache.list('-publishedAt', limit);
         if (cached && cached.length > 0) {
           const freshCutoff = new Date(Date.now() - REFRESH_MINUTES * 60 * 1000);
-          const mostRecent = new Date(cached[0].cachedAt);
+          const mostRecent = new Date(cached[0].cachedAt || cached[0].created_date);
           if (mostRecent > freshCutoff) {
             return Response.json({ articles: cached, fromCache: true, fetchedAt: new Date().toISOString() });
           }

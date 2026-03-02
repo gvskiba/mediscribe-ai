@@ -411,9 +411,9 @@ function AnalysisPanel({ analysis, loading, searchLoading, results, selectedSect
             )}
           </div>
         ) : (
-          <div className="flex flex-col gap-2.5 p-3 h-full overflow-hidden">
+          <div className="flex flex-col gap-2.5 p-3">
             {/* Toolbar */}
-            <div className="flex justify-between items-center pb-2.5 border-b border-[#1e3a5f] shrink-0">
+            <div className="flex justify-between items-center pb-2.5 border-b border-[#1e3a5f]">
               <div className="flex flex-col gap-0.5">
                 <div className="text-xs font-semibold text-[#c8ddf0] uppercase">Analysis</div>
                 {analysis.source_name && (

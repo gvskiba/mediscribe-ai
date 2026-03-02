@@ -57,6 +57,7 @@ import GuidelineDetail from './pages/GuidelineDetail';
 import Guidelines from './pages/Guidelines';
 import Home from './pages/Home';
 import MedicalKnowledgeBase from './pages/MedicalKnowledgeBase';
+import MedicalNews from './pages/MedicalNews';
 import NewNote from './pages/NewNote';
 import NoteDetail from './pages/NoteDetail';
 import NoteTemplates from './pages/NoteTemplates';
@@ -74,7 +75,6 @@ import TemplateEditor from './pages/TemplateEditor';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
-import MedicalNews from './pages/MedicalNews';
 import __Layout from './Layout.jsx';
 
 
@@ -89,6 +89,7 @@ export const PAGES = {
     "Guidelines": Guidelines,
     "Home": Home,
     "MedicalKnowledgeBase": MedicalKnowledgeBase,
+    "MedicalNews": MedicalNews,
     "NewNote": NewNote,
     "NoteDetail": NoteDetail,
     "NoteTemplates": NoteTemplates,
@@ -106,7 +107,6 @@ export const PAGES = {
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
-    "MedicalNews": MedicalNews,
 }
 
 export const pagesConfig = {

@@ -3,11 +3,12 @@ import { base44 } from "@/api/base44Client";
 import {
   RefreshCw, Bookmark, BookmarkCheck, ExternalLink, Sparkles,
   ChevronDown, ChevronUp, Loader2, X, Star, Newspaper, Settings2,
-  Filter, Calendar, Zap, Check
+  Filter, Calendar, Zap, Check, Share2
 } from "lucide-react";
 import { formatDistanceToNow, subDays, isAfter } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
+import ArticleShareModal from "../components/news/ArticleShareModal";
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const CATEGORIES = [

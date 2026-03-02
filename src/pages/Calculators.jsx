@@ -752,7 +752,7 @@ export default function Calculators() {
             {activeTab === "calculators" && filtered.length === 0 && (
               <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
                 <div className="text-4xl">🔍</div>
-                <div className="text-sm text-[#4a7299]">No calculators found for "{search}"</div>
+                <div className="text-sm text-[#4a7299]">No calculators found for &quot;{search}&quot;</div>
               </div>
             )}
             {activeTab === "peddosing" && <PedDosingCalc />}

@@ -255,7 +255,7 @@ Deno.serve(async (req) => {
       .flatMap(r => r.value);
 
     // Merge + deduplicate by URL
-    const allArticles = [...rssArticles, ...newsApiArticles];
+    const allArticles = [...rssArticles, ...aiArticles, ...newsApiArticles];
     const seen = new Set();
     const unique = allArticles.filter(a => {
       if (!a.url || seen.has(a.url)) return false;

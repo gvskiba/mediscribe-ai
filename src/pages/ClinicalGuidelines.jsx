@@ -686,7 +686,7 @@ Return 3-6 of the most relevant, current guidelines.`;
           analysisMode={analysisMode}
           setAnalysisMode={setAnalysisMode}
           onSearch={handleSearch}
-          loading={loading}
+          loading={searchLoading}
         />
 
         {/* Right Column */}

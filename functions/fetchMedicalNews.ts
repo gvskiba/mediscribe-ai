@@ -65,14 +65,10 @@ function parseRSSFeed(xml, sourceId, sourceName, category) {
       return '';
     };
 
-    // Special handling for <link> which is self-closing or between tags
+    // Get link — try plain text between tags, then fall back to guid
     const getLinkTag = () => {
       const m1 = block.match(/<link[^>]*>([^<]+)<\/link>/i);
       if (m1) return m1[1].trim();
-      // CDATA link
-      const m2 = block.match(/<link[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\/link>/i);
-      if (m2) return m2[1].trim();
-      // guid as fallback
       return getTag('guid');
     };
 

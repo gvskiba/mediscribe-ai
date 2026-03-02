@@ -325,6 +325,154 @@ function initValues(fields) {
   return v;
 }
 
+// ─── AI Insight Panel ─────────────────────────────────────────────────────────
+function AIInsightPanel({ calc, values, score, result }) {
+  const [loading, setLoading] = useState(false);
+  const [insight, setInsight] = useState(null);
+  const [open, setOpen] = useState(false);
+
+  const handleAnalyze = async () => {
+    setOpen(true);
+    if (insight) return; // already loaded
+    setLoading(true);
+
+    // Build human-readable inputs summary
+    const inputsSummary = calc.fields.map(f => {
+      if (f.type === "checkbox") {
+        return `${f.label}: ${values[f.id] ? "Yes" : "No"}`;
+      } else {
+        const selected = f.options?.find(o => String(o.value) === String(values[f.id]));
+        return `${f.label}: ${selected?.label || values[f.id]}`;
+      }
+    }).join("\n");
+
+    const resp = await base44.integrations.Core.InvokeLLM({
+      prompt: `You are a clinical decision support AI. A clinician has just calculated a ${calc.name} score.
+
+Calculator: ${calc.name}
+Description: ${calc.description}
+Inputs entered:
+${inputsSummary}
+
+Calculated Score: ${score}
+Result: ${result.label}
+Standard Recommendation: ${result.action}
+
+Provide a concise, clinically actionable AI analysis with:
+1. clinical_context: 2-3 sentences explaining what this score means for this specific patient given their inputs. Be specific about which inputs drove the score.
+2. next_steps: Array of 3-5 specific, prioritized clinical actions to take right now (e.g., order specific labs, consult, medication, imaging). Be concrete.
+3. pitfalls: Array of 2-3 common pitfalls or caveats specific to this score and these inputs that the clinician should be aware of.
+4. resources: Array of 2-3 relevant guidelines or reference resources (name and brief description only).`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          clinical_context: { type: "string" },
+          next_steps: { type: "array", items: { type: "string" } },
+          pitfalls: { type: "array", items: { type: "string" } },
+          resources: { type: "array", items: { type: "string" } },
+        }
+      }
+    });
+
+    setInsight(resp);
+    setLoading(false);
+  };
+
+  return (
+    <div>
+      <button
+        onClick={handleAnalyze}
+        className="px-3 py-1.5 rounded text-xs border border-[#9b6dff] bg-[rgba(155,109,255,0.1)] text-[#9b6dff] hover:bg-[rgba(155,109,255,0.2)] transition-all cursor-pointer flex items-center gap-1.5 font-semibold"
+      >
+        <Sparkles size={11} /> AI Analysis
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="mt-3 rounded-lg border border-[#9b6dff]/40 bg-[rgba(155,109,255,0.06)] p-3 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#9b6dff]">
+                  <Sparkles size={11} /> AI Clinical Insight
+                </div>
+                <button onClick={() => setOpen(false)} className="text-[#4a7299] hover:text-[#c8ddf0] text-xs cursor-pointer">✕</button>
+              </div>
+
+              {loading ? (
+                <div className="flex items-center gap-2 py-3 justify-center">
+                  <Loader2 size={14} className="animate-spin text-[#9b6dff]" />
+                  <span className="text-xs text-[#4a7299]">Analyzing clinical context…</span>
+                </div>
+              ) : insight ? (
+                <>
+                  {insight.clinical_context && (
+                    <div>
+                      <div className="text-xs font-semibold text-[#c8ddf0] mb-1">Clinical Context</div>
+                      <p className="text-xs text-[#a8c4e0] leading-relaxed">{insight.clinical_context}</p>
+                    </div>
+                  )}
+                  {insight.next_steps?.length > 0 && (
+                    <div>
+                      <div className="text-xs font-semibold text-[#00d4bc] mb-1.5">Recommended Next Steps</div>
+                      <div className="flex flex-col gap-1">
+                        {insight.next_steps.map((step, i) => (
+                          <div key={i} className="flex gap-2 text-xs text-[#c8ddf0]">
+                            <span className="text-[#00d4bc] font-bold shrink-0">{i + 1}.</span>
+                            <span>{step}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {insight.pitfalls?.length > 0 && (
+                    <div>
+                      <div className="text-xs font-semibold text-[#f5a623] mb-1.5 flex items-center gap-1">
+                        <AlertTriangle size={11} /> Clinical Pitfalls
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        {insight.pitfalls.map((p, i) => (
+                          <div key={i} className="flex gap-2 text-xs text-[#c8ddf0]">
+                            <span className="text-[#f5a623] shrink-0">⚠</span>
+                            <span>{p}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {insight.resources?.length > 0 && (
+                    <div>
+                      <div className="text-xs font-semibold text-[#4a7299] mb-1.5">Resources & Guidelines</div>
+                      <div className="flex flex-col gap-1">
+                        {insight.resources.map((r, i) => (
+                          <div key={i} className="text-xs text-[#4a7299] flex gap-1.5">
+                            <span className="text-[#2a4d72]">📚</span>
+                            <span>{r}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => { setInsight(null); setLoading(false); handleAnalyze(); }}
+                    className="text-xs text-[#4a7299] hover:text-[#9b6dff] cursor-pointer self-start transition-all"
+                  >
+                    ↻ Re-analyze with current values
+                  </button>
+                </>
+              ) : null}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 // ─── Calculator Card ──────────────────────────────────────────────────────────
 function CalculatorCard({ calc, initialExpanded = false }) {
   const [values, setValues] = useState(() => initValues(calc.fields));
@@ -408,7 +556,7 @@ function CalculatorCard({ calc, initialExpanded = false }) {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
               onClick={handleReset}
               className="px-3 py-1.5 rounded text-xs border border-[#1e3a5f] bg-[#162d4f] text-[#4a7299] hover:text-[#c8ddf0] transition-all cursor-pointer"
@@ -421,6 +569,7 @@ function CalculatorCard({ calc, initialExpanded = false }) {
             >
               <Plus size={10} /> {saved ? "Saved ✓" : "Add to Note"}
             </button>
+            <AIInsightPanel calc={calc} values={values} score={score} result={result} />
           </div>
         </div>
       )}

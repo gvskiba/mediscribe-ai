@@ -440,17 +440,8 @@ function AnalysisPanel({ analysis, loading, selectedSections, onToggleSection, o
             </div>
 
             {expandedSections[section.id] && (
-              <div className="px-3 py-2.5 border-t border-[#1e3a5f] text-xs text-[#c8ddf0] leading-relaxed max-h-48 overflow-auto">
-                <p className="m-0">
-                  {section.id === "executive_summary" && "Summary of guideline scope and key clinical recommendations…"}
-                  {section.id === "key_recommendations" && "1. Primary intervention recommended\n2. Secondary monitoring suggested\n3. Special considerations for comorbidities…"}
-                  {section.id === "diagnostic_criteria" && "Clinical criteria, scoring systems, and diagnostic algorithms…"}
-                  {section.id === "treatment_algorithm" && "Step-by-step decision tree for treatment selection…"}
-                  {section.id === "medication_guidance" && "Specific drug recommendations with dosing and monitoring…"}
-                  {section.id === "monitoring_parameters" && "Key metrics to monitor, intervals, and target ranges…"}
-                  {section.id === "special_populations" && "Adjustments for elderly, pregnancy, renal/hepatic disease…"}
-                  {section.id === "contraindications" && "Absolute and relative contraindications, black box warnings…"}
-                </p>
+              <div className="px-3 py-2.5 border-t border-[#1e3a5f] text-xs text-[#c8ddf0] leading-relaxed max-h-64 overflow-auto whitespace-pre-wrap">
+                {analysis.sections?.[section.id] || <span className="text-[#4a7299] italic">No data available for this section.</span>}
               </div>
             )}
           </div>

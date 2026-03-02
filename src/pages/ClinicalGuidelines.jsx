@@ -440,63 +440,122 @@ export default function ClinicalGuidelines() {
   const [selectedSections, setSelectedSections] = useState([]);
   const [selectedForCompare, setSelectedForCompare] = useState([]);
 
-  const mockResults = [
-    {
-      id: "1",
-      title: "2024 AHA/ACC Guideline for STEMI Management",
-      source: "ACC/AHA",
-      specialty: "Cardiology",
-      publicationYear: 2024,
-      evidenceLevel: "A",
-      guidelineType: "guideline",
-    },
-    {
-      id: "2",
-      title: "Surviving Sepsis Campaign 3.0 Bundle Update",
-      source: "SCCM",
-      specialty: "Critical Care",
-      publicationYear: 2023,
-      evidenceLevel: "B",
-      guidelineType: "systematic_review",
-    },
-    {
-      id: "3",
-      title: "Pulmonary Embolism: ACEP Evidence-Based Care Guideline",
-      source: "ACEP",
-      specialty: "Emergency Medicine",
-      publicationYear: 2023,
-      evidenceLevel: "A",
-      guidelineType: "guideline",
-    },
-  ];
-
-  const handleSearch = useCallback(() => {
+  const handleSearch = useCallback(async () => {
+    if (!query.trim()) return;
     setLoading(true);
-    setTimeout(() => {
-      let filtered = query ? mockResults : [];
-      if (filters.source) filtered = filtered.filter((r) => r.source === filters.source);
-      if (filters.specialty) filtered = filtered.filter((r) => r.specialty === filters.specialty);
-      if (filters.evidenceLevel) filtered = filtered.filter((r) => r.evidenceLevel === filters.evidenceLevel);
-      if (filters.guidelineType) filtered = filtered.filter((r) => r.guidelineType === filters.guidelineType);
-      if (filters.yearFrom) filtered = filtered.filter((r) => r.publicationYear >= Number(filters.yearFrom));
-      if (filters.yearTo) filtered = filtered.filter((r) => r.publicationYear <= Number(filters.yearTo));
-      setResults(filtered);
-      setLoading(false);
-    }, 500);
+    setResults([]);
+
+    const filterInstructions = [
+      filters.specialty ? `Specialty: ${filters.specialty}.` : "",
+      filters.source ? `Preferred source: ${filters.source}.` : "",
+      filters.yearFrom ? `Published from ${filters.yearFrom} onwards.` : "",
+      filters.yearTo ? `Published up to ${filters.yearTo}.` : "",
+      filters.evidenceLevel ? `Evidence level: ${filters.evidenceLevel}.` : "",
+      filters.guidelineType ? `Guideline type: ${filters.guidelineType}.` : "",
+    ].filter(Boolean).join(" ");
+
+    const prompt = `Search for clinical guidelines related to "${query}" from reputable professional medical associations and colleges. Prioritize authoritative sources such as ACC/AHA (American College of Cardiology / American Heart Association), ACEP (American College of Emergency Physicians), IDSA (Infectious Diseases Society of America), ATS (American Thoracic Society), ASA (American Stroke Association), USPSTF, NIH, WHO, Cochrane, UpToDate, SCCM, ACOG, ACS, and other recognized professional medical societies and academic institutions.
+
+${filterInstructions ? `Apply these filters: ${filterInstructions}` : ""}
+
+For each relevant guideline found, return an object with:
+1. title: Official guideline title
+2. publicationYear: Year published or last updated (number)
+3. summary: Concise 2-3 sentence executive summary of key recommendations
+4. evidenceLevel: Highest evidence level (A, B, C, D, or I)
+5. guidelineType: One of "clinical_practice_guideline", "consensus_statement", "systematic_review", "meta_analysis", "expert_opinion"
+6. source_name: Full name of the publishing professional association or college
+7. source_abbreviation: Abbreviation (e.g., ACC/AHA, ACEP)
+8. source_url: Direct URL to the guideline on the official organization website
+
+Return 3-6 of the most relevant, current guidelines. Prioritize the most recent versions.`;
+
+    const response = await base44.integrations.Core.InvokeLLM({
+      prompt,
+      add_context_from_internet: true,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          guidelines: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                title: { type: "string" },
+                publicationYear: { type: "number" },
+                summary: { type: "string" },
+                evidenceLevel: { type: "string", enum: ["A", "B", "C", "D", "I"] },
+                guidelineType: { type: "string" },
+                source_name: { type: "string" },
+                source_abbreviation: { type: "string" },
+                source_url: { type: "string" },
+              },
+              required: ["title", "publicationYear", "summary", "evidenceLevel", "guidelineType", "source_name", "source_abbreviation", "source_url"],
+            },
+          },
+        },
+      },
+    });
+
+    const rawResults = (response?.guidelines || []).map((g, i) => ({ ...g, id: String(i + 1) }));
+    setResults(rawResults);
+    setLoading(false);
   }, [query, filters]);
 
-  const handleAnalyze = (result) => {
+  const handleAnalyze = async (result) => {
     setLoading(true);
-    setTimeout(() => {
-      setAnalysis({
-        id: result.id,
-        title: result.title,
-        source: result.source,
-        evidenceLevel: result.evidenceLevel,
-      });
-      setSelectedSections([]);
-      setLoading(false);
-    }, 800);
+    setAnalysis(null);
+
+    const prompt = `Perform a comprehensive clinical analysis of the following guideline for healthcare providers:
+
+Guideline: "${result.title}"
+Published by: ${result.source_name} (${result.source_abbreviation})
+Year: ${result.publicationYear}
+Evidence Level: ${result.evidenceLevel}
+Background: ${result.summary}
+
+Provide a detailed, structured clinical analysis with the following sections:
+1. executive_summary: A concise 3-4 sentence overview of the guideline scope and most critical recommendations.
+2. key_recommendations: A numbered list of the top 5-7 key clinical recommendations from this guideline.
+3. diagnostic_criteria: Specific diagnostic criteria, scoring systems, thresholds, and algorithms recommended.
+4. treatment_algorithm: Step-by-step clinical decision pathway for treatment, including first-line, second-line, and escalation options.
+5. medication_guidance: Specific drug recommendations with drug names, dosing regimens, routes, and monitoring parameters.
+6. monitoring_parameters: Key clinical, laboratory, and imaging parameters to monitor, with intervals and target values.
+7. special_populations: Adjustments and considerations for elderly patients, pregnancy, renal/hepatic impairment, pediatrics, and other special groups.
+8. contraindications: Absolute and relative contraindications, black box warnings, and important cautions.
+
+Be specific, clinically precise, and use medical terminology appropriate for physicians and advanced practice providers.`;
+
+    const response = await base44.integrations.Core.InvokeLLM({
+      prompt,
+      add_context_from_internet: true,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          executive_summary: { type: "string" },
+          key_recommendations: { type: "string" },
+          diagnostic_criteria: { type: "string" },
+          treatment_algorithm: { type: "string" },
+          medication_guidance: { type: "string" },
+          monitoring_parameters: { type: "string" },
+          special_populations: { type: "string" },
+          contraindications: { type: "string" },
+        },
+      },
+    });
+
+    setAnalysis({
+      id: result.id,
+      title: result.title,
+      source_name: result.source_name,
+      source_abbreviation: result.source_abbreviation,
+      source_url: result.source_url,
+      evidenceLevel: result.evidenceLevel,
+      guidelineType: result.guidelineType,
+      sections: response,
+    });
+    setSelectedSections([]);
+    setLoading(false);
   };
 
   const handleAddToNote = (sections) => {

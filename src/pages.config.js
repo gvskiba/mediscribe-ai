@@ -57,7 +57,6 @@ import GuidelineDetail from './pages/GuidelineDetail';
 import Guidelines from './pages/Guidelines';
 import Home from './pages/Home';
 import MedicalKnowledgeBase from './pages/MedicalKnowledgeBase';
-import MedicalNews from './pages/MedicalNews';
 import NewNote from './pages/NewNote';
 import NoteDetail from './pages/NoteDetail';
 import NoteTemplates from './pages/NoteTemplates';
@@ -89,7 +88,6 @@ export const PAGES = {
     "Guidelines": Guidelines,
     "Home": Home,
     "MedicalKnowledgeBase": MedicalKnowledgeBase,
-    "MedicalNews": MedicalNews,
     "NewNote": NewNote,
     "NoteDetail": NoteDetail,
     "NoteTemplates": NoteTemplates,

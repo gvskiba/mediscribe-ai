@@ -437,7 +437,7 @@ function AnalysisPanel({ analysis, loading, searchLoading, results, selectedSect
               </div>
             </div>
             {/* Sections */}
-            <div className="flex-1 overflow-auto flex flex-col gap-2">
+            <div className="flex flex-col gap-2">
               {ANALYSIS_SECTIONS.map((section) => (
                 <div key={section.id} className={`bg-[#162d4f] border rounded-md overflow-hidden transition-all ${selectedSections.includes(section.id) ? "border-[#00d4bc]" : "border-[#1e3a5f]"}`}>
                   <div

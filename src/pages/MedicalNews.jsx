@@ -214,6 +214,101 @@ function AISummaryButton({ article, onOpen }) {
   );
 }
 
+// ── No Articles AI Fallback ───────────────────────────────────────────────────
+function NoArticlesAIFallback({ showSaved, onResetFilters, onArticlesGenerated }) {
+  const [generating, setGenerating] = useState(false);
+
+  const generateAINews = async () => {
+    setGenerating(true);
+    try {
+      const resp = await base44.integrations.Core.InvokeLLM({
+        prompt: `Generate 5 relevant medical news headlines and brief summaries as if they were from reputable medical news sources (WHO, CDC, NEJM, etc). Each should be clinically relevant and current. Format as JSON array with objects containing: title, originalDescription, sourceName, category, and publishedAt (ISO date).`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            news: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  title: { type: "string" },
+                  originalDescription: { type: "string" },
+                  sourceName: { type: "string" },
+                  category: { type: "string" },
+                  publishedAt: { type: "string" }
+                }
+              }
+            }
+          }
+        }
+      });
+      
+      if (resp?.news && Array.isArray(resp.news)) {
+        const newsWithUrl = resp.news.map(item => ({
+          ...item,
+          url: `#ai-generated-${Date.now()}`,
+          isAIGenerated: true
+        }));
+        onArticlesGenerated(newsWithUrl);
+      }
+    } catch (error) {
+      console.error('Failed to generate AI news:', error);
+    }
+    setGenerating(false);
+  };
+
+  if (showSaved) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <div className="text-6xl mb-4 opacity-40">📰</div>
+        <h3 className="text-lg font-semibold text-white mb-2">No saved articles</h3>
+        <p className="text-sm text-slate-400 mb-6 max-w-xs">You haven't saved any articles yet.</p>
+        <button
+          onClick={onResetFilters}
+          className="flex items-center gap-2 bg-emerald-700/30 hover:bg-emerald-700/50 border border-emerald-600/50 text-emerald-300 text-sm font-medium px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Reset Filters
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center py-24 text-center">
+      <div className="text-6xl mb-4 opacity-40">🤖</div>
+      <h3 className="text-lg font-semibold text-white mb-2">No articles match your filters</h3>
+      <p className="text-sm text-slate-400 mb-6 max-w-xs">Let AI generate relevant medical news for you.</p>
+      <div className="flex flex-col gap-3">
+        <button
+          onClick={generateAINews}
+          disabled={generating}
+          className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
+        >
+          {generating ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4" />
+              Generate AI News
+            </>
+          )}
+        </button>
+        <button
+          onClick={onResetFilters}
+          className="flex items-center gap-2 bg-emerald-700/30 hover:bg-emerald-700/50 border border-emerald-600/50 text-emerald-300 text-sm font-medium px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Reset Filters
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Article Card ──────────────────────────────────────────────────────────────
 function ArticleCard({ article, saved, onSave }) {
   const [showShare, setShowShare] = useState(false);

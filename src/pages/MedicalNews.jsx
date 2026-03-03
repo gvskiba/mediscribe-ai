@@ -315,7 +315,7 @@ export default function MedicalNews() {
         </div>
 
         {/* ── Source Switcher ── */}
-        <div style={{ padding: "7px 14px", borderBottom: "1px solid #1e3a5f", display: "flex", gap: 5, flexShrink: 0 }}>
+        <div style={{ padding: "7px 14px", borderBottom: "1px solid #1e3a5f", display: "flex", gap: 5, alignItems: "center", flexShrink: 0 }}>
           {SOURCES.map(s => {
             const hasToken = !!localStorage.getItem(s.storageKey);
             return (
@@ -332,6 +332,19 @@ export default function MedicalNews() {
               >{s.label}{!hasToken && " (no key)"}</button>
             );
           })}
+          <a
+            href={createPageUrl("AppSettings")}
+            style={{
+              marginLeft: "auto", padding: "3px 10px", borderRadius: 20, fontSize: 10.5, fontWeight: 600,
+              cursor: "pointer", fontFamily: "inherit", transition: "all .15s",
+              background: "transparent", color: "#4a7299",
+              border: "1px solid #1e3a5f", textDecoration: "none", display: "flex", alignItems: "center", gap: 4,
+              flexShrink: 0
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "#2a4d72"; e.currentTarget.style.color = "#c8ddf0"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = "#1e3a5f"; e.currentTarget.style.color = "#4a7299"; }}
+            title="Manage API keys in App Settings"
+          >🔑 Manage API Keys</a>
         </div>
 
         {/* ── Search ── */}

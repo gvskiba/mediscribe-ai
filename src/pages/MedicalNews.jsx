@@ -737,8 +737,12 @@ export default function MedicalNews() {
           <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
             className={`shrink-0 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-all cursor-pointer whitespace-nowrap ${
               activeCategory === cat.id
-                ? "border-emerald-500/60 bg-emerald-900/30 text-emerald-300"
-                : "border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:text-slate-200"
+                ? cat.id === "ed_priority"
+                  ? "border-red-500/70 bg-red-900/40 text-red-300 font-bold"
+                  : "border-emerald-500/60 bg-emerald-900/30 text-emerald-300"
+                : cat.id === "ed_priority"
+                  ? "border-red-700/50 bg-red-950/30 text-red-400 hover:border-red-500/60 hover:text-red-300"
+                  : "border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:text-slate-200"
             }`}
           >
             <span>{cat.icon}</span>

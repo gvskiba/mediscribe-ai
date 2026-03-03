@@ -23,6 +23,7 @@ const T = {
 
 const NEWS_API_KEY = "thenewsapi_token";
 const WEBZIO_KEY = "webzio_token";
+const NEWSDATA_KEY = "newsdata_token";
 
 function SectionCard({ icon: Icon, iconColor, title, subtitle, children }) {
   return (

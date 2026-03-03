@@ -883,13 +883,13 @@ export default function MedicalNews() {
               </AnimatePresence>
             </div>
           </div>
-        ) : activeCategory !== "ed_priority" ? (
+        ) : (
           <NoArticlesAIFallback 
             showSaved={showSaved}
             onResetFilters={() => { setActiveCategory("all"); setActiveSources([]); setDateRange("all"); setImpactFilter("all"); setShowSaved(false); }}
             onArticlesGenerated={(newArticles) => setArticles([...articles, ...newArticles])}
           />
-        ) : null}
+        )}
       </div>
 
       {/* ── Footer ── */}

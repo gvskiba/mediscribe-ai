@@ -199,6 +199,7 @@ export default function MedicalNews() {
           limit: 10,
         });
       } else if (src === "webzio") {
+        const localToken = localStorage.getItem(sourceInfo.storageKey);
         resp = await base44.functions.invoke("fetchWebzNews", {
           query,
           page: pg - 1,   // webz uses 0-based offset via "from"
@@ -206,6 +207,7 @@ export default function MedicalNews() {
           token: localToken,
         });
       } else {
+        const localToken = localStorage.getItem(sourceInfo.storageKey);
         resp = await base44.functions.invoke("fetchMedicalNews", {
           query,
           categories: currentTopic.cat,

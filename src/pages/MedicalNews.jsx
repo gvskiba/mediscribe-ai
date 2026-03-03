@@ -160,9 +160,8 @@ export default function MedicalNews() {
   const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(1);
   const [activeSource, setActiveSource] = useState(() => {
-    // Pick whichever source has a token; default to thenewsapi
-    if (localStorage.getItem("webzio_token")) return "webzio";
-    return "thenewsapi";
+    // Default to Polygon.io for stock news
+    return "polygon";
   });
   const [bookmarks, setBookmarks] = useState(() => getSaved());
   const [lastRef, setLastRef] = useState(null);

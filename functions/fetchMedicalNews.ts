@@ -48,7 +48,7 @@ const RSS_SOURCES = [
     id: "acep",
     name: "ACEP",
     label: "American College of Emergency Physicians",
-    url: "https://www.acep.org/rss/newsroom/",
+    url: "https://www.acep.org/sitemap.xml",
     category: "Associations"
   },
   {

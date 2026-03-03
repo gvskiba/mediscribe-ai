@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { X, Plus, Check, Key, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, Trash2 } from "lucide-react";
 
 const NEWS_API_KEY = "thenewsapi_token";
+const WEBZIO_KEY = "webzio_token";
 
 function NewsAPIKeySection() {
   const [inputVal, setInputVal] = useState("");

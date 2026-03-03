@@ -14,6 +14,7 @@ import EDPriorityFeed from "../components/news/EDPriorityFeed";
 // ── Config ────────────────────────────────────────────────────────────────────
 const CATEGORIES = [
   { id: "all", label: "All News", icon: "📰" },
+  { id: "ed_priority", label: "ED Priority", icon: "🚨" },
   { id: "Global Health", label: "Global Health", icon: "🌍" },
   { id: "Public Health", label: "Public Health", icon: "🛡️" },
   { id: "Research", label: "Research", icon: "🔬" },

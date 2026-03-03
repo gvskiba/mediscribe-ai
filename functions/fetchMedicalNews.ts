@@ -53,22 +53,22 @@ const RSS_SOURCES = [
   {
     id: "jama",
     name: "JAMA",
-    label: "JAMA Current Issue",
-    url: "https://feeds.jamanetwork.com/jamanetwork/jama/issuearchive",
+    label: "JAMA Network",
+    url: "https://jamanetwork.com/rss/site_3/67.xml",
     category: "Clinical Research"
   },
   {
     id: "bmj",
     name: "BMJ",
     label: "The BMJ",
-    url: "https://syndication.highwire.org/alerts/toc/bmj.dtl",
+    url: "https://www.bmj.com/rss/current.xml",
     category: "Clinical Research"
   },
   {
     id: "mayo",
     name: "Mayo Clinic",
-    label: "Mayo Clinic Health System",
-    url: "https://www.mayoclinic.org/patient-care-and-health-information",
+    label: "Mayo Clinic News Network",
+    url: "https://newsnetwork.mayoclinic.org/feed/",
     category: "Health News"
   }
 ];
@@ -164,14 +164,13 @@ Deno.serve(async (req) => {
         const res = await fetch(src.url, {
           headers: {
             'Accept': 'application/rss+xml, application/xml, text/xml, */*',
-            'User-Agent': 'Mozilla/5.0 (compatible; MedicalNewsBot/1.0)'
+            'User-Agent': 'ClinAI-MedicalNews/1.0'
           },
-          signal: AbortSignal.timeout(15000)
+          signal: AbortSignal.timeout(10000)
         });
         if (!res.ok) throw new Error(`${src.id} failed: ${res.status}`);
         const xml = await res.text();
         const parsed = parseRSSFeed(xml, src.id, src.name, src.category);
-        console.log(`[${src.id}] parsed ${parsed.length} articles`);
         if (parsed.length === 0) throw new Error(`${src.id} returned empty feed`);
         return parsed;
       })

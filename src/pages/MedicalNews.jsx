@@ -91,8 +91,7 @@ function AISummaryModal({ article, isOpen, onClose }) {
   const [summary, setSummary] = useState(article?.summary || null);
   const [error, setError] = useState(null);
 
-  const fetchSummary = useCallback(async () => {
-    if (summary || !article) return;
+  const fetchSummary = async () => {
     setLoading(true);
     setError(null);
     try {
@@ -107,20 +106,20 @@ function AISummaryModal({ article, isOpen, onClose }) {
           } 
         }
       });
-      setSummary(resp?.summary || article.originalDescription || "No summary available.");
-      if (article.id) base44.entities.MedicalNewsCache.update(article.id, { summary: resp?.summary }).catch(() => {});
+      const text = resp?.summary || article.originalDescription || "No summary available.";
+      setSummary(text);
+      if (article.id) base44.entities.MedicalNewsCache.update(article.id, { summary: text }).catch(() => {});
     } catch (err) {
       setError("Failed to generate summary. Please try again.");
-      setSummary(article.originalDescription || "No summary available.");
     }
     setLoading(false);
-  }, [article, summary]);
+  };
 
   useEffect(() => {
-    if (isOpen && !summary && article) {
+    if (isOpen && !summary) {
       fetchSummary();
     }
-  }, [isOpen, summary, article, fetchSummary]);
+  }, [isOpen]);
 
   if (!isOpen || !article) return null;
 

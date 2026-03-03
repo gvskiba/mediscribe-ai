@@ -1,27 +1,29 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
 const RSS_SOURCES = [
-  { id: "who_news",   name: "WHO",                url: "https://www.who.int/rss-feeds/news-english.xml",                                                  category: "Global Health" },
-  { id: "cdc_news",   name: "CDC",                url: "https://tools.cdc.gov/api/v2/resources/media/132608.rss",                                          category: "Public Health" },
-  { id: "nih_news",   name: "NIH",                url: "https://www.nih.gov/news-events/news-releases.rss",                                               category: "Research" },
-  { id: "nejm",       name: "NEJM",               url: "https://www.nejm.org/action/showFeed?jc=nejm&type=etoc&feed=rss",                                 category: "Clinical Research" },
-  { id: "lancet",     name: "Lancet",             url: "https://www.thelancet.com/rssfeed/lancet_online.xml",                                             category: "Clinical Research" },
-  { id: "medlineplus",name: "MedlinePlus",        url: "https://medlineplus.gov/xml/mplus_health_news_english.xml",                                       category: "Health News" },
-  { id: "bmj",        name: "BMJ",                url: "https://www.bmj.com/rss/current.xml",                                                            category: "Clinical Research" },
-  // JAMA Network
-  { id: "jama",       name: "JAMA",               url: "https://jamanetwork.com/rss/site_3/67.xml",                                                       category: "JAMA Network" },
-  { id: "jama_im",    name: "JAMA Intern Med",    url: "https://jamanetwork.com/rss/site_3/83.xml",                                                       category: "JAMA Network" },
-  { id: "jama_cd",    name: "JAMA Cardiology",    url: "https://jamanetwork.com/rss/site_3/79.xml",                                                       category: "JAMA Network" },
-  { id: "jama_pd",    name: "JAMA Pediatrics",    url: "https://jamanetwork.com/rss/site_3/76.xml",                                                       category: "JAMA Network" },
-  // AHA Journals
-  { id: "aha_circ",   name: "Circulation",        url: "https://www.ahajournals.org/action/showFeed?type=etoc&feed=rss&jc=circ",                          category: "AHA Journals" },
-  { id: "aha_jaha",   name: "JAHA",               url: "https://www.ahajournals.org/action/showFeed?type=etoc&feed=rss&jc=jaha",                          category: "AHA Journals" },
-  { id: "aha_str",    name: "Stroke (AHA)",       url: "https://www.ahajournals.org/action/showFeed?type=etoc&feed=rss&jc=str",                           category: "AHA Journals" },
-  { id: "aha_hyp",    name: "Hypertension (AHA)", url: "https://www.ahajournals.org/action/showFeed?type=etoc&feed=rss&jc=hyp",                           category: "AHA Journals" },
-  // Medscape
-  { id: "medscape",   name: "Medscape",           url: "https://www.medscape.com/cx/rssfeeds/2678.xml",                                                   category: "Clinical News" },
-  { id: "medsc_cd",   name: "Medscape Cardiology",url: "https://rssfeeds.medscape.com/rss/10/news-cardiology",                                            category: "Clinical News" },
-  { id: "medsc_id",   name: "Medscape ID",        url: "https://rssfeeds.medscape.com/rss/10/news-infectious-diseases",                                   category: "Clinical News" },
+  // ── Public Health / Gov ──────────────────────────────────────────────────────
+  { id: "who_news",    name: "WHO",              url: "https://www.who.int/rss-feeds/news-english.xml",                                           category: "Global Health" },
+  { id: "cdc_news",    name: "CDC",              url: "https://tools.cdc.gov/api/v2/resources/media/132608.rss",                                  category: "Public Health" },
+  { id: "nih_news",    name: "NIH",              url: "https://www.nih.gov/news-events/news-releases.rss",                                       category: "Research" },
+  // ── Clinical Journals (RSS confirmed) ───────────────────────────────────────
+  { id: "nejm",        name: "NEJM",             url: "https://www.nejm.org/action/showFeed?jc=nejm&type=etoc&feed=rss",                         category: "Clinical Research" },
+  { id: "lancet",      name: "Lancet",           url: "https://www.thelancet.com/rssfeed/lancet_online.xml",                                     category: "Clinical Research" },
+  { id: "bmj",         name: "BMJ",              url: "https://www.bmj.com/rss/current.xml",                                                     category: "Clinical Research" },
+  // ── JAMA Network (only main feed has confirmed working RSS) ─────────────────
+  { id: "jama",        name: "JAMA",             url: "https://jamanetwork.com/rss/site_3/67.xml",                                               category: "JAMA Network" },
+  { id: "jama_open",   name: "JAMA Open",        url: "https://jamanetwork.com/rss/site_214/mostReadArticles.xml",                               category: "JAMA Network" },
+  // ── AHA Journals ────────────────────────────────────────────────────────────
+  { id: "aha_circ",    name: "Circulation",      url: "https://www.ahajournals.org/action/showFeed?type=etoc&feed=rss&jc=circ",                  category: "AHA Journals" },
+  { id: "aha_jaha",    name: "JAHA",             url: "https://www.ahajournals.org/action/showFeed?type=etoc&feed=rss&jc=jaha",                  category: "AHA Journals" },
+  { id: "aha_str",     name: "Stroke (AHA)",     url: "https://www.ahajournals.org/action/showFeed?type=etoc&feed=rss&jc=str",                   category: "AHA Journals" },
+  { id: "aha_hyp",     name: "Hypertension",     url: "https://www.ahajournals.org/action/showFeed?type=etoc&feed=rss&jc=hyp",                   category: "AHA Journals" },
+  // ── Medscape (confirmed working feed) ───────────────────────────────────────
+  { id: "medscape",    name: "Medscape",         url: "https://www.medscape.com/cx/rssfeeds/2700.xml",                                           category: "Clinical News" },
+  // ── Medical News / General ──────────────────────────────────────────────────
+  { id: "medlineplus", name: "MedlinePlus",      url: "https://medlineplus.gov/xml/mplus_health_news_english.xml",                              category: "Health News" },
+  { id: "medxpress",   name: "Medical Xpress",   url: "https://medicalxpress.com/rss-feed/",                                                     category: "Medical News" },
+  { id: "statnews",    name: "STAT News",        url: "https://www.statnews.com/feed/",                                                          category: "Medical News" },
+  { id: "healio",      name: "Healio",           url: "https://www.healio.com/sws/feed/news/all",                                               category: "Medical News" },
 ];
 
 function parseRSSFeed(xml, sourceId, sourceName, category) {

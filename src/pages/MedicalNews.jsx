@@ -599,6 +599,7 @@ export default function MedicalNews() {
   const [showFilters, setShowFilters] = useState(false);
   const [prefs, setPrefs] = useState(() => getPrefs());
   const [clock, setClock] = useState("");
+  const [popularSummaryArticle, setPopularSummaryArticle] = useState(null);
   const timerRef = useRef(null);
 
   const savedUrls = useMemo(() => savedArticles.map(a => a.url), [savedArticles]);

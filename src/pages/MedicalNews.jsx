@@ -21,7 +21,7 @@ const CATEGORIES = [
   { id: "Journals", label: "Journals", icon: "📖" },
 ];
 
-const ALL_SOURCES = ["WHO", "CDC", "NIH", "NEJM", "MedlinePlus", "Lancet", "Medscape", "JAMA", "BMJ", "Mayo Clinic"];
+const ALL_SOURCES = ["WHO", "CDC", "NIH", "NEJM", "MedlinePlus", "Lancet", "Medscape", "AHA Journals"];
 
 const SOURCE_COLORS = {
   WHO:          { border: "#14b8a6", text: "#14b8a6" },

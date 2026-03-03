@@ -51,25 +51,11 @@ const RSS_SOURCES = [
     category: "Health News"
   },
   {
-    id: "jama",
-    name: "JAMA",
-    label: "JAMA Network",
-    url: "https://jamanetwork.com/rss/site_3/67.xml",
+    id: "aha",
+    name: "AHA Journals",
+    label: "American Heart Association Journals",
+    url: "https://www.ahajournals.org/action/showFeed?type=etoc&feed=rss&jc=circ",
     category: "Clinical Research"
-  },
-  {
-    id: "bmj",
-    name: "BMJ",
-    label: "The BMJ",
-    url: "https://www.bmj.com/rss/current.xml",
-    category: "Clinical Research"
-  },
-  {
-    id: "mayo",
-    name: "Mayo Clinic",
-    label: "Mayo Clinic News Network",
-    url: "https://newsnetwork.mayoclinic.org/feed/",
-    category: "Health News"
   }
 ];
 

@@ -12,14 +12,16 @@ Deno.serve(async (req) => {
     let body = {};
     try { body = await req.json(); } catch { /* no body */ }
 
-    const { query = 'health medicine medical', categories = 'health,science', page = 1, limit = 10 } = body;
+    const { query = 'health medicine medical', categories = 'health,science', page = 1, limit = 10, token } = body;
 
-    if (!API_TOKEN) {
-      return Response.json({ error: 'THENEWSAPI_TOKEN not configured' }, { status: 500 });
+    // Use user-supplied token first, then fall back to server secret
+    const resolvedToken = token || API_TOKEN;
+    if (!resolvedToken) {
+      return Response.json({ error: 'No API token configured' }, { status: 500 });
     }
 
     const params = new URLSearchParams({
-      api_token:  API_TOKEN,
+      api_token:  resolvedToken,
       search:     query,
       categories: categories,
       language:   'en',

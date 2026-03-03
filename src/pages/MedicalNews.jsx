@@ -312,6 +312,26 @@ export default function MedicalNews() {
           </div>
         </div>
 
+        {/* ── Source Switcher ── */}
+        <div style={{ padding: "7px 14px", borderBottom: "1px solid #1e3a5f", display: "flex", gap: 5, flexShrink: 0 }}>
+          {SOURCES.map(s => {
+            const hasToken = !!localStorage.getItem(s.storageKey);
+            return (
+              <button key={s.id} onClick={() => handleSourceChange(s.id)}
+                style={{
+                  padding: "3px 12px", borderRadius: 20, fontSize: 10.5, fontWeight: 600,
+                  cursor: "pointer", fontFamily: "inherit", transition: "all .15s",
+                  background: activeSource === s.id ? "rgba(0,212,188,.1)" : "transparent",
+                  color: activeSource === s.id ? "#00d4bc" : hasToken ? "#c8ddf0" : "#4a7299",
+                  border: activeSource === s.id ? "1px solid rgba(0,212,188,.3)" : "1px solid #1e3a5f",
+                  opacity: hasToken ? 1 : 0.5,
+                }}
+                title={hasToken ? `Switch to ${s.label}` : `No token — add in App Settings`}
+              >{s.label}{!hasToken && " (no key)"}</button>
+            );
+          })}
+        </div>
+
         {/* ── Search ── */}
         <div style={{ padding: "9px 14px", borderBottom: "1px solid #1e3a5f", display: "flex", gap: 7, alignItems: "center", flexShrink: 0 }}>
           <input

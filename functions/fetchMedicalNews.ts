@@ -164,13 +164,14 @@ Deno.serve(async (req) => {
         const res = await fetch(src.url, {
           headers: {
             'Accept': 'application/rss+xml, application/xml, text/xml, */*',
-            'User-Agent': 'ClinAI-MedicalNews/1.0'
+            'User-Agent': 'Mozilla/5.0 (compatible; MedicalNewsBot/1.0)'
           },
-          signal: AbortSignal.timeout(10000)
+          signal: AbortSignal.timeout(15000)
         });
         if (!res.ok) throw new Error(`${src.id} failed: ${res.status}`);
         const xml = await res.text();
         const parsed = parseRSSFeed(xml, src.id, src.name, src.category);
+        console.log(`[${src.id}] parsed ${parsed.length} articles`);
         if (parsed.length === 0) throw new Error(`${src.id} returned empty feed`);
         return parsed;
       })

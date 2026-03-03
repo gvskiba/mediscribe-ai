@@ -38,6 +38,7 @@ function relTime(dateStr) {
 const SOURCES = [
   { id: "thenewsapi", label: "TheNewsAPI", storageKey: "thenewsapi_token" },
   { id: "webzio",     label: "Webz.io",    storageKey: "webzio_token" },
+  { id: "newsdata",   label: "NewsData.io", storageKey: "newsdata_token" },
 ];
 
 const SAVED_KEY = "tna_saved_v1";

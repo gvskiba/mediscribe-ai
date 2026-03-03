@@ -369,10 +369,10 @@ export default function MedicalNews() {
         <div style={{ padding: "5px 16px", borderBottom: "1px solid #1e3a5f", display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 26, flexShrink: 0 }}>
           <div style={{ fontSize: 10, color: "#4a7299", display: "flex", alignItems: "center", gap: 6 }}>
             {loading ? (
-              <span>⏳ Fetching from TheNewsAPI…</span>
+              <span>⏳ Fetching from {SOURCES.find(s => s.id === activeSource)?.label}…</span>
             ) : (
               <>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 9, padding: "1px 7px", borderRadius: 3, background: "rgba(0,212,188,.08)", color: "#00d4bc", border: "1px solid rgba(0,212,188,.2)", fontWeight: 600 }}>📡 TheNewsAPI</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 9, padding: "1px 7px", borderRadius: 3, background: "rgba(0,212,188,.08)", color: "#00d4bc", border: "1px solid rgba(0,212,188,.2)", fontWeight: 600 }}>📡 {SOURCES.find(s => s.id === activeSource)?.label}</span>
                 <span style={{ color: "#c8ddf0", fontWeight: 600, fontSize: 10.5 }}>{articles.length}</span>
                 articles {total ? `· Page ${page} · ${total.toLocaleString()} found` : ""}
               </>

@@ -913,6 +913,18 @@ export default function MedicalNews() {
         )}
       </AnimatePresence>
 
+      {/* ── Popular Article Summary Modal ── */}
+      <AnimatePresence>
+        {popularSummaryArticle && (
+          <AISummaryModal
+            article={popularSummaryArticle}
+            isOpen={true}
+            onClose={() => setPopularSummaryArticle(null)}
+            allArticles={articles}
+          />
+        )}
+      </AnimatePresence>
+
       <style>{`
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }

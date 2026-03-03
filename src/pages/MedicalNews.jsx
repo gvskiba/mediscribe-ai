@@ -43,7 +43,7 @@ const CATEGORY_COLORS = {
   "Clinical Research": "bg-amber-900/40 text-amber-300 border-amber-700",
   "Health News":       "bg-cyan-900/40 text-cyan-300 border-cyan-700",
   "Medical News":      "bg-rose-900/40 text-rose-300 border-rose-700",
-  "Associations":      "bg-yellow-900/40 text-yellow-300 border-yellow-700",
+  "Journals":          "bg-yellow-900/40 text-yellow-300 border-yellow-700",
 };
 
 const DATE_RANGES = [

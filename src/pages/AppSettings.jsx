@@ -310,6 +310,7 @@ export default function AppSettings() {
 
       {/* News API Keys */}
       <NewsAPIKeySection />
+      <WebzAPIKeySection />
 
       {/* Hospital Information */}
       <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-6">

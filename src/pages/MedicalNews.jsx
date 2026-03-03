@@ -295,7 +295,7 @@ export default function MedicalNews() {
           <div style={{ width: 34, height: 34, borderRadius: 9, fontSize: 15, background: "linear-gradient(135deg,rgba(0,212,188,.2),rgba(155,109,255,.15))", border: "1px solid rgba(0,212,188,.28)", display: "flex", alignItems: "center", justifyContent: "center" }}>📰</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 15.5, color: "#e8f4ff" }}>Medical News Feed</div>
-            <div style={{ fontSize: 9.5, color: "#4a7299", marginTop: 2 }}>TheNewsAPI.com · Live health & medical stories · Auto-refresh every 30 min</div>
+            <div style={{ fontSize: 9.5, color: "#4a7299", marginTop: 2 }}>Live health & medical stories · Auto-refresh every 30 min</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 20, background: "rgba(46,204,113,.08)", border: "1px solid rgba(46,204,113,.22)", fontSize: 9.5, color: "#2ecc71", fontWeight: 700 }}>

@@ -146,10 +146,18 @@ function MostPopularSection({ articles, savedUrls, onSave, onOpenSummary }) {
 }
 
 // ── AI Summary Modal ───────────────────────────────────────────────────────────
-function AISummaryModal({ article, isOpen, onClose, allArticles }) {
+function AISummaryModal({ article, isOpen, onClose, allArticles = [] }) {
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState(article?.summary || null);
   const [error, setError] = useState(null);
+
+  // Related: same category or same source, excluding itself, up to 3
+  const relatedArticles = useMemo(() => {
+    if (!article || !allArticles.length) return [];
+    return allArticles
+      .filter(a => a.url !== article.url && (a.category === article.category || a.sourceName === article.sourceName))
+      .slice(0, 3);
+  }, [article, allArticles]);
 
   const fetchSummary = async () => {
     setLoading(true);

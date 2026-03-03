@@ -85,8 +85,68 @@ function relativeTime(dateStr) {
   try { return formatDistanceToNow(new Date(dateStr), { addSuffix: true }); } catch { return ""; }
 }
 
+// ── Most Popular Section ──────────────────────────────────────────────────────
+function MostPopularSection({ articles, savedUrls, onSave, onOpenSummary }) {
+  // "Popular" = high impact (has both summary and description), pick top 5
+  const popular = useMemo(() => {
+    return [...articles]
+      .filter(a => a.originalDescription)
+      .sort((a, b) => {
+        const scoreA = (a.summary ? 2 : 0) + (a.originalDescription ? 1 : 0);
+        const scoreB = (b.summary ? 2 : 0) + (b.originalDescription ? 1 : 0);
+        if (scoreB !== scoreA) return scoreB - scoreA;
+        return new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0);
+      })
+      .slice(0, 5);
+  }, [articles]);
+
+  if (popular.length === 0) return null;
+
+  return (
+    <div className="max-w-4xl mx-auto mb-5">
+      <div className="bg-[#0d1f3c]/60 border border-white/10 rounded-xl p-4">
+        <h3 className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-widest mb-3">
+          <TrendingUp className="w-3.5 h-3.5" />
+          Most Popular
+        </h3>
+        <div className="space-y-2">
+          {popular.map((article, i) => {
+            const sourceColor = SOURCE_COLORS[article.sourceName] || { border: "#64748b", text: "#94a3b8" };
+            return (
+              <div key={article.id || article.url || i} className="flex items-start gap-3 group">
+                <span className="text-lg font-bold text-slate-600 w-5 shrink-0 leading-tight">{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    {article.sourceName && (
+                      <span className="text-xs font-bold px-1.5 py-0.5 rounded border shrink-0"
+                        style={{ borderColor: sourceColor.border, color: sourceColor.text, background: `${sourceColor.border}15` }}>
+                        {article.sourceName}
+                      </span>
+                    )}
+                  </div>
+                  <a href={article.url} target="_blank" rel="noopener noreferrer"
+                    className="text-xs font-semibold text-slate-200 hover:text-blue-400 transition-colors line-clamp-2 leading-snug block">
+                    {article.title}
+                  </a>
+                </div>
+                <button
+                  onClick={() => onOpenSummary(article)}
+                  className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-slate-600 hover:text-purple-400 cursor-pointer"
+                  title="AI Summary"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── AI Summary Modal ───────────────────────────────────────────────────────────
-function AISummaryModal({ article, isOpen, onClose }) {
+function AISummaryModal({ article, isOpen, onClose, allArticles }) {
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState(article?.summary || null);
   const [error, setError] = useState(null);

@@ -34,6 +34,11 @@ function relTime(dateStr) {
   } catch { return ""; }
 }
 
+const SOURCES = [
+  { id: "thenewsapi", label: "TheNewsAPI", storageKey: "thenewsapi_token" },
+  { id: "webzio",     label: "Webz.io",    storageKey: "webzio_token" },
+];
+
 const SAVED_KEY = "tna_saved_v1";
 function getSaved() {
   try { return new Set(JSON.parse(localStorage.getItem(SAVED_KEY) || "[]")); } catch { return new Set(); }

@@ -36,9 +36,10 @@ function relTime(dateStr) {
 }
 
 const SOURCES = [
-  { id: "thenewsapi", label: "TheNewsAPI", storageKey: "thenewsapi_token" },
-  { id: "webzio",     label: "Webz.io",    storageKey: "webzio_token" },
-  { id: "newsdata",   label: "NewsData.io", storageKey: "newsdata_token" },
+  { id: "thenewsapi", label: "TheNewsAPI", storageKey: "thenewsapi_token", type: "news" },
+  { id: "webzio",     label: "Webz.io",    storageKey: "webzio_token", type: "news" },
+  { id: "newsdata",   label: "NewsData.io", storageKey: "newsdata_token", type: "news" },
+  { id: "polygon",    label: "Polygon.io", storageKey: null, type: "stocks" },
 ];
 
 const SAVED_KEY = "tna_saved_v1";

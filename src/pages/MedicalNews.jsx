@@ -31,9 +31,7 @@ const SOURCE_COLORS = {
   MedlinePlus:  { border: "#f97316", text: "#f97316" },
   Lancet:       { border: "#ef4444", text: "#ef4444" },
   Medscape:     { border: "#f59e0b", text: "#f59e0b" },
-  JAMA:         { border: "#8b5cf6", text: "#8b5cf6" },
-  BMJ:          { border: "#06b6d4", text: "#06b6d4" },
-  "Mayo Clinic":{ border: "#84cc16", text: "#84cc16" },
+  "AHA Journals":{ border: "#e11d48", text: "#e11d48" },
 };
 
 const CATEGORY_COLORS = {

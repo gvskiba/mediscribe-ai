@@ -169,26 +169,42 @@ export default function MedicalNews() {
 
   const showToast = (msg, color) => setToast({ msg, color });
 
-  const fetchNews = useCallback(async (pg = 1, topicId = topic, q = searchQuery) => {
+  const fetchNews = useCallback(async (pg = 1, topicId = topic, q = searchQuery, src = activeSource) => {
     setLoading(true);
     setError(null);
-    const localToken = localStorage.getItem("thenewsapi_token");
+
+    const sourceInfo = SOURCES.find(s => s.id === src) || SOURCES[0];
+    const localToken = localStorage.getItem(sourceInfo.storageKey);
+
     if (!localToken) {
-      setError("No API token configured. Please add your TheNewsAPI.com token in App Settings.");
+      setError(`No API token for ${sourceInfo.label}. Please add it in App Settings.`);
       setArticles([]);
       setLoading(false);
       return;
     }
+
     try {
       const currentTopic = TOPICS.find(t => t.id === topicId) || TOPICS[0];
       const query = q.trim() || currentTopic.q;
-      const resp = await base44.functions.invoke("fetchMedicalNews", {
-        query,
-        categories: currentTopic.cat,
-        page: pg,
-        limit: 10,
-        token: localToken,
-      });
+
+      let resp;
+      if (src === "webzio") {
+        resp = await base44.functions.invoke("fetchWebzNews", {
+          query,
+          page: pg - 1,   // webz uses 0-based offset via "from"
+          size: 10,
+          token: localToken,
+        });
+      } else {
+        resp = await base44.functions.invoke("fetchMedicalNews", {
+          query,
+          categories: currentTopic.cat,
+          page: pg,
+          limit: 10,
+          token: localToken,
+        });
+      }
+
       setArticles(resp.data?.articles || []);
       setMeta(resp.data?.meta || {});
       setLastRef(new Date());
@@ -198,7 +214,7 @@ export default function MedicalNews() {
       setArticles([]);
     }
     setLoading(false);
-  }, [topic, searchQuery]);
+  }, [topic, searchQuery, activeSource]);
 
   // Initial load + auto-refresh
   useEffect(() => {

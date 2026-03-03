@@ -177,6 +177,32 @@ function AISummaryModal({ article, isOpen, onClose }) {
           )}
         </div>
 
+        {/* Related Articles */}
+        {relatedArticles.length > 0 && (
+          <div className="mt-5 pt-4 border-t border-white/10">
+            <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+              <Link2 className="w-3.5 h-3.5 text-blue-400" />
+              Related Articles
+            </h4>
+            <div className="space-y-2">
+              {relatedArticles.map((rel, i) => {
+                const color = SOURCE_COLORS[rel.sourceName] || { border: "#64748b", text: "#94a3b8" };
+                return (
+                  <a key={i} href={rel.url} target="_blank" rel="noopener noreferrer"
+                    className="flex items-start gap-2 p-2.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/8 transition-all group"
+                  >
+                    <span className="text-xs font-bold px-1.5 py-0.5 rounded border shrink-0 mt-0.5"
+                      style={{ borderColor: color.border, color: color.text, background: `${color.border}15` }}>
+                      {rel.sourceName}
+                    </span>
+                    <span className="text-xs text-slate-300 group-hover:text-white transition-colors line-clamp-2 leading-relaxed">{rel.title}</span>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-2 mt-6 pt-4 border-t border-white/10">
           <a 
             href={article.url} 

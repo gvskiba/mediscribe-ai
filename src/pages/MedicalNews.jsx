@@ -308,7 +308,7 @@ function AISummaryButton({ article, onOpen }) {
 }
 
 // ── Article Card ──────────────────────────────────────────────────────────────
-function ArticleCard({ article, saved, onSave }) {
+function ArticleCard({ article, saved, onSave, allArticles }) {
   const [showShare, setShowShare] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const timeAgo = relativeTime(article.publishedAt);

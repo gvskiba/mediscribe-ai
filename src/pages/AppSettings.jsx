@@ -287,6 +287,17 @@ export default function AppSettings() {
             />
           </SectionCard>
 
+          <SectionCard icon={Newspaper} iconColor="#00b4d8" title="NewsData.io" subtitle="Alternative source for the Medical News feed page">
+            <ApiKeySection
+              storageKey={NEWSDATA_KEY}
+              label="NewsData.io"
+              color="#00b4d8"
+              validateFn="validateNewsdataApiKey"
+              getUrl="https://newsdata.io"
+              urlLabel="newsdata.io"
+            />
+          </SectionCard>
+
           <SectionCard icon={Building2} iconColor={T.amber} title="Hospital Information" subtitle="Displayed in the top bar and clinical notes">
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {[

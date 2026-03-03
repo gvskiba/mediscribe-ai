@@ -452,7 +452,7 @@ export default function MedicalNews() {
         {/* ── Footer ── */}
         <div style={{ padding: "8px 16px", borderTop: "1px solid #1e3a5f", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, background: "rgba(11,29,53,.6)" }}>
           <div style={{ fontSize: 9.5, color: "#4a7299", display: "flex", alignItems: "center", gap: 6 }}>
-            📡 TheNewsAPI.com · Base44
+            📡 {SOURCES.find(s => s.id === activeSource)?.label} · Base44
             {bookmarks.size > 0 && <span style={{ color: "#fbbf24" }}>· ★ {bookmarks.size} saved</span>}
           </div>
           <div style={{ display: "flex", gap: 5 }}>

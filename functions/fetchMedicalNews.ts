@@ -1,62 +1,27 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
 const RSS_SOURCES = [
-  {
-    id: "who_news",
-    name: "WHO",
-    label: "World Health Organization",
-    url: "https://www.who.int/rss-feeds/news-english.xml",
-    category: "Global Health"
-  },
-  {
-    id: "cdc_news",
-    name: "CDC",
-    label: "Centers for Disease Control",
-    url: "https://tools.cdc.gov/api/v2/resources/media/132608.rss",
-    category: "Public Health"
-  },
-  {
-    id: "nih_news",
-    name: "NIH",
-    label: "National Institutes of Health",
-    url: "https://www.nih.gov/news-events/news-releases.rss",
-    category: "Research"
-  },
-  {
-    id: "nejm",
-    name: "NEJM",
-    label: "New England Journal of Medicine",
-    url: "https://www.nejm.org/action/showFeed?jc=nejm&type=etoc&feed=rss",
-    category: "Clinical Research"
-  },
-  {
-    id: "medlineplus",
-    name: "MedlinePlus",
-    label: "NLM MedlinePlus Health News",
-    url: "https://medlineplus.gov/xml/mplus_health_news_english.xml",
-    category: "Health News"
-  },
-  {
-    id: "lancet",
-    name: "Lancet",
-    label: "The Lancet",
-    url: "https://www.thelancet.com/rssfeed/lancet_online.xml",
-    category: "Clinical Research"
-  },
-  {
-    id: "medscape",
-    name: "Medscape",
-    label: "Medscape Medical News",
-    url: "https://www.medscape.com/cx/rssfeeds/2678.xml",
-    category: "Health News"
-  },
-  {
-    id: "aha",
-    name: "AHA Journals",
-    label: "American Heart Association Journals",
-    url: "https://www.ahajournals.org/action/showFeed?type=etoc&feed=rss&jc=circ",
-    category: "Clinical Research"
-  }
+  { id: "who_news",   name: "WHO",                url: "https://www.who.int/rss-feeds/news-english.xml",                                                  category: "Global Health" },
+  { id: "cdc_news",   name: "CDC",                url: "https://tools.cdc.gov/api/v2/resources/media/132608.rss",                                          category: "Public Health" },
+  { id: "nih_news",   name: "NIH",                url: "https://www.nih.gov/news-events/news-releases.rss",                                               category: "Research" },
+  { id: "nejm",       name: "NEJM",               url: "https://www.nejm.org/action/showFeed?jc=nejm&type=etoc&feed=rss",                                 category: "Clinical Research" },
+  { id: "lancet",     name: "Lancet",             url: "https://www.thelancet.com/rssfeed/lancet_online.xml",                                             category: "Clinical Research" },
+  { id: "medlineplus",name: "MedlinePlus",        url: "https://medlineplus.gov/xml/mplus_health_news_english.xml",                                       category: "Health News" },
+  { id: "bmj",        name: "BMJ",                url: "https://www.bmj.com/rss/current.xml",                                                            category: "Clinical Research" },
+  // JAMA Network
+  { id: "jama",       name: "JAMA",               url: "https://jamanetwork.com/rss/site_3/67.xml",                                                       category: "JAMA Network" },
+  { id: "jama_im",    name: "JAMA Intern Med",    url: "https://jamanetwork.com/rss/site_3/83.xml",                                                       category: "JAMA Network" },
+  { id: "jama_cd",    name: "JAMA Cardiology",    url: "https://jamanetwork.com/rss/site_3/79.xml",                                                       category: "JAMA Network" },
+  { id: "jama_pd",    name: "JAMA Pediatrics",    url: "https://jamanetwork.com/rss/site_3/76.xml",                                                       category: "JAMA Network" },
+  // AHA Journals
+  { id: "aha_circ",   name: "Circulation",        url: "https://www.ahajournals.org/action/showFeed?type=etoc&feed=rss&jc=circ",                          category: "AHA Journals" },
+  { id: "aha_jaha",   name: "JAHA",               url: "https://www.ahajournals.org/action/showFeed?type=etoc&feed=rss&jc=jaha",                          category: "AHA Journals" },
+  { id: "aha_str",    name: "Stroke (AHA)",       url: "https://www.ahajournals.org/action/showFeed?type=etoc&feed=rss&jc=str",                           category: "AHA Journals" },
+  { id: "aha_hyp",    name: "Hypertension (AHA)", url: "https://www.ahajournals.org/action/showFeed?type=etoc&feed=rss&jc=hyp",                           category: "AHA Journals" },
+  // Medscape
+  { id: "medscape",   name: "Medscape",           url: "https://www.medscape.com/cx/rssfeeds/2678.xml",                                                   category: "Clinical News" },
+  { id: "medsc_cd",   name: "Medscape Cardiology",url: "https://rssfeeds.medscape.com/rss/10/news-cardiology",                                            category: "Clinical News" },
+  { id: "medsc_id",   name: "Medscape ID",        url: "https://rssfeeds.medscape.com/rss/10/news-infectious-diseases",                                   category: "Clinical News" },
 ];
 
 function parseRSSFeed(xml, sourceId, sourceName, category) {
@@ -79,7 +44,6 @@ function parseRSSFeed(xml, sourceId, sourceName, category) {
       return '';
     };
 
-    // Get link — try plain text between tags, then fall back to guid
     const getLinkTag = () => {
       const m1 = block.match(/<link[^>]*>([^<]+)<\/link>/i);
       if (m1) return m1[1].trim();
@@ -112,7 +76,7 @@ function parseRSSFeed(xml, sourceId, sourceName, category) {
     }
   }
 
-  return items.slice(0, 8);
+  return items.slice(0, 6);
 }
 
 Deno.serve(async (req) => {
@@ -127,10 +91,10 @@ Deno.serve(async (req) => {
     try { body = await req.json(); } catch { /* no body */ }
 
     const forceRefresh = body.forceRefresh || false;
-    const limit = body.limit || 20;
+    const limit = body.limit || 60;
     const REFRESH_MINUTES = 30;
 
-    // Check cache first (always attempt — NEWSAPI_KEY not required)
+    // Check cache first
     if (!forceRefresh) {
       try {
         const cached = await base44.entities.MedicalNewsCache.list('-publishedAt', limit);
@@ -162,13 +126,59 @@ Deno.serve(async (req) => {
       })
     );
 
-    // Collect successful RSS results
-    const rssArticles = results
-      .filter(r => r.status === 'fulfilled')
-      .flatMap(r => r.value);
+    // Optional: PubMed via API key
+    const pubmedArticles = [];
+    const PUBMED_API_KEY = Deno.env.get("PUBMED_API_KEY");
+    if (PUBMED_API_KEY) {
+      try {
+        const searchRes = await fetch(`https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=medicine[mesh]+AND+clinical+trial[pt]&sort=date&retmax=8&retmode=json&api_key=${PUBMED_API_KEY}`, { signal: AbortSignal.timeout(8000) });
+        const searchData = await searchRes.json();
+        const pmids = searchData.esearchresult?.idlist ?? [];
+        if (pmids.length) {
+          const summaryRes = await fetch(`https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${pmids.join(',')}&retmode=json&api_key=${PUBMED_API_KEY}`, { signal: AbortSignal.timeout(8000) });
+          const summaryData = await summaryRes.json();
+          pmids.forEach(pmid => {
+            const art = summaryData.result?.[pmid];
+            if (art?.title) pubmedArticles.push({
+              sourceId: 'pubmed_latest', sourceName: 'PubMed', category: 'Research',
+              title: art.title.slice(0, 250),
+              url: `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`,
+              originalDescription: `${art.fulljournalname || ''} · ${art.pubdate || ''}`.slice(0, 600),
+              publishedAt: art.pubdate ? new Date(art.pubdate).toISOString() : new Date().toISOString(),
+              cachedAt: new Date().toISOString(),
+            });
+          });
+        }
+      } catch { /* ignore pubmed errors */ }
+    }
 
-    // Merge + deduplicate by URL
-    const allArticles = [...rssArticles];
+    // Optional: NewsAPI
+    const newsApiArticles = [];
+    const NEWSAPI_KEY = Deno.env.get("NEWSAPI_KEY");
+    if (NEWSAPI_KEY) {
+      try {
+        const res = await fetch(`https://newsapi.org/v2/everything?q=medicine+OR+clinical+OR+drug+approval+OR+FDA&language=en&sortBy=publishedAt&pageSize=10&apiKey=${NEWSAPI_KEY}`, { signal: AbortSignal.timeout(8000) });
+        const data = await res.json();
+        (data.articles || []).forEach(a => {
+          if (a.title && a.url && !a.title.includes('[Removed]')) {
+            newsApiArticles.push({
+              sourceId: 'newsapi_medical', sourceName: a.source?.name || 'NewsAPI', category: 'Medical News',
+              title: a.title.slice(0, 250),
+              url: a.url,
+              originalDescription: (a.description || '').slice(0, 600),
+              imageUrl: a.urlToImage || null,
+              author: a.author || null,
+              publishedAt: a.publishedAt || new Date().toISOString(),
+              cachedAt: new Date().toISOString(),
+            });
+          }
+        });
+      } catch { /* ignore newsapi errors */ }
+    }
+
+    const rssArticles = results.filter(r => r.status === 'fulfilled').flatMap(r => r.value);
+    const allArticles = [...rssArticles, ...pubmedArticles, ...newsApiArticles];
+
     const seen = new Set();
     const unique = allArticles.filter(a => {
       if (!a.url || seen.has(a.url)) return false;
@@ -176,13 +186,12 @@ Deno.serve(async (req) => {
       return true;
     });
 
-    // Sort by publishedAt desc
     unique.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
     const toSave = unique.slice(0, limit);
 
-    // Persist to cache (clear old, insert new) — best effort
+    // Persist to cache
     try {
-      const existing = await base44.entities.MedicalNewsCache.list('-publishedAt', 100);
+      const existing = await base44.entities.MedicalNewsCache.list('-publishedAt', 200);
       await Promise.all(existing.map(e => base44.entities.MedicalNewsCache.delete(e.id)));
     } catch { /* ignore */ }
 

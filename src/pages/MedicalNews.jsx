@@ -13,27 +13,48 @@ import EDPriorityFeed from "../components/news/EDPriorityFeed";
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const CATEGORIES = [
-  { id: "all", label: "All News", icon: "📰" },
-  { id: "ed_priority", label: "ED Priority", icon: "🚨" },
-  { id: "Global Health", label: "Global Health", icon: "🌍" },
-  { id: "Public Health", label: "Public Health", icon: "🛡️" },
-  { id: "Research", label: "Research", icon: "🔬" },
-  { id: "Clinical Research", label: "Journals", icon: "📖" },
-  { id: "Health News", label: "Health News", icon: "🏥" },
-  { id: "Journals", label: "Journals", icon: "📖" },
+  { id: "all",             label: "All News",         icon: "📰" },
+  { id: "ed_priority",     label: "ED Priority",      icon: "🚨" },
+  { id: "Global Health",   label: "Global Health",    icon: "🌍" },
+  { id: "Public Health",   label: "Public Health",    icon: "🛡️" },
+  { id: "Research",        label: "Research",         icon: "🔬" },
+  { id: "Clinical Research", label: "Journals",       icon: "📖" },
+  { id: "JAMA Network",    label: "JAMA",             icon: "🩺" },
+  { id: "AHA Journals",    label: "AHA / Cardiology", icon: "🫀" },
+  { id: "Clinical News",   label: "Clinical News",    icon: "🏥" },
+  { id: "Health News",     label: "Health News",      icon: "💊" },
+  { id: "Medical News",    label: "Medical News",     icon: "📋" },
 ];
 
-const ALL_SOURCES = ["WHO", "CDC", "NIH", "NEJM", "MedlinePlus", "Lancet", "Medscape", "AHA Journals"];
+const ALL_SOURCES = [
+  "WHO", "CDC", "NIH", "NEJM", "MedlinePlus", "Lancet", "BMJ",
+  "JAMA", "JAMA Intern Med", "JAMA Cardiology", "JAMA Pediatrics",
+  "Circulation", "JAHA", "Stroke (AHA)", "Hypertension (AHA)",
+  "Medscape", "Medscape Cardiology", "Medscape ID",
+  "PubMed", "NewsAPI",
+];
 
 const SOURCE_COLORS = {
-  WHO:          { border: "#14b8a6", text: "#14b8a6" },
-  CDC:          { border: "#a855f7", text: "#a855f7" },
-  NIH:          { border: "#3b82f6", text: "#3b82f6" },
-  NEJM:         { border: "#22c55e", text: "#22c55e" },
-  MedlinePlus:  { border: "#f97316", text: "#f97316" },
-  Lancet:       { border: "#ef4444", text: "#ef4444" },
-  Medscape:     { border: "#f59e0b", text: "#f59e0b" },
-  "AHA Journals":{ border: "#e11d48", text: "#e11d48" },
+  WHO:                  { border: "#14b8a6", text: "#14b8a6" },
+  CDC:                  { border: "#a855f7", text: "#a855f7" },
+  NIH:                  { border: "#3b82f6", text: "#3b82f6" },
+  NEJM:                 { border: "#22c55e", text: "#22c55e" },
+  MedlinePlus:          { border: "#f97316", text: "#f97316" },
+  Lancet:               { border: "#ef4444", text: "#ef4444" },
+  BMJ:                  { border: "#4a90d9", text: "#4a90d9" },
+  JAMA:                 { border: "#e74c3c", text: "#e74c3c" },
+  "JAMA Intern Med":    { border: "#c0392b", text: "#c0392b" },
+  "JAMA Cardiology":    { border: "#e74c3c", text: "#e74c3c" },
+  "JAMA Pediatrics":    { border: "#c0392b", text: "#c0392b" },
+  Circulation:          { border: "#e11d48", text: "#e11d48" },
+  JAHA:                 { border: "#be123c", text: "#be123c" },
+  "Stroke (AHA)":       { border: "#e11d48", text: "#e11d48" },
+  "Hypertension (AHA)": { border: "#be123c", text: "#be123c" },
+  Medscape:             { border: "#f59e0b", text: "#f59e0b" },
+  "Medscape Cardiology":{ border: "#d97706", text: "#d97706" },
+  "Medscape ID":        { border: "#f59e0b", text: "#f59e0b" },
+  PubMed:               { border: "#9b6dff", text: "#9b6dff" },
+  NewsAPI:              { border: "#f472b6", text: "#f472b6" },
 };
 
 const CATEGORY_COLORS = {
@@ -43,7 +64,9 @@ const CATEGORY_COLORS = {
   "Clinical Research": "bg-amber-900/40 text-amber-300 border-amber-700",
   "Health News":       "bg-cyan-900/40 text-cyan-300 border-cyan-700",
   "Medical News":      "bg-rose-900/40 text-rose-300 border-rose-700",
-  "Journals":          "bg-yellow-900/40 text-yellow-300 border-yellow-700",
+  "JAMA Network":      "bg-red-900/40 text-red-300 border-red-700",
+  "AHA Journals":      "bg-pink-900/40 text-pink-300 border-pink-700",
+  "Clinical News":     "bg-yellow-900/40 text-yellow-300 border-yellow-700",
 };
 
 const DATE_RANGES = [

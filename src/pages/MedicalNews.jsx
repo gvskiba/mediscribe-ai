@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import {
   RefreshCw, Bookmark, BookmarkCheck, ExternalLink, Sparkles,
   ChevronDown, ChevronUp, Loader2, X, Star, Newspaper, Settings2,
-  Filter, Calendar, Zap, Check, Share2
+  Filter, Calendar, Zap, Check, Share2, TrendingUp, Link2
 } from "lucide-react";
 import { formatDistanceToNow, subDays, isAfter } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";

@@ -48,14 +48,14 @@ const RSS_SOURCES = [
     id: "acep",
     name: "ACEP",
     label: "American College of Emergency Physicians",
-    url: "https://www.acep.org/news/rss.xml",
+    url: "https://www.acep.org/news/rss/",
     category: "Associations"
   },
   {
     id: "aap",
     name: "AAP",
     label: "American Academy of Pediatrics",
-    url: "https://www.aap.org/en/news-room/aap-rss-feeds/news/",
+    url: "https://www.aap.org/en/news-room/news-releases-from-the-aap/rss.xml",
     category: "Associations"
   },
   {

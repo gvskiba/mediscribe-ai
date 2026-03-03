@@ -9,6 +9,7 @@ import { formatDistanceToNow, subDays, isAfter } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import ArticleShareModal from "../components/news/ArticleShareModal";
+import EDPriorityFeed from "../components/news/EDPriorityFeed";
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const CATEGORIES = [

@@ -47,7 +47,6 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
-import AppSettings from './pages/AppSettings';
 import Calculators from './pages/Calculators';
 import Calendar from './pages/Calendar';
 import ClinicalGuidelines from './pages/ClinicalGuidelines';
@@ -79,7 +78,6 @@ import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
-    "AppSettings": AppSettings,
     "Calculators": Calculators,
     "Calendar": Calendar,
     "ClinicalGuidelines": ClinicalGuidelines,

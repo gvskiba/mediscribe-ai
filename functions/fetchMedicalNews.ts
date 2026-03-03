@@ -53,22 +53,22 @@ const RSS_SOURCES = [
   {
     id: "jama",
     name: "JAMA",
-    label: "JAMA Internal Medicine",
-    url: "https://jamanetwork.com/rss/site_3/68.xml",
+    label: "JAMA Current Issue",
+    url: "https://feeds.jamanetwork.com/jamanetwork/jama/issuearchive",
     category: "Clinical Research"
   },
   {
     id: "bmj",
     name: "BMJ",
     label: "The BMJ",
-    url: "https://www.bmj.com/rss/current.xml",
+    url: "https://syndication.highwire.org/alerts/toc/bmj.dtl",
     category: "Clinical Research"
   },
   {
     id: "mayo",
     name: "Mayo Clinic",
-    label: "Mayo Clinic News Network",
-    url: "https://www.mayoclinic.org/rss/all-health-information-topics.rss",
+    label: "Mayo Clinic Health System",
+    url: "https://www.mayoclinic.org/patient-care-and-health-information",
     category: "Health News"
   }
 ];

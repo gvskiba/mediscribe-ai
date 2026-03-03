@@ -176,13 +176,16 @@ export default function MedicalNews() {
     setError(null);
 
     const sourceInfo = SOURCES.find(s => s.id === src) || SOURCES[0];
-    const localToken = localStorage.getItem(sourceInfo.storageKey);
-
-    if (!localToken) {
-      setError(`No API token for ${sourceInfo.label}. Please add it in App Settings.`);
-      setArticles([]);
-      setLoading(false);
-      return;
+    
+    // Skip token check for Polygon.io (uses backend secret)
+    if (src !== "polygon") {
+      const localToken = localStorage.getItem(sourceInfo.storageKey);
+      if (!localToken) {
+        setError(`No API token for ${sourceInfo.label}. Please add it in App Settings.`);
+        setArticles([]);
+        setLoading(false);
+        return;
+      }
     }
 
     try {

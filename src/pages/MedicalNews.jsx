@@ -18,7 +18,7 @@ const CATEGORIES = [
   { id: "Research", label: "Research", icon: "🔬" },
   { id: "Clinical Research", label: "Journals", icon: "📖" },
   { id: "Health News", label: "Health News", icon: "🏥" },
-  { id: "Associations", label: "Associations & Colleges", icon: "🏛️" },
+  { id: "Journals", label: "Journals", icon: "📖" },
 ];
 
 const ALL_SOURCES = ["WHO", "CDC", "NIH", "NEJM", "MedlinePlus", "Lancet", "Medscape", "JAMA", "BMJ", "Mayo Clinic"];

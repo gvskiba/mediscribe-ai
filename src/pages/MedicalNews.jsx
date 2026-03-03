@@ -191,7 +191,12 @@ export default function MedicalNews() {
       const query = q.trim() || currentTopic.q;
 
       let resp;
-      if (src === "webzio") {
+      if (src === "polygon") {
+        resp = await base44.functions.invoke("fetchPolygonStockNews", {
+          query,
+          limit: 10,
+        });
+      } else if (src === "webzio") {
         resp = await base44.functions.invoke("fetchWebzNews", {
           query,
           page: pg - 1,   // webz uses 0-based offset via "from"

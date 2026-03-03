@@ -853,6 +853,8 @@ export default function MedicalNews() {
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-slate-500" />
           </div>
+        ) : activeCategory === "ed_priority" ? (
+          <EDPriorityFeed articles={articles} />
         ) : filtered.length > 0 ? (
           <div>
             {!showSaved && activeCategory === "all" && activeSources.length === 0 && (

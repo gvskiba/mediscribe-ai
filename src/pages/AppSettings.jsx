@@ -255,7 +255,7 @@ export default function AppSettings() {
         @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
 
-      <div style={{ maxWidth: 860, margin: "0 auto", padding: "32px 24px", animation: "fadeUp 0.35s ease both" }}>
+      <div style={{ maxWidth: 860, margin: "0 auto", padding: "0 0 32px 0", animation: "fadeUp 0.35s ease both" }}>
 
         <div style={{ marginBottom: 28 }}>
           <div style={{ fontSize: 22, fontWeight: 700, color: T.bright, marginBottom: 4 }}>App Settings</div>

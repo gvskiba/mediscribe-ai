@@ -246,12 +246,12 @@ export default function MedicalNews() {
   const handleSearch = () => {
     setSearchQuery(searchInput);
     setPage(1);
-    fetchNews(1, topic, searchInput);
+    fetchNews(1, topic, searchInput, activeSource);
   };
 
   const handlePageChange = (pg) => {
     setPage(pg);
-    fetchNews(pg, topic, searchQuery);
+    fetchNews(pg, topic, searchQuery, activeSource);
   };
 
   const handleToggleBookmark = (uuid) => {

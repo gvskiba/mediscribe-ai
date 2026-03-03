@@ -397,7 +397,7 @@ function ArticleCard({ article, saved, onSave, allArticles }) {
         </div>
       </motion.div>
       <AnimatePresence>
-        {showSummary && <AISummaryModal article={article} isOpen={showSummary} onClose={() => setShowSummary(false)} />}
+        {showSummary && <AISummaryModal article={article} isOpen={showSummary} onClose={() => setShowSummary(false)} allArticles={allArticles} />}
         {showShare && <ArticleShareModal article={article} onClose={() => setShowShare(false)} />}
       </AnimatePresence>
     </>

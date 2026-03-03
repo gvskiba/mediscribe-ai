@@ -1,963 +1,415 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
-import {
-  RefreshCw, Bookmark, BookmarkCheck, ExternalLink, Sparkles,
-  ChevronDown, ChevronUp, Loader2, X, Star, Newspaper, Settings2,
-  Filter, Calendar, Zap, Check, Share2, TrendingUp, Link2
-} from "lucide-react";
-import { formatDistanceToNow, subDays, isAfter } from "date-fns";
-import { AnimatePresence, motion } from "framer-motion";
-import { toast } from "sonner";
-import ArticleShareModal from "../components/news/ArticleShareModal";
-import EDPriorityFeed from "../components/news/EDPriorityFeed";
+import { formatDistanceToNow } from "date-fns";
 
-// ── Config ────────────────────────────────────────────────────────────────────
-const CATEGORIES = [
-  { id: "all",             label: "All News",         icon: "📰" },
-  { id: "ed_priority",     label: "ED Priority",      icon: "🚨" },
-  { id: "Global Health",   label: "Global Health",    icon: "🌍" },
-  { id: "Public Health",   label: "Public Health",    icon: "🛡️" },
-  { id: "Research",        label: "Research",         icon: "🔬" },
-  { id: "Clinical Research", label: "Journals",       icon: "📖" },
-  { id: "JAMA Network",    label: "JAMA",             icon: "🩺" },
-  { id: "AHA Journals",    label: "AHA / Cardiology", icon: "🫀" },
-  { id: "Clinical News",   label: "Clinical News",    icon: "🏥" },
-  { id: "Health News",     label: "Health News",      icon: "💊" },
-  { id: "Medical News",    label: "Medical News",     icon: "📋" },
+// ── Topics ────────────────────────────────────────────────────────────────────
+const TOPICS = [
+  { id: "all",        label: "All Health",      q: "health medicine medical",                       cat: "health,science" },
+  { id: "clinical",   label: "Clinical",         q: "clinical trial treatment therapy",              cat: "health,science" },
+  { id: "drugs",      label: "FDA & Drugs",      q: "FDA drug approval medication",                  cat: "health,science" },
+  { id: "cardio",     label: "Cardiology",       q: "cardiology heart cardiovascular",               cat: "health,science" },
+  { id: "oncology",   label: "Oncology",         q: "cancer oncology tumor chemotherapy",            cat: "health,science" },
+  { id: "infectious", label: "Infectious Dis.",  q: "infectious disease virus bacteria outbreak",    cat: "health,science" },
+  { id: "neuro",      label: "Neurology",        q: "neurology brain stroke dementia alzheimer",     cat: "health,science" },
+  { id: "pubhealth",  label: "Public Health",    q: "public health CDC WHO epidemic",               cat: "health,science" },
+  { id: "research",   label: "Research",         q: "medical research study journal",               cat: "health,science" },
 ];
 
-const ALL_SOURCES = [
-  "WHO", "CDC", "NIH",
-  "NEJM", "Lancet", "BMJ",
-  "JAMA", "JAMA Open",
-  "Circulation", "JAHA", "Stroke (AHA)", "Hypertension",
-  "Medscape",
-  "MedlinePlus", "Medical Xpress", "STAT News", "Healio",
-  "PubMed", "NewsAPI",
-];
-
-const SOURCE_COLORS = {
-  WHO:              { border: "#14b8a6", text: "#14b8a6" },
-  CDC:              { border: "#a855f7", text: "#a855f7" },
-  NIH:              { border: "#3b82f6", text: "#3b82f6" },
-  NEJM:             { border: "#22c55e", text: "#22c55e" },
-  Lancet:           { border: "#ef4444", text: "#ef4444" },
-  BMJ:              { border: "#4a90d9", text: "#4a90d9" },
-  JAMA:             { border: "#e74c3c", text: "#e74c3c" },
-  "JAMA Open":      { border: "#c0392b", text: "#c0392b" },
-  Circulation:      { border: "#e11d48", text: "#e11d48" },
-  JAHA:             { border: "#be123c", text: "#be123c" },
-  "Stroke (AHA)":   { border: "#e11d48", text: "#e11d48" },
-  Hypertension:     { border: "#be123c", text: "#be123c" },
-  Medscape:         { border: "#f59e0b", text: "#f59e0b" },
-  MedlinePlus:      { border: "#f97316", text: "#f97316" },
-  "Medical Xpress": { border: "#06b6d4", text: "#06b6d4" },
-  "STAT News":      { border: "#8b5cf6", text: "#8b5cf6" },
-  Healio:           { border: "#10b981", text: "#10b981" },
-  PubMed:           { border: "#9b6dff", text: "#9b6dff" },
-  NewsAPI:          { border: "#f472b6", text: "#f472b6" },
+const CAT_COLORS = {
+  health:  { bg: "rgba(0,212,188,.15)",  fg: "#00d4bc" },
+  science: { bg: "rgba(155,109,255,.15)", fg: "#9b6dff" },
+  general: { bg: "rgba(74,114,153,.15)", fg: "#4a7299" },
+  tech:    { bg: "rgba(74,144,217,.15)", fg: "#4a90d9" },
 };
 
-const CATEGORY_COLORS = {
-  "Global Health":     "bg-teal-900/40 text-teal-300 border-teal-700",
-  "Public Health":     "bg-green-900/40 text-green-300 border-green-700",
-  "Research":          "bg-violet-900/40 text-violet-300 border-violet-700",
-  "Clinical Research": "bg-amber-900/40 text-amber-300 border-amber-700",
-  "Health News":       "bg-cyan-900/40 text-cyan-300 border-cyan-700",
-  "Medical News":      "bg-rose-900/40 text-rose-300 border-rose-700",
-  "JAMA Network":      "bg-red-900/40 text-red-300 border-red-700",
-  "AHA Journals":      "bg-pink-900/40 text-pink-300 border-pink-700",
-  "Clinical News":     "bg-yellow-900/40 text-yellow-300 border-yellow-700",
-};
-
-const DATE_RANGES = [
-  { id: "all", label: "Any Time" },
-  { id: "1d", label: "Last 24h", days: 1 },
-  { id: "7d", label: "Last 7 Days", days: 7 },
-  { id: "30d", label: "Last 30 Days", days: 30 },
-];
-
-// Simple heuristic: longer title + has description = higher impact
-function getImpactLevel(article) {
-  if (article.impact) return article.impact;
-  if (article.summary && article.originalDescription) return "high";
-  if (article.originalDescription) return "medium";
-  return "low";
+function catStyle(cats) {
+  const c = (cats || []).find(x => CAT_COLORS[x]);
+  return CAT_COLORS[c || "general"];
 }
 
-const IMPACT_LEVELS = [
-  { id: "all", label: "All Impact" },
-  { id: "high", label: "High", color: "text-red-400" },
-  { id: "medium", label: "Medium", color: "text-amber-400" },
-  { id: "low", label: "Low", color: "text-slate-400" },
-];
-
-const PREFS_KEY = "news_prefs_v2";
-const SAVED_KEY = "news_saved_v2";
-
-function getPrefs() {
-  try { return JSON.parse(localStorage.getItem(PREFS_KEY) || "{}"); } catch { return {}; }
-}
-function savePrefs(p) { localStorage.setItem(PREFS_KEY, JSON.stringify(p)); }
-function getSaved() {
-  try { return JSON.parse(localStorage.getItem(SAVED_KEY) || "[]"); } catch { return []; }
-}
-
-function relativeTime(dateStr) {
+function relTime(dateStr) {
   if (!dateStr) return "";
-  try { return formatDistanceToNow(new Date(dateStr), { addSuffix: true }); } catch { return ""; }
+  try {
+    return formatDistanceToNow(new Date(dateStr), { addSuffix: true });
+  } catch { return ""; }
 }
 
-// ── Most Popular Section ──────────────────────────────────────────────────────
-function MostPopularSection({ articles, savedUrls, onSave, onOpenSummary }) {
-  // "Popular" = high impact (has both summary and description), pick top 5
-  const popular = useMemo(() => {
-    return [...articles]
-      .filter(a => a.originalDescription)
-      .sort((a, b) => {
-        const scoreA = (a.summary ? 2 : 0) + (a.originalDescription ? 1 : 0);
-        const scoreB = (b.summary ? 2 : 0) + (b.originalDescription ? 1 : 0);
-        if (scoreB !== scoreA) return scoreB - scoreA;
-        return new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0);
-      })
-      .slice(0, 5);
-  }, [articles]);
-
-  if (popular.length === 0) return null;
-
-  return (
-    <div className="max-w-4xl mx-auto mb-5">
-      <div className="bg-[#0d1f3c]/60 border border-white/10 rounded-xl p-4">
-        <h3 className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-widest mb-3">
-          <TrendingUp className="w-3.5 h-3.5" />
-          Most Popular
-        </h3>
-        <div className="space-y-2">
-          {popular.map((article, i) => {
-            const sourceColor = SOURCE_COLORS[article.sourceName] || { border: "#64748b", text: "#94a3b8" };
-            return (
-              <div key={article.id || article.url || i} className="flex items-start gap-3 group">
-                <span className="text-lg font-bold text-slate-600 w-5 shrink-0 leading-tight">{i + 1}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    {article.sourceName && (
-                      <span className="text-xs font-bold px-1.5 py-0.5 rounded border shrink-0"
-                        style={{ borderColor: sourceColor.border, color: sourceColor.text, background: `${sourceColor.border}15` }}>
-                        {article.sourceName}
-                      </span>
-                    )}
-                  </div>
-                  <a href={article.url} target="_blank" rel="noopener noreferrer"
-                    className="text-xs font-semibold text-slate-200 hover:text-blue-400 transition-colors line-clamp-2 leading-snug block">
-                    {article.title}
-                  </a>
-                </div>
-                <button
-                  onClick={() => onOpenSummary(article)}
-                  className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-slate-600 hover:text-purple-400 cursor-pointer"
-                  title="AI Summary"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
+const SAVED_KEY = "tna_saved_v1";
+function getSaved() {
+  try { return new Set(JSON.parse(localStorage.getItem(SAVED_KEY) || "[]")); } catch { return new Set(); }
+}
+function persistSaved(s) {
+  localStorage.setItem(SAVED_KEY, JSON.stringify([...s]));
 }
 
-// ── AI Summary Modal ───────────────────────────────────────────────────────────
-function AISummaryModal({ article, isOpen, onClose, allArticles = [] }) {
-  const [loading, setLoading] = useState(false);
-  const [summary, setSummary] = useState(article?.summary || null);
-  const [error, setError] = useState(null);
-
-  // Related: same category or same source, excluding itself, up to 3
-  const relatedArticles = useMemo(() => {
-    if (!article || !allArticles.length) return [];
-    return allArticles
-      .filter(a => a.url !== article.url && (a.category === article.category || a.sourceName === article.sourceName))
-      .slice(0, 3);
-  }, [article, allArticles]);
-
-  const fetchSummary = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const resp = await base44.integrations.Core.InvokeLLM({
-        prompt: `Provide a comprehensive but concise summary of this medical article for a physician. Include key findings, clinical relevance, and implications. Title: "${article.title}". Description: "${article.originalDescription || ''}"`,
-        response_json_schema: { 
-          type: "object", 
-          properties: { 
-            summary: { type: "string" },
-            keyPoints: { type: "array", items: { type: "string" } },
-            clinicalRelevance: { type: "string" }
-          } 
-        }
-      });
-      const text = resp?.summary || article.originalDescription || "No summary available.";
-      setSummary(text);
-      if (article.id) base44.entities.MedicalNewsCache.update(article.id, { summary: text }).catch(() => {});
-    } catch (err) {
-      setError("Failed to generate summary. Please try again.");
-    }
-    setLoading(false);
-  };
-
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function Toast({ msg, color, onClose }) {
   useEffect(() => {
-    if (isOpen && !summary) {
-      fetchSummary();
-    }
-  }, [isOpen]);
-
-  if (!isOpen || !article) return null;
-
+    const t = setTimeout(onClose, 4500);
+    return () => clearTimeout(t);
+  }, []);
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-[#0e1f38] border border-white/15 rounded-2xl shadow-2xl p-6 w-[520px] max-w-[95vw] max-h-[80vh] overflow-y-auto"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-4 mb-4">
-          <div className="flex items-start gap-3 flex-1">
-            <div className="bg-purple-500/20 p-2 rounded-lg shrink-0">
-              <Sparkles className="w-5 h-5 text-purple-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-white text-lg leading-snug">AI-Powered Summary</h3>
-              <p className="text-xs text-slate-400 mt-1 line-clamp-2">{article.title}</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-300 cursor-pointer shrink-0">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="border-t border-white/10 pt-4">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-8">
-              <Loader2 className="w-8 h-8 animate-spin text-purple-400 mb-3" />
-              <p className="text-sm text-slate-400">Generating AI summary...</p>
-            </div>
-          ) : error ? (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-              <p className="text-sm text-red-400">{error}</p>
-              <button 
-                onClick={fetchSummary}
-                className="mt-3 text-xs bg-red-500/20 hover:bg-red-500/30 text-red-300 px-3 py-1.5 rounded transition-colors cursor-pointer"
-              >
-                Retry
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wide mb-2">Summary</h4>
-                <p className="text-sm text-slate-300 leading-relaxed bg-white/5 p-3 rounded-lg border border-white/10">{summary}</p>
-              </div>
-              <div className="flex items-center gap-2 pt-2 border-t border-white/10">
-                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                <p className="text-xs text-slate-500">This summary was generated by AI to save you reading time.</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Related Articles */}
-        {relatedArticles.length > 0 && (
-          <div className="mt-5 pt-4 border-t border-white/10">
-            <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wide mb-3 flex items-center gap-1.5">
-              <Link2 className="w-3.5 h-3.5 text-blue-400" />
-              Related Articles
-            </h4>
-            <div className="space-y-2">
-              {relatedArticles.map((rel, i) => {
-                const color = SOURCE_COLORS[rel.sourceName] || { border: "#64748b", text: "#94a3b8" };
-                return (
-                  <a key={i} href={rel.url} target="_blank" rel="noopener noreferrer"
-                    className="flex items-start gap-2 p-2.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/8 transition-all group"
-                  >
-                    <span className="text-xs font-bold px-1.5 py-0.5 rounded border shrink-0 mt-0.5"
-                      style={{ borderColor: color.border, color: color.text, background: `${color.border}15` }}>
-                      {rel.sourceName}
-                    </span>
-                    <span className="text-xs text-slate-300 group-hover:text-white transition-colors line-clamp-2 leading-relaxed">{rel.title}</span>
-                  </a>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        <div className="flex gap-2 mt-6 pt-4 border-t border-white/10">
-          <a 
-            href={article.url} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <ExternalLink className="w-4 h-4" />
-            Read Full Article
-          </a>
-          <button 
-            onClick={onClose}
-            className="px-4 py-2.5 rounded-lg border border-white/10 text-slate-400 text-sm hover:bg-white/5 cursor-pointer transition-colors"
-          >
-            Close
-          </button>
-        </div>
-      </motion.div>
+    <div style={{
+      position: "fixed", bottom: 20, right: 20, background: "#0e2340",
+      border: "1px solid rgba(0,212,188,.3)", borderRadius: 10,
+      padding: "10px 15px", display: "flex", alignItems: "center", gap: 8,
+      fontSize: 12, color: "#e8f4ff", boxShadow: "0 8px 32px rgba(0,0,0,.4)",
+      zIndex: 999, animation: "fadeUp .28s ease", maxWidth: 480
+    }}>
+      <span style={{ color: color || "var(--teal)", fontSize: 14 }}>✦</span>
+      <span>{msg}</span>
+      <button onClick={onClose} style={{ marginLeft: 5, cursor: "pointer", color: "#4a7299", fontSize: 13, background: "none", border: "none" }}>✕</button>
     </div>
-  );
-}
-
-// ── AI Summary Button ───────────────────────────────────────────────────────────
-function AISummaryButton({ article, onOpen }) {
-  return (
-    <button 
-      onClick={(e) => { e.stopPropagation(); onOpen(); }}
-      className="flex items-center gap-1.5 text-xs font-semibold text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 px-2.5 py-1 rounded transition-all"
-      title="View AI-generated summary"
-    >
-      <Sparkles className="w-3.5 h-3.5" />
-      AI Summary
-    </button>
   );
 }
 
 // ── Article Card ──────────────────────────────────────────────────────────────
-function ArticleCard({ article, saved, onSave, allArticles }) {
-  const [showShare, setShowShare] = useState(false);
-  const [showSummary, setShowSummary] = useState(false);
-  const timeAgo = relativeTime(article.publishedAt);
-  const sourceColor = SOURCE_COLORS[article.sourceName] || { border: "#64748b", text: "#94a3b8" };
-  const catClass = CATEGORY_COLORS[article.category] || "bg-slate-700/40 text-slate-300 border-slate-600";
-  const impact = getImpactLevel(article);
-  const impactStyle = { high: "text-red-400", medium: "text-amber-400", low: "text-slate-500" };
+function ArticleCard({ article, bookmarked, onToggleBookmark, onCopyLink, animDelay }) {
+  const cats = article.categories || [];
+  const cs = catStyle(cats);
+  const catLabel = cats[0] ? cats[0].charAt(0).toUpperCase() + cats[0].slice(1) : "Health";
+  const summary = (article.description || article.snippet || "").trim();
+  const [imgFailed, setImgFailed] = useState(false);
 
   return (
-    <>
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="group">
-        <div className="bg-[#0d1f3c]/60 border border-white/8 rounded-xl p-4 hover:border-white/20 hover:bg-[#0d1f3c]/80 transition-all">
-          {/* Top row */}
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {article.sourceName && (
-                <span className="text-xs font-bold px-2 py-0.5 rounded border"
-                  style={{ borderColor: sourceColor.border, color: sourceColor.text, background: `${sourceColor.border}15` }}>
-                  {article.sourceName}
-                </span>
-              )}
-              {article.category && (
-                <span className={`text-xs px-2 py-0.5 rounded border ${catClass}`}>{article.category}</span>
-              )}
-              {impact !== "low" && (
-                <span className={`text-xs font-semibold flex items-center gap-0.5 ${impactStyle[impact]}`}>
-                  <Zap className="w-2.5 h-2.5" />
-                  {impact.toUpperCase()}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={(e) => { e.stopPropagation(); setShowSummary(true); }}
-                title="View AI summary"
-                className="shrink-0 transition-colors cursor-pointer text-slate-600 hover:text-purple-400 opacity-0 group-hover:opacity-100"
-              >
-                <Sparkles className="w-4 h-4" />
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); setShowShare(true); }}
-                title="Share article"
-                className="shrink-0 transition-colors cursor-pointer text-slate-600 hover:text-blue-400 opacity-0 group-hover:opacity-100"
-              >
-                <Share2 className="w-4 h-4" />
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); onSave(article); }}
-                title={saved ? "Remove from saved" : "Save for later"}
-                className={`shrink-0 transition-colors cursor-pointer ${saved ? "text-amber-400" : "text-slate-600 hover:text-amber-400 opacity-0 group-hover:opacity-100"}`}
-              >
-                {saved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
+    <article style={{
+      padding: "13px 16px", borderBottom: "1px solid rgba(30,58,95,.55)",
+      transition: "background .15s", display: "flex", gap: 11, alignItems: "flex-start",
+      animation: `fadeUp .3s ease both`, animationDelay: `${Math.min(animDelay * 35, 500)}ms`
+    }}
+      onMouseEnter={e => e.currentTarget.style.background = "rgba(22,45,79,.5)"}
+      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+    >
+      {/* Thumbnail */}
+      {article.image_url && !imgFailed ? (
+        <img
+          src={article.image_url} alt="" loading="lazy"
+          onError={() => setImgFailed(true)}
+          style={{ width: 68, height: 68, borderRadius: 8, objectFit: "cover", flexShrink: 0, border: "1px solid #1e3a5f", background: "#162d4f" }}
+        />
+      ) : (
+        <div style={{ width: 68, height: 68, borderRadius: 8, flexShrink: 0, background: "#162d4f", border: "1px solid #1e3a5f", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, opacity: .4 }}>🩺</div>
+      )}
 
-          {/* Title */}
-          <a
-            href={article.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block font-semibold text-white text-sm leading-snug mb-1.5 hover:text-blue-400 transition-colors"
-            onClick={e => e.stopPropagation()}
-          >
-            {article.title}
-          </a>
-
-          {/* Description */}
-          {article.originalDescription && (
-            <p className="text-xs text-slate-400 leading-relaxed mb-2.5 line-clamp-2">{article.originalDescription}</p>
-          )}
-
-          {/* Footer */}
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-3">
-              {timeAgo && <span className="text-xs text-slate-500">{timeAgo}</span>}
-              <a href={article.url} target="_blank" rel="noopener noreferrer"
-                onClick={e => e.stopPropagation()}
-                className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors font-medium">
-                <ExternalLink className="w-3 h-3" />
-                Read article
-              </a>
-            </div>
-            <AISummaryButton article={article} onOpen={() => setShowSummary(true)} />
-          </div>
-        </div>
-      </motion.div>
-      <AnimatePresence>
-        {showSummary && <AISummaryModal article={article} isOpen={showSummary} onClose={() => setShowSummary(false)} allArticles={allArticles} />}
-        {showShare && <ArticleShareModal article={article} onClose={() => setShowShare(false)} />}
-      </AnimatePresence>
-    </>
-  );
-}
-
-// ── No Articles AI Fallback ───────────────────────────────────────────────────
-function NoArticlesAIFallback({ showSaved, onResetFilters, onArticlesGenerated }) {
-  const [generating, setGenerating] = useState(false);
-
-  const generateAINews = async () => {
-    setGenerating(true);
-    try {
-      const resp = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate 5 relevant medical news headlines and brief summaries as if they were from reputable medical news sources (WHO, CDC, NEJM, etc). Each should be clinically relevant and current. Format as JSON array with objects containing: title, originalDescription, sourceName, category, and publishedAt (ISO date).`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            news: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  title: { type: "string" },
-                  originalDescription: { type: "string" },
-                  sourceName: { type: "string" },
-                  category: { type: "string" },
-                  publishedAt: { type: "string" }
-                }
-              }
-            }
-          }
-        }
-      });
-      
-      if (resp?.news && Array.isArray(resp.news)) {
-        const newsWithUrl = resp.news.map(item => ({
-          ...item,
-          url: `#ai-generated-${Date.now()}`,
-          isAIGenerated: true
-        }));
-        onArticlesGenerated(newsWithUrl);
-      }
-    } catch (error) {
-      console.error('Failed to generate AI news:', error);
-    }
-    setGenerating(false);
-  };
-
-  if (showSaved) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 text-center">
-        <div className="text-6xl mb-4 opacity-40">📰</div>
-        <h3 className="text-lg font-semibold text-white mb-2">No saved articles</h3>
-        <p className="text-sm text-slate-400 mb-6 max-w-xs">You haven't saved any articles yet.</p>
-        <button
-          onClick={onResetFilters}
-          className="flex items-center gap-2 bg-emerald-700/30 hover:bg-emerald-700/50 border border-emerald-600/50 text-emerald-300 text-sm font-medium px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <a href={article.url} target="_blank" rel="noopener noreferrer"
+          style={{ fontSize: 13, fontWeight: 600, color: "#e8f4ff", textDecoration: "none", lineHeight: 1.52, display: "block", wordBreak: "break-word", marginBottom: 5, transition: "color .15s" }}
+          onMouseEnter={e => { e.target.style.color = "#00d4bc"; e.target.style.textDecoration = "underline"; }}
+          onMouseLeave={e => { e.target.style.color = "#e8f4ff"; e.target.style.textDecoration = "none"; }}
         >
-          <RefreshCw className="w-4 h-4" />
-          Reset Filters
-        </button>
-      </div>
-    );
-  }
+          {article.title}
+        </a>
 
-  return (
-    <div className="flex flex-col items-center justify-center py-24 text-center">
-      <div className="text-6xl mb-4 opacity-40">🤖</div>
-      <h3 className="text-lg font-semibold text-white mb-2">No articles match your filters</h3>
-      <p className="text-sm text-slate-400 mb-6 max-w-xs">Let AI generate relevant medical news for you.</p>
-      <div className="flex flex-col gap-3">
-        <button
-          onClick={generateAINews}
-          disabled={generating}
-          className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
-        >
-          {generating ? (
+        {summary && (
+          <div style={{ fontSize: 11.5, color: "#c8ddf0", lineHeight: 1.7, marginBottom: 6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+            {summary}
+          </div>
+        )}
+
+        <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", marginBottom: 5 }}>
+          <span style={{ fontSize: 9, padding: "1.5px 6px", borderRadius: 3, fontWeight: 700, letterSpacing: ".04em", background: cs.bg, color: cs.fg }}>
+            {article.source || "Unknown"}
+          </span>
+          <span style={{ fontSize: 9, padding: "1.5px 6px", borderRadius: 3, background: "rgba(74,114,153,.12)", color: "#4a7299", border: "1px solid rgba(30,58,95,.8)" }}>
+            {catLabel}
+          </span>
+          {article.published_at && (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-4 h-4" />
-              Generate AI News
+              <span style={{ width: 3, height: 3, borderRadius: "50%", background: "#2a4d72", flexShrink: 0 }} />
+              <span style={{ fontSize: 9.5, color: "#4a7299", fontFamily: "monospace" }}>{relTime(article.published_at)}</span>
             </>
           )}
-        </button>
-        <button
-          onClick={onResetFilters}
-          className="flex items-center gap-2 bg-emerald-700/30 hover:bg-emerald-700/50 border border-emerald-600/50 text-emerald-300 text-sm font-medium px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Reset Filters
-        </button>
+        </div>
+
+        <div className="art-acts" style={{ display: "flex", gap: 5 }}>
+          <a href={article.url} target="_blank" rel="noopener noreferrer"
+            style={{ padding: "3px 8px", borderRadius: 5, fontSize: 9.5, fontWeight: 600, cursor: "pointer", border: "1px solid #1e3a5f", background: "transparent", color: "#4a7299", textDecoration: "none", transition: "all .15s" }}
+            onMouseEnter={e => Object.assign(e.target.style, { borderColor: "rgba(0,212,188,.3)", color: "#00d4bc", background: "rgba(0,212,188,.06)" })}
+            onMouseLeave={e => Object.assign(e.target.style, { borderColor: "#1e3a5f", color: "#4a7299", background: "transparent" })}
+          >🔗 Open</a>
+          <button onClick={() => onToggleBookmark(article.uuid)}
+            style={{ padding: "3px 8px", borderRadius: 5, fontSize: 9.5, fontWeight: 600, cursor: "pointer", border: bookmarked ? "1px solid rgba(251,191,36,.35)" : "1px solid #1e3a5f", background: bookmarked ? "rgba(251,191,36,.06)" : "transparent", color: bookmarked ? "#fbbf24" : "#4a7299", transition: "all .15s", fontFamily: "inherit" }}
+          >{bookmarked ? "★ Saved" : "☆ Save"}</button>
+          <button onClick={() => onCopyLink(article.url)}
+            style={{ padding: "3px 8px", borderRadius: 5, fontSize: 9.5, fontWeight: 600, cursor: "pointer", border: "1px solid #1e3a5f", background: "transparent", color: "#4a7299", transition: "all .15s", fontFamily: "inherit" }}
+            onMouseEnter={e => Object.assign(e.target.style, { borderColor: "#2a4d72", color: "#c8ddf0", background: "#162d4f" })}
+            onMouseLeave={e => Object.assign(e.target.style, { borderColor: "#1e3a5f", color: "#4a7299", background: "transparent" })}
+          >📋 Copy Link</button>
+        </div>
       </div>
-    </div>
-  );
-}
-
-// ── Preferences Panel ─────────────────────────────────────────────────────────
-function PreferencesPanel({ prefs, onSave, onClose }) {
-  const [draft, setDraft] = useState({
-    sources: prefs.sources || ALL_SOURCES,
-    topics: prefs.topics || CATEGORIES.filter(c => c.id !== "all").map(c => c.id),
-  });
-
-  const toggleSource = (s) =>
-    setDraft(p => ({ ...p, sources: p.sources.includes(s) ? p.sources.filter(x => x !== s) : [...p.sources, s] }));
-  const toggleTopic = (t) =>
-    setDraft(p => ({ ...p, topics: p.topics.includes(t) ? p.topics.filter(x => x !== t) : [...p.topics, t] }));
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-[#0e1f38] border border-white/15 rounded-2xl shadow-2xl p-6 w-[420px] max-w-[95vw]"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h3 className="font-bold text-white text-base">News Preferences</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Customize your news feed sources and topics</p>
-          </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-300 cursor-pointer"><X className="w-4 h-4" /></button>
-        </div>
-
-        {/* Sources */}
-        <div className="mb-5">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2.5">News Sources</p>
-          <div className="flex flex-wrap gap-2">
-            {ALL_SOURCES.map(src => {
-              const color = SOURCE_COLORS[src] || { border: "#64748b", text: "#94a3b8" };
-              const active = draft.sources.includes(src);
-              return (
-                <button key={src} onClick={() => toggleSource(src)}
-                  style={{ borderColor: color.border, color: active ? "#fff" : color.text, background: active ? `${color.border}30` : "transparent" }}
-                  className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition-all cursor-pointer">
-                  {active && <Check className="w-3 h-3" />}
-                  {src}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Topics */}
-        <div className="mb-6">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2.5">Topics</p>
-          <div className="flex flex-wrap gap-2">
-            {CATEGORIES.filter(c => c.id !== "all").map(cat => {
-              const active = draft.topics.includes(cat.id);
-              return (
-                <button key={cat.id} onClick={() => toggleTopic(cat.id)}
-                  className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
-                    active ? "border-emerald-500/60 bg-emerald-900/30 text-emerald-300" : "border-white/10 bg-white/5 text-slate-400 hover:border-white/20"
-                  }`}>
-                  {active && <Check className="w-3 h-3" />}
-                  {cat.icon} {cat.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          <button
-            onClick={() => { onSave(draft); onClose(); toast.success("Preferences saved"); }}
-            className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-lg px-4 py-2.5 transition-colors cursor-pointer"
-          >
-            Save Preferences
-          </button>
-          <button
-            onClick={() => { const all = { sources: ALL_SOURCES, topics: CATEGORIES.filter(c => c.id !== "all").map(c => c.id) }; onSave(all); onClose(); }}
-            className="px-4 py-2.5 rounded-lg border border-white/10 text-slate-400 text-sm hover:bg-white/5 cursor-pointer transition-colors"
-          >
-            Reset
-          </button>
-        </div>
-      </motion.div>
-    </div>
+    </article>
   );
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function MedicalNews() {
   const [articles, setArticles] = useState([]);
+  const [meta, setMeta] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [fetchedAt, setFetchedAt] = useState(null);
-  const [activeCategory, setActiveCategory] = useState("all");
-  const [activeSources, setActiveSources] = useState([]);
-  const [dateRange, setDateRange] = useState("all");
-  const [impactFilter, setImpactFilter] = useState("all");
-  const [savedArticles, setSavedArticles] = useState(() => getSaved());
-  const [showSaved, setShowSaved] = useState(false);
-  const [showPrefs, setShowPrefs] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [prefs, setPrefs] = useState(() => getPrefs());
-  const [clock, setClock] = useState("");
-  const [popularSummaryArticle, setPopularSummaryArticle] = useState(null);
-  const timerRef = useRef(null);
+  const [topic, setTopic] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [page, setPage] = useState(1);
+  const [bookmarks, setBookmarks] = useState(() => getSaved());
+  const [lastRef, setLastRef] = useState(null);
+  const [countdown, setCountdown] = useState(30 * 60);
+  const [toast, setToast] = useState(null);
+  const timersRef = useRef({});
 
-  const savedUrls = useMemo(() => savedArticles.map(a => a.url), [savedArticles]);
+  const showToast = (msg, color) => setToast({ msg, color });
 
-  useEffect(() => {
-    const tick = () => setClock(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  const loadNews = async (forceRefresh = false) => {
+  const fetchNews = useCallback(async (pg = 1, topicId = topic, q = searchQuery) => {
     setLoading(true);
     setError(null);
     try {
-      const resp = await base44.functions.invoke('fetchMedicalNews', { forceRefresh, limit: 40 });
-      const data = resp.data;
-      setArticles(data.articles || []);
-      setFetchedAt(data.fetchedAt);
-    } catch {
-      try {
-        const cached = await base44.entities.MedicalNewsCache.list('-publishedAt', 40);
-        setArticles(cached);
-        setError("Live feed unavailable — showing cached articles.");
-      } catch {
-        setError("Unable to load news. Check your connection.");
-      }
+      const currentTopic = TOPICS.find(t => t.id === topicId) || TOPICS[0];
+      const query = q.trim() || currentTopic.q;
+      const resp = await base44.functions.invoke("fetchMedicalNews", {
+        query,
+        categories: currentTopic.cat,
+        page: pg,
+        limit: 10,
+      });
+      setArticles(resp.data?.articles || []);
+      setMeta(resp.data?.meta || {});
+      setLastRef(new Date());
+      setCountdown(30 * 60);
+    } catch (err) {
+      setError(err?.response?.data?.error || err.message || "Failed to fetch news.");
+      setArticles([]);
     }
     setLoading(false);
-  };
+  }, [topic, searchQuery]);
 
+  // Initial load + auto-refresh
   useEffect(() => {
-    loadNews();
-    timerRef.current = setInterval(() => loadNews(), 30 * 60 * 1000);
-    return () => clearInterval(timerRef.current);
+    fetchNews(1, topic, searchQuery);
+    timersRef.current.ar = setInterval(() => fetchNews(1, topic, searchQuery), 30 * 60 * 1000);
+    return () => clearInterval(timersRef.current.ar);
   }, []);
 
-  const handleSave = (article) => {
-    const alreadySaved = savedUrls.includes(article.url);
-    const next = alreadySaved
-      ? savedArticles.filter(a => a.url !== article.url)
-      : [...savedArticles, { url: article.url, title: article.title, sourceName: article.sourceName, publishedAt: article.publishedAt, savedAt: new Date().toISOString() }];
-    setSavedArticles(next);
-    localStorage.setItem(SAVED_KEY, JSON.stringify(next));
-    toast(alreadySaved ? "Removed from saved" : "Saved for later!");
+  // Countdown ticker
+  useEffect(() => {
+    timersRef.current.cd = setInterval(() => setCountdown(c => Math.max(0, c - 1)), 1000);
+    return () => clearInterval(timersRef.current.cd);
+  }, []);
+
+  const handleTopicChange = (id) => {
+    setTopic(id);
+    setSearchQuery("");
+    setSearchInput("");
+    setPage(1);
+    fetchNews(1, id, "");
   };
 
-  const handleSavePrefs = (newPrefs) => {
-    setPrefs(newPrefs);
-    savePrefs(newPrefs);
+  const handleSearch = () => {
+    setSearchQuery(searchInput);
+    setPage(1);
+    fetchNews(1, topic, searchInput);
   };
 
-  const toggleSource = (src) =>
-    setActiveSources(prev => prev.includes(src) ? prev.filter(s => s !== src) : [...prev, src]);
+  const handlePageChange = (pg) => {
+    setPage(pg);
+    fetchNews(pg, topic, searchQuery);
+  };
 
-  const activeFilterCount = [
-    activeCategory !== "all",
-    activeSources.length > 0,
-    dateRange !== "all",
-    impactFilter !== "all",
-  ].filter(Boolean).length;
+  const handleToggleBookmark = (uuid) => {
+    setBookmarks(prev => {
+      const next = new Set(prev);
+      if (next.has(uuid)) { next.delete(uuid); showToast("Bookmark removed", "#4a7299"); }
+      else { next.add(uuid); showToast("⭐ Article saved", "#fbbf24"); }
+      persistSaved(next);
+      return next;
+    });
+  };
 
-  const filtered = useMemo(() => {
-    let list = articles;
+  const handleCopyLink = (url) => {
+    navigator.clipboard?.writeText(url)
+      .then(() => showToast("📋 Link copied", "#00d4bc"))
+      .catch(() => showToast("Could not copy", "#f5a623"));
+  };
 
-    // Pref-based source filter (show only preferred sources unless manually overridden)
-    const prefSources = prefs.sources || ALL_SOURCES;
-    list = list.filter(a => prefSources.includes(a.sourceName) || !a.sourceName);
-
-    // Pref-based topic filter
-    const prefTopics = prefs.topics || CATEGORIES.filter(c => c.id !== "all").map(c => c.id);
-    if (prefTopics.length > 0 && prefTopics.length < CATEGORIES.length - 1) {
-      list = list.filter(a => !a.category || prefTopics.includes(a.category));
-    }
-
-    if (activeCategory !== "all") list = list.filter(a => a.category === activeCategory);
-    if (activeSources.length > 0) list = list.filter(a => activeSources.includes(a.sourceName));
-    if (showSaved) list = list.filter(a => savedUrls.includes(a.url));
-
-    if (dateRange !== "all") {
-      const dr = DATE_RANGES.find(d => d.id === dateRange);
-      if (dr?.days) {
-        const cutoff = subDays(new Date(), dr.days);
-        list = list.filter(a => a.publishedAt && isAfter(new Date(a.publishedAt), cutoff));
-      }
-    }
-
-    if (impactFilter !== "all") {
-      list = list.filter(a => getImpactLevel(a) === impactFilter);
-    }
-
-    return list;
-  }, [articles, activeCategory, activeSources, savedUrls, showSaved, dateRange, impactFilter, prefs]);
-
-  const updatedLabel = fetchedAt ? relativeTime(fetchedAt) : "just now";
+  const mm = String(Math.floor(countdown / 60)).padStart(2, "0");
+  const ss = String(countdown % 60).padStart(2, "0");
+  const total = meta.found || 0;
+  const totalPages = Math.ceil(Math.min(total, 200) / 10);
 
   return (
-    <div className="min-h-screen bg-[#050f1e] text-white flex flex-col">
-      {/* ── Header Bar ── */}
-      <div className="border-b border-white/10 bg-[#071224] px-6 py-3 flex items-center justify-between gap-4 shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center shrink-0">
-            <Newspaper className="w-5 h-5 text-slate-300" />
-          </div>
-          <div>
-            <h1 className="font-bold text-white text-lg leading-none">Medical News</h1>
-            <p className="text-xs text-slate-400 mt-0.5">Updated {updatedLabel} · {filtered.length} articles</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400 border border-emerald-500/50 rounded-full px-3 py-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            LIVE
-          </span>
-          <span className="text-sm font-mono text-slate-300 bg-slate-800 px-3 py-1 rounded-lg">{clock}</span>
-          <button
-            onClick={() => setShowPrefs(true)}
-            className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 border border-white/10 transition-colors cursor-pointer"
-            title="News Preferences"
-          >
-            <Settings2 className="w-4 h-4 text-slate-300" />
-          </button>
-          <button
-            onClick={() => loadNews(true)}
-            disabled={loading}
-            className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 border border-white/10 transition-colors disabled:opacity-50 cursor-pointer"
-          >
-            <RefreshCw className={`w-4 h-4 text-slate-300 ${loading ? "animate-spin" : ""}`} />
-          </button>
-        </div>
-      </div>
-
-      {/* ── Category Tabs ── */}
-      <div className="border-b border-white/8 bg-[#071224]/60 px-6 py-2.5 flex items-center gap-2 overflow-x-auto scrollbar-hide shrink-0">
-        {CATEGORIES.map(cat => (
-          <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
-            className={`shrink-0 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-all cursor-pointer whitespace-nowrap ${
-              activeCategory === cat.id
-                ? cat.id === "ed_priority"
-                  ? "border-red-500/70 bg-red-900/40 text-red-300 font-bold"
-                  : "border-emerald-500/60 bg-emerald-900/30 text-emerald-300"
-                : cat.id === "ed_priority"
-                  ? "border-red-700/50 bg-red-950/30 text-red-400 hover:border-red-500/60 hover:text-red-300"
-                  : "border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:text-slate-200"
-            }`}
-          >
-            <span>{cat.icon}</span>
-            {cat.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ── Source Filters + Filter Toggle ── */}
-      <div className="border-b border-white/8 bg-[#071224]/40 px-6 py-2.5 flex items-center gap-3 shrink-0 overflow-x-auto scrollbar-hide">
-        <span className="text-xs font-semibold text-slate-500 tracking-widest shrink-0">SOURCES:</span>
-        {ALL_SOURCES.map(src => {
-          const color = SOURCE_COLORS[src] || { border: "#64748b", text: "#94a3b8" };
-          const active = activeSources.includes(src);
-          return (
-            <button key={src} onClick={() => toggleSource(src)}
-              style={{ borderColor: color.border, color: active ? "#fff" : color.text, background: active ? `${color.border}30` : "transparent" }}
-              className="shrink-0 text-xs font-bold px-3 py-1 rounded border transition-all cursor-pointer">
-              {src}
-            </button>
-          );
-        })}
-        <div className="ml-auto shrink-0 flex items-center gap-2">
-          <button
-            onClick={() => setShowFilters(s => !s)}
-            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
-              showFilters || activeFilterCount > 0
-                ? "border-blue-500/50 bg-blue-900/20 text-blue-300"
-                : "border-white/10 bg-white/5 text-slate-400 hover:border-white/20"
-            }`}
-          >
-            <Filter className="w-3 h-3" />
-            Filters {activeFilterCount > 0 && <span className="bg-blue-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">{activeFilterCount}</span>}
-          </button>
-        </div>
-      </div>
-
-      {/* ── Advanced Filters Panel ── */}
-      <AnimatePresence>
-        {showFilters && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden border-b border-white/8 bg-[#071224]/60 shrink-0"
-          >
-            <div className="px-6 py-4 flex flex-wrap gap-6">
-              {/* Date Range */}
-              <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                  <Calendar className="w-3 h-3" /> Date Range
-                </p>
-                <div className="flex gap-1.5">
-                  {DATE_RANGES.map(dr => (
-                    <button key={dr.id} onClick={() => setDateRange(dr.id)}
-                      className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer font-medium ${
-                        dateRange === dr.id
-                          ? "border-blue-500/60 bg-blue-900/30 text-blue-300"
-                          : "border-white/10 bg-white/5 text-slate-400 hover:border-white/20"
-                      }`}>
-                      {dr.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Impact Level */}
-              <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                  <Zap className="w-3 h-3" /> Impact Level
-                </p>
-                <div className="flex gap-1.5">
-                  {IMPACT_LEVELS.map(il => (
-                    <button key={il.id} onClick={() => setImpactFilter(il.id)}
-                      className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer font-medium ${
-                        impactFilter === il.id
-                          ? "border-white/40 bg-white/10 text-white"
-                          : "border-white/10 bg-white/5 text-slate-400 hover:border-white/20"
-                      }`}>
-                      {il.id !== "all" && <span className={`${il.color} mr-1`}>●</span>}
-                      {il.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Reset */}
-              {activeFilterCount > 0 && (
-                <div className="flex items-end">
-                  <button
-                    onClick={() => { setActiveCategory("all"); setActiveSources([]); setDateRange("all"); setImpactFilter("all"); setShowSaved(false); }}
-                    className="text-xs text-red-400 hover:text-red-300 border border-red-500/30 px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
-                  >
-                    <X className="w-3 h-3 inline mr-1" />
-                    Clear All
-                  </button>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Error Bar ── */}
-      {error && (
-        <div className="border-b border-amber-700/40 bg-amber-900/20 px-6 py-2 flex items-center justify-between">
-          <span className="text-xs text-amber-400 flex items-center gap-2"><span>⚠</span>{error}</span>
-        </div>
-      )}
-
-      {/* ── Articles ── */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-slate-500" />
-          </div>
-        ) : activeCategory === "ed_priority" ? (
-          <EDPriorityFeed articles={articles} />
-        ) : filtered.length > 0 ? (
-          <div>
-            {!showSaved && activeCategory === "all" && activeSources.length === 0 && (
-              <MostPopularSection
-                articles={articles}
-                savedUrls={savedUrls}
-                onSave={handleSave}
-                onOpenSummary={(a) => setPopularSummaryArticle(a)}
-              />
-            )}
-            <div className="max-w-4xl mx-auto space-y-3">
-              <AnimatePresence>
-                {filtered.map((article, idx) => (
-                  <ArticleCard
-                    key={article.id || article.url || idx}
-                    article={article}
-                    saved={savedUrls.includes(article.url)}
-                    onSave={handleSave}
-                    allArticles={articles}
-                  />
-                ))}
-              </AnimatePresence>
-            </div>
-          </div>
-        ) : (
-          <NoArticlesAIFallback 
-            showSaved={showSaved}
-            onResetFilters={() => { setActiveCategory("all"); setActiveSources([]); setDateRange("all"); setImpactFilter("all"); setShowSaved(false); }}
-            onArticlesGenerated={(newArticles) => setArticles([...articles, ...newArticles])}
-          />
-        )}
-      </div>
-
-      {/* ── Footer ── */}
-      <div className="border-t border-white/10 bg-[#071224] px-6 py-2 flex items-center justify-between shrink-0">
-        <span className="text-xs text-slate-500 flex items-center gap-1.5">
-          <Newspaper className="w-3.5 h-3.5" />
-          {articles.length} total · {filtered.length} shown
-        </span>
-        <button
-          onClick={() => setShowSaved(s => !s)}
-          className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
-            showSaved
-              ? "border-amber-500/50 bg-amber-900/30 text-amber-300"
-              : "border-white/10 bg-white/5 text-slate-400 hover:text-slate-200"
-          }`}
-        >
-          {showSaved ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
-          Saved ({savedArticles.length})
-        </button>
-      </div>
-
-      {/* ── Preferences Modal ── */}
-      <AnimatePresence>
-        {showPrefs && (
-          <PreferencesPanel prefs={prefs} onSave={handleSavePrefs} onClose={() => setShowPrefs(false)} />
-        )}
-      </AnimatePresence>
-
-      {/* ── Popular Article Summary Modal ── */}
-      <AnimatePresence>
-        {popularSummaryArticle && (
-          <AISummaryModal
-            article={popularSummaryArticle}
-            isOpen={true}
-            onClose={() => setPopularSummaryArticle(null)}
-            allArticles={articles}
-          />
-        )}
-      </AnimatePresence>
-
+    <div style={{ minHeight: "100vh", background: "#050f1e", color: "#c8ddf0", fontFamily: "'DM Sans', -apple-system, sans-serif", fontSize: 13, paddingTop: 0 }}>
       <style>{`
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes pulse { 50%{opacity:.2;transform:scale(.6)} }
+        @keyframes spin { to{transform:rotate(360deg)} }
+        @keyframes scanH { 0%,100%{opacity:0;transform:scaleX(.06)} 50%{opacity:.38;transform:scaleX(1)} }
+        .catbar::-webkit-scrollbar{height:0}
+        .feed-scroll::-webkit-scrollbar{width:4px}
+        .feed-scroll::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:4px}
       `}</style>
+
+      <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 0px)", animation: "fadeUp .4s ease both" }}>
+
+        {/* ── Header ── */}
+        <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid #1e3a5f", display: "flex", alignItems: "center", gap: 10, background: "rgba(14,35,64,.88)", flexShrink: 0, position: "relative", overflow: "hidden" }}>
+          <div style={{ width: 34, height: 34, borderRadius: 9, fontSize: 15, background: "linear-gradient(135deg,rgba(0,212,188,.2),rgba(155,109,255,.15))", border: "1px solid rgba(0,212,188,.28)", display: "flex", alignItems: "center", justifyContent: "center" }}>📰</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 15.5, color: "#e8f4ff" }}>Medical News Feed</div>
+            <div style={{ fontSize: 9.5, color: "#4a7299", marginTop: 2 }}>TheNewsAPI.com · Live health & medical stories · Auto-refresh every 30 min</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 20, background: "rgba(46,204,113,.08)", border: "1px solid rgba(46,204,113,.22)", fontSize: 9.5, color: "#2ecc71", fontWeight: 700 }}>
+              <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#2ecc71", animation: "pulse 2s infinite", display: "inline-block" }} />
+              LIVE
+            </div>
+            <div style={{ fontFamily: "monospace", fontSize: 9.5, color: "#4a7299", padding: "3px 7px", borderRadius: 5, border: "1px solid #1e3a5f", background: "#162d4f" }}>{mm}:{ss}</div>
+            <button
+              onClick={() => fetchNews(page, topic, searchQuery)}
+              disabled={loading}
+              style={{ width: 28, height: 28, borderRadius: 7, background: "transparent", border: "1px solid #1e3a5f", color: "#4a7299", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, animation: loading ? "spin .65s linear infinite" : "none" }}
+              title="Refresh now"
+            >↻</button>
+          </div>
+        </div>
+
+        {/* ── Search ── */}
+        <div style={{ padding: "9px 14px", borderBottom: "1px solid #1e3a5f", display: "flex", gap: 7, alignItems: "center", flexShrink: 0 }}>
+          <input
+            type="text"
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleSearch()}
+            placeholder="Search medical news… e.g. CRISPR, sepsis, FDA approval, JAMA"
+            style={{ flex: 1, background: "#162d4f", border: "1.5px solid #1e3a5f", borderRadius: 8, padding: "7px 12px", color: "#e8f4ff", fontSize: 12.5, fontFamily: "inherit", outline: "none" }}
+            onFocus={e => e.target.style.borderColor = "#00d4bc"}
+            onBlur={e => e.target.style.borderColor = "#1e3a5f"}
+          />
+          <button
+            onClick={handleSearch}
+            style={{ padding: "7px 14px", borderRadius: 8, background: "linear-gradient(135deg,#00d4bc,#00a896)", color: "#050f1e", fontWeight: 700, fontSize: 11.5, cursor: "pointer", border: "none", fontFamily: "inherit", whiteSpace: "nowrap" }}
+          >🔍 Search</button>
+        </div>
+
+        {/* ── Category Bar ── */}
+        <div className="catbar" style={{ display: "flex", gap: 4, padding: "8px 14px", borderBottom: "1px solid #1e3a5f", flexShrink: 0, overflowX: "auto" }}>
+          {TOPICS.map(t => (
+            <button key={t.id} onClick={() => handleTopicChange(t.id)}
+              style={{
+                padding: "4px 11px", borderRadius: 20, fontSize: 10.5, fontWeight: 600,
+                cursor: "pointer", whiteSpace: "nowrap", fontFamily: "inherit", transition: "all .15s",
+                background: topic === t.id ? "rgba(0,212,188,.1)" : "transparent",
+                color: topic === t.id ? "#00d4bc" : "#4a7299",
+                border: topic === t.id ? "1px solid rgba(0,212,188,.3)" : "1px solid #1e3a5f",
+              }}
+            >{t.label}</button>
+          ))}
+        </div>
+
+        {/* ── Status Row ── */}
+        <div style={{ padding: "5px 16px", borderBottom: "1px solid #1e3a5f", display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 26, flexShrink: 0 }}>
+          <div style={{ fontSize: 10, color: "#4a7299", display: "flex", alignItems: "center", gap: 6 }}>
+            {loading ? (
+              <span>⏳ Fetching from TheNewsAPI…</span>
+            ) : (
+              <>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 9, padding: "1px 7px", borderRadius: 3, background: "rgba(0,212,188,.08)", color: "#00d4bc", border: "1px solid rgba(0,212,188,.2)", fontWeight: 600 }}>📡 TheNewsAPI</span>
+                <span style={{ color: "#c8ddf0", fontWeight: 600, fontSize: 10.5 }}>{articles.length}</span>
+                articles {total ? `· Page ${page} · ${total.toLocaleString()} found` : ""}
+              </>
+            )}
+          </div>
+          {lastRef && <div style={{ fontFamily: "monospace", fontSize: 9, color: "#4a7299" }}>Updated {lastRef.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>}
+        </div>
+
+        {/* ── Error Banner ── */}
+        {error && (
+          <div style={{ margin: "8px 14px", padding: "9px 13px", borderRadius: 8, background: "rgba(245,166,35,.07)", border: "1px solid rgba(245,166,35,.25)", fontSize: 11.5, color: "#f5a623", display: "flex", gap: 8, alignItems: "flex-start", flexShrink: 0 }}>
+            ⚠ {error}
+          </div>
+        )}
+
+        {/* ── Feed ── */}
+        <div className="feed-scroll" style={{ flex: 1, overflowY: "auto" }}>
+          {loading ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "52px 24px", gap: 12 }}>
+              <div style={{ width: 34, height: 34, borderRadius: "50%", border: "2.5px solid #1e3a5f", borderTopColor: "#00d4bc", animation: "spin .7s linear infinite" }} />
+              <div style={{ fontSize: 12, color: "#4a7299", textAlign: "center", lineHeight: 1.75 }}>
+                <strong style={{ color: "#c8ddf0", display: "block", marginBottom: 4, fontSize: 13 }}>Fetching medical news…</strong>
+                Querying TheNewsAPI for health & medical stories
+              </div>
+            </div>
+          ) : !articles.length ? (
+            <div style={{ padding: "42px 24px", textAlign: "center" }}>
+              <div style={{ fontSize: 36, opacity: .3, marginBottom: 12 }}>📰</div>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, color: "#e8f4ff", marginBottom: 6 }}>
+                {error ? "API Connection Issue" : "No results found"}
+              </div>
+              <div style={{ fontSize: 12, color: "#4a7299", lineHeight: 1.7, maxWidth: 380, margin: "0 auto 14px" }}>
+                {error ? "Could not fetch news from TheNewsAPI." : "No medical news matched your search. Try different keywords or select another category."}
+              </div>
+              <button onClick={() => { setTopic("all"); setSearchInput(""); setSearchQuery(""); fetchNews(1, "all", ""); }}
+                style={{ padding: "7px 18px", borderRadius: 8, background: "rgba(0,212,188,.1)", color: "#00d4bc", border: "1px solid rgba(0,212,188,.25)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+                ↺ Show All Health News
+              </button>
+            </div>
+          ) : (
+            articles.map((a, i) => (
+              <ArticleCard
+                key={a.uuid || a.url || i}
+                article={a}
+                bookmarked={bookmarks.has(a.uuid)}
+                onToggleBookmark={handleToggleBookmark}
+                onCopyLink={handleCopyLink}
+                animDelay={i}
+              />
+            ))
+          )}
+        </div>
+
+        {/* ── Pagination ── */}
+        {!loading && totalPages > 1 && (
+          <div style={{ padding: "9px 16px", borderTop: "1px solid #1e3a5f", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+            <div style={{ fontSize: 10, color: "#4a7299" }}>Page {page} of {totalPages} · {total.toLocaleString()} articles found</div>
+            <div style={{ display: "flex", gap: 5 }}>
+              <button disabled={page <= 1} onClick={() => handlePageChange(page - 1)}
+                style={{ padding: "4px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: page <= 1 ? "default" : "pointer", border: "1px solid #1e3a5f", background: "transparent", color: page <= 1 ? "rgba(74,114,153,.28)" : "#4a7299", fontFamily: "inherit" }}>← Prev</button>
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const pg = Math.max(1, Math.min(page - 2, totalPages - 4)) + i;
+                if (pg < 1 || pg > totalPages) return null;
+                return (
+                  <button key={pg} onClick={() => handlePageChange(pg)}
+                    style={{ padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", border: pg === page ? "1px solid rgba(0,212,188,.3)" : "1px solid #1e3a5f", background: pg === page ? "rgba(0,212,188,.1)" : "transparent", color: pg === page ? "#00d4bc" : "#4a7299", fontFamily: "inherit" }}>
+                    {pg}
+                  </button>
+                );
+              })}
+              <button disabled={page >= totalPages} onClick={() => handlePageChange(page + 1)}
+                style={{ padding: "4px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: page >= totalPages ? "default" : "pointer", border: "1px solid #1e3a5f", background: "transparent", color: page >= totalPages ? "rgba(74,114,153,.28)" : "#4a7299", fontFamily: "inherit" }}>Next →</button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Footer ── */}
+        <div style={{ padding: "8px 16px", borderTop: "1px solid #1e3a5f", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, background: "rgba(11,29,53,.6)" }}>
+          <div style={{ fontSize: 9.5, color: "#4a7299", display: "flex", alignItems: "center", gap: 6 }}>
+            📡 TheNewsAPI.com · Base44
+            {bookmarks.size > 0 && <span style={{ color: "#fbbf24" }}>· ★ {bookmarks.size} saved</span>}
+          </div>
+          <div style={{ display: "flex", gap: 5 }}>
+            <button onClick={() => showToast(bookmarks.size ? `★ ${bookmarks.size} article${bookmarks.size !== 1 ? "s" : ""} saved this session` : "No saved articles yet — hover an article and click ☆ Save", "#fbbf24")}
+              style={{ padding: "3px 9px", borderRadius: 5, background: "transparent", border: "1px solid #1e3a5f", color: "#4a7299", fontSize: 9.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+              ★ Saved ({bookmarks.size})
+            </button>
+            <button onClick={() => fetchNews(page, topic, searchQuery)}
+              style={{ padding: "3px 9px", borderRadius: 5, background: "transparent", border: "1px solid #1e3a5f", color: "#4a7299", fontSize: 9.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+              ↻ Refresh
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Toast ── */}
+      {toast && <Toast msg={toast.msg} color={toast.color} onClose={() => setToast(null)} />}
     </div>
   );
 }

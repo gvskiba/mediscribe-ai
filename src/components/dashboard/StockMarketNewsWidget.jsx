@@ -13,25 +13,10 @@ export default function StockMarketNewsWidget() {
       setError(null);
 
       try {
-        // Try to find available API token
-        const newsApiToken = localStorage.getItem("thenewsapi_token") || 
-                             localStorage.getItem("webzio_token") || 
-                             localStorage.getItem("newsdata_token");
-
-        if (!newsApiToken) {
-          setError("No API token configured. Please add one in App Settings.");
-          setArticles([]);
-          setLoading(false);
-          return;
-        }
-
-        // Fetch stock market news
-        const resp = await base44.functions.invoke("fetchMedicalNews", {
-          query: "stock market trading stocks NYSE NASDAQ S&P 500 dow jones",
-          categories: "business,finance",
-          page: 1,
+        // Fetch from Polygon.io API
+        const resp = await base44.functions.invoke("fetchPolygonStockNews", {
+          query: "stock market NYSE NASDAQ S&P 500",
           limit: 5,
-          token: newsApiToken,
         });
 
         setArticles(resp.data?.articles || []);

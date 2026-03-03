@@ -229,12 +229,18 @@ export default function MedicalNews() {
     return () => clearInterval(timersRef.current.cd);
   }, []);
 
+  const handleSourceChange = (src) => {
+    setActiveSource(src);
+    setPage(1);
+    // fetchNews will be triggered by the activeSource useEffect
+  };
+
   const handleTopicChange = (id) => {
     setTopic(id);
     setSearchQuery("");
     setSearchInput("");
     setPage(1);
-    fetchNews(1, id, "");
+    fetchNews(1, id, "", activeSource);
   };
 
   const handleSearch = () => {

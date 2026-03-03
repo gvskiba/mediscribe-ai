@@ -156,6 +156,11 @@ export default function MedicalNews() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(1);
+  const [activeSource, setActiveSource] = useState(() => {
+    // Pick whichever source has a token; default to thenewsapi
+    if (localStorage.getItem("webzio_token")) return "webzio";
+    return "thenewsapi";
+  });
   const [bookmarks, setBookmarks] = useState(() => getSaved());
   const [lastRef, setLastRef] = useState(null);
   const [countdown, setCountdown] = useState(30 * 60);

@@ -162,6 +162,13 @@ export default function MedicalNews() {
   const fetchNews = useCallback(async (pg = 1, topicId = topic, q = searchQuery) => {
     setLoading(true);
     setError(null);
+    const localToken = localStorage.getItem("thenewsapi_token");
+    if (!localToken) {
+      setError("No API token configured. Please add your TheNewsAPI.com token in App Settings.");
+      setArticles([]);
+      setLoading(false);
+      return;
+    }
     try {
       const currentTopic = TOPICS.find(t => t.id === topicId) || TOPICS[0];
       const query = q.trim() || currentTopic.q;
@@ -170,6 +177,7 @@ export default function MedicalNews() {
         categories: currentTopic.cat,
         page: pg,
         limit: 10,
+        token: localToken,
       });
       setArticles(resp.data?.articles || []);
       setMeta(resp.data?.meta || {});

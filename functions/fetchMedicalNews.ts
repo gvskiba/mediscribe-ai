@@ -45,39 +45,32 @@ const RSS_SOURCES = [
     category: "Clinical Research"
   },
   {
-    id: "acep",
-    name: "ACEP",
-    label: "American College of Emergency Physicians",
-    url: "https://www.acep.org/rss/newsroom/",
-    category: "Associations"
+    id: "medscape",
+    name: "Medscape",
+    label: "Medscape Medical News",
+    url: "https://www.medscape.com/cx/rssfeeds/2678.xml",
+    category: "Health News"
   },
   {
-    id: "aap",
-    name: "AAP",
-    label: "American Academy of Pediatrics",
-    url: "https://www.aap.org/en/news-room/aap-rss-feeds/news/",
-    category: "Associations"
+    id: "jama",
+    name: "JAMA",
+    label: "JAMA Network",
+    url: "https://jamanetwork.com/rss/site_3/67.xml",
+    category: "Clinical Research"
   },
   {
-    id: "aafp",
-    name: "AAFP",
-    label: "American Academy of Family Physicians",
-    url: "https://www.aafp.org/news.rss",
-    category: "Associations"
+    id: "bmj",
+    name: "BMJ",
+    label: "The BMJ",
+    url: "https://www.bmj.com/rss/current.xml",
+    category: "Clinical Research"
   },
   {
-    id: "aca",
-    name: "ACA",
-    label: "American Chiropractic Association",
-    url: "https://www.acatoday.org/feed/",
-    category: "Associations"
-  },
-  {
-    id: "acc",
-    name: "ACC",
-    label: "American College of Cardiology",
-    url: "https://www.acc.org/latest-in-cardiology/rss",
-    category: "Associations"
+    id: "mayo",
+    name: "Mayo Clinic",
+    label: "Mayo Clinic News Network",
+    url: "https://newsnetwork.mayoclinic.org/feed/",
+    category: "Health News"
   }
 ];
 

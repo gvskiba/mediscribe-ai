@@ -48,14 +48,14 @@ const RSS_SOURCES = [
     id: "acep",
     name: "ACEP",
     label: "American College of Emergency Physicians",
-    url: "https://www.acep.org/news/rss/",
+    url: "https://www.acep.org/rss/newsroom/",
     category: "Associations"
   },
   {
     id: "aap",
     name: "AAP",
     label: "American Academy of Pediatrics",
-    url: "https://www.aap.org/en/news-room/news-releases-from-the-aap/rss.xml",
+    url: "https://www.aap.org/en/news-room/aap-rss-feeds/news/",
     category: "Associations"
   },
   {
@@ -181,15 +181,13 @@ Deno.serve(async (req) => {
         const res = await fetch(src.url, {
           headers: {
             'Accept': 'application/rss+xml, application/xml, text/xml, */*',
-            'User-Agent': 'Mozilla/5.0 (compatible; ClinAI-MedicalNews/1.0)'
+            'User-Agent': 'ClinAI-MedicalNews/1.0'
           },
           signal: AbortSignal.timeout(10000)
         });
         if (!res.ok) throw new Error(`${src.id} failed: ${res.status}`);
         const xml = await res.text();
-        console.log(`[${src.id}] fetched ${xml.length} chars`);
         const parsed = parseRSSFeed(xml, src.id, src.name, src.category);
-        console.log(`[${src.id}] parsed ${parsed.length} articles`);
         if (parsed.length === 0) throw new Error(`${src.id} returned empty feed`);
         return parsed;
       })

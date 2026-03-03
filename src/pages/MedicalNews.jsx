@@ -854,17 +854,28 @@ export default function MedicalNews() {
             <Loader2 className="w-8 h-8 animate-spin text-slate-500" />
           </div>
         ) : filtered.length > 0 ? (
-          <div className="max-w-4xl mx-auto space-y-3">
-            <AnimatePresence>
-              {filtered.map((article, idx) => (
-                <ArticleCard
-                  key={article.id || article.url || idx}
-                  article={article}
-                  saved={savedUrls.includes(article.url)}
-                  onSave={handleSave}
-                />
-              ))}
-            </AnimatePresence>
+          <div>
+            {!showSaved && activeCategory === "all" && activeSources.length === 0 && (
+              <MostPopularSection
+                articles={articles}
+                savedUrls={savedUrls}
+                onSave={handleSave}
+                onOpenSummary={(a) => setPopularSummaryArticle(a)}
+              />
+            )}
+            <div className="max-w-4xl mx-auto space-y-3">
+              <AnimatePresence>
+                {filtered.map((article, idx) => (
+                  <ArticleCard
+                    key={article.id || article.url || idx}
+                    article={article}
+                    saved={savedUrls.includes(article.url)}
+                    onSave={handleSave}
+                    allArticles={articles}
+                  />
+                ))}
+              </AnimatePresence>
+            </div>
           </div>
         ) : (
           <NoArticlesAIFallback 

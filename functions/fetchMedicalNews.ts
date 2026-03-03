@@ -54,21 +54,21 @@ const RSS_SOURCES = [
     id: "jama",
     name: "JAMA",
     label: "JAMA Network",
-    url: "https://jamanetwork.com/rss/site_3/69.xml",
+    url: "https://jamanetwork.com/rss/site_3/67.xml",
     category: "Clinical Research"
   },
   {
     id: "bmj",
     name: "BMJ",
     label: "The BMJ",
-    url: "https://feeds.bmj.com/bmj/recent.rss",
+    url: "https://www.bmj.com/rss/latest",
     category: "Clinical Research"
   },
   {
     id: "mayo",
     name: "Mayo Clinic",
     label: "Mayo Clinic News Network",
-    url: "https://newsnetwork.mayoclinic.org/?format=RSS",
+    url: "https://newsnetwork.mayoclinic.org/feed/",
     category: "Health News"
   }
 ];

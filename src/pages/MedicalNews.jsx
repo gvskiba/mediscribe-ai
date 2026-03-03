@@ -21,20 +21,19 @@ const CATEGORIES = [
   { id: "Associations", label: "Associations & Colleges", icon: "🏛️" },
 ];
 
-const ALL_SOURCES = ["WHO", "CDC", "NIH", "NEJM", "MedlinePlus", "Lancet", "ACEP", "AAP", "AAFP", "ACA", "ACC"];
+const ALL_SOURCES = ["WHO", "CDC", "NIH", "NEJM", "MedlinePlus", "Lancet", "Medscape", "JAMA", "BMJ", "Mayo Clinic"];
 
 const SOURCE_COLORS = {
-  WHO:         { border: "#14b8a6", text: "#14b8a6" },
-  CDC:         { border: "#a855f7", text: "#a855f7" },
-  NIH:         { border: "#3b82f6", text: "#3b82f6" },
-  NEJM:        { border: "#22c55e", text: "#22c55e" },
-  MedlinePlus: { border: "#f97316", text: "#f97316" },
-  Lancet:      { border: "#ef4444", text: "#ef4444" },
-  ACEP:        { border: "#f59e0b", text: "#f59e0b" },
-  AAP:         { border: "#8b5cf6", text: "#8b5cf6" },
-  AAFP:        { border: "#06b6d4", text: "#06b6d4" },
-  ACA:         { border: "#84cc16", text: "#84cc16" },
-  ACC:         { border: "#ec4899", text: "#ec4899" },
+  WHO:          { border: "#14b8a6", text: "#14b8a6" },
+  CDC:          { border: "#a855f7", text: "#a855f7" },
+  NIH:          { border: "#3b82f6", text: "#3b82f6" },
+  NEJM:         { border: "#22c55e", text: "#22c55e" },
+  MedlinePlus:  { border: "#f97316", text: "#f97316" },
+  Lancet:       { border: "#ef4444", text: "#ef4444" },
+  Medscape:     { border: "#f59e0b", text: "#f59e0b" },
+  JAMA:         { border: "#8b5cf6", text: "#8b5cf6" },
+  BMJ:          { border: "#06b6d4", text: "#06b6d4" },
+  "Mayo Clinic":{ border: "#84cc16", text: "#84cc16" },
 };
 
 const CATEGORY_COLORS = {

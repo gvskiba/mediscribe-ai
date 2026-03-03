@@ -218,10 +218,10 @@ export default function MedicalNews() {
 
   // Initial load + auto-refresh
   useEffect(() => {
-    fetchNews(1, topic, searchQuery);
-    timersRef.current.ar = setInterval(() => fetchNews(1, topic, searchQuery), 30 * 60 * 1000);
+    fetchNews(1, topic, searchQuery, activeSource);
+    timersRef.current.ar = setInterval(() => fetchNews(1, topic, searchQuery, activeSource), 30 * 60 * 1000);
     return () => clearInterval(timersRef.current.ar);
-  }, []);
+  }, [activeSource]);
 
   // Countdown ticker
   useEffect(() => {

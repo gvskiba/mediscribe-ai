@@ -217,7 +217,7 @@ Return JSON with:
   };
 
   return (
-    <div style={{ background: colors.navy, fontFamily: "DM Sans, sans-serif", minHeight: "100vh", display: "flex", flexDirection: "column", color: colors.text, marginLeft: 0, marginTop: 0 }}>
+    <div style={{ background: colors.navy, fontFamily: "DM Sans, sans-serif", minHeight: "100vh", display: "flex", flexDirection: "column", color: colors.text, marginLeft: 0, marginTop: 0, padding: 0 }}>
       {/* Top Navigation Bar */}
       <div style={{ background: colors.slate, borderBottom: `1px solid ${colors.border}`, padding: "12px 16px", display: "flex", flexDirection: "column", gap: "8px" }}>
         {/* Row 1: Patient Info + Vitals */}
@@ -502,7 +502,7 @@ Return JSON with:
       </div>
 
       {/* Main Content Grid */}
-      <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", padding: "11px 16px" }}>
+      <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", padding: 0 }}>
         <div style={{ display: "grid", gridTemplateColumns: "290px 1fr 272px", gap: "11px", flex: 1, overflow: "hidden" }}>
 
 

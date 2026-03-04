@@ -69,6 +69,7 @@ import PatientHistory from './pages/PatientHistory';
 import Procedures from './pages/Procedures';
 import SavedGuidelines from './pages/SavedGuidelines';
 import Search from './pages/Search';
+import Shift from './pages/Shift';
 import ShiftHours from './pages/ShiftHours';
 import SmartTemplates from './pages/SmartTemplates';
 import Snippets from './pages/Snippets';
@@ -76,7 +77,6 @@ import TemplateEditor from './pages/TemplateEditor';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
-import Shift from './pages/Shift';
 import __Layout from './Layout.jsx';
 
 
@@ -103,6 +103,7 @@ export const PAGES = {
     "Procedures": Procedures,
     "SavedGuidelines": SavedGuidelines,
     "Search": Search,
+    "Shift": Shift,
     "ShiftHours": ShiftHours,
     "SmartTemplates": SmartTemplates,
     "Snippets": Snippets,
@@ -110,7 +111,6 @@ export const PAGES = {
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
-    "Shift": Shift,
 }
 
 export const pagesConfig = {

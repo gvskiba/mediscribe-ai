@@ -35,6 +35,9 @@ Deno.serve(async (req) => {
       )
     );
 
+    console.log('dateStr:', dateStr);
+    console.log('stockResults[0]:', JSON.stringify(stockResults[0]?.value));
+
     for (let i = 0; i < tickers.length; i++) {
       const result = stockResults[i];
       if (result.status === 'fulfilled' && result.value?.results?.length > 0) {

@@ -717,6 +717,7 @@ export default function Dashboard() {
     notesActivity: { label: "Recent Activity", Comp: NotesActivityWidget },
     quickNoteCreator: { label: "Quick Note", Comp: QuickNoteCreatorWidget },
     quickSearch: { label: "Quick Search", Comp: QuickSearchWidget },
+    weather: { label: "Weather", Comp: WeatherWidget },
   };
 
   useEffect(() => {

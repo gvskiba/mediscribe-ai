@@ -205,6 +205,7 @@ const PROC_CATEGORIES = [
   { id:"gi", label:"🔩 GI" },
   { id:"gyn", label:"🌸 OB/GYN" },
   { id:"ent", label:"👁️ ENT/Ophth" },
+  { id:"anesthesia", label:"💉 Anesthesia" },
 ];
 
 const PROC_TEMPLATES = [

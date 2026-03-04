@@ -41,7 +41,10 @@ export default function StockMarketNewsWidget() {
       display: "flex",
       flexDirection: "column",
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+      <div
+        onClick={() => setCollapsed(c => !c)}
+        style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: collapsed ? 0 : 12, cursor: "pointer", userSelect: "none" }}
+      >
         <div style={{
           width: 32,
           height: 32,
@@ -54,10 +57,11 @@ export default function StockMarketNewsWidget() {
         }}>
           <TrendingUp size={16} />
         </div>
-        <div>
+        <div style={{ flex: 1 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: "#1f2937" }}>Stock Market News</div>
           <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>Top trading stories</div>
         </div>
+        {collapsed ? <ChevronDown size={14} style={{ color: "#9ca3af" }} /> : <ChevronUp size={14} style={{ color: "#9ca3af" }} />}
       </div>
 
       {loading ? (

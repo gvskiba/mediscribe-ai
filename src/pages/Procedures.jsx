@@ -629,6 +629,18 @@ const PROC_TEMPLATES = [
       { id:"patient_response", label:"Patient Response",     type:"text",    required:false, placeholder:"e.g., pain relief noted, comfortable for transport" },
     ]
   },
+  { id:"digital-block", label:"Digital Block", category:"anesthesia", icon:"💉", color:"#4a90d9",
+    fields:[
+      { id:"indication",    label:"Indication",              type:"text",    required:true,  placeholder:"e.g., finger laceration repair, ingrown toenail removal" },
+      { id:"finger",        label:"Finger/Location",         type:"text",    required:true,  placeholder:"e.g., left index finger, right thumb, left big toe" },
+      { id:"agent",         label:"Local Anesthetic",        type:"text",    required:true,  placeholder:"e.g., 1% lidocaine without epinephrine, 3-5 mL" },
+      { id:"volume",        label:"Total Volume (mL)",       type:"number",  required:true,  placeholder:"3-5" },
+      { id:"technique",     label:"Technique",               type:"select",  required:true,  options:["Subcutaneous 'ring' technique — 4 injections around finger","Subcutaneous 'v' technique — 2 injections dorsal + palmar","Intravascular wrist technique"] },
+      { id:"onset",         label:"Anesthesia Onset",        type:"select",  required:true,  options:["Within 5-10 min","Within 10-15 min","Delayed — required supplemental"] },
+      { id:"epinephrine",   label:"Epinephrine Used",        type:"select",  required:true,  options:["No — not recommended for digits","Yes — with caution in emergency only"] },
+      { id:"complications", label:"Complications",           type:"text",    required:false, placeholder:"None" },
+    ]
+  },
   { id:"wrist-block", label:"Wrist Block (Median/Ulnar/Radial)", category:"anesthesia", icon:"💉", color:"#4a90d9",
     fields:[
       { id:"indication",    label:"Indication",              type:"text",    required:true,  placeholder:"e.g., hand laceration, finger fracture" },

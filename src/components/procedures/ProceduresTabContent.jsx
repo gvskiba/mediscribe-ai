@@ -928,8 +928,8 @@ function ProcedureLog({ note }) {
         ) : filteredAndSorted.length === 0 ? (
           <div style={{ padding:"40px 16px", textAlign:"center", color:T.dim, fontSize:13 }}>
             <div style={{ fontSize:32, marginBottom:12 }}>📊</div>
-            <div style={{ fontWeight:600, color:T.text, marginBottom:6 }}>No procedures logged yet</div>
-            <div>Use the form above to log your first procedure.</div>
+            <div style={{ fontWeight:600, color:T.text, marginBottom:6 }}>{search ? "No procedures matched your search" : "No procedures logged yet"}</div>
+            <div>{search ? "Try a different keyword or clear the search." : "Use the form above to log your first procedure."}</div>
           </div>
         ) : (
           <div style={{ overflowX:"auto" }}>

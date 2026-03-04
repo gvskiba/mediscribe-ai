@@ -14,28 +14,46 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Polygon.io API key not configured' }, { status: 500 });
     }
 
-    // Fetch snapshot for major market tickers
-    const tickers = ['SPY', 'QQQ', 'DIA', 'AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL'];
-    const tickerStr = tickers.join(',');
+    // Fetch previous day close for each ticker using free-tier /v2/aggs endpoint
+    const tickers = ['SPY', 'QQQ', 'DIA', 'AAPL', 'MSFT', 'NVDA'];
 
-    const snapshotUrl = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers?tickers=${tickerStr}&apiKey=${apiKey}`;
-    const snapshotRes = await fetch(snapshotUrl);
+    // Get yesterday's date (skip weekends)
+    const today = new Date();
+    let prevDate = new Date(today);
+    prevDate.setDate(prevDate.getDate() - 1);
+    // If Sunday, go back to Friday
+    if (prevDate.getDay() === 0) prevDate.setDate(prevDate.getDate() - 2);
+    // If Saturday, go back to Friday
+    if (prevDate.getDay() === 6) prevDate.setDate(prevDate.getDate() - 1);
+    const dateStr = prevDate.toISOString().split('T')[0];
 
     let stocks = [];
-    if (snapshotRes.ok) {
-      const snapshotData = await snapshotRes.json();
-      stocks = (snapshotData.tickers || []).map(t => ({
-        ticker: t.ticker,
-        name: t.ticker,
-        price: t.day?.c || t.prevDay?.c || 0,
-        open: t.day?.o || t.prevDay?.o || 0,
-        high: t.day?.h || t.prevDay?.h || 0,
-        low: t.day?.l || t.prevDay?.l || 0,
-        prevClose: t.prevDay?.c || 0,
-        change: t.todaysChange || 0,
-        changePercent: t.todaysChangePerc || 0,
-        volume: t.day?.v || 0,
-      }));
+    const stockResults = await Promise.allSettled(
+      tickers.map(ticker =>
+        fetch(`https://api.polygon.io/v2/aggs/ticker/${ticker}/range/1/day/${dateStr}/${dateStr}?adjusted=true&apiKey=${apiKey}`)
+          .then(r => r.json())
+      )
+    );
+
+    for (let i = 0; i < tickers.length; i++) {
+      const result = stockResults[i];
+      if (result.status === 'fulfilled' && result.value?.results?.length > 0) {
+        const bar = result.value.results[0];
+        const prevClose = bar.o || bar.c;
+        const changePercent = prevClose ? ((bar.c - prevClose) / prevClose) * 100 : 0;
+        stocks.push({
+          ticker: tickers[i],
+          name: tickers[i],
+          price: bar.c || 0,
+          open: bar.o || 0,
+          high: bar.h || 0,
+          low: bar.l || 0,
+          prevClose: prevClose,
+          change: bar.c - prevClose,
+          changePercent: changePercent,
+          volume: bar.v || 0,
+        });
+      }
     }
 
     // Fetch market-wide news

@@ -652,8 +652,13 @@ Return JSON with:
              </div>
           </div>
 
-          {/* Right: Medications + Labs + Imaging */}
+          {/* Right: Medications + Labs + Imaging + Drug Dosing */}
           <div style={{ display: "flex", flexDirection: "column", gap: "11px", overflow: "auto", paddingRight: "4px" }}>
+            {/* Drug Dosing Calculator */}
+            <div style={{ flex: 0 }}>
+              <QuickDrugDosingCalculator />
+            </div>
+
             {/* Medications */}
             <div style={{ background: colors.panel, border: `1px solid ${colors.border}`, borderLeft: `3px solid ${colors.rose}`, borderRadius: "8px", padding: "10px", minHeight: "120px" }}>
               <h3 style={{ fontSize: "12px", fontWeight: 600, margin: "0 0 8px 0", display: "flex", gap: "4px" }}>💊 MEDICATIONS GIVEN</h3>

@@ -445,8 +445,8 @@ export default function MedicalNews() {
             ) : (
               <>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 9, padding: "1px 7px", borderRadius: 3, background: "rgba(0,212,188,.08)", color: "#00d4bc", border: "1px solid rgba(0,212,188,.2)", fontWeight: 600 }}>📡 {SOURCES.find(s => s.id === activeSource)?.label}</span>
-                <span style={{ color: "#c8ddf0", fontWeight: 600, fontSize: 10.5 }}>{articles.length}</span>
-                articles {total ? `· Page ${page} · ${total.toLocaleString()} found` : ""}
+                <span style={{ color: "#c8ddf0", fontWeight: 600, fontSize: 10.5 }}>{filteredArticles.length}</span>
+                {localFilter ? ` filtered (of ${articles.length})` : "articles"} {total ? `· Page ${page} · ${total.toLocaleString()} found` : ""}
               </>
             )}
           </div>

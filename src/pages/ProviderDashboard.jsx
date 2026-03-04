@@ -797,6 +797,22 @@ export default function ProviderDashboard() {
     <div style={{ background: T.navy, width: "100%", height: "100%", fontFamily: "DM Sans, sans-serif", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       <style>{`@keyframes clockColon { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }`}</style>
 
+      {/* Navigation Bar */}
+      <div style={{ padding: "12px 16px", borderBottom: `1px solid ${T.border}`, display: "flex", gap: "16px", alignItems: "center", flexShrink: 0 }}>
+        <a href={createPageUrl("Shift")} style={{ padding: "8px 16px", background: "rgba(0,212,188,0.1)", border: `1px solid rgba(0,212,188,0.3)`, borderRadius: "8px", color: T.teal, fontSize: "13px", fontWeight: 600, textDecoration: "none", transition: "all 0.2s", cursor: "pointer" }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(0,212,188,0.2)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(0,212,188,0.1)"; }}
+        >
+          Shift Dashboard
+        </a>
+        <a href={createPageUrl("PatientDashboard")} style={{ padding: "8px 16px", background: "rgba(0,212,188,0.1)", border: `1px solid rgba(0,212,188,0.3)`, borderRadius: "8px", color: T.teal, fontSize: "13px", fontWeight: 600, textDecoration: "none", transition: "all 0.2s", cursor: "pointer" }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(0,212,188,0.2)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(0,212,188,0.1)"; }}
+        >
+          Patient Dashboard
+        </a>
+      </div>
+
       {/* Header */}
       <div style={{ padding: "10px 16px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "8px", flexShrink: 0, position: "relative" }}>
         {isEditMode ? (

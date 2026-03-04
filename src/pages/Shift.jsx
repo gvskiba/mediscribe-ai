@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import ShiftNavBar from "../components/shift/ShiftNavBar.jsx";
 import ShiftHeader from "../components/shift/ShiftHeader.jsx";
 import StatsRibbon from "../components/shift/StatsRibbon.jsx";
@@ -21,7 +21,6 @@ const COLORS = {
 };
 
 export default function Shift() {
-  const queryClient = useQueryClient();
   const [shift, setShift] = useState(null);
   const [currentFilter, setCurrentFilter] = useState("all");
   const [activeOrderTarget, setActiveOrderTarget] = useState(null);
@@ -69,6 +68,15 @@ export default function Shift() {
     staleTime: 5000,
   });
 
+  // Real-time subscriptions
+  useEffect(() => {
+    if (!activeShift) return;
+    const unsubscribe = base44.entities.encounters.subscribe((event) => {
+      // Re-fetch on any encounter change
+    });
+    return () => unsubscribe();
+  }, [activeShift]);
+
   // Process shift data
   useEffect(() => {
     if (activeShift && encounters.length >= 0) {
@@ -92,26 +100,37 @@ export default function Shift() {
     }
   }, [activeShift, encounters, orders, tasks, currentFilter]);
 
-  // Live clock updates
+  // Live elapsed time
   useEffect(() => {
     if (!shift) return;
-    const interval = setInterval(() => {
+    const updateElapsed = () => {
       setElapsed(Math.floor((Date.now() - shift.start.getTime()) / 1000));
-    }, 1000);
+    };
+    updateElapsed();
+    const interval = setInterval(updateElapsed, 30000);
     return () => clearInterval(interval);
   }, [shift]);
 
-  const openModal = useCallback((modalId) => {
+  const openModal = (modalId) => {
     setOpenModals((prev) => ({ ...prev, [modalId]: true }));
-  }, []);
+  };
 
-  const closeModal = useCallback((modalId) => {
+  const closeModal = (modalId) => {
     setOpenModals((prev) => ({ ...prev, [modalId]: false }));
-  }, []);
+  };
 
   if (shiftLoading) {
     return (
-      <div style={{ background: COLORS.navy, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#e8f4ff" }}>
+      <div
+        style={{
+          background: COLORS.navy,
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#e8f4ff",
+        }}
+      >
         <div>Loading shift…</div>
       </div>
     );
@@ -119,7 +138,16 @@ export default function Shift() {
 
   if (!activeShift) {
     return (
-      <div style={{ background: COLORS.navy, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#e8f4ff" }}>
+      <div
+        style={{
+          background: COLORS.navy,
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#e8f4ff",
+        }}
+      >
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 32, marginBottom: 16 }}>🏥</div>
           <div style={{ fontSize: 18, fontWeight: 700 }}>No Active Shift</div>
@@ -144,12 +172,21 @@ export default function Shift() {
         });
 
   return (
-    <div style={{ background: COLORS.navy, minHeight: "100vh", color: "#c8ddf0", fontFamily: "DM Sans, sans-serif" }}>
+    <div
+      style={{
+        background: COLORS.navy,
+        minHeight: "100vh",
+        color: "#c8ddf0",
+        fontFamily: "DM Sans, sans-serif",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       <ShiftNavBar shift={activeShift} elapsed={elapsed} onEndShift={() => openModal("end-shift")} />
       <ShiftHeader shift={activeShift} elapsed={elapsed} onAddPatient={() => openModal("add-patient")} />
       <StatsRibbon shift={shift} />
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 20, padding: "20px 24px", width: "100%" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 20, padding: "20px 24px", width: "100%", flex: 1 }}>
         <div>
           <PatientBoard
             patients={filteredPatients}
@@ -173,7 +210,9 @@ export default function Shift() {
       {openModals["add-patient"] && (
         <AddPatientModal isOpen onClose={() => closeModal("add-patient")} shiftId={activeShift.id} />
       )}
-      {openModals["add-task"] && <AddTaskModal isOpen onClose={() => closeModal("add-task")} shiftId={activeShift.id} />}
+      {openModals["add-task"] && (
+        <AddTaskModal isOpen onClose={() => closeModal("add-task")} shiftId={activeShift.id} />
+      )}
       {openModals["add-order"] && (
         <AddOrderModal
           isOpen

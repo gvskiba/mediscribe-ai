@@ -658,9 +658,9 @@ function ProcedureNoteDrafter({ prefilledCPT, onClearPrefill }) {
                 onMouseEnter={e=>e.currentTarget.style.background="rgba(22,45,79,0.5)"}
                 onMouseLeave={e=>!openCategories[cat.id]&&(e.currentTarget.style.background="transparent")}
               >
-                <span style={{fontSize:14}}>{cat.label.split(" ")[1] || cat.label}</span>
-                <div style={{flex:1, textAlign:"left", fontSize:12, fontWeight:600, color:T.bright}}>{cat.label.split(" ")[0]}</div>
-                <span style={{fontSize:10, color:T.dim}}>{templatesByCategory[cat.id]?.length || 0}</span>
+                <span style={{fontSize:14, flexShrink:0}}>{cat.label.split(" ")[0]}</span>
+                <div style={{flex:1, textAlign:"left", fontSize:12, fontWeight:600, color:T.bright, minWidth:0}}>{cat.label.split(" ").slice(1).join(" ")}</div>
+                <span style={{fontSize:11, color:T.dim, flexShrink:0, fontWeight:600}}>{templatesByCategory[cat.id]?.length || 0}</span>
               </button>
               {openCategories[cat.id] && (
                 <div style={{background:"rgba(14,35,64,0.4)", borderBottom:`1px solid ${T.border}`}}>

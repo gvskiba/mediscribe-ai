@@ -87,7 +87,7 @@ export default function StockMarketNewsWidget() {
         <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 12 }}>
           No stock market news available
         </div>
-      ) : (
+      ) : !collapsed ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 10, flex: 1, overflowY: "auto" }}>
           {articles.map((article, idx) => (
             <a

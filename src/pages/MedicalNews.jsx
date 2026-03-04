@@ -174,6 +174,24 @@ export default function MedicalNews() {
 
   const showToast = (msg, color) => setToast({ msg, color });
 
+  // Load API tokens from DB on mount (so they work when published, not just in preview)
+  useEffect(() => {
+    const loadTokens = async () => {
+      try {
+        const results = await base44.entities.HospitalSettings.list();
+        if (results.length > 0 && results[0].api_tokens) {
+          const tokens = results[0].api_tokens;
+          setDbTokens(tokens);
+          // Also sync to localStorage so existing checks still work
+          Object.entries(tokens).forEach(([key, val]) => {
+            if (val) localStorage.setItem(key, val);
+          });
+        }
+      } catch {}
+    };
+    loadTokens();
+  }, []);
+
   // Build combined query from selected topics + manual search
   const buildQuery = (topics, q) => {
     if (q.trim()) return q.trim();

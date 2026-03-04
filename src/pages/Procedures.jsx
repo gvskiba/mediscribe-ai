@@ -1346,6 +1346,7 @@ export default function Procedures() {
         <EDNoteDrafter />
         <CPTSearch onSelectCPT={handleSelectCPT} />
         <ProcedureLog />
+        <BillingModule />
       </div>
     </div>
   );

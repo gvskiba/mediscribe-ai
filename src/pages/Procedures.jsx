@@ -592,6 +592,16 @@ function ProcedureNoteDrafter({ prefilledCPT, onClearPrefill }) {
   const [generating, setGenerating] = useState(false);
   const [customProcedureName, setCustomProcedureName] = useState("");
   const [customCptCode, setCustomCptCode] = useState("");
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [search, setSearch] = useState("");
+
+  const filteredTemplates = useMemo(() => {
+    return PROC_TEMPLATES.filter(t => {
+      const matchCat = activeCategory === "all" || t.category === activeCategory;
+      const matchSearch = !search || t.label.toLowerCase().includes(search.toLowerCase());
+      return matchCat && matchSearch;
+    });
+  }, [activeCategory, search]);
 
   useEffect(() => {
     if (prefilledCPT) {

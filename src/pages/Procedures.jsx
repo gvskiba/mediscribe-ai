@@ -838,7 +838,7 @@ function ProcedureNoteDrafter({ prefilledCPT, onClearPrefill }) {
             <>
               <div style={{ padding:"12px 18px", background:"rgba(22,45,79,0.9)", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:8 }}>
                 <span style={{ fontSize:13, fontWeight:700, color:T.bright, marginRight:"auto" }}>{selectedTemplate.icon} {selectedTemplate.label}</span>
-                {generatedNote && <button onClick={() => navigator.clipboard.writeText(generatedNote)} style={{ padding:"5px 10px", borderRadius:6, background:"rgba(0,212,188,0.1)", color:T.teal, border:`1px solid rgba(0,212,188,0.25)`, fontSize:11.5, cursor:"pointer" }}>📋 Copy Note</button>}
+                {(generatedNote || keyFindings || impression || summary) && <button onClick={() => navigator.clipboard.writeText([summary, keyFindings, impression, generatedNote].filter(Boolean).join("\n\n"))} style={{ padding:"5px 10px", borderRadius:6, background:"rgba(0,212,188,0.1)", color:T.teal, border:`1px solid rgba(0,212,188,0.25)`, fontSize:11.5, cursor:"pointer" }}>📋 Copy All</button>}
               </div>
               <div style={{ padding:20, display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
                 {selectedTemplate.fields.map(field => (

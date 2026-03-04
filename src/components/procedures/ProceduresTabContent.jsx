@@ -451,16 +451,17 @@ function ProcedureNoteDrafter({ note, prefilledCPT, onClearPrefill }) {
   };
 
   const generateNote = async () => {
-    if (!selectedTemplate) return;
+    const procedureLabel = selectedTemplate ? selectedTemplate.label : customProcedureName;
+    if (!procedureLabel) return;
     setGenerating(true);
     try {
-      const fieldSummary = selectedTemplate.fields
-        .map(f => `${f.label}: ${fields[f.id] || "(not provided)"}`)
-        .join("\n");
+      const fieldSummary = selectedTemplate
+        ? selectedTemplate.fields.map(f => `${f.label}: ${fields[f.id] || "(not provided)"}`).join("\n")
+        : `Procedure Name: ${customProcedureName}\nCPT Code: ${customCptCode}`;
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are Notrya AI. Draft a complete, medicolegally sound ${selectedTemplate.label} procedure note for an emergency medicine provider.
+        prompt: `You are Notrya AI. Draft a complete, medicolegally sound ${procedureLabel} procedure note for an emergency medicine provider.
 
-PROCEDURE: ${selectedTemplate.label}
+PROCEDURE: ${procedureLabel}${customCptCode ? `\nCPT CODE: ${customCptCode}` : ""}
 PATIENT CONTEXT FROM NOTE: ${note ? [note.patient_name, note.patient_age, note.patient_gender].filter(Boolean).join(", ") : "Not specified"}
 DATE/TIME: ${new Date().toLocaleString()}
 

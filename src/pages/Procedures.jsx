@@ -1136,7 +1136,7 @@ export default function Procedures() {
         <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:14 }}>
           <div style={{ fontSize:28, background:"rgba(0,212,188,0.1)", border:"1px solid rgba(0,212,188,0.2)", borderRadius:12, padding:12 }}>✂️</div>
           <div>
-            <h1 style={{ fontFamily:"Playfair Display,serif", fontSize:26, fontWeight:700, color:T.bright, margin:0 }}>Procedures</h1>
+            <h1 style={{ fontFamily:"Playfair Display,serif", fontSize:26, fontWeight:700, color:T.bright, margin:0 }}>Procedure Suite</h1>
             <p style={{ fontSize:13, color:T.dim, margin:"4px 0 0" }}>CPT lookup, note templates, and procedure logging</p>
           </div>
         </div>

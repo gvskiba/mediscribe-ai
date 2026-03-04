@@ -124,7 +124,7 @@ export default function StockMarketNewsWidget() {
             </a>
           ))}
         </div>
-      )}
+      ) : null}
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }

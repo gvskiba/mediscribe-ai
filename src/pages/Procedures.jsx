@@ -1005,29 +1005,29 @@ function ProcedureNoteDrafter({ prefilledCPT, onClearPrefill }) {
                 )}
               </div>
               {(generatedNote || keyFindings || impression || summary) && (
-                <div style={{ background:"#0a1929", padding:20, fontFamily:"DM Sans,sans-serif", fontSize:13.5, lineHeight:1.9, color:T.text, whiteSpace:"pre-wrap", borderTop:`1px solid ${T.border}` }}>
+                <div style={{ background:"#0a1929", padding:20, fontFamily:"'Segoe UI', Arial, sans-serif", fontSize:12, lineHeight:1.8, color:T.text, borderTop:`1px solid ${T.border}`, maxHeight:"600px", overflow:"auto" }}>
                   {summary && (
                     <div style={{ marginBottom:20 }}>
-                      <div style={{ fontSize:12, fontWeight:700, color:T.purple, marginBottom:8 }}>📋 PROCEDURE SUMMARY</div>
-                      <div style={{ background:"rgba(155,109,255,0.08)", padding:12, borderRadius:6, borderLeft:`3px solid ${T.purple}` }}>{summary}</div>
+                      <div style={{ fontSize:11, fontWeight:700, color:T.purple, marginBottom:8, textTransform:"uppercase", letterSpacing:"0.5px" }}>Procedure Summary</div>
+                      <div style={{ background:"rgba(155,109,255,0.08)", padding:12, borderRadius:6, borderLeft:`3px solid ${T.purple}`, whiteSpace:"pre-wrap" }}>{cleanMarkdown(summary)}</div>
                     </div>
                   )}
                   {keyFindings && (
                     <div style={{ marginBottom:20 }}>
-                      <div style={{ fontSize:12, fontWeight:700, color:T.teal, marginBottom:8 }}>🔍 KEY FINDINGS</div>
-                      <div style={{ background:"rgba(0,212,188,0.08)", padding:12, borderRadius:6, borderLeft:`3px solid ${T.teal}` }}>{keyFindings}</div>
+                      <div style={{ fontSize:11, fontWeight:700, color:T.teal, marginBottom:8, textTransform:"uppercase", letterSpacing:"0.5px" }}>Key Findings</div>
+                      <div style={{ background:"rgba(0,212,188,0.08)", padding:12, borderRadius:6, borderLeft:`3px solid ${T.teal}`, whiteSpace:"pre-wrap" }}>{cleanMarkdown(keyFindings)}</div>
                     </div>
                   )}
                   {impression && (
                     <div style={{ marginBottom:20 }}>
-                      <div style={{ fontSize:12, fontWeight:700, color:T.rose, marginBottom:8 }}>💭 IMPRESSION</div>
-                      <div style={{ background:"rgba(244,114,182,0.08)", padding:12, borderRadius:6, borderLeft:`3px solid ${T.rose}` }}>{impression}</div>
+                      <div style={{ fontSize:11, fontWeight:700, color:T.rose, marginBottom:8, textTransform:"uppercase", letterSpacing:"0.5px" }}>Clinical Impression</div>
+                      <div style={{ background:"rgba(244,114,182,0.08)", padding:12, borderRadius:6, borderLeft:`3px solid ${T.rose}`, whiteSpace:"pre-wrap" }}>{cleanMarkdown(impression)}</div>
                     </div>
                   )}
                   {generatedNote && (
                     <div>
-                      <div style={{ fontSize:12, fontWeight:700, color:T.amber, marginBottom:8 }}>📝 FULL PROCEDURE NOTE</div>
-                      <div>{generatedNote}</div>
+                      <div style={{ fontSize:11, fontWeight:700, color:T.amber, marginBottom:12, textTransform:"uppercase", letterSpacing:"0.5px" }}>Full Procedure Note</div>
+                      <div style={{ whiteSpace:"pre-wrap", lineHeight:1.7 }}>{cleanMarkdown(generatedNote)}</div>
                     </div>
                   )}
                 </div>

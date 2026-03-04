@@ -922,7 +922,7 @@ function ProcedureLog({ note }) {
 }
 
 // ── Main Export ───────────────────────────────────────────────────────────────
-export default function ProceduresTabContent({ note }) {
+export default function ProceduresTabContent({ note, standalone = false }) {
   const SECTIONS = [
     { id:"ai-recommender",        label:"🤖 AI Recommendations", color:T.purple },
     { id:"cpt-search",            label:"🔍 CPT Code Search",    color:T.teal   },

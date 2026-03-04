@@ -155,14 +155,16 @@ export default function MedicalNews() {
   const [meta, setMeta] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [topic, setTopic] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchInput, setSearchInput] = useState("");
+  // Multi-topic: Set of selected topic IDs
+  const [selectedTopics, setSelectedTopics] = useState(new Set(["all"]));
+  // API search query (sent to backend)
+  const [apiQuery, setApiQuery] = useState("");
+  const [apiQueryInput, setApiQueryInput] = useState("");
+  // Client-side keyword filter (filters fetched articles locally)
+  const [localFilter, setLocalFilter] = useState("");
+  const [localFilterInput, setLocalFilterInput] = useState("");
   const [page, setPage] = useState(1);
-  const [activeSource, setActiveSource] = useState(() => {
-    // Default to Polygon.io for stock news
-    return "polygon";
-  });
+  const [activeSource, setActiveSource] = useState("polygon");
   const [bookmarks, setBookmarks] = useState(() => getSaved());
   const [lastRef, setLastRef] = useState(null);
   const [countdown, setCountdown] = useState(30 * 60);
@@ -171,13 +173,20 @@ export default function MedicalNews() {
 
   const showToast = (msg, color) => setToast({ msg, color });
 
-  const fetchNews = useCallback(async (pg = 1, topicId = topic, q = searchQuery, src = activeSource) => {
+  // Build combined query from selected topics + manual search
+  const buildQuery = (topics, q) => {
+    if (q.trim()) return q.trim();
+    const ids = [...topics];
+    if (ids.includes("all") || ids.length === 0) return TOPICS[0].q;
+    return ids.map(id => TOPICS.find(t => t.id === id)?.q || "").filter(Boolean).join(" OR ");
+  };
+
+  const fetchNews = useCallback(async (pg = 1, topics = selectedTopics, q = apiQuery, src = activeSource) => {
     setLoading(true);
     setError(null);
 
     const sourceInfo = SOURCES.find(s => s.id === src) || SOURCES[0];
-    
-    // Skip token check for Polygon.io (uses backend secret)
+
     if (src !== "polygon") {
       const localToken = localStorage.getItem(sourceInfo.storageKey);
       if (!localToken) {
@@ -189,32 +198,19 @@ export default function MedicalNews() {
     }
 
     try {
-      const currentTopic = TOPICS.find(t => t.id === topicId) || TOPICS[0];
-      const query = q.trim() || currentTopic.q;
+      const query = buildQuery(topics, q);
+      const firstTopicId = [...topics][0] || "all";
+      const currentTopic = TOPICS.find(t => t.id === firstTopicId) || TOPICS[0];
 
       let resp;
       if (src === "polygon") {
-        resp = await base44.functions.invoke("fetchPolygonStockNews", {
-          query,
-          limit: 10,
-        });
+        resp = await base44.functions.invoke("fetchPolygonStockNews", { query, limit: 10 });
       } else if (src === "webzio") {
         const localToken = localStorage.getItem(sourceInfo.storageKey);
-        resp = await base44.functions.invoke("fetchWebzNews", {
-          query,
-          page: pg - 1,   // webz uses 0-based offset via "from"
-          size: 10,
-          token: localToken,
-        });
+        resp = await base44.functions.invoke("fetchWebzNews", { query, page: pg - 1, size: 10, token: localToken });
       } else {
         const localToken = localStorage.getItem(sourceInfo.storageKey);
-        resp = await base44.functions.invoke("fetchMedicalNews", {
-          query,
-          categories: currentTopic.cat,
-          page: pg,
-          limit: 10,
-          token: localToken,
-        });
+        resp = await base44.functions.invoke("fetchMedicalNews", { query, categories: currentTopic.cat, page: pg, limit: 10, token: localToken });
       }
 
       setArticles(resp.data?.articles || []);
@@ -226,12 +222,12 @@ export default function MedicalNews() {
       setArticles([]);
     }
     setLoading(false);
-  }, [topic, searchQuery, activeSource]);
+  }, [selectedTopics, apiQuery, activeSource]);
 
   // Initial load + auto-refresh
   useEffect(() => {
-    fetchNews(1, topic, searchQuery, activeSource);
-    timersRef.current.ar = setInterval(() => fetchNews(1, topic, searchQuery, activeSource), 30 * 60 * 1000);
+    fetchNews(1, selectedTopics, apiQuery, activeSource);
+    timersRef.current.ar = setInterval(() => fetchNews(1, selectedTopics, apiQuery, activeSource), 30 * 60 * 1000);
     return () => clearInterval(timersRef.current.ar);
   }, [activeSource]);
 
@@ -244,26 +240,39 @@ export default function MedicalNews() {
   const handleSourceChange = (src) => {
     setActiveSource(src);
     setPage(1);
-    // fetchNews will be triggered by the activeSource useEffect
   };
 
-  const handleTopicChange = (id) => {
-    setTopic(id);
-    setSearchQuery("");
-    setSearchInput("");
-    setPage(1);
-    fetchNews(1, id, "", activeSource);
+  const handleTopicToggle = (id) => {
+    setSelectedTopics(prev => {
+      const next = new Set(prev);
+      if (id === "all") {
+        // "All" clears everything and selects only "all"
+        return new Set(["all"]);
+      }
+      // Remove "all" when selecting a specific topic
+      next.delete("all");
+      if (next.has(id)) {
+        next.delete(id);
+        if (next.size === 0) next.add("all"); // revert to "all" if nothing left
+      } else {
+        next.add(id);
+      }
+      const newTopics = next;
+      setPage(1);
+      fetchNews(1, newTopics, apiQuery, activeSource);
+      return newTopics;
+    });
   };
 
-  const handleSearch = () => {
-    setSearchQuery(searchInput);
+  const handleApiSearch = () => {
+    setApiQuery(apiQueryInput);
     setPage(1);
-    fetchNews(1, topic, searchInput, activeSource);
+    fetchNews(1, selectedTopics, apiQueryInput, activeSource);
   };
 
   const handlePageChange = (pg) => {
     setPage(pg);
-    fetchNews(pg, topic, searchQuery, activeSource);
+    fetchNews(pg, selectedTopics, apiQuery, activeSource);
   };
 
   const handleToggleBookmark = (uuid) => {
@@ -281,6 +290,19 @@ export default function MedicalNews() {
       .then(() => showToast("📋 Link copied", "#00d4bc"))
       .catch(() => showToast("Could not copy", "#f5a623"));
   };
+
+  // Client-side filter applied on top of fetched articles
+  const filteredArticles = localFilter.trim()
+    ? articles.filter(a => {
+        const kw = localFilter.toLowerCase();
+        return (
+          (a.title || "").toLowerCase().includes(kw) ||
+          (a.description || "").toLowerCase().includes(kw) ||
+          (a.snippet || "").toLowerCase().includes(kw) ||
+          (a.source || "").toLowerCase().includes(kw)
+        );
+      })
+    : articles;
 
   const mm = String(Math.floor(countdown / 60)).padStart(2, "0");
   const ss = String(countdown % 60).padStart(2, "0");

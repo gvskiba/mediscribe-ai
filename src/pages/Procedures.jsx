@@ -1302,6 +1302,7 @@ export default function Procedures() {
   };
 
   const SECTIONS = [
+    { id:"template-manager",       label:"📋 Template Manager", color:T.teal  },
     { id:"procedure-note-drafter", label:"📋 Procedure Notes",  color:T.amber },
     { id:"ed-note-drafter",        label:"📝 ED Notes",         color:T.rose  },
     { id:"cpt-search",             label:"🔍 CPT Code Search",  color:T.teal  },

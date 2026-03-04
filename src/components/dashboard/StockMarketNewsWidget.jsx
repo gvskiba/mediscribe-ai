@@ -68,7 +68,7 @@ export default function StockMarketNewsWidget() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, minHeight: 150 }}>
           <Loader2 size={20} style={{ color: "#2563eb", animation: "spin 1s linear infinite" }} />
         </div>
-      ) : error ? (
+      ) : !collapsed && error ? (
         <div style={{
           display: "flex",
           alignItems: "center",

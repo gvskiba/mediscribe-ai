@@ -762,6 +762,45 @@ function ProcedureLog({ note }) {
     "Assisted":                            {bg:"rgba(245,166,35,0.1)", fg:T.amber},
   };
 
+  const toggleSort = (field) => {
+    if (sortField === field) {
+      setSortDir(d => d === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDir("desc");
+    }
+  };
+
+  const filteredAndSorted = useMemo(() => {
+    const q = search.toLowerCase();
+    let result = logs.filter(r =>
+      !q ||
+      (r.procedure_name || "").toLowerCase().includes(q) ||
+      (r.cpt_code || "").toLowerCase().includes(q) ||
+      (r.location || "").toLowerCase().includes(q)
+    );
+    result = [...result].sort((a, b) => {
+      let av = a[sortField] ?? "";
+      let bv = b[sortField] ?? "";
+      if (sortField === "date_performed") {
+        av = av ? new Date(av).getTime() : 0;
+        bv = bv ? new Date(bv).getTime() : 0;
+      } else {
+        av = String(av).toLowerCase();
+        bv = String(bv).toLowerCase();
+      }
+      if (av < bv) return sortDir === "asc" ? -1 : 1;
+      if (av > bv) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return result;
+  }, [logs, search, sortField, sortDir]);
+
+  const SortIcon = ({ field }) => {
+    if (sortField !== field) return <span style={{ color: T.muted, fontSize: 9, marginLeft: 3 }}>⇅</span>;
+    return <span style={{ color: T.teal, fontSize: 9, marginLeft: 3 }}>{sortDir === "asc" ? "↑" : "↓"}</span>;
+  };
+
   return (
     <div id="procedure-log" style={{ paddingBottom:40 }}>
       <SectionHeader

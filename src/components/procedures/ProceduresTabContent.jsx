@@ -1045,6 +1045,17 @@ function ProcedureLog({ note }) {
 
 // ── Main Export ───────────────────────────────────────────────────────────────
 export default function ProceduresTabContent({ note, standalone = false }) {
+  const [selectedCPT, setSelectedCPT] = useState(null);
+  const noteDrafterRef = useRef(null);
+
+  const handleSelectCPT = (row) => {
+    setSelectedCPT(row);
+    // Scroll to procedure note drafter
+    setTimeout(() => {
+      document.getElementById("procedure-note-drafter")?.scrollIntoView({ behavior:"smooth", block:"start" });
+    }, 100);
+  };
+
   const SECTIONS = [
     { id:"ai-recommender",        label:"🤖 AI Recommendations", color:T.purple },
     { id:"cpt-search",            label:"🔍 CPT Code Search",    color:T.teal   },

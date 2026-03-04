@@ -338,7 +338,7 @@ export default function MedicalNews() {
             </div>
             <div style={{ fontFamily: "monospace", fontSize: 9.5, color: "#4a7299", padding: "3px 7px", borderRadius: 5, border: "1px solid #1e3a5f", background: "#162d4f" }}>{mm}:{ss}</div>
             <button
-              onClick={() => fetchNews(page, topic, searchQuery, activeSource)}
+              onClick={() => fetchNews(page, selectedTopics, apiQuery, activeSource)}
               disabled={loading}
               style={{ width: 28, height: 28, borderRadius: 7, background: "transparent", border: "1px solid #1e3a5f", color: "#4a7299", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, animation: loading ? "spin .65s linear infinite" : "none" }}
               title="Refresh now"

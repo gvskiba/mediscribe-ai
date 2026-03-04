@@ -709,6 +709,7 @@ export default function Dashboard() {
     news: { label: "Medical News", Comp: NewsPanel },
     newsSummary: { label: "AI News Briefing", Comp: NewsSummaryWidget },
     stockMarket: { label: "Stock Market News", Comp: StockMarketNewsWidget },
+    stockData: { label: "Market Overview", Comp: StockMarketWidget },
     notes: { label: "Recent Notes", Comp: NotesPanel },
     noteStatus: { label: "Note Status", Comp: NoteStatusWidget },
     pendingSignatures: { label: "Awaiting Signature", Comp: PendingSignaturesWidget },

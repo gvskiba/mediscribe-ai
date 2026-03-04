@@ -83,7 +83,7 @@ export default function StockMarketNewsWidget() {
           <AlertCircle size={14} />
           {error}
         </div>
-      ) : articles.length === 0 ? (
+      ) : !collapsed && articles.length === 0 ? (
         <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 12 }}>
           No stock market news available
         </div>

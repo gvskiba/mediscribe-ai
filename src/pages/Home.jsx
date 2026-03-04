@@ -508,25 +508,15 @@ export default function Home() {
 
       <div style={{ position: "relative", zIndex: 1 }}>
         <NavBar user={user} onLogin={handleLogin} onDashboard={handleDash} onLogout={handleLogout} />
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
-          <HeroSection user={user} onLogin={handleLogin} onDashboard={handleDash} />
-        </div>
+        <HeroSection user={user} onLogin={handleLogin} onDashboard={handleDash} />
         <TrustStrip />
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
-          <FeaturesSection />
-        </div>
+        <FeaturesSection />
         <ClinicalIntelligenceSection />
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
-          <WorkflowSection />
-        </div>
+        <WorkflowSection />
         <StatsSection />
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
-          <TestimonialsSection />
-        </div>
+        <TestimonialsSection />
         <IntegrationsSection />
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
-          <SecuritySection />
-        </div>
+        <SecuritySection />
         <CTASection user={user} onLogin={handleLogin} onDashboard={handleDash} />
         <Footer />
       </div>

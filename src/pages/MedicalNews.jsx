@@ -225,10 +225,10 @@ export default function MedicalNews() {
       if (src === "polygon") {
         resp = await base44.functions.invoke("fetchPolygonStockNews", { query, limit: 10 });
       } else if (src === "webzio") {
-        const localToken = localStorage.getItem(sourceInfo.storageKey);
+        const localToken = localStorage.getItem(sourceInfo.storageKey) || dbTokens[sourceInfo.storageKey];
         resp = await base44.functions.invoke("fetchWebzNews", { query, page: pg - 1, size: 10, token: localToken });
       } else {
-        const localToken = localStorage.getItem(sourceInfo.storageKey);
+        const localToken = localStorage.getItem(sourceInfo.storageKey) || dbTokens[sourceInfo.storageKey];
         resp = await base44.functions.invoke("fetchMedicalNews", { query, categories: currentTopic.cat, page: pg, limit: 10, token: localToken });
       }
 

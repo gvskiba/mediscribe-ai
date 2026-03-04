@@ -166,6 +166,22 @@ export default function Shift() {
           <div style={{ fontSize: 14, color: "#4a7299", marginTop: 8 }}>
             Start a new shift to begin
           </div>
+          <button
+            onClick={startShift}
+            style={{
+              marginTop: 24,
+              padding: "12px 28px",
+              background: "linear-gradient(135deg, #00d4bc, #00a896)",
+              color: "#050f1e",
+              fontWeight: 700,
+              fontSize: 14,
+              border: "none",
+              borderRadius: 9,
+              cursor: "pointer",
+            }}
+          >
+            ▶ Start Shift
+          </button>
         </div>
       </div>
     );

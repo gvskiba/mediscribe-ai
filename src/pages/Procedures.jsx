@@ -673,6 +673,10 @@ function ProcedureNoteDrafter({ prefilledCPT, onClearPrefill }) {
   const [customProcedureName, setCustomProcedureName] = useState("");
   const [customCptCode, setCustomCptCode] = useState("");
   const [openCategories, setOpenCategories] = useState({});
+  const [keyFindings, setKeyFindings] = useState("");
+  const [impression, setImpression] = useState("");
+  const [summary, setSummary] = useState("");
+  const [generatingSection, setGeneratingSection] = useState(null);
 
   const templatesByCategory = useMemo(() => {
     const grouped = {};

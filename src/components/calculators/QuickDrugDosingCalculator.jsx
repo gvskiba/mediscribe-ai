@@ -204,7 +204,7 @@ export default function QuickDrugDosingCalculator() {
     });
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (weight) calculateDose();
   }, [weight, selectedDrug, selectedDosage]);
 

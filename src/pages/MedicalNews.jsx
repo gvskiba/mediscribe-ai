@@ -368,7 +368,7 @@ export default function MedicalNews() {
         {/* ── Source Switcher ── */}
         <div style={{ padding: "7px 14px", borderBottom: "1px solid #1e3a5f", display: "flex", gap: 5, alignItems: "center", flexShrink: 0 }}>
           {SOURCES.map(s => {
-            const hasToken = s.id === "polygon" ? true : !!localStorage.getItem(s.storageKey);
+            const hasToken = s.id === "polygon" ? true : !!(localStorage.getItem(s.storageKey) || dbTokens[s.storageKey]);
             return (
               <button key={s.id} onClick={() => handleSourceChange(s.id)}
                 style={{

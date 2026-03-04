@@ -925,7 +925,7 @@ function ProcedureLog({ note }) {
 
         {isLoading ? (
           <div style={{ padding:"24px 16px", textAlign:"center", color:T.dim, fontSize:13 }}>Loading procedure log…</div>
-        ) : logs.length === 0 ? (
+        ) : filteredAndSorted.length === 0 ? (
           <div style={{ padding:"40px 16px", textAlign:"center", color:T.dim, fontSize:13 }}>
             <div style={{ fontSize:32, marginBottom:12 }}>📊</div>
             <div style={{ fontWeight:600, color:T.text, marginBottom:6 }}>No procedures logged yet</div>

@@ -379,37 +379,62 @@ export default function MedicalNews() {
           >🔑 Manage API Keys</a>
         </div>
 
-        {/* ── Search ── */}
+        {/* ── Search: API query ── */}
         <div style={{ padding: "9px 14px", borderBottom: "1px solid #1e3a5f", display: "flex", gap: 7, alignItems: "center", flexShrink: 0 }}>
           <input
             type="text"
-            value={searchInput}
-            onChange={e => setSearchInput(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleSearch()}
-            placeholder="Search medical news… e.g. CRISPR, sepsis, FDA approval, JAMA"
+            value={apiQueryInput}
+            onChange={e => setApiQueryInput(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleApiSearch()}
+            placeholder="Fetch news by keyword… e.g. CRISPR, sepsis, FDA approval"
             style={{ flex: 1, background: "#162d4f", border: "1.5px solid #1e3a5f", borderRadius: 8, padding: "7px 12px", color: "#e8f4ff", fontSize: 12.5, fontFamily: "inherit", outline: "none" }}
             onFocus={e => e.target.style.borderColor = "#00d4bc"}
             onBlur={e => e.target.style.borderColor = "#1e3a5f"}
           />
           <button
-            onClick={handleSearch}
+            onClick={handleApiSearch}
             style={{ padding: "7px 14px", borderRadius: 8, background: "linear-gradient(135deg,#00d4bc,#00a896)", color: "#050f1e", fontWeight: 700, fontSize: 11.5, cursor: "pointer", border: "none", fontFamily: "inherit", whiteSpace: "nowrap" }}
-          >🔍 Search</button>
+          >🔍 Fetch</button>
         </div>
 
-        {/* ── Category Bar ── */}
-        <div className="catbar" style={{ display: "flex", gap: 4, padding: "8px 14px", borderBottom: "1px solid #1e3a5f", flexShrink: 0, overflowX: "auto" }}>
-          {TOPICS.map(t => (
-            <button key={t.id} onClick={() => handleTopicChange(t.id)}
-              style={{
-                padding: "4px 11px", borderRadius: 20, fontSize: 10.5, fontWeight: 600,
-                cursor: "pointer", whiteSpace: "nowrap", fontFamily: "inherit", transition: "all .15s",
-                background: topic === t.id ? "rgba(0,212,188,.1)" : "transparent",
-                color: topic === t.id ? "#00d4bc" : "#4a7299",
-                border: topic === t.id ? "1px solid rgba(0,212,188,.3)" : "1px solid #1e3a5f",
-              }}
-            >{t.label}</button>
-          ))}
+        {/* ── Multi-select Topic Bar ── */}
+        <div style={{ padding: "7px 14px", borderBottom: "1px solid #1e3a5f", flexShrink: 0 }}>
+          <div className="catbar" style={{ display: "flex", gap: 4, overflowX: "auto", paddingBottom: 2 }}>
+            {TOPICS.map(t => {
+              const active = selectedTopics.has(t.id);
+              return (
+                <button key={t.id} onClick={() => handleTopicToggle(t.id)}
+                  style={{
+                    padding: "4px 11px", borderRadius: 20, fontSize: 10.5, fontWeight: 600,
+                    cursor: "pointer", whiteSpace: "nowrap", fontFamily: "inherit", transition: "all .15s",
+                    background: active ? "rgba(0,212,188,.1)" : "transparent",
+                    color: active ? "#00d4bc" : "#4a7299",
+                    border: active ? "1px solid rgba(0,212,188,.3)" : "1px solid #1e3a5f",
+                  }}
+                  title={active && t.id !== "all" ? "Click to deselect" : "Click to add to filter"}
+                >{active && t.id !== "all" ? `✓ ${t.label}` : t.label}</button>
+              );
+            })}
+          </div>
+          {/* Client-side keyword filter */}
+          <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 7 }}>
+            <span style={{ fontSize: 9.5, color: "#4a7299", whiteSpace: "nowrap", flexShrink: 0 }}>Filter results:</span>
+            <input
+              type="text"
+              value={localFilterInput}
+              onChange={e => { setLocalFilterInput(e.target.value); setLocalFilter(e.target.value); }}
+              placeholder="Filter fetched articles by keyword…"
+              style={{ flex: 1, background: "#0e2340", border: "1px solid #1e3a5f", borderRadius: 6, padding: "4px 10px", color: "#e8f4ff", fontSize: 11.5, fontFamily: "inherit", outline: "none" }}
+              onFocus={e => e.target.style.borderColor = "#4a7299"}
+              onBlur={e => e.target.style.borderColor = "#1e3a5f"}
+            />
+            {localFilter && (
+              <button onClick={() => { setLocalFilter(""); setLocalFilterInput(""); }}
+                style={{ padding: "3px 8px", borderRadius: 5, fontSize: 9.5, background: "transparent", border: "1px solid #1e3a5f", color: "#4a7299", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+                ✕ Clear
+              </button>
+            )}
+          </div>
         </div>
 
         {/* ── Status Row ── */}

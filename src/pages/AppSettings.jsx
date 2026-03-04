@@ -277,6 +277,13 @@ export default function AppSettings() {
               validateFn="validateNewsApiKey"
               getUrl="https://www.thenewsapi.com"
               urlLabel="thenewsapi.com"
+              dbSettings={settings?.api_tokens}
+              onSaveToken={(key, val) => {
+                const tokens = { ...(settings?.api_tokens || {}), [key]: val };
+                const updated = { ...settings, api_tokens: tokens };
+                setSettings(updated);
+                saveMutation.mutateAsync(updated);
+              }}
             />
           </SectionCard>
 
@@ -288,6 +295,13 @@ export default function AppSettings() {
               validateFn="validateWebzApiKey"
               getUrl="https://webz.io"
               urlLabel="webz.io"
+              dbSettings={settings?.api_tokens}
+              onSaveToken={(key, val) => {
+                const tokens = { ...(settings?.api_tokens || {}), [key]: val };
+                const updated = { ...settings, api_tokens: tokens };
+                setSettings(updated);
+                saveMutation.mutateAsync(updated);
+              }}
             />
           </SectionCard>
 
@@ -299,6 +313,13 @@ export default function AppSettings() {
               validateFn="validateNewsdataApiKey"
               getUrl="https://newsdata.io"
               urlLabel="newsdata.io"
+              dbSettings={settings?.api_tokens}
+              onSaveToken={(key, val) => {
+                const tokens = { ...(settings?.api_tokens || {}), [key]: val };
+                const updated = { ...settings, api_tokens: tokens };
+                setSettings(updated);
+                saveMutation.mutateAsync(updated);
+              }}
             />
           </SectionCard>
 

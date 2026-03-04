@@ -17,6 +17,7 @@ import QuickNoteCreatorWidget from "../components/dashboard/QuickNoteCreatorWidg
 import QuickSearchWidget from "../components/dashboard/QuickSearchWidget";
 import NewsSummaryWidget from "../components/dashboard/NewsSummaryWidget";
 import StockMarketNewsWidget from "../components/dashboard/StockMarketNewsWidget";
+import StockMarketWidget from "../components/dashboard/StockMarketWidget";
 
 const T = {
   navy: "#050f1e",

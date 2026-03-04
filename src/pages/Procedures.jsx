@@ -1308,6 +1308,7 @@ export default function Procedures() {
     { id:"ed-note-drafter",        label:"📝 ED Notes",         color:T.rose  },
     { id:"cpt-search",             label:"🔍 CPT Code Search",  color:T.teal  },
     { id:"procedure-log",          label:"📊 Procedure Log",    color:T.green },
+    { id:"billing-module",         label:"💳 Billing",         color:"#9b6dff" },
   ];
 
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior:"smooth", block:"start" });

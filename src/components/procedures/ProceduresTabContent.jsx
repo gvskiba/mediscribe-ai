@@ -422,16 +422,32 @@ const PROC_TEMPLATES = [
   },
 ];
 
-function ProcedureNoteDrafter({ note }) {
+function ProcedureNoteDrafter({ note, prefilledCPT, onClearPrefill }) {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [fields, setFields] = useState({});
   const [generatedNote, setGeneratedNote] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [customProcedureName, setCustomProcedureName] = useState("");
+  const [customCptCode, setCustomCptCode] = useState("");
+
+  // When a CPT row is selected from CPTSearch, populate the free-text fields
+  React.useEffect(() => {
+    if (prefilledCPT) {
+      setCustomProcedureName(prefilledCPT.procedureName);
+      setCustomCptCode(prefilledCPT.cptCode);
+      setSelectedTemplate(null);
+      setFields({});
+      setGeneratedNote("");
+    }
+  }, [prefilledCPT]);
 
   const selectTemplate = (tmpl) => {
     setSelectedTemplate(tmpl);
+    setCustomProcedureName("");
+    setCustomCptCode("");
     setFields({});
     setGeneratedNote("");
+    if (onClearPrefill) onClearPrefill();
   };
 
   const generateNote = async () => {

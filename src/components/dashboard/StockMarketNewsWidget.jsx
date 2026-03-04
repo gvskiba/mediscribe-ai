@@ -64,7 +64,7 @@ export default function StockMarketNewsWidget() {
         {collapsed ? <ChevronDown size={14} style={{ color: "#9ca3af" }} /> : <ChevronUp size={14} style={{ color: "#9ca3af" }} />}
       </div>
 
-      {loading ? (
+      {!collapsed && loading ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, minHeight: 150 }}>
           <Loader2 size={20} style={{ color: "#2563eb", animation: "spin 1s linear infinite" }} />
         </div>

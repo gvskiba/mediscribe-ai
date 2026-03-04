@@ -65,13 +65,15 @@ function DarkInput({ value, onChange, placeholder, type = "text", onKeyDown }) {
   );
 }
 
-function ApiKeySection({ storageKey, label, color, validateFn, getUrl, urlLabel }) {
+function ApiKeySection({ storageKey, label, color, validateFn, getUrl, urlLabel, dbSettings, onSaveToken }) {
   const [inputVal, setInputVal] = useState("");
   const [show, setShow] = useState(false);
   const [status, setStatus] = useState(null);
   const [errMsg, setErrMsg] = useState("");
-  const [saved, setSaved] = useState(() => localStorage.getItem(storageKey) || "");
   const [focused, setFocused] = useState(false);
+
+  // Read from DB (passed in as prop) — fall back to localStorage for migration
+  const saved = dbSettings?.[storageKey] || localStorage.getItem(storageKey) || "";
 
   const validate = async (token) => {
     setStatus("validating");
@@ -80,8 +82,9 @@ function ApiKeySection({ storageKey, label, color, validateFn, getUrl, urlLabel 
       const res = await base44.functions.invoke(validateFn, { token });
       if (res.data?.valid) {
         setStatus("valid");
+        // Save to DB via parent callback AND keep localStorage as fallback
         localStorage.setItem(storageKey, token);
-        setSaved(token);
+        onSaveToken(storageKey, token);
         setInputVal("");
       } else {
         setStatus("invalid");
@@ -95,7 +98,8 @@ function ApiKeySection({ storageKey, label, color, validateFn, getUrl, urlLabel 
 
   const handleRevoke = () => {
     localStorage.removeItem(storageKey);
-    setSaved(""); setInputVal(""); setStatus(null); setErrMsg("");
+    onSaveToken(storageKey, "");
+    setInputVal(""); setStatus(null); setErrMsg("");
   };
   const maskedKey = (k) => k ? `${k.slice(0, 8)}${"•".repeat(18)}${k.slice(-4)}` : "";
 

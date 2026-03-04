@@ -102,7 +102,7 @@ function SectionHeader({ icon, title, subtitle, badge }) {
   );
 }
 
-function CPTSearch() {
+function CPTSearch({ onSelectCPT }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [copied, setCopied] = useState(null);

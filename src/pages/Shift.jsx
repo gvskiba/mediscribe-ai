@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import ShiftNavBar from "../components/shift/ShiftNavBar";
-import ShiftHeader from "../components/shift/ShiftHeader";
-import StatsRibbon from "../components/shift/StatsRibbon";
-import PatientBoard from "../components/shift/PatientBoard";
-import RightSidebar from "../components/shift/RightSidebar";
-import TaskPanel from "../components/shift/TaskPanel";
-import SignoutSection from "../components/shift/SignoutSection";
-import AddPatientModal from "../components/shift/modals/AddPatientModal";
-import AddTaskModal from "../components/shift/modals/AddTaskModal";
-import AddOrderModal from "../components/shift/modals/AddOrderModal";
-import EndShiftModal from "../components/shift/modals/EndShiftModal";
+import ShiftNavBar from "../components/shift/ShiftNavBar.jsx";
+import ShiftHeader from "../components/shift/ShiftHeader.jsx";
+import StatsRibbon from "../components/shift/StatsRibbon.jsx";
+import PatientBoard from "../components/shift/PatientBoard.jsx";
+import RightSidebar from "../components/shift/RightSidebar.jsx";
+import TaskPanel from "../components/shift/TaskPanel.jsx";
+import SignoutSection from "../components/shift/SignoutSection.jsx";
+import AddPatientModal from "../components/shift/modals/AddPatientModal.jsx";
+import AddTaskModal from "../components/shift/modals/AddTaskModal.jsx";
+import AddOrderModal from "../components/shift/modals/AddOrderModal.jsx";
+import EndShiftModal from "../components/shift/modals/EndShiftModal.jsx";
 
 const COLORS = {
   navy: "#050f1e",

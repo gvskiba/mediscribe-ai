@@ -756,6 +756,15 @@ function ProcedureLog() {
 }
 
 export default function Procedures() {
+  const [selectedCPT, setSelectedCPT] = useState(null);
+
+  const handleSelectCPT = (row) => {
+    setSelectedCPT(row);
+    setTimeout(() => {
+      document.getElementById("procedure-note-drafter")?.scrollIntoView({ behavior:"smooth", block:"start" });
+    }, 100);
+  };
+
   const SECTIONS = [
     { id:"procedure-note-drafter", label:"📋 Procedure Notes",  color:T.amber },
     { id:"ed-note-drafter",        label:"📝 ED Notes",         color:T.rose  },
@@ -791,9 +800,9 @@ export default function Procedures() {
         </div>
       </div>
       <div style={{ padding:"32px 24px" }}>
-        <ProcedureNoteDrafter />
+        <ProcedureNoteDrafter prefilledCPT={selectedCPT} onClearPrefill={() => setSelectedCPT(null)} />
         <EDNoteDrafter />
-        <CPTSearch />
+        <CPTSearch onSelectCPT={handleSelectCPT} />
         <ProcedureLog />
       </div>
     </div>

@@ -205,7 +205,7 @@ export default function Shift() {
         background: COLORS.navy,
         minHeight: "100vh",
         color: "#c8ddf0",
-        fontFamily: "DM Sans, sans-serif",
+        fontFamily: "'Inter', 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
         display: "flex",
         flexDirection: "column",
       }}

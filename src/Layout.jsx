@@ -153,7 +153,7 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Main Content */}
       <main className={`flex-1 ${currentPageName === 'NoteDetail' || currentPageName === 'Dashboard' || currentPageName === 'Calendar' || currentPageName === 'NotesLibrary' || currentPageName === 'PatientDashboard' || currentPageName === 'ClinicalGuidelines' || currentPageName === 'Calculators' || currentPageName === 'MedicalNews' || currentPageName === 'AppSettings' ? 'bg-[#050f1e] pt-20' : currentPageName === 'Home' ? 'p-0 m-0' : 'pt-32 lg:pt-20'}`}
- style={{ marginLeft: showSidebar ? 64 : 0, minHeight: '100vh' }}>
+ style={{ marginLeft: (showSidebar && currentPageName !== 'Home') ? 64 : 0, minHeight: '100vh' }}>
         <div className={currentPageName === 'NoteDetail' || currentPageName === 'Dashboard' || currentPageName === 'Calendar' || currentPageName === 'NotesLibrary' || currentPageName === 'PatientDashboard' || currentPageName === 'ClinicalGuidelines' || currentPageName === 'Calculators' || currentPageName === 'MedicalNews' || currentPageName === 'AppSettings' || currentPageName === 'Home' ? 'h-full w-full p-0 m-0' : 'p-4 md:p-8 max-w-7xl mx-auto'}>
           {children}
         </div>

@@ -312,11 +312,20 @@ function CPTSearch({ onSelectCPT }) {
               <React.Fragment key={row.cptCode}>
                 <div style={{ padding:"10px 14px", borderBottom:`1px solid rgba(30,58,95,0.4)`, display:"flex", alignItems:"center", gap:6 }}>
                   <span style={{ fontFamily:"JetBrains Mono,monospace", fontSize:13, fontWeight:700, color:T.teal }}>{row.cptCode}</span>
-                  <button onClick={()=>copyCode(row.cptCode)} title="Copy" style={{ background:"transparent", border:"none", cursor:"pointer", color:copied===row.cptCode?T.green:T.muted, fontSize:11, padding:"2px 4px" }}>
+                  <button onClick={()=>copyCode(row.cptCode)} title="Copy CPT code" style={{ background:"transparent", border:"none", cursor:"pointer", color:copied===row.cptCode?T.green:T.muted, fontSize:11, padding:"2px 4px" }}>
                     {copied===row.cptCode?"✓":"⎘"}
                   </button>
                 </div>
-                <div style={{ padding:"10px 14px", fontSize:13, fontWeight:600, color:T.bright, borderBottom:`1px solid rgba(30,58,95,0.4)` }}>{row.procedureName}</div>
+                <div
+                  onClick={() => onSelectCPT && onSelectCPT(row)}
+                  title="Use in Procedure Note Drafter"
+                  style={{ padding:"10px 14px", fontSize:13, fontWeight:600, color:T.bright, borderBottom:`1px solid rgba(30,58,95,0.4)`, cursor: onSelectCPT ? "pointer" : "default", display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}
+                  onMouseEnter={e=>{ if(onSelectCPT){ e.currentTarget.style.background="rgba(0,212,188,0.05)"; e.currentTarget.style.color=T.teal; } }}
+                  onMouseLeave={e=>{ if(onSelectCPT){ e.currentTarget.style.background="transparent"; e.currentTarget.style.color=T.bright; } }}
+                >
+                  <span>{row.procedureName}</span>
+                  {onSelectCPT && <span style={{ fontSize:10, color:T.teal, opacity:0.7, whiteSpace:"nowrap" }}>→ Use in Drafter</span>}
+                </div>
                 <div style={{ padding:"10px 14px", borderBottom:`1px solid rgba(30,58,95,0.4)`, display:"flex", alignItems:"center" }}>
                   <span style={{ padding:"2px 8px", borderRadius:6, fontSize:10.5, fontWeight:600, background:cc.bg, color:cc.fg }}>
                     {CATEGORY_LABELS[row.category]||row.category}

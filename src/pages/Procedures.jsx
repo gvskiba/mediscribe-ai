@@ -643,15 +643,33 @@ function ProcedureNoteDrafter({ prefilledCPT, onClearPrefill }) {
         subtitle="Select an ED procedure template. Fill the fields and Notrya AI drafts the complete, billable procedure note."
         badge={{ text:`${PROC_TEMPLATES.length} ED procedure templates`, background:"rgba(245,166,35,0.07)", border:"1px solid rgba(245,166,35,0.22)", color:T.amber }}
       />
-      <div style={{ display:"grid", gridTemplateColumns:"220px 1fr", gap:16, alignItems:"start" }}>
-        <div style={{ background:T.panel, border:`1px solid ${T.border}`, borderRadius:13, overflow:"hidden" }}>
-          {PROC_TEMPLATES.map(tmpl => (
-            <button key={tmpl.id} onClick={() => selectTemplate(tmpl)}
-              style={{ width:"100%", padding:"12px 14px", textAlign:"left", background:selectedTemplate?.id===tmpl.id?"rgba(155,109,255,0.1)":"transparent", border:"none", borderBottom:`1px solid ${T.border}`, cursor:"pointer", display:"flex", alignItems:"center", gap:10 }}>
-              <span style={{ fontSize:18 }}>{tmpl.icon}</span>
-              <span style={{ fontSize:13, fontWeight:selectedTemplate?.id===tmpl.id?700:500, color:selectedTemplate?.id===tmpl.id?T.bright:T.text }}>{tmpl.label}</span>
-            </button>
-          ))}
+      <div style={{ display:"grid", gridTemplateColumns:"240px 1fr", gap:16, alignItems:"start" }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          {/* Search */}
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search procedures…"
+            style={{ width:"100%", background:T.panel, border:`1px solid ${T.border}`, borderRadius:8, padding:"8px 12px", color:T.bright, fontSize:12.5, fontFamily:"DM Sans,sans-serif", outline:"none", boxSizing:"border-box" }}
+            onFocus={e=>e.target.style.borderColor=T.amber} onBlur={e=>e.target.style.borderColor=T.border} />
+          {/* Category filter */}
+          <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
+            {PROC_CATEGORIES.map(cat => (
+              <button key={cat.id} onClick={()=>setActiveCategory(cat.id)}
+                style={{ padding:"3px 9px", borderRadius:20, fontSize:10.5, fontWeight:600, cursor:"pointer", border:`1px solid ${activeCategory===cat.id?"rgba(245,166,35,0.4)":T.border}`, background:activeCategory===cat.id?"rgba(245,166,35,0.1)":"transparent", color:activeCategory===cat.id?T.amber:T.dim, transition:"all 0.12s", whiteSpace:"nowrap" }}>
+                {cat.label}
+              </button>
+            ))}
+          </div>
+          {/* Template list */}
+          <div style={{ background:T.panel, border:`1px solid ${T.border}`, borderRadius:13, overflow:"hidden", maxHeight:520, overflowY:"auto" }}>
+            {filteredTemplates.length === 0 ? (
+              <div style={{ padding:"24px 16px", textAlign:"center", color:T.dim, fontSize:12 }}>No procedures found</div>
+            ) : filteredTemplates.map(tmpl => (
+              <button key={tmpl.id} onClick={() => selectTemplate(tmpl)}
+                style={{ width:"100%", padding:"10px 14px", textAlign:"left", background:selectedTemplate?.id===tmpl.id?"rgba(155,109,255,0.1)":"transparent", border:"none", borderBottom:`1px solid ${T.border}`, cursor:"pointer", display:"flex", alignItems:"center", gap:10 }}>
+                <span style={{ fontSize:16 }}>{tmpl.icon}</span>
+                <span style={{ fontSize:12.5, fontWeight:selectedTemplate?.id===tmpl.id?700:500, color:selectedTemplate?.id===tmpl.id?T.bright:T.text, lineHeight:1.3 }}>{tmpl.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
         <div style={{ background:T.panel, border:`1px solid ${T.border}`, borderRadius:13, overflow:"hidden" }}>
           {!selectedTemplate && !customProcedureName ? (

@@ -114,7 +114,7 @@ function SectionHeader({ icon, iconColor, title, subtitle, badge }) {
 }
 
 // ── Section 1: AI Recommender ─────────────────────────────────────────────────
-function AIProcedureRecommender({ note }) {
+function AIProcedureRecommender({ note, standalone }) {
   const [noteText, setNoteText] = useState(
     note ? [note.chief_complaint, note.history_of_present_illness, note.assessment].filter(Boolean).join("\n\n") : ""
   );

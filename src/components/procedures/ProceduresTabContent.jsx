@@ -1099,8 +1099,8 @@ export default function ProceduresTabContent({ note, standalone = false }) {
       {/* Sections */}
       <div style={{ padding:"32px 24px" }}>
         <AIProcedureRecommender note={note} standalone={standalone} />
-        <CPTSearch />
-        <ProcedureNoteDrafter note={note} />
+        <CPTSearch onSelectCPT={handleSelectCPT} />
+        <ProcedureNoteDrafter note={note} prefilledCPT={selectedCPT} onClearPrefill={() => setSelectedCPT(null)} />
         <EDNoteDrafter note={note} />
         <ProcedureLog note={note} />
       </div>

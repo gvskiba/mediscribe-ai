@@ -1,43 +1,56 @@
-import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Star, Trash2, Edit2, Plus, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { Trash2, Edit2, Plus } from "lucide-react";
+
+const T = {
+  navy: "#050f1e",
+  slate: "#0b1d35",
+  panel: "#0e2340",
+  edge: "#162d4f",
+  border: "#1e3a5f",
+  muted: "#2a4d72",
+  dim: "#4a7299",
+  text: "#c8ddf0",
+  bright: "#e8f4ff",
+  teal: "#00d4bc",
+  amber: "#f5a623",
+  red: "#ff5c6c",
+  green: "#2ecc71",
+  purple: "#9b6dff",
+};
+
+const ICON_OPTIONS = ["🩹", "🩸", "🫁", "💧", "❤️", "🫀", "🧠", "🦴", "🚿", "🔩", "🌸", "👁️", "💉", "⚡", "🔪", "🧲"];
+const CATEGORY_OPTIONS = ["wound", "vascular", "airway", "thoracic", "cardiac", "abdominal", "neuro", "ortho", "uro", "gi", "gyn", "ent", "anesthesia"];
+const COLOR_OPTIONS = ["#00d4bc", "#ff5c6c", "#9b6dff", "#f5a623", "#2ecc71", "#4a90d9", "#f472b6"];
+
+function SectionHeader({ title, subtitle }) {
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
+        <span style={{ fontSize: 22 }}>📋</span>
+        <span style={{ fontFamily: "Playfair Display,serif", fontSize: 20, fontWeight: 700, color: T.bright }}>{title}</span>
+      </div>
+      {subtitle && <p style={{ fontSize: 13, color: T.dim, lineHeight: 1.6, marginLeft: 34 }}>{subtitle}</p>}
+    </div>
+  );
+}
 
 export default function ProcedureTemplateManager() {
-  const [open, setOpen] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState(null);
+  const queryClient = useQueryClient();
+  const [editingId, setEditingId] = useState(null);
+  const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    procedure_name: "",
-    procedure_code: "",
-    technique: "",
-    findings: "",
-    post_procedure_plan: "",
-    common_complications: "",
-    icd10_codes: [],
-    location: "clinic",
-    anesthesia_type: "local",
-    estimated_duration: "",
-    category: "therapeutic",
-    is_favorite: false,
-    tags: "",
-    specialty: ""
+    category: "wound",
+    icon: "🩹",
+    color: "#00d4bc",
   });
-
-  const queryClient = useQueryClient();
 
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ["procedureTemplates"],
-    queryFn: () => base44.entities.ProcedureTemplate.list(),
-    enabled: open
+    queryFn: () => base44.entities.ProcedureTemplate.list("-created_date", 100),
   });
 
   const createMutation = useMutation({
@@ -45,289 +58,325 @@ export default function ProcedureTemplateManager() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["procedureTemplates"] });
       resetForm();
-      toast.success("Template created");
     },
-    onError: () => toast.error("Failed to create template")
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.ProcedureTemplate.update(editingTemplate.id, data),
+    mutationFn: ({ id, data }) => base44.entities.ProcedureTemplate.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["procedureTemplates"] });
       resetForm();
-      toast.success("Template updated");
     },
-    onError: () => toast.error("Failed to update template")
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.ProcedureTemplate.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["procedureTemplates"] });
-      toast.success("Template deleted");
-    },
-    onError: () => toast.error("Failed to delete template")
-  });
-
-  const toggleFavoriteMutation = useMutation({
-    mutationFn: (template) =>
-      base44.entities.ProcedureTemplate.update(template.id, {
-        ...template,
-        is_favorite: !template.is_favorite
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["procedureTemplates"] });
-    }
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["procedureTemplates"] }),
   });
 
   const resetForm = () => {
-    setEditingTemplate(null);
-    setFormData({
-      name: "",
-      description: "",
-      procedure_name: "",
-      procedure_code: "",
-      technique: "",
-      findings: "",
-      post_procedure_plan: "",
-      common_complications: "",
-      icd10_codes: [],
-      location: "clinic",
-      anesthesia_type: "local",
-      estimated_duration: "",
-      category: "therapeutic",
-      is_favorite: false,
-      tags: "",
-      specialty: ""
-    });
+    setFormData({ name: "", description: "", category: "wound", icon: "🩹", color: "#00d4bc" });
+    setEditingId(null);
+    setShowForm(false);
   };
 
-  const handleSubmit = () => {
-    if (!formData.name || !formData.procedure_name) {
-      toast.error("Name and procedure name are required");
-      return;
-    }
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.name.trim()) return;
 
-    const submitData = {
-      ...formData,
-      icd10_codes: formData.icd10_codes.filter((c) => c.trim()),
-      tags: formData.tags.split(",").map((t) => t.trim()).filter((t) => t),
-      estimated_duration: formData.estimated_duration ? parseInt(formData.estimated_duration) : null
-    };
-
-    if (editingTemplate) {
-      updateMutation.mutate(submitData);
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, data: formData });
     } else {
-      createMutation.mutate(submitData);
+      createMutation.mutate(formData);
     }
   };
 
   const handleEdit = (template) => {
-    setEditingTemplate(template);
     setFormData({
-      ...template,
-      icd10_codes: template.icd10_codes || [],
-      tags: (template.tags || []).join(", "),
-      estimated_duration: template.estimated_duration || ""
+      name: template.name,
+      description: template.description || "",
+      category: template.specialty || "wound",
+      icon: template.tags?.[0] || "🩹",
+      color: template.tags?.[1] || "#00d4bc",
     });
+    setEditingId(template.id);
+    setShowForm(true);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2">
-          <Plus className="w-4 h-4" />
-          Manage Templates
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Procedure Templates</DialogTitle>
-        </DialogHeader>
+    <div style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: 13, padding: 24, marginBottom: 40 }}>
+      <SectionHeader
+        title="Template Manager"
+        subtitle="Create and customize procedure templates for quick access to common procedures."
+      />
 
-        <div className="grid md:grid-cols-2 gap-4">
-          {/* Template List */}
-          <div className="border-r pr-4">
-            <h3 className="font-semibold mb-3">Saved Templates</h3>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-5 h-5 animate-spin" />
-              </div>
-            ) : templates.length > 0 ? (
-              <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                {templates.map((template) => (
-                  <Card key={template.id} className="p-3 hover:bg-slate-50">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-sm text-slate-900">{template.name}</p>
-                          {template.is_favorite && <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />}
-                        </div>
-                        <p className="text-xs text-slate-600">{template.procedure_name}</p>
-                      </div>
-                      <div className="flex gap-1 flex-shrink-0">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7"
-                          onClick={() => toggleFavoriteMutation.mutate(template)}
-                        >
-                          <Star className={`w-3 h-3 ${template.is_favorite ? "fill-yellow-400 text-yellow-400" : ""}`} />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7"
-                          onClick={() => handleEdit(template)}
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 text-red-600 hover:text-red-700"
-                          onClick={() => deleteMutation.mutate(template.id)}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
+      {!showForm ? (
+        <button
+          onClick={() => setShowForm(true)}
+          style={{
+            padding: "10px 20px",
+            background: "linear-gradient(135deg,#00d4bc,#00a896)",
+            color: "#fff",
+            fontWeight: 700,
+            fontSize: 14,
+            borderRadius: 8,
+            border: "none",
+            cursor: "pointer",
+            marginBottom: 20,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}>
+          <Plus size={16} /> Create Template
+        </button>
+      ) : (
+        <form onSubmit={handleSubmit} style={{ background: T.edge, padding: 20, borderRadius: 10, marginBottom: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+            <div>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.dim, marginBottom: 5 }}>
+                Template Name *
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+                placeholder="e.g., Laceration Repair - Standard"
+                style={{
+                  width: "100%",
+                  background: T.panel,
+                  border: `1px solid ${T.border}`,
+                  borderRadius: 6,
+                  padding: "8px 12px",
+                  color: T.bright,
+                  fontSize: 13,
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.dim, marginBottom: 5 }}>
+                Category *
+              </label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                style={{
+                  width: "100%",
+                  background: T.panel,
+                  border: `1px solid ${T.border}`,
+                  borderRadius: 6,
+                  padding: "8px 12px",
+                  color: T.bright,
+                  fontSize: 13,
+                }}>
+                {CATEGORY_OPTIONS.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  </option>
                 ))}
-              </div>
-            ) : (
-              <p className="text-sm text-slate-500">No templates yet. Create one to get started.</p>
-            )}
+              </select>
+            </div>
           </div>
 
-          {/* Form */}
-          <div className="pl-4">
-            <h3 className="font-semibold mb-3">{editingTemplate ? "Edit Template" : "New Template"}</h3>
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs font-medium text-slate-700 block mb-1">Template Name *</label>
-                <Input
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g., Central Line - Standard"
-                  className="text-sm"
-                />
-              </div>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.dim, marginBottom: 5 }}>
+              Description
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="What is this template for?"
+              rows={2}
+              style={{
+                width: "100%",
+                background: T.panel,
+                border: `1px solid ${T.border}`,
+                borderRadius: 6,
+                padding: "8px 12px",
+                color: T.bright,
+                fontSize: 13,
+                boxSizing: "border-box",
+                fontFamily: "DM Sans,sans-serif",
+              }}
+            />
+          </div>
 
-              <div>
-                <label className="text-xs font-medium text-slate-700 block mb-1">Description</label>
-                <Input
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="When to use this template..."
-                  className="text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-slate-700 block mb-1">Procedure Name *</label>
-                <Input
-                  value={formData.procedure_name}
-                  onChange={(e) => setFormData({ ...formData, procedure_name: e.target.value })}
-                  placeholder="e.g., Central Line Placement"
-                  className="text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-slate-700 block mb-1">Procedure Code (CPT)</label>
-                <Input
-                  value={formData.procedure_code}
-                  onChange={(e) => setFormData({ ...formData, procedure_code: e.target.value })}
-                  placeholder="e.g., 36558"
-                  className="text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-slate-700 block mb-1">Technique</label>
-                <Textarea
-                  value={formData.technique}
-                  onChange={(e) => setFormData({ ...formData, technique: e.target.value })}
-                  placeholder="Standard technique..."
-                  className="text-sm h-16"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-slate-700 block mb-1">Common Findings</label>
-                <Textarea
-                  value={formData.findings}
-                  onChange={(e) => setFormData({ ...formData, findings: e.target.value })}
-                  placeholder="Typical findings..."
-                  className="text-sm h-16"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-slate-700 block mb-1">Post-Procedure Plan</label>
-                <Textarea
-                  value={formData.post_procedure_plan}
-                  onChange={(e) => setFormData({ ...formData, post_procedure_plan: e.target.value })}
-                  placeholder="Standard post-procedure care..."
-                  className="text-sm h-16"
-                />
-              </div>
-
-              <div className="flex gap-2">
-                <select
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="text-sm flex-1 border border-slate-300 rounded-md px-2 py-1"
-                >
-                  <option value="clinic">Clinic</option>
-                  <option value="bedside">Bedside</option>
-                  <option value="procedure_room">Procedure Room</option>
-                  <option value="or">OR</option>
-                  <option value="er">ER</option>
-                  <option value="icu">ICU</option>
-                </select>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="text-sm flex-1 border border-slate-300 rounded-md px-2 py-1"
-                >
-                  <option value="diagnostic">Diagnostic</option>
-                  <option value="therapeutic">Therapeutic</option>
-                  <option value="interventional">Interventional</option>
-                  <option value="surgical">Surgical</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-slate-700 block mb-1">Tags (comma-separated)</label>
-                <Input
-                  value={formData.tags}
-                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                  placeholder="e.g., common, central, vascular"
-                  className="text-sm"
-                />
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                {editingTemplate && (
-                  <Button variant="outline" onClick={resetForm} className="flex-1">
-                    Cancel
-                  </Button>
-                )}
-                <Button
-                  onClick={handleSubmit}
-                  disabled={createMutation.isPending || updateMutation.isPending}
-                  className="flex-1"
-                >
-                  {editingTemplate ? "Update" : "Create"}
-                </Button>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+            <div>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.dim, marginBottom: 5 }}>
+                Icon
+              </label>
+              <select
+                value={formData.icon}
+                onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+                style={{
+                  width: "100%",
+                  background: T.panel,
+                  border: `1px solid ${T.border}`,
+                  borderRadius: 6,
+                  padding: "8px 12px",
+                  color: T.bright,
+                  fontSize: 13,
+                }}>
+                {ICON_OPTIONS.map((icon) => (
+                  <option key={icon} value={icon}>
+                    {icon} {icon}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.dim, marginBottom: 5 }}>
+                Color
+              </label>
+              <div style={{ display: "flex", gap: 8 }}>
+                {COLOR_OPTIONS.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, color })}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 6,
+                      background: color,
+                      border: formData.color === color ? `3px solid ${T.bright}` : `1px solid ${T.border}`,
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                    }}
+                  />
+                ))}
               </div>
             </div>
           </div>
+
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              type="submit"
+              disabled={createMutation.isPending || updateMutation.isPending}
+              style={{
+                background: "linear-gradient(135deg,#00d4bc,#00a896)",
+                color: "#fff",
+                fontWeight: 700,
+                fontSize: 13,
+                padding: "10px 20px",
+                borderRadius: 6,
+                border: "none",
+                cursor: createMutation.isPending || updateMutation.isPending ? "not-allowed" : "pointer",
+                opacity: createMutation.isPending || updateMutation.isPending ? 0.6 : 1,
+              }}>
+              {editingId ? "Update" : "Create"}
+            </button>
+            <button
+              type="button"
+              onClick={resetForm}
+              style={{
+                background: "transparent",
+                color: T.dim,
+                border: `1px solid ${T.border}`,
+                borderRadius: 6,
+                padding: "10px 20px",
+                cursor: "pointer",
+                fontSize: 13,
+              }}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {isLoading ? (
+        <div style={{ textAlign: "center", color: T.dim, padding: "20px" }}>Loading templates…</div>
+      ) : templates.length === 0 ? (
+        <div style={{ textAlign: "center", color: T.dim, padding: "40px 20px" }}>
+          <div style={{ fontSize: 24, marginBottom: 12 }}>📋</div>
+          <div style={{ fontWeight: 600, color: T.text, marginBottom: 6 }}>No templates yet</div>
+          <div style={{ fontSize: 12 }}>Create your first template to get started.</div>
         </div>
-      </DialogContent>
-    </Dialog>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+          {templates.map((template) => (
+            <div
+              key={template.id}
+              style={{
+                background: T.edge,
+                border: `1px solid ${T.border}`,
+                borderRadius: 10,
+                padding: 16,
+                display: "flex",
+                flexDirection: "column",
+                gap: 12,
+              }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                <div
+                  style={{
+                    fontSize: 24,
+                    width: 44,
+                    height: 44,
+                    borderRadius: 8,
+                    background: `${template.tags?.[1] || "#00d4bc"}22`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: template.tags?.[1] || "#00d4bc",
+                  }}>
+                  {template.tags?.[0] || "🩹"}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.bright }}>{template.name}</div>
+                  <div style={{ fontSize: 11, color: T.dim, marginTop: 4 }}>
+                    {template.specialty || "uncategorized"}
+                  </div>
+                </div>
+              </div>
+              {template.description && (
+                <div style={{ fontSize: 12, color: T.text, lineHeight: 1.5 }}>{template.description}</div>
+              )}
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button
+                  onClick={() => handleEdit(template)}
+                  style={{
+                    flex: 1,
+                    padding: "8px 12px",
+                    background: "rgba(155,109,255,0.1)",
+                    color: T.purple,
+                    border: `1px solid rgba(155,109,255,0.25)`,
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                  }}>
+                  <Edit2 size={12} /> Edit
+                </button>
+                <button
+                  onClick={() => deleteMutation.mutate(template.id)}
+                  style={{
+                    flex: 1,
+                    padding: "8px 12px",
+                    background: "rgba(255,92,108,0.1)",
+                    color: T.red,
+                    border: `1px solid rgba(255,92,108,0.25)`,
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                  }}>
+                  <Trash2 size={12} /> Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

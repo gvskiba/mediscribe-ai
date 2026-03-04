@@ -1372,6 +1372,9 @@ export default function Procedures() {
         <CPTSearch onSelectCPT={handleSelectCPT} />
         <ProcedureLog />
         <BillingModule />
+        <div id="template-manager">
+          <ProcedureTemplateManager />
+        </div>
       </div>
     </div>
   );

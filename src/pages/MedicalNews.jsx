@@ -485,7 +485,7 @@ export default function MedicalNews() {
               </button>
             </div>
           ) : (
-            articles.map((a, i) => (
+            filteredArticles.map((a, i) => (
               <ArticleCard
                 key={a.uuid || a.url || i}
                 article={a}

@@ -4,6 +4,7 @@ import { Sparkles, Loader2, Check, AlertTriangle, Copy, ChevronDown, ChevronUp, 
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import VitalSignsDisplayPanel from "./VitalSignsDisplayPanel";
+import VitalsInputPanel from "./VitalsInputPanel";
 
 /* ── Theme ─────────────────────────────────────────────── */
 const T = {

@@ -936,13 +936,28 @@ function ProcedureLog({ note }) {
             <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12.5 }}>
               <thead>
                 <tr style={{ borderBottom:`1px solid ${T.border}` }}>
-                  {["Date","Procedure","CPT","Site","Role","Att.","✓","US","Complications",""].map((h,i)=>(
-                    <th key={i} style={{ padding:"10px 12px", textAlign:"left", fontSize:11, fontWeight:700, color:T.dim, textTransform:"uppercase", letterSpacing:"0.06em", whiteSpace:"nowrap" }}>{h}</th>
+                  {[
+                    { label:"Date",         field:"date_performed",  sortable:true },
+                    { label:"Procedure",    field:"procedure_name",  sortable:true },
+                    { label:"CPT",          field:"cpt_code",        sortable:false },
+                    { label:"Site",         field:"location",        sortable:false },
+                    { label:"Role",         field:"supervision",     sortable:false },
+                    { label:"Att.",         field:"attempts",        sortable:false },
+                    { label:"✓",            field:"success",         sortable:false },
+                    { label:"US",           field:"ultrasound_used", sortable:false },
+                    { label:"Complications",field:"complications",   sortable:false },
+                    { label:"",             field:"",                sortable:false },
+                  ].map((h,i)=>(
+                    <th key={i}
+                      onClick={h.sortable ? () => toggleSort(h.field) : undefined}
+                      style={{ padding:"10px 12px", textAlign:"left", fontSize:11, fontWeight:700, color:h.sortable&&sortField===h.field?T.teal:T.dim, textTransform:"uppercase", letterSpacing:"0.06em", whiteSpace:"nowrap", cursor:h.sortable?"pointer":"default", userSelect:"none" }}>
+                      {h.label}{h.sortable && <SortIcon field={h.field} />}
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {logs.map(row=>{
+                {filteredAndSorted.map(row=>{
                   const sc = supervisionColors[row.supervision] || {bg:"rgba(74,114,153,0.12)",fg:T.dim};
                   return (
                     <tr key={row.id} style={{ borderBottom:`1px solid rgba(30,58,95,0.4)` }}

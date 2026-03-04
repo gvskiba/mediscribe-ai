@@ -320,11 +320,34 @@ function ProcedureNoteDrafter({ prefilledCPT, onClearPrefill }) {
           ))}
         </div>
         <div style={{ background:T.panel, border:`1px solid ${T.border}`, borderRadius:13, overflow:"hidden" }}>
-          {!selectedTemplate ? (
+          {!selectedTemplate && !customProcedureName ? (
             <div style={{ padding:"52px 24px", textAlign:"center", color:T.dim, fontSize:13 }}>
               <div style={{ fontSize:32, marginBottom:12 }}>📋</div>
-              <div>Select a procedure template to begin</div>
+              <div>Select a procedure template, or click a procedure name in the CPT Search below to begin</div>
             </div>
+          ) : !selectedTemplate && customProcedureName ? (
+            <>
+              <div style={{ padding:"12px 18px", background:"rgba(22,45,79,0.9)", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ fontSize:13, fontWeight:700, color:T.bright, marginRight:"auto" }}>📋 {customProcedureName} <span style={{ fontFamily:"JetBrains Mono,monospace", fontSize:11, color:T.teal, marginLeft:6 }}>{customCptCode}</span></span>
+                <button onClick={()=>{setCustomProcedureName("");setCustomCptCode("");if(onClearPrefill)onClearPrefill();}} style={{ padding:"4px 10px", borderRadius:6, background:"transparent", color:T.dim, border:`1px solid ${T.border}`, fontSize:11, cursor:"pointer" }}>✕ Clear</button>
+                {generatedNote && <button onClick={()=>navigator.clipboard.writeText(generatedNote)} style={{ padding:"5px 10px", borderRadius:6, background:"rgba(0,212,188,0.1)", color:T.teal, border:`1px solid rgba(0,212,188,0.25)`, fontSize:11.5, cursor:"pointer" }}>📋 Copy Note</button>}
+              </div>
+              <div style={{ padding:20, display:"flex", flexDirection:"column", gap:12 }}>
+                <div style={{ padding:"12px 16px", background:"rgba(0,212,188,0.06)", border:"1px solid rgba(0,212,188,0.2)", borderRadius:9, fontSize:12.5, color:T.text, lineHeight:1.6 }}>
+                  <strong style={{ color:T.teal }}>Selected from CPT Search:</strong> {customProcedureName} — CPT {customCptCode}<br/>
+                  <span style={{ color:T.dim, fontSize:11.5 }}>Click "Generate Note" to have Notrya AI draft a complete procedure note, or select a structured template from the left.</span>
+                </div>
+                <button onClick={generateNote} disabled={generating}
+                  style={{ background:generating?"rgba(245,166,35,0.2)":"linear-gradient(135deg,#f5a623,#e09010)", color:generating?T.amber:"#fff", fontWeight:700, fontSize:14, padding:"12px 24px", borderRadius:9, border:"none", cursor:generating?"not-allowed":"pointer" }}>
+                  {generating ? "✨ Generating procedure note…" : "✨ Generate Note"}
+                </button>
+              </div>
+              {generatedNote && (
+                <div style={{ background:"#0a1929", padding:20, fontFamily:"DM Sans,sans-serif", fontSize:13.5, lineHeight:1.9, color:T.text, whiteSpace:"pre-wrap", borderTop:`1px solid ${T.border}` }}>
+                  {generatedNote}
+                </div>
+              )}
+            </>
           ) : (
             <>
               <div style={{ padding:"12px 18px", background:"rgba(22,45,79,0.9)", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:8 }}>

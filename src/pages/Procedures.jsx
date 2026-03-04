@@ -584,6 +584,85 @@ const PROC_TEMPLATES = [
       { id:"onset",         label:"Block Onset",             type:"select",  required:true,  options:["Adequate anesthesia within 5 min","Partial block — repeated injection","Failed block — alternative approach used"] },
     ]
   },
+  // ── Anesthesia Blocks ──────────────────────────────────────────────
+  { id:"femoral-nerve-block", label:"Femoral Nerve Block", category:"anesthesia", icon:"💉", color:"#4a90d9",
+    fields:[
+      { id:"indication",    label:"Indication",              type:"textarea",required:true,  placeholder:"e.g., femur fracture, anterior knee pain relief" },
+      { id:"us_guidance",   label:"Ultrasound Guidance",     type:"select",  required:true,  options:["Real-time ultrasound guidance","Landmark technique"] },
+      { id:"landmark",      label:"Landmark Identified",     type:"select",  required:true,  options:["Inguinal ligament palpated","Femoral artery identified — needle lateral","Ultrasound femoral sheath visualized"] },
+      { id:"agent",         label:"Local Anesthetic",        type:"text",    required:true,  placeholder:"e.g., 1% lidocaine 20 mL with epinephrine" },
+      { id:"technique",     label:"Technique",               type:"text",    required:true,  placeholder:"e.g., single injection lateral to femoral artery" },
+      { id:"onset",         label:"Block Onset",             type:"select",  required:true,  options:["Adequate block within 10 min","Partial block — supplemental injection","Block failed — alternative anesthesia"] },
+      { id:"complications", label:"Complications",           type:"text",    required:false, placeholder:"None" },
+    ]
+  },
+  { id:"interscalene-block", label:"Interscalene Block", category:"anesthesia", icon:"💉", color:"#4a90d9",
+    fields:[
+      { id:"indication",    label:"Indication",              type:"textarea",required:true,  placeholder:"e.g., shoulder surgery, upper extremity pain" },
+      { id:"us_guidance",   label:"Ultrasound Guidance",     type:"select",  required:true,  options:["Real-time ultrasound guidance","Landmark technique"] },
+      { id:"agent",         label:"Local Anesthetic",        type:"text",    required:true,  placeholder:"e.g., 1% lidocaine 10 mL + 0.5% bupivacaine 10 mL" },
+      { id:"volume",        label:"Total Volume (mL)",       type:"number",  required:true,  placeholder:"20" },
+      { id:"needle_placement", label:"Needle Placement",     type:"text",    required:true,  placeholder:"e.g., between anterior and middle scalene muscles at C6" },
+      { id:"paresthesia",   label:"Paresthesia Elicited",    type:"select",  required:true,  options:["Yes — shoulder/arm radiating pain","Subtle — repositioned","None — ultrasound confirmed placement"] },
+      { id:"onset",         label:"Block Onset",             type:"select",  required:true,  options:["Adequate block within 15 min","Partial block — supplemental","Failed block"] },
+      { id:"complications", label:"Complications",           type:"text",    required:false, placeholder:"None" },
+    ]
+  },
+  { id:"supraclavicular-block", label:"Supraclavicular Block", category:"anesthesia", icon:"💉", color:"#4a90d9",
+    fields:[
+      { id:"indication",    label:"Indication",              type:"textarea",required:true,  placeholder:"e.g., forearm/hand procedure" },
+      { id:"us_guidance",   label:"Ultrasound Guidance",     type:"select",  required:true,  options:["Real-time ultrasound","Landmark technique"] },
+      { id:"agent",         label:"Local Anesthetic",        type:"text",    required:true,  placeholder:"e.g., 1% lidocaine 15 mL + 0.5% bupivacaine 15 mL" },
+      { id:"volume",        label:"Total Volume (mL)",       type:"number",  required:true,  placeholder:"30" },
+      { id:"needle_location", label:"Needle Location",       type:"text",    required:true,  placeholder:"e.g., above clavicle, lateral to subclavian artery" },
+      { id:"onset",         label:"Block Onset",             type:"select",  required:true,  options:["Adequate block within 20 min","Partial — need supplemental","Failed block"] },
+      { id:"complications", label:"Complications",           type:"text",    required:false, placeholder:"None" },
+    ]
+  },
+  { id:"fascia-iliaca-block", label:"Fascia Iliaca Block", category:"anesthesia", icon:"💉", color:"#4a90d9",
+    fields:[
+      { id:"indication",    label:"Indication",              type:"textarea",required:true,  placeholder:"e.g., femur/hip fracture analgesia, elderly patient" },
+      { id:"us_guidance",   label:"Ultrasound Guidance",     type:"select",  required:true,  options:["Real-time ultrasound guidance","Landmark technique"] },
+      { id:"agent",         label:"Local Anesthetic",        type:"text",    required:true,  placeholder:"e.g., 0.5% bupivacaine 30 mL or 1% lidocaine 30 mL" },
+      { id:"technique",     label:"Technique",               type:"text",    required:true,  placeholder:"e.g., landmark: below inguinal ligament, medial to ASIS, perpendicular injection" },
+      { id:"onset",         label:"Block Onset",             type:"select",  required:true,  options:["Adequate block within 15 min","Partial — supplemental given","Failed — alternative anesthesia"] },
+      { id:"patient_response", label:"Patient Response",     type:"text",    required:false, placeholder:"e.g., pain relief noted, comfortable for transport" },
+    ]
+  },
+  { id:"wrist-block", label:"Wrist Block (Median/Ulnar/Radial)", category:"anesthesia", icon:"💉", color:"#4a90d9",
+    fields:[
+      { id:"indication",    label:"Indication",              type:"text",    required:true,  placeholder:"e.g., hand laceration, finger fracture" },
+      { id:"nerves",        label:"Nerves Blocked",          type:"select",  required:true,  options:["Median nerve only","Ulnar nerve only","Radial nerve only","Median + Ulnar","All three (complete wrist)"] },
+      { id:"agent",         label:"Local Anesthetic",        type:"text",    required:true,  placeholder:"e.g., 1% lidocaine with epi, 5 mL per nerve" },
+      { id:"technique",     label:"Technique",               type:"text",    required:true,  placeholder:"e.g., median: palmaris longus + FCR tendons, 1 cm proximal to wrist crease" },
+      { id:"paresthesia",   label:"Paresthesia / Resistance",type:"select",  required:true,  options:["Paresthesia elicited — nerve contacted","Slight resistance — soft tissue","No response — repositioned"] },
+      { id:"onset",         label:"Anesthesia Onset",        type:"select",  required:true,  options:["Within 5 min","Within 10 min","Delayed — supplemental injection"] },
+      { id:"complications", label:"Complications",           type:"text",    required:false, placeholder:"None" },
+    ]
+  },
+  { id:"popliteal-block", label:"Popliteal Block", category:"anesthesia", icon:"💉", color:"#4a90d9",
+    fields:[
+      { id:"indication",    label:"Indication",              type:"textarea",required:true,  placeholder:"e.g., ankle/foot procedure, post-op analgesia" },
+      { id:"approach",      label:"Approach",                type:"select",  required:true,  options:["Lateral approach","Posterior approach"] },
+      { id:"us_guidance",   label:"Ultrasound Guidance",     type:"select",  required:true,  options:["Real-time ultrasound","Landmark technique"] },
+      { id:"agent",         label:"Local Anesthetic",        type:"text",    required:true,  placeholder:"e.g., 0.5% bupivacaine 30 mL" },
+      { id:"volume",        label:"Total Volume (mL)",       type:"number",  required:true,  placeholder:"30" },
+      { id:"onset",         label:"Block Onset",             type:"select",  required:true,  options:["Adequate within 20 min","Partial — repeat injection","Failed"] },
+      { id:"complications", label:"Complications",           type:"text",    required:false, placeholder:"None" },
+    ]
+  },
+  { id:"epidural-analgesia", label:"Epidural Analgesia", category:"anesthesia", icon:"💉", color:"#4a90d9",
+    fields:[
+      { id:"indication",    label:"Indication",              type:"textarea",required:true,  placeholder:"e.g., labor pain, post-op analgesia, chronic pain" },
+      { id:"level",         label:"Injection Level",         type:"select",  required:true,  options:["Lumbar L2-L3","Lumbar L3-L4","Lumbar L4-L5","Thoracic"] },
+      { id:"approach",      label:"Technique",               type:"select",  required:true,  options:["Loss of resistance — saline","Loss of resistance — air","Hanging drop technique"] },
+      { id:"catheter",      label:"Catheter Placement",      type:"select",  required:true,  options:["Catheter advanced 3-5 cm","Difficult advancement — adjusted","Single injection only"] },
+      { id:"agent_bolus",   label:"Initial Bolus",           type:"text",    required:true,  placeholder:"e.g., 0.1% bupivacaine 10 mL + 100 mcg fentanyl" },
+      { id:"infusion",      label:"Infusion Rate",           type:"text",    required:false, placeholder:"e.g., 0.1% bupivacaine at 8-10 mL/hr" },
+      { id:"onset",         label:"Analgesia Onset",         type:"select",  required:true,  options:["Within 15 min","Within 20 min","Delayed — rebolus given"] },
+      { id:"complications", label:"Complications",           type:"text",    required:false, placeholder:"None" },
+    ]
+  },
 ];
 
 function ProcedureNoteDrafter({ prefilledCPT, onClearPrefill }) {

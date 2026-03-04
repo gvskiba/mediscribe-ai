@@ -749,6 +749,15 @@ function ProcedureNoteDrafter({ prefilledCPT, onClearPrefill }) {
     if (onClearPrefill) onClearPrefill();
   };
 
+  const cleanMarkdown = (text) => {
+    return text
+      .replace(/^#+\s+/gm, '')
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/^-\s+/gm, '• ')
+      .replace(/\n{3,}/g, '\n\n');
+  };
+
   const generateNote = async () => {
     const procedureLabel = selectedTemplate ? selectedTemplate.label : customProcedureName;
     if (!procedureLabel) return;
@@ -762,6 +771,67 @@ function ProcedureNoteDrafter({ prefilledCPT, onClearPrefill }) {
       });
       setGeneratedNote(result);
     } catch(e) { console.error(e); } finally { setGenerating(false); }
+  };
+
+  const handlePrintNote = () => {
+    const printWindow = window.open('', '_blank');
+    const cleanedNote = cleanMarkdown(generatedNote);
+    printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <title>Procedure Note</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 40px auto; line-height: 1.6; color: #333; }
+    h1, h2, h3 { color: #1f2937; margin-top: 20px; }
+    .header { text-align: center; border-bottom: 2px solid #1f2937; padding-bottom: 16px; margin-bottom: 24px; }
+    .content { white-space: pre-wrap; font-size: 11pt; }
+    .footer { margin-top: 40px; border-top: 1px solid #ccc; padding-top: 16px; font-size: 10px; color: #666; }
+    @media print { body { margin: 0; } .no-print { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>PROCEDURE NOTE</h1>
+    <p>${new Date().toLocaleString()}</p>
+  </div>
+  <div class="content">${cleanedNote}</div>
+  <div class="footer">Notrya AI · Clinical Documentation · Confidential</div>
+</body>
+</html>`);
+    printWindow.document.close();
+    setTimeout(() => printWindow.print(), 250);
+  };
+
+  const handleDownloadPDF = async () => {
+    const { jsPDF } = window;
+    const pdf = new jsPDF();
+    const cleanedNote = cleanMarkdown(generatedNote);
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const margin = 15;
+    let yPos = margin;
+
+    pdf.setFontSize(16);
+    pdf.text('PROCEDURE NOTE', margin, yPos);
+    yPos += 10;
+    pdf.setFontSize(10);
+    pdf.text(new Date().toLocaleString(), margin, yPos);
+    yPos += 10;
+    pdf.line(margin, yPos, pageWidth - margin, yPos);
+    yPos += 8;
+
+    pdf.setFontSize(11);
+    const lines = pdf.splitTextToSize(cleanedNote, pageWidth - 2 * margin);
+    lines.forEach((line) => {
+      if (yPos > pageHeight - margin) {
+        pdf.addPage();
+        yPos = margin;
+      }
+      pdf.text(line, margin, yPos);
+      yPos += 6;
+    });
+
+    pdf.save('procedure_note.pdf');
   };
 
   const generateKeyFindings = async () => {

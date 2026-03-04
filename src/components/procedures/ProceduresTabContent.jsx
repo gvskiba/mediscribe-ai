@@ -967,7 +967,7 @@ export default function ProceduresTabContent({ note, standalone = false }) {
 
       {/* Sections */}
       <div style={{ padding:"32px 24px" }}>
-        <AIProcedureRecommender note={note} />
+        <AIProcedureRecommender note={note} standalone={standalone} />
         <CPTSearch />
         <ProcedureNoteDrafter note={note} />
         <EDNoteDrafter note={note} />

@@ -207,7 +207,7 @@ export default function MedicalNews() {
     const sourceInfo = SOURCES.find(s => s.id === src) || SOURCES[0];
 
     if (src !== "polygon") {
-      const localToken = localStorage.getItem(sourceInfo.storageKey);
+      const localToken = localStorage.getItem(sourceInfo.storageKey) || dbTokens[sourceInfo.storageKey];
       if (!localToken) {
         setError(`No API token for ${sourceInfo.label}. Please add it in App Settings.`);
         setArticles([]);

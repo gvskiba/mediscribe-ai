@@ -991,6 +991,18 @@ function ProcedureNoteDrafter({ prefilledCPT, onClearPrefill }) {
                     {generatingSection==="summary"?"✨ Generating…":"📋 Summary"}
                   </button>
                 </div>
+                {generatedNote && (
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                    <button onClick={handlePrintNote}
+                      style={{ background:"rgba(0,212,188,0.1)", color:T.teal, fontWeight:600, fontSize:12, padding:"8px 12px", borderRadius:6, border:`1px solid rgba(0,212,188,0.25)`, cursor:"pointer" }}>
+                      🖨️ Print
+                    </button>
+                    <button onClick={handleDownloadPDF}
+                      style={{ background:"rgba(255,92,108,0.1)", color:T.red, fontWeight:600, fontSize:12, padding:"8px 12px", borderRadius:6, border:`1px solid rgba(255,92,108,0.25)`, cursor:"pointer" }}>
+                      📄 Download PDF
+                    </button>
+                  </div>
+                )}
               </div>
               {(generatedNote || keyFindings || impression || summary) && (
                 <div style={{ background:"#0a1929", padding:20, fontFamily:"DM Sans,sans-serif", fontSize:13.5, lineHeight:1.9, color:T.text, whiteSpace:"pre-wrap", borderTop:`1px solid ${T.border}` }}>

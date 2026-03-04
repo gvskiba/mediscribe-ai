@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Settings, Save, X, ChevronDown } from "lucide-react";
 import { createPageUrl } from "../utils";
+import DashboardNavBar from "../components/dashboard/DashboardNavBar";
 
 import ClinicalGuidelinesPanel from "../components/dashboard/ClinicalGuidelinesPanel";
 import OpenEvidenceSearchPanel from "../components/dashboard/OpenEvidenceSearchPanel";
@@ -796,6 +797,9 @@ export default function Dashboard() {
   return (
     <div style={{ background: T.navy, width: "100%", height: "100%", fontFamily: "DM Sans, sans-serif", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       <style>{`@keyframes clockColon { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }`}</style>
+
+      {/* Navigation Bar */}
+      <DashboardNavBar currentPage="Dashboard" />
 
       {/* Header */}
       <div style={{ padding: "10px 16px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "8px", flexShrink: 0, position: "relative" }}>

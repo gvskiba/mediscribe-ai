@@ -108,6 +108,7 @@ function CPTSearch({ onSelectCPT }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [copied, setCopied] = useState(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const filtered = useMemo(() => {
     return CPT_DATA.filter(row => {
@@ -128,12 +129,37 @@ function CPTSearch({ onSelectCPT }) {
 
   return (
     <div id="cpt-search" style={{ borderBottom:`1px solid rgba(30,58,95,0.55)`, paddingBottom:40, marginBottom:40 }}>
-      <SectionHeader
-        icon="🔍"
-        title="Procedure & CPT Code Search"
-        subtitle="Search by procedure name, body region, or keyword."
-        badge={{ text:`${CPT_DATA.length}+ ED-relevant codes`, background:"rgba(0,212,188,0.07)", border:"1px solid rgba(0,212,188,0.2)", color:T.teal }}
-      />
+      <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:24 }}>
+        <div style={{ flex:1 }}>
+          <SectionHeader
+            icon="🔍"
+            title="Procedure & CPT Code Search"
+            subtitle="Search by procedure name, body region, or keyword."
+            badge={{ text:`${CPT_DATA.length}+ ED-relevant codes`, background:"rgba(0,212,188,0.07)", border:"1px solid rgba(0,212,188,0.2)", color:T.teal }}
+          />
+        </div>
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          style={{
+            padding:"8px 12px",
+            borderRadius:8,
+            background:"rgba(0,212,188,0.1)",
+            border:`1px solid rgba(0,212,188,0.25)`,
+            color:T.teal,
+            fontSize:13,
+            fontWeight:600,
+            cursor:"pointer",
+            transition:"all 0.2s",
+            whiteSpace:"nowrap",
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = "rgba(0,212,188,0.15)"}
+          onMouseLeave={e => e.currentTarget.style.background = "rgba(0,212,188,0.1)"}
+        >
+          {isCollapsed ? "▶ Expand" : "▼ Collapse"}
+        </button>
+      </div>
+      {!isCollapsed && (
+      <>
       <input
         value={query}
         onChange={e => setQuery(e.target.value)}

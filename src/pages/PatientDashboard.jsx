@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { RotateCw, ChevronDown } from "lucide-react";
 import { format, differenceInMinutes } from "date-fns";
 import LabsImagingAIReview from "../components/notes/LabsImagingAIReview";
+import QuickDrugDosingCalculator from "../components/calculators/QuickDrugDosingCalculator";
 
 export default function PatientDashboard() {
   const [encounterId, setEncounterId] = useState(null);

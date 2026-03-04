@@ -119,6 +119,18 @@ export default function Shift() {
     setOpenModals((prev) => ({ ...prev, [modalId]: false }));
   };
 
+  const startShift = async () => {
+    const user = await base44.auth.me();
+    if (!user) return;
+    await base44.entities.shifts.create({
+      provider_id: user.id,
+      provider_name: user.full_name,
+      shift_start: new Date().toISOString(),
+      shift_duration_hours: 12,
+      status: "active",
+    });
+  };
+
   if (shiftLoading) {
     return (
       <div

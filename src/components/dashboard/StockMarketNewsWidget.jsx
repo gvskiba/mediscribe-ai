@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { TrendingUp, AlertCircle, Loader2 } from "lucide-react";
+import { TrendingUp, AlertCircle, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function StockMarketNewsWidget() {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     const fetchStockNews = async () => {

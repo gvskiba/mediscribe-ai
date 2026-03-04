@@ -21,7 +21,6 @@ const T = {
   purple: "#9b6dff",
 };
 
-// Storage keys kept for backward-compat reading, but we now persist to DB
 const NEWS_API_KEY = "thenewsapi_token";
 const WEBZIO_KEY = "webzio_token";
 const NEWSDATA_KEY = "newsdata_token";

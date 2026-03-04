@@ -185,27 +185,29 @@ Return up to 6 procedures sorted by clinical priority. Be concise and evidence-b
         subtitle="Paste or review the clinical note below. Notrya AI analyzes the context and recommends relevant procedures with CPT codes and guidance."
         badge={{ text:"Powered by Notrya AI", background:"rgba(155,109,255,0.1)", border:"1px solid rgba(155,109,255,0.25)", color:T.purple }}
       />
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-        {/* Input */}
-        <div style={{ background:T.panel, border:`1px solid ${T.border}`, borderRadius:14, padding:20, display:"flex", flexDirection:"column", gap:12 }}>
-          <div style={{ fontSize:12, fontWeight:600, color:T.dim, textTransform:"uppercase", letterSpacing:"0.06em" }}>📄 Clinical Note / Context</div>
-          <textarea
-            value={noteText}
-            onChange={e=>setNoteText(e.target.value)}
-            placeholder={"Paste HPI, Assessment, or full note here...\n\nExample: '54M with 5cm stellate laceration to right forearm after fall, neurovascularly intact...'"}
-            rows={12}
-            style={{ width:"100%", background:T.edge, border:`1px solid ${T.border}`, borderRadius:8, padding:"12px 14px", color:T.bright, fontSize:13, lineHeight:1.75, fontFamily:"DM Sans,sans-serif", resize:"vertical", outline:"none", boxSizing:"border-box" }}
-          />
-          <button
-            onClick={analyze}
-            disabled={loading || !noteText.trim()}
-            style={{ background:loading?"rgba(155,109,255,0.2)":"linear-gradient(135deg,#9b6dff,#7c5cd6)", color:"#fff", fontWeight:700, fontSize:14, padding:"12px 24px", borderRadius:9, border:"none", cursor:loading||!noteText.trim()?"not-allowed":"pointer", transition:"all 0.2s" }}
-          >
-            {loading ? "Analyzing clinical context…" : "🤖 Recommend Procedures"}
-          </button>
-        </div>
+      <div style={{ display:"grid", gridTemplateColumns: standalone ? "1fr" : "1fr 1fr", gap:16 }}>
+        {/* Input — hidden on standalone page */}
+        {!standalone && (
+          <div style={{ background:T.panel, border:`1px solid ${T.border}`, borderRadius:14, padding:20, display:"flex", flexDirection:"column", gap:12 }}>
+            <div style={{ fontSize:12, fontWeight:600, color:T.dim, textTransform:"uppercase", letterSpacing:"0.06em" }}>📄 Clinical Note / Context</div>
+            <textarea
+              value={noteText}
+              onChange={e=>setNoteText(e.target.value)}
+              placeholder={"Paste HPI, Assessment, or full note here...\n\nExample: '54M with 5cm stellate laceration to right forearm after fall, neurovascularly intact...'"}
+              rows={12}
+              style={{ width:"100%", background:T.edge, border:`1px solid ${T.border}`, borderRadius:8, padding:"12px 14px", color:T.bright, fontSize:13, lineHeight:1.75, fontFamily:"DM Sans,sans-serif", resize:"vertical", outline:"none", boxSizing:"border-box" }}
+            />
+            <button
+              onClick={analyze}
+              disabled={loading || !noteText.trim()}
+              style={{ background:loading?"rgba(155,109,255,0.2)":"linear-gradient(135deg,#9b6dff,#7c5cd6)", color:"#fff", fontWeight:700, fontSize:14, padding:"12px 24px", borderRadius:9, border:"none", cursor:loading||!noteText.trim()?"not-allowed":"pointer", transition:"all 0.2s" }}
+            >
+              {loading ? "Analyzing clinical context…" : "🤖 Recommend Procedures"}
+            </button>
+          </div>
+        )}
         {/* Output */}
-        <div style={{ display:"flex", flexDirection:"column", gap:10, overflowY:"auto", maxHeight:460 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:10, overflowY:"auto", maxHeight: standalone ? "none" : 460 }}>
           {!loading && recommendations.length === 0 && (
             <div style={{ background:T.panel, border:`1px solid ${T.border}`, borderRadius:14, padding:"52px 24px", textAlign:"center", opacity:0.5, color:T.dim, fontSize:13 }}>
               <div style={{ fontSize:32, marginBottom:12 }}>🤖</div>

@@ -245,7 +245,7 @@ Return up to 6 procedures sorted by clinical priority. Be concise and evidence-b
 }
 
 // ── Section 2: CPT Search ─────────────────────────────────────────────────────
-function CPTSearch() {
+function CPTSearch({ onSelectCPT }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [copied, setCopied] = useState(null);

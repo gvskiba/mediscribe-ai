@@ -1370,9 +1370,6 @@ export default function Procedures() {
         <div id="template-manager">
           <ProcedureTemplateManager />
         </div>
-        <div id="drug-dosing" style={{ borderBottom:`1px solid rgba(30,58,95,0.55)`, paddingBottom:40, marginBottom:40 }}>
-          <QuickDrugDosingCalculator />
-        </div>
         <ProcedureNoteDrafter prefilledCPT={selectedCPT} onClearPrefill={() => setSelectedCPT(null)} />
         <EDNoteDrafter />
         <CPTSearch onSelectCPT={handleSelectCPT} />

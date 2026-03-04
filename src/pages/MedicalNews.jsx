@@ -479,7 +479,7 @@ export default function MedicalNews() {
               <div style={{ fontSize: 12, color: "#4a7299", lineHeight: 1.7, maxWidth: 380, margin: "0 auto 14px" }}>
                 {error ? "Could not fetch news from TheNewsAPI." : "No medical news matched your search. Try different keywords or select another category."}
               </div>
-              <button onClick={() => { setTopic("all"); setSearchInput(""); setSearchQuery(""); fetchNews(1, "all", "", activeSource); }}
+              <button onClick={() => { setSelectedTopics(new Set(["all"])); setApiQuery(""); setApiQueryInput(""); setLocalFilter(""); setLocalFilterInput(""); fetchNews(1, new Set(["all"]), "", activeSource); }}
                 style={{ padding: "7px 18px", borderRadius: 8, background: "rgba(0,212,188,.1)", color: "#00d4bc", border: "1px solid rgba(0,212,188,.25)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
                 ↺ Show All Health News
               </button>

@@ -672,9 +672,9 @@ export default function Procedures() {
         </div>
       </div>
       <div style={{ padding:"32px 24px" }}>
-        <CPTSearch />
         <ProcedureNoteDrafter />
         <EDNoteDrafter />
+        <CPTSearch />
         <ProcedureLog />
       </div>
     </div>

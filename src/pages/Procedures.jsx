@@ -1367,9 +1367,6 @@ export default function Procedures() {
         </div>
       </div>
       <div style={{ padding:"32px 24px" }}>
-        <div id="template-manager">
-          <ProcedureTemplateManager />
-        </div>
         <ProcedureNoteDrafter prefilledCPT={selectedCPT} onClearPrefill={() => setSelectedCPT(null)} />
         <EDNoteDrafter />
         <CPTSearch onSelectCPT={handleSelectCPT} />

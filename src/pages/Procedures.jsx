@@ -500,6 +500,69 @@ function ProcedureLog() {
     const a = document.createElement("a"); a.href=url; a.download="procedure_log.csv"; a.click(); URL.revokeObjectURL(url);
   };
 
+  const exportJSON = () => {
+    const data = logs.map(({ id, created_date, updated_date, ...rest }) => rest);
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href=url; a.download="procedure_log.json"; a.click(); URL.revokeObjectURL(url);
+  };
+
+  const exportPDF = () => {
+    const win = window.open("", "_blank");
+    const date = new Date().toLocaleDateString("en-US", { year:"numeric", month:"long", day:"numeric" });
+    const rows = logs.map((row, i) => `
+      <tr style="background:${i%2===0?"#f9fafb":"#ffffff"}">
+        <td>${row.date_performed?.split("T")[0] || "—"}</td>
+        <td><strong>${row.procedure_name || "—"}</strong></td>
+        <td style="font-family:monospace">${row.cpt_code || "—"}</td>
+        <td>${row.location || "—"}</td>
+        <td>${row.supervision?.split(" ")[0] || "—"}</td>
+        <td style="text-align:center">${row.attempts || 1}</td>
+        <td style="text-align:center;color:${row.success!==false?"#16a34a":"#dc2626"}">${row.success!==false?"✓":"✗"}</td>
+        <td style="text-align:center">${row.ultrasound_used?"Yes":"No"}</td>
+        <td>${row.complications || "—"}</td>
+        <td>${row.attending_name || "—"}</td>
+      </tr>
+      ${row.indication ? `<tr style="background:#f0fdf4"><td colspan="10" style="padding:4px 12px;font-size:11px;color:#166534"><em>Indication: ${row.indication}</em></td></tr>` : ""}
+      ${row.notes ? `<tr style="background:#fefce8"><td colspan="10" style="padding:4px 12px;font-size:11px;color:#713f12"><em>Notes: ${row.notes}</em></td></tr>` : ""}
+    `).join("");
+
+    win.document.write(`<!DOCTYPE html><html><head><title>Procedure Log</title>
+    <style>
+      body { font-family: 'Segoe UI', Arial, sans-serif; color: #1f2937; margin: 40px; font-size: 13px; }
+      h1 { font-size: 24px; color: #0f172a; margin-bottom: 4px; }
+      .meta { color: #6b7280; font-size: 12px; margin-bottom: 24px; }
+      .summary { display: flex; gap: 24px; margin-bottom: 24px; }
+      .stat { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 12px 20px; }
+      .stat-value { font-size: 22px; font-weight: 700; color: #0369a1; }
+      .stat-label { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; }
+      table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+      th { background: #0f172a; color: #e2e8f0; padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+      td { padding: 8px 12px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+      .footer { margin-top: 32px; font-size: 11px; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 12px; }
+      @media print { body { margin: 20px; } }
+    </style></head><body>
+    <h1>Procedure Log</h1>
+    <div class="meta">Generated ${date} · ${logs.length} procedure${logs.length!==1?"s":""} total</div>
+    <div class="summary">
+      <div class="stat"><div class="stat-value">${logs.length}</div><div class="stat-label">Total Procedures</div></div>
+      <div class="stat"><div class="stat-value">${logs.filter(r=>r.success!==false).length}</div><div class="stat-label">Successful</div></div>
+      <div class="stat"><div class="stat-value">${logs.filter(r=>r.supervision==="Attending (primary operator)").length}</div><div class="stat-label">As Primary Operator</div></div>
+      <div class="stat"><div class="stat-value">${[...new Set(logs.map(r=>r.procedure_name).filter(Boolean))].length}</div><div class="stat-label">Unique Procedures</div></div>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Date</th><th>Procedure</th><th>CPT</th><th>Site</th><th>Role</th>
+        <th>Att.</th><th>Success</th><th>US</th><th>Complications</th><th>Attending</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="footer">Notrya AI · Procedure Log Export · Confidential Clinical Document</div>
+    </body></html>`);
+    win.document.close();
+    setTimeout(() => win.print(), 500);
+  };
+
   const supervisionColors = {
     "Attending (primary operator)": {bg:"rgba(0,212,188,0.1)",fg:T.teal},
     "Supervising (resident/APP primary)": {bg:"rgba(155,109,255,0.1)",fg:T.purple},

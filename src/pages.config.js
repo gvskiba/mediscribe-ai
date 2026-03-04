@@ -66,6 +66,7 @@ import OrdersQueue from './pages/OrdersQueue';
 import PatientDashboard from './pages/PatientDashboard';
 import PatientEducation from './pages/PatientEducation';
 import PatientHistory from './pages/PatientHistory';
+import Procedures from './pages/Procedures';
 import SavedGuidelines from './pages/SavedGuidelines';
 import Search from './pages/Search';
 import ShiftHours from './pages/ShiftHours';
@@ -75,7 +76,6 @@ import TemplateEditor from './pages/TemplateEditor';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
-import Procedures from './pages/Procedures';
 import __Layout from './Layout.jsx';
 
 
@@ -99,6 +99,7 @@ export const PAGES = {
     "PatientDashboard": PatientDashboard,
     "PatientEducation": PatientEducation,
     "PatientHistory": PatientHistory,
+    "Procedures": Procedures,
     "SavedGuidelines": SavedGuidelines,
     "Search": Search,
     "ShiftHours": ShiftHours,
@@ -108,7 +109,6 @@ export const PAGES = {
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
-    "Procedures": Procedures,
 }
 
 export const pagesConfig = {

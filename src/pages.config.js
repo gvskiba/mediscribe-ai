@@ -77,6 +77,7 @@ import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
 import PatientDashboard from './pages/PatientDashboard';
+import ProviderDashboard from './pages/ProviderDashboard';
 import __Layout from './Layout.jsx';
 
 
@@ -111,6 +112,7 @@ export const PAGES = {
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
     "PatientDashboard": PatientDashboard,
+    "ProviderDashboard": ProviderDashboard,
 }
 
 export const pagesConfig = {

@@ -122,6 +122,7 @@ const TAB_GROUPS = [
     color: 'emerald',
     tabs: [
       { id: 'physical_exam', label: 'Physical Exam', icon: Activity },
+      { id: 'labs_imaging', label: 'Labs & Imaging', icon: Beaker },
     ]
   },
   {
@@ -130,7 +131,6 @@ const TAB_GROUPS = [
     color: 'rose',
     tabs: [
       { id: 'differential', label: 'Differential Dx', icon: Code },
-      { id: 'labs_imaging', label: 'Labs & Imaging', icon: Beaker },
       { id: 'mdm', label: 'MDM', icon: Brain },
     ]
   },

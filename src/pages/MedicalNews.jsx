@@ -532,7 +532,7 @@ export default function MedicalNews() {
               style={{ padding: "3px 9px", borderRadius: 5, background: "transparent", border: "1px solid #1e3a5f", color: "#4a7299", fontSize: 9.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
               ★ Saved ({bookmarks.size})
             </button>
-            <button onClick={() => fetchNews(page, topic, searchQuery, activeSource)}
+            <button onClick={() => fetchNews(page, selectedTopics, apiQuery, activeSource)}
               style={{ padding: "3px 9px", borderRadius: 5, background: "transparent", border: "1px solid #1e3a5f", color: "#4a7299", fontSize: 9.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
               ↻ Refresh
             </button>

@@ -210,14 +210,16 @@ function CPTSearch({ onSelectCPT }) {
           })}
         </div>
         {filtered.length === 0 && (
-          <div style={{ padding:"32px 16px", textAlign:"center", color:T.dim, fontSize:13 }}>
-            🔍 No procedures matched your search.
-          </div>
+           <div style={{ padding:"32px 16px", textAlign:"center", color:T.dim, fontSize:13 }}>
+             🔍 No procedures matched your search.
+           </div>
+         )}
+        </div>
+        </>
         )}
-      </div>
-    </div>
-  );
-}
+        </div>
+        );
+        }
 
 const PROC_CATEGORIES = [
   { id:"all", label:"All" },

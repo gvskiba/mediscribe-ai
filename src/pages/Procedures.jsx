@@ -860,15 +860,52 @@ function ProcedureNoteDrafter({ prefilledCPT, onClearPrefill }) {
                   </div>
                 ))}
               </div>
-              <div style={{ padding:"0 20px 20px" }}>
+              <div style={{ padding:"0 20px 20px", display:"flex", flexDirection:"column", gap:12 }}>
                 <button onClick={generateNote} disabled={generating}
                   style={{ width:"100%", background:generating?"rgba(245,166,35,0.2)":"linear-gradient(135deg,#f5a623,#e09010)", color:generating?T.amber:"#fff", fontWeight:700, fontSize:14, padding:"12px 24px", borderRadius:9, border:"none", cursor:generating?"not-allowed":"pointer" }}>
                   {generating ? "✨ Generating procedure note…" : "✨ Generate Note"}
                 </button>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
+                  <button onClick={generateKeyFindings} disabled={generatingSection !== null}
+                    style={{ background:generatingSection==="findings"?"rgba(0,212,188,0.2)":"rgba(0,212,188,0.1)", color:generatingSection==="findings"?T.teal:T.dim, fontWeight:600, fontSize:12, padding:"8px 12px", borderRadius:6, border:`1px solid rgba(0,212,188,0.25)`, cursor:generatingSection!==null?"not-allowed":"pointer" }}>
+                    {generatingSection==="findings"?"✨ Generating…":"🔍 Key Findings"}
+                  </button>
+                  <button onClick={generateImpression} disabled={generatingSection !== null}
+                    style={{ background:generatingSection==="impression"?"rgba(244,114,182,0.2)":"rgba(244,114,182,0.1)", color:generatingSection==="impression"?T.rose:T.dim, fontWeight:600, fontSize:12, padding:"8px 12px", borderRadius:6, border:`1px solid rgba(244,114,182,0.25)`, cursor:generatingSection!==null?"not-allowed":"pointer" }}>
+                    {generatingSection==="impression"?"✨ Generating…":"💭 Impression"}
+                  </button>
+                  <button onClick={generateSummary} disabled={generatingSection !== null}
+                    style={{ background:generatingSection==="summary"?"rgba(155,109,255,0.2)":"rgba(155,109,255,0.1)", color:generatingSection==="summary"?T.purple:T.dim, fontWeight:600, fontSize:12, padding:"8px 12px", borderRadius:6, border:`1px solid rgba(155,109,255,0.25)`, cursor:generatingSection!==null?"not-allowed":"pointer" }}>
+                    {generatingSection==="summary"?"✨ Generating…":"📋 Summary"}
+                  </button>
+                </div>
               </div>
-              {generatedNote && (
+              {(generatedNote || keyFindings || impression || summary) && (
                 <div style={{ background:"#0a1929", padding:20, fontFamily:"DM Sans,sans-serif", fontSize:13.5, lineHeight:1.9, color:T.text, whiteSpace:"pre-wrap", borderTop:`1px solid ${T.border}` }}>
-                  {generatedNote}
+                  {summary && (
+                    <div style={{ marginBottom:20 }}>
+                      <div style={{ fontSize:12, fontWeight:700, color:T.purple, marginBottom:8 }}>📋 PROCEDURE SUMMARY</div>
+                      <div style={{ background:"rgba(155,109,255,0.08)", padding:12, borderRadius:6, borderLeft:`3px solid ${T.purple}` }}>{summary}</div>
+                    </div>
+                  )}
+                  {keyFindings && (
+                    <div style={{ marginBottom:20 }}>
+                      <div style={{ fontSize:12, fontWeight:700, color:T.teal, marginBottom:8 }}>🔍 KEY FINDINGS</div>
+                      <div style={{ background:"rgba(0,212,188,0.08)", padding:12, borderRadius:6, borderLeft:`3px solid ${T.teal}` }}>{keyFindings}</div>
+                    </div>
+                  )}
+                  {impression && (
+                    <div style={{ marginBottom:20 }}>
+                      <div style={{ fontSize:12, fontWeight:700, color:T.rose, marginBottom:8 }}>💭 IMPRESSION</div>
+                      <div style={{ background:"rgba(244,114,182,0.08)", padding:12, borderRadius:6, borderLeft:`3px solid ${T.rose}` }}>{impression}</div>
+                    </div>
+                  )}
+                  {generatedNote && (
+                    <div>
+                      <div style={{ fontSize:12, fontWeight:700, color:T.amber, marginBottom:8 }}>📝 FULL PROCEDURE NOTE</div>
+                      <div>{generatedNote}</div>
+                    </div>
+                  )}
                 </div>
               )}
             </>

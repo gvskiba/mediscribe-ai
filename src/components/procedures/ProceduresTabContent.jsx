@@ -718,6 +718,9 @@ function ProcedureLog({ note }) {
     location:"", supervision:"Attending (primary operator)", attempts:1, success:true,
     ultrasound_used:false, complications:"None", indication:"", attending_name:"", notes:""
   });
+  const [search, setSearch] = useState("");
+  const [sortField, setSortField] = useState("date_performed");
+  const [sortDir, setSortDir] = useState("desc");
 
   const { data: logs=[], isLoading } = useQuery({
     queryKey:["procedureLogs"],

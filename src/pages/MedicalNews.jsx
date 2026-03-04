@@ -165,6 +165,7 @@ export default function MedicalNews() {
   const [localFilterInput, setLocalFilterInput] = useState("");
   const [page, setPage] = useState(1);
   const [activeSource, setActiveSource] = useState("polygon");
+  const [dbTokens, setDbTokens] = useState({});
   const [bookmarks, setBookmarks] = useState(() => getSaved());
   const [lastRef, setLastRef] = useState(null);
   const [countdown, setCountdown] = useState(30 * 60);

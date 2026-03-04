@@ -722,6 +722,51 @@ function ProcedureNoteDrafter({ prefilledCPT, onClearPrefill }) {
     } catch(e) { console.error(e); } finally { setGenerating(false); }
   };
 
+  const generateKeyFindings = async () => {
+    const procedureLabel = selectedTemplate ? selectedTemplate.label : customProcedureName;
+    if (!procedureLabel) return;
+    setGeneratingSection("findings");
+    try {
+      const fieldSummary = selectedTemplate
+        ? selectedTemplate.fields.map(f => `${f.label}: ${fields[f.id] || "(not provided)"}`).join("\n")
+        : `Procedure Name: ${customProcedureName}\nCPT Code: ${customCptCode}`;
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Based on the following ${procedureLabel} procedure details, generate 3-5 concise key findings:\n\n${fieldSummary}\n\nProvide specific, clinically relevant findings. Format as a bullet list.`,
+      });
+      setKeyFindings(result);
+    } catch(e) { console.error(e); } finally { setGeneratingSection(null); }
+  };
+
+  const generateImpression = async () => {
+    const procedureLabel = selectedTemplate ? selectedTemplate.label : customProcedureName;
+    if (!procedureLabel) return;
+    setGeneratingSection("impression");
+    try {
+      const fieldSummary = selectedTemplate
+        ? selectedTemplate.fields.map(f => `${f.label}: ${fields[f.id] || "(not provided)"}`).join("\n")
+        : `Procedure Name: ${customProcedureName}\nCPT Code: ${customCptCode}`;
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Based on the following ${procedureLabel} procedure details, generate a brief clinical impression summarizing the procedure outcome and any significant findings:\n\n${fieldSummary}\n\nKeep it concise (2-3 sentences) and clinically focused.`,
+      });
+      setImpression(result);
+    } catch(e) { console.error(e); } finally { setGeneratingSection(null); }
+  };
+
+  const generateSummary = async () => {
+    const procedureLabel = selectedTemplate ? selectedTemplate.label : customProcedureName;
+    if (!procedureLabel) return;
+    setGeneratingSection("summary");
+    try {
+      const fieldSummary = selectedTemplate
+        ? selectedTemplate.fields.map(f => `${f.label}: ${fields[f.id] || "(not provided)"}`).join("\n")
+        : `Procedure Name: ${customProcedureName}\nCPT Code: ${customCptCode}`;
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Provide a brief, one-paragraph summary of the ${procedureLabel} procedure performed based on these details:\n\n${fieldSummary}\n\nInclude what was done, why, and the outcome. Keep it under 100 words.`,
+      });
+      setSummary(result);
+    } catch(e) { console.error(e); } finally { setGeneratingSection(null); }
+  };
+
   return (
     <div id="procedure-note-drafter" style={{ borderBottom:`1px solid rgba(30,58,95,0.55)`, paddingBottom:40, marginBottom:40 }}>
       <SectionHeader icon="📋" title="Procedure Note Drafter"

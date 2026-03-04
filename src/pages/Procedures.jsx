@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ProcedureTemplateManager from "../components/procedures/ProcedureTemplateManager";
+import BillingModule from "../components/billing/BillingModule";
 
 const T = {
   navy:   "#050f1e",

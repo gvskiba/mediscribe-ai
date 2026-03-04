@@ -644,33 +644,37 @@ function ProcedureNoteDrafter({ prefilledCPT, onClearPrefill }) {
         subtitle="Select an ED procedure template. Fill the fields and Notrya AI drafts the complete, billable procedure note."
         badge={{ text:`${PROC_TEMPLATES.length} ED procedure templates`, background:"rgba(245,166,35,0.07)", border:"1px solid rgba(245,166,35,0.22)", color:T.amber }}
       />
-      <div style={{ display:"grid", gridTemplateColumns:"240px 1fr", gap:16, alignItems:"start" }}>
-        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-          {/* Search */}
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search procedures…"
-            style={{ width:"100%", background:T.panel, border:`1px solid ${T.border}`, borderRadius:8, padding:"8px 12px", color:T.bright, fontSize:12.5, fontFamily:"DM Sans,sans-serif", outline:"none", boxSizing:"border-box" }}
-            onFocus={e=>e.target.style.borderColor=T.amber} onBlur={e=>e.target.style.borderColor=T.border} />
-          {/* Category filter */}
-          <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
-            {PROC_CATEGORIES.map(cat => (
-              <button key={cat.id} onClick={()=>setActiveCategory(cat.id)}
-                style={{ padding:"3px 9px", borderRadius:20, fontSize:10.5, fontWeight:600, cursor:"pointer", border:`1px solid ${activeCategory===cat.id?"rgba(245,166,35,0.4)":T.border}`, background:activeCategory===cat.id?"rgba(245,166,35,0.1)":"transparent", color:activeCategory===cat.id?T.amber:T.dim, transition:"all 0.12s", whiteSpace:"nowrap" }}>
-                {cat.label}
+      <div style={{ display:"grid", gridTemplateColumns:"280px 1fr", gap:16, alignItems:"start" }}>
+        <div style={{ background:T.panel, border:`1px solid ${T.border}`, borderRadius:13, overflow:"hidden", maxHeight:"600px", overflowY:"auto" }}>
+          <div style={{ padding:"12px 0", fontSize:12, fontWeight:700, color:T.dim, textTransform:"uppercase", letterSpacing:"0.06em", paddingLeft:"16px", paddingRight:"16px", paddingTop:"16px" }}>Categories</div>
+          {PROC_CATEGORIES.filter(cat => cat.id !== "all").map(cat => (
+            <div key={cat.id}>
+              <button
+                onClick={()=>setOpenCategories({...openCategories, [cat.id]:!openCategories[cat.id]})}
+                style={{
+                  width:"100%", padding:"12px 16px", background:openCategories[cat.id]?"rgba(22,45,79,0.8)":"transparent", border:"none", cursor:"pointer",
+                  display:"flex", alignItems:"center", gap:10, transition:"all 0.2s", borderBottom:`1px solid ${T.border}`
+                }}
+                onMouseEnter={e=>e.currentTarget.style.background="rgba(22,45,79,0.5)"}
+                onMouseLeave={e=>!openCategories[cat.id]&&(e.currentTarget.style.background="transparent")}
+              >
+                <span style={{fontSize:14}}>{cat.label.split(" ")[1] || cat.label}</span>
+                <div style={{flex:1, textAlign:"left", fontSize:12, fontWeight:600, color:T.bright}}>{cat.label.split(" ")[0]}</div>
+                <span style={{fontSize:10, color:T.dim}}>{templatesByCategory[cat.id]?.length || 0}</span>
               </button>
-            ))}
-          </div>
-          {/* Template list */}
-          <div style={{ background:T.panel, border:`1px solid ${T.border}`, borderRadius:13, overflow:"hidden", maxHeight:520, overflowY:"auto" }}>
-            {filteredTemplates.length === 0 ? (
-              <div style={{ padding:"24px 16px", textAlign:"center", color:T.dim, fontSize:12 }}>No procedures found</div>
-            ) : filteredTemplates.map(tmpl => (
-              <button key={tmpl.id} onClick={() => selectTemplate(tmpl)}
-                style={{ width:"100%", padding:"10px 14px", textAlign:"left", background:selectedTemplate?.id===tmpl.id?"rgba(155,109,255,0.1)":"transparent", border:"none", borderBottom:`1px solid ${T.border}`, cursor:"pointer", display:"flex", alignItems:"center", gap:10 }}>
-                <span style={{ fontSize:16 }}>{tmpl.icon}</span>
-                <span style={{ fontSize:12.5, fontWeight:selectedTemplate?.id===tmpl.id?700:500, color:selectedTemplate?.id===tmpl.id?T.bright:T.text, lineHeight:1.3 }}>{tmpl.label}</span>
-              </button>
-            ))}
-          </div>
+              {openCategories[cat.id] && (
+                <div style={{background:"rgba(14,35,64,0.4)", borderBottom:`1px solid ${T.border}`}}>
+                  {templatesByCategory[cat.id]?.map(tmpl => (
+                    <button key={tmpl.id} onClick={() => selectTemplate(tmpl)}
+                      style={{ width:"100%", padding:"9px 24px", textAlign:"left", background:selectedTemplate?.id===tmpl.id?"rgba(155,109,255,0.15)":"transparent", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:8, transition:"all 0.15s", fontSize:12, fontWeight:selectedTemplate?.id===tmpl.id?700:500, color:selectedTemplate?.id===tmpl.id?T.bright:T.text }}>
+                      <span style={{fontSize:13}}>{tmpl.icon}</span>
+                      {tmpl.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
         <div style={{ background:T.panel, border:`1px solid ${T.border}`, borderRadius:13, overflow:"hidden" }}>
           {!selectedTemplate && !customProcedureName ? (

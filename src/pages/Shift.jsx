@@ -149,17 +149,21 @@ export default function Shift() {
       <ShiftHeader shift={activeShift} elapsed={elapsed} onAddPatient={() => openModal("add-patient")} />
       <StatsRibbon shift={shift} />
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 16, padding: 20, maxWidth: "1400px", margin: "0 auto" }}>
-        <PatientBoard
-          patients={filteredPatients}
-          currentFilter={currentFilter}
-          onFilterChange={setCurrentFilter}
-          onAddOrder={(patientId) => {
-            setActiveOrderTarget(patientId);
-            openModal("add-order");
-          }}
-        />
-        <RightSidebar shift={shift} />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 20, padding: "20px 24px", width: "100%" }}>
+        <div>
+          <PatientBoard
+            patients={filteredPatients}
+            currentFilter={currentFilter}
+            onFilterChange={setCurrentFilter}
+            onAddOrder={(patientId) => {
+              setActiveOrderTarget(patientId);
+              openModal("add-order");
+            }}
+          />
+        </div>
+        <div>
+          <RightSidebar shift={shift} />
+        </div>
       </div>
 
       <TaskPanel tasks={shift.tasks} onAddTask={() => openModal("add-task")} />

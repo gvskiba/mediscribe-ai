@@ -28,15 +28,14 @@ Deno.serve(async (req) => {
     const dateStr = prevDate.toISOString().split('T')[0];
 
     let stocks = [];
+
+    // Fetch each ticker's previous close using /v2/aggs/ticker/{ticker}/prev endpoint
     const stockResults = await Promise.allSettled(
       tickers.map(ticker =>
-        fetch(`https://api.polygon.io/v2/aggs/ticker/${ticker}/range/1/day/${dateStr}/${dateStr}?adjusted=true&apiKey=${apiKey}`)
+        fetch(`https://api.polygon.io/v2/aggs/ticker/${ticker}/prev?adjusted=true&apiKey=${apiKey}`)
           .then(r => r.json())
       )
     );
-
-    console.log('dateStr:', dateStr);
-    console.log('stockResults[0]:', JSON.stringify(stockResults[0]?.value));
 
     for (let i = 0; i < tickers.length; i++) {
       const result = stockResults[i];

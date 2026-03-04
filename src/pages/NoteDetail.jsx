@@ -78,6 +78,7 @@ import BMICalculator from "../components/calculators/BMICalculator";
 import CreatinineClearanceCalculator from "../components/calculators/CreatinineClearanceCalculator";
 import MedicationDosingLookup from "../components/calculators/MedicationDosingLookup";
 import ProceduresPanel from "../components/procedures/ProceduresPanel";
+import ProceduresTabContent from "../components/procedures/ProceduresTabContent";
 import ClinicalWorkflowAutomation from "../components/notes/ClinicalWorkflowAutomation";
 import AIGuidelineSuggestions from "../components/notes/AIGuidelineSuggestions";
 import AISidebar from "../components/ai/AISidebar";

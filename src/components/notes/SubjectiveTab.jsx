@@ -642,8 +642,8 @@ export default function SubjectiveTab({
         gap: 14,
         alignItems: "start",
       }}>
-        {/* Left: Vitals Display Panel */}
-        <VitalSignsDisplayPanel vitals={note?.vital_signs} title="VITAL SIGNS" />
+        {/* Left: Vitals Input + AI Analysis Panel */}
+        <VitalsInputPanel note={note} noteId={noteId} queryClient={queryClient} />
 
         {/* Center: HPI */}
         <HPIPanel

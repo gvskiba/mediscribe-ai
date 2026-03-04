@@ -650,7 +650,9 @@ function ProcedureLog() {
       <div style={{ background:T.panel, border:`1px solid ${T.border}`, borderRadius:13, overflow:"hidden" }}>
         <div style={{ padding:"12px 18px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:10 }}>
           <span style={{ fontSize:13, fontWeight:700, color:T.bright, marginRight:"auto" }}>Procedure History ({logs.length})</span>
-          <button onClick={exportCSV} style={{ padding:"5px 12px", borderRadius:6, background:"rgba(46,204,113,0.09)", color:T.green, border:`1px solid rgba(46,204,113,0.25)`, fontSize:11.5, cursor:"pointer", fontWeight:600 }}>⬇ Export CSV</button>
+          <button onClick={exportCSV} style={{ padding:"5px 12px", borderRadius:6, background:"rgba(46,204,113,0.09)", color:T.green, border:`1px solid rgba(46,204,113,0.25)`, fontSize:11.5, cursor:"pointer", fontWeight:600 }}>⬇ CSV</button>
+          <button onClick={exportJSON} style={{ padding:"5px 12px", borderRadius:6, background:"rgba(155,109,255,0.09)", color:T.purple, border:`1px solid rgba(155,109,255,0.25)`, fontSize:11.5, cursor:"pointer", fontWeight:600 }}>⬇ JSON</button>
+          <button onClick={exportPDF} style={{ padding:"5px 12px", borderRadius:6, background:"rgba(245,166,35,0.09)", color:T.amber, border:`1px solid rgba(245,166,35,0.25)`, fontSize:11.5, cursor:"pointer", fontWeight:600 }}>⬇ PDF</button>
         </div>
         {isLoading ? (
           <div style={{ padding:"24px 16px", textAlign:"center", color:T.dim, fontSize:13 }}>Loading procedure log…</div>

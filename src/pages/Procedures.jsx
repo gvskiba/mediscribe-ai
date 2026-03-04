@@ -261,21 +261,43 @@ const PROC_TEMPLATES = [
   },
 ];
 
-function ProcedureNoteDrafter() {
+function ProcedureNoteDrafter({ prefilledCPT, onClearPrefill }) {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [fields, setFields] = useState({});
   const [generatedNote, setGeneratedNote] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [customProcedureName, setCustomProcedureName] = useState("");
+  const [customCptCode, setCustomCptCode] = useState("");
 
-  const selectTemplate = (tmpl) => { setSelectedTemplate(tmpl); setFields({}); setGeneratedNote(""); };
+  useEffect(() => {
+    if (prefilledCPT) {
+      setCustomProcedureName(prefilledCPT.procedureName);
+      setCustomCptCode(prefilledCPT.cptCode);
+      setSelectedTemplate(null);
+      setFields({});
+      setGeneratedNote("");
+    }
+  }, [prefilledCPT]);
+
+  const selectTemplate = (tmpl) => {
+    setSelectedTemplate(tmpl);
+    setCustomProcedureName("");
+    setCustomCptCode("");
+    setFields({});
+    setGeneratedNote("");
+    if (onClearPrefill) onClearPrefill();
+  };
 
   const generateNote = async () => {
-    if (!selectedTemplate) return;
+    const procedureLabel = selectedTemplate ? selectedTemplate.label : customProcedureName;
+    if (!procedureLabel) return;
     setGenerating(true);
     try {
-      const fieldSummary = selectedTemplate.fields.map(f => `${f.label}: ${fields[f.id] || "(not provided)"}`).join("\n");
+      const fieldSummary = selectedTemplate
+        ? selectedTemplate.fields.map(f => `${f.label}: ${fields[f.id] || "(not provided)"}`).join("\n")
+        : `Procedure Name: ${customProcedureName}\nCPT Code: ${customCptCode}`;
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are Notrya AI. Draft a complete, medicolegally sound ${selectedTemplate.label} procedure note for an emergency medicine provider.\n\nPROCEDURE: ${selectedTemplate.label}\nDATE/TIME: ${new Date().toLocaleString()}\n\nCOMPLETED FIELDS:\n${fieldSummary}\n\nGenerate a complete, structured procedure note including: indication, preprocedure assessment/consent, procedure description, postprocedure status, and provider attestation. Format it professionally with clear section headers.`,
+        prompt: `You are Notrya AI. Draft a complete, medicolegally sound ${procedureLabel} procedure note for an emergency medicine provider.\n\nPROCEDURE: ${procedureLabel}${customCptCode ? `\nCPT CODE: ${customCptCode}` : ""}\nDATE/TIME: ${new Date().toLocaleString()}\n\nCOMPLETED FIELDS:\n${fieldSummary}\n\nGenerate a complete, structured procedure note including: indication, preprocedure assessment/consent, procedure description, postprocedure status, and provider attestation. Format it professionally with clear section headers.`,
       });
       setGeneratedNote(result);
     } catch(e) { console.error(e); } finally { setGenerating(false); }

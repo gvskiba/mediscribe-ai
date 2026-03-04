@@ -902,9 +902,23 @@ function ProcedureLog({ note }) {
 
       {/* Log Table */}
       <div style={{ background:T.panel, border:`1px solid ${T.border}`, borderRadius:13, overflow:"hidden" }}>
-        <div style={{ padding:"12px 18px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:10 }}>
-          <span style={{ fontSize:13, fontWeight:700, color:T.bright, marginRight:"auto" }}>Procedure History ({logs.length})</span>
-          <button onClick={exportCSV} style={{ padding:"5px 12px", borderRadius:6, background:"rgba(46,204,113,0.09)", color:T.green, border:`1px solid rgba(46,204,113,0.25)`, fontSize:11.5, cursor:"pointer", fontWeight:600 }}>
+        <div style={{ padding:"12px 18px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
+          <span style={{ fontSize:13, fontWeight:700, color:T.bright }}>Procedure History ({filteredAndSorted.length}{search ? ` of ${logs.length}` : ""})</span>
+          <div style={{ flex:1, minWidth:180, position:"relative" }}>
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search by name, CPT code, or location…"
+              style={{ width:"100%", background:T.edge, border:`1.5px solid ${T.border}`, borderRadius:8, padding:"6px 12px 6px 30px", color:T.bright, fontSize:12, fontFamily:"DM Sans,sans-serif", outline:"none", boxSizing:"border-box" }}
+              onFocus={e => e.target.style.borderColor = T.teal}
+              onBlur={e => e.target.style.borderColor = T.border}
+            />
+            <span style={{ position:"absolute", left:9, top:"50%", transform:"translateY(-50%)", fontSize:13, color:T.dim, pointerEvents:"none" }}>🔍</span>
+            {search && (
+              <button onClick={() => setSearch("")} style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:T.dim, cursor:"pointer", fontSize:13, padding:0, lineHeight:1 }}>✕</button>
+            )}
+          </div>
+          <button onClick={exportCSV} style={{ padding:"5px 12px", borderRadius:6, background:"rgba(46,204,113,0.09)", color:T.green, border:`1px solid rgba(46,204,113,0.25)`, fontSize:11.5, cursor:"pointer", fontWeight:600, whiteSpace:"nowrap" }}>
             ⬇ Export CSV
           </button>
         </div>

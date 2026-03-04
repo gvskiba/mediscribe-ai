@@ -64,67 +64,39 @@ export default function StockMarketNewsWidget() {
         {collapsed ? <ChevronDown size={14} style={{ color: "#9ca3af" }} /> : <ChevronUp size={14} style={{ color: "#9ca3af" }} />}
       </div>
 
-      {!collapsed && loading ? (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, minHeight: 150 }}>
-          <Loader2 size={20} style={{ color: "#2563eb", animation: "spin 1s linear infinite" }} />
-        </div>
-      ) : !collapsed && error ? (
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          padding: 12,
-          background: "rgba(239,68,68,0.06)",
-          border: "1px solid rgba(239,68,68,0.2)",
-          borderRadius: 8,
-          fontSize: 11,
-          color: "#dc2626"
-        }}>
-          <AlertCircle size={14} />
-          {error}
-        </div>
-      ) : !collapsed && articles.length === 0 ? (
-        <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 12 }}>
-          No stock market news available
-        </div>
-      ) : !collapsed ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, flex: 1, overflowY: "auto" }}>
-          {articles.map((article, idx) => (
-            <a
-              key={idx}
-              href={article.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                padding: 10,
-                background: "rgba(255,255,255,0.5)",
-                border: "1px solid rgba(37,99,235,0.1)",
-                borderRadius: 8,
-                textDecoration: "none",
-                color: "#1f2937",
-                transition: "all 0.15s",
-                cursor: "pointer",
-                display: "block"
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = "rgba(37,99,235,0.08)";
-                e.currentTarget.style.borderColor = "rgba(37,99,235,0.3)";
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = "rgba(255,255,255,0.5)";
-                e.currentTarget.style.borderColor = "rgba(37,99,235,0.1)";
-              }}
-            >
-              <div style={{ fontSize: 11.5, fontWeight: 600, marginBottom: 4, lineHeight: 1.4 }}>
-                {article.title}
-              </div>
-              <div style={{ fontSize: 10, color: "#6b7280", lineHeight: 1.3 }}>
-                {article.description || "Stock market update"}
-              </div>
-            </a>
-          ))}
-        </div>
-      ) : null}
+      {!collapsed && (
+        loading ? (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, minHeight: 150 }}>
+            <Loader2 size={20} style={{ color: "#2563eb", animation: "spin 1s linear infinite" }} />
+          </div>
+        ) : error ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: 12, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 8, fontSize: 11, color: "#dc2626" }}>
+            <AlertCircle size={14} />
+            {error}
+          </div>
+        ) : articles.length === 0 ? (
+          <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 12 }}>
+            No stock market news available
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, flex: 1, overflowY: "auto" }}>
+            {articles.map((article, idx) => (
+              <a
+                key={idx}
+                href={article.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ padding: 10, background: "rgba(255,255,255,0.5)", border: "1px solid rgba(37,99,235,0.1)", borderRadius: 8, textDecoration: "none", color: "#1f2937", transition: "all 0.15s", cursor: "pointer", display: "block" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(37,99,235,0.08)"; e.currentTarget.style.borderColor = "rgba(37,99,235,0.3)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.5)"; e.currentTarget.style.borderColor = "rgba(37,99,235,0.1)"; }}
+              >
+                <div style={{ fontSize: 11.5, fontWeight: 600, marginBottom: 4, lineHeight: 1.4 }}>{article.title}</div>
+                <div style={{ fontSize: 10, color: "#6b7280", lineHeight: 1.3 }}>{article.description || "Stock market update"}</div>
+              </a>
+            ))}
+          </div>
+        )
+      )}
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }

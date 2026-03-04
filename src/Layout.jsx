@@ -28,7 +28,7 @@ const navSections = [
             {
               title: "Primary",
               items: [
-                { name: "Provider Dashboard", icon: LayoutDashboard, page: "ProviderDashboard" },
+                { name: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
                 { name: "Shift Dashboard", icon: Activity, page: "Shift" },
                 { name: "Patient Dashboard", icon: Activity, page: "PatientDashboard" },
                 { name: "My Notes", icon: FileText, page: "NotesLibrary" },

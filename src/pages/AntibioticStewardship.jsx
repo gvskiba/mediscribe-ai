@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import DosageCalculator from "../components/antibiotics/DosageCalculator";
 import DiagnosticWorkup from "../components/antibiotics/DiagnosticWorkup";
+import AntibiogramManager from "../components/antibiotics/AntibiogramManager";
 
 const T = {
   navy:"#050f1e", slate:"#0b1d35", panel:"#0d2240", edge:"#162d4f",

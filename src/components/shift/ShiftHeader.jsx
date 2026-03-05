@@ -73,6 +73,7 @@ export default function ShiftHeader({ shift, elapsed, onAddPatient, onHandover }
             cursor: "pointer",
             transition: "all 0.2s",
           }}
+          onClick={onHandover}
           onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(155,109,255,0.2)")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(155,109,255,0.1)")}>
           🤝 Shift Handover

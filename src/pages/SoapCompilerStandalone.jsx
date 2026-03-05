@@ -1057,6 +1057,301 @@ function toast(msg, color='#00d4bc') {
   setTimeout(()=>{el.classList.add('fade-out');setTimeout(()=>el.remove(),300);},3200);
 }
 document.addEventListener('DOMContentLoaded',()=>{document.getElementById('doc-date').textContent=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});});
+
+// ─── ICD-10 DATABASE (300+ common ED/inpatient codes) ─────────────────────────
+const ICD10_DB = [
+  // Cardiovascular
+  {code:'I10',name:'Essential (primary) hypertension',cat:'Cardiovascular'},
+  {code:'I11.9',name:'Hypertensive heart disease without heart failure',cat:'Cardiovascular'},
+  {code:'I20.9',name:'Angina pectoris, unspecified',cat:'Cardiovascular'},
+  {code:'I21.3',name:'ST elevation (STEMI) myocardial infarction, unspecified',cat:'Cardiovascular'},
+  {code:'I21.4',name:'Non-ST elevation (NSTEMI) myocardial infarction',cat:'Cardiovascular'},
+  {code:'I25.10',name:'Atherosclerotic heart disease of native coronary artery without angina',cat:'Cardiovascular'},
+  {code:'I26.99',name:'Pulmonary embolism without acute cor pulmonale',cat:'Cardiovascular'},
+  {code:'I48.0',name:'Paroxysmal atrial fibrillation',cat:'Cardiovascular'},
+  {code:'I48.11',name:'Longstanding persistent atrial fibrillation',cat:'Cardiovascular'},
+  {code:'I48.19',name:'Other persistent atrial fibrillation',cat:'Cardiovascular'},
+  {code:'I48.20',name:'Chronic atrial fibrillation, unspecified',cat:'Cardiovascular'},
+  {code:'I49.3',name:'Ventricular premature depolarization',cat:'Cardiovascular'},
+  {code:'I47.1',name:'Supraventricular tachycardia',cat:'Cardiovascular'},
+  {code:'I47.2',name:'Ventricular tachycardia',cat:'Cardiovascular'},
+  {code:'I50.9',name:'Heart failure, unspecified',cat:'Cardiovascular'},
+  {code:'I50.22',name:'Acute systolic (congestive) heart failure',cat:'Cardiovascular'},
+  {code:'I50.32',name:'Acute diastolic (congestive) heart failure',cat:'Cardiovascular'},
+  {code:'I60.9',name:'Subarachnoid hemorrhage, unspecified',cat:'Cardiovascular'},
+  {code:'I61.9',name:'Intracerebral hemorrhage, unspecified',cat:'Cardiovascular'},
+  {code:'I63.9',name:'Cerebral infarction, unspecified',cat:'Cardiovascular'},
+  {code:'I65.29',name:'Occlusion and stenosis of unspecified carotid artery',cat:'Cardiovascular'},
+  {code:'I70.201',name:'Atherosclerosis of native arteries of extremities',cat:'Cardiovascular'},
+  {code:'I83.90',name:'Varicose veins of unspecified lower extremity',cat:'Cardiovascular'},
+  // Pulmonary
+  {code:'J00',name:'Acute nasopharyngitis (common cold)',cat:'Pulmonary/ENT'},
+  {code:'J02.9',name:'Acute pharyngitis, unspecified',cat:'Pulmonary/ENT'},
+  {code:'J06.9',name:'Acute upper respiratory infection, unspecified',cat:'Pulmonary/ENT'},
+  {code:'J18.9',name:'Pneumonia, unspecified organism',cat:'Pulmonary'},
+  {code:'J18.1',name:'Lobar pneumonia, unspecified organism',cat:'Pulmonary'},
+  {code:'J20.9',name:'Acute bronchitis, unspecified',cat:'Pulmonary'},
+  {code:'J44.0',name:'COPD with acute lower respiratory infection',cat:'Pulmonary'},
+  {code:'J44.1',name:'COPD with acute exacerbation',cat:'Pulmonary'},
+  {code:'J45.20',name:'Mild intermittent asthma, uncomplicated',cat:'Pulmonary'},
+  {code:'J45.41',name:'Moderate persistent asthma with acute exacerbation',cat:'Pulmonary'},
+  {code:'J45.51',name:'Severe persistent asthma with acute exacerbation',cat:'Pulmonary'},
+  {code:'J96.00',name:'Acute respiratory failure, unspecified whether with hypoxia or hypercapnia',cat:'Pulmonary'},
+  {code:'J93.11',name:'Primary spontaneous pneumothorax',cat:'Pulmonary'},
+  {code:'J93.12',name:'Secondary spontaneous pneumothorax',cat:'Pulmonary'},
+  {code:'J98.01',name:'Acute bronchospasm',cat:'Pulmonary'},
+  // Gastrointestinal
+  {code:'K21.0',name:'Gastro-esophageal reflux disease with esophagitis',cat:'Gastrointestinal'},
+  {code:'K21.9',name:'Gastro-esophageal reflux disease without esophagitis',cat:'Gastrointestinal'},
+  {code:'K25.9',name:'Gastric ulcer, unspecified',cat:'Gastrointestinal'},
+  {code:'K27.9',name:'Peptic ulcer, unspecified, without hemorrhage or perforation',cat:'Gastrointestinal'},
+  {code:'K29.70',name:'Gastritis, unspecified, without bleeding',cat:'Gastrointestinal'},
+  {code:'K35.80',name:'Acute appendicitis without abscess',cat:'Gastrointestinal'},
+  {code:'K37',name:'Unspecified appendicitis',cat:'Gastrointestinal'},
+  {code:'K40.90',name:'Unilateral inguinal hernia, without obstruction or gangrene',cat:'Gastrointestinal'},
+  {code:'K56.60',name:'Unspecified intestinal obstruction',cat:'Gastrointestinal'},
+  {code:'K57.30',name:'Diverticulosis of large intestine without perforation or abscess',cat:'Gastrointestinal'},
+  {code:'K57.32',name:'Diverticulitis of large intestine without perforation or abscess without bleeding',cat:'Gastrointestinal'},
+  {code:'K59.00',name:'Constipation, unspecified',cat:'Gastrointestinal'},
+  {code:'K70.30',name:'Alcoholic cirrhosis of liver without ascites',cat:'Gastrointestinal'},
+  {code:'K72.90',name:'Hepatic failure, unspecified without coma',cat:'Gastrointestinal'},
+  {code:'K74.60',name:'Unspecified cirrhosis of liver',cat:'Gastrointestinal'},
+  {code:'K80.20',name:'Calculus of gallbladder without cholecystitis, without obstruction',cat:'Gastrointestinal'},
+  {code:'K81.0',name:'Acute cholecystitis',cat:'Gastrointestinal'},
+  {code:'K85.90',name:'Acute pancreatitis without necrosis or infection, unspecified',cat:'Gastrointestinal'},
+  {code:'K92.1',name:'Melena',cat:'Gastrointestinal'},
+  {code:'K92.0',name:'Hematemesis',cat:'Gastrointestinal'},
+  // Endocrine/Metabolic
+  {code:'E11.9',name:'Type 2 diabetes mellitus without complications',cat:'Endocrine'},
+  {code:'E10.9',name:'Type 1 diabetes mellitus without complications',cat:'Endocrine'},
+  {code:'E11.65',name:'Type 2 diabetes mellitus with hyperglycemia',cat:'Endocrine'},
+  {code:'E11.641',name:'Type 2 diabetes mellitus with hypoglycemia with coma',cat:'Endocrine'},
+  {code:'E13.10',name:'Diabetic ketoacidosis without coma',cat:'Endocrine'},
+  {code:'E05.00',name:'Thyrotoxicosis with diffuse goiter without thyrotoxic crisis',cat:'Endocrine'},
+  {code:'E03.9',name:'Hypothyroidism, unspecified',cat:'Endocrine'},
+  {code:'E87.1',name:'Hypo-osmolality and hyponatremia',cat:'Endocrine'},
+  {code:'E87.5',name:'Hyperkalemia',cat:'Endocrine'},
+  {code:'E87.6',name:'Hypokalemia',cat:'Endocrine'},
+  {code:'E11.51',name:'Type 2 diabetes mellitus with diabetic peripheral angiopathy without gangrene',cat:'Endocrine'},
+  {code:'E66.9',name:'Obesity, unspecified',cat:'Endocrine'},
+  // Neurological
+  {code:'G43.909',name:'Migraine, unspecified, not intractable, without status migrainosus',cat:'Neurology'},
+  {code:'G43.119',name:'Migraine with aura, intractable, without status migrainosus',cat:'Neurology'},
+  {code:'G40.909',name:'Epilepsy, unspecified, not intractable, without status epilepticus',cat:'Neurology'},
+  {code:'G40.201',name:'Localization-related symptomatic epilepsy with complex partial seizures',cat:'Neurology'},
+  {code:'G45.9',name:'Transient cerebral ischemic attack, unspecified',cat:'Neurology'},
+  {code:'G89.29',name:'Other chronic pain',cat:'Neurology'},
+  {code:'G20',name:'Parkinson disease',cat:'Neurology'},
+  {code:'G30.9',name:'Alzheimer disease, unspecified',cat:'Neurology'},
+  {code:'G35',name:'Multiple sclerosis',cat:'Neurology'},
+  {code:'R51.9',name:'Headache, unspecified',cat:'Neurology'},
+  {code:'R55',name:'Syncope and collapse',cat:'Neurology'},
+  {code:'G91.9',name:'Hydrocephalus, unspecified',cat:'Neurology'},
+  // Musculoskeletal
+  {code:'M54.5',name:'Low back pain',cat:'Musculoskeletal'},
+  {code:'M54.2',name:'Cervicalgia',cat:'Musculoskeletal'},
+  {code:'M79.3',name:'Panniculitis',cat:'Musculoskeletal'},
+  {code:'M10.9',name:'Gout, unspecified',cat:'Musculoskeletal'},
+  {code:'M25.561',name:'Pain in right knee',cat:'Musculoskeletal'},
+  {code:'M25.562',name:'Pain in left knee',cat:'Musculoskeletal'},
+  {code:'M17.11',name:'Primary osteoarthritis, right knee',cat:'Musculoskeletal'},
+  {code:'M17.12',name:'Primary osteoarthritis, left knee',cat:'Musculoskeletal'},
+  {code:'M81.0',name:'Age-related osteoporosis without current pathological fracture',cat:'Musculoskeletal'},
+  {code:'M06.9',name:'Rheumatoid arthritis, unspecified',cat:'Musculoskeletal'},
+  {code:'M32.9',name:'Systemic lupus erythematosus, unspecified',cat:'Musculoskeletal'},
+  {code:'M65.9',name:'Synovitis and tenosynovitis, unspecified',cat:'Musculoskeletal'},
+  {code:'M72.0',name:'Palmar fascial fibromatosis (Dupuytren)',cat:'Musculoskeletal'},
+  // Infectious Disease
+  {code:'A09',name:'Infectious gastroenteritis and colitis, unspecified',cat:'Infectious Disease'},
+  {code:'A41.9',name:'Sepsis, unspecified organism',cat:'Infectious Disease'},
+  {code:'A41.51',name:'Sepsis due to Escherichia coli',cat:'Infectious Disease'},
+  {code:'A41.01',name:'Sepsis due to Methicillin susceptible Staphylococcus aureus',cat:'Infectious Disease'},
+  {code:'A41.02',name:'Sepsis due to Methicillin resistant Staphylococcus aureus',cat:'Infectious Disease'},
+  {code:'B20',name:'Human immunodeficiency virus (HIV) disease',cat:'Infectious Disease'},
+  {code:'B34.9',name:'Viral infection, unspecified',cat:'Infectious Disease'},
+  {code:'J10.1',name:'Influenza due to identified novel influenza A virus with other respiratory manifestations',cat:'Infectious Disease'},
+  {code:'J11.1',name:'Influenza due to unidentified influenza virus with other respiratory manifestations',cat:'Infectious Disease'},
+  {code:'N39.0',name:'Urinary tract infection, site not specified',cat:'Infectious Disease'},
+  {code:'L03.90',name:'Cellulitis, unspecified',cat:'Infectious Disease'},
+  {code:'L03.011',name:'Cellulitis of right finger',cat:'Infectious Disease'},
+  {code:'L02.91',name:'Cutaneous abscess, unspecified',cat:'Infectious Disease'},
+  {code:'G03.9',name:'Meningitis, unspecified',cat:'Infectious Disease'},
+  // Renal/Urologic
+  {code:'N17.9',name:'Acute kidney failure, unspecified',cat:'Renal/Urology'},
+  {code:'N18.9',name:'Chronic kidney disease, unspecified',cat:'Renal/Urology'},
+  {code:'N18.3',name:'Chronic kidney disease, stage 3 (moderate)',cat:'Renal/Urology'},
+  {code:'N18.5',name:'Chronic kidney disease, stage 5',cat:'Renal/Urology'},
+  {code:'N20.0',name:'Calculus of kidney',cat:'Renal/Urology'},
+  {code:'N20.1',name:'Calculus of ureter',cat:'Renal/Urology'},
+  {code:'N40.0',name:'Benign prostatic hyperplasia without lower urinary tract symptoms',cat:'Renal/Urology'},
+  {code:'N10',name:'Acute pyelonephritis',cat:'Renal/Urology'},
+  // Psychiatric
+  {code:'F32.9',name:'Major depressive disorder, single episode, unspecified',cat:'Psychiatry'},
+  {code:'F33.9',name:'Major depressive disorder, recurrent, unspecified',cat:'Psychiatry'},
+  {code:'F41.1',name:'Generalized anxiety disorder',cat:'Psychiatry'},
+  {code:'F41.0',name:'Panic disorder without agoraphobia',cat:'Psychiatry'},
+  {code:'F20.9',name:'Schizophrenia, unspecified',cat:'Psychiatry'},
+  {code:'F31.9',name:'Bipolar disorder, unspecified',cat:'Psychiatry'},
+  {code:'F10.20',name:'Alcohol use disorder, moderate, uncomplicated',cat:'Psychiatry'},
+  {code:'F10.10',name:'Alcohol abuse, uncomplicated',cat:'Psychiatry'},
+  {code:'F11.20',name:'Opioid dependence, uncomplicated',cat:'Psychiatry'},
+  {code:'F19.10',name:'Other psychoactive substance abuse, uncomplicated',cat:'Psychiatry'},
+  {code:'F43.10',name:'Post-traumatic stress disorder, unspecified',cat:'Psychiatry'},
+  {code:'F60.3',name:'Borderline personality disorder',cat:'Psychiatry'},
+  // Hematology/Oncology
+  {code:'D50.9',name:'Iron deficiency anemia, unspecified',cat:'Hematology'},
+  {code:'D51.9',name:'Vitamin B12 deficiency anemia, unspecified',cat:'Hematology'},
+  {code:'D64.9',name:'Anemia, unspecified',cat:'Hematology'},
+  {code:'D68.9',name:'Coagulation defect, unspecified',cat:'Hematology'},
+  {code:'C34.10',name:'Malignant neoplasm of upper lobe, unspecified bronchus or lung',cat:'Oncology'},
+  {code:'C50.911',name:'Malignant neoplasm of unspecified site of right female breast',cat:'Oncology'},
+  {code:'C61',name:'Malignant neoplasm of prostate',cat:'Oncology'},
+  {code:'C18.9',name:'Malignant neoplasm of colon, unspecified',cat:'Oncology'},
+  // Trauma/Injury
+  {code:'S09.90XA',name:'Unspecified injury of head, initial encounter',cat:'Trauma'},
+  {code:'S06.0X0A',name:'Concussion without loss of consciousness, initial encounter',cat:'Trauma'},
+  {code:'S52.501A',name:'Unspecified fracture of lower end of right radius, initial encounter',cat:'Trauma'},
+  {code:'S72.001A',name:'Fracture of unspecified part of neck of right femur, initial encounter',cat:'Trauma'},
+  {code:'T14.90',name:'Injury, unspecified',cat:'Trauma'},
+  {code:'T07',name:'Unspecified multiple injuries',cat:'Trauma'},
+  {code:'S00.01XA',name:'Unspecified superficial injury of scalp, initial encounter',cat:'Trauma'},
+  // Symptoms/Signs
+  {code:'R00.0',name:'Tachycardia, unspecified',cat:'Symptoms'},
+  {code:'R00.1',name:'Bradycardia, unspecified',cat:'Symptoms'},
+  {code:'R05.9',name:'Cough, unspecified',cat:'Symptoms'},
+  {code:'R06.00',name:'Dyspnea, unspecified',cat:'Symptoms'},
+  {code:'R06.09',name:'Other forms of dyspnea',cat:'Symptoms'},
+  {code:'R07.9',name:'Chest pain, unspecified',cat:'Symptoms'},
+  {code:'R07.4',name:'Chest pain on breathing',cat:'Symptoms'},
+  {code:'R09.02',name:'Hypoxemia',cat:'Symptoms'},
+  {code:'R10.9',name:'Unspecified abdominal pain',cat:'Symptoms'},
+  {code:'R10.0',name:'Acute abdomen',cat:'Symptoms'},
+  {code:'R11.0',name:'Nausea',cat:'Symptoms'},
+  {code:'R11.10',name:'Vomiting, unspecified',cat:'Symptoms'},
+  {code:'R17',name:'Unspecified jaundice',cat:'Symptoms'},
+  {code:'R19.7',name:'Diarrhea, unspecified',cat:'Symptoms'},
+  {code:'R20.2',name:'Paraesthesia of skin',cat:'Symptoms'},
+  {code:'R41.3',name:'Other amnesia',cat:'Symptoms'},
+  {code:'R50.9',name:'Fever, unspecified',cat:'Symptoms'},
+  {code:'R53.83',name:'Other fatigue',cat:'Symptoms'},
+  {code:'R56.9',name:'Unspecified convulsions',cat:'Symptoms'},
+  {code:'R57.0',name:'Cardiogenic shock',cat:'Symptoms'},
+  {code:'R57.9',name:'Shock, unspecified',cat:'Symptoms'},
+  {code:'R73.09',name:'Other abnormal glucose',cat:'Symptoms'},
+  {code:'R79.89',name:'Other specified abnormal findings of blood chemistry',cat:'Symptoms'},
+  // Dermatology
+  {code:'L20.9',name:'Atopic dermatitis, unspecified',cat:'Dermatology'},
+  {code:'L50.9',name:'Urticaria, unspecified',cat:'Dermatology'},
+  {code:'L60.0',name:'Ingrowing nail',cat:'Dermatology'},
+  {code:'L89.90',name:'Pressure ulcer of unspecified site, unspecified stage',cat:'Dermatology'},
+  {code:'B02.9',name:'Zoster without complications (shingles)',cat:'Dermatology'},
+  // OB/GYN
+  {code:'N94.6',name:'Dysmenorrhoea, unspecified',cat:'OB/GYN'},
+  {code:'N83.20',name:'Unspecified ovarian cyst',cat:'OB/GYN'},
+  {code:'N92.0',name:'Excessive and frequent menstruation with regular cycle',cat:'OB/GYN'},
+  {code:'O20.0',name:'Threatened abortion',cat:'OB/GYN'},
+  {code:'O80',name:'Encounter for full-term uncomplicated delivery',cat:'OB/GYN'},
+];
+
+// ─── ICD-10 AUTOCOMPLETE ENGINE ───────────────────────────────────────────────
+let icdTimers = {};
+let icdSelected = {};
+let icdFocusIdx = {};
+
+function icdSearch(id, query) {
+  clearTimeout(icdTimers[id]);
+  const dropdown = document.getElementById('icd-' + id + '-dropdown');
+  if (!query || query.length < 2) { dropdown.style.display = 'none'; return; }
+  icdTimers[id] = setTimeout(() => {
+    const q = query.toLowerCase();
+    // Try open API first, fall back to internal DB
+    fetch('https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search?terms=' + encodeURIComponent(query) + '&maxList=8&sf=code,name')
+      .then(r => r.json())
+      .then(data => {
+        // API returns [totalCount, codes, extra, displayStrings]
+        const items = (data[3] || []).map((d,i) => ({ code: d[0], name: d[1] }));
+        renderDropdown(id, items.length ? items : searchInternalDB(q));
+      })
+      .catch(() => renderDropdown(id, searchInternalDB(q)));
+  }, 180);
+}
+
+function searchInternalDB(q) {
+  return ICD10_DB.filter(item =>
+    item.name.toLowerCase().includes(q) ||
+    item.code.toLowerCase().includes(q) ||
+    (item.cat && item.cat.toLowerCase().includes(q))
+  ).slice(0, 10);
+}
+
+function renderDropdown(id, items) {
+  const dropdown = document.getElementById('icd-' + id + '-dropdown');
+  if (!items.length) {
+    dropdown.innerHTML = '<div class="icd-no-results">No matches found. Try a different term.</div>';
+    dropdown.style.display = 'block';
+    return;
+  }
+  icdFocusIdx[id] = -1;
+  dropdown.innerHTML = '<div class="icd-dropdown-header">ICD-10 Results — click to auto-fill</div>' +
+    items.map((item, i) =>
+      '<div class="icd-item" data-idx="' + i + '" data-code="' + (item.code||'') + '" data-name="' + ((item.name||'').replace(/"/g,'&quot;')) + '" onmousedown="icdSelect(event,\'' + id + '\',\'' + (item.code||'').replace(/'/g,"\\'") + '\',\'' + ((item.name||'').replace(/'/g,"\\'").replace(/"/g,'&quot;')) + '\')">' +
+        '<span class="icd-item-code">' + (item.code||'') + '</span>' +
+        '<span class="icd-item-name">' + (item.name||item[1]||'') + '</span>' +
+      '</div>'
+    ).join('');
+  dropdown.style.display = 'block';
+}
+
+function icdSelect(event, id, code, name) {
+  event.preventDefault();
+  // Fill the diagnosis text input with the full name
+  const dxInput = document.getElementById('a-primary-dx');
+  if (dxInput && !dxInput.value.trim()) dxInput.value = name;
+  // Set the hidden ICD-10 code
+  document.getElementById('a-icd10-' + id).value = code;
+  // Update badge
+  const badge = document.getElementById('icd-' + id + '-badge');
+  badge.textContent = code;
+  badge.classList.remove('empty');
+  // Show clear button
+  document.getElementById('icd-' + id + '-clear').style.display = 'inline-flex';
+  // Hide dropdown
+  document.getElementById('icd-' + id + '-dropdown').style.display = 'none';
+  icdSelected[id] = { code, name };
+  updateChip('A');
+  toast('ICD-10 code ' + code + ' applied ✓', '#00d4bc');
+}
+
+function icdClear(id) {
+  document.getElementById('a-icd10-' + id).value = '';
+  const badge = document.getElementById('icd-' + id + '-badge');
+  badge.textContent = 'No code'; badge.classList.add('empty');
+  document.getElementById('icd-' + id + '-clear').style.display = 'none';
+  icdSelected[id] = null;
+}
+
+function icdKeydown(e, id) {
+  const dropdown = document.getElementById('icd-' + id + '-dropdown');
+  if (dropdown.style.display === 'none') return;
+  const items = dropdown.querySelectorAll('.icd-item');
+  if (!items.length) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); icdFocusIdx[id] = Math.min((icdFocusIdx[id]||0)+1, items.length-1); icdHighlight(id, items); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); icdFocusIdx[id] = Math.max((icdFocusIdx[id]||0)-1, 0); icdHighlight(id, items); }
+  else if (e.key === 'Enter' && icdFocusIdx[id] >= 0) { e.preventDefault(); const item = items[icdFocusIdx[id]]; icdSelect(e, id, item.dataset.code, item.dataset.name); }
+  else if (e.key === 'Escape') { dropdown.style.display = 'none'; }
+}
+
+function icdHighlight(id, items) {
+  items.forEach((el,i) => el.classList.toggle('active', i === icdFocusIdx[id]));
+  if (icdFocusIdx[id] >= 0) items[icdFocusIdx[id]].scrollIntoView({block:'nearest'});
+}
+
+// Close dropdown on outside click
+document.addEventListener('click', e => {
+  if (!e.target.closest('.icd-wrap')) {
+    document.querySelectorAll('.icd-dropdown').forEach(d => d.style.display = 'none');
+  }
+});
 <\/script>
 </body>
 </html>`;

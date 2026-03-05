@@ -12,6 +12,7 @@ import AddPatientModal from "../components/shift/modals/AddPatientModal.jsx";
 import AddTaskModal from "../components/shift/modals/AddTaskModal.jsx";
 import AddOrderModal from "../components/shift/modals/AddOrderModal.jsx";
 import EndShiftModal from "../components/shift/modals/EndShiftModal.jsx";
+import ShiftHandoverModal from "../components/shift/ShiftHandoverModal.jsx";
 
 const COLORS = {
   navy: "#050f1e",

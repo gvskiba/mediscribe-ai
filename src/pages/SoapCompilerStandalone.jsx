@@ -763,8 +763,21 @@ body::after {
       <div class="field-group"><label>Other Diagnostics</label><textarea class="field-textarea" id="o-other-dx" rows="2" placeholder="Echo, stress test, EEG, spirometry results…" oninput="updateChip('O')"></textarea></div>
     </div>
     <div class="soap-section" id="section-A">
-      <div class="field-group"><label>Primary Diagnosis</label><input class="field-input" id="a-primary-dx" placeholder="e.g. Non-ST elevation myocardial infarction" oninput="updateChip('A')"></div>
-      <div class="field-group"><label>ICD-10 Code (Primary)</label><input class="field-input" id="a-icd10-primary" placeholder="e.g. I21.4" oninput="updateChip('A')"></div>
+      <div class="field-group">
+        <label>Primary Diagnosis + ICD-10 Code</label>
+        <div class="icd-wrap" id="icd-primary-wrap">
+          <div class="icd-input-row">
+            <input class="field-input" id="a-primary-dx" placeholder="Type diagnosis name to search ICD-10…" autocomplete="off"
+              oninput="icdSearch('primary', this.value); updateChip('A')"
+              onfocus="if(this.value.length>=2) icdSearch('primary',this.value)"
+              onkeydown="icdKeydown(event,'primary')">
+            <span class="icd-badge empty" id="icd-primary-badge">No code</span>
+            <button class="icd-clear" id="icd-primary-clear" onclick="icdClear('primary')" style="display:none" title="Clear code">✕</button>
+          </div>
+          <div class="icd-dropdown" id="icd-primary-dropdown" style="display:none"></div>
+          <input type="hidden" id="a-icd10-primary">
+        </div>
+      </div>
       <div class="field-group"><label>Secondary / Comorbid Diagnoses</label><textarea class="field-textarea" id="a-secondary-dx" rows="3" placeholder="1. Hypertension — I10" oninput="updateChip('A')"></textarea></div>
       <div class="field-group"><label>Clinical Reasoning / MDM</label><textarea class="field-textarea" id="a-reasoning" rows="4" placeholder="Describe the clinical reasoning, risk stratification, and decision-making process…" oninput="updateChip('A')"></textarea></div>
       <div class="field-group"><label>Differential Diagnoses</label><textarea class="field-textarea" id="a-differential" rows="3" placeholder="1. Acute coronary syndrome&#10;2. Pulmonary embolism" oninput="updateChip('A')"></textarea></div>

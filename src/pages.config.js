@@ -78,6 +78,7 @@ import TemplateEditor from './pages/TemplateEditor';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
+import SoapCompilerStandalone from './pages/SoapCompilerStandalone';
 import __Layout from './Layout.jsx';
 
 
@@ -113,6 +114,7 @@ export const PAGES = {
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
+    "SoapCompilerStandalone": SoapCompilerStandalone,
 }
 
 export const pagesConfig = {

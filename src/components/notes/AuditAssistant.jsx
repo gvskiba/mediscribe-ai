@@ -59,6 +59,295 @@ function GhostBtn({ onClick, disabled, children, teal }) {
   );
 }
 
+/* ── E/M Code Suggester ─────────────────────────────────────────────────────── */
+function EMCodeSuggester({ note }) {
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [expandedCode, setExpandedCode] = useState(null);
+
+  const runSuggestion = async () => {
+    setLoading(true);
+    setResult(null);
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are an expert E/M coding specialist. Analyze this clinical note and suggest the most appropriate E/M billing code(s), with detailed reasoning based on MDM complexity and total documented work.
+
+FULL NOTE CONTENT:
+- Chief Complaint: ${note.chief_complaint || "Not documented"}
+- HPI: ${note.history_of_present_illness || "Not documented"}
+- Review of Systems: ${note.review_of_systems || "Not documented"}
+- Physical Exam: ${note.physical_exam || "Not documented"}
+- Assessment: ${note.assessment || "Not documented"}
+- Diagnoses: ${(note.diagnoses || []).join(", ") || "Not documented"}
+- Plan: ${note.plan || "Not documented"}
+- MDM Notes: ${note.mdm || "Not documented"}
+- Medical History: ${note.medical_history || "Not documented"}
+- Medications: ${(note.medications || []).join(", ") || "Not documented"}
+- Patient Age: ${note.patient_age || "Not documented"}
+- Specialty: ${note.specialty || "Not documented"}
+
+Evaluate the following dimensions:
+1. NUMBER AND COMPLEXITY OF PROBLEMS ADDRESSED: How many and how complex are the diagnoses/problems?
+2. AMOUNT AND COMPLEXITY OF DATA: Labs reviewed, imaging interpreted, records reviewed, ordering tests, independent interpretations
+3. RISK OF COMPLICATIONS: Risk associated with diagnoses and management options chosen
+4. TOTAL DOCUMENTED WORK: HPI quality, ROS depth, exam thoroughness, MDM documentation quality
+5. TIME-BASED CODING: Estimate total physician time if enough information (e.g., counseling, coordination)
+
+Based on this analysis, suggest the top 3 most appropriate E/M codes ranked by fit. For each code provide:
+- code: the CPT code (e.g., "99214")
+- label: short description (e.g., "99214 – Established, Moderate Complexity")
+- confidence: 0-100 confidence this is the right code
+- is_recommended: true only for the single best code
+- mdm_level: "straightforward" | "low" | "moderate" | "high"
+- problem_complexity_score: 0-10
+- data_complexity_score: 0-10
+- risk_score: 0-10
+- documentation_quality_score: 0-10
+- reasoning: 2-3 sentence explanation of why this code fits
+- supporting_evidence: array of 3-5 specific phrases from the note that justify this code
+- limiting_factor: the ONE thing most limiting this code level (null if top recommended)
+- estimated_rvu: approximate RVU value
+
+Also provide:
+- overall_mdm_complexity: "straightforward" | "low" | "moderate" | "high"
+- primary_recommendation: the single best code string
+- confidence_narrative: one sentence summary of the coding confidence
+- time_estimate_minutes: estimated total physician time if inferable, else null`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            suggestions: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  code: { type: "string" },
+                  label: { type: "string" },
+                  confidence: { type: "number" },
+                  is_recommended: { type: "boolean" },
+                  mdm_level: { type: "string" },
+                  problem_complexity_score: { type: "number" },
+                  data_complexity_score: { type: "number" },
+                  risk_score: { type: "number" },
+                  documentation_quality_score: { type: "number" },
+                  reasoning: { type: "string" },
+                  supporting_evidence: { type: "array", items: { type: "string" } },
+                  limiting_factor: { type: "string" },
+                  estimated_rvu: { type: "number" },
+                },
+              },
+            },
+            overall_mdm_complexity: { type: "string" },
+            primary_recommendation: { type: "string" },
+            confidence_narrative: { type: "string" },
+            time_estimate_minutes: { type: "number" },
+          },
+        },
+      });
+      setResult(res);
+      if (res?.suggestions?.length) setExpandedCode(res.primary_recommendation);
+    } catch {
+      toast.error("Code suggestion failed — please try again");
+    }
+    setLoading(false);
+  };
+
+  const mdmColors = {
+    straightforward: { color: T.teal,   bg: "rgba(0,212,188,0.1)",   border: "rgba(0,212,188,0.25)" },
+    low:             { color: T.green,  bg: "rgba(46,204,113,0.1)",  border: "rgba(46,204,113,0.25)" },
+    moderate:        { color: T.amber,  bg: "rgba(245,166,35,0.1)",  border: "rgba(245,166,35,0.25)" },
+    high:            { color: T.red,    bg: "rgba(255,92,108,0.1)",  border: "rgba(255,92,108,0.25)" },
+  };
+
+  const ScoreBar = ({ label, value, color }) => (
+    <div className="space-y-1">
+      <div className="flex justify-between items-center">
+        <span className="text-xs" style={{ color: T.dim }}>{label}</span>
+        <span className="text-xs font-bold" style={{ fontFamily: "JetBrains Mono,monospace", color }}>{value}/10</span>
+      </div>
+      <div style={{ background: T.muted, borderRadius: 9999, height: 4, overflow: "hidden" }}>
+        <motion.div initial={{ width: 0 }} animate={{ width: `${value * 10}%` }}
+          transition={{ duration: 0.8 }}
+          style={{ height: "100%", borderRadius: 9999, background: color }} />
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden", fontFamily: "DM Sans, sans-serif" }}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${T.border}` }}>
+        <div className="flex items-center gap-2">
+          <div style={{ width: 22, height: 22, borderRadius: 5, background: "rgba(0,212,188,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <DollarSign size={12} style={{ color: T.teal }} />
+          </div>
+          <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: T.dim, letterSpacing: "0.1em" }}>
+            E/M Code Suggester
+          </span>
+        </div>
+        <GhostBtn onClick={runSuggestion} disabled={loading} teal>
+          {loading ? <Loader2 size={11} className="animate-spin" /> : <Wand2 size={11} />}
+          {loading ? "Analyzing…" : result ? "Re-Analyze" : "Suggest Codes"}
+        </GhostBtn>
+      </div>
+
+      <div className="p-4">
+        {!result && !loading && (
+          <div className="py-10 text-center space-y-3">
+            <TrendingUp size={36} style={{ color: T.muted, margin: "0 auto" }} />
+            <p className="text-sm font-semibold" style={{ color: T.dim }}>Intelligent E/M Code Suggestion</p>
+            <p className="text-xs max-w-sm mx-auto leading-relaxed" style={{ color: T.muted }}>
+              Analyzes MDM complexity, problem count, data reviewed, risk level, and total documented work to suggest the most defensible billing code with full reasoning.
+            </p>
+          </div>
+        )}
+
+        {loading && (
+          <div className="py-12 flex flex-col items-center gap-3">
+            <Loader2 size={28} className="animate-spin" style={{ color: T.teal }} />
+            <p className="text-sm font-medium" style={{ color: T.dim }}>Analyzing MDM complexity and documented work…</p>
+          </div>
+        )}
+
+        {result && !loading && (
+          <div className="space-y-4">
+            {/* Summary bar */}
+            <div className="rounded-xl p-4 space-y-2" style={{ background: T.edge, border: `1px solid ${T.border}` }}>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <span className="text-xs uppercase tracking-wider font-bold" style={{ color: T.dim }}>Recommended Code</span>
+                  <div className="text-2xl font-black mt-0.5" style={{ fontFamily: "JetBrains Mono,monospace", color: T.teal }}>
+                    {result.primary_recommendation}
+                  </div>
+                </div>
+                {result.overall_mdm_complexity && (
+                  <span className="text-sm font-bold px-4 py-2 rounded-xl capitalize"
+                    style={{
+                      background: (mdmColors[result.overall_mdm_complexity] || mdmColors.moderate).bg,
+                      color: (mdmColors[result.overall_mdm_complexity] || mdmColors.moderate).color,
+                      border: `1px solid ${(mdmColors[result.overall_mdm_complexity] || mdmColors.moderate).border}`,
+                    }}>
+                    {result.overall_mdm_complexity} MDM
+                  </span>
+                )}
+              </div>
+              <p className="text-xs leading-relaxed" style={{ color: T.text }}>{result.confidence_narrative}</p>
+              {result.time_estimate_minutes && (
+                <div className="flex items-center gap-2 text-xs" style={{ color: T.dim }}>
+                  <Info size={11} />
+                  <span>Estimated physician time: <strong style={{ color: T.text }}>{result.time_estimate_minutes} min</strong></span>
+                </div>
+              )}
+            </div>
+
+            {/* Code cards */}
+            <div className="space-y-2">
+              {result.suggestions?.map((suggestion, i) => {
+                const isOpen = expandedCode === suggestion.code;
+                const mdmC = mdmColors[suggestion.mdm_level] || mdmColors.moderate;
+                const confColor = suggestion.confidence >= 75 ? T.green : suggestion.confidence >= 50 ? T.amber : T.red;
+                return (
+                  <div key={i} style={{
+                    border: `1px solid ${suggestion.is_recommended ? T.teal : T.border}`,
+                    borderRadius: 12, overflow: "hidden",
+                    background: suggestion.is_recommended ? "rgba(0,212,188,0.04)" : "transparent",
+                    boxShadow: suggestion.is_recommended ? "0 0 0 1px rgba(0,212,188,0.15)" : "none",
+                  }}>
+                    <button onClick={() => setExpandedCode(isOpen ? null : suggestion.code)}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left">
+                      {/* Confidence ring mini */}
+                      <div style={{ position: "relative", width: 36, height: 36, flexShrink: 0 }}>
+                        <svg width="36" height="36" viewBox="0 0 36 36">
+                          <circle cx="18" cy="18" r="14" fill="none" stroke={T.muted} strokeWidth="3" />
+                          <circle cx="18" cy="18" r="14" fill="none" stroke={confColor} strokeWidth="3"
+                            strokeDasharray={2 * Math.PI * 14}
+                            strokeDashoffset={2 * Math.PI * 14 * (1 - suggestion.confidence / 100)}
+                            strokeLinecap="round" transform="rotate(-90 18 18)" />
+                          <text x="18" y="18" textAnchor="middle" dominantBaseline="middle"
+                            style={{ fontSize: 9, fontWeight: 700, fill: confColor, fontFamily: "JetBrains Mono,monospace" }}>
+                            {suggestion.confidence}
+                          </text>
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-bold" style={{ fontFamily: "JetBrains Mono,monospace", color: T.bright }}>{suggestion.code}</span>
+                          <span className="text-xs" style={{ color: T.dim }}>{suggestion.label}</span>
+                          {suggestion.is_recommended && (
+                            <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: "rgba(0,212,188,0.15)", color: T.teal, border: "1px solid rgba(0,212,188,0.3)" }}>
+                              ★ Best Match
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                          <span className="text-xs capitalize" style={{ color: mdmC.color }}>{suggestion.mdm_level} MDM</span>
+                          {suggestion.estimated_rvu && (
+                            <span className="text-xs" style={{ color: T.dim }}>~{suggestion.estimated_rvu} RVU</span>
+                          )}
+                        </div>
+                      </div>
+                      {isOpen ? <ChevronUp size={13} style={{ color: T.dim, flexShrink: 0 }} /> : <ChevronDown size={13} style={{ color: T.dim, flexShrink: 0 }} />}
+                    </button>
+
+                    <AnimatePresence>
+                      {isOpen && (
+                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                          <div className="px-4 pb-4 space-y-4" style={{ borderTop: `1px solid ${T.border}` }}>
+                            {/* Reasoning */}
+                            <div className="pt-3">
+                              <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: T.dim }}>Reasoning</p>
+                              <p className="text-xs leading-relaxed" style={{ color: T.text }}>{suggestion.reasoning}</p>
+                            </div>
+
+                            {/* Score bars */}
+                            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                              <ScoreBar label="Problem Complexity" value={suggestion.problem_complexity_score || 0} color={T.purple} />
+                              <ScoreBar label="Data Complexity" value={suggestion.data_complexity_score || 0} color={T.teal} />
+                              <ScoreBar label="Risk Level" value={suggestion.risk_score || 0} color={T.red} />
+                              <ScoreBar label="Documentation Quality" value={suggestion.documentation_quality_score || 0} color={T.green} />
+                            </div>
+
+                            {/* Supporting evidence */}
+                            {suggestion.supporting_evidence?.length > 0 && (
+                              <div>
+                                <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: T.dim }}>Supporting Evidence from Note</p>
+                                <div className="space-y-1.5">
+                                  {suggestion.supporting_evidence.map((ev, j) => (
+                                    <div key={j} className="flex items-start gap-2 text-xs" style={{ color: T.text }}>
+                                      <CheckCircle2 size={11} style={{ color: T.teal, flexShrink: 0, marginTop: 1 }} />
+                                      <span>{ev}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Limiting factor */}
+                            {suggestion.limiting_factor && (
+                              <div className="rounded-lg px-3 py-2.5 flex items-start gap-2" style={{ background: "rgba(245,166,35,0.08)", border: "1px solid rgba(245,166,35,0.2)" }}>
+                                <AlertTriangle size={12} style={{ color: T.amber, flexShrink: 0, marginTop: 1 }} />
+                                <div>
+                                  <p className="text-xs font-bold uppercase tracking-wider mb-0.5" style={{ color: T.amber }}>Limiting Factor</p>
+                                  <p className="text-xs" style={{ color: "#ffd080" }}>{suggestion.limiting_factor}</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Audit Assistant (original) ─────────────────────────────────────────────── */
 export default function AuditAssistant({ note }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);

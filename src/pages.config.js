@@ -67,6 +67,7 @@ import OrdersQueue from './pages/OrdersQueue';
 import PatientDashboard from './pages/PatientDashboard';
 import PatientEducation from './pages/PatientEducation';
 import PatientHistory from './pages/PatientHistory';
+import PediatricDosing from './pages/PediatricDosing';
 import Procedures from './pages/Procedures';
 import SavedGuidelines from './pages/SavedGuidelines';
 import Search from './pages/Search';
@@ -80,7 +81,7 @@ import TemplateEditor from './pages/TemplateEditor';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
-import PediatricDosing from './pages/PediatricDosing';
+import DrugReference from './pages/DrugReference';
 import __Layout from './Layout.jsx';
 
 
@@ -105,6 +106,7 @@ export const PAGES = {
     "PatientDashboard": PatientDashboard,
     "PatientEducation": PatientEducation,
     "PatientHistory": PatientHistory,
+    "PediatricDosing": PediatricDosing,
     "Procedures": Procedures,
     "SavedGuidelines": SavedGuidelines,
     "Search": Search,
@@ -118,7 +120,7 @@ export const PAGES = {
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
-    "PediatricDosing": PediatricDosing,
+    "DrugReference": DrugReference,
 }
 
 export const pagesConfig = {

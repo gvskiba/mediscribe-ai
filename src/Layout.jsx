@@ -40,6 +40,7 @@ const navSections = [
         title: "Resources",
         items: [
           { name: "Antibiotic Guide", icon: BookOpen, page: "AntibioticStewardship" },
+          { name: "Drug Reference", icon: BookOpen, page: "DrugReference" },
           { name: "Pediatric Dosing", icon: Activity, page: "PediatricDosing" },
           { name: "Guidelines", icon: BookOpen, page: "Guidelines" },
           { name: "Saved Guidelines", icon: BookOpen, page: "SavedGuidelines" },

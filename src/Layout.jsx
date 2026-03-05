@@ -32,6 +32,7 @@ const navSections = [
                 { name: "Shift Dashboard", icon: Activity, page: "Shift" },
                 { name: "Patient Dashboard", icon: Activity, page: "PatientDashboard" },
                 { name: "SOAP Compiler", icon: FileText, page: "SoapCompiler" },
+                { name: "SOAP Compiler (Standalone)", icon: FileText, page: "SoapCompilerStandalone" },
                 { name: "My Notes", icon: FileText, page: "NotesLibrary" },
               ]
             },

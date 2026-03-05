@@ -825,6 +825,13 @@ export default function AntibioticStewardship() {
             <span>📊</span> Local Resistance Rates
           </div>
           <div style={{padding:12,display:"flex",flexDirection:"column",gap:8}}>
+            <AntibiogramManager
+              currentResist={resist}
+              onApply={(mapped) => {
+                setResist(r => ({ ...r, ...mapped }));
+                addToast("Antibiogram applied to resistance rates ✓", T.teal);
+              }}
+            />
             {[["mrsa","MRSA prevalence",T.red],["esbl","ESBL E. coli / Klebsiella",T.amber],["pseudo","Pseudomonas pip/tazo-R",T.amber],["fqec","FQ-resistant E. coli",T.blue],["spneu","Pen-R S. pneumoniae",T.purple]].map(([key,label,color])=>(
               <div key={key} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
                 <div style={{flex:1}}>

@@ -347,6 +347,8 @@ Also provide:
   );
 }
 
+export { EMCodeSuggester };
+
 /* ── Audit Assistant (original) ─────────────────────────────────────────────── */
 export default function AuditAssistant({ note }) {
   const [result, setResult] = useState(null);

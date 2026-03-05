@@ -803,7 +803,7 @@ function ProcedureNoteDrafter({ prefilledCPT, onClearPrefill }) {
   };
 
   const handleDownloadPDF = async () => {
-    const { jsPDF } = window;
+    const { jsPDF } = await import('jspdf');
     const pdf = new jsPDF();
     const cleanedNote = cleanMarkdown(generatedNote);
     const pageHeight = pdf.internal.pageSize.getHeight();

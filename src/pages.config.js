@@ -74,11 +74,11 @@ import ShiftHours from './pages/ShiftHours';
 import SmartTemplates from './pages/SmartTemplates';
 import Snippets from './pages/Snippets';
 import SoapCompiler from './pages/SoapCompiler';
+import SoapCompilerStandalone from './pages/SoapCompilerStandalone';
 import TemplateEditor from './pages/TemplateEditor';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
-import SoapCompilerStandalone from './pages/SoapCompilerStandalone';
 import __Layout from './Layout.jsx';
 
 
@@ -110,11 +110,11 @@ export const PAGES = {
     "SmartTemplates": SmartTemplates,
     "Snippets": Snippets,
     "SoapCompiler": SoapCompiler,
+    "SoapCompilerStandalone": SoapCompilerStandalone,
     "TemplateEditor": TemplateEditor,
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
-    "SoapCompilerStandalone": SoapCompilerStandalone,
 }
 
 export const pagesConfig = {

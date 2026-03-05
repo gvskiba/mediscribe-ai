@@ -518,6 +518,72 @@ body::after {
   animation: toastIn 0.3s ease both;
   max-width: 300px;
 }
+/* ICD-10 AUTOCOMPLETE */
+.icd-wrap { position: relative; width: 100%; }
+.icd-input-row { display: flex; gap: 6px; align-items: center; }
+.icd-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(0,212,188,0.12);
+  border: 1px solid rgba(0,212,188,0.35);
+  border-radius: 6px;
+  padding: 5px 9px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--teal);
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 68px;
+  justify-content: center;
+}
+.icd-badge.empty { color: var(--muted); border-color: var(--border); background: transparent; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 500; }
+.icd-clear { background: transparent; border: none; cursor: pointer; color: var(--dim); font-size: 13px; padding: 2px 4px; border-radius: 4px; line-height: 1; }
+.icd-clear:hover { color: var(--red); }
+.icd-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0; right: 0;
+  background: #0d2240;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  z-index: 200;
+  max-height: 280px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.icd-dropdown-header {
+  padding: 8px 12px 6px;
+  font-size: 9.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--dim);
+  border-bottom: 1px solid rgba(30,58,95,0.6);
+}
+.icd-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  cursor: pointer;
+  transition: background 0.12s;
+  border-bottom: 1px solid rgba(30,58,95,0.3);
+}
+.icd-item:last-child { border-bottom: none; }
+.icd-item:hover, .icd-item.active { background: rgba(0,212,188,0.07); }
+.icd-item-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--teal);
+  min-width: 56px;
+  flex-shrink: 0;
+}
+.icd-item-name { font-size: 12.5px; color: var(--bright); font-weight: 500; line-height: 1.35; }
+.icd-item-cat { font-size: 10px; color: var(--dim); margin-top: 1px; }
+.icd-no-results { padding: 20px 12px; text-align: center; font-size: 12px; color: var(--dim); }
+.icd-searching { padding: 16px 12px; text-align: center; font-size: 12px; color: var(--dim); }
 .toast.fade-out { animation: toastOut 0.3s ease both; }
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }

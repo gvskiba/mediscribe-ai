@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import DosageCalculator from "../components/antibiotics/DosageCalculator";
 
 const T = {
   navy:"#050f1e", slate:"#0b1d35", panel:"#0d2240", edge:"#162d4f",

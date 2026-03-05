@@ -411,6 +411,7 @@ function EmpiricPanel({selectedInfection, setting, allergies, mrsaRate, esblRate
         <span style={{display:"inline-flex",alignItems:"center",padding:"3px 9px",borderRadius:10,fontSize:"10.5px",fontWeight:700,border:"1px solid",color:settingColor,borderColor:settingColor+"55",background:settingColor+"15"}}>{settingLabel}</span>
       </div>
 
+      <DosageCalculator infection={inf} setting={setting} age={age} wt={wt} crcl={crcl} />
       {mrsaRate>=30&&<AlertBox type="red" icon="⚠️" title={`High Local MRSA Rate (${mrsaRate}%)`} body="Always consider MRSA coverage for purulent/severe infections. MRSA nares PCR can help de-escalate."/>}
       {esblRate>=20&&<AlertBox type="amber" icon="🔬" title={`High ESBL Rate (${esblRate}%)`} body="Consider carbapenem for complicated UTI, IAI, or bloodstream infection from urinary/abdominal source."/>}
       {allergies.has("pcn")&&<AlertBox type="amber" icon="⚠️" title="PCN Allergy Documented" body="Cross-reactivity with cephalosporins is ~2%. Cephalosporins are generally safe unless history suggests anaphylaxis."/>}

@@ -212,7 +212,7 @@ export default function Shift() {
       }}
     >
       <ShiftNavBar shift={activeShift} elapsed={elapsed} onEndShift={() => openModal("end-shift")} />
-      <ShiftHeader shift={activeShift} elapsed={elapsed} onAddPatient={() => openModal("add-patient")} />
+      <ShiftHeader shift={activeShift} elapsed={elapsed} onAddPatient={() => openModal("add-patient")} onHandover={() => openModal("handover")} />
       <StatsRibbon shift={shift} />
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 20, padding: "20px 24px", width: "100%", flex: 1 }}>

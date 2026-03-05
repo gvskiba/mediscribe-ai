@@ -8,7 +8,7 @@ const T = {
   amber: "#f5a623",
 };
 
-export default function ShiftHeader({ shift, elapsed, onAddPatient }) {
+export default function ShiftHeader({ shift, elapsed, onAddPatient, onHandover }) {
   const shiftStart = new Date(shift.shift_start);
   const shiftEnd = new Date(shiftStart.getTime() + shift.shift_duration_hours * 3600000);
   const minutesRemaining = Math.floor((shiftEnd - Date.now()) / 60000);
@@ -75,7 +75,7 @@ export default function ShiftHeader({ shift, elapsed, onAddPatient }) {
           }}
           onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(155,109,255,0.2)")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(155,109,255,0.1)")}>
-          🤖 Generate Sign-Out
+          🤝 Shift Handover
         </button>
       </div>
     </div>

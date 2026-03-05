@@ -850,7 +850,7 @@ export default function AntibioticStewardship() {
             ))}
           </div>
           <div style={{padding:20,flex:1}}>
-            {activeTab==="empiric"&&<EmpiricPanel selectedInfection={selectedInfection} setting={setting} allergies={allergies} mrsaRate={parseInt(resist.mrsa)||30} esblRate={parseInt(resist.esbl)||15} onQuickLog={quickLog}/>}
+            {activeTab==="empiric"&&<EmpiricPanel selectedInfection={selectedInfection} setting={setting} allergies={allergies} mrsaRate={parseInt(resist.mrsa)||30} esblRate={parseInt(resist.esbl)||15} onQuickLog={quickLog} age={age} wt={wt} crcl={crcl}/>}
             {activeTab==="renal"&&(
               <div>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:T.bright,marginBottom:6}}>Renal Dose Adjustments</div>

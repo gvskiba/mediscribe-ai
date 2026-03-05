@@ -155,14 +155,6 @@ const TAB_GROUPS = [
       { id: 'discharge_summary', label: 'Discharge Summary', icon: FileText },
     ]
   },
-  {
-    id: 'analysis',
-    label: 'AI Analysis',
-    color: 'orange',
-    tabs: [
-      { id: 'ai_analysis', label: 'AI Analysis', icon: Brain },
-    ]
-  }
 ];
 
 const TAB_CONFIGS = TAB_GROUPS.flatMap(group => group.tabs);

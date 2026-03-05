@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
-import { Loader2, ShieldCheck, AlertTriangle, CheckCircle2, XCircle, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import { Loader2, ShieldCheck, AlertTriangle, CheckCircle2, XCircle, ChevronDown, ChevronUp, Sparkles, Wand2, DollarSign, TrendingUp, Info } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const T = {

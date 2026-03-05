@@ -252,6 +252,17 @@ export default function Shift() {
       {openModals["end-shift"] && (
         <EndShiftModal isOpen onClose={() => closeModal("end-shift")} shiftId={activeShift.id} />
       )}
+      {openModals["handover"] && (
+        <ShiftHandoverModal
+          isOpen
+          onClose={() => closeModal("handover")}
+          shift={shift}
+          encounters={encounters}
+          orders={orders}
+          tasks={tasks}
+          activeShift={activeShift}
+        />
+      )}
     </div>
   );
 }

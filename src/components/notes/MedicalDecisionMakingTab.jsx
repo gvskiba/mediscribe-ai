@@ -937,6 +937,7 @@ function DischargeSummaryPanel({ note, mdm, noteId }) {
 /* ── Layout Config ────────────────────────────────────────────────────────────── */
 const DEFAULT_PANELS = [
   { id: "insight",         label: "AI Clinical Insight",       span: "full" },
+  { id: "audit",           label: "E/M Audit Assistant",       span: "full" },
   { id: "differential",   label: "Differential Diagnosis",     span: "half" },
   { id: "recommendations",label: "Clinical Recommendations",   span: "half" },
   { id: "patient",        label: "Patient Snapshot",           span: "third" },

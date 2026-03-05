@@ -981,7 +981,7 @@ IMPORTANT:
           <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
             <button onClick={compileSoapNote} style={{ padding: "8px 14px", borderRadius: 7, background: "transparent", border: `1px solid ${T.border}`, color: T.dim, fontSize: 12, cursor: "pointer", fontWeight: 600 }}>↺ Recompile</button>
             <button onClick={copyNoteToClipboard} style={{ padding: "8px 14px", borderRadius: 7, background: "transparent", border: `1px solid ${T.border}`, color: T.teal, fontSize: 12, cursor: "pointer", fontWeight: 600 }}>{copyLabel}</button>
-            <button onClick={printNote} style={{ padding: "8px 14px", borderRadius: 7, background: "transparent", border: `1px solid #4a90d9`, color: "#4a90d9", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>🖨 Print</button>
+            <button onClick={printNote} style={{ padding: "8px 14px", borderRadius: 7, background: "rgba(37,99,235,0.1)", border: `1px solid #4a90d9`, color: "#4a90d9", fontSize: 12, cursor: "pointer", fontWeight: 600 }} title="Opens print-optimized view with full formatting">🖨 Print / Preview</button>
             <button onClick={downloadNotePDF} disabled={pdfLoading} style={{ padding: "8px 14px", borderRadius: 7, background: "linear-gradient(135deg,#2563eb,#1d4ed8)", color: "#fff", fontSize: 12, cursor: pdfLoading ? "not-allowed" : "pointer", fontWeight: 600, border: "none" }}>
               {pdfLoading ? "⏳ Generating…" : "⬇ Download PDF"}
             </button>

@@ -389,7 +389,7 @@ function ReналTable({crcl}) {
   );
 }
 
-function EmpiricPanel({selectedInfection, setting, allergies, mrsaRate, esblRate, onQuickLog}) {
+function EmpiricPanel({selectedInfection, setting, allergies, mrsaRate, esblRate, onQuickLog, age, wt, crcl}) {
   if(!selectedInfection) return (
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:300,gap:14,opacity:.5,textAlign:"center"}}>
       <div style={{fontSize:48}}>🧬</div>

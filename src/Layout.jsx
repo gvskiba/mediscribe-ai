@@ -31,6 +31,7 @@ const navSections = [
                 { name: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
                 { name: "Shift Dashboard", icon: Activity, page: "Shift" },
                 { name: "Patient Dashboard", icon: Activity, page: "PatientDashboard" },
+                { name: "SOAP Compiler", icon: FileText, page: "SoapCompiler" },
                 { name: "My Notes", icon: FileText, page: "NotesLibrary" },
               ]
             },

@@ -365,8 +365,289 @@ IMPORTANT:
     setTimeout(() => setCopyLabel("📋 Copy"), 2000);
   };
 
+  const buildPrintHTML = () => {
+    const noteContent = noteBodyRef.current?.innerHTML || `<pre style="white-space:pre-wrap">${compiledNote?.content || ""}</pre>`;
+    const noteTitle = NOTE_STYLES.find(s => s.value === (compiledNote?.format || noteStyle))?.label || "SOAP Note";
+    const dos = encounter?.arrival_time ? format(new Date(encounter.arrival_time), "MMMM d, yyyy") : "—";
+    const compiledAt = compiledNote?.createdAt ? format(new Date(compiledNote.createdAt), "MMM d, yyyy h:mm a") : format(new Date(), "MMM d, yyyy h:mm a");
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>${noteTitle} — ${encounter?.patient_initials || "Patient"} — ${dos}</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-size: 11pt;
+      line-height: 1.75;
+      color: #111827;
+      background: #fff;
+    }
+
+    /* ── Page Setup ── */
+    @page {
+      size: letter portrait;
+      margin: 18mm 20mm 22mm 20mm;
+      @top-center {
+        content: "CONFIDENTIAL — NOTRYA AI CLINICAL RECORD";
+        font-size: 7pt;
+        color: #9ca3af;
+        font-family: Arial, sans-serif;
+        letter-spacing: 0.08em;
+      }
+      @bottom-left {
+        content: "Patient: ${encounter?.patient_initials || "—"}  |  Encounter: ${encounterId?.slice(0, 8) || "—"}";
+        font-size: 7.5pt;
+        color: #6b7280;
+        font-family: Arial, sans-serif;
+      }
+      @bottom-center {
+        content: counter(page) " of " counter(pages);
+        font-size: 8pt;
+        color: #6b7280;
+        font-family: Arial, sans-serif;
+      }
+      @bottom-right {
+        content: "${dos}";
+        font-size: 7.5pt;
+        color: #6b7280;
+        font-family: Arial, sans-serif;
+      }
+    }
+
+    /* ── Note Wrapper ── */
+    .note-wrapper { max-width: 100%; }
+
+    /* ── Document Header ── */
+    .doc-header {
+      border-bottom: 2.5pt solid #111827;
+      padding-bottom: 14pt;
+      margin-bottom: 18pt;
+    }
+    .doc-header-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12pt;
+      align-items: start;
+    }
+    .doc-logo { font-size: 8pt; color: #6b7280; margin-bottom: 3pt; font-family: Arial, sans-serif; letter-spacing: 0.05em; }
+    .doc-title { font-size: 22pt; font-weight: 700; color: #111827; font-family: Georgia, serif; line-height: 1.2; }
+    .doc-meta { text-align: right; font-size: 9.5pt; color: #374151; font-family: Arial, sans-serif; line-height: 1.7; }
+    .doc-meta strong { color: #111827; }
+
+    /* ── Patient Banner ── */
+    .patient-banner {
+      margin-top: 12pt;
+      padding: 9pt 12pt;
+      background: #f0f4ff;
+      border: 1pt solid #c7d2fe;
+      border-radius: 5pt;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8pt;
+    }
+    .patient-banner-field { font-family: Arial, sans-serif; }
+    .patient-banner-label { font-size: 7.5pt; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; margin-bottom: 1pt; }
+    .patient-banner-value { font-size: 10pt; font-weight: 600; color: #111827; }
+
+    /* ── Section Headings ── */
+    .soap-section-heading {
+      font-size: 10pt;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #111827;
+      border-bottom: 1pt solid #d1d5db;
+      padding-bottom: 3pt;
+      margin-top: 20pt;
+      margin-bottom: 8pt;
+      font-family: Arial, sans-serif;
+      page-break-after: avoid;
+    }
+    .soap-section-heading::before {
+      display: inline-block;
+      width: 14pt;
+      height: 14pt;
+      line-height: 14pt;
+      text-align: center;
+      border-radius: 3pt;
+      font-size: 9pt;
+      font-weight: 900;
+      margin-right: 6pt;
+      vertical-align: middle;
+    }
+    .heading-s::before { content: "S"; background: #dbeafe; color: #1d4ed8; }
+    .heading-o::before { content: "O"; background: #d1fae5; color: #065f46; }
+    .heading-a::before { content: "A"; background: #fef3c7; color: #92400e; }
+    .heading-p::before { content: "P"; background: #ede9fe; color: #5b21b6; }
+
+    /* ── Body Text ── */
+    .note-body {
+      font-size: 11pt;
+      color: #1f2937;
+      line-height: 1.85;
+      white-space: pre-wrap;
+      font-family: Georgia, 'Times New Roman', serif;
+    }
+    .note-body p { margin-bottom: 6pt; }
+    .note-body strong, b { color: #111827; }
+
+    /* ── Vitals Row ── */
+    .vitals-row {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6pt;
+      margin: 10pt 0;
+      padding: 8pt;
+      background: #f9fafb;
+      border: 1pt solid #e5e7eb;
+      border-radius: 4pt;
+    }
+    .vital-item { text-align: center; font-family: Arial, sans-serif; }
+    .vital-label { font-size: 7pt; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.06em; }
+    .vital-value { font-size: 13pt; font-weight: 700; color: #111827; font-family: 'Courier New', monospace; }
+
+    /* ── Signature Block ── */
+    .signature-block {
+      margin-top: 32pt;
+      padding-top: 16pt;
+      border-top: 1pt solid #d1d5db;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24pt;
+      page-break-inside: avoid;
+    }
+    .sig-line { border-bottom: 1pt solid #374151; margin-bottom: 5pt; height: 24pt; }
+    .sig-name { font-size: 10.5pt; font-weight: 700; color: #111827; }
+    .sig-credentials { font-size: 9pt; color: #6b7280; }
+    .sig-stamp { font-size: 8pt; color: #9ca3af; margin-top: 8pt; font-family: 'Courier New', monospace; }
+    .sig-right { text-align: right; font-size: 10pt; color: #374151; }
+    .sig-right div { margin-bottom: 6pt; }
+
+    /* ── Watermark (confidential) ── */
+    .watermark {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-45deg);
+      font-size: 72pt;
+      font-weight: 900;
+      color: rgba(0,0,0,0.03);
+      font-family: Arial, sans-serif;
+      pointer-events: none;
+      z-index: 0;
+      white-space: nowrap;
+    }
+
+    /* ── Confidentiality Footer ── */
+    .confidentiality-notice {
+      margin-top: 24pt;
+      padding: 8pt 10pt;
+      background: #fef9c3;
+      border: 0.75pt solid #fde047;
+      border-radius: 4pt;
+      font-size: 8pt;
+      color: #713f12;
+      font-family: Arial, sans-serif;
+      line-height: 1.5;
+      page-break-inside: avoid;
+    }
+
+    /* ── Page break helpers ── */
+    .page-break { page-break-before: always; }
+    .avoid-break { page-break-inside: avoid; }
+
+    /* ── Print-only: hide screen artifacts ── */
+    @media screen { body { padding: 40px; max-width: 900px; margin: 0 auto; } }
+  </style>
+</head>
+<body>
+  <div class="watermark">CONFIDENTIAL</div>
+  <div class="note-wrapper">
+
+    <!-- Document Header -->
+    <div class="doc-header avoid-break">
+      <div class="doc-header-grid">
+        <div>
+          <div class="doc-logo">NOTRYA AI &nbsp;|&nbsp; CLINICAL DOCUMENTATION &nbsp;|&nbsp; BY MEDNU</div>
+          <div class="doc-title">${noteTitle}</div>
+        </div>
+        <div class="doc-meta">
+          <div><strong>Date of Service:</strong> ${dos}</div>
+          <div><strong>Provider:</strong> ${user?.full_name || "—"}</div>
+          <div><strong>Compiled:</strong> ${compiledAt}</div>
+        </div>
+      </div>
+      <div class="patient-banner">
+        <div class="patient-banner-field">
+          <div class="patient-banner-label">Patient</div>
+          <div class="patient-banner-value">${encounter?.patient_initials || "—"}</div>
+        </div>
+        <div class="patient-banner-field">
+          <div class="patient-banner-label">Age / Sex</div>
+          <div class="patient-banner-value">${encounter?.patient_age || "—"}y ${encounter?.patient_sex || "—"}</div>
+        </div>
+        <div class="patient-banner-field">
+          <div class="patient-banner-label">Chief Complaint</div>
+          <div class="patient-banner-value">${encounter?.chief_complaint || "—"}</div>
+        </div>
+        <div class="patient-banner-field">
+          <div class="patient-banner-label">Allergies</div>
+          <div class="patient-banner-value" style="color:#dc2626">${encounter?.allergies || "NKDA"}</div>
+        </div>
+        <div class="patient-banner-field">
+          <div class="patient-banner-label">Room / Bed</div>
+          <div class="patient-banner-value">${encounter?.room || "—"}</div>
+        </div>
+        <div class="patient-banner-field">
+          <div class="patient-banner-label">Encounter ID</div>
+          <div class="patient-banner-value" style="font-family:monospace;font-size:9pt">${encounterId?.slice(0, 8) || "—"}…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Note Body -->
+    <div class="note-body">${noteContent}</div>
+
+    <!-- Signature Block -->
+    <div class="signature-block">
+      <div>
+        <div class="sig-line"></div>
+        <div class="sig-name">${user?.full_name || "Provider"}</div>
+        <div class="sig-credentials">MD / DO / APP</div>
+        <div class="sig-stamp">Electronically signed via Notrya AI · ${new Date().toLocaleString()}</div>
+      </div>
+      <div class="sig-right">
+        <div>Date: ___________________</div>
+        <div>Time: ___________________</div>
+        <div>NPI: ___________________</div>
+      </div>
+    </div>
+
+    <!-- Confidentiality Notice -->
+    <div class="confidentiality-notice">
+      <strong>CONFIDENTIALITY NOTICE:</strong> This document contains privileged and confidential patient health information protected under HIPAA (45 CFR §164). Unauthorized disclosure, copying, or distribution is strictly prohibited. If you received this in error, please notify the sender immediately and destroy all copies.
+    </div>
+
+  </div>
+</body>
+</html>`;
+  };
+
   const printNote = () => {
-    window.print();
+    const printWindow = window.open("", "_blank", "width=900,height=700");
+    printWindow.document.write(buildPrintHTML());
+    printWindow.document.close();
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+      }, 400);
+    };
   };
 
   const downloadNotePDF = async () => {
@@ -381,19 +662,35 @@ IMPORTANT:
           document.head.appendChild(s);
         });
       }
-      const el = document.getElementById("note-document");
+
+      // Create an off-screen iframe with the full print HTML for accurate rendering
+      const iframe = document.createElement("iframe");
+      iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:900px;height:1200px;border:none;visibility:hidden;";
+      document.body.appendChild(iframe);
+      iframe.contentDocument.open();
+      iframe.contentDocument.write(buildPrintHTML());
+      iframe.contentDocument.close();
+
+      await new Promise(r => setTimeout(r, 600)); // let fonts/styles render
+
+      const el = iframe.contentDocument.body;
       const dateStr = encounter?.arrival_time ? format(new Date(encounter.arrival_time), "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
-      const filename = `SOAP-Note-${encounter?.room || encounter?.patient_initials || "patient"}-${dateStr}.pdf`;
+      const patientSlug = (encounter?.patient_initials || encounter?.room || "patient").replace(/\s+/g, "-");
+      const filename = `SOAP-Note-${patientSlug}-${dateStr}.pdf`;
+
       await window.html2pdf().set({
-        margin: [12, 14, 12, 14],
+        margin: [15, 18, 20, 18],
         filename,
         image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: "#ffffff" },
         jsPDF: { unit: "mm", format: "letter", orientation: "portrait" },
-        pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+        pagebreak: { mode: ["css", "legacy"], before: ".page-break", avoid: ".avoid-break" },
       }).from(el).save();
+
+      document.body.removeChild(iframe);
       showToast("PDF downloaded ✓", "#4a90d9");
     } catch (e) {
+      console.error(e);
       showToast("PDF generation failed", T.red);
     } finally {
       setPdfLoading(false);

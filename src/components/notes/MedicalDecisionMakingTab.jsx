@@ -14,7 +14,7 @@ import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import ReactMarkdown from "react-markdown";
-import AuditAssistant from "./AuditAssistant";
+import AuditAssistant, { EMCodeSuggester } from "./AuditAssistant";
 
 /* ── Theme ──────────────────────────────────────────────────────────────────── */
 const T = {

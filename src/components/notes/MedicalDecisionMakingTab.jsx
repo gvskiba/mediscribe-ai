@@ -1015,6 +1015,7 @@ export default function MedicalDecisionMakingTab({ note, onUpdateNote, noteId })
       case "medications":     return <ActiveMedicationsPanel {...props} />;
       case "discharge":       return <DischargeSummaryPanel {...props} />;
       case "mdm_notes":       return <MDMNotesPanel {...props} onAdd={addEntry} onDelete={deleteEntry} onEdit={editEntry} />;
+      case "audit":           return <AuditAssistant note={note} />;
       default: return null;
     }
   };

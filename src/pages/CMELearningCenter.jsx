@@ -617,13 +617,13 @@ export default function CMELearningCenter() {
         <div style={{ background:G.panel, border:`1px solid ${G.border}`, borderRadius:11, padding:"16px 18px" }}>
           <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
             <span style={{ fontWeight:700, color:G.bright }}>2-Year Cycle Progress</span>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:13, color:G.teal, fontWeight:700 }}>{pct}%</span>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:13, color:G.teal, fontWeight:700 }}>{Math.min(100,Math.round((total/CREDIT_SUMMARY.totalRequired)*100))}%</span>
           </div>
           <div style={{ height:12, borderRadius:6, background:"rgba(30,58,95,.6)", overflow:"hidden" }}>
-            <div style={{ height:"100%", borderRadius:6, background:`linear-gradient(90deg,${G.teal},${G.blue})`, width:`${pct}%`, transition:"width .4s" }}/>
+            <div style={{ height:"100%", borderRadius:6, background:`linear-gradient(90deg,${G.teal},${G.blue})`, width:`${Math.min(100,Math.round((total/CREDIT_SUMMARY.totalRequired)*100))}%`, transition:"width .4s" }}/>
           </div>
           <div style={{ display:"flex", justifyContent:"space-between", marginTop:6 }}>
-            <span style={{ fontSize:11, color:G.dim }}>0 credits</span>
+            <span style={{ fontSize:11, color:G.dim }}>{total.toFixed(1)} earned</span>
             <span style={{ fontSize:11, color:G.dim }}>{CREDIT_SUMMARY.totalRequired} required by renewal</span>
           </div>
         </div>

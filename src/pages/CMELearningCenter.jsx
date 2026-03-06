@@ -629,17 +629,27 @@ export default function CMELearningCenter() {
         </div>
         <div style={{ background:G.panel, border:`1px solid ${G.border}`, borderRadius:11, padding:"16px 18px" }}>
           <div style={{ fontWeight:800, fontSize:12.5, color:G.bright, marginBottom:12 }}>Credits by Specialty Category</div>
-          {CREDIT_SUMMARY.byCategory.map(c => (
-            <div key={c.cat} style={{ marginBottom:10 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                <span style={{ fontSize:12.5, color:G.text }}>{c.cat}</span>
-                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:c.color, fontWeight:700 }}>{c.credits} cr</span>
+          {(() => {
+            const catMap = {};
+            completedMods.forEach(m => {
+              catMap[m.category] = (catMap[m.category] || 0) + m.credits;
+            });
+            const catColors = { "Critical Care":"#ef4444","Cardiology":"#f97316","Toxicology":"#a855f7","Pediatrics":"#4a90d9","Ultrasound":"#00d4bc","Neurology":"#9b6dff","Nephrology":"#06b6d4","Other":"#4a7299" };
+            const cats = Object.entries(catMap);
+            if (cats.length === 0) return <div style={{ fontSize:12, color:G.muted, textAlign:"center", padding:"12px 0" }}>Complete modules to see credit breakdown.</div>;
+            const maxCr = Math.max(...cats.map(([,v])=>v));
+            return cats.map(([cat, credits]) => (
+              <div key={cat} style={{ marginBottom:10 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                  <span style={{ fontSize:12.5, color:G.text }}>{cat}</span>
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:catColors[cat]||G.blue, fontWeight:700 }}>{credits.toFixed(1)} cr</span>
+                </div>
+                <div style={{ height:5, borderRadius:3, background:"rgba(30,58,95,.5)" }}>
+                  <div style={{ height:"100%", borderRadius:3, background:catColors[cat]||G.blue, width:`${Math.min(100,(credits/maxCr)*100)}%` }}/>
+                </div>
               </div>
-              <div style={{ height:5, borderRadius:3, background:"rgba(30,58,95,.5)" }}>
-                <div style={{ height:"100%", borderRadius:3, background:c.color, width:`${Math.min(100,(c.credits/8)*100)}%` }}/>
-              </div>
-            </div>
-          ))}
+            ));
+          })()}
         </div>
         <div style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:16, fontWeight:700, color:G.bright }}>Completed Modules</div>
         {CME_MODULES.filter(m => completedModules.includes(m.id)).map(mod => (

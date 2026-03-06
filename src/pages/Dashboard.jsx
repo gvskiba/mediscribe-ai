@@ -227,7 +227,7 @@ function WelcomeBar({ user }) {
       <div style={{ height: "3px", width: "100%", background: `linear-gradient(90deg, ${T.teal}, ${T.purple}, ${T.amber})`, position: "absolute", top: 0, left: 0 }} />
       <div style={{ position: "absolute", right: "-40px", top: "-40px", width: "180px", height: "180px", background: `radial-gradient(circle, rgba(0,212,188,0.06), transparent 70%)`, pointerEvents: "none" }} />
       <div style={{ fontFamily: "Playfair Display, serif", fontSize: "22px", color: T.bright, fontWeight: 500 }}>
-        {provider.greeting}, <span style={{ color: T.teal }}>{prefix} {lastName}</span>
+        {getGreeting()}, <span style={{ color: T.teal }}>{prefix} {lastName}</span>
       </div>
       {specialty && (
         <div style={{ background: "rgba(239,68,68,0.15)", border: `1px solid rgba(239,68,68,0.3)`, borderRadius: "12px", padding: "12px 16px", textAlign: "center", marginLeft: "auto" }}>

@@ -316,14 +316,19 @@ function ClockCalPanel() {
         <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: "14px", color: T.dim, marginTop: "8px" }}>
           {dateStr}
         </div>
-        <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "11px", color: T.teal, background: `rgba(0,212,188,0.08)`, border: `1px solid rgba(0,212,188,0.15)`, borderRadius: "6px", padding: "3px 10px", display: "inline-block", marginTop: "6px" }}>
-          {(() => {
-            const start = time;
-            const h = String(start.getHours()).padStart(2, "0");
-            const m = String(start.getMinutes()).padStart(2, "0");
-            return `${h}:${m}`;
-          })()}
-        </div>
+        {user?.clinical_settings?.shift_start && (
+          <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "11px", color: T.teal, background: `rgba(0,212,188,0.08)`, border: `1px solid rgba(0,212,188,0.15)`, borderRadius: "6px", padding: "3px 10px", display: "inline-block", marginTop: "6px" }}>
+            {(() => {
+              const [h, m] = user.clinical_settings.shift_start.split(":").map(Number);
+              const startMs = new Date(time.getFullYear(), time.getMonth(), time.getDate(), h, m).getTime();
+              const diffMs = Date.now() - startMs;
+              if (diffMs < 0 || diffMs > 86400000) return `Shift: ${user.clinical_settings.shift_start}`;
+              const hrs = Math.floor(diffMs / 3600000);
+              const mins = Math.floor((diffMs % 3600000) / 60000);
+              return `Shift: ${hrs}h ${mins}m`;
+            })()}
+          </div>
+        )}
       </div>
 
       {/* Calendar Section */}

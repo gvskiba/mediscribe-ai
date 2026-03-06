@@ -1061,7 +1061,33 @@ export default function CMELearningCenter() {
         <span style={{ fontSize:11, fontWeight:700, padding:"4px 12px", borderRadius:20, background:"rgba(251,191,36,.1)", border:"1px solid rgba(251,191,36,.25)", color:G.gold }}>🏅 ABEM Approved</span>
         <div style={{ flex:1 }}/>
         <button style={{ padding:"9px 18px", borderRadius:8, fontFamily:"inherit", fontSize:12, fontWeight:700, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:6, background:"transparent", border:`1px solid ${G.border}`, color:G.text }} onClick={()=>setActiveTab("tracker")}>📊 View Transcript</button>
-        <button style={{ padding:"9px 18px", borderRadius:8, fontFamily:"inherit", fontSize:12, fontWeight:700, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:6, background:"linear-gradient(135deg,#9b6dff,#7c5cd6)", border:"none", color:"#fff" }} onClick={()=>showToast("MOC transcript exported for ABEM submission",G.purple)}>📥 Export MOC Report</button>
+        <button style={{ padding:"9px 18px", borderRadius:8, fontFamily:"inherit", fontSize:12, fontWeight:700, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:6, background:"linear-gradient(135deg,#9b6dff,#7c5cd6)", border:"none", color:"#fff" }} onClick={() => {
+          const lines = [
+            "CME & MOC REPORT",
+            "=".repeat(55),
+            `Total Credits Earned: ${totalEarned.toFixed(1)}`,
+            `Completed Modules: ${completedModules.length}`,
+            "",
+            "COMPLETED MODULES",
+            "-".repeat(40),
+            ...CME_MODULES.filter(m => completedModules.includes(m.id))
+              .map(m => `• ${m.title} — ${m.credits} credits — ${m.accreditor}`),
+            "",
+            "ABEM MOC POINTS",
+            "-".repeat(40),
+            ...ABEM_MOC.points.map(p => `${p.part}: ${p.earned} / ${p.required || "bonus"} pts`),
+            "",
+            `Exported: ${new Date().toLocaleDateString()}`,
+          ];
+          const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `CME_MOC_Report_${new Date().toISOString().slice(0,10)}.txt`;
+          a.click();
+          URL.revokeObjectURL(url);
+          showToast("MOC report downloaded ✓", G.purple);
+        }}>📥 Export MOC Report</button>
       </div>
 
       {/* CERTIFICATE MODAL */}

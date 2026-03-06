@@ -563,14 +563,18 @@ Return JSON with:
               </div>
 
               {/* Footer */}
-              <div style={{
-                padding: "10px 16px",
-                borderTop: `1px solid ${colors.border}`,
-                fontSize: "10px",
-                color: colors.dim,
-                fontStyle: "italic",
-              }}>
-                No vitals recorded — pull from Objective page
+              <div
+                onClick={() => noteId && navigate(createPageUrl(`NoteDetail?id=${noteId}`))}
+                style={{
+                  padding: "10px 16px",
+                  borderTop: `1px solid ${colors.border}`,
+                  fontSize: "10px",
+                  color: noteId ? colors.teal : colors.dim,
+                  fontStyle: "italic",
+                  cursor: noteId ? "pointer" : "default",
+                }}
+              >
+                {noteId ? "↗ Edit vitals in note" : "No vitals recorded — pull from Objective page"}
               </div>
             </div>
 

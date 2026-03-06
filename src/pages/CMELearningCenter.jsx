@@ -918,24 +918,36 @@ export default function CMELearningCenter() {
         </div>
       </div>
     );
-    if (activeTab === "tracker") return (
-      <div style={{ padding:12 }}>
-        <div style={S.sectionHeading}>📊 Credit Breakdown</div>
-        <div style={{ padding:8 }}>
-          {CREDIT_SUMMARY.byCategory.map(c => (
-            <div key={c.cat} style={{ marginBottom:10 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                <span style={{ fontSize:12, color:G.text }}>{c.cat}</span>
-                <span style={{ fontSize:11, color:c.color, fontFamily:"'JetBrains Mono',monospace", fontWeight:700 }}>{c.credits}</span>
-              </div>
-              <div style={{ height:4, borderRadius:2, background:"rgba(30,58,95,.6)" }}>
-                <div style={{ height:"100%", borderRadius:2, background:c.color, width:`${(c.credits/8)*100}%` }}/>
-              </div>
-            </div>
-          ))}
+    if (activeTab === "tracker") {
+      const catColors = { "Critical Care":"#ef4444","Cardiology":"#f97316","Toxicology":"#a855f7","Pediatrics":"#4a90d9","Ultrasound":"#00d4bc","Neurology":"#9b6dff","Nephrology":"#06b6d4","Other":"#4a7299" };
+      const catMap = {};
+      CME_MODULES.filter(m => completedModules.includes(m.id)).forEach(m => {
+        catMap[m.category] = (catMap[m.category] || 0) + m.credits;
+      });
+      const cats = Object.entries(catMap);
+      const maxCr = cats.length > 0 ? Math.max(...cats.map(([,v])=>v)) : 1;
+      return (
+        <div style={{ padding:12 }}>
+          <div style={S.sectionHeading}>📊 Credit Breakdown</div>
+          <div style={{ padding:8 }}>
+            {cats.length === 0
+              ? <div style={{ fontSize:12, color:G.muted, padding:"8px 0" }}>No credits yet.</div>
+              : cats.map(([cat, credits]) => (
+                <div key={cat} style={{ marginBottom:10 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                    <span style={{ fontSize:12, color:G.text }}>{cat}</span>
+                    <span style={{ fontSize:11, color:catColors[cat]||G.blue, fontFamily:"'JetBrains Mono',monospace", fontWeight:700 }}>{credits.toFixed(1)}</span>
+                  </div>
+                  <div style={{ height:4, borderRadius:2, background:"rgba(30,58,95,.6)" }}>
+                    <div style={{ height:"100%", borderRadius:2, background:catColors[cat]||G.blue, width:`${(credits/maxCr)*100}%` }}/>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
     if (activeTab === "licenses") return (
       <div style={{ padding:12 }}>
         <div style={S.sectionHeading}>📅 Upcoming Renewals</div>

@@ -867,7 +867,7 @@ export default function CMELearningCenter() {
               </div>
               <div style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:16, fontWeight:700, color:G.bright, marginBottom:8, lineHeight:1.4 }}>{article.title}</div>
               <div style={{ fontSize:13, color:G.dim, lineHeight:1.7, marginBottom:12 }}>{article.summary}</div>
-              <div style={{ fontSize:11, fontFamily:"'JetBrains Mono',monospace", color:G.muted, marginBottom:12 }}>DOI: {article.doi}</div>
+              <a href={`https://doi.org/${article.doi}`} target="_blank" rel="noopener noreferrer" style={{ fontSize:11, fontFamily:"'JetBrains Mono',monospace", color:G.blue, marginBottom:12, display:"block", textDecoration:"none" }} onMouseEnter={e=>e.target.style.textDecoration="underline"} onMouseLeave={e=>e.target.style.textDecoration="none"}>DOI: {article.doi} ↗</a>
               <div style={{ display:"flex", gap:8 }}>
                 <button style={{ ...S.btn("linear-gradient(135deg,#9b6dff,#7c5cd6)"), fontSize:12 }} onClick={()=>showToast(`Opening CME module for ${article.title.slice(0,30)}…`,G.purple)}>🎓 Claim {article.credits} Credits</button>
                 <button style={{ ...S.btn("transparent",G.text,G.border), fontSize:12 }} onClick={()=>window.open(`https://doi.org/${article.doi}`,"_blank")}>📄 Full Article</button>

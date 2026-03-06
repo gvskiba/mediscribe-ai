@@ -54,6 +54,7 @@ import Calendar from './pages/Calendar';
 import ClinicalGuidelines from './pages/ClinicalGuidelines';
 import Customize from './pages/Customize';
 import Dashboard from './pages/Dashboard';
+import DrugReference from './pages/DrugReference';
 import GuidelineDetail from './pages/GuidelineDetail';
 import Guidelines from './pages/Guidelines';
 import Home from './pages/Home';
@@ -81,7 +82,7 @@ import TemplateEditor from './pages/TemplateEditor';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
-import DrugReference from './pages/DrugReference';
+import CMELearningCenter from './pages/CMELearningCenter';
 import __Layout from './Layout.jsx';
 
 
@@ -93,6 +94,7 @@ export const PAGES = {
     "ClinicalGuidelines": ClinicalGuidelines,
     "Customize": Customize,
     "Dashboard": Dashboard,
+    "DrugReference": DrugReference,
     "GuidelineDetail": GuidelineDetail,
     "Guidelines": Guidelines,
     "Home": Home,
@@ -120,7 +122,7 @@ export const PAGES = {
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
-    "DrugReference": DrugReference,
+    "CMELearningCenter": CMELearningCenter,
 }
 
 export const pagesConfig = {

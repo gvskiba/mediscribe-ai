@@ -589,15 +589,23 @@ export default function CMELearningCenter() {
   function TrackerView() {
     const total = totalEarned;
     const pct = Math.min(100, Math.round((total / CREDIT_SUMMARY.totalRequired)*100));
+    // Dynamic values calculated from actual completed modules
+    const completedMods = CME_MODULES.filter(m => completedModules.includes(m.id));
+    const cat1Earned = completedMods.reduce((s,m) => s + m.credits, 0);
+    const abemEarned = completedMods.filter(m => m.abem).reduce((s,m) => s + m.credits, 0);
+    const currentYear = new Date().getFullYear();
+    const thisYearEarned = completedMods
+      .filter(m => m.completedDate && new Date(m.completedDate).getFullYear() === currentYear)
+      .reduce((s,m) => s + m.credits, 0);
     return (
       <div style={{ padding:24, display:"flex", flexDirection:"column", gap:18 }}>
         <div style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:22, fontWeight:700, color:G.bright }}>CME Credit Tracker</div>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
           {[
             ["Total Earned",`${total.toFixed(1)}`,`/ ${CREDIT_SUMMARY.totalRequired} credits`,G.teal],
-            ["Cat. 1 Credits",`${CREDIT_SUMMARY.cat1Earned}`,`/ ${CREDIT_SUMMARY.cat1Required} required`,G.blue],
-            ["ABEM/MOC",`${CREDIT_SUMMARY.abemEarned}`,`/ ${CREDIT_SUMMARY.abemRequired} LLSA pts`,G.gold],
-            ["This Year",`${CREDIT_SUMMARY.thisYear}`,"2025 YTD",G.green],
+            ["Cat. 1 Credits",`${cat1Earned.toFixed(1)}`,`/ ${CREDIT_SUMMARY.cat1Required} required`,G.blue],
+            ["ABEM/MOC",`${abemEarned.toFixed(1)}`,`/ ${CREDIT_SUMMARY.abemRequired} LLSA pts`,G.gold],
+            ["This Year",`${thisYearEarned.toFixed(1)}`,`${currentYear} YTD`,G.green],
           ].map(([label, val, sub, color]) => (
             <div key={label} style={S.statBlock}>
               <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:28, fontWeight:700, color, lineHeight:1 }}>{val}</div>

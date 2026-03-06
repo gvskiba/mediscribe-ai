@@ -225,6 +225,7 @@ function EmptyState({ icon, title, sub, action, actionLabel }) {
 // MAIN PAGE COMPONENT
 // ══════════════════════════════════════════════════════════════════════════════
 export default function DischargePlanning() {
+  const navigate = useNavigate();
   // ── Load real data from Base44 ───────────────────────────────────────────────
   const [currentUser, setCurrentUser] = useState(null);
   const [clinicalNotes, setClinicalNotes] = useState([]);

@@ -282,7 +282,8 @@ export default function CMELearningCenter() {
 
   const categories = [...new Set(CME_MODULES.map(m => m.category))];
   const totalEarned = completedModules.reduce((s, id) => s + (CME_MODULES.find(m=>m.id===id)?.credits||0), 0);
-  const nextRenewalDays = Math.min(...STATE_LICENSES.map(l => daysUntil(l.renewalDate)));
+  const futureLicenseDays = STATE_LICENSES.map(l => daysUntil(l.renewalDate)).filter(d => d > 0);
+  const nextRenewalDays = futureLicenseDays.length > 0 ? Math.min(...futureLicenseDays) : null;
 
   // ── STYLES ──────────────────────────────────────────────────────────────────
   const S = {

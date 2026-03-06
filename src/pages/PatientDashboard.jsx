@@ -675,7 +675,10 @@ Return JSON with:
 
             {/* Medications */}
             <div style={{ background: colors.panel, border: `1px solid ${colors.border}`, borderLeft: `3px solid ${colors.rose}`, borderRadius: "8px", padding: "10px", minHeight: "120px" }}>
-              <h3 style={{ fontSize: "12px", fontWeight: 600, margin: "0 0 8px 0", display: "flex", gap: "4px" }}>💊 MEDICATIONS GIVEN</h3>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                <h3 style={{ fontSize: "12px", fontWeight: 600, margin: 0 }}>💊 MEDICATIONS GIVEN</h3>
+                {noteId && <span onClick={() => navigate(createPageUrl(`NoteDetail?id=${noteId}`))} style={{ fontSize: "9px", color: colors.teal, cursor: "pointer", textDecoration: "underline" }}>↗ Edit in note</span>}
+              </div>
               {medications?.length > 0 ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "10px" }}>
                   {medications.slice(0, 3).map((med, idx) => (

@@ -788,8 +788,43 @@ export default function CMELearningCenter() {
           <div style={{ fontSize:11, fontWeight:800, textTransform:"uppercase", letterSpacing:".07em", color:G.purple, marginBottom:8 }}>📤 MOC Documentation Export</div>
           <div style={{ fontSize:12.5, color:G.text, lineHeight:1.7, marginBottom:12 }}>Export your completed CME activities to submit directly to ABEM's MOC portal. All completed modules with ABEM MOC designation are included automatically.</div>
           <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-            <button style={{ ...S.btn("linear-gradient(135deg,#9b6dff,#7c5cd6)") }} onClick={()=>showToast("MOC transcript exported — ready for ABEM submission",G.purple)}>📥 Export MOC Transcript</button>
-            <button style={{ ...S.btn("transparent",G.text,G.border) }} onClick={()=>showToast("Opening ABEM portal…",G.blue)}>🔗 ABEM Portal</button>
+            <button style={{ ...S.btn("linear-gradient(135deg,#9b6dff,#7c5cd6)") }} onClick={() => {
+              const moc = ABEM_MOC;
+              const lines = [
+                "ABEM MAINTENANCE OF CERTIFICATION — MOC TRANSCRIPT",
+                "=".repeat(55),
+                `Diplomate: ${moc.diplomate}`,
+                `Cert #: ${moc.certNum}`,
+                `Cycle: ${moc.currentCycle}`,
+                `Cert Expiry: ${moc.certExpiry}`,
+                "",
+                "MOC POINTS SUMMARY",
+                "-".repeat(40),
+                ...moc.points.map(p => `${p.part}: ${p.earned} / ${p.required || "bonus"} pts`),
+                "",
+                "LLSA ARTICLES",
+                "-".repeat(40),
+                ...moc.llsaArticles.map(a => `[${a.completed ? "✓" : " "}] ${a.title} (${a.year}) — ${a.credits} pts`),
+                "",
+                "COMPLETED CME MODULES (ABEM-Eligible)",
+                "-".repeat(40),
+                ...CME_MODULES.filter(m => m.abem && completedModules.includes(m.id))
+                  .map(m => `• ${m.title} — ${m.credits} AMA Cat. 1 credits — ${m.accreditor}`),
+                "",
+                `Exported: ${new Date().toLocaleDateString()}`,
+              ];
+              const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `ABEM_MOC_Transcript_${new Date().toISOString().slice(0,10)}.txt`;
+              a.click();
+              URL.revokeObjectURL(url);
+              showToast("MOC transcript downloaded ✓", G.purple);
+            }}>📥 Export MOC Transcript</button>
+            <button style={{ ...S.btn("transparent",G.text,G.border) }} onClick={() => {
+              window.open("https://www.abem.org/public/stay-certified/moc-information", "_blank");
+            }}>🔗 ABEM Portal</button>
           </div>
         </div>
       </div>

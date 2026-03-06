@@ -41,6 +41,13 @@ const T = {
   gold: "#fbbf24",
 };
 
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+}
+
 const pageData = {
   app: { name: "ClinAI", page: "Provider Dashboard", session: { status: "AI_ACTIVE" } },
   provider: {
@@ -49,13 +56,8 @@ const pageData = {
     specialty: "Emergency Medicine",
     role: "Attending Physician",
     avatar: "👩‍⚕️",
-    greeting: "Good morning",
-    stats: [
-      { label: "Active Patients", value: "7", color: T.teal },
-      { label: "Notes Pending", value: "3", color: T.amber },
-      { label: "Orders Queue", value: "12", color: T.purple },
-      { label: "Shift Hours", value: "4.2", color: T.green },
-    ],
+    greeting: getGreeting(),
+    stats: [],
   },
   shift: {
     start: "06:00",

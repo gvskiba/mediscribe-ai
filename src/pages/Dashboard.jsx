@@ -20,6 +20,7 @@ import NewsSummaryWidget from "../components/dashboard/NewsSummaryWidget";
 import StockMarketNewsWidget from "../components/dashboard/StockMarketNewsWidget";
 import StockMarketWidget from "../components/dashboard/StockMarketWidget";
 import WeatherWidget from "../components/dashboard/WeatherWidget";
+import EarlyWarningWidget from "../components/dashboard/EarlyWarningWidget";
 
 const T = {
   navy: "#050f1e",

@@ -49,6 +49,7 @@
  */
 import AntibioticStewardship from './pages/AntibioticStewardship';
 import AppSettings from './pages/AppSettings';
+import CMELearningCenter from './pages/CMELearningCenter';
 import Calculators from './pages/Calculators';
 import Calendar from './pages/Calendar';
 import ClinicalGuidelines from './pages/ClinicalGuidelines';
@@ -82,13 +83,13 @@ import TemplateEditor from './pages/TemplateEditor';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
-import CMELearningCenter from './pages/CMELearningCenter';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "AntibioticStewardship": AntibioticStewardship,
     "AppSettings": AppSettings,
+    "CMELearningCenter": CMELearningCenter,
     "Calculators": Calculators,
     "Calendar": Calendar,
     "ClinicalGuidelines": ClinicalGuidelines,
@@ -122,7 +123,6 @@ export const PAGES = {
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
-    "CMELearningCenter": CMELearningCenter,
 }
 
 export const pagesConfig = {

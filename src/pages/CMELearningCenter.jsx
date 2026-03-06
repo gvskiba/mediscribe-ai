@@ -823,7 +823,7 @@ export default function CMELearningCenter() {
               showToast("MOC transcript downloaded ✓", G.purple);
             }}>📥 Export MOC Transcript</button>
             <button style={{ ...S.btn("transparent",G.text,G.border) }} onClick={() => {
-              window.open("https://www.abem.org/public/stay-certified/moc-information", "_blank");
+              window.open("https://www.abem.org/stay-certified/", "_blank");
             }}>🔗 ABEM Portal</button>
           </div>
         </div>

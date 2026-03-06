@@ -960,7 +960,7 @@ export default function CMELearningCenter() {
             <div style={{ fontSize:9.5, color:G.dim, fontWeight:700, textTransform:"uppercase", letterSpacing:".06em" }}>Credits Earned</div>
           </div>
           <div style={{ background:G.panel, border:`1px solid ${G.border}`, borderRadius:10, padding:"8px 16px", textAlign:"center" }}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:18, fontWeight:700, color:urgencyColor(nextRenewalDays) }}>{nextRenewalDays}d</div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:18, fontWeight:700, color:nextRenewalDays ? urgencyColor(nextRenewalDays) : G.dim }}>{nextRenewalDays ? `${nextRenewalDays}d` : "—"}</div>
             <div style={{ fontSize:9.5, color:G.dim, fontWeight:700, textTransform:"uppercase", letterSpacing:".06em" }}>Next Renewal</div>
           </div>
           <button style={{ padding:"9px 18px", borderRadius:8, fontFamily:"inherit", fontSize:12, fontWeight:700, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:6, background:"linear-gradient(135deg,#fbbf24,#d97706)", border:"none", color:"#1a1000" }} onClick={()=>setActiveTab("moc")}>🏅 ABEM MOC</button>

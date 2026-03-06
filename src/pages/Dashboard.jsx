@@ -251,7 +251,7 @@ function WelcomeBar({ user }) {
   );
 }
 
-function ClockCalPanel() {
+function ClockCalPanel({ user }) {
   const [time, setTime] = useState(new Date());
   const [upcomingEvents, setUpcomingEvents] = useState([]);
 

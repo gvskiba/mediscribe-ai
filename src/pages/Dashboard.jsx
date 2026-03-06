@@ -179,11 +179,23 @@ function WelcomeBar({ user }) {
         const draftNotes = notes?.filter(n => n.status === "draft")?.length || 0;
         const pendingNotes = notes?.filter(n => n.status === "finalized")?.length || 0;
 
+        // Compute shift hours from saved shift_start
+        let shiftHours = "—";
+        const u = await base44.auth.me();
+        const shiftStart = u?.clinical_settings?.shift_start;
+        if (shiftStart) {
+          const [h, m] = shiftStart.split(":").map(Number);
+          const now = new Date();
+          const startMs = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m).getTime();
+          const diffH = (Date.now() - startMs) / 3600000;
+          if (diffH >= 0 && diffH < 24) shiftHours = diffH.toFixed(1);
+        }
+
         setStats([
           { label: "Active Patients", value: String(draftNotes), color: T.teal },
           { label: "Notes Pending", value: String(pendingNotes), color: T.amber },
           { label: "Orders Queue", value: "—", color: T.purple },
-          { label: "Shift Hours", value: "4.2", color: T.green },
+          { label: "Shift Hours", value: shiftHours, color: T.green },
         ]);
       } catch (error) {
         console.error("Failed to load stats:", error);

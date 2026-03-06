@@ -829,10 +829,10 @@ Be concise, clinically accurate, and professional. Use standard medical abbrevia
           ℹ️ <strong style={{ color:G.blue }}>{selectedEdu.length}</strong> material{selectedEdu.length !== 1 ? "s" : ""} selected for this discharge packet.
         </div>
         {EDU_LIBRARY.map(edu => {
-          const isSelected = selectedEdu.includes(edu.id);
-          return (
-            <div key={edu.id} style={{ ...card, border:`1px solid ${isSelected ? "rgba(0,212,188,.35)" : G.border}`, cursor:"pointer", transition:"all .15s" }}>
-              <div style={{ padding:"14px 16px" }}>
+        const isSelected = selectedEdu.includes(edu.id);
+        return (
+          <div key={edu.id} style={{ ...card, border:`1px solid ${isSelected ? "rgba(0,212,188,.35)" : G.border}`, transition:"all .15s" }}>
+            <div style={{ padding:"14px 16px" }}>
                 <div style={{ display:"flex", alignItems:"flex-start", gap:12 }}>
                   <div style={{ width:44, height:44, borderRadius:11, background:isSelected?"rgba(0,212,188,.12)":"rgba(22,45,79,.5)", border:`1px solid ${isSelected?"rgba(0,212,188,.35)":G.border}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, flexShrink:0 }}>
                     {edu.icon}

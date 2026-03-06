@@ -166,9 +166,9 @@ const CME_MODULES = [
 
 // ── STATE LICENSE DATA ─────────────────────────────────────────────────────────
 const STATE_LICENSES = [
-  { state:"California", abbr:"CA", licenseNum:"G-123456", renewalDate:"2025-07-31", cmeRequired:50, cmeCompleted:38, category1Required:25, category1Completed:22, cycle:"2 years", status:"active", daysUntil:148, specialReqs:["Pain Management 8hr","Ethics 2hr","End of Life 1hr"] },
-  { state:"Texas", abbr:"TX", licenseNum:"L-789012", renewalDate:"2026-01-31", cmeRequired:48, cmeCompleted:38, category1Required:24, category1Completed:22, cycle:"2 years", status:"active", daysUntil:332, specialReqs:["Medical Ethics 2hr","Jurisprudence (one-time)"] },
-  { state:"New York", abbr:"NY", licenseNum:"NY-345678", renewalDate:"2025-10-31", cmeRequired:36, cmeCompleted:38, category1Required:24, category1Completed:22, cycle:"2 years", status:"active", daysUntil:240, specialReqs:["Child Abuse 2hr","Infection Control 4hr","Opioid Prescribing 3hr"] },
+  { state:"California", abbr:"CA", licenseNum:"G-123456", renewalDate:"2027-07-31", cmeRequired:50, cmeCompleted:38, category1Required:25, category1Completed:22, cycle:"2 years", status:"active", specialReqs:["Pain Management 8hr","Ethics 2hr","End of Life 1hr"] },
+  { state:"Texas", abbr:"TX", licenseNum:"L-789012", renewalDate:"2028-01-31", cmeRequired:48, cmeCompleted:38, category1Required:24, category1Completed:22, cycle:"2 years", status:"active", specialReqs:["Medical Ethics 2hr","Jurisprudence (one-time)"] },
+  { state:"New York", abbr:"NY", licenseNum:"NY-345678", renewalDate:"2026-10-31", cmeRequired:36, cmeCompleted:38, category1Required:24, category1Completed:22, cycle:"2 years", status:"active", specialReqs:["Child Abuse 2hr","Infection Control 4hr","Opioid Prescribing 3hr"] },
 ];
 
 // ── NEWS FEED CME ARTICLES ─────────────────────────────────────────────────────

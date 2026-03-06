@@ -9,6 +9,7 @@ import LabsImagingAIReview from "../components/notes/LabsImagingAIReview";
 import QuickDrugDosingCalculator from "../components/calculators/QuickDrugDosingCalculator";
 
 export default function PatientDashboard() {
+  const navigate = useNavigate();
   const [encounterId, setEncounterId] = useState(null);
   const [patientId, setPatientId] = useState(null);
   const [noteId, setNoteId] = useState(null);

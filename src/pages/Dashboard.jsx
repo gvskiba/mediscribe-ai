@@ -303,7 +303,12 @@ function ClockCalPanel() {
           {dateStr}
         </div>
         <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "11px", color: T.teal, background: `rgba(0,212,188,0.08)`, border: `1px solid rgba(0,212,188,0.15)`, borderRadius: "6px", padding: "3px 10px", display: "inline-block", marginTop: "6px" }}>
-          Shift: 4h 28m
+          {(() => {
+            const start = time;
+            const h = String(start.getHours()).padStart(2, "0");
+            const m = String(start.getMinutes()).padStart(2, "0");
+            return `${h}:${m}`;
+          })()}
         </div>
       </div>
 

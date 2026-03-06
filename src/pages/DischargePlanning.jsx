@@ -580,7 +580,8 @@ Be concise, clinically accurate, and professional. Use standard medical abbrevia
         {isLoading ? (
           <div style={{ ...card, padding:18 }}>{[85,65,90,70].map((w,i) => <Skeleton key={i} w={`${w}%`}/>)}</div>
         ) : !patient ? (
-          <EmptyState icon="👤" title="No patient notes found" sub="Create clinical notes first, then return here to plan discharge."/>
+          <EmptyState icon="👤" title="No patient notes found" sub="Create clinical notes first, then return here to plan discharge."
+            action={() => navigate(createPageUrl("NewNote"))} actionLabel="➕ Create New Note"/>
         ) : (
           <div style={{ ...card, background:"linear-gradient(135deg,rgba(0,212,188,.04),rgba(74,144,217,.04))" }}>
             <div style={{ padding:"13px 16px", display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12 }}>

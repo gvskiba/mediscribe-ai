@@ -231,9 +231,9 @@ Return JSON with:
               {patient?.name?.charAt(0) || "P"}
             </div>
             <div>
-              <p style={{ fontSize: "12px", fontWeight: 600, margin: "0 0 2px 0", color: colors.bright }}>{patient?.name || "Patient"}</p>
-              <p style={{ fontSize: "10px", margin: 0, color: colors.dim }}>MRN: {patient?.mrn || "—"}</p>
-            </div>
+                <p style={{ fontSize: "12px", fontWeight: 600, margin: "0 0 2px 0", color: colors.bright }}>{patient?.name || "Patient"}</p>
+                <p style={{ fontSize: "10px", margin: 0, color: colors.dim }}>MRN: {patient?.mrn || "—"}{noteId && <span onClick={() => navigate(createPageUrl(`NoteDetail?id=${noteId}`))} style={{ marginLeft: 8, color: colors.teal, cursor: "pointer", textDecoration: "underline" }}>↗ Open Note</span>}</p>
+              </div>
           </div>
           <div style={{ display: "flex", gap: "12px" }}>
             {[

@@ -139,12 +139,41 @@ export default function DashboardTopBar({ user }) {
     }
   };
 
-  const stats = [
-    { label: "Active Patients", value: "7", color: T.teal },
-    { label: "Notes Pending", value: "3", color: T.amber },
-    { label: "Orders Queue", value: "12", color: T.purple },
-    { label: "Shift Hours", value: "4.2", color: T.green },
-  ];
+  const [stats, setStats] = useState([
+    { label: "Active Patients", value: "—", color: T.teal },
+    { label: "Notes Pending", value: "—", color: T.amber },
+    { label: "Orders Queue", value: "—", color: T.purple },
+    { label: "Shift Hours", value: "—", color: T.green },
+  ]);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const notes = await base44.entities.ClinicalNote.list();
+        const active = notes?.filter(n => n.status === "draft")?.length || 0;
+        const pending = notes?.filter(n => n.status !== "finalized")?.length || 0;
+
+        // Compute shift hours from saved shift_start
+        let shiftHours = "—";
+        const start = user?.clinical_settings?.shift_start;
+        if (start) {
+          const [h, m] = start.split(":").map(Number);
+          const now = new Date();
+          const startMs = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m).getTime();
+          const diffH = (Date.now() - startMs) / 3600000;
+          if (diffH >= 0 && diffH < 24) shiftHours = diffH.toFixed(1);
+        }
+
+        setStats([
+          { label: "Active Patients", value: String(active), color: T.teal },
+          { label: "Notes Pending", value: String(pending), color: T.amber },
+          { label: "Orders Queue", value: "—", color: T.purple },
+          { label: "Shift Hours", value: shiftHours, color: T.green },
+        ]);
+      } catch (e) { console.error(e); }
+    };
+    loadStats();
+  }, [user]);
 
   const handleSave = async () => {
     try {

@@ -870,7 +870,7 @@ export default function CMELearningCenter() {
               <div style={{ fontSize:11, fontFamily:"'JetBrains Mono',monospace", color:G.muted, marginBottom:12 }}>DOI: {article.doi}</div>
               <div style={{ display:"flex", gap:8 }}>
                 <button style={{ ...S.btn("linear-gradient(135deg,#9b6dff,#7c5cd6)"), fontSize:12 }} onClick={()=>showToast(`Opening CME module for ${article.title.slice(0,30)}…`,G.purple)}>🎓 Claim {article.credits} Credits</button>
-                <button style={{ ...S.btn("transparent",G.text,G.border), fontSize:12 }}>📄 Full Article</button>
+                <button style={{ ...S.btn("transparent",G.text,G.border), fontSize:12 }} onClick={()=>window.open(`https://doi.org/${article.doi}`,"_blank")}>📄 Full Article</button>
               </div>
             </div>
           </div>

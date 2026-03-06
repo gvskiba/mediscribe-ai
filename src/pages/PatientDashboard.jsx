@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { RotateCw, ChevronDown } from "lucide-react";
 import { format, differenceInMinutes } from "date-fns";
+import { createPageUrl } from "../utils";
 import LabsImagingAIReview from "../components/notes/LabsImagingAIReview";
 import QuickDrugDosingCalculator from "../components/calculators/QuickDrugDosingCalculator";
 

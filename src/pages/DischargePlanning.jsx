@@ -968,6 +968,13 @@ Be concise, clinically accurate, and professional. Use standard medical abbrevia
               ))}
             </select>
           )}
+          {selectedNoteId && (
+            <button className="act-btn"
+              style={{ ...btn("transparent", G.dim, G.border, "6px 12px"), transition:"all .15s" }}
+              onClick={() => navigate(createPageUrl(`NoteDetail?id=${selectedNoteId}`))}>
+              ↗ Open Note
+            </button>
+          )}
           {/* Completion ring */}
           <div style={{ display:"flex", alignItems:"center", gap:8, background:"rgba(22,45,79,.5)", border:`1px solid ${G.border}`, borderRadius:9, padding:"7px 12px" }}>
             <div style={{ position:"relative", width:36, height:36 }}>

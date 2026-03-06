@@ -711,7 +711,7 @@ function NotesPanel() {
 
 // 3 columns × 3 rows = 9 cells
 const TOTAL_CELLS = 9;
-const DEFAULT_GRID = ["clock", "search", "guidelines", "news", "notes", "noteStatus", "pendingSignatures", "notesActivity", "quickNoteCreator"];
+const DEFAULT_GRID = ["clock", "search", "guidelines", "earlyWarning", "notes", "noteStatus", "pendingSignatures", "notesActivity", "quickNoteCreator"];
 
 const PRESET_LAYOUTS = {
   layout1: { name: "Default", grid: ["clock", "search", "guidelines", "news", "notes", "noteStatus", "pendingSignatures", "notesActivity", "quickNoteCreator"], sizes: {} },

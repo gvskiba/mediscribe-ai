@@ -1145,7 +1145,7 @@ export default function CMELearningCenter() {
             </div>
             <div style={{ padding:"14px 24px", borderTop:`1px solid ${G.border}`, display:"flex", gap:8, justifyContent:"flex-end" }}>
               <button style={{ padding:"9px 18px", borderRadius:8, fontFamily:"inherit", fontSize:12.5, fontWeight:700, cursor:"pointer", background:"transparent", border:`1px solid ${G.border}`, color:G.text }} onClick={()=>setCertModal(null)}>Close</button>
-              <button style={{ padding:"9px 18px", borderRadius:8, fontFamily:"inherit", fontSize:12.5, fontWeight:700, cursor:"pointer", background:"linear-gradient(135deg,#9b6dff,#7c5cd6)", border:"none", color:"#fff" }} onClick={()=>showToast("Submitted to ABEM MOC portal",G.purple)}>📤 Submit to ABEM</button>
+              <button style={{ padding:"9px 18px", borderRadius:8, fontFamily:"inherit", fontSize:12.5, fontWeight:700, cursor:"pointer", background:"linear-gradient(135deg,#9b6dff,#7c5cd6)", border:"none", color:"#fff" }} onClick={()=>{ window.open("https://www.abem.org/stay-certified/","_blank"); showToast("Opening ABEM MOC portal…",G.purple); }}>📤 Submit to ABEM</button>
               <button style={{ padding:"9px 18px", borderRadius:8, fontFamily:"inherit", fontSize:12.5, fontWeight:700, cursor:"pointer", background:"linear-gradient(135deg,#00d4bc,#00a896)", border:"none", color:"#fff" }} onClick={()=>{showToast("Certificate downloaded ✓",G.green);setCertModal(null);}}>📥 Download PDF</button>
             </div>
           </div>

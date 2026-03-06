@@ -744,6 +744,7 @@ export default function Dashboard() {
     quickNoteCreator: { label: "Quick Note", Comp: QuickNoteCreatorWidget },
     quickSearch: { label: "Quick Search", Comp: QuickSearchWidget },
     weather: { label: "Weather", Comp: WeatherWidget },
+    earlyWarning: { label: "Early Warning (Sepsis)", Comp: EarlyWarningWidget },
   };
 
   useEffect(() => {

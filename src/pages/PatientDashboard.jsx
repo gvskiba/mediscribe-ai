@@ -257,13 +257,14 @@ Return JSON with:
         {/* Row 2: Section Tabs */}
         <div style={{ display: "flex", gap: "8px", borderTop: `1px solid ${colors.border}`, paddingTop: "8px" }}>
           {[
-            { icon: "S", label: "Subjective", subtext: "HPI · ROS · Vitals", color: colors.teal },
-            { icon: "O", label: "Objective", subtext: "Exam · Labs · Imaging", color: colors.dim },
-            { icon: "A", label: "Assessment", subtext: "Diagnosis · DDx", color: colors.dim },
-            { icon: "P", label: "Plan", subtext: "Orders · Medications", color: colors.dim },
+            { icon: "S", label: "Subjective", subtext: "HPI · ROS · Vitals", color: colors.teal, tab: "patient_intake" },
+            { icon: "O", label: "Objective", subtext: "Exam · Labs · Imaging", color: colors.dim, tab: "physical_exam" },
+            { icon: "A", label: "Assessment", subtext: "Diagnosis · DDx", color: colors.dim, tab: "differential" },
+            { icon: "P", label: "Plan", subtext: "Orders · Medications", color: colors.dim, tab: "treatment_plan" },
           ].map((tab, idx) => (
             <div
               key={idx}
+              onClick={() => noteId && navigate(createPageUrl(`NoteDetail?id=${noteId}#${tab.tab}`))}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -272,7 +273,7 @@ Return JSON with:
                 borderRadius: "6px",
                 background: idx === 0 ? "rgba(0,212,188,0.15)" : "transparent",
                 border: idx === 0 ? `1px solid ${colors.teal}` : "none",
-                cursor: "pointer",
+                cursor: noteId ? "pointer" : "default",
               }}
             >
               <div

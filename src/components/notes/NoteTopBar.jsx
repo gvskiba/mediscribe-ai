@@ -19,19 +19,24 @@ const T = {
 export default function NoteTopBar({ note, noteId, queryClient, onNext }) {
   const [elapsed, setElapsed] = useState("00:00");
 
-  // Timer since note was created
+  // Timer: counts up from created_date, stops when note is finalized/amended
   useEffect(() => {
     const start = note?.created_date ? new Date(note.created_date) : new Date();
-    const tick = () => {
-      const diff = Math.floor((Date.now() - start.getTime()) / 1000);
+    const end = note?.updated_date && note?.status !== "draft" ? new Date(note.updated_date) : null;
+
+    const calc = () => {
+      const to = end ? end.getTime() : Date.now();
+      const diff = Math.max(0, Math.floor((to - start.getTime()) / 1000));
       const m = Math.floor(diff / 60).toString().padStart(2, "0");
       const s = (diff % 60).toString().padStart(2, "0");
       setElapsed(`${m}:${s}`);
     };
-    tick();
-    const id = setInterval(tick, 1000);
+
+    calc();
+    if (end) return; // already stopped — no interval needed
+    const id = setInterval(calc, 1000);
     return () => clearInterval(id);
-  }, [note?.created_date]);
+  }, [note?.created_date, note?.updated_date, note?.status]);
 
   const handleSaveDraft = async () => {
     await base44.entities.ClinicalNote.update(noteId, { status: "draft" });

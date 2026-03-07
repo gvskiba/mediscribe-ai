@@ -179,11 +179,25 @@ export default function TemplateLibrarySidebar({ selectedTemplate, onSelect, fav
           );
         })}
 
-        {filtered.length === 0 && (
+        {filtered.length === 0 && filteredCustom.length === 0 && (
           <div style={{ textAlign: "center", color: T.dim, fontSize: 12, padding: "30px 10px" }}>
             No templates match your filters
           </div>
         )}
+      </div>
+
+      {/* Footer: link to custom template manager */}
+      <div style={{ padding: "10px 12px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>
+        <a
+          href={createPageUrl("CustomTemplates")}
+          style={{
+            display: "flex", alignItems: "center", gap: 6, padding: "7px 10px", borderRadius: 8,
+            background: `${T.teal}12`, border: `1px solid ${T.teal}30`, color: T.teal,
+            fontSize: 11, fontWeight: 700, textDecoration: "none", cursor: "pointer",
+          }}
+        >
+          <Plus size={12} /> Create Custom Template
+        </a>
       </div>
     </div>
   );

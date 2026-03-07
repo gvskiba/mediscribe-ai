@@ -880,9 +880,10 @@ Return 3-5 ranked medication recommendations for ER management.`,
 
 // ─── Main Export ─────────────────────────────────────────────────────────────
 const MAIN_TABS = [
-  { id:"reference", label:"ER Reference", icon:Pill },
-  { id:"ai",        label:"AI Assist",    icon:Sparkles },
-  { id:"sepsis",    label:"Sepsis",       icon:Heart },
+  { id:"reference",    label:"ER Reference",  icon:Pill },
+  { id:"ai",           label:"AI Assist",     icon:Sparkles },
+  { id:"prescription", label:"Prescription",  icon:FileText },
+  { id:"sepsis",       label:"Sepsis",        icon:Heart },
 ];
 
 export default function MedicationsTab({ note, noteId, queryClient, isFirstTab, isLastTab, handleBack, handleNext }) {

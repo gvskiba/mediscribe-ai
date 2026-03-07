@@ -332,8 +332,8 @@ Allergies: ${allergies.join(", ") || "NKDA"}`;
     try {
       let text;
       if (imgFile?.type === "image") {
-        const uploaded = await base44.integrations.Core.UploadFile({ file: imgFile.dataUrl });
-        text = await callAI(`Analyze this imaging study using ACR/RSNA guidelines.\n\n${patientCtx()}\n\n${SCHEMA_INSTRUCTION}`, [uploaded.file_url]);
+        const fileUrl = await uploadImageFile(imgFile.dataUrl, imgFile.name);
+        text = await callAI(`Analyze this imaging study using ACR/RSNA guidelines.\n\n${patientCtx()}\n\n${SCHEMA_INSTRUCTION}`, [fileUrl]);
       } else {
         text = await callAI(`Analyze this radiology/imaging report using ACR, RSNA guidelines.\n\n${patientCtx()}\n\nIMAGING REPORT:\n${imgText}\n\n${SCHEMA_INSTRUCTION}`);
       }

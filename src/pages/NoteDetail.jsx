@@ -1431,7 +1431,7 @@ Generated: ${new Date().toLocaleString()}
     <>
       <div style={{ background: "#050f1e", fontFamily: "DM Sans, sans-serif", minHeight: "calc(100vh - 80px)", display: "flex", flexDirection: "column" }}>
       {/* Top Bar */}
-      <NoteTopBar note={note} noteId={noteId} queryClient={queryClient} onNext={handleNext} />
+      <NoteTopBar note={note} noteId={noteId} queryClient={queryClient} onNext={handleNext} autoSaveStatus={autoSaveStatus} />
       {/* Patient Vitals Bar */}
       <NotePatientVitalsBar note={note} />
       {/* SOAP Nav */}

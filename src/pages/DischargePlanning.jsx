@@ -972,7 +972,7 @@ Be concise, clinically accurate, and professional. Use standard medical abbrevia
           {selectedNoteId && (
             <button className="act-btn"
               style={{ ...btn("transparent", G.dim, G.border, "6px 12px"), transition:"all .15s" }}
-              onClick={() => navigate(createPageUrl(`NoteDetail?id=${selectedNoteId}`))}>
+              onClick={() => navigate(createPageUrl("NoteDetail") + `?id=${selectedNoteId}`)}>
               ↗ Open Note
             </button>
           )}

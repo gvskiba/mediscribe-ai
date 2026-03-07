@@ -25,11 +25,16 @@ export default function TemplateLibrarySidebar({ selectedTemplate, onSelect, fav
     queryFn: () => base44.entities.NoteTemplate.list("-created_date", 100),
   });
 
+  const NOTE_TYPE_LABELS = {
+    progress_note: "Progress Note", h_and_p: "H&P", discharge_summary: "Discharge Summary",
+    consult: "Consult Note", procedure_note: "Procedure Note",
+  };
+
   // Normalise custom templates to match built-in shape for display
   const normalisedCustom = customTemplates.map(t => ({
     ...t,
     setting: t.category || "Custom",
-    note_type: t.note_type || "Custom",
+    note_type: NOTE_TYPE_LABELS[t.note_type] || t.note_type || "Custom",
     tags: t.tags || [],
     fields: t.dynamic_fields || [],
     ai_prompt_template: t.ai_instructions || "",

@@ -99,8 +99,15 @@ export default function NoteTemplates() {
 
   const buildPrompt = () => {
     if (!selectedTemplate) return "";
-    let prompt = selectedTemplate.ai_prompt_template || "";
-    (selectedTemplate.fields || []).forEach(field => {
+    // Custom templates use ai_instructions + dynamic_fields; built-ins use ai_prompt_template + fields
+    const isCustom = selectedTemplate._isCustom || (!selectedTemplate.template_key);
+    let prompt = isCustom
+      ? (selectedTemplate.ai_instructions || selectedTemplate.ai_prompt_template || "")
+      : (selectedTemplate.ai_prompt_template || "");
+    const fieldsToUse = isCustom
+      ? (selectedTemplate.dynamic_fields || selectedTemplate.fields || [])
+      : (selectedTemplate.fields || []);
+    fieldsToUse.forEach(field => {
       const raw = fieldValues[field.id];
       let val = "";
       if (raw === undefined || raw === null || raw === "") {

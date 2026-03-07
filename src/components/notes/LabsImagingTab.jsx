@@ -230,14 +230,11 @@ Respond ONLY with valid JSON (no markdown, no backticks) matching this exact sch
   "additionalWorkup": [{ "test": "string", "type": "Lab|Imaging|EKG|Consult|Procedure", "indication": "string" }]
 }`;
 
-async function callAI(messages) {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model:"claude-opus-4-5", max_tokens:2000, messages }),
-  });
-  const data = await res.json();
-  return data.content?.[0]?.text ?? "";
+async function callAI(prompt, fileUrls) {
+  const params = { prompt, response_json_schema: null };
+  if (fileUrls?.length) params.file_urls = fileUrls;
+  const result = await base44.integrations.Core.InvokeLLM(params);
+  return typeof result === "string" ? result : JSON.stringify(result);
 }
 
 export default function LabsImagingTab({ note, noteId, queryClient, isFirstTab, isLastTab, handleBack, handleNext }) {

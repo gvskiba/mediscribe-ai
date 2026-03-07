@@ -131,7 +131,7 @@ const TAB_GROUPS = [
     label: 'Assessment',
     color: 'rose',
     tabs: [
-      { id: 'differential', label: 'Differential Dx', icon: Code },
+      { id: 'differential', label: 'Diagnoses', icon: Code },
       { id: 'mdm', label: 'MDM', icon: Brain },
     ]
   },

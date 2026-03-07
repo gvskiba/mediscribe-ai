@@ -55,6 +55,7 @@ import Calendar from './pages/Calendar';
 import ClinicalGuidelines from './pages/ClinicalGuidelines';
 import Customize from './pages/Customize';
 import Dashboard from './pages/Dashboard';
+import DischargePlanning from './pages/DischargePlanning';
 import DrugReference from './pages/DrugReference';
 import GuidelineDetail from './pages/GuidelineDetail';
 import Guidelines from './pages/Guidelines';
@@ -83,7 +84,6 @@ import TemplateEditor from './pages/TemplateEditor';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
-import DischargePlanning from './pages/DischargePlanning';
 import __Layout from './Layout.jsx';
 
 
@@ -96,6 +96,7 @@ export const PAGES = {
     "ClinicalGuidelines": ClinicalGuidelines,
     "Customize": Customize,
     "Dashboard": Dashboard,
+    "DischargePlanning": DischargePlanning,
     "DrugReference": DrugReference,
     "GuidelineDetail": GuidelineDetail,
     "Guidelines": Guidelines,
@@ -124,7 +125,6 @@ export const PAGES = {
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
-    "DischargePlanning": DischargePlanning,
 }
 
 export const pagesConfig = {

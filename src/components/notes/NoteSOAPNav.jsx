@@ -35,7 +35,7 @@ const SOAP_SECTIONS = [
   {
     id: "A",
     label: "Assessment",
-    sub: "Diagnosis · DDx",
+    sub: "Diagnoses · DDx",
     tabs: ["differential", "diagnoses", "mdm"],
     color: "#dfe6e9",
     bg: "transparent",

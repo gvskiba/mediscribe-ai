@@ -346,6 +346,7 @@ export default function TemplateForm({ template, fieldValues, onChange, onGenera
       {/* Generate Button */}
       <div style={{ padding: "12px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>
         <button
+          type="button"
           onClick={onGenerate}
           disabled={isGenerating || progress < 100}
           style={{

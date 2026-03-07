@@ -30,9 +30,9 @@ export default function NoteTopBar({ note, noteId, queryClient, onNext }) {
       const endTime = stoppedAtRef.current || autoStopped;
       const to = endTime ? endTime.getTime() : Date.now();
       const diff = Math.max(0, Math.floor((to - start.getTime()) / 1000));
-      const m = Math.floor(diff / 60).toString().padStart(2, "0");
-      const s = (diff % 60).toString().padStart(2, "0");
-      setElapsed(`${m}:${s}`);
+      const h = Math.floor(diff / 3600).toString().padStart(2, "0");
+      const m = Math.floor((diff % 3600) / 60).toString().padStart(2, "0");
+      setElapsed(`${h}:${m}`);
     };
 
     calc();

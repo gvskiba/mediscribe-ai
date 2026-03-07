@@ -203,8 +203,8 @@ export default function TemplateLibrarySidebar({ selectedTemplate, onSelect, fav
   );
 }
 
-function TemplateItem({ template, isActive, onSelect, favorites, onToggleFavorite }) {
-  const cfg = SPECIALTY_CONFIG[template.specialty] || { color: "#4a7299" };
+function TemplateItem({ template, isActive, onSelect, favorites, onToggleFavorite, isCustom }) {
+  const cfg = SPECIALTY_CONFIG[template.specialty] || { color: isCustom ? "#00d4bc" : "#4a7299" };
   const isFav = favorites.includes(template.id);
   return (
     <div
@@ -219,12 +219,15 @@ function TemplateItem({ template, isActive, onSelect, favorites, onToggleFavorit
       onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
       onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
     >
-      <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>{template.icon}</span>
+      <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>{template.icon || "📄"}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 11.5, fontWeight: 600, color: isActive ? "#e8f4ff" : "#c8ddf0", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {template.name}
         </div>
-        <div style={{ fontSize: 10, color: "#4a7299", marginTop: 2 }}>{template.note_type}</div>
+        <div style={{ fontSize: 10, color: "#4a7299", marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
+          {template.note_type}
+          {isCustom && <span style={{ fontSize: 9, padding: "0px 4px", borderRadius: 4, background: "rgba(0,212,188,0.15)", color: "#00d4bc", fontWeight: 700 }}>CUSTOM</span>}
+        </div>
       </div>
       <button
         type="button"

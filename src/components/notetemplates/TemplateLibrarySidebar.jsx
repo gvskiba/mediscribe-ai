@@ -67,7 +67,7 @@ export default function TemplateLibrarySidebar({ selectedTemplate, onSelect, fav
         <div style={{ fontSize: 10, color: T.dim, fontWeight: 700, textTransform: "uppercase", marginBottom: 6 }}>Setting</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10 }}>
           {SETTINGS.map(s => (
-            <button key={s} onClick={() => setSettingFilter(s)} style={{
+            <button key={s} type="button" onClick={() => setSettingFilter(s)} style={{
               padding: "2px 8px", borderRadius: 12, fontSize: 10, fontWeight: 600, cursor: "pointer",
               background: settingFilter === s ? T.teal : "rgba(255,255,255,0.05)",
               border: `1px solid ${settingFilter === s ? T.teal : T.border}`,

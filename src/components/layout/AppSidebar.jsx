@@ -7,7 +7,7 @@ const navItems = [
   { emoji: "🧠", label: "Dashboard", page: "Dashboard" },
   { emoji: "📋", label: "My Notes", page: "NotesLibrary" },
   { emoji: "🏥", label: "Patient Dashboard", page: "PatientDashboard" },
-  { emoji: "🔬", label: "Guidelines", page: "ClinicalGuidelines" },
+  { emoji: "🔬", label: "Guidelines", page: "Guidelines" },
   { emoji: "📰", label: "Medical News", page: "MedicalNews" },
   { emoji: "✂️", label: "Procedure Suite", page: "Procedures" },
   { emoji: "🫀", label: "Calculators", page: "Calculators" },

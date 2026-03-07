@@ -66,6 +66,7 @@ import NewNote from './pages/NewNote';
 import NoteDetail from './pages/NoteDetail';
 import NoteTemplates from './pages/NoteTemplates';
 import NotesLibrary from './pages/NotesLibrary';
+import OrderSetBuilder from './pages/OrderSetBuilder';
 import OrdersQueue from './pages/OrdersQueue';
 import PatientDashboard from './pages/PatientDashboard';
 import PatientEducation from './pages/PatientEducation';
@@ -84,7 +85,6 @@ import TemplateEditor from './pages/TemplateEditor';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
-import OrderSetBuilder from './pages/OrderSetBuilder';
 import __Layout from './Layout.jsx';
 
 
@@ -108,6 +108,7 @@ export const PAGES = {
     "NoteDetail": NoteDetail,
     "NoteTemplates": NoteTemplates,
     "NotesLibrary": NotesLibrary,
+    "OrderSetBuilder": OrderSetBuilder,
     "OrdersQueue": OrdersQueue,
     "PatientDashboard": PatientDashboard,
     "PatientEducation": PatientEducation,
@@ -126,7 +127,6 @@ export const PAGES = {
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
-    "OrderSetBuilder": OrderSetBuilder,
 }
 
 export const pagesConfig = {

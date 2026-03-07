@@ -227,7 +227,8 @@ export default function NoteDetail() {
   const [physicalExamNormal, setPhysicalExamNormal] = useState(false);
   const [rosNormal, setRosNormal] = useState(false);
   const [loadingDischargeSummary, setLoadingDischargeSummary] = useState(false);
-  const [autosaveEnabled, setAutosaveEnabled] = useState(false);
+  const [autosaveEnabled, setAutosaveEnabled] = useState(true);
+  const [autoSaveStatus, setAutoSaveStatus] = useState(null); // null | 'saving' | 'saved'
   const [vitalSignsAnalysis, setVitalSignsAnalysis] = useState(null);
   const [loadingVitalAnalysis, setLoadingVitalAnalysis] = useState(false);
   const [vitalSignsHistory, setVitalSignsHistory] = useState([]);

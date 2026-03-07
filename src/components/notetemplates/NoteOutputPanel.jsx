@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Copy, CheckCircle, PenLine, RotateCcw, Loader2, FileText } from "lucide-react";
 import { toast } from "sonner";
 

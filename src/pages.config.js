@@ -87,6 +87,7 @@ import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
 import LiveTranscriptionStudio from './pages/LiveTranscriptionStudio';
+import AddendumManager from './pages/AddendumManager';
 import __Layout from './Layout.jsx';
 
 
@@ -131,6 +132,7 @@ export const PAGES = {
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
     "LiveTranscriptionStudio": LiveTranscriptionStudio,
+    "AddendumManager": AddendumManager,
 }
 
 export const pagesConfig = {

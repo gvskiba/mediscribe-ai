@@ -4,7 +4,7 @@ import {
   Search, Sparkles, Plus, X, ChevronDown, ChevronUp,
   AlertTriangle, Activity, Loader2, Shield, ArrowLeft,
   Baby, Heart, Pill, FlaskConical, Zap, RotateCcw,
-  Skull, Wind, Syringe, Check
+  Skull, Wind, Syringe, Check, FileText
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";

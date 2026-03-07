@@ -18,6 +18,23 @@ export default function TemplateLibrarySidebar({ selectedTemplate, onSelect, fav
   const [settingFilter, setSettingFilter] = useState("All");
   const [noteTypeFilter, setNoteTypeFilter] = useState("All");
   const [openSpecialties, setOpenSpecialties] = useState({});
+  const [showCustom, setShowCustom] = useState(true);
+
+  const { data: customTemplates = [] } = useQuery({
+    queryKey: ["NoteTemplate"],
+    queryFn: () => base44.entities.NoteTemplate.list("-created_date", 100),
+  });
+
+  // Normalise custom templates to match built-in shape for display
+  const normalisedCustom = customTemplates.map(t => ({
+    ...t,
+    setting: t.category || "Custom",
+    note_type: t.note_type || "Custom",
+    tags: t.tags || [],
+    fields: t.dynamic_fields || [],
+    ai_prompt_template: t.ai_instructions || "",
+    _isCustom: true,
+  }));
 
   const filtered = BUILTIN_TEMPLATES.filter(t => {
     const q = search.toLowerCase();

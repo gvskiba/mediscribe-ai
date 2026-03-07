@@ -171,7 +171,7 @@ export default function NoteTemplates() {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: T.navy }}>
         {selectedTemplate ? (
           <TemplateForm
-            template={selectedTemplate}
+            template={normalisedTemplate}
             fieldValues={fieldValues}
             onChange={handleFieldChange}
             onGenerate={handleGenerate}

@@ -104,6 +104,7 @@ function BooleanInput({ field, value, onChange }) {
   const v = value === undefined ? (field.default ?? false) : value;
   return (
     <button
+      type="button"
       onClick={() => onChange(!v)}
       style={{
         display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", borderRadius: 8,

@@ -358,8 +358,8 @@ Allergies: ${allergies.join(", ") || "NKDA"}`;
     try {
       let text;
       if (ekgFile?.type === "image") {
-        const uploaded = await base44.integrations.Core.UploadFile({ file: ekgFile.dataUrl });
-        text = await callAI(`Analyze this 12-lead EKG using ACC/AHA and HRS guidelines.\n\n${patientCtx()}\n\n${SCHEMA_INSTRUCTION}`, [uploaded.file_url]);
+        const fileUrl = await uploadImageFile(ekgFile.dataUrl, ekgFile.name);
+        text = await callAI(`Analyze this 12-lead EKG using ACC/AHA and HRS guidelines.\n\n${patientCtx()}\n\n${SCHEMA_INSTRUCTION}`, [fileUrl]);
       } else {
         text = await callAI(`Analyze the following EKG findings using ACC/AHA and HRS guidelines.\n\n${patientCtx()}\n\nEKG FINDINGS:\n${ekgText}\n\n${SCHEMA_INSTRUCTION}`);
       }

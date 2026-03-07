@@ -85,6 +85,7 @@ import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
 import NoteTemplates from './pages/NoteTemplates';
+import CustomTemplates from './pages/CustomTemplates';
 import __Layout from './Layout.jsx';
 
 
@@ -127,6 +128,7 @@ export const PAGES = {
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
     "NoteTemplates": NoteTemplates,
+    "CustomTemplates": CustomTemplates,
 }
 
 export const pagesConfig = {

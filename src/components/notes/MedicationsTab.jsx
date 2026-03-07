@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import MedicationRecommendations from "./MedicationRecommendations";
 import TabDataPreview from "./TabDataPreview";
 import ClinicalNotePreviewButton from "./ClinicalNotePreviewButton";
+import PrescriptionBuilder from "./PrescriptionBuilder";
 
 // ─── Theme ─────────────────────────────────────────────────────────────────────
 const T = {

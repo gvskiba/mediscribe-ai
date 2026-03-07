@@ -17,8 +17,13 @@ const STATUS_CONFIG = {
 
 export default function NoteOutputPanel({ note, onNoteChange, onRegenerate, isGenerating, template }) {
   const [showSignModal, setShowSignModal] = useState(false);
-  const [status, setStatus] = useState(note ? "ai_generated" : "draft");
+  const [status, setStatus] = useState("draft");
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (note && status === "draft") setStatus("ai_generated");
+    if (!note) setStatus("draft");
+  }, [note]);
 
   const handleCopy = () => {
     if (!note) return;

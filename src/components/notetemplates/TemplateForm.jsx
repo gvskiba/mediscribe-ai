@@ -237,16 +237,14 @@ function FieldRenderer({ field, value, onChange }) {
     case "exam_checklist": return <ExamChecklist field={field} value={value} onChange={onChange} />;
     case "labs_block":     return <LabsBlock value={value} onChange={onChange} />;
     case "date":           return <DateInput field={field} value={value} onChange={onChange} />;
-    // med_list, allergy_list, ros_checklist — fallback to textarea
     default:               return <TextareaInput field={field} value={value} onChange={onChange} />;
   }
 }
 
-export default function TemplateForm({ template, fieldValues, onChange, onGenerate, isGenerating, requiredFilled, totalRequired }) {
+export default function TemplateForm({ template, fieldValues, onChange, onGenerate, isGenerating }) {
   const [openGroups, setOpenGroups] = useState({});
   const cfg = SPECIALTY_CONFIG[template.specialty] || { icon: "📄", color: T.teal };
 
-  // Group fields
   const groups = {};
   (template.fields || []).forEach(f => {
     const g = f.group || "General";

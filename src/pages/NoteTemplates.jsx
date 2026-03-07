@@ -41,6 +41,7 @@ function WelcomeScreen({ onSelect }) {
           return (
             <button
               key={spec}
+              type="button"
               onClick={() => onSelect(first)}
               style={{
                 padding: "16px 10px", borderRadius: 12, cursor: "pointer", textAlign: "center",
@@ -99,7 +100,6 @@ export default function NoteTemplates() {
 
   const buildPrompt = () => {
     if (!selectedTemplate) return "";
-    // Custom templates use ai_instructions + dynamic_fields; built-ins use ai_prompt_template + fields
     const isCustom = selectedTemplate._isCustom || (!selectedTemplate.template_key);
     let prompt = isCustom
       ? (selectedTemplate.ai_instructions || selectedTemplate.ai_prompt_template || "")
@@ -125,7 +125,7 @@ export default function NoteTemplates() {
     return prompt;
   };
 
-  // For TemplateForm: normalise custom template to built-in field shape
+  // Normalise custom template to built-in field shape for TemplateForm
   const normalisedTemplate = selectedTemplate
     ? {
         ...selectedTemplate,

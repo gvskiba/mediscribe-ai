@@ -25,7 +25,6 @@ const FIELD_TYPES = [
 
 const NOTE_TYPES = ["Progress Note", "H&P", "Discharge Summary", "Consult Note", "Procedure Note", "ED Note", "Outpatient SOAP", "Psychiatry Eval", "Custom"];
 const SPECIALTIES = Object.keys(SPECIALTY_CONFIG);
-const SETTINGS = ["ED", "ICU", "Inpatient", "Outpatient", "Procedures", "Any"];
 const ICONS = ["📋","❤️","🫁","🧠","🏥","🛏️","🩺","🔬","🦠","💊","💉","🩸","🦴","🧩","🚨","🌸","🔪","💧","📝","🚪"];
 
 const inputStyle = (extra = {}) => ({
@@ -44,13 +43,12 @@ function newField() {
   };
 }
 
-function FieldRow({ field, index, onChange, onDelete, groups }) {
+function FieldRow({ field, index, onChange, onDelete }) {
   const [open, setOpen] = useState(index === 0);
   const needsOptions = ["select", "multiselect", "exam_checklist"].includes(field.type);
 
   return (
     <div style={{ background: T.slate, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden", marginBottom: 8 }}>
-      {/* Header */}
       <div
         onClick={() => setOpen(o => !o)}
         style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", cursor: "pointer" }}
@@ -70,11 +68,9 @@ function FieldRow({ field, index, onChange, onDelete, groups }) {
         {open ? <ChevronUp size={13} color={T.dim} /> : <ChevronDown size={13} color={T.dim} />}
       </div>
 
-      {/* Body */}
       {open && (
         <div style={{ padding: "4px 14px 14px", borderTop: `1px solid ${T.border}` }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
-            {/* Label */}
             <div>
               <label style={labelStyle}>Field Label *</label>
               <input
@@ -84,14 +80,12 @@ function FieldRow({ field, index, onChange, onDelete, groups }) {
                 style={inputStyle()}
               />
             </div>
-            {/* Type */}
             <div>
               <label style={labelStyle}>Input Type *</label>
               <select value={field.type} onChange={e => onChange({ ...field, type: e.target.value })} style={inputStyle({ cursor: "pointer" })}>
                 {FIELD_TYPES.map(ft => <option key={ft.value} value={ft.value}>{ft.label}</option>)}
               </select>
             </div>
-            {/* Group */}
             <div>
               <label style={labelStyle}>Section Group</label>
               <input
@@ -107,7 +101,6 @@ function FieldRow({ field, index, onChange, onDelete, groups }) {
                 ))}
               </datalist>
             </div>
-            {/* Width */}
             <div>
               <label style={labelStyle}>Width</label>
               <select value={field.width || "full"} onChange={e => onChange({ ...field, width: e.target.value })} style={inputStyle({ cursor: "pointer" })}>
@@ -116,7 +109,6 @@ function FieldRow({ field, index, onChange, onDelete, groups }) {
                 <option value="third">One-third width</option>
               </select>
             </div>
-            {/* Placeholder */}
             {!["vitals_block", "labs_block", "boolean"].includes(field.type) && (
               <div style={{ gridColumn: "1 / -1" }}>
                 <label style={labelStyle}>Placeholder / Help Text</label>
@@ -128,7 +120,6 @@ function FieldRow({ field, index, onChange, onDelete, groups }) {
                 />
               </div>
             )}
-            {/* Unit (for number) */}
             {field.type === "number" && (
               <div>
                 <label style={labelStyle}>Unit</label>
@@ -140,7 +131,6 @@ function FieldRow({ field, index, onChange, onDelete, groups }) {
                 />
               </div>
             )}
-            {/* Required toggle */}
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <label style={{ ...labelStyle, marginBottom: 0 }}>Required Field</label>
               <button
@@ -159,7 +149,6 @@ function FieldRow({ field, index, onChange, onDelete, groups }) {
             </div>
           </div>
 
-          {/* Options for select/multiselect/exam_checklist */}
           {needsOptions && (
             <div style={{ marginTop: 12 }}>
               <label style={labelStyle}>Options (one per line)</label>
@@ -170,13 +159,9 @@ function FieldRow({ field, index, onChange, onDelete, groups }) {
                 rows={4}
                 style={inputStyle({ resize: "vertical", lineHeight: 1.6 })}
               />
-              <div style={{ fontSize: 10, color: T.dim, marginTop: 4 }}>
-                Enter each option on its own line. These will appear as choices in the form.
-              </div>
             </div>
           )}
 
-          {/* Prompt variable hint */}
           <div style={{ marginTop: 10, padding: "7px 10px", background: `${T.teal}10`, border: `1px solid ${T.teal}25`, borderRadius: 6 }}>
             <span style={{ fontSize: 10, color: T.teal }}>
               <Info size={10} style={{ verticalAlign: "middle", marginRight: 4 }} />
@@ -250,7 +235,6 @@ export default function CustomTemplateEditor({ template, onClose, onSave }) {
   const handleAutoPrompt = async () => {
     setGeneratingPrompt(true);
     try {
-      const autoPrompt = buildPromptFromFields();
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `You are helping a physician create an AI note-generation prompt. 
         
@@ -343,7 +327,6 @@ Return ONLY the prompt text, nothing else.`,
           {/* BASICS TAB */}
           {activeTab === "basics" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {/* Icon picker */}
               <div>
                 <label style={labelStyle}>Template Icon</label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -365,7 +348,6 @@ Return ONLY the prompt text, nothing else.`,
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                {/* Name */}
                 <div style={{ gridColumn: "1 / -1" }}>
                   <label style={labelStyle}>Template Name *</label>
                   <input
@@ -375,7 +357,6 @@ Return ONLY the prompt text, nothing else.`,
                     style={inputStyle()}
                   />
                 </div>
-                {/* Description */}
                 <div style={{ gridColumn: "1 / -1" }}>
                   <label style={labelStyle}>Description</label>
                   <textarea
@@ -386,7 +367,6 @@ Return ONLY the prompt text, nothing else.`,
                     style={inputStyle({ resize: "vertical" })}
                   />
                 </div>
-                {/* Specialty */}
                 <div>
                   <label style={labelStyle}>Specialty</label>
                   <select value={form.specialty} onChange={e => setField("specialty", e.target.value)} style={inputStyle({ cursor: "pointer" })}>
@@ -394,7 +374,6 @@ Return ONLY the prompt text, nothing else.`,
                     {SPECIALTIES.map(s => <option key={s} value={s}>{SPECIALTY_CONFIG[s].icon} {s}</option>)}
                   </select>
                 </div>
-                {/* Note Type */}
                 <div>
                   <label style={labelStyle}>Note Type</label>
                   <select value={form.note_type} onChange={e => setField("note_type", e.target.value)} style={inputStyle({ cursor: "pointer" })}>
@@ -403,7 +382,6 @@ Return ONLY the prompt text, nothing else.`,
                 </div>
               </div>
 
-              {/* Tags */}
               <div>
                 <label style={labelStyle}>Tags (for search/filter)</label>
                 <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
@@ -523,7 +501,6 @@ Return ONLY the prompt text, nothing else.`,
                 </button>
               </div>
 
-              {/* Field placeholder reference */}
               {form.dynamic_fields.length > 0 && (
                 <div style={{ marginBottom: 12, padding: "10px 12px", background: `${T.teal}08`, border: `1px solid ${T.teal}20`, borderRadius: 8 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: T.teal, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>

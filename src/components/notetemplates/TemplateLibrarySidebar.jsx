@@ -54,6 +54,11 @@ export default function TemplateLibrarySidebar({ selectedTemplate, onSelect, fav
 
   const toggleSpecialty = (spec) => setOpenSpecialties(prev => ({ ...prev, [spec]: !prev[spec] }));
 
+  const filteredCustom = normalisedCustom.filter(t => {
+    const q = search.toLowerCase();
+    return !q || (t.name || "").toLowerCase().includes(q) || (t.specialty || "").toLowerCase().includes(q);
+  });
+
   const favTemplates = BUILTIN_TEMPLATES.filter(t => favorites.includes(t.id));
 
   return (

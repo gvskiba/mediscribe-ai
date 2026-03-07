@@ -342,12 +342,10 @@ Allergies: ${allergies.join(", ") || "NKDA"}`;
     try {
       let text;
       if (ekgFile?.type === "image") {
-        text = await callAI([{ role:"user", content:[
-          { type:"image", source:{ type:"base64", media_type:ekgFile.mimeType, data:ekgFile.dataUrl.split(",")[1] } },
-          { type:"text", text:`Analyze this 12-lead EKG using ACC/AHA and HRS guidelines.\n\n${patientCtx()}\n\n${SCHEMA_INSTRUCTION}` }
-        ]}]);
+        const uploaded = await base44.integrations.Core.UploadFile({ file: ekgFile.dataUrl });
+        text = await callAI(`Analyze this 12-lead EKG using ACC/AHA and HRS guidelines.\n\n${patientCtx()}\n\n${SCHEMA_INSTRUCTION}`, [uploaded.file_url]);
       } else {
-        text = await callAI([{ role:"user", content:`Analyze the following EKG findings using ACC/AHA and HRS guidelines.\n\n${patientCtx()}\n\nEKG FINDINGS:\n${ekgText}\n\n${SCHEMA_INSTRUCTION}` }]);
+        text = await callAI(`Analyze the following EKG findings using ACC/AHA and HRS guidelines.\n\n${patientCtx()}\n\nEKG FINDINGS:\n${ekgText}\n\n${SCHEMA_INSTRUCTION}`);
       }
       setEkgResult(text);
       setEkgHistory(p => [{ id:Date.now(), timestamp:new Date().toISOString(), input:ekgText||`[Image: ${ekgFile?.name}]`, result:text }, ...p]);

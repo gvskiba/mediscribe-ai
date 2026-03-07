@@ -109,6 +109,7 @@ export default function TemplateLibrarySidebar({ selectedTemplate, onSelect, fav
           return (
             <div key={spec} style={{ marginBottom: 4 }}>
               <button
+                type="button"
                 onClick={() => toggleSpecialty(spec)}
                 style={{
                   width: "100%", display: "flex", alignItems: "center", gap: 6,

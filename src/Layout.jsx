@@ -51,6 +51,7 @@ const navSections = [
           { name: "Patient Education", icon: BookOpen, page: "PatientEducation" },
           { name: "Calculators", icon: Activity, page: "Calculators" },
           { name: "Templates", icon: FileText, page: "NoteTemplates" },
+          { name: "Custom Templates", icon: FileText, page: "CustomTemplates" },
           { name: "Smart Templates", icon: Sparkles, page: "SmartTemplates" },
           { name: "Snippets", icon: FileText, page: "Snippets" },
         ]

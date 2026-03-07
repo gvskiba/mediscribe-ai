@@ -120,6 +120,9 @@ export default function NoteTopBar({ note, noteId, queryClient, onNext }) {
           AI ACTIVE
         </div>
 
+        {/* Export */}
+        <ExportPDFButton note={note} noteId={noteId} />
+
         {/* Save Draft */}
         <button onClick={handleSaveDraft} style={{
           padding: "5px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,

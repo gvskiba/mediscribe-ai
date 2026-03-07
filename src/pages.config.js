@@ -48,10 +48,12 @@
  * The mainPage value must match a key in the PAGES object exactly.
  */
 import NoteTemplates from './pages/NoteTemplates';
+import CustomTemplates from './pages/CustomTemplates';
 
 
 export const PAGES = {
     "NoteTemplates": NoteTemplates,
+    "CustomTemplates": CustomTemplates,
 }
 
 export const pagesConfig = {

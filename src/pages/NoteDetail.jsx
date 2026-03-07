@@ -97,7 +97,7 @@ import SubjectiveTab from "../components/notes/SubjectiveTab";
 import PatientHeaderCard from "../components/notes/PatientHeaderCard";
 import VitalSignsTab from "../components/notes/VitalSignsTab";
 import DifferentialTab from "../components/notes/DifferentialTab";
-import LabsImagingTab from "../components/notes/LabsImagingTab";
+import LabsImagingTab from "../components/notes/LabsImagingTab.jsx";
 import PhysicalExamTab from "../components/notes/PhysicalExamTab";
 import TreatmentPlanTab from "../components/notes/TreatmentPlanTab";
 import MedicationsTab from "../components/notes/MedicationsTab";

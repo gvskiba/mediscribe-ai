@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { Search, Star, ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -13,6 +14,11 @@ const T = {
 const SETTINGS = ["All", "ED", "ICU", "Inpatient", "Outpatient", "Procedures"];
 const NOTE_TYPES = ["All", "H&P", "Progress Note", "Consult Note", "Discharge Summary", "Procedure Note", "Brief ED Note", "Outpatient SOAP", "Psychiatry Eval"];
 
+const NOTE_TYPE_LABELS = {
+  progress_note: "Progress Note", h_and_p: "H&P", discharge_summary: "Discharge Summary",
+  consult: "Consult Note", procedure_note: "Procedure Note",
+};
+
 export default function TemplateLibrarySidebar({ selectedTemplate, onSelect, favorites, onToggleFavorite }) {
   const [search, setSearch] = useState("");
   const [settingFilter, setSettingFilter] = useState("All");
@@ -24,11 +30,6 @@ export default function TemplateLibrarySidebar({ selectedTemplate, onSelect, fav
     queryKey: ["NoteTemplate"],
     queryFn: () => base44.entities.NoteTemplate.list("-created_date", 100),
   });
-
-  const NOTE_TYPE_LABELS = {
-    progress_note: "Progress Note", h_and_p: "H&P", discharge_summary: "Discharge Summary",
-    consult: "Consult Note", procedure_note: "Procedure Note",
-  };
 
   // Normalise custom templates to match built-in shape for display
   const normalisedCustom = customTemplates.map(t => ({
@@ -59,9 +60,9 @@ export default function TemplateLibrarySidebar({ selectedTemplate, onSelect, fav
 
   const toggleSpecialty = (spec) => setOpenSpecialties(prev => ({ ...prev, [spec]: !prev[spec] }));
 
-  // Only show custom templates that were built with the new CustomTemplateEditor (have actual dynamic_fields)
+  // Only show custom templates that have actual dynamic_fields (built with CustomTemplateEditor)
   const filteredCustom = normalisedCustom.filter(t => {
-    if (!t.fields || t.fields.length === 0) return false; // skip old-style section templates
+    if (!t.fields || t.fields.length === 0) return false;
     const q = search.toLowerCase();
     return !q || (t.name || "").toLowerCase().includes(q) || (t.specialty || "").toLowerCase().includes(q);
   });
@@ -129,7 +130,7 @@ export default function TemplateLibrarySidebar({ selectedTemplate, onSelect, fav
               <Star size={10} fill="#f5a623" /> Favorites
             </div>
             {favTemplates.map(t => (
-              <TemplateItem key={t.id} template={t} isActive={selectedTemplate?.id === t.id} onSelect={onSelect} isFavorite favorites={favorites} onToggleFavorite={onToggleFavorite} />
+              <TemplateItem key={t.id} template={t} isActive={selectedTemplate?.id === t.id} onSelect={onSelect} favorites={favorites} onToggleFavorite={onToggleFavorite} />
             ))}
           </div>
         )}
@@ -195,8 +196,8 @@ export default function TemplateLibrarySidebar({ selectedTemplate, onSelect, fav
 
       {/* Footer: link to custom template manager */}
       <div style={{ padding: "10px 12px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>
-        <a
-          href={createPageUrl("CustomTemplates")}
+        <Link
+          to={createPageUrl("CustomTemplates")}
           style={{
             display: "flex", alignItems: "center", gap: 6, padding: "7px 10px", borderRadius: 8,
             background: `${T.teal}12`, border: `1px solid ${T.teal}30`, color: T.teal,
@@ -204,7 +205,7 @@ export default function TemplateLibrarySidebar({ selectedTemplate, onSelect, fav
           }}
         >
           <Plus size={12} /> Create Custom Template
-        </a>
+        </Link>
       </div>
     </div>
   );

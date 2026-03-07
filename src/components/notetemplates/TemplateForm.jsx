@@ -4,7 +4,7 @@ import { SPECIALTY_CONFIG } from "./templateData";
 
 const T = {
   navy: "#050f1e", panel: "#0d2240", edge: "#162d4f", border: "#1e3a5f",
-  dim: "#4a7299", text: "#c8ddf0", bright: "#e8f4ff", teal: "#00d4bc", amber: "#f5a623", red: "#ff5c6c",
+  muted: "#2a4d72", dim: "#4a7299", text: "#c8ddf0", bright: "#e8f4ff", teal: "#00d4bc", amber: "#f5a623", red: "#ff5c6c",
 };
 
 const inputStyle = {

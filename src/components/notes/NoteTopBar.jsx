@@ -77,6 +77,7 @@ export default function NoteTopBar({ note, noteId, queryClient, onNext, autoSave
       borderBottom: `1px solid ${T.border}`,
       flexShrink: 0,
     }}>
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       {/* Left: Title + breadcrumb */}
       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

@@ -178,7 +178,7 @@ export default function LiveTranscriptionStudio({
     clearTimeout(genRef.current);
     genRef.current = setTimeout(()=>generateSOAP(transcript), 2800);
     return ()=>clearTimeout(genRef.current);
-  }, [transcript, autoGen]);
+  }, [transcript, autoGen, state]);
 
   // AI Generation
   const generateSOAP = async (txts) => {
@@ -235,7 +235,7 @@ export default function LiveTranscriptionStudio({
       if(!prev) return `## SUBJECTIVE\n\n## OBJECTIVE\n\n## ASSESSMENT\n\n## PLAN\n${m.text}`;
       const planIdx = prev.toLowerCase().lastIndexOf("## plan");
       if(m.category==="Plan"||m.category==="Social") {
-        return planIdx===-1 ? prev+"\n"+m.text : prev.slice(0,planIdx+7)+"\n"+m.text+prev.slice(planIdx+7);
+        return planIdx===-1 ? prev+"\n"+m.text : prev.slice(0,planIdx+8)+"\n"+m.text+prev.slice(planIdx+8);
       }
       const subjIdx = prev.toLowerCase().indexOf("## subjective");
       const objIdx  = prev.toLowerCase().indexOf("## objective");
@@ -537,7 +537,7 @@ export default function LiveTranscriptionStudio({
           <div style={{ flex:1, overflowY:"auto", padding:"16px", display:"flex", flexDirection:"column", gap:"6px" }}>
             {state==="idle"&&(
               <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100%", textAlign:"center", padding:"40px" }}>
-                <div style={{ fontSize:"52px", marginBottom:"16px", filter:"drop-shadow(0 0 20px "+G.teal+"60)" }}>🎙️</div>
+                <div style={{ fontSize:"52px", marginBottom:"16px", filter:`drop-shadow(0 0 20px ${G.teal}cc)` }}>🎙️</div>
                 <h3 style={{ fontFamily:F.display, fontSize:"22px", color:G.bright, margin:"0 0 10px", letterSpacing:"-0.01em" }}>Ready to Record</h3>
                 <p style={{ fontFamily:F.body, fontSize:"13px", color:G.dim, lineHeight:1.7, maxWidth:"340px" }}>
                   Click <strong style={{ color:G.teal }}>Start Recording</strong> to begin. Notrya AI transcribes the encounter in real time, separates physician and patient voices, and builds a SOAP note as you speak.

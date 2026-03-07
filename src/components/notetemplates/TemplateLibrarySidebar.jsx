@@ -78,7 +78,7 @@ export default function TemplateLibrarySidebar({ selectedTemplate, onSelect, fav
         <div style={{ fontSize: 10, color: T.dim, fontWeight: 700, textTransform: "uppercase", marginBottom: 6 }}>Note Type</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
           {NOTE_TYPES.slice(0, 6).map(n => (
-            <button key={n} onClick={() => setNoteTypeFilter(n)} style={{
+            <button key={n} type="button" onClick={() => setNoteTypeFilter(n)} style={{
               padding: "2px 8px", borderRadius: 12, fontSize: 10, fontWeight: 600, cursor: "pointer",
               background: noteTypeFilter === n ? "rgba(155,109,255,0.2)" : "rgba(255,255,255,0.05)",
               border: `1px solid ${noteTypeFilter === n ? "#9b6dff" : T.border}`,

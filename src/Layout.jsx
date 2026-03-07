@@ -54,6 +54,7 @@ const navSections = [
           { name: "Custom Templates", icon: FileText, page: "CustomTemplates" },
           { name: "Smart Templates", icon: Sparkles, page: "SmartTemplates" },
           { name: "Snippets", icon: FileText, page: "Snippets" },
+          { name: "Addendum Manager", icon: FileText, page: "AddendumManager" },
         ]
       },
       {

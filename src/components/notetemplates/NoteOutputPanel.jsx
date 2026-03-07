@@ -7,12 +7,7 @@ const T = {
   dim: "#4a7299", text: "#c8ddf0", bright: "#e8f4ff", teal: "#00d4bc", amber: "#f5a623",
 };
 
-if (typeof document !== "undefined" && !document.getElementById("spin-kf")) {
-  const s = document.createElement("style");
-  s.id = "spin-kf";
-  s.textContent = "@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }";
-  document.head.appendChild(s);
-}
+
 
 const STATUS = {
   draft:        { color: "#4a7299", label: "Draft" },

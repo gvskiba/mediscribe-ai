@@ -7,13 +7,7 @@ const T = {
   muted: "#2a4d72", dim: "#4a7299", text: "#c8ddf0", bright: "#e8f4ff", teal: "#00d4bc", amber: "#f5a623", red: "#ff5c6c",
 };
 
-// Inject spin keyframe once
-if (typeof document !== "undefined" && !document.getElementById("spin-kf")) {
-  const s = document.createElement("style");
-  s.id = "spin-kf";
-  s.textContent = "@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }";
-  document.head.appendChild(s);
-}
+
 
 const inputStyle = {
   width: "100%", padding: "7px 10px", background: "rgba(255,255,255,0.06)",

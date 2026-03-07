@@ -230,6 +230,22 @@ Respond ONLY with valid JSON (no markdown, no backticks) matching this exact sch
   "additionalWorkup": [{ "test": "string", "type": "Lab|Imaging|EKG|Consult|Procedure", "indication": "string" }]
 }`;
 
+function dataUrlToBlob(dataUrl) {
+  const [header, base64] = dataUrl.split(",");
+  const mimeType = header.match(/:(.*?);/)[1];
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mimeType });
+}
+
+async function uploadImageFile(dataUrl, fileName) {
+  const blob = dataUrlToBlob(dataUrl);
+  const file = new File([blob], fileName || "upload.png", { type: blob.type });
+  const uploaded = await base44.integrations.Core.UploadFile({ file });
+  return uploaded.file_url;
+}
+
 async function callAI(prompt, fileUrls) {
   const params = { prompt, response_json_schema: null };
   if (fileUrls?.length) params.file_urls = fileUrls;

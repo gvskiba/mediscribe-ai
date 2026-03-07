@@ -45,6 +45,8 @@ export default function ClinicalNoteComposer({ note, noteId, queryClient }) {
       <div className="flex-1 overflow-hidden">
         <ClinicalNotePreview
           note={note}
+          noteId={noteId}
+          queryClient={queryClient}
           selectedNoteType={selectedNoteType}
           selectedTemplate={selectedTemplate}
         />

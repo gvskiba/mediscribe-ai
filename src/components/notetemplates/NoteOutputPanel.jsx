@@ -7,6 +7,13 @@ const T = {
   dim: "#4a7299", text: "#c8ddf0", bright: "#e8f4ff", teal: "#00d4bc", amber: "#f5a623",
 };
 
+if (typeof document !== "undefined" && !document.getElementById("spin-kf")) {
+  const s = document.createElement("style");
+  s.id = "spin-kf";
+  s.textContent = "@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }";
+  document.head.appendChild(s);
+}
+
 const STATUS = {
   draft:        { color: "#4a7299", label: "Draft" },
   ai_generated: { color: "#9b6dff", label: "AI Generated" },
@@ -55,7 +62,7 @@ export default function NoteOutputPanel({ note, onNoteChange, onRegenerate, isGe
       </div>
 
       {/* Note content */}
-      <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
+      <div style={{ flex: 1, overflow: "hidden", position: "relative", display: "flex", flexDirection: "column" }}>
         {isGenerating ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 12 }}>
             <Loader2 size={28} color={T.teal} style={{ animation: "spin 1s linear infinite" }} />
@@ -66,7 +73,7 @@ export default function NoteOutputPanel({ note, onNoteChange, onRegenerate, isGe
             value={note}
             onChange={e => onNoteChange(e.target.value)}
             style={{
-              width: "100%", height: "100%", padding: "16px", background: "transparent",
+              flex: 1, width: "100%", padding: "16px", background: "transparent",
               border: "none", outline: "none", resize: "none", fontSize: 12.5, lineHeight: 1.7,
               color: T.text, fontFamily: "DM Sans, sans-serif", boxSizing: "border-box",
             }}

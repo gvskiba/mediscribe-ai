@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Zap, Clock, Sparkles } from "lucide-react";
 import ExportPDFButton from "./ExportPDFButton";

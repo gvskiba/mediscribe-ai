@@ -164,6 +164,7 @@ function TemplateItem({ template, isActive, onSelect, favorites, onToggleFavorit
         <div style={{ fontSize: 10, color: "#4a7299", marginTop: 2 }}>{template.note_type}</div>
       </div>
       <button
+        type="button"
         onClick={e => { e.stopPropagation(); onToggleFavorite(template.id); }}
         style={{ background: "none", border: "none", cursor: "pointer", padding: 2, color: isFav ? "#f5a623" : "#2a4d72", flexShrink: 0 }}
       >

@@ -152,10 +152,9 @@ export default function NoteTemplates() {
     <div style={{
       background: T.navy,
       fontFamily: "DM Sans, sans-serif",
-      height: "100%",
+      height: "calc(100vh - 80px)",
       display: "flex",
       overflow: "hidden",
-      minHeight: 0,
     }}>
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
 

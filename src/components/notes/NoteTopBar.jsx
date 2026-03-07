@@ -16,7 +16,7 @@ const T = {
   red: "#ff5c6c",
 };
 
-export default function NoteTopBar({ note, noteId, queryClient, onNext }) {
+export default function NoteTopBar({ note, noteId, queryClient, onNext, autoSaveStatus }) {
   const [elapsed, setElapsed] = useState("00:00");
   const [timerStopped, setTimerStopped] = useState(false);
   const stoppedAtRef = React.useRef(null);

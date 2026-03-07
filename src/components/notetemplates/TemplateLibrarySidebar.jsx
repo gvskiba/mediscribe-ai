@@ -127,6 +127,30 @@ export default function TemplateLibrarySidebar({ selectedTemplate, onSelect, fav
           </div>
         )}
 
+        {/* Custom Templates */}
+        {filteredCustom.length > 0 && (
+          <div style={{ marginBottom: 8 }}>
+            <button
+              type="button"
+              onClick={() => setShowCustom(o => !o)}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 6,
+                padding: "5px 6px", borderRadius: 6, cursor: "pointer",
+                background: "transparent", border: "none", textAlign: "left",
+                color: T.teal, fontSize: 11, fontWeight: 700,
+              }}
+            >
+              <span>✏️</span>
+              <span style={{ flex: 1 }}>My Templates</span>
+              <span style={{ fontSize: 10, background: `${T.teal}20`, color: T.teal, padding: "1px 5px", borderRadius: 8 }}>{filteredCustom.length}</span>
+              {showCustom ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+            </button>
+            {showCustom && filteredCustom.map(t => (
+              <TemplateItem key={t.id} template={t} isActive={selectedTemplate?.id === t.id} onSelect={onSelect} favorites={favorites} onToggleFavorite={onToggleFavorite} isCustom />
+            ))}
+          </div>
+        )}
+
         {/* By specialty */}
         {Object.entries(bySpecialty).map(([spec, templates]) => {
           const cfg = SPECIALTY_CONFIG[spec] || { icon: "📄", color: T.teal };

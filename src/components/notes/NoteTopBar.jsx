@@ -21,13 +21,14 @@ export default function NoteTopBar({ note, noteId, queryClient, onNext }) {
   const [timerStopped, setTimerStopped] = useState(false);
   const stoppedAtRef = React.useRef(null);
 
-  // Timer: counts up from created_date, stops when note is finalized/amended
+  // Timer: counts up from created_date, stops on finalize or manual stop
   useEffect(() => {
     const start = note?.created_date ? new Date(note.created_date) : new Date();
-    const end = note?.updated_date && note?.status !== "draft" ? new Date(note.updated_date) : null;
+    const autoStopped = note?.updated_date && note?.status !== "draft" ? new Date(note.updated_date) : null;
 
     const calc = () => {
-      const to = end ? end.getTime() : Date.now();
+      const endTime = stoppedAtRef.current || autoStopped;
+      const to = endTime ? endTime.getTime() : Date.now();
       const diff = Math.max(0, Math.floor((to - start.getTime()) / 1000));
       const m = Math.floor(diff / 60).toString().padStart(2, "0");
       const s = (diff % 60).toString().padStart(2, "0");
@@ -35,10 +36,20 @@ export default function NoteTopBar({ note, noteId, queryClient, onNext }) {
     };
 
     calc();
-    if (end) return; // already stopped — no interval needed
+    if (stoppedAtRef.current || autoStopped) return;
     const id = setInterval(calc, 1000);
     return () => clearInterval(id);
-  }, [note?.created_date, note?.updated_date, note?.status]);
+  }, [note?.created_date, note?.updated_date, note?.status, timerStopped]);
+
+  function handleToggleTimer() {
+    if (timerStopped) {
+      stoppedAtRef.current = null;
+      setTimerStopped(false);
+    } else {
+      stoppedAtRef.current = new Date();
+      setTimerStopped(true);
+    }
+  }
 
   const handleSaveDraft = async () => {
     await base44.entities.ClinicalNote.update(noteId, { status: "draft" });

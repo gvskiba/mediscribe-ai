@@ -47,14 +47,96 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
+import AddendumManager from './pages/AddendumManager';
+import AntibioticStewardship from './pages/AntibioticStewardship';
+import AppSettings from './pages/AppSettings';
+import CMELearningCenter from './pages/CMELearningCenter';
+import Calculators from './pages/Calculators';
+import Calendar from './pages/Calendar';
+import ClinicalGuidelines from './pages/ClinicalGuidelines';
+import CustomTemplates from './pages/CustomTemplates';
+import Customize from './pages/Customize';
+import Dashboard from './pages/Dashboard';
+import DischargePlanning from './pages/DischargePlanning';
+import DrugReference from './pages/DrugReference';
+import GuidelineDetail from './pages/GuidelineDetail';
+import Guidelines from './pages/Guidelines';
 import Home from './pages/Home';
+import LiveTranscriptionStudio from './pages/LiveTranscriptionStudio';
+import MedicalKnowledgeBase from './pages/MedicalKnowledgeBase';
+import MedicalNews from './pages/MedicalNews';
+import NewNote from './pages/NewNote';
+import NoteDetail from './pages/NoteDetail';
+import NoteTemplates from './pages/NoteTemplates';
+import NotesLibrary from './pages/NotesLibrary';
+import OrderSetBuilder from './pages/OrderSetBuilder';
+import OrdersQueue from './pages/OrdersQueue';
+import PatientDashboard from './pages/PatientDashboard';
+import PatientEducation from './pages/PatientEducation';
+import PatientHistory from './pages/PatientHistory';
+import PediatricDosing from './pages/PediatricDosing';
+import Procedures from './pages/Procedures';
+import SavedGuidelines from './pages/SavedGuidelines';
+import Search from './pages/Search';
+import Shift from './pages/Shift';
+import ShiftHours from './pages/ShiftHours';
+import SmartTemplates from './pages/SmartTemplates';
+import Snippets from './pages/Snippets';
+import SoapCompiler from './pages/SoapCompiler';
+import SoapCompilerStandalone from './pages/SoapCompilerStandalone';
+import TemplateEditor from './pages/TemplateEditor';
+import TemplateSections from './pages/TemplateSections';
+import UserPreferences from './pages/UserPreferences';
+import UserSettings from './pages/UserSettings';
+import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "AddendumManager": AddendumManager,
+    "AntibioticStewardship": AntibioticStewardship,
+    "AppSettings": AppSettings,
+    "CMELearningCenter": CMELearningCenter,
+    "Calculators": Calculators,
+    "Calendar": Calendar,
+    "ClinicalGuidelines": ClinicalGuidelines,
+    "CustomTemplates": CustomTemplates,
+    "Customize": Customize,
+    "Dashboard": Dashboard,
+    "DischargePlanning": DischargePlanning,
+    "DrugReference": DrugReference,
+    "GuidelineDetail": GuidelineDetail,
+    "Guidelines": Guidelines,
     "Home": Home,
+    "LiveTranscriptionStudio": LiveTranscriptionStudio,
+    "MedicalKnowledgeBase": MedicalKnowledgeBase,
+    "MedicalNews": MedicalNews,
+    "NewNote": NewNote,
+    "NoteDetail": NoteDetail,
+    "NoteTemplates": NoteTemplates,
+    "NotesLibrary": NotesLibrary,
+    "OrderSetBuilder": OrderSetBuilder,
+    "OrdersQueue": OrdersQueue,
+    "PatientDashboard": PatientDashboard,
+    "PatientEducation": PatientEducation,
+    "PatientHistory": PatientHistory,
+    "PediatricDosing": PediatricDosing,
+    "Procedures": Procedures,
+    "SavedGuidelines": SavedGuidelines,
+    "Search": Search,
+    "Shift": Shift,
+    "ShiftHours": ShiftHours,
+    "SmartTemplates": SmartTemplates,
+    "Snippets": Snippets,
+    "SoapCompiler": SoapCompiler,
+    "SoapCompilerStandalone": SoapCompilerStandalone,
+    "TemplateEditor": TemplateEditor,
+    "TemplateSections": TemplateSections,
+    "UserPreferences": UserPreferences,
+    "UserSettings": UserSettings,
 }
 
 export const pagesConfig = {
     mainPage: "Home",
     Pages: PAGES,
+    Layout: __Layout,
 };

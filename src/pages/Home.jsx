@@ -528,7 +528,7 @@ export default function Home() {
           </span>
           <div style={{ flex: 1, height: 1, background: COLORS.border }} />
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14 }}>
           {MODULES.map((m) => (
             <ModuleCard key={m.id} module={m} navigate={navigate} />
           ))}
@@ -546,7 +546,7 @@ export default function Home() {
           </span>
           <div style={{ flex: 1, height: 1, background: COLORS.border }} />
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14 }}>
           {COMPLIANCE_MODULES.map((m) => (
             <ModuleCard key={m.id} module={m} navigate={navigate} />
           ))}
@@ -564,7 +564,7 @@ export default function Home() {
           </span>
           <div style={{ flex: 1, height: 1, background: COLORS.border }} />
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14, maxWidth: "100%" }}>
           {REFERENCE_MODULES.map((m) => (
             <ModuleCard key={m.id} module={m} navigate={navigate} />
           ))}

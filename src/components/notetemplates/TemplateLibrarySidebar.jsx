@@ -1,6 +1,9 @@
 import React, { useState } from "react";
-import { Search, Star, ChevronDown, ChevronRight } from "lucide-react";
+import { Search, Star, ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 import { SPECIALTY_CONFIG, BUILTIN_TEMPLATES } from "./templateData";
+import { createPageUrl } from "@/utils";
 
 const T = {
   navy: "#050f1e", slate: "#0b1d35", panel: "#0d2240", edge: "#162d4f",

@@ -54,7 +54,9 @@ export default function TemplateLibrarySidebar({ selectedTemplate, onSelect, fav
 
   const toggleSpecialty = (spec) => setOpenSpecialties(prev => ({ ...prev, [spec]: !prev[spec] }));
 
+  // Only show custom templates that were built with the new CustomTemplateEditor (have actual dynamic_fields)
   const filteredCustom = normalisedCustom.filter(t => {
+    if (!t.fields || t.fields.length === 0) return false; // skip old-style section templates
     const q = search.toLowerCase();
     return !q || (t.name || "").toLowerCase().includes(q) || (t.specialty || "").toLowerCase().includes(q);
   });

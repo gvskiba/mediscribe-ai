@@ -117,14 +117,22 @@ export default function NoteTopBar({ note, noteId, queryClient, onNext }) {
         </div>
 
         {/* Timer */}
-        <div style={{
-          display: "flex", alignItems: "center", gap: 5,
-          padding: "4px 10px", borderRadius: 20,
-          background: "rgba(200,221,240,0.07)", border: `1px solid ${T.border}`,
-          fontSize: 12, fontWeight: 600, color: T.text,
-        }}>
-          <div style={{ width: 7, height: 7, borderRadius: "50%", background: T.text }} />
+        <div
+          onClick={handleToggleTimer}
+          title={timerStopped ? "Click to resume timer" : "Click to pause timer"}
+          style={{
+            display: "flex", alignItems: "center", gap: 5,
+            padding: "4px 10px", borderRadius: 20, cursor: "pointer",
+            background: timerStopped ? "rgba(245,166,35,0.1)" : "rgba(200,221,240,0.07)",
+            border: `1px solid ${timerStopped ? "rgba(245,166,35,0.4)" : T.border}`,
+            fontSize: 12, fontWeight: 600,
+            color: timerStopped ? T.amber : T.text,
+            transition: "all .15s",
+          }}
+        >
+          <div style={{ width: 7, height: 7, borderRadius: timerStopped ? 1 : "50%", background: timerStopped ? T.amber : T.text }} />
           {elapsed}
+          <span style={{ fontSize: 9, opacity: 0.7, marginLeft: 2 }}>{timerStopped ? "▶" : "⏸"}</span>
         </div>
 
         {/* AI Active */}

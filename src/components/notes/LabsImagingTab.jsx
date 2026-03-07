@@ -305,8 +305,8 @@ Allergies: ${allergies.join(", ") || "NKDA"}`;
     try {
       let text;
       if (labFile?.type === "image") {
-        const uploaded = await base44.integrations.Core.UploadFile({ file: labFile.dataUrl });
-        text = await callAI(`Analyze these lab results.\n\n${patientCtx()}\n\n${SCHEMA_INSTRUCTION}`, [uploaded.file_url]);
+        const fileUrl = await uploadImageFile(labFile.dataUrl, labFile.name);
+        text = await callAI(`Analyze these lab results.\n\n${patientCtx()}\n\n${SCHEMA_INSTRUCTION}`, [fileUrl]);
       } else {
         text = await callAI(`Analyze the following lab results using evidence-based guidelines (ACC/AHA, ADA, KDIGO, ASH, IDSA).\n\n${patientCtx()}\n\nLAB RESULTS:\n${labText}\n\n${SCHEMA_INSTRUCTION}`);
       }

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { BUILTIN_TEMPLATES, SPECIALTY_CONFIG } from "../components/notetemplates/templateData";
 import TemplateLibrarySidebar from "../components/notetemplates/TemplateLibrarySidebar";

@@ -316,12 +316,10 @@ Allergies: ${allergies.join(", ") || "NKDA"}`;
     try {
       let text;
       if (imgFile?.type === "image") {
-        text = await callAI([{ role:"user", content:[
-          { type:"image", source:{ type:"base64", media_type:imgFile.mimeType, data:imgFile.dataUrl.split(",")[1] } },
-          { type:"text", text:`Analyze this imaging study using ACR/RSNA guidelines.\n\n${patientCtx()}\n\n${SCHEMA_INSTRUCTION}` }
-        ]}]);
+        const uploaded = await base44.integrations.Core.UploadFile({ file: imgFile.dataUrl });
+        text = await callAI(`Analyze this imaging study using ACR/RSNA guidelines.\n\n${patientCtx()}\n\n${SCHEMA_INSTRUCTION}`, [uploaded.file_url]);
       } else {
-        text = await callAI([{ role:"user", content:`Analyze this radiology/imaging report using ACR, RSNA guidelines.\n\n${patientCtx()}\n\nIMGING REPORT:\n${imgText}\n\n${SCHEMA_INSTRUCTION}` }]);
+        text = await callAI(`Analyze this radiology/imaging report using ACR, RSNA guidelines.\n\n${patientCtx()}\n\nIMAGING REPORT:\n${imgText}\n\n${SCHEMA_INSTRUCTION}`);
       }
       setImgResult(text);
       setImgHistory(p => [{ id:Date.now(), timestamp:new Date().toISOString(), input:imgText||`[Image: ${imgFile?.name}]`, result:text }, ...p]);

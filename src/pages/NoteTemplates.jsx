@@ -125,6 +125,14 @@ export default function NoteTemplates() {
     return prompt;
   };
 
+  // For TemplateForm: normalise custom template to built-in field shape
+  const normalisedTemplate = selectedTemplate
+    ? {
+        ...selectedTemplate,
+        fields: selectedTemplate.fields || selectedTemplate.dynamic_fields || [],
+      }
+    : null;
+
   const handleGenerate = async () => {
     if (!selectedTemplate) return;
     setIsGenerating(true);

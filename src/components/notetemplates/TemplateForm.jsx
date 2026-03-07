@@ -302,6 +302,7 @@ export default function TemplateForm({ template, fieldValues, onChange, onGenera
           return (
             <div key={groupName} style={{ marginBottom: 12 }}>
               <button
+                type="button"
                 onClick={() => toggleGroup(groupName)}
                 style={{
                   display: "flex", alignItems: "center", gap: 6, width: "100%",

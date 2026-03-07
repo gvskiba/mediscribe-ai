@@ -629,13 +629,27 @@ export default function NoteDetail() {
     entityId: noteId,
     onSave: async (data) => {
       if (noteId) {
+        setAutoSaveStatus('saving');
         await base44.entities.ClinicalNote.update(noteId, data);
-        toast.success("Auto-saved at " + format(new Date(), "h:mm:ss a"));
+        setAutoSaveStatus('saved');
+        setTimeout(() => setAutoSaveStatus(null), 3000);
       }
     },
-    interval: 30000,
-    enabled: autosaveEnabled,
+    interval: 15000, // every 15 seconds
+    enabled: autosaveEnabled && note?.status === 'draft',
   });
+
+  // Warn user before closing with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (note?.status === 'draft') {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [note?.status]);
 
   const finalizeMutation = useMutation({
     mutationFn: async () => {

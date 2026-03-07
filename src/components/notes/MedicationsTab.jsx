@@ -1044,6 +1044,13 @@ export default function MedicationsTab({ note, noteId, queryClient, isFirstTab, 
           </div>
         )}
 
+        {/* ── Prescription Builder ── */}
+        {activeTab === "prescription" && (
+          <div style={{ height: "calc(100vh - 140px)", overflowY: "auto" }}>
+            <PrescriptionBuilder note={note} noteId={noteId} queryClient={queryClient} />
+          </div>
+        )}
+
         {/* ── Sepsis ── */}
         {activeTab === "sepsis" && (
           <div className="p-4 overflow-y-auto" style={{ height: "calc(100vh - 140px)" }}>

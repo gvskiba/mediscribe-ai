@@ -289,12 +289,10 @@ Allergies: ${allergies.join(", ") || "NKDA"}`;
     try {
       let text;
       if (labFile?.type === "image") {
-        text = await callAI([{ role:"user", content:[
-          { type:"image", source:{ type:"base64", media_type:labFile.mimeType, data:labFile.dataUrl.split(",")[1] } },
-          { type:"text", text:`Analyze these lab results.\n\n${patientCtx()}\n\n${SCHEMA_INSTRUCTION}` }
-        ]}]);
+        const uploaded = await base44.integrations.Core.UploadFile({ file: labFile.dataUrl });
+        text = await callAI(`Analyze these lab results.\n\n${patientCtx()}\n\n${SCHEMA_INSTRUCTION}`, [uploaded.file_url]);
       } else {
-        text = await callAI([{ role:"user", content:`Analyze the following lab results using evidence-based guidelines (ACC/AHA, ADA, KDIGO, ASH, IDSA).\n\n${patientCtx()}\n\nLAB RESULTS:\n${labText}\n\n${SCHEMA_INSTRUCTION}` }]);
+        text = await callAI(`Analyze the following lab results using evidence-based guidelines (ACC/AHA, ADA, KDIGO, ASH, IDSA).\n\n${patientCtx()}\n\nLAB RESULTS:\n${labText}\n\n${SCHEMA_INSTRUCTION}`);
       }
       setLabResult(text);
       setLabHistory(p => [{ id:Date.now(), timestamp:new Date().toISOString(), input:labText||`[Image: ${labFile?.name}]`, result:text }, ...p]);

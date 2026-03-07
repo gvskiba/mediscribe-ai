@@ -83,6 +83,7 @@ function MultiSelectInput({ field, value, onChange }) {
         return (
           <button
             key={opt}
+            type="button"
             onClick={() => toggle(opt)}
             style={{
               padding: "4px 10px", borderRadius: 20, fontSize: 11, cursor: "pointer",

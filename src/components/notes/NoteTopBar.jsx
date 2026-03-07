@@ -149,6 +149,25 @@ export default function NoteTopBar({ note, noteId, queryClient, onNext, autoSave
         {/* Export */}
         <ExportPDFButton note={note} noteId={noteId} />
 
+        {/* Autosave status */}
+        {autoSaveStatus && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 5,
+            padding: "4px 10px", borderRadius: 20,
+            background: autoSaveStatus === 'saving' ? "rgba(74,114,153,0.15)" : "rgba(46,204,113,0.08)",
+            border: `1px solid ${autoSaveStatus === 'saving' ? T.border : "rgba(46,204,113,0.3)"}`,
+            fontSize: 11, fontWeight: 600,
+            color: autoSaveStatus === 'saving' ? T.dim : T.green,
+            transition: "all 0.3s",
+          }}>
+            {autoSaveStatus === 'saving' ? (
+              <><Clock size={10} style={{ animation: "spin 1s linear infinite" }} /> Saving…</>
+            ) : (
+              <><Sparkles size={10} /> Saved</>
+            )}
+          </div>
+        )}
+
         {/* Save Draft */}
         <button onClick={handleSaveDraft} style={{
           padding: "5px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,

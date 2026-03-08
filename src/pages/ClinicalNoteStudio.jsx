@@ -658,11 +658,6 @@ export default function ClinicalNoteStudio() {
   }
 
   // ── NOTE DETAIL MODE ──
-  // Prevent switching to notes mode without a saved note
-  if (mode === "notes" && !savedNoteId) {
-    setMode("studio");
-    return null;
-  }
 
   if (noteLoading && savedNoteId) {
     return (

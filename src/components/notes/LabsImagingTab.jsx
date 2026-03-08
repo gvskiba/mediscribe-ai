@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { ArrowLeft } from "lucide-react";
+import ExternalLabImporter from "./ExternalLabImporter";
 
 const G = {
   navy:"#050f1e", slate:"#0b1d35", panel:"#0d2240", edge:"#162d4f",
@@ -381,6 +382,7 @@ Allergies: ${allergies.join(", ") || "NKDA"}`;
     { id:"labs",    icon:"🧪", label:"Lab Analysis",     color:G.teal,   abn:labAbn, urg:labUrg, has:!!labResult },
     { id:"imaging", icon:"🩻", label:"Imaging Analysis", color:G.purple, abn:imgAbn, urg:imgUrg, has:!!imgResult },
     { id:"ekg",     icon:"💓", label:"EKG Analysis",     color:G.rose,   abn:ekgAbn, urg:ekgUrg, has:!!ekgResult },
+    { id:"import",  icon:"🔗", label:"External Import",  color:G.blue,   abn:0,      urg:null,   has:false },
   ];
 
   function AnalyzingState({ label, color }) {
@@ -576,6 +578,16 @@ Allergies: ${allergies.join(", ") || "NKDA"}`;
               {!imgAnalyzing && imgResult && <AnalysisResult result={imgResult}/>}
               {!imgAnalyzing && !imgResult && <HistoryPanel history={imgHistory} onSelect={r => setImgResult(r)}/>}
             </div>
+          )}
+
+          {/* EXTERNAL IMPORT */}
+          {activeTab==="import" && (
+            <ExternalLabImporter
+              note={note}
+              noteId={noteId}
+              queryClient={queryClient}
+              onImportDone={() => setActiveTab("labs")}
+            />
           )}
 
           {/* EKG */}

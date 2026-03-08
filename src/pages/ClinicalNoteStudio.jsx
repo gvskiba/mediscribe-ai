@@ -167,6 +167,92 @@ export default function ClinicalNoteStudio() {
   const removeDx = (i) => setDxList(prev => prev.filter((_,idx) => idx !== i));
   const updateDx = (i, field, val) => setDxList(prev => prev.map((d,idx) => idx===i ? {...d,[field]:val} : d));
 
+  const buildNotePayload = (status = "draft") => ({
+    patient_name: pt.name,
+    patient_id: pt.mrn,
+    patient_age: pt.age,
+    patient_gender: pt.sex?.toLowerCase() || "male",
+    date_of_birth: pt.dob,
+    date_of_visit: pt.encounter || new Date().toISOString().split("T")[0],
+    note_type: "progress_note",
+    chief_complaint: pt.cc,
+    history_of_present_illness: pt.hpi,
+    medical_history: pt.pmh.join(", "),
+    allergies: pt.allergies.filter(Boolean),
+    diagnoses: dxList.map(d => d.dx).filter(Boolean),
+    disposition_plan: pt.dc,
+    vital_signs: {
+      heart_rate: pt.vitals.hr ? { value: +pt.vitals.hr, unit: "bpm" } : undefined,
+      blood_pressure: pt.vitals.sbp ? { systolic: +pt.vitals.sbp, diastolic: +pt.vitals.dbp, unit: "mmHg" } : undefined,
+      temperature: pt.vitals.temp ? { value: +pt.vitals.temp, unit: "F" } : undefined,
+      respiratory_rate: pt.vitals.rr ? { value: +pt.vitals.rr, unit: "breaths/min" } : undefined,
+      oxygen_saturation: pt.vitals.spo2 ? { value: +pt.vitals.spo2, unit: "%" } : undefined,
+      weight: pt.vitals.wt ? { value: +pt.vitals.wt, unit: "lbs" } : undefined,
+      height: pt.vitals.ht ? { value: +pt.vitals.ht, unit: "in" } : undefined,
+    },
+    lab_findings: pt.labs.filter(l => l.n).map(l => ({
+      test_name: l.n, result: l.v, reference_range: l.ref, unit: l.u,
+      status: l.f === "H" || l.f === "L" ? "abnormal" : "normal",
+    })),
+    imaging_findings: pt.imaging.filter(i => i.type).map(i => ({
+      study_type: i.type, location: i.title, findings: i.f, impression: i.imp,
+    })),
+    raw_note: `CC: ${pt.cc}\nHPI: ${pt.hpi}\nAssessment: ${dxList.map((d,i) => `${i+1}. ${d.dx}: ${d.plan}`).join('; ')}`,
+    status,
+  });
+
+  const saveNote = async () => {
+    if (!pt.name && !pt.cc) { showToast("Enter patient name or chief complaint first", 'e'); return; }
+    setSaving(true);
+    try {
+      const payload = buildNotePayload("draft");
+      let id = savedNoteId;
+      if (id) {
+        await base44.entities.ClinicalNote.update(id, payload);
+      } else {
+        const created = await base44.entities.ClinicalNote.create(payload);
+        id = created.id;
+        setSavedNoteId(id);
+        // Update URL without reload
+        window.history.replaceState({}, '', `?noteId=${id}`);
+      }
+      showToast("Note saved", 's');
+      queryClient.invalidateQueries({ queryKey: ["studioNote", id] });
+    } catch (err) {
+      showToast("Save failed: " + err.message, 'e');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const signNote = async () => {
+    if (!pt.name && !pt.cc) { showToast("Enter patient info before signing", 'e'); return; }
+    setSaving(true);
+    try {
+      const payload = buildNotePayload("finalized");
+      let id = savedNoteId;
+      if (id) {
+        await base44.entities.ClinicalNote.update(id, payload);
+      } else {
+        const created = await base44.entities.ClinicalNote.create(payload);
+        id = created.id;
+        setSavedNoteId(id);
+        window.history.replaceState({}, '', `?noteId=${id}`);
+      }
+      showToast("Note signed and finalized", 's');
+      queryClient.invalidateQueries({ queryKey: ["studioNote", id] });
+    } catch (err) {
+      showToast("Sign failed: " + err.message, 'e');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openInNoteDetail = () => {
+    if (!savedNoteId) { showToast("Save note first", 'e'); return; }
+    navigate(createPageUrl(`NoteDetail?id=${savedNoteId}`));
+  };
+
   const secContent = (id) => {
     const v = pt.vitals;
     const map = {

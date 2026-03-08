@@ -257,14 +257,14 @@ Return JSON with:
         {/* Row 2: Section Tabs */}
         <div style={{ display: "flex", gap: "8px", borderTop: `1px solid ${colors.border}`, paddingTop: "8px" }}>
           {[
-            { icon: "S", label: "Subjective", subtext: "HPI · ROS · Vitals", color: colors.teal, tab: "patient_intake" },
-            { icon: "O", label: "Objective", subtext: "Exam · Labs · Imaging", color: colors.dim, tab: "physical_exam" },
-            { icon: "A", label: "Assessment", subtext: "Diagnosis · DDx", color: colors.dim, tab: "differential" },
-            { icon: "P", label: "Plan", subtext: "Orders · Medications", color: colors.dim, tab: "treatment_plan" },
+            { icon: "✏️", label: "Note Studio", subtext: "Create & Edit Notes", page: "ClinicalNoteStudio" },
+            { icon: "🎤", label: "Transcription", subtext: "Voice to Text", page: "LiveTranscription" },
+            { icon: "📋", label: "Orders", subtext: "Orders & Protocols", page: "OrderSetBuilder" },
+            { icon: "🚪", label: "Discharge", subtext: "Disposition & Discharge", page: "DischargePlanning" },
           ].map((tab, idx) => (
             <div
               key={idx}
-              onClick={() => noteId && navigate(createPageUrl(`NoteDetail?id=${noteId}#${tab.tab}`))}
+              onClick={() => navigate(createPageUrl(tab.page))}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -273,7 +273,7 @@ Return JSON with:
                 borderRadius: "6px",
                 background: idx === 0 ? "rgba(0,212,188,0.15)" : "transparent",
                 border: idx === 0 ? `1px solid ${colors.teal}` : "none",
-                cursor: noteId ? "pointer" : "default",
+                cursor: "pointer",
               }}
             >
               <div
@@ -287,7 +287,7 @@ Return JSON with:
                   justifyContent: "center",
                   color: idx === 0 ? colors.navy : colors.text,
                   fontWeight: 600,
-                  fontSize: "12px",
+                  fontSize: "14px",
                 }}
               >
                 {tab.icon}

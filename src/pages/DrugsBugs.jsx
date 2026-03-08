@@ -161,7 +161,7 @@ export default function DrugsAndBugs(){
 
       // ── HUB ────────────────────────────────────────────────────
       case "hub": return(
-        <div style={{width:"100%"}}>
+        <div style={{width:"100%",padding:"20px"}}>
 
           {/* Hero bar */}
           <div style={{background:"linear-gradient(135deg,rgba(0,212,188,.07),rgba(155,109,255,.04))",border:`1px solid rgba(0,212,188,.2)`,borderRadius:16,padding:"18px 22px",marginBottom:20,display:"flex",alignItems:"center",gap:16}}>
@@ -244,7 +244,7 @@ export default function DrugsAndBugs(){
 
       // ── QUICK DRUG REFERENCE ────────────────────────────────────
       case "quickref": return(
-        <div style={{width:"100%"}}>
+        <div style={{width:"100%",padding:"20px"}}>
           <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
             <div style={{position:"relative",flex:1,minWidth:200}}>
               <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:13,pointerEvents:"none"}}>🔍</span>
@@ -290,7 +290,7 @@ export default function DrugsAndBugs(){
 
       // ── SEPSIS PROTOCOL ────────────────────────────────────────
       case "sepsis": return(
-        <div style={{width:"100%"}}>
+        <div style={{width:"100%",padding:"20px"}}>
           <div style={{display:"flex",gap:10,marginBottom:16,alignItems:"center"}}>
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:C.bright}}>Sepsis Protocol</div>
             <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:7,background:"rgba(255,92,108,.12)",border:"1px solid rgba(255,92,108,.3)",color:C.red}}>SSC 2018</span>
@@ -353,7 +353,7 @@ export default function DrugsAndBugs(){
 
       // ── EMPIRIC ANTIBIOTICS ────────────────────────────────────
       case "abx": return(
-        <div style={{width:"100%"}}>
+        <div style={{width:"100%",padding:"20px"}}>
           <div style={{display:"flex",gap:10,marginBottom:16,alignItems:"center"}}>
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:C.bright}}>Empiric Antibiotic Selection</div>
             <div style={{flex:1}} />
@@ -397,7 +397,7 @@ export default function DrugsAndBugs(){
 
       // ── PEDS QUICK CALC ────────────────────────────────────────
       case "peds": return(
-        <div style={{width:"100%"}}>
+        <div style={{width:"100%",padding:"20px"}}>
           <div style={{display:"flex",gap:10,marginBottom:16,alignItems:"center"}}>
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:C.bright}}>Pediatric Quick Reference</div>
             <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:7,background:"rgba(155,109,255,.12)",border:"1px solid rgba(155,109,255,.3)",color:C.purple}}>PHOENIX 2024</span>

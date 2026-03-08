@@ -85,7 +85,10 @@ export default function ClinicalNoteStudio() {
   // Load existing note if noteId provided
   const { data: existingNote } = useQuery({
     queryKey: ["studioNote", noteId],
-    queryFn: () => base44.entities.ClinicalNote.get(noteId),
+    queryFn: async () => {
+      const results = await base44.entities.ClinicalNote.filter({ id: noteId });
+      return results?.[0] || null;
+    },
     enabled: !!noteId,
   });
 

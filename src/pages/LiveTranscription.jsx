@@ -278,7 +278,7 @@ export default function LiveTranscriptionStudio({
   );
 
   return (
-    <div style={{ minHeight:"100vh", background:G.navy, fontFamily:F.body, position:"relative", overflow:"hidden", paddingTop:"42px" }}>
+    <div style={{ minHeight:"100vh", background:G.navy, fontFamily:F.body, position:"relative", paddingTop:"42px" }}>
 
       {/* Navbar */}
       <div style={{

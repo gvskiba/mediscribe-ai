@@ -191,47 +191,47 @@ export default function ClinicalNoteStudio() {
     if (noteId && note) setMode("notes");
   }, [noteId, note?.id]);
 
-  // Hydrate studio form when existing note loads
+  // Hydrate studio form when existing note loads (only on initial load from URL)
   useEffect(() => {
-    if (!note) return;
+    if (!note || !noteId) return; // Only hydrate if note was loaded from URL
     const n = note;
     const vs = n.vital_signs || {};
-    setPt(prev => ({
-      ...prev,
-      name: n.patient_name || prev.name,
-      mrn: n.patient_id || prev.mrn,
-      dob: n.date_of_birth || prev.dob,
-      age: n.patient_age || prev.age,
+    setPt({
+      name: n.patient_name || "",
+      mrn: n.patient_id || "",
+      dob: n.date_of_birth || "",
+      age: n.patient_age || "",
       sex: n.patient_gender === "female" ? "Female" : n.patient_gender === "other" ? "Other" : "Male",
-      encounter: n.date_of_visit || prev.encounter,
+      encounter: n.date_of_visit || "",
       type: n.note_type || "ED Visit",
-      allergies: n.allergies || prev.allergies,
+      provider: "",
+      allergies: n.allergies || [],
+      meds: [],
       vitals: {
-        hr: vs.heart_rate?.value || prev.vitals.hr,
-        sbp: vs.blood_pressure?.systolic || prev.vitals.sbp,
-        dbp: vs.blood_pressure?.diastolic || prev.vitals.dbp,
-        temp: vs.temperature?.value || prev.vitals.temp,
-        rr: vs.respiratory_rate?.value || prev.vitals.rr,
-        spo2: vs.oxygen_saturation?.value || prev.vitals.spo2,
-        gcs: prev.vitals.gcs,
-        wt: vs.weight?.value || prev.vitals.wt,
-        ht: vs.height?.value || prev.vitals.ht,
-        bmi: prev.vitals.bmi,
+        hr: vs.heart_rate?.value || "",
+        sbp: vs.blood_pressure?.systolic || "",
+        dbp: vs.blood_pressure?.diastolic || "",
+        temp: vs.temperature?.value || "",
+        rr: vs.respiratory_rate?.value || "",
+        spo2: vs.oxygen_saturation?.value || "",
+        gcs: "",
+        wt: vs.weight?.value || "",
+        ht: vs.height?.value || "",
+        bmi: "",
       },
       labs: (n.lab_findings || []).map(l => ({n:l.test_name,v:l.result,ref:l.reference_range,u:l.unit,f:l.status==="abnormal"?"H":"N"})),
-      cc: n.chief_complaint || prev.cc,
-      hpi: n.history_of_present_illness || prev.hpi,
-      pmh: n.medical_history ? n.medical_history.split(", ").filter(Boolean) : prev.pmh,
-      psh: prev.psh,
-      social: prev.social,
-      family: prev.family,
+      cc: n.chief_complaint || "",
+      hpi: n.history_of_present_illness || "",
+      pmh: n.medical_history ? n.medical_history.split(", ").filter(Boolean) : [],
+      psh: [], social: "", family: "",
+      ros: EMPTY_PT.ros,
+      pe: EMPTY_PT.pe,
       imaging: (n.imaging_findings || []).map(i => ({type:i.study_type,title:i.location||"",date:"Today",f:i.findings||"",imp:i.impression||"",abn:false})),
-      disposition: prev.disposition,
-      dc: n.disposition_plan || prev.dc,
-    }));
+      assessment: [], disposition: "", dc: n.disposition_plan || "",
+    });
     setDxList((n.diagnoses || []).map(d => ({dx:d,plan:""})));
     setSavedNoteId(n.id);
-  }, [note?.id]);
+  }, [note?.id, noteId]);
 
   // Merge custom tab groups
   useEffect(() => {

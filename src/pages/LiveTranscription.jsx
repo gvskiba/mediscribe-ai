@@ -722,14 +722,12 @@ export default function LiveTranscriptionStudio({
                   borderRadius:"9px", padding:"8px", cursor:"pointer", fontFamily:F.body, fontSize:"12px",
                   opacity:!soapRaw?0.4:1,
                 }}>📋 Copy</button>
-              {onSaveSession&&(
-                <button onClick={()=>{ onSaveSession({transcript,soapNote:editMode?editText:soapRaw}); toast("Session saved","success"); }}
-                  disabled={!soapRaw}
-                  style={{ flex:1, background:G.blue+"18", border:`1px solid ${G.blue}40`, color:G.blue,
-                    borderRadius:"9px", padding:"8px", cursor:"pointer", fontFamily:F.body, fontSize:"12px",
-                    opacity:!soapRaw?0.4:1,
-                  }}>💾 Save</button>
-              )}
+              <button onClick={handleSave}
+                disabled={!soapRaw}
+                style={{ flex:1, background:G.blue+"18", border:`1px solid ${G.blue}40`, color:G.blue,
+                  borderRadius:"9px", padding:"8px", cursor:"pointer", fontFamily:F.body, fontSize:"12px",
+                  opacity:!soapRaw?0.4:1,
+                }}>💾 Save</button>
             </div>
           </div>
         </div>

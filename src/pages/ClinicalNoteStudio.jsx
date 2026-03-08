@@ -539,7 +539,7 @@ export default function ClinicalNoteStudio() {
           <button onClick={saveNote} disabled={saving} style={{padding:"5px 13px",borderRadius:9,fontSize:12,fontWeight:600,cursor:saving?"not-allowed":"pointer",border:`1px solid ${C.border}`,background:C.edge,color:C.dim,opacity:saving?.5:1}}>{saving?"Saving...":"💾 Save"}</button>
           <button onClick={signNote} disabled={saving} style={{padding:"5px 13px",borderRadius:9,fontSize:12,fontWeight:700,cursor:saving?"not-allowed":"pointer",border:"none",background:`linear-gradient(135deg,${C.teal},#00b8a5)`,color:C.navy,opacity:saving?.5:1}}>✍️ Sign Note</button>
         </>}
-        {mode==="notes" && savedNoteId && (
+        {mode==="notes" && (
           <button onClick={()=>{setMode("studio");}} style={{padding:"5px 13px",borderRadius:9,fontSize:12,fontWeight:600,cursor:"pointer",border:`1px solid ${C.border}`,background:C.edge,color:C.dim}}>✦ Switch to Studio</button>
         )}
       </div>

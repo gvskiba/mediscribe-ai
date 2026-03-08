@@ -165,16 +165,24 @@ export default function Layout({ children, currentPageName }) {
       }
 
       {/* Main Content */}
-      <main
-        className={currentPageName === 'Home' ? 'p-0 m-0' : currentPageName === 'NoteDetail' ? '' : 'pt-16'}
-        style={{ marginLeft: (showSidebar && currentPageName !== 'Home') ? 72 : 0, minHeight: '100vh', overflowY: 'auto' }}
-      >
-        <div className={currentPageName === 'Home' ? 'w-full' : 'p-4 md:p-8 max-w-7xl mx-auto'}>
-          {children}
-        </div>
-        {/* Medical AI Chatbot */}
-        <MedicalChatbot />
-      </main>
+      {(() => {
+        const darkPages = ['NoteDetail','Dashboard','Calendar','NotesLibrary','PatientDashboard','ClinicalGuidelines','Calculators','MedicalNews','AppSettings','Procedures','Shift','SoapCompiler','SoapCompilerStandalone','AntibioticStewardship','PediatricDosing','DrugReference','CMELearningCenter','DischargePlanning','OrderSetBuilder','NoteTemplates','CustomTemplates','AddendumManager','LiveTranscription','CantMissDiagnoses','ClinicalNoteStudio','BillingDashboard'];
+        const isDark = darkPages.includes(currentPageName);
+        const isHome = currentPageName === 'Home';
+        const isNote = currentPageName === 'NoteDetail';
+        return (
+          <main
+            className={isDark ? 'bg-[#050f1e]' : isHome ? '' : 'pt-32 lg:pt-20'}
+            style={{ marginLeft: (showSidebar && !isHome) ? 72 : 0, minHeight: '100vh', overflowY: 'auto' }}
+          >
+            <div className={isHome || isDark ? 'w-full' : 'p-4 md:p-8 max-w-7xl mx-auto'}>
+              {children}
+            </div>
+            {/* Medical AI Chatbot */}
+            <MedicalChatbot />
+          </main>
+        );
+      })()}
     </div>);
 
 }

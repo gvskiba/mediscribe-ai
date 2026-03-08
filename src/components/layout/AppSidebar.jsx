@@ -3,29 +3,45 @@ import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
 
-const navItems = [
-  { emoji: "🏠", label: "Home", page: "Home" },
-  { emoji: "🧠", label: "Dashboard", page: "Dashboard" },
-  { emoji: "🎙️", label: "Live Transcription", page: "LiveTranscription" },
-  { emoji: "📋", label: "SOAP Compiler", page: "SoapCompiler" },
-  { emoji: "📝", label: "My Notes", page: "NotesLibrary" },
-  { emoji: "🏥", label: "Shift Dashboard", page: "Shift" },
-  { emoji: "👤", label: "Patient Dashboard", page: "PatientDashboard" },
-  { emoji: "📑", label: "Order Set Builder", page: "OrderSetBuilder" },
-  { emoji: "🚪", label: "Discharge Planning", page: "DischargePlanning" },
-  { emoji: "📄", label: "Note Templates", page: "NoteTemplates" },
-  { emoji: "✏️", label: "Addendum Manager", page: "AddendumManager" },
-  { emoji: "📚", label: "Guidelines", page: "Guidelines" },
-  { emoji: "💊", label: "Drug Reference", page: "DrugReference" },
-  { emoji: "🦠", label: "Antibiotic Guide", page: "AntibioticStewardship" },
-  { emoji: "👶", label: "Pediatric Dosing", page: "PediatricDosing" },
-  { emoji: "🧮", label: "Calculators", page: "Calculators" },
-  { emoji: "🔬", label: "Knowledge Base", page: "MedicalKnowledgeBase" },
-  { emoji: "✂️", label: "Procedures", page: "Procedures" },
-  { emoji: "💬", label: "Snippets", page: "Snippets" },
-  { emoji: "📅", label: "Calendar", page: "Calendar" },
-  { emoji: "📰", label: "Medical News", page: "MedicalNews" },
-  { emoji: "⚙️", label: "Settings", page: "UserSettings" },
+const navGroups = [
+  {
+    label: "Core",
+    items: [
+      { emoji: "🏠", label: "Home", page: "Home" },
+      { emoji: "🧠", label: "Dashboard", page: "Dashboard" },
+      { emoji: "🏥", label: "Shift", page: "Shift" },
+      { emoji: "👤", label: "Patients", page: "PatientDashboard" },
+    ],
+  },
+  {
+    label: "Documentation",
+    items: [
+      { emoji: "🎙️", label: "Live Transcription", page: "LiveTranscription" },
+      { emoji: "📋", label: "SOAP Compiler", page: "SoapCompiler" },
+      { emoji: "📝", label: "My Notes", page: "NotesLibrary" },
+      { emoji: "📑", label: "Order Sets", page: "OrderSetBuilder" },
+      { emoji: "🚪", label: "Discharge Planning", page: "DischargePlanning" },
+    ],
+  },
+  {
+    label: "Reference",
+    items: [
+      { emoji: "📚", label: "Guidelines", page: "Guidelines" },
+      { emoji: "💊", label: "Drug Reference", page: "DrugReference" },
+      { emoji: "🦠", label: "Antibiotics", page: "AntibioticStewardship" },
+      { emoji: "🧮", label: "Calculators", page: "Calculators" },
+      { emoji: "🔬", label: "Knowledge Base", page: "MedicalKnowledgeBase" },
+    ],
+  },
+  {
+    label: "Tools",
+    items: [
+      { emoji: "📄", label: "Templates", page: "NoteTemplates" },
+      { emoji: "💬", label: "Snippets", page: "Snippets" },
+      { emoji: "📅", label: "Calendar", page: "Calendar" },
+      { emoji: "📰", label: "Medical News", page: "MedicalNews" },
+    ],
+  },
 ];
 
 export default function AppSidebar({ user }) {

@@ -415,6 +415,8 @@ export default function DrugReference() {
   const [detailModal, setDetailModal]     = useState(null);
   const [procNoteModal, setProcNoteModal] = useState(false);
   const [procNote, setProcNote]           = useState("");
+  const [patientWeight, setPatientWeight] = useState("");
+  const [weightUnit, setWeightUnit]       = useState("kg");
   const [toast, setToast]                 = useState(null);
 
   const toastTimer = useRef(null);

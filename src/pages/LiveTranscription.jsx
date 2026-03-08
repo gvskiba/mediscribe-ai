@@ -258,9 +258,30 @@ export default function LiveTranscriptionStudio({
   };
 
   const handlePush=()=>{
-    onPushToSOAPCompiler?.({ transcript, soapNote:editMode?editText:soapRaw, patient, encounter });
+    if(onPushToSOAPCompiler) {
+      onPushToSOAPCompiler({ transcript, soapNote:editMode?editText:soapRaw, patient, encounter });
+    } else {
+      sessionStorage.setItem("transcription_soap", editMode?editText:soapRaw);
+      navigate(createPageUrl("SoapCompiler"));
+    }
     setPushOk(true); toast("✓ Pushed to SOAP Compiler!","success");
     setTimeout(()=>setPushOk(false),3000);
+  };
+
+  const handleSave = async () => {
+    const noteText = editMode ? editText : soapRaw;
+    if (!noteText) return;
+    const soap = parseSOAP(noteText);
+    await base44.entities.ClinicalNote.create({
+      raw_note: noteText,
+      patient_name: patient?.fullName || "Unknown Patient",
+      history_of_present_illness: soap.s,
+      assessment: soap.a,
+      plan: soap.p,
+      status: "draft",
+    });
+    toast("Session saved to Notes","success");
+    if(onSaveSession) onSaveSession({ transcript, soapNote: noteText });
   };
 
   const filteredMacros=MACROS.filter(m=>{

@@ -730,7 +730,7 @@ function SectionROS({ pt, updatePt }) {
                   const isPos = data.pos.includes(s);
                   const isNeg = data.neg.includes(s);
                   return (
-                    <span key={s} onClick={() => toggle(sys, isPos?"neg":"pos", s)} style={{
+                    <span key={s} onClick={() => toggle(sys, isPos ? "pos" : "neg", s)} style={{
                       padding:"3px 9px", borderRadius:7, fontSize:11, cursor:"pointer",
                       background: isPos?"rgba(255,92,108,.13)":isNeg?"rgba(46,204,113,.09)":"transparent",
                       border: `1px solid ${isPos?"rgba(255,92,108,.38)":isNeg?"rgba(46,204,113,.28)":C.border}`,

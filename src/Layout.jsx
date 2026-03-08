@@ -43,6 +43,7 @@ const navSections = [
       {
         title: "Resources",
         items: [
+          { name: "Drugs & Bugs", icon: BookOpen, page: "DrugsBugs" },
           { name: "Antibiotic Guide", icon: BookOpen, page: "AntibioticStewardship" },
           { name: "Drug Reference", icon: BookOpen, page: "DrugReference" },
           { name: "CME & Learning", icon: BookOpen, page: "CMELearningCenter" },

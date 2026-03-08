@@ -37,6 +37,7 @@ const navGroups = [
     items: [
       { emoji: "📄", label: "Templates", page: "NoteTemplates" },
       { emoji: "💬", label: "Snippets", page: "Snippets" },
+      { emoji: "🚨", label: "Can't-Miss", page: "CantMissDiagnoses" },
       { emoji: "📅", label: "Calendar", page: "Calendar" },
       { emoji: "📰", label: "News", page: "MedicalNews" },
     ],

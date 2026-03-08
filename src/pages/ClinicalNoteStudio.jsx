@@ -404,8 +404,11 @@ export default function ClinicalNoteStudio() {
           </div>
         </div>
         <div style={{ display:"flex", gap:6 }}>
-          <button onClick={() => showToast('Exporting note PDF...','i')} style={{ padding:"5px 13px", borderRadius:9, fontSize:12, fontWeight:600, cursor:"pointer", border:`1px solid ${C.border}`, background:C.edge, color:C.dim }}>📄 Export</button>
-          <button onClick={() => showToast('Note prepared for signature','s')} style={{ padding:"5px 13px", borderRadius:9, fontSize:12, fontWeight:700, cursor:"pointer", border:"none", background:`linear-gradient(135deg,${C.teal},#00b8a5)`, color:C.navy }}>✍️ Sign Note</button>
+          {savedNoteId && (
+            <button onClick={openInNoteDetail} style={{ padding:"5px 13px", borderRadius:9, fontSize:12, fontWeight:600, cursor:"pointer", border:`1px solid ${C.border}`, background:C.edge, color:C.dim }}>🔗 Open in Detail</button>
+          )}
+          <button onClick={saveNote} disabled={saving} style={{ padding:"5px 13px", borderRadius:9, fontSize:12, fontWeight:600, cursor: saving?"not-allowed":"pointer", border:`1px solid ${C.border}`, background:C.edge, color:C.dim, opacity: saving ? .5 : 1 }}>{saving ? "Saving..." : "💾 Save"}</button>
+          <button onClick={signNote} disabled={saving} style={{ padding:"5px 13px", borderRadius:9, fontSize:12, fontWeight:700, cursor: saving?"not-allowed":"pointer", border:"none", background:`linear-gradient(135deg,${C.teal},#00b8a5)`, color:C.navy, opacity: saving ? .5 : 1 }}>✍️ Sign Note</button>
         </div>
         <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:C.dim }}>{clock}</span>
       </nav>

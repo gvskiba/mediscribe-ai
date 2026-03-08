@@ -6,6 +6,8 @@ import CategorySection from "../components/orderset/CategorySection";
 import OrderSummaryPanel from "../components/orderset/OrderSummaryPanel";
 import SignModal from "../components/orderset/SignModal";
 import SaveTemplateModal from "../components/orderset/SaveTemplateModal";
+import PatientContextPanel from "../components/orderset/PatientContextPanel";
+import RecommendationEngine from "../components/orderset/RecommendationEngine";
 import { Search, X, CheckSquare, Square, Filter } from "lucide-react";
 
 const FILTERS = ["all", "selected", "required", "modified", "high_alert"];
@@ -22,6 +24,7 @@ export default function OrderSetBuilder() {
   const [aiLoading, setAiLoading] = useState(false);
   const [toastMsg, setToastMsg] = useState(null);
   const [signedSets, setSignedSets] = useState([]);
+  const [patientData, setPatientData] = useState({});
 
   // Load user + templates
   useEffect(() => {
@@ -89,6 +92,19 @@ export default function OrderSetBuilder() {
     };
     setOrders(prev => [...prev, newOrder]);
     auditLog("custom_added", { cat, name });
+  }
+
+  function handleAddRecommendations(recommendedOrders) {
+    const newOrders = recommendedOrders.map((r, i) => ({
+      id: `rec-${Date.now()}-${i}`,
+      ...r,
+      selected: true,
+      recommendation_based: true,
+      modified: false,
+    }));
+    setOrders(prev => [...prev, ...newOrders]);
+    auditLog("recommendations_added", { count: newOrders.length });
+    toast(`✓ Added ${newOrders.length} recommended order${newOrders.length !== 1 ? "s" : ""}`, G.teal);
   }
 
   function handleSelectAll() {
@@ -391,6 +407,14 @@ Respond ONLY with valid JSON array (no markdown, no backticks):
 
           {/* Order list */}
           <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px" }}>
+            {/* Patient context + recommendations */}
+            <PatientContextPanel onPatientDataChange={setPatientData} />
+            <RecommendationEngine
+              patientData={patientData}
+              existingOrderNames={orders.map(o => o.name)}
+              onAddRecommendations={handleAddRecommendations}
+            />
+
             {catOrder.map(cat => {
               const catOrders = ordersByCategory[cat];
               if (!catOrders?.length) return null;

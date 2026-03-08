@@ -467,7 +467,7 @@ export default function DrugsAndBugs(){
 
   // ── Render ─────────────────────────────────────────────────────
   return(
-    <div style={{fontFamily:"'DM Sans',sans-serif",background:C.navy,color:C.text,display:"flex",width:"100%"}}>
+    <div style={{fontFamily:"'DM Sans',sans-serif",background:C.navy,color:C.text}}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
@@ -478,48 +478,21 @@ export default function DrugsAndBugs(){
         input::placeholder,textarea::placeholder{color:#2a4d72}
       `}</style>
 
-      {/* ── Left Sidebar ──────────────────────────────────────── */}
-      <div style={{width:220,flexShrink:0,background:C.panel,borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-        <div style={{padding:"12px 14px 10px",borderBottom:`1px solid ${C.border}`}}>
-          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.dim,letterSpacing:".1em",marginBottom:8}}>NAVIGATION</div>
-          {NAV_SECTIONS.map(sec=>{
-            const isActive=activeSection===sec.id;
-            return(
-              <div key={sec.id} onClick={()=>setActiveSection(sec.id)} style={{display:"flex",alignItems:"center",gap:9,padding:"8px 10px",borderRadius:10,cursor:"pointer",marginBottom:2,transition:"all .15s",background:isActive?"rgba(0,212,188,.08)":"transparent",border:`1px solid ${isActive?"rgba(0,212,188,.3)":"transparent"}`}}>
-                <div style={{fontSize:15,width:22,textAlign:"center",flexShrink:0}}>{sec.icon}</div>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:12,fontWeight:500,color:isActive?C.teal:C.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{sec.label}</div>
-                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.muted,marginTop:1}}>{sec.sub}</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Sub-page deep links */}
-        <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`}}>
-          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.dim,letterSpacing:".1em",marginBottom:8}}>FULL MODULES</div>
-          {[
-            {label:"Drug Reference",     page:PAGES.DrugReference,        icon:"💊", color:C.teal   },
-            {label:"Abx Stewardship",    page:PAGES.AntibioticStewardship, icon:"🧫", color:C.green  },
-            {label:"Pediatric Dosing",   page:PAGES.PediatricDosing,       icon:"👶", color:C.purple },
-          ].map(link=>(
-            <button key={link.page} onClick={()=>navigate(createPageUrl(link.page))} style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"7px 10px",borderRadius:10,cursor:"pointer",marginBottom:4,background:"transparent",border:`1px solid ${C.border}`,color:link.color,fontSize:12,fontWeight:600,transition:"all .15s",textAlign:"left"}}>
-              <span style={{fontSize:14,flexShrink:0}}>{link.icon}</span>
-              <span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{link.label}</span>
-              <span style={{fontSize:10,opacity:.6}}>→</span>
+      {/* ── In-page nav tabs ──────────────────────────────────── */}
+      <div style={{display:"flex",gap:2,padding:"12px 20px",borderBottom:`1px solid ${C.border}`,overflowX:"auto",flexWrap:"wrap"}}>
+        {NAV_SECTIONS.map(sec=>{
+          const isActive=activeSection===sec.id;
+          return(
+            <button key={sec.id} onClick={()=>setActiveSection(sec.id)} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:10,cursor:"pointer",background:isActive?"rgba(0,212,188,.12)":"transparent",border:`1px solid ${isActive?"rgba(0,212,188,.3)":C.border}`,transition:"all .15s",whiteSpace:"nowrap"}}>
+              <span style={{fontSize:14}}>{sec.icon}</span>
+              <span style={{fontSize:12,fontWeight:500,color:isActive?C.teal:C.text}}>{sec.label}</span>
             </button>
-          ))}
-        </div>
-
-        {/* Disclaimer */}
-        <div style={{padding:"10px 14px",marginTop:"auto",borderTop:`1px solid ${C.border}`}}>
-          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:C.muted,lineHeight:1.6,letterSpacing:".04em"}}>⚠ FOR CLINICAL DECISION SUPPORT ONLY. Verify all doses independently. Not a substitute for clinical judgment.<br/><br/>ACEP · SSC 2018 · ESETT · SMART · SALT-ED · PHOENIX 2024</div>
-        </div>
+          );
+        })}
       </div>
 
       {/* ── Main Content ───────────────────────────────────────── */}
-      <div style={{flex:1,overflowY:"auto"}}>
+      <div style={{overflowY:"auto"}}>
         <AnimatePresence mode="wait">
           <motion.div key={activeSection} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-4}} transition={{duration:.15}}>
             {renderContent()}

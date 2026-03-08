@@ -61,7 +61,6 @@ import CustomTemplates from './pages/CustomTemplates';
 import Customize from './pages/Customize';
 import Dashboard from './pages/Dashboard';
 import DischargePlanning from './pages/DischargePlanning';
-import DrugReference from './pages/DrugReference';
 import GuidelineDetail from './pages/GuidelineDetail';
 import Guidelines from './pages/Guidelines';
 import Home from './pages/Home';
@@ -93,6 +92,7 @@ import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
 import DrugsBugs from './pages/DrugsBugs';
+import DrugReference from './pages/DrugReference';
 import __Layout from './Layout.jsx';
 
 
@@ -111,7 +111,6 @@ export const PAGES = {
     "Customize": Customize,
     "Dashboard": Dashboard,
     "DischargePlanning": DischargePlanning,
-    "DrugReference": DrugReference,
     "GuidelineDetail": GuidelineDetail,
     "Guidelines": Guidelines,
     "Home": Home,
@@ -143,6 +142,7 @@ export const PAGES = {
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
     "DrugsBugs": DrugsBugs,
+    "DrugReference": DrugReference,
 }
 
 export const pagesConfig = {

@@ -114,7 +114,8 @@ export default function ClinicalNoteStudio() {
   const noteId = urlParams.get("noteId") || urlParams.get("id");
 
   // Mode: "studio" = structured input, "notes" = NoteDetail tab view
-  const [mode, setMode] = useState(noteId ? "notes" : "studio");
+  // Default to studio; switch to notes only after note has loaded
+  const [mode, setMode] = useState("studio");
   const [clock, setClock] = useState("");
 
   // Studio state

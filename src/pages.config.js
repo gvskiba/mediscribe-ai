@@ -91,6 +91,7 @@ import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
 import ClinicalNoteStudio from './pages/ClinicalNoteStudio';
+import BillingDashboard from './pages/BillingDashboard';
 import __Layout from './Layout.jsx';
 
 
@@ -139,6 +140,7 @@ export const PAGES = {
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
     "ClinicalNoteStudio": ClinicalNoteStudio,
+    "BillingDashboard": BillingDashboard,
 }
 
 export const pagesConfig = {

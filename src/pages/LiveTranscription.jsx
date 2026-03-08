@@ -146,6 +146,7 @@ export default function LiveTranscriptionStudio({
   patient=null, encounter=null, currentUser=null,
   isLoading=false, onPushToSOAPCompiler=null, onSaveSession=null,
 }) {
+  const navigate = useNavigate();
   const [state, setState] = useState("idle"); // idle|recording|paused|complete
   const [elapsed, setElapsed] = useState(0);
   const [transcript, setTranscript] = useState([]);

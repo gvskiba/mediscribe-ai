@@ -479,7 +479,7 @@ export default function DrugsAndBugs(){
       `}</style>
 
       {/* ── In-page nav tabs ──────────────────────────────────── */}
-      <div style={{display:"flex",gap:2,padding:"12px 20px",borderBottom:`1px solid ${C.border}`,overflowX:"auto",flexWrap:"wrap"}}>
+      <div style={{display:"flex",gap:2,padding:"12px 20px",borderBottom:`1px solid ${C.border}`,overflowX:"auto",flexWrap:"wrap",width:"100%",boxSizing:"border-box"}}>
         {NAV_SECTIONS.map(sec=>{
           const isActive=activeSection===sec.id;
           return(

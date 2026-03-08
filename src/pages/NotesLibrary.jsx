@@ -287,6 +287,18 @@ export default function NotesLibrary() {
                 onBlur={(e) => e.target.style.borderColor = T.border_2}
               />
             </div>
+            <button
+              onClick={() => setShowNewNoteModal(true)}
+              style={{
+                display: "flex", alignItems: "center", gap: "5px",
+                padding: "7px 13px", borderRadius: "6px",
+                border: `1px solid ${T.teal}`, background: T.teal,
+                color: T.bg, fontFamily: "Geist Mono", fontSize: "9px",
+                letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer"
+              }}
+            >
+              <Plus size={12} /> New Note
+            </button>
             <div style={{ width: "1px", height: "22px", background: T.border_2 }} />
             <div style={{ marginLeft: "auto", fontFamily: "Geist Mono", fontSize: "11px", color: T.muted }}>
               Showing <span style={{ color: T.text }}>{filtered.length}</span> of <span style={{ color: T.text }}>{notes.length}</span> notes

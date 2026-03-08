@@ -45,7 +45,7 @@ const MODULES = [
     page: "SoapCompiler",
     color: COLORS.blue,
     badges: ["SOAP"],
-    meta: "Last used 12m ago",
+    meta: "",
   },
   {
     id: "analysis",
@@ -98,8 +98,8 @@ const COMPLIANCE_MODULES = [
     page: "AddendumManager",
     color: COLORS.amber,
     featured: true,
-    badges: ["⏳ 3 PENDING", "COMPLIANT"],
-    meta: "3 co-signs awaiting · Full HIPAA audit log",
+    badges: ["COMPLIANT"],
+    meta: "",
   },
   {
     id: "shift",

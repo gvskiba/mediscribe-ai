@@ -89,7 +89,7 @@ export default function Layout({ children, currentPageName }) {
   const showSidebar = currentPageName !== 'Home';
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="bg-white flex flex-col" style={{ minHeight: "100vh" }}>
       <style>{`
         :root {
           --primary: #2563eb;

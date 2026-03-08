@@ -50,11 +50,13 @@
 import AddendumManager from './pages/AddendumManager';
 import AntibioticStewardship from './pages/AntibioticStewardship';
 import AppSettings from './pages/AppSettings';
+import BillingDashboard from './pages/BillingDashboard';
 import CMELearningCenter from './pages/CMELearningCenter';
 import Calculators from './pages/Calculators';
 import Calendar from './pages/Calendar';
 import CantMissDiagnoses from './pages/CantMissDiagnoses';
 import ClinicalGuidelines from './pages/ClinicalGuidelines';
+import ClinicalNoteStudio from './pages/ClinicalNoteStudio';
 import CustomTemplates from './pages/CustomTemplates';
 import Customize from './pages/Customize';
 import Dashboard from './pages/Dashboard';
@@ -90,8 +92,6 @@ import TemplateEditor from './pages/TemplateEditor';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
-import ClinicalNoteStudio from './pages/ClinicalNoteStudio';
-import BillingDashboard from './pages/BillingDashboard';
 import __Layout from './Layout.jsx';
 
 
@@ -99,11 +99,13 @@ export const PAGES = {
     "AddendumManager": AddendumManager,
     "AntibioticStewardship": AntibioticStewardship,
     "AppSettings": AppSettings,
+    "BillingDashboard": BillingDashboard,
     "CMELearningCenter": CMELearningCenter,
     "Calculators": Calculators,
     "Calendar": Calendar,
     "CantMissDiagnoses": CantMissDiagnoses,
     "ClinicalGuidelines": ClinicalGuidelines,
+    "ClinicalNoteStudio": ClinicalNoteStudio,
     "CustomTemplates": CustomTemplates,
     "Customize": Customize,
     "Dashboard": Dashboard,
@@ -139,8 +141,6 @@ export const PAGES = {
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
-    "ClinicalNoteStudio": ClinicalNoteStudio,
-    "BillingDashboard": BillingDashboard,
 }
 
 export const pagesConfig = {

@@ -576,16 +576,16 @@ export default function Home() {
           NOTRYA AI PLATFORM · v2.4.1 · © 2026 · All clinical data is PHI-protected under HIPAA
         </div>
         <div style={{ display: "flex", gap: 20 }}>
-          <a href="#" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: COLORS.muted, textDecoration: "none", letterSpacing: "0.06em", transition: "color 0.15s" }}>
-            Support
-          </a>
-          <a href="#" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: COLORS.muted, textDecoration: "none", letterSpacing: "0.06em", transition: "color 0.15s" }}>
-            Documentation
-          </a>
-          <a href="#" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: COLORS.muted, textDecoration: "none", letterSpacing: "0.06em", transition: "color 0.15s" }}>
-            Privacy Policy
-          </a>
-        </div>
+           <a href="#" onClick={(e) => e.preventDefault()} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: COLORS.muted, textDecoration: "none", letterSpacing: "0.06em", transition: "color 0.15s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.color = COLORS.text} onMouseLeave={(e) => e.currentTarget.style.color = COLORS.muted}>
+             Support
+           </a>
+           <a href="#" onClick={(e) => e.preventDefault()} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: COLORS.muted, textDecoration: "none", letterSpacing: "0.06em", transition: "color 0.15s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.color = COLORS.text} onMouseLeave={(e) => e.currentTarget.style.color = COLORS.muted}>
+             Documentation
+           </a>
+           <a href="#" onClick={(e) => e.preventDefault()} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: COLORS.muted, textDecoration: "none", letterSpacing: "0.06em", transition: "color 0.15s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.color = COLORS.text} onMouseLeave={(e) => e.currentTarget.style.color = COLORS.muted}>
+             Privacy Policy
+           </a>
+         </div>
       </footer>
     </div>
   );

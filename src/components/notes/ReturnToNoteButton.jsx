@@ -12,13 +12,13 @@ export default function ReturnToNoteButton({ currentPage }) {
     setOpenNoteId(noteId);
   }, []);
 
-  // Don't show on NoteDetail page
-  if (currentPage === 'NoteDetail' || !openNoteId) {
+  // Don't show on ClinicalNoteStudio or NoteDetail page
+  if (currentPage === 'ClinicalNoteStudio' || currentPage === 'NoteDetail' || !openNoteId) {
     return null;
   }
 
   return (
-    <Link to={createPageUrl(`NoteDetail?id=${openNoteId}`)}>
+    <Link to={createPageUrl(`ClinicalNoteStudio?id=${openNoteId}`)}>
       <Button
         variant="outline"
         className="gap-2 border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-400 shadow-sm"

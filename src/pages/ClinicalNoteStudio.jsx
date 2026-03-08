@@ -516,7 +516,7 @@ export default function ClinicalNoteStudio() {
       {/* Mode toggle */}
       <div style={{display:"flex",alignItems:"center",gap:2,padding:"3px",borderRadius:10,background:C.edge,border:`1px solid ${C.border}`}}>
         <button onClick={()=>setMode("studio")} style={{padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:mode==="studio"?C.teal:"transparent",color:mode==="studio"?C.navy:C.dim,transition:"all .15s"}}>✦ Studio</button>
-        <button onClick={()=>setMode("notes")} disabled={!savedNoteId} style={{padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600,cursor:savedNoteId?"pointer":"not-allowed",border:"none",background:mode==="notes"?C.blue:"transparent",color:mode==="notes"?C.bright:C.dim,transition:"all .15s",opacity:savedNoteId?1:.4}}>📋 Note Detail</button>
+        <button onClick={()=>setMode("notes")} style={{padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:mode==="notes"?C.blue:"transparent",color:mode==="notes"?C.bright:C.dim,transition:"all .15s"}}>📋 Note Detail</button>
       </div>
 
       <div style={{flex:1}} />

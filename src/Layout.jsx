@@ -128,7 +128,7 @@ export default function Layout({ children, currentPageName }) {
       {showSidebar && <AppSidebar user={user} />}
 
       {/* Dashboard Top Bar */}
-      {currentPageName !== 'Home' && <DashboardTopBar user={user} />}
+      {currentPageName !== 'Home' && currentPageName !== 'ClinicalNoteStudio' && currentPageName !== 'NoteDetail' && <DashboardTopBar user={user} />}
 
 
 

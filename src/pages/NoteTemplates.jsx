@@ -152,7 +152,7 @@ export default function NoteTemplates() {
     <div style={{
       background: T.navy,
       fontFamily: "DM Sans, sans-serif",
-      height: "calc(100vh - 80px)",
+      height: "100vh",
       display: "flex",
       overflow: "hidden",
     }}>

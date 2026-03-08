@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { Zap, Clock, Sparkles } from "lucide-react";
+import { Zap, Clock, Sparkles, PenLine } from "lucide-react";
 import ExportPDFButton from "./ExportPDFButton";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 
 const T = {
   navy: "#050f1e",

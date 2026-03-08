@@ -56,6 +56,7 @@ export default function NoteTopBar({ note, noteId, queryClient, onNext, autoSave
 
   const handleSaveDraft = async () => {
     await base44.entities.ClinicalNote.update(noteId, { status: "draft" });
+    queryClient.invalidateQueries({ queryKey: ["studioNote", noteId] });
     queryClient.invalidateQueries({ queryKey: ["note", noteId] });
   };
 

@@ -14,7 +14,6 @@ import {
   FileText, Activity, Beaker, Code, Brain, Pill, Plus, Settings,
   RotateCcw, ArrowLeft, Sparkles
 } from "lucide-react";
-import { useAutoSave } from "../components/utils/useAutoSave";
 
 // NoteDetail tab components
 import SubjectiveTab from "../components/notes/SubjectiveTab";

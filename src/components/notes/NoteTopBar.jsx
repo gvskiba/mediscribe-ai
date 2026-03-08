@@ -19,6 +19,7 @@ const T = {
 };
 
 export default function NoteTopBar({ note, noteId, queryClient, onNext, autoSaveStatus }) {
+  const navigate = useNavigate();
   const [elapsed, setElapsed] = useState("00:00");
   const [timerStopped, setTimerStopped] = useState(false);
   const stoppedAtRef = React.useRef(null);

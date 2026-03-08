@@ -420,7 +420,7 @@ export default function Home() {
           </p>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <button
-              onClick={() => navigate(createPageUrl("LiveTranscription"))}
+              onClick={() => navigate(createPageUrl("PatientDashboard"))}
               style={{
                 display: "inline-flex",
                 alignItems: "center",

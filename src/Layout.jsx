@@ -174,7 +174,7 @@ export default function Layout({ children, currentPageName }) {
         return (
           <main
             className={isDark ? 'bg-[#050f1e]' : isHome ? '' : 'pt-32 lg:pt-20'}
-            style={{ marginLeft: (showSidebar && !isHome) ? 72 : 0, flex: 1, overflowY: 'auto' }}
+            style={{ marginLeft: (showSidebar && !isHome) ? 72 : 0, paddingTop: (currentPageName !== 'Home' && currentPageName !== 'ClinicalNoteStudio' && currentPageName !== 'NoteDetail' && currentPageName !== 'NoteTemplates' && currentPageName !== 'CustomTemplates' && currentPageName !== 'PatientDashboard' && currentPageName !== 'DischargePlanning') ? '16px' : '0', flex: 1, overflowY: 'auto' }}
           >
             <div className={isHome || isDark ? 'w-full' : 'p-4 md:p-8 max-w-7xl mx-auto'}>
               {children}

@@ -37,6 +37,7 @@ const navSections = [
                 { name: "My Notes", icon: FileText, page: "NotesLibrary" },
                 { name: "Discharge Planning", icon: FileText, page: "DischargePlanning" },
               { name: "Order Set Builder", icon: FileText, page: "OrderSetBuilder" },
+              { name: "Billing Assistant", icon: FileText, page: "BillingDashboard" },
               ]
             },
       {

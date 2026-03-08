@@ -106,6 +106,7 @@ import PatientEducationTab from "../components/notes/PatientEducationTab";
 import NoteTopBar from "../components/notes/NoteTopBar";
 import NotePatientVitalsBar from "../components/notes/NotePatientVitalsBar";
 import NoteSOAPNav from "../components/notes/NoteSOAPNav";
+import BillingPanel from "../components/billing/BillingPanel";
 
 const TAB_GROUPS = [
   {

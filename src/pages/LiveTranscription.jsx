@@ -278,13 +278,13 @@ export default function LiveTranscriptionStudio({
   );
 
   return (
-    <div style={{ minHeight:"100vh", background:G.navy, fontFamily:F.body, position:"relative", overflow:"hidden" }}>
+    <div style={{ minHeight:"100vh", background:G.navy, fontFamily:F.body, position:"relative", overflow:"hidden", paddingTop:"42px" }}>
 
       {/* Navbar */}
       <div style={{
         height:"54px", background:G.slate, borderBottom:`1px solid ${G.border}`,
         display:"flex", alignItems:"center", padding:"0 20px", gap:"14px",
-        position:"sticky", top:0, zIndex:100,
+        position:"sticky", top:"42px", zIndex:40,
       }}>
         <span style={{ fontFamily:F.display, fontSize:"18px", color:G.bright, letterSpacing:"-0.01em" }}>Notrya</span>
         <span style={{ color:G.border }}>|</span>

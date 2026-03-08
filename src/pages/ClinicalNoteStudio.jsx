@@ -187,6 +187,11 @@ export default function ClinicalNoteStudio() {
     enabled: mode === "notes",
   });
 
+  // When URL has a noteId, switch to notes mode once note is loaded
+  useEffect(() => {
+    if (noteId && note) setMode("notes");
+  }, [noteId, note?.id]);
+
   // Hydrate studio form when existing note loads
   useEffect(() => {
     if (!note) return;

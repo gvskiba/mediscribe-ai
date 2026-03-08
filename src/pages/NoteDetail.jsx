@@ -520,7 +520,10 @@ export default function NoteDetail() {
 
   const { data: note, isLoading } = useQuery({
     queryKey: ["note", noteId],
-    queryFn: () => base44.entities.ClinicalNote.get(noteId),
+    queryFn: async () => {
+      const results = await base44.entities.ClinicalNote.filter({ id: noteId });
+      return results?.[0] || null;
+    },
     enabled: !!noteId,
   });
 

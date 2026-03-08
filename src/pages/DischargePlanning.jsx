@@ -946,7 +946,7 @@ Be concise, clinically accurate, and professional. Use standard medical abbrevia
       <div style={{ position:"fixed", inset:0, background:`radial-gradient(ellipse 70% 50% at 8% 5%,rgba(0,168,150,.07),transparent 55%),radial-gradient(ellipse 55% 45% at 92% 92%,rgba(155,109,255,.05),transparent 50%)`, pointerEvents:"none", zIndex:0 }}/>
 
       {/* PAGE HEADER */}
-      <div style={{ position:"relative", zIndex:1, padding:"14px 28px 12px", borderBottom:`1px solid rgba(30,58,95,.6)`, background:"rgba(11,29,53,.4)", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, flexWrap:"wrap" }}>
+      <div style={{ position:"relative", zIndex:1, padding:"0 28px 12px", borderBottom:`1px solid rgba(30,58,95,.6)`, background:"rgba(11,29,53,.4)", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, flexWrap:"wrap" }}>
         <div style={{ display:"flex", alignItems:"center", gap:14 }}>
           <div style={{ width:46, height:46, background:"rgba(0,212,188,.1)", border:"1px solid rgba(0,212,188,.25)", borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22 }}>🏥</div>
           <div>

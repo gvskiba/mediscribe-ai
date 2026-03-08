@@ -311,7 +311,7 @@ export default function LiveTranscriptionStudio({
         display:"flex", alignItems:"center", padding:"0 20px", gap:"14px",
         position:"sticky", top:"0px", zIndex:40,
       }}>
-        <span style={{ fontFamily:F.display, fontSize:"18px", color:G.bright, letterSpacing:"-0.01em" }}>Notrya</span>
+        <span onClick={()=>navigate(createPageUrl("Dashboard"))} style={{ fontFamily:F.display, fontSize:"18px", color:G.bright, letterSpacing:"-0.01em", cursor:"pointer" }}>Notrya</span>
         <span style={{ color:G.border }}>|</span>
         <span style={{ fontFamily:F.mono, fontSize:"11px", color:G.teal, letterSpacing:"0.08em" }}>LIVE TRANSCRIPTION STUDIO</span>
         <div style={{ flex:1 }}/>

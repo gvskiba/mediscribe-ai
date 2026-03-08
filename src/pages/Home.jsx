@@ -413,8 +413,7 @@ export default function Home() {
             NOTRYA AI PLATFORM
           </div>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(32px, 4vw, 52px)", fontWeight: 900, color: COLORS.bright, lineHeight: 1.08, letterSpacing: "-0.03em", marginBottom: 16 }}>
-            Clinical intelligence<br />
-            at your <span style={{ color: COLORS.teal }}>fingertips.</span>
+            Command <span style={{ color: COLORS.teal }}>Center.</span>
           </h1>
           <p style={{ fontSize: 15, color: COLORS.dim, lineHeight: 1.7, maxWidth: 480, marginBottom: 28 }}>
             Your complete AI-powered clinical documentation suite. Transcribe, analyze, order, document, and comply — all from one unified platform.

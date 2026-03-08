@@ -467,7 +467,7 @@ export default function DrugsAndBugs(){
 
   // ── Render ─────────────────────────────────────────────────────
   return(
-    <div style={{fontFamily:"'DM Sans',sans-serif",background:C.navy,height:"100vh",color:C.text,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+    <div style={{fontFamily:"'DM Sans',sans-serif",background:C.navy,color:C.text,display:"flex",width:"100%"}}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
@@ -478,75 +478,53 @@ export default function DrugsAndBugs(){
         input::placeholder,textarea::placeholder{color:#2a4d72}
       `}</style>
 
-      {/* ── Navbar ──────────────────────────────────────────────── */}
-      <nav style={{height:52,background:"rgba(11,29,53,.97)",borderBottom:`1px solid ${C.border}`,backdropFilter:"blur(20px)",display:"flex",alignItems:"center",padding:"0 16px",gap:12,flexShrink:0,zIndex:100}}>
-        <span onClick={()=>navigate(createPageUrl("Home"))} style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,color:C.bright,cursor:"pointer",letterSpacing:"-.02em"}}>Notrya</span>
-        <div style={{width:1,height:16,background:C.border}} />
-        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:C.teal,letterSpacing:".12em"}}>DRUGS & BUGS</span>
-        <div style={{flex:1}} />
+      {/* ── Left Sidebar ──────────────────────────────────────── */}
+      <div style={{width:220,flexShrink:0,background:C.panel,borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+        <div style={{padding:"12px 14px 10px",borderBottom:`1px solid ${C.border}`}}>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.dim,letterSpacing:".1em",marginBottom:8}}>NAVIGATION</div>
+          {NAV_SECTIONS.map(sec=>{
+            const isActive=activeSection===sec.id;
+            return(
+              <div key={sec.id} onClick={()=>setActiveSection(sec.id)} style={{display:"flex",alignItems:"center",gap:9,padding:"8px 10px",borderRadius:10,cursor:"pointer",marginBottom:2,transition:"all .15s",background:isActive?"rgba(0,212,188,.08)":"transparent",border:`1px solid ${isActive?"rgba(0,212,188,.3)":"transparent"}`}}>
+                <div style={{fontSize:15,width:22,textAlign:"center",flexShrink:0}}>{sec.icon}</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:12,fontWeight:500,color:isActive?C.teal:C.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{sec.label}</div>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.muted,marginTop:1}}>{sec.sub}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
-        {/* Quick nav to sub-pages */}
-        <div style={{display:"flex",gap:5}}>
-          {[{label:"💊 Drug Ref",page:PAGES.DrugReference,c:C.teal},{label:"🧫 Stewardship",page:PAGES.AntibioticStewardship,c:C.green},{label:"👶 Peds Dosing",page:PAGES.PediatricDosing,c:C.purple}].map(p=>(
-            <button key={p.page} onClick={()=>navigate(createPageUrl(p.page))} style={{padding:"4px 11px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",border:`1px solid ${p.c}44`,background:`${p.c}0e`,color:p.c,transition:"all .15s"}}>
-              {p.label}
+        {/* Sub-page deep links */}
+        <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`}}>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.dim,letterSpacing:".1em",marginBottom:8}}>FULL MODULES</div>
+          {[
+            {label:"Drug Reference",     page:PAGES.DrugReference,        icon:"💊", color:C.teal   },
+            {label:"Abx Stewardship",    page:PAGES.AntibioticStewardship, icon:"🧫", color:C.green  },
+            {label:"Pediatric Dosing",   page:PAGES.PediatricDosing,       icon:"👶", color:C.purple },
+          ].map(link=>(
+            <button key={link.page} onClick={()=>navigate(createPageUrl(link.page))} style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"7px 10px",borderRadius:10,cursor:"pointer",marginBottom:4,background:"transparent",border:`1px solid ${C.border}`,color:link.color,fontSize:12,fontWeight:600,transition:"all .15s",textAlign:"left"}}>
+              <span style={{fontSize:14,flexShrink:0}}>{link.icon}</span>
+              <span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{link.label}</span>
+              <span style={{fontSize:10,opacity:.6}}>→</span>
             </button>
           ))}
         </div>
 
-        <div style={{width:1,height:16,background:C.border}} />
-        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.dim}}>{clock}</span>
-      </nav>
-
-      <div style={{display:"flex",flex:1,overflow:"hidden"}}>
-        {/* ── Left Sidebar ──────────────────────────────────────── */}
-        <div style={{width:220,flexShrink:0,background:C.panel,borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-          <div style={{padding:"12px 14px 10px",borderBottom:`1px solid ${C.border}`}}>
-            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.dim,letterSpacing:".1em",marginBottom:8}}>NAVIGATION</div>
-            {NAV_SECTIONS.map(sec=>{
-              const isActive=activeSection===sec.id;
-              return(
-                <div key={sec.id} onClick={()=>setActiveSection(sec.id)} style={{display:"flex",alignItems:"center",gap:9,padding:"8px 10px",borderRadius:10,cursor:"pointer",marginBottom:2,transition:"all .15s",background:isActive?"rgba(0,212,188,.08)":"transparent",border:`1px solid ${isActive?"rgba(0,212,188,.3)":"transparent"}`}}>
-                  <div style={{fontSize:15,width:22,textAlign:"center",flexShrink:0}}>{sec.icon}</div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:12,fontWeight:500,color:isActive?C.teal:C.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{sec.label}</div>
-                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.muted,marginTop:1}}>{sec.sub}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Sub-page deep links */}
-          <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`}}>
-            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.dim,letterSpacing:".1em",marginBottom:8}}>FULL MODULES</div>
-            {[
-              {label:"Drug Reference",     page:PAGES.DrugReference,        icon:"💊", color:C.teal   },
-              {label:"Abx Stewardship",    page:PAGES.AntibioticStewardship, icon:"🧫", color:C.green  },
-              {label:"Pediatric Dosing",   page:PAGES.PediatricDosing,       icon:"👶", color:C.purple },
-            ].map(link=>(
-              <button key={link.page} onClick={()=>navigate(createPageUrl(link.page))} style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"7px 10px",borderRadius:10,cursor:"pointer",marginBottom:4,background:"transparent",border:`1px solid ${C.border}`,color:link.color,fontSize:12,fontWeight:600,transition:"all .15s",textAlign:"left"}}>
-                <span style={{fontSize:14,flexShrink:0}}>{link.icon}</span>
-                <span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{link.label}</span>
-                <span style={{fontSize:10,opacity:.6}}>→</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Disclaimer */}
-          <div style={{padding:"10px 14px",marginTop:"auto",borderTop:`1px solid ${C.border}`}}>
-            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:C.muted,lineHeight:1.6,letterSpacing:".04em"}}>⚠ FOR CLINICAL DECISION SUPPORT ONLY. Verify all doses independently. Not a substitute for clinical judgment.<br/><br/>ACEP · SSC 2018 · ESETT · SMART · SALT-ED · PHOENIX 2024</div>
-          </div>
+        {/* Disclaimer */}
+        <div style={{padding:"10px 14px",marginTop:"auto",borderTop:`1px solid ${C.border}`}}>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:C.muted,lineHeight:1.6,letterSpacing:".04em"}}>⚠ FOR CLINICAL DECISION SUPPORT ONLY. Verify all doses independently. Not a substitute for clinical judgment.<br/><br/>ACEP · SSC 2018 · ESETT · SMART · SALT-ED · PHOENIX 2024</div>
         </div>
+      </div>
 
-        {/* ── Main Content ───────────────────────────────────────── */}
-        <div style={{flex:1,overflowY:"auto"}}>
-          <AnimatePresence mode="wait">
-            <motion.div key={activeSection} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-4}} transition={{duration:.15}}>
-              {renderContent()}
-            </motion.div>
-          </AnimatePresence>
-        </div>
+      {/* ── Main Content ───────────────────────────────────────── */}
+      <div style={{flex:1,overflowY:"auto"}}>
+        <AnimatePresence mode="wait">
+          <motion.div key={activeSection} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-4}} transition={{duration:.15}}>
+            {renderContent()}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );

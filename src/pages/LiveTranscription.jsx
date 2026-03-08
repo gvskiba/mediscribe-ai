@@ -284,7 +284,7 @@ export default function LiveTranscriptionStudio({
       <div style={{
         height:"54px", background:G.slate, borderBottom:`1px solid ${G.border}`,
         display:"flex", alignItems:"center", padding:"0 20px", gap:"14px",
-        position:"sticky", top:"42px", zIndex:40,
+        position:"sticky", top:"48px", zIndex:40,
       }}>
         <span style={{ fontFamily:F.display, fontSize:"18px", color:G.bright, letterSpacing:"-0.01em" }}>Notrya</span>
         <span style={{ color:G.border }}>|</span>

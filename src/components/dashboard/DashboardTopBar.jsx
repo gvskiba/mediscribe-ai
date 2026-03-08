@@ -194,7 +194,7 @@ export default function DashboardTopBar({ user }) {
   };
 
   return (
-    <div style={{ position: "fixed", top: 0, left: 64, right: 0, zIndex: 40, background: T.navy }}>
+    <div style={{ position: "fixed", top: 0, left: 72, right: 0, zIndex: 40, background: T.navy }}>
       {/* Single Compact Top Bar */}
       <div
         style={{

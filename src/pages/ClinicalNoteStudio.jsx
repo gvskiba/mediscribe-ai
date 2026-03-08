@@ -1,0 +1,1010 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { base44 } from "@/api/base44Client";
+
+const C = {
+  navy:"#050f1e", slate:"#0b1d35", panel:"#0d2240", edge:"#162d4f",
+  border:"#1e3a5f", muted:"#2a4d72", dim:"#4a7299", text:"#c8ddf0",
+  bright:"#e8f4ff", teal:"#00d4bc", amber:"#f5a623", red:"#ff5c6c",
+  green:"#2ecc71", purple:"#9b6dff", blue:"#4a90d9", rose:"#f472b6", gold:"#f0c040",
+};
+
+const SECTIONS = [
+  {id:"overview",icon:"🏥",name:"Overview",sub:"Patient summary",group:"ENCOUNTER"},
+  {id:"cc_hpi",icon:"📝",name:"CC & HPI",sub:"Chief complaint",group:"SUBJECTIVE"},
+  {id:"pmh",icon:"📋",name:"History",sub:"PMH / Social / Family",group:"SUBJECTIVE"},
+  {id:"meds",icon:"💊",name:"Medications",sub:"Active meds + allergies",group:"SUBJECTIVE"},
+  {id:"ros",icon:"🔍",name:"Review of Systems",sub:"Systems review",group:"SUBJECTIVE"},
+  {id:"vitals",icon:"📊",name:"Vital Signs",sub:"Current hemodynamics",group:"OBJECTIVE"},
+  {id:"pe",icon:"🩺",name:"Physical Exam",sub:"Head-to-toe",group:"OBJECTIVE"},
+  {id:"labs",icon:"🧪",name:"Lab Results",sub:"CBC, BMP, ABG...",group:"OBJECTIVE"},
+  {id:"imaging",icon:"🔬",name:"Imaging & Dx",sub:"CXR, ECG, UA...",group:"OBJECTIVE"},
+  {id:"assessment",icon:"⚕️",name:"Assessment & Plan",sub:"Diagnosis + management",group:"ASSESSMENT"},
+  {id:"disposition",icon:"🚑",name:"Disposition",sub:"Admit / discharge",group:"ASSESSMENT"},
+];
+const GROUPS = ["ENCOUNTER","SUBJECTIVE","OBJECTIVE","ASSESSMENT"];
+
+const EMPTY_PT = {
+  name:"", mrn:"", dob:"", age:"", sex:"Male", encounter:"", type:"ED Visit", provider:"",
+  allergies:[],
+  meds:[],
+  vitals:{hr:"",sbp:"",dbp:"",temp:"",rr:"",spo2:"",gcs:"",wt:"",ht:"",bmi:""},
+  labs:[],
+  cc:"", hpi:"", pmh:[], psh:[], social:"", family:"",
+  ros:{
+    constitutional:{pos:[],neg:["Weight loss"]},
+    cardiovascular:{pos:[],neg:["Chest pain","Palpitations","Edema"]},
+    respiratory:{pos:[],neg:["Shortness of breath","Cough","Wheezing"]},
+    gastrointestinal:{pos:[],neg:["Nausea","Vomiting","Abdominal pain","Diarrhea"]},
+    genitourinary:{pos:[],neg:["Dysuria","Frequency","Decreased UO","Hematuria"]},
+    neurological:{pos:[],neg:["Altered mentation","Focal weakness","Headache"]},
+    musculoskeletal:{pos:[],neg:["Myalgias","Joint pain"]},
+    integumentary:{pos:[],neg:["Rash"]},
+  },
+  pe:{
+    general:{f:[],n:"",abn:false},
+    heent:{f:[],n:"",abn:false},
+    cardiovascular:{f:[],n:"",abn:false},
+    pulmonary:{f:[],n:"",abn:false},
+    abdomen:{f:[],n:"",abn:false},
+    neurological:{f:[],n:"",abn:false},
+    extremities:{f:[],n:"",abn:false},
+    skin:{f:[],n:"",abn:false},
+  },
+  imaging:[],
+  assessment:[],
+  disposition:"",
+  dc:"",
+};
+
+function esc(s) { return String(s || ""); }
+
+const SY_NAMES = {general:"General",heent:"HEENT",cardiovascular:"Cardiovascular",pulmonary:"Pulmonary",abdomen:"Abdomen",neurological:"Neurological",extremities:"Extremities",skin:"Skin"};
+
+export default function ClinicalNoteStudio() {
+  const navigate = useNavigate();
+  const [clock, setClock] = useState("");
+  const [cur, setCur] = useState("overview");
+  const [analyses, setAnalyses] = useState({});
+  const [done, setDone] = useState({});
+  const [analyzing, setAnalyzing] = useState(false);
+  const [rpContent, setRpContent] = useState("default");
+  const [rpData, setRpData] = useState(null);
+  const [toasts, setToasts] = useState([]);
+  const [pt, setPt] = useState({...EMPTY_PT});
+  const [dxList, setDxList] = useState([]);
+  const [completion, setCompletion] = useState(45);
+
+  useEffect(() => {
+    const iv = setInterval(() => {
+      const n = new Date();
+      setClock(n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false}));
+    }, 1000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const showToast = (msg, type = "i") => {
+    const id = Date.now();
+    setToasts(t => [...t, {id, msg, type}]);
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3000);
+  };
+
+  const updatePt = (path, val) => {
+    setPt(prev => {
+      const next = {...prev};
+      const keys = path.split(".");
+      let obj = next;
+      for (let i = 0; i < keys.length - 1; i++) {
+        obj[keys[i]] = {...obj[keys[i]]};
+        obj = obj[keys[i]];
+      }
+      obj[keys[keys.length-1]] = val;
+      return next;
+    });
+  };
+
+  const addDx = () => setDxList(prev => [...prev, {dx:"",plan:""}]);
+  const removeDx = (i) => setDxList(prev => prev.filter((_,idx) => idx !== i));
+  const updateDx = (i, field, val) => setDxList(prev => prev.map((d,idx) => idx===i ? {...d,[field]:val} : d));
+
+  const secContent = (id) => {
+    const v = pt.vitals;
+    const map = {
+      overview: `Patient: ${pt.name}, ${pt.age} ${pt.sex}. CC: ${pt.cc}`,
+      cc_hpi: `CC: ${pt.cc}\nHPI: ${pt.hpi}`,
+      pmh: `PMH: ${pt.pmh.join(', ')}\nPSH: ${pt.psh.join(', ')}\nSocial: ${pt.social}\nFamily: ${pt.family}\nAllergies: ${pt.allergies.join(', ')}`,
+      meds: `Medications: ${pt.meds.map(m=>m.n+' '+m.d).join('; ')}\nAllergies: ${pt.allergies.join(', ')}`,
+      ros: Object.entries(pt.ros).map(([sys,d])=>`${sys}: POS: ${d.pos.join(',')||'none'} | NEG: ${d.neg.join(',')}`).join('\n'),
+      vitals: `HR:${v.hr} BP:${v.sbp}/${v.dbp} Temp:${v.temp} RR:${v.rr} SpO2:${v.spo2}% GCS:${v.gcs}`,
+      pe: Object.entries(pt.pe).map(([s,d])=>`${s}: ${d.n}`).join('\n'),
+      labs: pt.labs.map(l=>`${l.n}: ${l.v} ${l.u} (ref ${l.ref}) [${l.f}]`).join('\n'),
+      imaging: pt.imaging.map(i=>`${i.type}: ${i.f} Impression: ${i.imp}`).join('\n'),
+      assessment: dxList.map((d,i)=>`${i+1}. ${d.dx}: ${d.plan}`).join('\n'),
+      disposition: `Dispo: ${pt.disposition}. ${pt.dc}`,
+    };
+    return map[id] || '';
+  };
+
+  const analyzeSection = async (id) => {
+    if (analyzing) { showToast('Analysis in progress','i'); return; }
+    setAnalyzing(true);
+    setRpContent("loading");
+    const sec = SECTIONS.find(s => s.id === id);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are Notrya AI, a clinical documentation assistant. Analyze this ${sec?.name || id} section of a clinical note and provide structured insights.\n\nSection content:\n${secContent(id)}\n\nReturn a JSON object with: {"summary":"2-3 sentence clinical summary","abnormals":[{"finding":"string","severity":"critical|high|moderate","detail":"string"}],"insights":["string"],"recommendation":"string","tags":[{"text":"string","color":"red|amber|green|blue"}]}`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            summary: { type: "string" },
+            abnormals: { type: "array", items: { type: "object" } },
+            insights: { type: "array", items: { type: "string" } },
+            recommendation: { type: "string" },
+            tags: { type: "array", items: { type: "object" } },
+          },
+        },
+      });
+      setAnalyses(prev => ({...prev, [id]: result}));
+      setDone(prev => ({...prev, [id]: true}));
+      setRpContent("analysis");
+      setRpData(result);
+      setCompletion(c => Math.min(100, c + 8));
+      showToast(`${sec?.name || id} analyzed`, 's');
+    } catch (err) {
+      showToast('Analysis failed: ' + err.message, 'e');
+      setRpContent("default");
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const analyzeAll = async () => {
+    showToast('Analyzing all sections...','i');
+    for (const id of ['vitals','labs','pe','assessment','cc_hpi','imaging']) {
+      await analyzeSection(id);
+      await new Promise(r => setTimeout(r, 300));
+    }
+    showToast('Complete note analysis done','s');
+  };
+
+  const generateSummary = async () => {
+    showToast('Generating clinical summary...','i');
+    setRpContent("loading");
+    const allContent = `Patient: ${pt.name} ${pt.age} ${pt.sex}\nCC: ${pt.cc}\nVitals: HR ${pt.vitals.hr} BP ${pt.vitals.sbp}/${pt.vitals.dbp} Temp ${pt.vitals.temp} RR ${pt.vitals.rr} SpO2 ${pt.vitals.spo2}% GCS ${pt.vitals.gcs}\nLabs: ${pt.labs.map(l=>l.n+' '+l.v).join(', ')}\nImaging: ${pt.imaging.map(i=>i.type+': '+i.imp).join('; ')}\nDx: ${dxList.map((d,i)=>i+1+'. '+d.dx).join('; ')}\nDisposition: ${pt.disposition}`;
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Generate a comprehensive clinical note summary for this patient encounter.\n\n${allContent}\n\nReturn JSON: {"summary":"3-4 sentence overview","criticals":[{"item":"string","flag":"critical|high|moderate"}],"keyDx":["string"],"actions":["string"],"mdm":"string"}`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            summary: { type: "string" },
+            criticals: { type: "array", items: { type: "object" } },
+            keyDx: { type: "array", items: { type: "string" } },
+            actions: { type: "array", items: { type: "string" } },
+            mdm: { type: "string" },
+          },
+        },
+      });
+      setRpContent("summary");
+      setRpData(result);
+      showToast('Summary generated','s');
+    } catch (err) {
+      showToast('Error: ' + err.message, 'e');
+      setRpContent("default");
+    }
+  };
+
+  const switchSec = (id) => {
+    setCur(id);
+    if (analyses[id]) { setRpContent("analysis"); setRpData(analyses[id]); }
+    else setRpContent("default");
+  };
+
+  const totalAbn = pt.labs.filter(l=>l.f!=='N').length + Object.values(pt.pe).filter(p=>p.abn).length + pt.imaging.filter(i=>i.abn).length;
+
+  // Styles
+  const inputS = { width:"100%", background:"transparent", border:`1px solid ${C.border}`, borderRadius:7, padding:"6px 9px", color:C.text, fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none" };
+  const textareaS = { ...inputS, resize:"vertical", minHeight:65, lineHeight:1.65, display:"block" };
+  const labelS = { fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:C.dim, letterSpacing:".1em", display:"block", marginBottom:4 };
+  const secHdrStyle = (color) => ({
+    padding:"14px 20px 12px", background:C.slate, borderBottom:`1px solid ${C.border}`, flexShrink:0,
+  });
+
+  const renderSection = () => {
+    switch(cur) {
+      case "overview": return <SectionOverview pt={pt} totalAbn={totalAbn} dxList={dxList} />;
+      case "cc_hpi": return <SectionCCHPI pt={pt} updatePt={updatePt} inputS={inputS} textareaS={textareaS} labelS={labelS} />;
+      case "pmh": return <SectionPMH pt={pt} updatePt={updatePt} inputS={inputS} textareaS={textareaS} labelS={labelS} />;
+      case "meds": return <SectionMeds pt={pt} updatePt={updatePt} inputS={inputS} labelS={labelS} />;
+      case "ros": return <SectionROS pt={pt} updatePt={updatePt} />;
+      case "vitals": return <SectionVitals pt={pt} updatePt={updatePt} />;
+      case "pe": return <SectionPE pt={pt} updatePt={updatePt} />;
+      case "labs": return <SectionLabs pt={pt} updatePt={updatePt} />;
+      case "imaging": return <SectionImaging pt={pt} updatePt={updatePt} />;
+      case "assessment": return <SectionAssessment dxList={dxList} addDx={addDx} removeDx={removeDx} updateDx={updateDx} inputS={inputS} textareaS={textareaS} />;
+      case "disposition": return <SectionDisposition pt={pt} updatePt={updatePt} inputS={inputS} textareaS={textareaS} labelS={labelS} />;
+      default: return null;
+    }
+  };
+
+  const curSec = SECTIONS.find(s => s.id === cur);
+
+  return (
+    <div style={{ fontFamily:"'DM Sans',sans-serif", background:C.navy, height:"100vh", color:C.text, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+        @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
+        @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(255,92,108,0)}60%{box-shadow:0 0 14px 0 rgba(255,92,108,.3)}}
+        ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:2px}
+        textarea,input,select{transition:border-color .15s}
+        textarea:focus,input:focus,select:focus{border-color:#4a7299 !important;outline:none}
+        textarea::placeholder,input::placeholder{color:#2a4d72}
+        select option{background:#0b1d35}
+      `}</style>
+
+      {/* Navbar */}
+      <nav style={{ height:52, background:"rgba(11,29,53,.97)", borderBottom:`1px solid ${C.border}`, backdropFilter:"blur(20px)", display:"flex", alignItems:"center", padding:"0 16px", gap:12, flexShrink:0, zIndex:100 }}>
+        <span onClick={() => navigate(createPageUrl("Home"))} style={{ fontFamily:"'Playfair Display',serif", fontSize:19, fontWeight:700, color:C.bright, cursor:"pointer", letterSpacing:"-.02em" }}>Notrya</span>
+        <div style={{ width:1, height:16, background:C.border }} />
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:C.teal, letterSpacing:".12em" }}>CLINICAL NOTE STUDIO</span>
+        <div style={{ flex:1 }} />
+        <div style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 12px", borderRadius:10, background:C.panel, border:`1px solid ${C.border}` }}>
+          <div>
+            <div style={{ fontSize:13, fontWeight:600, color:C.bright }}>{pt.name || "New Patient"}</div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.dim }}>{[pt.mrn, pt.age && (pt.age+(pt.sex?pt.sex[0]:'')), pt.dob].filter(Boolean).join(' · ') || "Enter patient info"}</div>
+          </div>
+        </div>
+        <div style={{ display:"flex", gap:6 }}>
+          <button onClick={() => showToast('Exporting note PDF...','i')} style={{ padding:"5px 13px", borderRadius:9, fontSize:12, fontWeight:600, cursor:"pointer", border:`1px solid ${C.border}`, background:C.edge, color:C.dim }}>📄 Export</button>
+          <button onClick={() => showToast('Note prepared for signature','s')} style={{ padding:"5px 13px", borderRadius:9, fontSize:12, fontWeight:700, cursor:"pointer", border:"none", background:`linear-gradient(135deg,${C.teal},#00b8a5)`, color:C.navy }}>✍️ Sign Note</button>
+        </div>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:C.dim }}>{clock}</span>
+      </nav>
+
+      {/* Workspace */}
+      <div style={{ display:"flex", flex:1, overflow:"hidden" }}>
+
+        {/* Sidebar */}
+        <div style={{ width:230, flexShrink:0, background:C.panel, borderRight:`1px solid ${C.border}`, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+          {/* Patient input */}
+          <div style={{ padding:"12px 14px 10px", borderBottom:`1px solid ${C.border}` }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.dim, letterSpacing:".1em", marginBottom:4 }}>PATIENT · ENCOUNTER</div>
+            <input value={pt.name} onChange={e => updatePt("name", e.target.value)} placeholder="Patient Name" style={{ width:"100%", background:C.edge, border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 8px", color:C.bright, fontSize:13, fontWeight:700, outline:"none", marginBottom:5, fontFamily:"'Playfair Display',serif" }} />
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:5, marginBottom:5 }}>
+              <input value={pt.mrn} onChange={e => updatePt("mrn", e.target.value)} placeholder="MRN" style={{ background:C.edge, border:`1px solid ${C.border}`, borderRadius:6, padding:"4px 7px", color:C.dim, fontSize:11, outline:"none", fontFamily:"'JetBrains Mono',monospace" }} />
+              <input value={pt.age} onChange={e => updatePt("age", e.target.value)} placeholder="Age" style={{ background:C.edge, border:`1px solid ${C.border}`, borderRadius:6, padding:"4px 7px", color:C.dim, fontSize:11, outline:"none", fontFamily:"'JetBrains Mono',monospace" }} />
+            </div>
+            {totalAbn > 0 && (
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, padding:"2px 8px", borderRadius:7, background:"rgba(255,92,108,.1)", border:"1px solid rgba(255,92,108,.3)", color:C.red, display:"inline-block" }}>⚠ {totalAbn} Abnormal</div>
+            )}
+          </div>
+
+          {/* Progress */}
+          <div style={{ padding:"8px 14px", borderBottom:`1px solid ${C.border}` }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.dim, letterSpacing:".1em", display:"flex", justifyContent:"space-between", marginBottom:5 }}>
+              <span>COMPLETION</span><span>{completion}%</span>
+            </div>
+            <div style={{ height:4, borderRadius:2, background:C.edge, overflow:"hidden" }}>
+              <div style={{ height:"100%", background:`linear-gradient(90deg,${C.teal},#00b8a5)`, borderRadius:2, width:`${completion}%`, transition:"width .5s" }} />
+            </div>
+          </div>
+
+          {/* Nav */}
+          <div style={{ flex:1, overflowY:"auto", padding:"6px 8px" }}>
+            {GROUPS.map(g => (
+              <div key={g}>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.muted, letterSpacing:".12em", padding:"6px 8px 3px", textTransform:"uppercase" }}>{g}</div>
+                {SECTIONS.filter(s => s.group === g).map(sec => {
+                  const isDone = done[sec.id];
+                  const isActive = cur === sec.id;
+                  return (
+                    <div key={sec.id} onClick={() => switchSec(sec.id)} style={{
+                      display:"flex", alignItems:"center", gap:9, padding:"8px 10px", borderRadius:10, cursor:"pointer",
+                      marginBottom:1, transition:"all .15s",
+                      background: isActive ? "rgba(0,212,188,.08)" : "transparent",
+                      border: `1px solid ${isActive ? "rgba(0,212,188,.3)" : "transparent"}`,
+                    }}>
+                      <div style={{ fontSize:14, width:20, textAlign:"center", flexShrink:0 }}>{sec.icon}</div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:12, fontWeight:500, color: isActive ? C.teal : C.text, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{sec.name}</div>
+                        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.muted, marginTop:1 }}>{sec.sub}</div>
+                      </div>
+                      {isDone && <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, minWidth:16, height:16, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(46,204,113,.1)", color:C.green, border:"1px solid rgba(46,204,113,.25)", padding:"0 4px" }}>✓</div>}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+
+          {/* Quick actions */}
+          <div style={{ padding:"8px 10px", borderTop:`1px solid ${C.border}`, display:"flex", flexDirection:"column", gap:5 }}>
+            <button onClick={analyzeAll} style={{ padding:"7px 10px", borderRadius:9, fontSize:11, fontWeight:500, cursor:"pointer", background:"rgba(0,212,188,.07)", border:"1px solid rgba(0,212,188,.28)", color:C.teal, display:"flex", alignItems:"center", gap:7 }}>✦ Analyze Entire Note</button>
+            <button onClick={generateSummary} style={{ padding:"7px 10px", borderRadius:9, fontSize:11, fontWeight:500, cursor:"pointer", background:C.edge, border:`1px solid ${C.border}`, color:C.dim, display:"flex", alignItems:"center", gap:7 }}>📋 Generate Summary</button>
+          </div>
+        </div>
+
+        {/* Center Content */}
+        <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", minWidth:0 }}>
+          {/* Section header */}
+          <div style={{ padding:"14px 20px 12px", background:C.slate, borderBottom:`1px solid ${C.border}`, flexShrink:0 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+              <div style={{ width:38, height:38, borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", fontSize:19, flexShrink:0, background:"rgba(0,212,188,.1)", border:"1px solid rgba(0,212,188,.28)" }}>
+                {curSec?.icon}
+              </div>
+              <div>
+                <div style={{ fontFamily:"'Playfair Display',serif", fontSize:21, fontWeight:700, color:C.bright, letterSpacing:"-.02em" }}>{curSec?.name}</div>
+                <div style={{ fontSize:12, color:C.dim, marginTop:1 }}>{curSec?.sub}</div>
+              </div>
+              <div style={{ flex:1 }} />
+              <button onClick={() => analyzeSection(cur)} disabled={analyzing} style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:10, cursor: analyzing ? "not-allowed" : "pointer", background:"rgba(155,109,255,.1)", border:"1px solid rgba(155,109,255,.3)", color:C.purple, fontSize:12, fontWeight:600, opacity: analyzing ? .45 : 1 }}>
+                {analyzing ? <div style={{ width:13, height:13, border:"2px solid rgba(155,109,255,.3)", borderTopColor:C.purple, borderRadius:"50%", animation:"spin .6s linear infinite" }} /> : "✦"}
+                {analyzing ? "Analyzing..." : "Analyze Section"}
+              </button>
+            </div>
+          </div>
+          {/* Section body */}
+          <div style={{ flex:1, overflowY:"auto", padding:"16px 20px" }}>
+            {renderSection()}
+          </div>
+        </div>
+
+        {/* Right Panel — AI */}
+        <div style={{ width:310, flexShrink:0, background:C.panel, borderLeft:`1px solid ${C.border}`, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+          <div style={{ padding:"12px 14px 10px", borderBottom:`1px solid ${C.border}`, flexShrink:0, display:"flex", alignItems:"center", gap:8 }}>
+            <div style={{ width:7, height:7, borderRadius:"50%", background:C.purple, animation:"pulse .8s infinite" }} />
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:C.purple, letterSpacing:".12em", flex:1 }}>✦ AI ANALYSIS</div>
+          </div>
+          <div style={{ flex:1, overflowY:"auto", padding:"12px 14px" }}>
+            {rpContent === "loading" && <AILoadingState />}
+            {rpContent === "analysis" && rpData && <AIAnalysisPanel data={rpData} done={done} />}
+            {rpContent === "summary" && rpData && <AISummaryPanel data={rpData} done={done} />}
+            {rpContent === "default" && <AIDefaultState />}
+          </div>
+        </div>
+      </div>
+
+      {/* Toasts */}
+      <div style={{ position:"fixed", bottom:18, right:18, display:"flex", flexDirection:"column", gap:6, zIndex:9999 }}>
+        {toasts.map(t => (
+          <div key={t.id} style={{
+            padding:"10px 14px", borderRadius:10, fontSize:12, animation:"fadeUp .2s ease", backdropFilter:"blur(8px)",
+            background: t.type==='s'?"rgba(46,204,113,.11)":t.type==='e'?"rgba(255,92,108,.11)":"rgba(74,144,217,.11)",
+            border: `1px solid ${t.type==='s'?"rgba(46,204,113,.38)":t.type==='e'?"rgba(255,92,108,.38)":"rgba(74,144,217,.38)"}`,
+            color: t.type==='s'?C.green:t.type==='e'?C.red:C.blue,
+          }}>{t.msg}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Section Components ───────────────────────────────────────────
+
+function FC({ title, badge, badgeColor = "b", abn, children }) {
+  const bk = { a:"rgba(255,92,108,.16)", w:"rgba(245,166,35,.13)", g:"rgba(46,204,113,.1)", b:"rgba(74,144,217,.1)" };
+  const bt = { a:C.red, w:C.amber, g:C.green, b:C.blue };
+  return (
+    <div style={{ background:C.panel, border:`1px solid ${abn?"rgba(255,92,108,.4)":C.border}`, borderRadius:12, marginBottom:11, overflow:"hidden" }}>
+      <div style={{ padding:"9px 14px", background:"rgba(0,0,0,.15)", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:8 }}>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:C.dim, letterSpacing:".1em", flex:1 }}>{title}</div>
+        {badge && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, padding:"2px 7px", borderRadius:7, background:bk[badgeColor]||bk.b, border:`1px solid ${bt[badgeColor]||bt.b}55`, color:bt[badgeColor]||bt.b }}>{badge}</span>}
+      </div>
+      <div style={{ padding:"12px 14px" }}>{children}</div>
+    </div>
+  );
+}
+
+function SectionOverview({ pt, totalAbn, dxList }) {
+  const v = pt.vitals;
+  const stats = [
+    {lbl:"Heart Rate", val:v.hr, unit:"bpm", color: +v.hr>100||+v.hr<60?C.red:C.green},
+    {lbl:"Blood Pressure", val:v.sbp&&v.dbp?`${v.sbp}/${v.dbp}`:v.sbp||"—", unit:"mmHg", color:+v.sbp<90?C.red:C.green},
+    {lbl:"Temperature", val:v.temp, unit:"°C", color:+v.temp>38.3?C.red:C.green},
+    {lbl:"SpO₂", val:v.spo2, unit:"%", color:+v.spo2<94?C.red:+v.spo2<96?C.amber:C.green},
+    {lbl:"GCS", val:v.gcs, unit:"/15", color:+v.gcs<14?C.red:+v.gcs<15?C.amber:C.green},
+    {lbl:"Resp Rate", val:v.rr, unit:"br/min", color:+v.rr>20?C.amber:C.green},
+  ];
+  return (
+    <>
+      {totalAbn > 0 && (
+        <div style={{ display:"flex", alignItems:"flex-start", gap:10, padding:"10px 14px", borderRadius:11, background:"rgba(255,92,108,.07)", border:"1px solid rgba(255,92,108,.32)", marginBottom:14, animation:"glow 3s infinite" }}>
+          <span style={{ fontSize:16 }}>🔴</span>
+          <div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:C.red, letterSpacing:".08em", marginBottom:3 }}>ABNORMAL FINDINGS ACROSS NOTE SECTIONS — {totalAbn} TOTAL</div>
+            <div style={{ fontSize:12, color:C.text, lineHeight:1.65 }}>Review flagged sections for abnormal labs, physical exam findings, and imaging results.</div>
+          </div>
+        </div>
+      )}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11, marginBottom:11 }}>
+        <FC title="PATIENT INFORMATION">
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
+            {[["Name",pt.name||"—"],["MRN",pt.mrn||"—"],["DOB",pt.dob||"—"],["Age/Sex",[pt.age,pt.sex].filter(Boolean).join(' ')||"—"],["Visit Type",pt.type||"—"],["Provider",pt.provider||"—"]].map(([l,v])=>(
+              <div key={l}>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.muted }}>{l}</div>
+                <div style={{ fontSize:12, fontWeight:500, color:C.text }}>{v}</div>
+              </div>
+            ))}
+          </div>
+        </FC>
+        <FC title="CHIEF COMPLAINT" badge={pt.cc?"HPI":"EMPTY"} badgeColor={pt.cc?"b":"w"}>
+          <div style={{ fontSize:12, color:C.text, lineHeight:1.75 }}>{pt.cc || <span style={{ color:C.muted }}>No chief complaint entered yet.</span>}</div>
+        </FC>
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:9 }}>
+        {stats.map(s => (
+          <div key={s.lbl} style={{ background:C.edge, borderRadius:10, padding:"10px 12px", border:`1px solid ${s.val?s.color+"32":C.border}` }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.muted, marginBottom:3 }}>{s.lbl}</div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:20, fontWeight:700, color: s.val ? s.color : C.muted }}>{s.val || "—"}</div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.muted }}>{s.unit}</div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function SectionCCHPI({ pt, updatePt, inputS, textareaS, labelS }) {
+  return (
+    <>
+      <FC title="CHIEF COMPLAINT" badge="SUBJECTIVE" badgeColor="b">
+        <textarea style={{...textareaS, minHeight:50}} value={pt.cc} onChange={e=>updatePt("cc",e.target.value)} placeholder="Enter chief complaint..." />
+      </FC>
+      <FC title="HISTORY OF PRESENT ILLNESS" badge="HPI" badgeColor="b">
+        <textarea style={{...textareaS, minHeight:130}} value={pt.hpi} onChange={e=>updatePt("hpi",e.target.value)} placeholder="Enter HPI with OLDCARTS elements..." />
+      </FC>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
+        {[["ONSET / TIMING","onset"],["SEVERITY / QUALITY","severity"],["MODIFYING FACTORS","modifying"],["ASSOCIATED SYMPTOMS","associated"]].map(([lbl,key])=>(
+          <FC key={key} title={lbl}>
+            <textarea style={{...textareaS, minHeight:45}} value={pt[key]||""} onChange={e=>updatePt(key,e.target.value)} placeholder="..." />
+          </FC>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function SectionPMH({ pt, updatePt, inputS, textareaS, labelS }) {
+  const alp = (a, i) => (
+    <div key={i} style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"5px 11px", borderRadius:9, background:"rgba(255,92,108,.09)", border:"1px solid rgba(255,92,108,.28)", margin:3, fontSize:12, color:C.red }}>⚠ {a}</div>
+  );
+  return (
+    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
+      <div>
+        <FC title="PAST MEDICAL HISTORY">
+          <textarea style={{...textareaS, minHeight:80}} value={pt.pmh.join('\n')} onChange={e=>updatePt("pmh", e.target.value.split('\n'))} placeholder="One condition per line..." />
+        </FC>
+        <FC title="PAST SURGICAL HISTORY">
+          <textarea style={{...textareaS, minHeight:60}} value={pt.psh.join('\n')} onChange={e=>updatePt("psh", e.target.value.split('\n'))} placeholder="One procedure per line..." />
+        </FC>
+        <FC title="FAMILY HISTORY">
+          <textarea style={{...textareaS, minHeight:55}} value={pt.family} onChange={e=>updatePt("family", e.target.value)} placeholder="Family history..." />
+        </FC>
+      </div>
+      <div>
+        <FC title="SOCIAL HISTORY">
+          <textarea style={{...textareaS, minHeight:70}} value={pt.social} onChange={e=>updatePt("social", e.target.value)} placeholder="Smoking, alcohol, drugs, occupation, living situation..." />
+        </FC>
+        <FC title="ALLERGIES" badge={pt.allergies.length>0?`⚠ ${pt.allergies.length} KNOWN`:"NONE"} badgeColor={pt.allergies.length>0?"a":"g"} abn={pt.allergies.length>0}>
+          <textarea style={{...textareaS, minHeight:55}} value={pt.allergies.join('\n')} onChange={e=>updatePt("allergies", e.target.value.split('\n').filter(Boolean))} placeholder="One allergy per line (Drug — Reaction)..." />
+          {pt.allergies.filter(Boolean).map((a,i) => alp(a,i))}
+        </FC>
+      </div>
+    </div>
+  );
+}
+
+function SectionMeds({ pt, updatePt, inputS, labelS }) {
+  return (
+    <>
+      <FC title="MEDICATIONS" badge={`${pt.meds.length} ACTIVE`} badgeColor="g">
+        {pt.meds.length > 0 ? (
+          <table style={{ width:"100%", borderCollapse:"collapse" }}>
+            <thead>
+              <tr>
+                {["MEDICATION","DOSE","ROUTE","FREQ","STATUS"].map(h=>(
+                  <th key={h} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.dim, padding:"7px 12px", borderBottom:`1px solid ${C.border}`, background:"rgba(0,0,0,.2)", textAlign:"left" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {pt.meds.map((m,i)=>(
+                <tr key={i}>
+                  <td style={{ padding:"7px 12px", fontSize:12, fontWeight:500, color:C.bright, borderBottom:`1px solid rgba(255,255,255,.04)` }}>{m.n}</td>
+                  <td style={{ padding:"7px 12px", fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:C.teal, borderBottom:`1px solid rgba(255,255,255,.04)` }}>{m.d}</td>
+                  <td style={{ padding:"7px 12px", fontSize:11, color:C.dim, borderBottom:`1px solid rgba(255,255,255,.04)` }}>{m.r}</td>
+                  <td style={{ padding:"7px 12px", fontSize:11, color:C.dim, borderBottom:`1px solid rgba(255,255,255,.04)` }}>{m.f}</td>
+                  <td style={{ padding:"7px 12px", borderBottom:`1px solid rgba(255,255,255,.04)` }}>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, padding:"2px 7px", borderRadius:7, background:"rgba(46,204,113,.11)", color:C.green, border:"1px solid rgba(46,204,113,.22)" }}>ACTIVE</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div style={{ textAlign:"center", padding:"20px", color:C.muted, fontSize:12 }}>No medications added. Enter medications in patient data above.</div>
+        )}
+      </FC>
+      <FC title="ALLERGIES" badge={pt.allergies.length>0?`⚠ ${pt.allergies.length} KNOWN`:"NONE KNOWN"} badgeColor={pt.allergies.length>0?"a":"g"} abn={pt.allergies.length>0}>
+        {pt.allergies.filter(Boolean).length > 0
+          ? pt.allergies.filter(Boolean).map((a,i) => <div key={i} style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"5px 11px", borderRadius:9, background:"rgba(255,92,108,.09)", border:"1px solid rgba(255,92,108,.28)", margin:3, fontSize:12, color:C.red }}>⚠ {a}</div>)
+          : <div style={{ color:C.muted, fontSize:12 }}>No known drug allergies</div>}
+      </FC>
+    </>
+  );
+}
+
+function SectionROS({ pt, updatePt }) {
+  const posSystems = Object.entries(pt.ros).filter(([_,v])=>v.pos.length>0);
+  const sysNames = {constitutional:"Constitutional",cardiovascular:"Cardiovascular",respiratory:"Respiratory",gastrointestinal:"Gastrointestinal",genitourinary:"Genitourinary",neurological:"Neurological",musculoskeletal:"Musculoskeletal",integumentary:"Integumentary"};
+  const toggle = (sys, polarity, symptom) => {
+    const cur = pt.ros[sys][polarity];
+    const opp = polarity === "pos" ? "neg" : "pos";
+    const newCur = cur.includes(symptom) ? cur.filter(s=>s!==symptom) : [...cur, symptom];
+    const newOpp = pt.ros[sys][opp].filter(s=>s!==symptom);
+    const newRos = {...pt.ros, [sys]: {...pt.ros[sys], [polarity]: newCur, [opp]: newOpp}};
+    updatePt("ros", newRos);
+  };
+  return (
+    <>
+      {posSystems.length > 0 && (
+        <div style={{ display:"flex", alignItems:"flex-start", gap:10, padding:"10px 14px", borderRadius:11, background:"rgba(255,92,108,.07)", border:"1px solid rgba(255,92,108,.32)", marginBottom:14 }}>
+          <span>⚠️</span>
+          <div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:C.red, marginBottom:3 }}>POSITIVE FINDINGS — {posSystems.length} SYSTEMS</div>
+            <div style={{ fontSize:12, color:C.text, lineHeight:1.65 }}>
+              {posSystems.map(([k,v])=>(
+                <span key={k} style={{ display:"inline-block", padding:"1px 8px", borderRadius:6, background:"rgba(255,92,108,.14)", border:"1px solid rgba(255,92,108,.28)", color:C.red, fontSize:11, margin:"2px 3px" }}>{sysNames[k]||k}: {v.pos.join(', ')}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+        {Object.entries(pt.ros).map(([sys, data]) => {
+          const hasPos = data.pos.length > 0;
+          const allSyms = [...new Set([...data.pos, ...data.neg])];
+          return (
+            <div key={sys} style={{ background:C.edge, border:`1px solid ${hasPos?"rgba(255,92,108,.4)":C.border}`, borderRadius:10, padding:"10px 12px", background: hasPos?"rgba(255,92,108,.05)":C.edge }}>
+              <div style={{ fontSize:11, fontWeight:600, color:C.text, marginBottom:6, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                {sysNames[sys]||sys}
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color: hasPos?C.red:C.green }}>{hasPos?'POS':'NEG'}</span>
+              </div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                {allSyms.map(s=>{
+                  const isPos = data.pos.includes(s);
+                  const isNeg = data.neg.includes(s);
+                  return (
+                    <span key={s} onClick={() => toggle(sys, isPos?"neg":"pos", s)} style={{
+                      padding:"3px 9px", borderRadius:7, fontSize:11, cursor:"pointer",
+                      background: isPos?"rgba(255,92,108,.13)":isNeg?"rgba(46,204,113,.09)":"transparent",
+                      border: `1px solid ${isPos?"rgba(255,92,108,.38)":isNeg?"rgba(46,204,113,.28)":C.border}`,
+                      color: isPos?C.red:isNeg?C.green:C.dim,
+                    }}>{s}</span>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+function SectionVitals({ pt, updatePt }) {
+  const vDefs = [
+    {k:"hr",lbl:"HEART RATE",unit:"bpm",ref:"60-100",abn:v=>+v>100||+v<60,warn:v=>false},
+    {k:"sbp",lbl:"SYS BP",unit:"mmHg",ref:"90-140",abn:v=>+v<90,warn:v=>+v>160},
+    {k:"dbp",lbl:"DIA BP",unit:"mmHg",ref:"60-90",abn:v=>+v<60,warn:v=>false},
+    {k:"temp",lbl:"TEMPERATURE",unit:"°C",ref:"36.1-37.2",abn:v=>+v>38.3||+v<35,warn:v=>+v>37.5},
+    {k:"rr",lbl:"RESP RATE",unit:"br/min",ref:"12-20",abn:v=>+v>24||+v<10,warn:v=>+v>20},
+    {k:"spo2",lbl:"SpO₂",unit:"%",ref:"≥96%",abn:v=>+v<94,warn:v=>+v<96},
+    {k:"gcs",lbl:"GCS",unit:"/15",ref:"15",abn:v=>+v<14,warn:v=>+v<15},
+    {k:"wt",lbl:"WEIGHT",unit:"kg",ref:"—",abn:v=>false,warn:v=>false},
+    {k:"ht",lbl:"HEIGHT",unit:"cm",ref:"—",abn:v=>false,warn:v=>false},
+    {k:"bmi",lbl:"BMI",unit:"kg/m²",ref:"18.5-24.9",abn:v=>+v>40,warn:v=>+v>29.9||+v<18.5},
+  ];
+  const abnDefs = vDefs.filter(d => pt.vitals[d.k] && d.abn(pt.vitals[d.k]));
+  return (
+    <>
+      {abnDefs.length > 0 && (
+        <div style={{ display:"flex", alignItems:"flex-start", gap:10, padding:"10px 14px", borderRadius:11, background:"rgba(255,92,108,.07)", border:"1px solid rgba(255,92,108,.32)", marginBottom:14 }}>
+          <span>🔴</span>
+          <div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:C.red, marginBottom:3 }}>CRITICAL VITAL ABNORMALITIES — {abnDefs.length} OUT OF RANGE</div>
+            <div style={{ fontSize:12, color:C.text }}>{abnDefs.map(d=>(
+              <span key={d.k} style={{ display:"inline-block", padding:"1px 8px", borderRadius:6, background:"rgba(255,92,108,.14)", border:"1px solid rgba(255,92,108,.28)", color:C.red, fontSize:11, margin:"2px 3px" }}>{d.lbl}: {pt.vitals[d.k]} {d.unit}</span>
+            ))}</div>
+          </div>
+        </div>
+      )}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10 }}>
+        {vDefs.map(d => {
+          const val = pt.vitals[d.k];
+          const isAbn = val && d.abn(val);
+          const isWarn = val && !isAbn && d.warn(val);
+          return (
+            <div key={d.k} style={{ background: isAbn?"rgba(255,92,108,.07)":isWarn?"rgba(245,166,35,.05)":C.edge, border:`1px solid ${isAbn?"rgba(255,92,108,.5)":isWarn?"rgba(245,166,35,.4)":C.border}`, borderRadius:11, padding:11, transition:"all .2s" }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.muted, letterSpacing:".07em", marginBottom:3 }}>{d.lbl}</div>
+              <input value={val} onChange={e => updatePt(`vitals.${d.k}`, e.target.value)}
+                style={{ width:"100%", background:"transparent", border:"none", color:C.text, fontFamily:"'JetBrains Mono',monospace", fontSize:21, fontWeight:700, outline:"none" }}
+                placeholder="—"
+              />
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.muted, marginTop:2 }}>{d.unit}</div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, marginTop:3, color: isAbn?C.red:isWarn?C.amber:val?C.green:C.muted }}>
+                {isAbn?"⚠":isWarn?"!":val?"✓":"—"} {d.ref}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+function SectionPE({ pt, updatePt }) {
+  const syNames = {general:"General",heent:"HEENT",cardiovascular:"Cardiovascular",pulmonary:"Pulmonary",abdomen:"Abdomen",neurological:"Neurological",extremities:"Extremities",skin:"Skin"};
+  const abnSys = Object.entries(pt.pe).filter(([_,v])=>v.abn);
+  const toggleAbn = (sys) => {
+    const newPe = {...pt.pe, [sys]: {...pt.pe[sys], abn: !pt.pe[sys].abn}};
+    updatePt("pe", newPe);
+  };
+  const updateNote = (sys, val) => {
+    const newPe = {...pt.pe, [sys]: {...pt.pe[sys], n: val}};
+    updatePt("pe", newPe);
+  };
+  return (
+    <>
+      {abnSys.length > 0 && (
+        <div style={{ display:"flex", alignItems:"flex-start", gap:10, padding:"10px 14px", borderRadius:11, background:"rgba(255,92,108,.07)", border:"1px solid rgba(255,92,108,.32)", marginBottom:14 }}>
+          <span>🔴</span>
+          <div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:C.red, marginBottom:3 }}>ABNORMAL PHYSICAL FINDINGS — {abnSys.length} SYSTEMS</div>
+            <div style={{ fontSize:12, color:C.text }}>{abnSys.map(([k])=>(
+              <span key={k} style={{ display:"inline-block", padding:"1px 8px", borderRadius:6, background:"rgba(255,92,108,.14)", border:"1px solid rgba(255,92,108,.28)", color:C.red, fontSize:11, margin:"2px 3px" }}>{syNames[k]||k}</span>
+            ))}</div>
+          </div>
+        </div>
+      )}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:9 }}>
+        {Object.entries(pt.pe).map(([sys, data]) => (
+          <div key={sys} style={{ background: data.abn?"rgba(255,92,108,.05)":C.edge, border:`1px solid ${data.abn?"rgba(255,92,108,.4)":C.border}`, borderRadius:11, padding:11 }}>
+            <div style={{ fontSize:11, fontWeight:700, color:C.dim, letterSpacing:".06em", textTransform:"uppercase", marginBottom:7, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              {syNames[sys]||sys}
+              <button onClick={() => toggleAbn(sys)} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, padding:"2px 7px", borderRadius:7, cursor:"pointer", background: data.abn?"rgba(255,92,108,.16)":"rgba(46,204,113,.1)", border:`1px solid ${data.abn?"rgba(255,92,108,.32)":"rgba(46,204,113,.22)"}`, color: data.abn?C.red:C.green }}>
+                {data.abn?"ABNORMAL":"NORMAL"}
+              </button>
+            </div>
+            <textarea value={data.n} onChange={e => updateNote(sys, e.target.value)}
+              rows={2}
+              style={{ width:"100%", background:"transparent", border:"none", borderTop:`1px solid ${C.border}`, paddingTop:7, color:C.text, fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none", resize:"none", lineHeight:1.6 }}
+              placeholder={`${syNames[sys]||sys} examination findings...`}
+            />
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function SectionLabs({ pt, updatePt }) {
+  const labs = pt.labs;
+  const abnLabs = labs.filter(l=>l.f&&l.f!=='N');
+  const addLab = () => updatePt("labs", [...labs, {n:"",v:"",ref:"",u:"",f:"N"}]);
+  const updateLab = (i, field, val) => {
+    const next = labs.map((l,idx) => idx===i ? {...l,[field]:val} : l);
+    updatePt("labs", next);
+  };
+  const removeLab = (i) => updatePt("labs", labs.filter((_,idx)=>idx!==i));
+  return (
+    <>
+      {abnLabs.length > 0 && (
+        <div style={{ display:"flex", alignItems:"flex-start", gap:10, padding:"10px 14px", borderRadius:11, background:"rgba(255,92,108,.07)", border:"1px solid rgba(255,92,108,.32)", marginBottom:14 }}>
+          <span>🔴</span>
+          <div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:C.red, marginBottom:3 }}>CRITICAL LAB ABNORMALITIES — {abnLabs.length} VALUES OUT OF RANGE</div>
+            <div style={{ fontSize:12, color:C.text }}>{abnLabs.map((l,i)=>(
+              <span key={i} style={{ display:"inline-block", padding:"1px 8px", borderRadius:6, background:"rgba(255,92,108,.14)", border:"1px solid rgba(255,92,108,.28)", color:C.red, fontSize:11, margin:"2px 3px" }}>{l.n}: {l.v} ({l.f==='H'?'HIGH':'LOW'})</span>
+            ))}</div>
+          </div>
+        </div>
+      )}
+      <div style={{ background:C.panel, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden", marginBottom:11 }}>
+        <div style={{ padding:"9px 14px", background:"rgba(0,0,0,.15)", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:8 }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:C.dim, flex:1 }}>LAB RESULTS</div>
+          {abnLabs.length > 0 && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, padding:"2px 7px", borderRadius:7, background:"rgba(255,92,108,.16)", color:C.red, border:"1px solid rgba(255,92,108,.32)" }}>{abnLabs.length} ABNORMAL</span>}
+        </div>
+        <table style={{ width:"100%", borderCollapse:"collapse" }}>
+          <thead>
+            <tr>{["TEST","RESULT","REFERENCE","UNITS","FLAG",""].map(h=>(
+              <th key={h} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.dim, padding:"7px 12px", borderBottom:`1px solid ${C.border}`, textAlign:"left", background:C.edge }}>{h}</th>
+            ))}</tr>
+          </thead>
+          <tbody>
+            {labs.map((l,i) => {
+              const fc = l.f==='H'||l.f==='L' ? 'a' : 'g';
+              const fg = l.f==='H'||l.f==='L' ? C.red : C.text;
+              const ar = l.f==='H'?'↑':l.f==='L'?'↓':'';
+              return (
+                <tr key={i}>
+                  <td style={{ padding:"7px 12px", borderBottom:`1px solid rgba(255,255,255,.04)` }}>
+                    <input value={l.n} onChange={e=>updateLab(i,'n',e.target.value)} style={{ background:"transparent", border:"none", color:C.text, fontSize:12, outline:"none", width:"100%" }} placeholder="Test name" />
+                  </td>
+                  <td style={{ padding:"7px 12px", borderBottom:`1px solid rgba(255,255,255,.04)` }}>
+                    <input value={l.v} onChange={e=>updateLab(i,'v',e.target.value)} style={{ background:"transparent", border:"none", color:fg, fontFamily:"'JetBrains Mono',monospace", fontWeight:600, fontSize:12, outline:"none", width:"80px" }} placeholder="—" />
+                    {ar && <span style={{ fontSize:10, color:C.red, marginLeft:2 }}>{ar}</span>}
+                  </td>
+                  <td style={{ padding:"7px 12px", borderBottom:`1px solid rgba(255,255,255,.04)` }}>
+                    <input value={l.ref} onChange={e=>updateLab(i,'ref',e.target.value)} style={{ background:"transparent", border:"none", color:C.muted, fontFamily:"'JetBrains Mono',monospace", fontSize:10, outline:"none", width:"100%" }} placeholder="ref range" />
+                  </td>
+                  <td style={{ padding:"7px 12px", borderBottom:`1px solid rgba(255,255,255,.04)` }}>
+                    <input value={l.u} onChange={e=>updateLab(i,'u',e.target.value)} style={{ background:"transparent", border:"none", color:C.muted, fontFamily:"'JetBrains Mono',monospace", fontSize:10, outline:"none", width:"80px" }} placeholder="unit" />
+                  </td>
+                  <td style={{ padding:"7px 12px", borderBottom:`1px solid rgba(255,255,255,.04)` }}>
+                    <select value={l.f} onChange={e=>updateLab(i,'f',e.target.value)} style={{ background:C.edge, border:`1px solid ${C.border}`, borderRadius:5, padding:"2px 5px", color: l.f!=='N'?C.red:C.green, fontSize:11, fontFamily:"'JetBrains Mono',monospace", cursor:"pointer", outline:"none" }}>
+                      <option value="N">N</option><option value="H">H</option><option value="L">L</option>
+                    </select>
+                  </td>
+                  <td style={{ padding:"7px 8px", borderBottom:`1px solid rgba(255,255,255,.04)` }}>
+                    <button onClick={()=>removeLab(i)} style={{ background:"transparent", border:"none", color:C.muted, cursor:"pointer", fontSize:14, padding:"2px 5px" }}>×</button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <div style={{ padding:"8px 14px" }}>
+          <button onClick={addLab} style={{ padding:"7px 14px", borderRadius:9, background:"transparent", border:`1px dashed ${C.border}`, color:C.dim, fontSize:11, cursor:"pointer", display:"flex", alignItems:"center", gap:5 }}>+ Add Lab Result</button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function SectionImaging({ pt, updatePt }) {
+  const imaging = pt.imaging;
+  const abnImg = imaging.filter(i=>i.abn);
+  const addImg = () => updatePt("imaging", [...imaging, {type:"",title:"",date:"Today",f:"",imp:"",abn:false}]);
+  const updateImg = (i, field, val) => updatePt("imaging", imaging.map((img,idx) => idx===i ? {...img,[field]:val} : img));
+  const removeImg = (i) => updatePt("imaging", imaging.filter((_,idx)=>idx!==i));
+  return (
+    <>
+      {abnImg.length > 0 && (
+        <div style={{ display:"flex", alignItems:"flex-start", gap:10, padding:"10px 14px", borderRadius:11, background:"rgba(255,92,108,.07)", border:"1px solid rgba(255,92,108,.32)", marginBottom:14 }}>
+          <span>🔴</span>
+          <div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:C.red, marginBottom:3 }}>ABNORMAL DIAGNOSTIC FINDINGS</div>
+            <div style={{ fontSize:12, color:C.text }}>{abnImg.map((img,i)=>(
+              <span key={i} style={{ display:"inline-block", padding:"1px 8px", borderRadius:6, background:"rgba(255,92,108,.14)", border:"1px solid rgba(255,92,108,.28)", color:C.red, fontSize:11, margin:"2px 3px" }}>{img.type}: {img.imp}</span>
+            ))}</div>
+          </div>
+        </div>
+      )}
+      {imaging.map((img,i) => (
+        <div key={i} style={{ background:C.edge, border:`1px solid ${img.abn?"rgba(255,92,108,.38)":C.border}`, borderRadius:11, padding:11, marginBottom:9 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"80px 1fr 80px auto", gap:8, marginBottom:8 }}>
+            <input value={img.type} onChange={e=>updateImg(i,'type',e.target.value)} placeholder="TYPE" style={{ background:C.panel, border:`1px solid ${C.border}`, borderRadius:6, padding:"4px 7px", color:C.blue, fontFamily:"'JetBrains Mono',monospace", fontSize:10, outline:"none", fontWeight:700 }} />
+            <input value={img.title} onChange={e=>updateImg(i,'title',e.target.value)} placeholder="Study name / title" style={{ background:C.panel, border:`1px solid ${C.border}`, borderRadius:6, padding:"4px 8px", color:C.bright, fontSize:13, fontWeight:600, outline:"none" }} />
+            <input value={img.date} onChange={e=>updateImg(i,'date',e.target.value)} placeholder="Date" style={{ background:C.panel, border:`1px solid ${C.border}`, borderRadius:6, padding:"4px 7px", color:C.dim, fontSize:11, outline:"none" }} />
+            <button onClick={()=>removeImg(i)} style={{ background:"transparent", border:"none", color:C.muted, cursor:"pointer", fontSize:16, padding:"2px 6px" }}>×</button>
+          </div>
+          <textarea value={img.f} onChange={e=>updateImg(i,'f',e.target.value)} rows={2} placeholder="Findings..." style={{ width:"100%", background:"transparent", border:"none", color:C.text, fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none", resize:"none", lineHeight:1.65, marginBottom:5 }} />
+          <div style={{ borderTop:`1px solid ${C.border}`, paddingTop:7, display:"flex", gap:8, alignItems:"center" }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.amber, fontWeight:700 }}>IMPRESSION:</span>
+            <input value={img.imp} onChange={e=>updateImg(i,'imp',e.target.value)} placeholder="Impression..." style={{ flex:1, background:"transparent", border:"none", color:C.dim, fontSize:12, outline:"none" }} />
+            <button onClick={()=>updateImg(i,'abn',!img.abn)} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, padding:"2px 8px", borderRadius:7, cursor:"pointer", background: img.abn?"rgba(255,92,108,.16)":"rgba(46,204,113,.1)", border:`1px solid ${img.abn?"rgba(255,92,108,.32)":"rgba(46,204,113,.22)"}`, color: img.abn?C.red:C.green }}>
+              {img.abn?"ABNORMAL":"NORMAL"}
+            </button>
+          </div>
+        </div>
+      ))}
+      <button onClick={addImg} style={{ width:"100%", padding:10, borderRadius:11, background:"transparent", border:`1px dashed ${C.border}`, color:C.dim, fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>+ Add Imaging / Diagnostic Study</button>
+    </>
+  );
+}
+
+function SectionAssessment({ dxList, addDx, removeDx, updateDx, inputS, textareaS }) {
+  return (
+    <>
+      {dxList.map((dx, i) => (
+        <div key={i} style={{ background:C.edge, border:`1px solid ${C.border}`, borderRadius:11, padding:11, marginBottom:9, animation:"fadeUp .2s ease" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:7 }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, fontWeight:700, color:C.teal, width:22, height:22, borderRadius:"50%", border:"1px solid rgba(0,212,188,.38)", background:"rgba(0,212,188,.09)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{i+1}</div>
+            <input value={dx.dx} onChange={e=>updateDx(i,'dx',e.target.value)} placeholder="Enter diagnosis..." style={{ flex:1, background:"transparent", border:"none", color:C.bright, fontFamily:"'Playfair Display',serif", fontSize:16, fontWeight:600, outline:"none" }} />
+            <button onClick={()=>removeDx(i)} style={{ background:"transparent", border:"none", color:C.muted, cursor:"pointer", fontSize:16, padding:"3px 6px" }}>×</button>
+          </div>
+          <textarea value={dx.plan} onChange={e=>updateDx(i,'plan',e.target.value)} rows={3} placeholder="Management plan..." style={{ width:"100%", background:"transparent", border:"none", borderTop:`1px solid ${C.border}`, paddingTop:7, color:C.text, fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none", resize:"none", lineHeight:1.65 }} />
+        </div>
+      ))}
+      <button onClick={addDx} style={{ width:"100%", padding:10, borderRadius:11, background:"transparent", border:`1px dashed ${C.border}`, color:C.dim, fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5, transition:"all .15s" }}>+ Add Diagnosis</button>
+    </>
+  );
+}
+
+function SectionDisposition({ pt, updatePt, inputS, textareaS, labelS }) {
+  const opts = [{id:"admit-icu",lbl:"Admit — ICU",icon:"🏥"},{id:"admit-floor",lbl:"Admit — Floor",icon:"🛏️"},{id:"obs",lbl:"Observation",icon:"👁️"},{id:"discharge",lbl:"Discharge Home",icon:"🏠"}];
+  return (
+    <>
+      <FC title="DISPOSITION DECISION">
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:9 }}>
+          {opts.map(o=>(
+            <div key={o.id} onClick={()=>updatePt("disposition",o.id)} style={{
+              padding:12, borderRadius:11, background:C.edge, border:`2px solid ${pt.disposition===o.id?C.teal:C.border}`,
+              cursor:"pointer", textAlign:"center", transition:"all .15s", background: pt.disposition===o.id?"rgba(0,212,188,.07)":C.edge,
+            }}>
+              <div style={{ fontSize:22, marginBottom:4 }}>{o.icon}</div>
+              <div style={{ fontSize:12, fontWeight:600, color: pt.disposition===o.id?C.teal:C.text }}>{o.lbl}</div>
+            </div>
+          ))}
+        </div>
+      </FC>
+      <FC title="DISPOSITION NOTES">
+        <textarea style={{...textareaS, minHeight:65}} value={pt.dc} onChange={e=>updatePt("dc",e.target.value)} placeholder="Disposition notes, instructions, consultations..." />
+      </FC>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
+        <FC title="FOLLOW-UP INSTRUCTIONS">
+          <textarea style={{...textareaS, minHeight:55}} value={pt.followup||""} onChange={e=>updatePt("followup",e.target.value)} placeholder="Follow-up instructions..." />
+        </FC>
+        <FC title="PATIENT EDUCATION">
+          <textarea style={{...textareaS, minHeight:55}} value={pt.education||""} onChange={e=>updatePt("education",e.target.value)} placeholder="Patient education notes..." />
+        </FC>
+      </div>
+    </>
+  );
+}
+
+// ─── Right Panel Components ───────────────────────────────────────
+
+function AILoadingState() {
+  const shimmer = { background:"linear-gradient(90deg,#162d4f 0%,#2a4d7220 50%,#162d4f 100%)", backgroundSize:"600px 100%", animation:"shimmer 1.4s infinite", minHeight:55, borderRadius:"0 0 11px 11px" };
+  return (
+    <>
+      <div style={{ background:C.edge, border:`1px solid ${C.border}`, borderRadius:11, marginBottom:10, overflow:"hidden" }}>
+        <div style={{ padding:"9px 12px", borderBottom:`1px solid ${C.border}`, background:"rgba(0,0,0,.2)", display:"flex", alignItems:"center", gap:6 }}>
+          <span style={{ fontSize:12 }}>✦</span>
+          <span style={{ fontSize:11, fontWeight:600, color:C.text, flex:1 }}>Analyzing...</span>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, padding:"1px 7px", borderRadius:7, background:"rgba(155,109,255,.12)", color:C.purple, border:"1px solid rgba(155,109,255,.28)" }}>AI</span>
+        </div>
+        <div style={shimmer} />
+      </div>
+      <div style={{ background:C.edge, border:`1px solid ${C.border}`, borderRadius:11, overflow:"hidden" }}>
+        <div style={{ padding:"9px 12px", borderBottom:`1px solid ${C.border}`, background:"rgba(0,0,0,.2)", display:"flex", alignItems:"center", gap:6 }}>
+          <span style={{ fontSize:12 }}>⚠</span>
+          <span style={{ fontSize:11, fontWeight:600, color:C.text }}>Finding abnormals...</span>
+        </div>
+        <div style={{...shimmer, minHeight:40}} />
+      </div>
+    </>
+  );
+}
+
+function AIAnalysisPanel({ data, done }) {
+  return (
+    <>
+      <div style={{ background:"linear-gradient(135deg,rgba(0,212,188,.06),rgba(155,109,255,.03))", border:"1px solid rgba(0,212,188,.22)", borderRadius:12, padding:12, marginBottom:11 }}>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:C.teal, letterSpacing:".12em", marginBottom:6 }}>✦ AI ANALYSIS</div>
+        <div style={{ fontSize:12, color:C.text, lineHeight:1.7 }}>{data.summary||""}</div>
+      </div>
+      {data.abnormals?.length > 0 && (
+        <div style={{ background:C.edge, border:`1px solid ${C.border}`, borderRadius:11, marginBottom:10, overflow:"hidden" }}>
+          <div style={{ padding:"9px 12px", borderBottom:`1px solid ${C.border}`, background:"rgba(0,0,0,.2)", display:"flex", alignItems:"center", gap:6 }}>
+            <span style={{ fontSize:12 }}>⚠️</span>
+            <span style={{ fontSize:11, fontWeight:600, color:C.text, flex:1 }}>Abnormal Findings</span>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, padding:"1px 7px", borderRadius:7, background:"rgba(255,92,108,.13)", color:C.red, border:"1px solid rgba(255,92,108,.28)" }}>{data.abnormals.length}</span>
+          </div>
+          <div style={{ padding:"10px 12px" }}>
+            {data.abnormals.map((a,i) => {
+              const dc = a.severity==='critical'?C.red:a.severity==='high'?C.amber:C.blue;
+              return (
+                <div key={i} style={{ display:"flex", gap:6, padding:"5px 0", borderBottom: i<data.abnormals.length-1?"1px solid rgba(255,255,255,.04)":"none" }}>
+                  <div style={{ width:5, height:5, borderRadius:"50%", background:dc, flexShrink:0, marginTop:5 }} />
+                  <div style={{ fontSize:11, color:C.text, lineHeight:1.55, flex:1 }}><strong style={{ color:dc }}>{a.finding}</strong> — {a.detail}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {data.insights?.length > 0 && (
+        <div style={{ background:C.edge, border:`1px solid ${C.border}`, borderRadius:11, marginBottom:10, overflow:"hidden" }}>
+          <div style={{ padding:"9px 12px", borderBottom:`1px solid ${C.border}`, background:"rgba(0,0,0,.2)", display:"flex", alignItems:"center", gap:6 }}>
+            <span style={{ fontSize:12 }}>💡</span>
+            <span style={{ fontSize:11, fontWeight:600, color:C.text, flex:1 }}>Clinical Insights</span>
+          </div>
+          <div style={{ padding:"10px 12px" }}>
+            {data.insights.map((ins,i) => (
+              <div key={i} style={{ display:"flex", gap:6, padding:"5px 0", borderBottom: i<data.insights.length-1?"1px solid rgba(255,255,255,.04)":"none" }}>
+                <div style={{ width:5, height:5, borderRadius:"50%", background:C.purple, flexShrink:0, marginTop:5 }} />
+                <div style={{ fontSize:11, color:C.text, lineHeight:1.55, flex:1 }}>{ins}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {data.recommendation && (
+        <div style={{ padding:"9px 12px", borderRadius:9, background:"rgba(0,212,188,.05)", border:"1px solid rgba(0,212,188,.22)", fontSize:12, color:C.teal, marginBottom:9 }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, letterSpacing:".1em", marginBottom:4 }}>RECOMMENDATION</div>
+          {data.recommendation}
+        </div>
+      )}
+      {data.tags?.length > 0 && (
+        <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:9 }}>
+          {data.tags.map((t,i) => {
+            const bc = t.color==='red'?"rgba(255,92,108,.14)":t.color==='amber'?"rgba(245,166,35,.11)":t.color==='green'?"rgba(46,204,113,.09)":"rgba(74,144,217,.1)";
+            const tc = t.color==='red'?C.red:t.color==='amber'?C.amber:t.color==='green'?C.green:C.blue;
+            return <span key={i} style={{ padding:"2px 7px", borderRadius:7, fontSize:10, background:bc, color:tc, border:`1px solid ${tc}28` }}>{t.text}</span>;
+          })}
+        </div>
+      )}
+    </>
+  );
+}
+
+function AISummaryPanel({ data, done }) {
+  return (
+    <>
+      <div style={{ background:"linear-gradient(135deg,rgba(0,212,188,.06),rgba(155,109,255,.03))", border:"1px solid rgba(0,212,188,.22)", borderRadius:12, padding:12, marginBottom:11 }}>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:C.teal, letterSpacing:".12em", marginBottom:6 }}>✦ NOTE SUMMARY</div>
+        <div style={{ fontSize:12, color:C.text, lineHeight:1.7 }}>{data.summary||""}</div>
+      </div>
+      {data.criticals?.length > 0 && (
+        <div style={{ background:"rgba(255,92,108,.05)", border:"1px solid rgba(255,92,108,.22)", borderRadius:11, padding:"10px 12px", marginBottom:10 }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:C.red, letterSpacing:".1em", marginBottom:7 }}>⚠ CRITICAL FINDINGS</div>
+          {data.criticals.map((c,i) => {
+            const dc = c.flag==='critical'?C.red:c.flag==='high'?C.amber:C.blue;
+            return <div key={i} style={{ fontSize:11, color:C.text, padding:"4px 0", borderBottom:"1px solid rgba(255,255,255,.04)", display:"flex", gap:5 }}><span style={{color:dc}}>•</span><span>{c.item}</span></div>;
+          })}
+        </div>
+      )}
+      {data.keyDx?.length > 0 && (
+        <div style={{ background:C.edge, border:`1px solid ${C.border}`, borderRadius:11, marginBottom:10, overflow:"hidden" }}>
+          <div style={{ padding:"9px 12px", borderBottom:`1px solid ${C.border}`, background:"rgba(0,0,0,.2)", display:"flex", alignItems:"center", gap:6 }}>
+            <span>⚕️</span><span style={{ fontSize:11, fontWeight:600, color:C.text }}>Key Diagnoses</span>
+          </div>
+          <div style={{ padding:"10px 12px" }}>
+            {data.keyDx.map((d,i) => (
+              <div key={i} style={{ display:"flex", gap:6, padding:"5px 0", borderBottom: i<data.keyDx.length-1?"1px solid rgba(255,255,255,.04)":"none" }}>
+                <div style={{ width:5, height:5, borderRadius:"50%", background:C.teal, flexShrink:0, marginTop:5 }} />
+                <div style={{ fontSize:11, color:C.text, lineHeight:1.55, flex:1 }}>{i+1}. {d}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {data.actions?.length > 0 && (
+        <div style={{ background:C.edge, border:`1px solid ${C.border}`, borderRadius:11, marginBottom:10, overflow:"hidden" }}>
+          <div style={{ padding:"9px 12px", borderBottom:`1px solid ${C.border}`, background:"rgba(0,0,0,.2)", display:"flex", alignItems:"center", gap:6 }}>
+            <span>⚡</span><span style={{ fontSize:11, fontWeight:600, color:C.text }}>Recommended Actions</span>
+          </div>
+          <div style={{ padding:"10px 12px" }}>
+            {data.actions.map((a,i) => (
+              <div key={i} style={{ display:"flex", gap:6, padding:"5px 0", borderBottom: i<data.actions.length-1?"1px solid rgba(255,255,255,.04)":"none" }}>
+                <div style={{ width:5, height:5, borderRadius:"50%", background:C.amber, flexShrink:0, marginTop:5 }} />
+                <div style={{ fontSize:11, color:C.text, lineHeight:1.55, flex:1 }}>{a}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {data.mdm && (
+        <div style={{ padding:"8px 12px", borderRadius:9, background:"rgba(74,144,217,.07)", border:"1px solid rgba(74,144,217,.22)", fontSize:11, color:C.blue }}>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, letterSpacing:".1em" }}>MDM LEVEL: </span>{data.mdm}
+        </div>
+      )}
+    </>
+  );
+}
+
+function AIDefaultState() {
+  return (
+    <div style={{ padding:"22px 14px", textAlign:"center", color:C.muted }}>
+      <div style={{ fontSize:30, marginBottom:9, opacity:.4 }}>🤖</div>
+      <div style={{ fontSize:12, color:C.dim, lineHeight:1.7 }}>Select a section and click <strong style={{ color:C.purple }}>Analyze Section</strong> for AI insights, or use <strong style={{ color:C.teal }}>Analyze Entire Note</strong> for a complete review.</div>
+    </div>
+  );
+}

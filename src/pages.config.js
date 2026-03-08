@@ -53,6 +53,7 @@ import AppSettings from './pages/AppSettings';
 import CMELearningCenter from './pages/CMELearningCenter';
 import Calculators from './pages/Calculators';
 import Calendar from './pages/Calendar';
+import CantMissDiagnoses from './pages/CantMissDiagnoses';
 import ClinicalGuidelines from './pages/ClinicalGuidelines';
 import CustomTemplates from './pages/CustomTemplates';
 import Customize from './pages/Customize';
@@ -89,7 +90,7 @@ import TemplateEditor from './pages/TemplateEditor';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
-import CantMissDiagnoses from './pages/CantMissDiagnoses';
+import ClinicalNoteStudio from './pages/ClinicalNoteStudio';
 import __Layout from './Layout.jsx';
 
 
@@ -100,6 +101,7 @@ export const PAGES = {
     "CMELearningCenter": CMELearningCenter,
     "Calculators": Calculators,
     "Calendar": Calendar,
+    "CantMissDiagnoses": CantMissDiagnoses,
     "ClinicalGuidelines": ClinicalGuidelines,
     "CustomTemplates": CustomTemplates,
     "Customize": Customize,
@@ -136,7 +138,7 @@ export const PAGES = {
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
-    "CantMissDiagnoses": CantMissDiagnoses,
+    "ClinicalNoteStudio": ClinicalNoteStudio,
 }
 
 export const pagesConfig = {

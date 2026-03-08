@@ -376,7 +376,7 @@ export default function DashboardTopBar({ user }) {
                 patient_name: "New Patient",
                 status: "draft"
               });
-              window.location.href = createPageUrl(`NoteDetail?id=${newNote.id}`);
+              window.location.href = createPageUrl(`ClinicalNoteStudio?id=${newNote.id}`);
             }}
             style={{
               padding: "4px 10px",

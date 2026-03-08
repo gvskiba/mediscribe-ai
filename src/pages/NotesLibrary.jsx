@@ -394,7 +394,7 @@ export default function NotesLibrary() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
                       transition={{ delay: i * 0.028 }}
-                      onClick={() => window.location.href = createPageUrl(`NoteDetail?id=${note.id}`)}
+                      onClick={() => window.location.href = createPageUrl(`ClinicalNoteStudio?id=${note.id}`)}
                       style={{
                         display: "flex",
                         gap: "12px",

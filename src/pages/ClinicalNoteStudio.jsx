@@ -652,6 +652,12 @@ export default function ClinicalNoteStudio() {
   }
 
   // ── NOTE DETAIL MODE ──
+  // Prevent switching to notes mode without a saved note
+  if (mode === "notes" && !savedNoteId) {
+    setMode("studio");
+    return null;
+  }
+
   if (noteLoading && savedNoteId) {
     return (
       <div style={{background:C.navy,minHeight:"100vh",padding:40}}>
@@ -669,17 +675,6 @@ export default function ClinicalNoteStudio() {
           <FileText className="w-12 h-12 text-slate-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-slate-300">Note not found</h2>
           <button onClick={()=>setMode("studio")} className="text-blue-400 hover:underline text-sm mt-2 block">← Back to Studio</button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!savedNoteId) {
-    return (
-      <div style={{background:C.navy,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center"}}>
-        <div className="text-center">
-          <p className="text-slate-400 mb-4">Save a note in Studio mode first to view Note Detail.</p>
-          <button onClick={()=>setMode("studio")} style={{padding:"8px 20px",borderRadius:10,background:C.teal,color:C.navy,fontWeight:700,fontSize:13,border:"none",cursor:"pointer"}}>Go to Studio</button>
         </div>
       </div>
     );

@@ -52,7 +52,7 @@ const MODULES = [
     title: "Clinical Analysis Center",
     icon: "🔬",
     desc: "AI-powered lab, imaging, and EKG analysis. Claude interprets abnormalities and generates clinical impressions.",
-    page: "MedicalKnowledgeBase",
+    page: "LabsImagingTab",
     color: COLORS.purple,
     badges: ["VISION"],
     meta: "Labs · Imaging · EKG",

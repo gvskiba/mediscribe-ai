@@ -65,6 +65,9 @@ const SY_NAMES = {general:"General",heent:"HEENT",cardiovascular:"Cardiovascular
 
 export default function ClinicalNoteStudio() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const urlParams = new URLSearchParams(window.location.search);
+  const noteId = urlParams.get("noteId");
   const [clock, setClock] = useState("");
   const [cur, setCur] = useState("overview");
   const [analyses, setAnalyses] = useState({});
@@ -76,6 +79,8 @@ export default function ClinicalNoteStudio() {
   const [pt, setPt] = useState({...EMPTY_PT});
   const [dxList, setDxList] = useState([]);
   const [completion, setCompletion] = useState(45);
+  const [savedNoteId, setSavedNoteId] = useState(noteId || null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const iv = setInterval(() => {

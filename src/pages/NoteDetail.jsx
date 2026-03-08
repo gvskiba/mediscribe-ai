@@ -1671,9 +1671,15 @@ Generated: ${new Date().toLocaleString()}
              </TabsContent>
 
            {/* Clinical Note Tab */}
-             <TabsContent value="clinical_note" className="overflow-y-auto" style={{ background: "#050f1e" }}>
-               <ClinicalNoteComposer note={note} noteId={noteId} queryClient={queryClient} />
-             </TabsContent>
+              <TabsContent value="clinical_note" className="overflow-y-auto" style={{ background: "#050f1e" }}>
+                <ClinicalNoteComposer note={note} noteId={noteId} queryClient={queryClient} />
+                {/* Billing Panel inline */}
+                <div className="max-w-3xl mx-auto px-4 pb-4">
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                    <BillingPanel note={note} noteId={noteId} />
+                  </div>
+                </div>
+              </TabsContent>
 
            {/* Old tabs removed - replaced by sidebar */}
 

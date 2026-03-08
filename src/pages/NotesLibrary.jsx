@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -79,11 +80,12 @@ export default function NotesLibrary() {
       summary: data.title,
       status: "draft"
     }),
-    onSuccess: () => {
+    onSuccess: (newNote) => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       setShowNewNoteModal(false);
       setNewNoteData({ type: "progress_note", patient: "", ageSex: "", dept: "", title: "", icds: "", content: "" });
       toast.success("Draft created");
+      window.location.href = createPageUrl(`ClinicalNoteStudio?id=${newNote.id}`);
     },
     onError: () => toast.error("Failed to create note")
   });

@@ -371,8 +371,8 @@ Generate comprehensive discharge instructions in this JSON structure:
         />
       </div>
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 flex justify-between items-center px-6 py-3 border-t border-[#1e3a5f] bg-[#0b1d35]" style={{ zIndex: 40 }}>
+      {/* Bottom Navigation - uses relative positioning to avoid conflicting with page nav */}
+      <div className="flex justify-between items-center px-6 py-3 border-t border-[#1e3a5f] bg-[#0b1d35]">
         <div className="flex items-center gap-2">
           {!isFirstTab() && (
             <button

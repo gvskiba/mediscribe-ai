@@ -342,7 +342,7 @@ export default function LiveTranscriptionStudio({
       </div>
 
       {/* Three-column body */}
-      <div style={{ display:"flex", height:"calc(100vh - 42px - 54px - 70px)" }}>
+      <div style={{ display:"flex", height:"calc(100vh - 48px - 54px - 70px)" }}>
 
         {/* ── LEFT: Controls + Macros ── */}
         <div style={{ width:"264px", flexShrink:0, background:G.panel, borderRight:`1px solid ${G.border}`, overflowY:"auto", display:"flex", flexDirection:"column" }}>

@@ -411,6 +411,7 @@ function parseMedList(text) {
 }
 
 export default function DrugReference() {
+  const navigate = useNavigate();
   const [selectedDrug, setSelectedDrug]   = useState(null);
   const [searchQ, setSearchQ]             = useState("");
   const [activeCat, setActiveCat]         = useState("all");

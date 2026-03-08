@@ -211,6 +211,14 @@ export default function CantMissDiagnoses() {
   const buildPt = () =>
     `PATIENT: ${ptName}, Age: ${ptAge}, Sex: ${ptSex}\n\nVITAL SIGNS:\n- HR: ${vitals.HR} bpm\n- BP: ${vitals.SBP}/${vitals.DBP} mmHg\n- Temp: ${vitals.Temp}°C\n- RR: ${vitals.RR} breaths/min\n- SpO₂: ${vitals.SpO2}%\n- GCS: ${vitals.GCS}/15\n- Glucose: ${vitals.Glu} mg/dL\n\nLABS:\n- WBC: ${labs.WBC} | Lactate: ${labs.Lac} | Creatinine: ${labs.Cr} | Troponin: ${labs.Trop}\n- D-Dimer: ${labs.Dimer} | INR: ${labs.INR} | pH: ${labs.pH} | Bicarb: ${labs.Bic}\n- BNP: ${labs.BNP} | Hemoglobin: ${labs.Hgb}\n\nCHIEF COMPLAINT: ${ccx}\nPMH/MEDS: ${pmh}\nIMAGING/ECG: ${imag}`;
 
+  // Auto-analyze whenever key fields change (debounced)
+  useEffect(() => {
+    const hasData = ccx || pmh || Object.values(vitals).some(v => v) || Object.values(labs).some(v => v);
+    if (!hasData) return;
+    const timer = setTimeout(() => doAnalysis(), 1500);
+    return () => clearTimeout(timer);
+  }, [vitals, labs, ccx, pmh, imag, ptAge, ptSex]);
+
   const doAnalysis = async () => {
     if (busy) return;
     setBusy(true); setScanning(true); setResults(null); setAiSrc("");

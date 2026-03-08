@@ -687,7 +687,7 @@ export default function ClinicalNoteStudio() {
       <div style={{background:C.navy,fontFamily:"DM Sans,sans-serif",minHeight:"100vh",display:"flex",flexDirection:"column"}}>
         {/* Mode toggle bar */}
         <div style={{background:"rgba(11,29,53,.97)",borderBottom:`1px solid ${C.border}`,padding:"8px 16px",display:"flex",alignItems:"center",gap:12,flexShrink:0,zIndex:100}}>
-          <span onClick={()=>navigate(createPageUrl("Home"))} style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:C.bright,cursor:"pointer",letterSpacing:"-.02em"}}>Notrya</span>
+          <a href={createPageUrl("Home")} style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:C.bright,cursor:"pointer",letterSpacing:"-.02em",textDecoration:"none"}}>Notrya</a>
           <div style={{width:1,height:14,background:C.border}} />
           <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:C.teal,letterSpacing:".12em"}}>CLINICAL NOTE STUDIO</span>
           <div style={{display:"flex",alignItems:"center",gap:2,padding:"2px",borderRadius:9,background:C.edge,border:`1px solid ${C.border}`}}>

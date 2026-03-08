@@ -170,7 +170,7 @@ export default function DrugsAndBugs(){
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:C.bright,letterSpacing:"-.02em"}}>Drugs & Bugs</div>
               <div style={{fontSize:13,color:C.dim,marginTop:2}}>Emergency pharmacology reference · Antibiotic stewardship · Pediatric dosing</div>
             </div>
-            <div style={{display:"flex",gap:8"}}>
+            <div style={{display:"flex",gap:8}}>
               {[{lbl:"Medications",val:"36+",c:C.teal},{lbl:"Abx Regimens",val:"13+",c:C.green},{lbl:"Guidelines",val:"8",c:C.purple}].map(s=>(
                 <div key={s.lbl} style={{textAlign:"center",padding:"8px 16px",borderRadius:12,background:C.edge,border:`1px solid ${C.border}`}}>
                   <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:18,fontWeight:700,color:s.c}}>{s.val}</div>

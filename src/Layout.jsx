@@ -166,7 +166,7 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Main Content */}
       {(() => {
-        const darkPages = ['NoteDetail','Dashboard','Calendar','NotesLibrary','PatientDashboard','ClinicalGuidelines','Calculators','MedicalNews','AppSettings','Procedures','Shift','SoapCompiler','SoapCompilerStandalone','AntibioticStewardship','PediatricDosing','DrugReference','CMELearningCenter','DischargePlanning','OrderSetBuilder','NoteTemplates','CustomTemplates','AddendumManager','LiveTranscription','CantMissDiagnoses','ClinicalNoteStudio','BillingDashboard'];
+        const darkPages = ['NoteDetail','ClinicalNoteStudio','Dashboard','Calendar','NotesLibrary','PatientDashboard','ClinicalGuidelines','Calculators','MedicalNews','AppSettings','Procedures','Shift','SoapCompiler','SoapCompilerStandalone','AntibioticStewardship','PediatricDosing','DrugReference','CMELearningCenter','DischargePlanning','OrderSetBuilder','NoteTemplates','CustomTemplates','AddendumManager','LiveTranscription','CantMissDiagnoses','BillingDashboard'];
         const isDark = darkPages.includes(currentPageName);
         const isHome = currentPageName === 'Home';
         const isNote = currentPageName === 'NoteDetail';

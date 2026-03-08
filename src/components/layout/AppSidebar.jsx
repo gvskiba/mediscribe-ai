@@ -45,108 +45,147 @@ const navGroups = [
 ];
 
 export default function AppSidebar({ user }) {
+  const location = useLocation();
   const initials = user?.full_name
     ? user.full_name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
     : "?";
 
+  const isActive = (page) => location.pathname.includes(page.toLowerCase());
+
   return (
-    <div
-      style={{
-        width: 64,
-        minHeight: "100vh",
-        background: "linear-gradient(180deg, #0b1628 0%, #0d1f3c 100%)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        paddingTop: 16,
-        paddingBottom: 20,
-        gap: 6,
-        position: "fixed",
-        left: 0,
-        top: 0,
-        bottom: 0,
-        zIndex: 50,
-        borderRight: "1px solid rgba(255,255,255,0.06)",
-      }}
-    >
-      {/* Logo */}
-      <Link
-        to={createPageUrl("AppSettings")}
-        title="App Settings"
+    <>
+      <style>{`
+        .sidebar-tooltip {
+          position: absolute;
+          left: 68px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: #1e293b;
+          color: #e2e8f0;
+          padding: 5px 10px;
+          border-radius: 7px;
+          font-size: 12px;
+          font-weight: 500;
+          white-space: nowrap;
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.15s;
+          z-index: 9999;
+          border: 1px solid rgba(255,255,255,0.08);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .sidebar-item:hover .sidebar-tooltip { opacity: 1; }
+        .sidebar-item { position: relative; }
+      `}</style>
+      <div
         style={{
-          width: 48,
-          height: 40,
-          borderRadius: 10,
-          background: "#f5f5f5",
+          width: 56,
+          minHeight: "100vh",
+          background: "#0a1628",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center",
-          marginBottom: 20,
-          flexShrink: 0,
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-          cursor: "pointer",
-          textDecoration: "none",
-          transition: "all 0.15s",
+          paddingTop: 12,
+          paddingBottom: 16,
+          position: "fixed",
+          left: 0,
+          top: 0,
+          bottom: 0,
+          zIndex: 50,
+          borderRight: "1px solid rgba(255,255,255,0.07)",
+          overflowY: "auto",
+          overflowX: "visible",
         }}
-        onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 12px rgba(109,40,217,0.3)"; }}
-        onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)"; }}
       >
-        <span style={{ fontSize: 14, fontWeight: 800, color: "#1e1b4b", letterSpacing: "-0.5px" }}>
-          medn<span style={{ color: "#6d28d9" }}>u.</span>
-        </span>
-      </Link>
-
-      {/* Nav Items */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flex: 1 }}>
-        {navItems.map((item) => (
-          <Link
-            key={item.page}
-            to={createPageUrl(item.page)}
-            title={item.label}
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 22,
-              cursor: "pointer",
-              textDecoration: "none",
-              transition: "background 0.15s",
-              background: "transparent",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
-          >
-            {item.emoji}
-          </Link>
-        ))}
-      </div>
-
-      {/* User Avatar */}
-      {user && (
+        {/* Logo */}
         <Link
-          to={createPageUrl("UserSettings")}
-          title={user.full_name || user.email}
+          to={createPageUrl("Home")}
+          title="Home"
           style={{
             width: 36,
-            height: 36,
-            borderRadius: "50%",
-            background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+            height: 32,
+            borderRadius: 8,
+            background: "#f5f5f5",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 13,
-            fontWeight: 700,
-            color: "#fff",
+            marginBottom: 16,
             flexShrink: 0,
             textDecoration: "none",
           }}
         >
-          {initials}
+          <span style={{ fontSize: 11, fontWeight: 800, color: "#1e1b4b", letterSpacing: "-0.5px" }}>
+            N<span style={{ color: "#6d28d9" }}>.</span>
+          </span>
         </Link>
-      )}
-    </div>
+
+        {/* Nav Groups */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0, flex: 1, width: "100%" }}>
+          {navGroups.map((group, gi) => (
+            <div key={group.label} style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+              {/* Group divider */}
+              {gi > 0 && (
+                <div style={{ width: 28, height: 1, background: "rgba(255,255,255,0.08)", margin: "6px 0" }} />
+              )}
+              {group.items.map((item) => {
+                const active = isActive(item.page);
+                return (
+                  <Link
+                    key={item.page}
+                    to={createPageUrl(item.page)}
+                    className="sidebar-item"
+                    style={{
+                      width: 40,
+                      height: 36,
+                      borderRadius: 9,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 18,
+                      cursor: "pointer",
+                      textDecoration: "none",
+                      background: active ? "rgba(99,179,237,0.15)" : "transparent",
+                      boxShadow: active ? "inset 0 0 0 1px rgba(99,179,237,0.3)" : "none",
+                      margin: "1px 0",
+                      transition: "all 0.12s",
+                    }}
+                    onMouseEnter={e => { if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.07)"; }}
+                    onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
+                  >
+                    {item.emoji}
+                    <span className="sidebar-tooltip">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+
+        {/* User Avatar + Settings */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, marginTop: 8 }}>
+          <Link
+            to={createPageUrl("UserSettings")}
+            className="sidebar-item"
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 11,
+              fontWeight: 700,
+              color: "#fff",
+              flexShrink: 0,
+              textDecoration: "none",
+            }}
+          >
+            {initials}
+            <span className="sidebar-tooltip">{user?.full_name || "Settings"}</span>
+          </Link>
+        </div>
+      </div>
+    </>
   );
 }

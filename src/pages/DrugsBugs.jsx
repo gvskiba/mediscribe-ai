@@ -161,7 +161,7 @@ export default function DrugsAndBugs(){
 
       // ── HUB ────────────────────────────────────────────────────
       case "hub": return(
-        <div style={{maxWidth:1060,margin:"0 auto",padding:"20px 20px"}}>
+        <div style={{padding:"20px 20px"}}>
 
           {/* Hero bar */}
           <div style={{background:"linear-gradient(135deg,rgba(0,212,188,.07),rgba(155,109,255,.04))",border:`1px solid rgba(0,212,188,.2)`,borderRadius:16,padding:"18px 22px",marginBottom:20,display:"flex",alignItems:"center",gap:16}}>

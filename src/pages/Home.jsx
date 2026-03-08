@@ -271,7 +271,7 @@ function ModuleCard({ module, navigate }) {
         }}
       >
         <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: COLORS.muted }}>
-          {module.meta}
+          {module.meta || ""}
         </span>
         <div style={{ width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, background: COLORS.edge, border: `1px solid ${COLORS.border}`, color: COLORS.dim, transition: "all 0.18s" }}>
           →

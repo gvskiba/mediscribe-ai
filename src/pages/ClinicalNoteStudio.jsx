@@ -286,22 +286,8 @@ export default function ClinicalNoteStudio() {
     return () => clearInterval(iv);
   }, []);
 
-  // Auto-save for NoteDetail mode
-  const { isSaving } = useAutoSave({
-    data: note,
-    entityName: "ClinicalNote",
-    entityId: savedNoteId,
-    onSave: async (data) => {
-      if (savedNoteId) {
-        setAutoSaveStatus('saving');
-        await base44.entities.ClinicalNote.update(savedNoteId, data);
-        setAutoSaveStatus('saved');
-        setTimeout(() => setAutoSaveStatus(null), 3000);
-      }
-    },
-    interval: 15000,
-    enabled: autosaveEnabled && note?.status === 'draft',
-  });
+  // Auto-save is handled by individual tab components; this is just a status indicator
+  const isSaving = false;
 
   const finalizeMutation = useMutation({
     mutationFn: async () => { await base44.entities.ClinicalNote.update(savedNoteId, {status:"finalized"}); },

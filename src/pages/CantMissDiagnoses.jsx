@@ -175,14 +175,14 @@ export default function CantMissDiagnoses() {
   const [aiSrc, setAiSrc] = useState("");
 
   // Patient data
-  const [ptName, setPtName] = useState("Marcus Webb, MRN-4821");
-  const [ptAge, setPtAge] = useState("58");
+  const [ptName, setPtName] = useState("");
+  const [ptAge, setPtAge] = useState("");
   const [ptSex, setPtSex] = useState("Male");
-  const [vitals, setVitals] = useState({ HR:"118", SBP:"88", DBP:"56", Temp:"38.9", RR:"24", SpO2:"94", GCS:"13", Glu:"98" });
-  const [labs, setLabs] = useState({ WBC:"18.4", Lac:"4.2", Cr:"2.1", Trop:"0.04", Dimer:"", INR:"", pH:"7.28", Bic:"16", BNP:"", Hgb:"" });
-  const [ccx, setCcx] = useState("58M presenting with fever, hypotension, tachycardia, altered mentation, decreased urine output over 6 hours. Started with UTI symptoms 2 days ago.");
-  const [pmh, setPmh] = useState("DM2, CKD Stage 3, on metformin. No recent hospitalizations.");
-  const [imag, setImag] = useState("CXR: no infiltrate, no cardiomegaly. ECG: sinus tachycardia.");
+  const [vitals, setVitals] = useState({ HR:"", SBP:"", DBP:"", Temp:"", RR:"", SpO2:"", GCS:"", Glu:"" });
+  const [labs, setLabs] = useState({ WBC:"", Lac:"", Cr:"", Trop:"", Dimer:"", INR:"", pH:"", Bic:"", BNP:"", Hgb:"" });
+  const [ccx, setCcx] = useState("");
+  const [pmh, setPmh] = useState("");
+  const [imag, setImag] = useState("");
 
   useEffect(() => {
     const iv = setInterval(() => {

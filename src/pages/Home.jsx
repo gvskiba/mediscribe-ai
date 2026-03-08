@@ -35,7 +35,7 @@ const MODULES = [
     color: COLORS.teal,
     featured: true,
     badges: ["● LIVE", "FLAGSHIP"],
-    meta: "2 active sessions",
+    meta: "",
   },
   {
     id: "soap",

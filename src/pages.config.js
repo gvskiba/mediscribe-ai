@@ -62,6 +62,7 @@ import DrugReference from './pages/DrugReference';
 import GuidelineDetail from './pages/GuidelineDetail';
 import Guidelines from './pages/Guidelines';
 import Home from './pages/Home';
+import LiveTranscription from './pages/LiveTranscription';
 import LiveTranscriptionStudio from './pages/LiveTranscriptionStudio';
 import MedicalKnowledgeBase from './pages/MedicalKnowledgeBase';
 import MedicalNews from './pages/MedicalNews';
@@ -88,7 +89,6 @@ import TemplateEditor from './pages/TemplateEditor';
 import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
-import LiveTranscription from './pages/LiveTranscription';
 import __Layout from './Layout.jsx';
 
 
@@ -108,6 +108,7 @@ export const PAGES = {
     "GuidelineDetail": GuidelineDetail,
     "Guidelines": Guidelines,
     "Home": Home,
+    "LiveTranscription": LiveTranscription,
     "LiveTranscriptionStudio": LiveTranscriptionStudio,
     "MedicalKnowledgeBase": MedicalKnowledgeBase,
     "MedicalNews": MedicalNews,
@@ -134,7 +135,6 @@ export const PAGES = {
     "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
-    "LiveTranscription": LiveTranscription,
 }
 
 export const pagesConfig = {

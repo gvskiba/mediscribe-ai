@@ -175,16 +175,18 @@ export default function NoteTopBar({ note, noteId, queryClient, onNext, autoSave
         )}
 
         {/* Save Draft */}
-        <button onClick={handleSaveDraft} style={{
-          padding: "5px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
-          background: "transparent", border: `1px solid ${T.border}`,
-          color: T.text, cursor: "pointer", transition: "all 0.15s",
-        }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = T.dim; e.currentTarget.style.color = T.bright; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.text; }}
-        >
-          Save Draft
-        </button>
+        {noteId && (
+          <button onClick={handleSaveDraft} style={{
+            padding: "5px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+            background: "transparent", border: `1px solid ${T.border}`,
+            color: T.text, cursor: "pointer", transition: "all 0.15s",
+          }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = T.dim; e.currentTarget.style.color = T.bright; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.text; }}
+          >
+            Save Draft
+          </button>
+        )}
 
         {/* Next */}
         {onNext && (

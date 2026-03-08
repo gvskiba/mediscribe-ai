@@ -82,6 +82,59 @@ export default function ClinicalNoteStudio() {
   const [savedNoteId, setSavedNoteId] = useState(noteId || null);
   const [saving, setSaving] = useState(false);
 
+  // Load existing note if noteId provided
+  const { data: existingNote } = useQuery({
+    queryKey: ["studioNote", noteId],
+    queryFn: () => base44.entities.ClinicalNote.get(noteId),
+    enabled: !!noteId,
+  });
+
+  // Hydrate form when existing note loads
+  useEffect(() => {
+    if (!existingNote) return;
+    const n = existingNote;
+    const vs = n.vital_signs || {};
+    setPt({
+      name: n.patient_name || "",
+      mrn: n.patient_id || "",
+      dob: n.date_of_birth || "",
+      age: n.patient_age || "",
+      sex: n.patient_gender === "female" ? "Female" : n.patient_gender === "other" ? "Other" : "Male",
+      encounter: n.date_of_visit || "",
+      type: n.note_type || "ED Visit",
+      provider: "",
+      allergies: n.allergies || [],
+      meds: [],
+      vitals: {
+        hr: vs.heart_rate?.value || "",
+        sbp: vs.blood_pressure?.systolic || "",
+        dbp: vs.blood_pressure?.diastolic || "",
+        temp: vs.temperature?.value || "",
+        rr: vs.respiratory_rate?.value || "",
+        spo2: vs.oxygen_saturation?.value || "",
+        gcs: "",
+        wt: vs.weight?.value || "",
+        ht: vs.height?.value || "",
+        bmi: "",
+      },
+      labs: (n.lab_findings || []).map(l => ({ n: l.test_name, v: l.result, ref: l.reference_range, u: l.unit, f: l.status === "abnormal" ? "H" : l.status === "critical" ? "H" : "N" })),
+      cc: n.chief_complaint || "",
+      hpi: n.history_of_present_illness || "",
+      pmh: n.medical_history ? [n.medical_history] : [],
+      psh: [],
+      social: "",
+      family: "",
+      ros: EMPTY_PT.ros,
+      pe: EMPTY_PT.pe,
+      imaging: (n.imaging_findings || []).map(i => ({ type: i.study_type, title: i.location || "", date: "Today", f: i.findings || "", imp: i.impression || "", abn: false })),
+      assessment: [],
+      disposition: "",
+      dc: n.disposition_plan || "",
+    });
+    setDxList((n.diagnoses || []).map(d => ({ dx: d, plan: "" })));
+    setSavedNoteId(n.id);
+  }, [existingNote]);
+
   useEffect(() => {
     const iv = setInterval(() => {
       const n = new Date();

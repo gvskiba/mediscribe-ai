@@ -416,7 +416,7 @@ export default function NoteDetail() {
 
     try {
       // Find which group contains this tab
-      for (const group of customTabGroups) {
+      for (const group of tabGroups) {
         const tabIndex = group.tabs.findIndex(t => t.id === tabId);
         if (tabIndex !== -1) {
           const updatedTabs = [...group.tabs];

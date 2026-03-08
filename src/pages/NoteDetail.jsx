@@ -1303,7 +1303,8 @@ CRITICAL: The diagnoses field MUST always contain at least one entry. If no diag
     }
   };
 
-  const downloadResultsAnalysis = (format) => {
+  const downloadResultsAnalysis = (exportFormat) => {
+    const format = exportFormat;
     // This would ideally pull imaging and labs data, but since they're in separate components,
     // we'll provide a template for the user to add their specific data
     const content = `RESULT ANALYSIS REPORT

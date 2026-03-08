@@ -123,7 +123,7 @@ export default function ClinicalNoteStudio() {
       labs: (n.lab_findings || []).map(l => ({ n: l.test_name, v: l.result, ref: l.reference_range, u: l.unit, f: l.status === "abnormal" ? "H" : l.status === "critical" ? "H" : "N" })),
       cc: n.chief_complaint || "",
       hpi: n.history_of_present_illness || "",
-      pmh: n.medical_history ? [n.medical_history] : [],
+      pmh: n.medical_history ? n.medical_history.split(", ").filter(Boolean) : [],
       psh: [],
       social: "",
       family: "",

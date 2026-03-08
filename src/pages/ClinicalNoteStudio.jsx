@@ -720,7 +720,7 @@ function SectionROS({ pt, updatePt }) {
           const hasPos = data.pos.length > 0;
           const allSyms = [...new Set([...data.pos, ...data.neg])];
           return (
-            <div key={sys} style={{ background:C.edge, border:`1px solid ${hasPos?"rgba(255,92,108,.4)":C.border}`, borderRadius:10, padding:"10px 12px", background: hasPos?"rgba(255,92,108,.05)":C.edge }}>
+            <div key={sys} style={{ background: hasPos?"rgba(255,92,108,.05)":C.edge, border:`1px solid ${hasPos?"rgba(255,92,108,.4)":C.border}`, borderRadius:10, padding:"10px 12px" }}>
               <div style={{ fontSize:11, fontWeight:600, color:C.text, marginBottom:6, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                 {sysNames[sys]||sys}
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color: hasPos?C.red:C.green }}>{hasPos?'POS':'NEG'}</span>

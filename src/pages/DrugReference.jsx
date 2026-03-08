@@ -351,6 +351,16 @@ const TYPE_STYLE = {
   renal:      { bg:"rgba(245,166,35,.1)",  border:"rgba(245,166,35,.3)", color:G.amber },
 };
 
+function calculateWeightBasedDose(doseString, weight, unit) {
+  if (!weight || weight <= 0) return null;
+  const wt = unit === "lbs" ? weight / 2.205 : weight;
+  const match = doseString.match(/(\d+(?:\.\d+)?)\s*(?:mg|mcg|g)?\/\s*kg/i);
+  if (!match) return null;
+  const dosePerKg = parseFloat(match[1]);
+  const calculatedDose = (dosePerKg * wt).toFixed(1);
+  return `${calculatedDose} ${doseString.match(/(mg|mcg|g)\//i)?.[1] || "mg"}`;
+}
+
 function ruleBasedScan(meds, allergies) {
   const ml = meds.map(m => m.toLowerCase());
   const has = n => ml.some(m => m.includes(n.toLowerCase()));

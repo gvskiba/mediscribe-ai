@@ -444,7 +444,7 @@ export default function Home() {
               <span>🎙️</span> Start New Session
             </button>
             <button
-              onClick={() => navigate(createPageUrl("ShiftDashboard"))}
+              onClick={() => navigate(createPageUrl("Shift"))}
               style={{
                 display: "inline-flex",
                 alignItems: "center",

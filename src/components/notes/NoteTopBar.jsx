@@ -151,23 +151,6 @@ export default function NoteTopBar({ note, noteId, queryClient, onNext, autoSave
           AI ACTIVE
         </div>
 
-        {/* Edit in Studio */}
-        <button
-          onClick={() => navigate(createPageUrl(`ClinicalNoteStudio?noteId=${noteId}`))}
-          title="Edit in Note Studio"
-          style={{
-            display: "flex", alignItems: "center", gap: 5,
-            padding: "4px 10px", borderRadius: 20, cursor: "pointer",
-            background: "rgba(0,212,188,0.08)", border: "1px solid rgba(0,212,188,0.3)",
-            fontSize: 12, fontWeight: 600, color: T.teal, transition: "all .15s",
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,212,188,0.15)"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,212,188,0.08)"; }}
-        >
-          <PenLine size={12} />
-          Edit in Studio
-        </button>
-
         {/* Export */}
         <ExportPDFButton note={note} noteId={noteId} />
 

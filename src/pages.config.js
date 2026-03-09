@@ -65,7 +65,6 @@ import DrugReference from './pages/DrugReference';
 import DrugsBugs from './pages/DrugsBugs';
 import GuidelineDetail from './pages/GuidelineDetail';
 import Guidelines from './pages/Guidelines';
-import Home from './pages/Home';
 import LiveTranscription from './pages/LiveTranscription';
 import LiveTranscriptionStudio from './pages/LiveTranscriptionStudio';
 import MedicalKnowledgeBase from './pages/MedicalKnowledgeBase';
@@ -89,10 +88,9 @@ import SmartTemplates from './pages/SmartTemplates';
 import Snippets from './pages/Snippets';
 import SoapCompiler from './pages/SoapCompiler';
 import SoapCompilerStandalone from './pages/SoapCompilerStandalone';
-import TemplateEditor from './pages/TemplateEditor';
-import TemplateSections from './pages/TemplateSections';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
+import Home from './pages/Home';
 import __Layout from './Layout.jsx';
 
 
@@ -115,7 +113,6 @@ export const PAGES = {
     "DrugsBugs": DrugsBugs,
     "GuidelineDetail": GuidelineDetail,
     "Guidelines": Guidelines,
-    "Home": Home,
     "LiveTranscription": LiveTranscription,
     "LiveTranscriptionStudio": LiveTranscriptionStudio,
     "MedicalKnowledgeBase": MedicalKnowledgeBase,
@@ -139,10 +136,9 @@ export const PAGES = {
     "Snippets": Snippets,
     "SoapCompiler": SoapCompiler,
     "SoapCompilerStandalone": SoapCompilerStandalone,
-    "TemplateEditor": TemplateEditor,
-    "TemplateSections": TemplateSections,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
+    "Home": Home,
 }
 
 export const pagesConfig = {

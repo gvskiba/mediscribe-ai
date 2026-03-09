@@ -63,7 +63,7 @@ export default function RecentGuidelinesWidget() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: idx * 0.05 }}
         >
-          <Link to={createPageUrl(`GuidelineDetail?id=${guideline.id}`)}>
+          <Link to={createPageUrl(`Guidelines`)}>
             <Card className="p-3 hover:shadow-md hover:border-blue-200 transition-all cursor-pointer">
               <div className="flex items-start justify-between gap-2 mb-2">
                 <h4 className="text-sm font-semibold text-slate-900 line-clamp-2 flex-1">

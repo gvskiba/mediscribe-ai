@@ -80,7 +80,7 @@ export default function SavedGuidelinesWidget() {
 
       {/* Footer */}
       <Link
-        to={createPageUrl("SavedGuidelines")}
+        to={createPageUrl("Guidelines")}
         style={{
           padding: "10px 14px",
           borderTop: `1px solid ${T.border}`,

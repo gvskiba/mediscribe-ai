@@ -98,19 +98,19 @@ export default function UserAccount() {
 
   // ── User state ─────────────────────────────────────────────────
   const [profile, setProfile] = useState({
-    firstName: "Alex",
-    lastName: "Rivera",
-    email: "arivera@notrya.health",
-    phone: "+1 (314) 555-0192",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
     role: "Attending Physician",
     specialty: "Emergency Medicine",
-    institution: "Macon Regional Medical Center",
-    department: "Emergency Department",
-    npi: "1234567890",
-    licenseNumber: "MO-12345",
-    licenseState: "Missouri",
-    deaNumber: "BR1234563",
-    bio: "Emergency medicine physician with 8 years of experience. Interested in clinical decision support and EHR optimization.",
+    institution: "",
+    department: "",
+    npi: "",
+    licenseNumber: "",
+    licenseState: "",
+    deaNumber: "",
+    bio: "",
   });
 
   const [prefs, setPrefs] = useState({

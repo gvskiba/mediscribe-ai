@@ -406,78 +406,79 @@ export default function Home() {
       </nav>
 
       {/* Hero */}
-      <div style={{ position: "relative", zIndex: 1, padding: "72px 28px 48px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, color: COLORS.teal, letterSpacing: "0.18em", marginBottom: 18, display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ width: 28, height: 1, background: COLORS.teal }} />
-          NOTRYA AI PLATFORM
-          <span style={{ width: 28, height: 1, background: COLORS.teal }} />
-        </div>
-        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(38px, 5vw, 64px)", fontWeight: 900, color: COLORS.bright, lineHeight: 1.08, letterSpacing: "-0.03em", marginBottom: 20 }}>
-          Command <span style={{ color: COLORS.teal }}>Center.</span>
-        </h1>
-        <p style={{ fontSize: 16, color: COLORS.dim, lineHeight: 1.75, maxWidth: 560, marginBottom: 36 }}>
-          Your complete AI-powered clinical documentation suite. Transcribe, analyze, order, document, and comply — all from one unified platform.
-        </p>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
-          <button
-            onClick={() => navigate(createPageUrl("PatientDashboard"))}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "12px 26px",
-              borderRadius: 11,
-              background: `linear-gradient(135deg, ${COLORS.teal}22, ${COLORS.blue}16)`,
-              border: `1px solid ${COLORS.teal}50`,
-              color: COLORS.teal,
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 14,
-              fontWeight: 700,
-              cursor: "pointer",
-              transition: "all 0.18s",
-              animation: "glow 3s infinite",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
-            onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
-          >
-            <span>🎙️</span> Start New Session
-          </button>
-          <button
-            onClick={() => navigate(createPageUrl("Shift"))}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "12px 26px",
-              borderRadius: 11,
-              background: COLORS.edge,
-              border: `1px solid ${COLORS.border}`,
-              color: COLORS.dim,
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-              transition: "all 0.18s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = COLORS.dim;
-              e.currentTarget.style.color = COLORS.text;
-              e.currentTarget.style.transform = "translateY(-1px)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = COLORS.border;
-              e.currentTarget.style.color = COLORS.dim;
-              e.currentTarget.style.transform = "translateY(0)";
-            }}
-          >
-            <span>🏥</span> Shift Dashboard
-          </button>
+      <div style={{ position: "relative", zIndex: 1, padding: "52px 28px 36px", display: "flex", alignItems: "flex-start", gap: 48 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, color: COLORS.teal, letterSpacing: "0.14em", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ width: 24, height: 1, background: COLORS.teal }} />
+            NOTRYA AI PLATFORM
+          </div>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(32px, 4vw, 52px)", fontWeight: 900, color: COLORS.bright, lineHeight: 1.08, letterSpacing: "-0.03em", marginBottom: 16 }}>
+            Command <span style={{ color: COLORS.teal }}>Center.</span>
+          </h1>
+          <p style={{ fontSize: 15, color: COLORS.dim, lineHeight: 1.7, maxWidth: 480, marginBottom: 28 }}>
+            Your complete AI-powered clinical documentation suite. Transcribe, analyze, order, document, and comply — all from one unified platform.
+          </p>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <button
+              onClick={() => navigate(createPageUrl("PatientDashboard"))}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "11px 22px",
+                borderRadius: 11,
+                background: `linear-gradient(135deg, ${COLORS.teal}22, ${COLORS.blue}16)`,
+                border: `1px solid ${COLORS.teal}50`,
+                color: COLORS.teal,
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: "pointer",
+                transition: "all 0.18s",
+                animation: "glow 3s infinite",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+            >
+              <span>🎙️</span> Start New Session
+            </button>
+            <button
+              onClick={() => navigate(createPageUrl("Shift"))}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "11px 22px",
+                borderRadius: 11,
+                background: COLORS.edge,
+                border: `1px solid ${COLORS.border}`,
+                color: COLORS.dim,
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.18s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = COLORS.dim;
+                e.currentTarget.style.color = COLORS.text;
+                e.currentTarget.style.transform = "translateY(-1px)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = COLORS.border;
+                e.currentTarget.style.color = COLORS.dim;
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
+            >
+              <span>🏥</span> Shift Dashboard
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Quick Launch */}
       <div style={{ position: "relative", zIndex: 1, padding: "0 28px 24px" }}>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           {MODULES.slice(0, 6).map((m) => (
             <button
               key={m.id}

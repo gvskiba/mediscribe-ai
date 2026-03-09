@@ -38,6 +38,7 @@ const navSections = [
                 { name: "Discharge Planning", icon: FileText, page: "DischargePlanning" },
               { name: "Order Set Builder", icon: FileText, page: "OrderSetBuilder" },
               { name: "Billing Assistant", icon: FileText, page: "BillingDashboard" },
+              { name: "Diagnostic Stewardship", icon: Activity, page: "DiagnosticStewardship" },
               ]
             },
       {
@@ -129,7 +130,7 @@ export default function Layout({ children, currentPageName }) {
       {showSidebar && <AppSidebar user={user} />}
 
       {/* Dashboard Top Bar */}
-      {currentPageName !== 'Home' && currentPageName !== 'ClinicalNoteStudio' && currentPageName !== 'NoteDetail' && currentPageName !== 'NoteTemplates' && currentPageName !== 'CustomTemplates' && currentPageName !== 'PatientDashboard' && currentPageName !== 'DischargePlanning' && currentPageName !== 'UserPreferences' && <DashboardTopBar user={user} />}
+      {currentPageName !== 'Home' && currentPageName !== 'ClinicalNoteStudio' && currentPageName !== 'NoteDetail' && currentPageName !== 'NoteTemplates' && currentPageName !== 'CustomTemplates' && currentPageName !== 'PatientDashboard' && currentPageName !== 'DischargePlanning' && currentPageName !== 'UserPreferences' && currentPageName !== 'DiagnosticStewardship' && <DashboardTopBar user={user} />}
 
 
 

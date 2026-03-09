@@ -535,7 +535,6 @@ export default function ClinicalNoteStudio() {
       </div>
 
       <div style={{display:"flex",gap:6}}>
-        <a href={createPageUrl("NoteTemplates")} style={{padding:"5px 13px",borderRadius:9,fontSize:12,fontWeight:600,cursor:"pointer",border:`1px solid ${C.purple}44`,background:`${C.purple}0e`,color:C.purple,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:5}}>📄 Templates</a>
         {mode==="studio" && <>
           <button onClick={saveNote} disabled={saving} style={{padding:"5px 13px",borderRadius:9,fontSize:12,fontWeight:600,cursor:saving?"not-allowed":"pointer",border:`1px solid ${C.border}`,background:C.edge,color:C.dim,opacity:saving?.5:1}}>{saving?"Saving...":"💾 Save"}</button>
           <button onClick={signNote} disabled={saving} style={{padding:"5px 13px",borderRadius:9,fontSize:12,fontWeight:700,cursor:saving?"not-allowed":"pointer",border:"none",background:`linear-gradient(135deg,${C.teal},#00b8a5)`,color:C.navy,opacity:saving?.5:1}}>✍️ Sign Note</button>

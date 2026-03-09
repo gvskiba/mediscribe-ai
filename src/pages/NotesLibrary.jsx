@@ -166,7 +166,7 @@ export default function NotesLibrary() {
   };
 
   return (
-    <div style={{ display: "flex", background: T.bg, color: T.text, gap: 0, flex: 1 }}>
+    <div style={{ display: "flex", background: T.bg, color: T.text, gap: 0, flex: 1, paddingTop: "48px" }}>
       {/* Sidebar */}
       <div
         style={{

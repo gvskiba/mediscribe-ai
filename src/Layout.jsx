@@ -87,7 +87,7 @@ export default function Layout({ children, currentPageName }) {
     checkAuth();
   }, []);
 
-  const showSidebar = currentPageName !== 'Home';
+  const showSidebar = currentPageName !== 'Home' && currentPageName !== 'UserPreferences';
 
   return (
     <div className="bg-white flex flex-col h-screen">

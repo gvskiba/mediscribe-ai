@@ -386,7 +386,7 @@ Write in formal clinical documentation style.`,
   // ── HUB ──────────────────────────────────────────────────────
   const renderHub = () => (
     <motion.div key="hub" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.2}} style={{ flex:1, overflowY:"auto", padding:"20px 24px", backgroundColor:C.navy }}>
-      <div style={{ maxWidth:1020, margin:"0 auto" }}>
+      <div style={{ maxWidth:1100, margin:"0 auto" }}>
 
         {/* Hero */}
         <div style={{ marginBottom:32 }}>

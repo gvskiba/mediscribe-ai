@@ -752,7 +752,21 @@ export default function PediatricDosing() {
             <div style={{ fontSize: 12, color: T.dim, marginTop: 2 }}>Weight-based dosing · Safety caps · Broselow bands · ER/Inpatient & Outpatient medications</div>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+          {/* Global Search */}
+          <div style={{ position: 'relative', minWidth: 260 }}>
+            <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', fontSize: 15, color: T.dim, pointerEvents: 'none' }}>🔍</span>
+            <input
+              type="text"
+              placeholder="Search drugs or condition (e.g. 'ear infection', 'seizure')…"
+              value={searchQuery}
+              onChange={e => { setSearchQuery(e.target.value); setActiveCategory('all'); }}
+              style={{ width: '100%', background: 'rgba(22,45,79,.8)', border: `1px solid ${searchQuery ? T.teal : T.border}`, borderRadius: 10, padding: '9px 32px 9px 34px', fontFamily: "'DM Sans', sans-serif", fontSize: 12.5, color: T.bright, outline: 'none', transition: 'border-color .2s' }}
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: 9, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: T.dim, cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0 }}>✕</button>
+            )}
+          </div>
           <div style={{ background: 'rgba(245,166,35,.1)', border: '1px solid rgba(245,166,35,.25)', borderRadius: 20, padding: '6px 14px', fontSize: 11.5, fontWeight: 700, color: T.amber }}>⚠ Verify all doses clinically</div>
           <button onClick={() => { setPrefillDrug(null); setShowLogModal(true); }} style={{ padding: '9px 18px', borderRadius: 8, background: `linear-gradient(135deg, ${T.blue}, #2f6db5)`, border: 'none', color: '#fff', cursor: 'pointer', fontSize: 12.5, fontWeight: 700 }}>＋ Log Dose</button>
         </div>

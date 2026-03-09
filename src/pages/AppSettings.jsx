@@ -190,6 +190,37 @@ export default function AppSettings() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const queryClient = useQueryClient();
 
+  // User preferences state
+  const [preferences, setPreferences] = useState(null);
+  const [prefSaving, setPrefSaving] = useState(false);
+  const [prefSaved, setPrefSaved] = useState(false);
+
+  useEffect(() => {
+    base44.auth.me().then(u => {
+      const userPrefs = u?.preferences || {
+        clock_face_style: 'digital',
+        dashboard_layout: '2x2',
+        color_theme: 'light',
+        notifications_email: true,
+        notifications_inapp: true,
+      };
+      setPreferences(userPrefs);
+    });
+  }, []);
+
+  const updatePreference = (key, value) => {
+    setPreferences(prev => ({ ...prev, [key]: value }));
+    setPrefSaved(false);
+  };
+
+  const handleSavePreferences = async () => {
+    setPrefSaving(true);
+    await base44.auth.updateMe({ preferences });
+    setPrefSaving(false);
+    setPrefSaved(true);
+    setTimeout(() => setPrefSaved(false), 2500);
+  };
+
   const { data: hospitalSettings, isLoading } = useQuery({
     queryKey: ["hospitalSettings"],
     queryFn: async () => {

@@ -502,7 +502,7 @@ export default function UserAccount() {
 
   // ── Main render ────────────────────────────────────────────────
   return (
-    <div style={{ fontFamily:"'DM Sans',sans-serif", background:C.navy, height:"100vh", color:C.text, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+    <div style={{ fontFamily:"'DM Sans',sans-serif", background:C.navy, height:"100%", minHeight:"100vh", color:C.text, display:"flex", flexDirection:"column", overflow:"hidden" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}

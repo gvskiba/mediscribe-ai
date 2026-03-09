@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { createPageUrl } from "@/utils";
 import DosageCalculator from "../components/antibiotics/DosageCalculator";
 import DiagnosticWorkup from "../components/antibiotics/DiagnosticWorkup";
 import AntibiogramManager from "../components/antibiotics/AntibiogramManager";
@@ -672,7 +670,6 @@ function Toast({message,color,onDone}) {
 }
 
 export default function AntibioticStewardship() {
-  const navigate = useNavigate();
   const [selectedInfection, setSelectedInfection]=useState(null);
   const [setting, setSetting]=useState("inpatient");
   const [age, setAge]=useState("");
@@ -724,7 +721,6 @@ export default function AntibioticStewardship() {
       {/* PAGE HEADER */}
       <div style={{padding:"18px 28px 14px",borderBottom:"1px solid rgba(30,58,95,.6)",background:"rgba(11,29,53,.4)",display:"flex",alignItems:"center",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
         <div style={{display:"flex",alignItems:"center",gap:14}}>
-          <button onClick={()=>navigate(createPageUrl('DrugsBugs'))} style={{padding:"8px 14px",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",background:"transparent",border:`1px solid ${T.border}`,color:T.dim,display:"flex",alignItems:"center",gap:6}}>← Back to Drugs & Bugs</button>
           <div style={{width:46,height:46,background:"rgba(46,204,113,.1)",border:"1px solid rgba(46,204,113,.25)",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>🧬</div>
           <div>
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:T.bright}}>Antibiotic Stewardship Guide</div>

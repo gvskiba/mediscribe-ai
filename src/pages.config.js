@@ -87,8 +87,8 @@ import SmartTemplates from './pages/SmartTemplates';
 import Snippets from './pages/Snippets';
 import SoapCompiler from './pages/SoapCompiler';
 import SoapCompilerStandalone from './pages/SoapCompilerStandalone';
-import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
+import UserPreferences from './pages/UserPreferences';
 import __Layout from './Layout.jsx';
 
 
@@ -133,8 +133,8 @@ export const PAGES = {
     "Snippets": Snippets,
     "SoapCompiler": SoapCompiler,
     "SoapCompilerStandalone": SoapCompilerStandalone,
-    "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
+    "UserPreferences": UserPreferences,
 }
 
 export const pagesConfig = {

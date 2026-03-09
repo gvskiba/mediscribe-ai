@@ -764,7 +764,7 @@ export default function PediatricDosing() {
           <div style={{ padding: 10, display: 'flex', flexDirection: 'column', gap: 3 }}>
             {CATEGORIES.map(cat => {
               const isActive = activeCategory === cat.id;
-              const count = cat.id === 'all' ? DRUG_DATA.length : catCountMap[cat.id] || 0;
+              const count = cat.id === 'all' ? settingDrugs.length : catCountMap[cat.id] || 0;
               return (
                 <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
                   style={{ width: '100%', textAlign: 'left', padding: '10px 12px', background: isActive ? 'rgba(0,212,188,.08)' : 'transparent', border: `1px solid ${isActive ? 'rgba(0,212,188,.3)' : 'rgba(30,58,95,.5)'}`, borderRadius: 9, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: 12.5, fontWeight: 600, color: isActive ? T.bright : T.dim, display: 'flex', alignItems: 'center', gap: 9 }}>

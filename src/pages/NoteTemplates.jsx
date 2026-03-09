@@ -209,5 +209,4 @@ export default function NoteTemplates() {
       </div>
     </div>
   );
-}
-}
+  }

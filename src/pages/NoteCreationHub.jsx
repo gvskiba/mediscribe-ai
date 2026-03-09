@@ -849,7 +849,7 @@ Write in formal clinical documentation style.`,
       </nav>
 
       {/* ── Content ──────────────────────────────────────────── */}
-      <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
+      <div style={{ flex:1, display:"flex", overflow:"hidden", backgroundColor:C.navy }}>
         <AnimatePresence mode="wait">
           {mode === "hub"           && renderHub()}
           {mode === "templates"     && renderTemplates()}

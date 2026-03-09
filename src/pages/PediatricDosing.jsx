@@ -13,7 +13,7 @@ const T = {
 // ── DRUG DATABASE ──────────────────────────────────────────────────────────
 const DRUG_DATA = [
   // RESUSCITATION
-  { id:'epi-arrest', name:'Epinephrine', indication:'Cardiac Arrest', category:'resuscitation', critical:true,
+  { id:'epi-arrest', name:'Epinephrine', indication:'Cardiac Arrest', category:'resuscitation', setting:'er', critical:true,
     route:'IV / IO', repeat:'q3–5 min',
     doses:[{ dosePerKg:0.01, unit:'mg', maxDose:1, label:'Standard' }],
     concentration:0.1, concLabel:'0.1 mg/mL (1:10,000)',

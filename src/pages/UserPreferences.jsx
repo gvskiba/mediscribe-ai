@@ -188,16 +188,7 @@ export default function UserAccount() {
 
   const fullName = `${profile.firstName} ${profile.lastName}`.trim();
 
-  // ── Recent activity (mock — replace with base44 entity query) ──
-  const ACTIVITY = [
-    { action:"Signed note",        patient:"Jane Doe",    time:"2 min ago",  type:"sign"  },
-    { action:"Created note",       patient:"Marcus Webb", time:"18 min ago", type:"create"},
-    { action:"Reviewed labs",      patient:"Priya Nair",  time:"41 min ago", type:"lab"   },
-    { action:"Updated medications",patient:"Tom Kerrigan",time:"1 hr ago",   type:"med"   },
-    { action:"Signed note",        patient:"Linda Shah",  time:"2 hr ago",   type:"sign"  },
-    { action:"Exported PDF",       patient:"Ray Castillo",time:"3 hr ago",   type:"export"},
-    { action:"Accessed system",    patient:"—",           time:"Today 07:14",type:"login" },
-  ];
+  const ACTIVITY = [];
 
   const activityIcon = { sign:"✍️", create:"📝", lab:"🧪", med:"💊", export:"📤", login:"🔐" };
 

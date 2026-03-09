@@ -628,7 +628,7 @@ Write in formal clinical documentation style.`,
 
   // ── TRANSCRIPTION ────────────────────────────────────────────
   const renderTranscription = () => (
-    <motion.div key="transcription" initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-10}} transition={{duration:.18}} style={{ flex:1, overflowY:"auto", padding:"24px 32px" }}>
+    <motion.div key="transcription" initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-10}} transition={{duration:.18}} style={{ flex:1, overflowY:"auto", padding:"20px 24px", backgroundColor:C.navy }}>
       <div style={{ maxWidth:700, margin:"0 auto" }}>
         <div style={{ marginBottom:20 }}>
           <div style={{ fontFamily:"'Playfair Display',serif", fontSize:24, fontWeight:700, color:C.bright, letterSpacing:"-.02em", marginBottom:5 }}>Live Transcription</div>

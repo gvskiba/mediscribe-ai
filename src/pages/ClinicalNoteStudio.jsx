@@ -588,6 +588,7 @@ export default function ClinicalNoteStudio() {
         `}</style>
 
         {renderNavbar()}
+        {mode === "studio" && renderNoteTypeBar()}
 
         <div style={{display:"flex",flex:1,overflow:"hidden"}}>
           {/* Sidebar */}

@@ -177,35 +177,36 @@ export default function NoteTemplates() {
       <div style={{flex:1,display:"flex",overflow:"hidden"}}>
         {/* Left: Template Library Sidebar */}
         <TemplateLibrarySidebar
-        selectedTemplate={selectedTemplate}
-        onSelect={handleSelectTemplate}
-        favorites={favorites}
-        onToggleFavorite={toggleFavorite}
-      />
+          selectedTemplate={selectedTemplate}
+          onSelect={handleSelectTemplate}
+          favorites={favorites}
+          onToggleFavorite={toggleFavorite}
+        />
 
-      {/* Center: Template Form or Welcome */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: T.navy }}>
-        {selectedTemplate ? (
-          <TemplateForm
-            template={normalisedTemplate}
-            fieldValues={fieldValues}
-            onChange={handleFieldChange}
-            onGenerate={handleGenerate}
-            isGenerating={isGenerating}
-          />
-        ) : (
-          <WelcomeScreen onSelect={handleSelectTemplate} />
-        )}
+        {/* Center: Template Form or Welcome */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: T.navy }}>
+          {selectedTemplate ? (
+            <TemplateForm
+              template={normalisedTemplate}
+              fieldValues={fieldValues}
+              onChange={handleFieldChange}
+              onGenerate={handleGenerate}
+              isGenerating={isGenerating}
+            />
+          ) : (
+            <WelcomeScreen onSelect={handleSelectTemplate} />
+          )}
+        </div>
+
+        {/* Right: Note Output Panel */}
+        <NoteOutputPanel
+          note={generatedNote}
+          onNoteChange={setGeneratedNote}
+          onRegenerate={handleGenerate}
+          isGenerating={isGenerating}
+          template={selectedTemplate}
+        />
       </div>
-
-      {/* Right: Note Output Panel */}
-      <NoteOutputPanel
-        note={generatedNote}
-        onNoteChange={setGeneratedNote}
-        onRegenerate={handleGenerate}
-        isGenerating={isGenerating}
-        template={selectedTemplate}
-      />
     </div>
   );
 }

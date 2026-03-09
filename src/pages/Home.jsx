@@ -517,7 +517,7 @@ export default function Home() {
       </div>
 
       {/* Core AI Modules */}
-      <div style={{ position: "relative", zIndex: 1, padding: "0 28px 40px" }}>
+      <div style={{ position: "relative", zIndex: 1, padding: "0 28px 40px", maxWidth: 1320, margin: "0 auto", width: "100%" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20, paddingBottom: 14, borderBottom: `1px solid ${COLORS.border}` }}>
           <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, color: COLORS.dim, letterSpacing: "0.12em" }}>
             CORE AI MODULES

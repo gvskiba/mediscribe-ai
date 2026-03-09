@@ -697,12 +697,15 @@ export default function PediatricDosing() {
     setShowLogModal(true);
   };
 
+  const searchResults = getSearchResults(searchQuery);
+  const isSearching = searchResults !== null;
+
   const CATEGORIES = settingMode === 'er' ? ER_CATEGORIES : OP_CATEGORIES;
-  const settingDrugs = DRUG_DATA.filter(d => (d.setting || 'er') === settingMode);
+  const settingDrugs = isSearching ? searchResults : DRUG_DATA.filter(d => (d.setting || 'er') === settingMode);
   const cats = settingMode === 'er'
     ? ['resuscitation','rsi','sedation','seizure','respiratory','antibiotics','other']
     : ['antibiotics','respiratory','other'];
-  const filtered = activeCategory === 'all' ? settingDrugs : settingDrugs.filter(d => d.category === activeCategory);
+  const filtered = (isSearching || activeCategory === 'all') ? settingDrugs : settingDrugs.filter(d => d.category === activeCategory);
 
   const catCountMap = {};
   cats.forEach(c => { catCountMap[c] = settingDrugs.filter(d => d.category === c).length; });

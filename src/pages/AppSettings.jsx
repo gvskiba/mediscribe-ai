@@ -375,6 +375,83 @@ export default function AppSettings() {
             </div>
           </SectionCard>
 
+          {/* ── Dashboard Preferences ─────────────────── */}
+          <SectionCard icon={LayoutDashboard} iconColor={T.teal} title="Dashboard" subtitle="Configure your dashboard layout and clock style">
+            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              <div>
+                <div style={{ fontSize: 11, color: T.dim, fontWeight: 600, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>Default Layout</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {[{ value: '2x2', label: '2×2 Grid' }, { value: '3x3', label: '3×3 Grid' }, { value: '4x4', label: '4×4 Grid' }, { value: '6x6', label: '6×6 Grid' }, { value: 'horizontal', label: 'Horizontal' }].map(opt => (
+                    <button key={opt.value} onClick={() => updatePreference('dashboard_layout', opt.value)} style={{ padding: "7px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s", background: preferences?.dashboard_layout === opt.value ? `linear-gradient(135deg, ${T.teal}, ${T.teal2})` : T.edge, border: `1px solid ${preferences?.dashboard_layout === opt.value ? T.teal : T.border}`, color: preferences?.dashboard_layout === opt.value ? T.navy : T.text }}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: T.dim, fontWeight: 600, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>Clock Face Style</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {[{ value: 'digital', label: 'Digital' }, { value: 'analog', label: 'Analog' }, { value: 'minimal', label: 'Minimal' }, { value: 'binary', label: 'Binary' }].map(opt => (
+                    <button key={opt.value} onClick={() => updatePreference('clock_face_style', opt.value)} style={{ padding: "7px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s", background: preferences?.clock_face_style === opt.value ? `linear-gradient(135deg, ${T.teal}, ${T.teal2})` : T.edge, border: `1px solid ${preferences?.clock_face_style === opt.value ? T.teal : T.border}`, color: preferences?.clock_face_style === opt.value ? T.navy : T.text }}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <button onClick={handleSavePreferences} disabled={prefSaving} style={{ padding: "8px 20px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: prefSaving ? "not-allowed" : "pointer", background: prefSaved ? `linear-gradient(135deg, ${T.green}, #27ae60)` : `linear-gradient(135deg, ${T.teal}, ${T.teal2})`, border: "none", color: T.navy, fontFamily: "inherit", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 6 }}>
+                  {prefSaving ? <><Loader2 size={13} style={{ animation: "spin 0.8s linear infinite" }} /> Saving…</> : prefSaved ? <><Check size={13} /> Saved!</> : "Save Changes"}
+                </button>
+              </div>
+            </div>
+          </SectionCard>
+
+          {/* ── Appearance ───────────────────────────── */}
+          <SectionCard icon={Palette} iconColor={T.purple} title="Appearance" subtitle="Customize how the app looks">
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div>
+                <div style={{ fontSize: 11, color: T.dim, fontWeight: 600, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>Color Theme</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {[{ value: 'light', label: '☀️ Light' }, { value: 'dark', label: '🌙 Dark' }, { value: 'auto', label: '🔄 Auto' }].map(opt => (
+                    <button key={opt.value} onClick={() => updatePreference('color_theme', opt.value)} style={{ padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s", background: preferences?.color_theme === opt.value ? `linear-gradient(135deg, ${T.purple}, #7c3aed)` : T.edge, border: `1px solid ${preferences?.color_theme === opt.value ? T.purple : T.border}`, color: preferences?.color_theme === opt.value ? "#fff" : T.text }}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <button onClick={handleSavePreferences} disabled={prefSaving} style={{ padding: "8px 20px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: prefSaving ? "not-allowed" : "pointer", background: prefSaved ? `linear-gradient(135deg, ${T.green}, #27ae60)` : `linear-gradient(135deg, ${T.teal}, ${T.teal2})`, border: "none", color: T.navy, fontFamily: "inherit", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 6 }}>
+                  {prefSaving ? <><Loader2 size={13} style={{ animation: "spin 0.8s linear infinite" }} /> Saving…</> : prefSaved ? <><Check size={13} /> Saved!</> : "Save Changes"}
+                </button>
+              </div>
+            </div>
+          </SectionCard>
+
+          {/* ── Notifications ────────────────────────── */}
+          <SectionCard icon={Bell} iconColor={T.amber} title="Notifications" subtitle="Manage how you receive updates">
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {[
+                { key: 'notifications_email', label: 'Email Notifications', sub: 'Receive updates via email' },
+                { key: 'notifications_inapp', label: 'In-App Notifications', sub: 'Receive notifications in the app' },
+              ].map(item => (
+                <div key={item.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: T.edge, border: `1px solid ${T.border}`, borderRadius: 9 }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: T.bright }}>{item.label}</div>
+                    <div style={{ fontSize: 11, color: T.dim, marginTop: 2 }}>{item.sub}</div>
+                  </div>
+                  <button onClick={() => updatePreference(item.key, !preferences?.[item.key])} style={{ width: 42, height: 24, borderRadius: 12, border: "none", cursor: "pointer", transition: "all 0.2s", background: preferences?.[item.key] ? `linear-gradient(135deg, ${T.teal}, ${T.teal2})` : T.muted, position: "relative", flexShrink: 0 }}>
+                    <div style={{ width: 18, height: 18, borderRadius: "50%", background: "#fff", position: "absolute", top: 3, left: preferences?.[item.key] ? 21 : 3, transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }} />
+                  </button>
+                </div>
+              ))}
+              <div style={{ paddingTop: 4 }}>
+                <button onClick={handleSavePreferences} disabled={prefSaving} style={{ padding: "8px 20px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: prefSaving ? "not-allowed" : "pointer", background: prefSaved ? `linear-gradient(135deg, ${T.green}, #27ae60)` : `linear-gradient(135deg, ${T.teal}, ${T.teal2})`, border: "none", color: T.navy, fontFamily: "inherit", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 6 }}>
+                  {prefSaving ? <><Loader2 size={13} style={{ animation: "spin 0.8s linear infinite" }} /> Saving…</> : prefSaved ? <><Check size={13} /> Saved!</> : "Save Changes"}
+                </button>
+              </div>
+            </div>
+          </SectionCard>
+
           <SectionCard icon={Users} iconColor={T.teal} title="Attending Physicians" subtitle="The default attending is shown in the top bar">
             <div style={{ background: T.edge, border: `1px solid ${T.border}`, borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
               <div style={{ fontSize: 11, color: T.dim, fontWeight: 600, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>Add New Physician</div>

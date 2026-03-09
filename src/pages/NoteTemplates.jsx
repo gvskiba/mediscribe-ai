@@ -154,12 +154,28 @@ export default function NoteTemplates() {
       fontFamily: "DM Sans, sans-serif",
       height: "100vh",
       display: "flex",
+      flexDirection: "column",
       overflow: "hidden",
     }}>
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
 
-      {/* Left: Template Library Sidebar */}
-      <TemplateLibrarySidebar
+      {/* Top Bar */}
+      <div style={{height:48,background:`linear-gradient(90deg, ${T.panel}, ${T.slate})`,borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",padding:"0 16px",gap:12,flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:14}}>📋</span>
+          <div>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.dim,letterSpacing:".1em"}}>TEMPLATES LIBRARY</div>
+            <div style={{fontSize:12,fontWeight:600,color:T.bright}}>Note Templates</div>
+          </div>
+        </div>
+        <div style={{flex:1}} />
+        <a href={require("@/utils").createPageUrl("ClinicalNoteStudio")} style={{padding:"4px 12px",borderRadius:6,fontSize:11,fontWeight:700,cursor:"pointer",border:`1px solid ${T.border}`,background:T.panel,color:T.dim,textDecoration:"none"}}>← Back to Studio</a>
+      </div>
+
+      {/* Main Content */}
+      <div style={{flex:1,display:"flex",overflow:"hidden"}}>
+        {/* Left: Template Library Sidebar */}
+        <TemplateLibrarySidebar
         selectedTemplate={selectedTemplate}
         onSelect={handleSelectTemplate}
         favorites={favorites}

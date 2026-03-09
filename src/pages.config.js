@@ -60,6 +60,7 @@ import ClinicalNoteStudio from './pages/ClinicalNoteStudio';
 import CustomTemplates from './pages/CustomTemplates';
 import Customize from './pages/Customize';
 import Dashboard from './pages/Dashboard';
+import DiagnosticStewardship from './pages/DiagnosticStewardship';
 import DischargePlanning from './pages/DischargePlanning';
 import DrugReference from './pages/DrugReference';
 import DrugsBugs from './pages/DrugsBugs';
@@ -87,9 +88,8 @@ import SmartTemplates from './pages/SmartTemplates';
 import Snippets from './pages/Snippets';
 import SoapCompiler from './pages/SoapCompiler';
 import SoapCompilerStandalone from './pages/SoapCompilerStandalone';
-import UserSettings from './pages/UserSettings';
 import UserPreferences from './pages/UserPreferences';
-import DiagnosticStewardship from './pages/DiagnosticStewardship';
+import UserSettings from './pages/UserSettings';
 import __Layout from './Layout.jsx';
 
 
@@ -107,6 +107,7 @@ export const PAGES = {
     "CustomTemplates": CustomTemplates,
     "Customize": Customize,
     "Dashboard": Dashboard,
+    "DiagnosticStewardship": DiagnosticStewardship,
     "DischargePlanning": DischargePlanning,
     "DrugReference": DrugReference,
     "DrugsBugs": DrugsBugs,
@@ -134,9 +135,8 @@ export const PAGES = {
     "Snippets": Snippets,
     "SoapCompiler": SoapCompiler,
     "SoapCompilerStandalone": SoapCompilerStandalone,
-    "UserSettings": UserSettings,
     "UserPreferences": UserPreferences,
-    "DiagnosticStewardship": DiagnosticStewardship,
+    "UserSettings": UserSettings,
 }
 
 export const pagesConfig = {

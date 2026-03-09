@@ -170,7 +170,7 @@ export default function NoteTemplates() {
           </div>
         </div>
         <div style={{flex:1}} />
-        <a href={require("@/utils").createPageUrl("ClinicalNoteStudio")} style={{padding:"4px 12px",borderRadius:6,fontSize:11,fontWeight:700,cursor:"pointer",border:`1px solid ${T.border}`,background:T.panel,color:T.dim,textDecoration:"none"}}>← Back to Studio</a>
+        <a href={createPageUrl("ClinicalNoteStudio")} style={{padding:"4px 12px",borderRadius:6,fontSize:11,fontWeight:700,cursor:"pointer",border:`1px solid ${T.border}`,background:T.panel,color:T.dim,textDecoration:"none"}}>← Back to Studio</a>
       </div>
 
       {/* Main Content */}

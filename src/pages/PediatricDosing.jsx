@@ -841,8 +841,8 @@ export default function PediatricDosing() {
           </button>
         </div>
 
-        <span style={{ background: 'rgba(0,212,188,.1)', border: '1px solid rgba(0,212,188,.25)', borderRadius: 20, padding: '6px 14px', fontSize: 11.5, fontWeight: 700, color: T.teal }}>
-          {filtered.length} medication{filtered.length !== 1 ? 's' : ''}
+        <span style={{ background: isSearching ? 'rgba(0,212,188,.15)' : 'rgba(0,212,188,.1)', border: `1px solid ${isSearching ? 'rgba(0,212,188,.4)' : 'rgba(0,212,188,.25)'}`, borderRadius: 20, padding: '6px 14px', fontSize: 11.5, fontWeight: 700, color: T.teal }}>
+          {isSearching ? `🔍 ${filtered.length} found` : `${filtered.length} medication${filtered.length !== 1 ? 's' : ''}`}
         </span>
       </div>
 

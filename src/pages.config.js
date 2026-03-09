@@ -70,7 +70,6 @@ import LiveTranscription from './pages/LiveTranscription';
 import MedicalKnowledgeBase from './pages/MedicalKnowledgeBase';
 import MedicalNews from './pages/MedicalNews';
 import NewNote from './pages/NewNote';
-import NoteCreationHub from './pages/NoteCreationHub';
 import NoteDetail from './pages/NoteDetail';
 import NoteTemplates from './pages/NoteTemplates';
 import NotesLibrary from './pages/NotesLibrary';
@@ -90,6 +89,7 @@ import SoapCompiler from './pages/SoapCompiler';
 import SoapCompilerStandalone from './pages/SoapCompilerStandalone';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
+import NoteCreationHub from './pages/NoteCreationHub';
 import __Layout from './Layout.jsx';
 
 
@@ -117,7 +117,6 @@ export const PAGES = {
     "MedicalKnowledgeBase": MedicalKnowledgeBase,
     "MedicalNews": MedicalNews,
     "NewNote": NewNote,
-    "NoteCreationHub": NoteCreationHub,
     "NoteDetail": NoteDetail,
     "NoteTemplates": NoteTemplates,
     "NotesLibrary": NotesLibrary,
@@ -137,6 +136,7 @@ export const PAGES = {
     "SoapCompilerStandalone": SoapCompilerStandalone,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
+    "NoteCreationHub": NoteCreationHub,
 }
 
 export const pagesConfig = {

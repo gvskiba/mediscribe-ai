@@ -67,7 +67,6 @@ import DrugsBugs from './pages/DrugsBugs';
 import Guidelines from './pages/Guidelines';
 import Home from './pages/Home';
 import LiveTranscription from './pages/LiveTranscription';
-import LiveTranscriptionStudio from './pages/LiveTranscriptionStudio';
 import MedicalKnowledgeBase from './pages/MedicalKnowledgeBase';
 import MedicalNews from './pages/MedicalNews';
 import NewNote from './pages/NewNote';
@@ -114,7 +113,6 @@ export const PAGES = {
     "Guidelines": Guidelines,
     "Home": Home,
     "LiveTranscription": LiveTranscription,
-    "LiveTranscriptionStudio": LiveTranscriptionStudio,
     "MedicalKnowledgeBase": MedicalKnowledgeBase,
     "MedicalNews": MedicalNews,
     "NewNote": NewNote,

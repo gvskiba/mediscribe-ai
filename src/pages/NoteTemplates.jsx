@@ -206,7 +206,8 @@ export default function NoteTemplates() {
           isGenerating={isGenerating}
           template={selectedTemplate}
         />
-      </div>
-    </div>
-  );
+        </div>
+        </div>
+        );
+        }
 }

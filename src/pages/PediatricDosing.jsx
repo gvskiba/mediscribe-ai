@@ -608,6 +608,56 @@ export default function PediatricDosing() {
   const [weightInput, setWeightInput] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
   const [settingMode, setSettingMode] = useState('er'); // 'er' | 'outpatient'
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Clinical alias expansion for plain-language searches
+  const SEARCH_ALIASES = {
+    'ear infection': 'AOM otitis',
+    'ear pain': 'AOM otitis',
+    'strep': 'pharyngitis streptococcal',
+    'sore throat': 'pharyngitis',
+    'flu': 'influenza oseltamivir',
+    'hives': 'urticaria diphenhydramine cetirizine',
+    'rash': 'urticaria allergic diphenhydramine',
+    'vomiting': 'nausea ondansetron',
+    'throwing up': 'nausea ondansetron',
+    'skin infection': 'SSTI cephalexin clindamycin',
+    'wound': 'SSTI bite cephalexin',
+    'breathing': 'asthma bronchospasm respiratory albuterol',
+    'wheeze': 'asthma albuterol bronchospasm',
+    'wheezing': 'asthma albuterol',
+    'convulsion': 'seizure',
+    'fits': 'seizure',
+    'allergic': 'anaphylaxis urticaria diphenhydramine',
+    'allergy': 'anaphylaxis urticaria diphenhydramine',
+    'croup': 'croup dexamethasone epinephrine',
+    'urinary': 'UTI cephalexin TMP-SMX',
+    'bladder': 'UTI cephalexin',
+    'pneumonia': 'CAP ceftriaxone azithromycin amoxicillin',
+    'lung infection': 'CAP pneumonia',
+    'meningitis': 'meningitis ceftriaxone ampicillin vancomycin',
+    'heart': 'cardiac arrest resuscitation',
+    'code': 'cardiac arrest epinephrine',
+    'airway': 'RSI intubation ketamine rocuronium',
+    'intubation': 'RSI rocuronium succinylcholine',
+    'pain': 'pain analgesic fentanyl morphine',
+    'fever': 'fever acetaminophen ibuprofen',
+    'mrsa': 'MRSA vancomycin TMP-SMX clindamycin',
+  };
+
+  const getSearchResults = useCallback((query) => {
+    if (!query.trim()) return null;
+    const q = query.toLowerCase();
+    let expanded = q;
+    Object.entries(SEARCH_ALIASES).forEach(([key, val]) => {
+      if (q.includes(key)) expanded += ' ' + val.toLowerCase();
+    });
+    const terms = expanded.split(/\s+/).filter(t => t.length > 1);
+    return DRUG_DATA.filter(drug => {
+      const haystack = [drug.name, drug.indication, drug.note || '', drug.category, drug.warning || ''].join(' ').toLowerCase();
+      return terms.some(term => haystack.includes(term));
+    });
+  }, []);
   const [doseLog, setDoseLog] = useState(() => {
     try { return JSON.parse(localStorage.getItem('notrya-ped-log') || '[]'); } catch { return []; }
   });

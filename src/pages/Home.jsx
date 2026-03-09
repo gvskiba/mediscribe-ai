@@ -477,7 +477,7 @@ export default function Home() {
       </div>
 
       {/* Quick Launch */}
-      <div style={{ position: "relative", zIndex: 1, padding: "0 28px 24px" }}>
+      <div style={{ position: "relative", zIndex: 1, padding: "0 28px 24px", maxWidth: 1320, margin: "0 auto", width: "100%" }}>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           {MODULES.slice(0, 6).map((m) => (
             <button

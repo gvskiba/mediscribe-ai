@@ -468,14 +468,7 @@ export default function UserAccount() {
               </div>
               <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.muted, marginTop:5 }}>⚠ Keep this key secret. Do not share or commit to version control.</div>
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
-              {[{label:"API Calls Today",value:"142",c:C.teal},{label:"Rate Limit",value:"1,000/hr",c:C.blue},{label:"Plan",value:"Clinical Pro",c:C.purple}].map(s=>(
-                <div key={s.label} style={{ background:C.edge, borderRadius:10, padding:"10px 12px", border:`1px solid ${C.border}`, textAlign:"center" }}>
-                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:16, fontWeight:700, color:s.c }}>{s.value}</div>
-                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.muted, marginTop:3 }}>{s.label}</div>
-                </div>
-              ))}
-            </div>
+
           </Card>
         </div>
       );

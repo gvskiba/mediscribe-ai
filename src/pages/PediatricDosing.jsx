@@ -647,11 +647,15 @@ export default function PediatricDosing() {
     setShowLogModal(true);
   };
 
-  const cats = ['resuscitation','rsi','sedation','seizure','respiratory','antibiotics','other'];
-  const filtered = activeCategory === 'all' ? DRUG_DATA : DRUG_DATA.filter(d => d.category === activeCategory);
+  const CATEGORIES = settingMode === 'er' ? ER_CATEGORIES : OP_CATEGORIES;
+  const settingDrugs = DRUG_DATA.filter(d => (d.setting || 'er') === settingMode);
+  const cats = settingMode === 'er'
+    ? ['resuscitation','rsi','sedation','seizure','respiratory','antibiotics','other']
+    : ['antibiotics','respiratory','other'];
+  const filtered = activeCategory === 'all' ? settingDrugs : settingDrugs.filter(d => d.category === activeCategory);
 
   const catCountMap = {};
-  cats.forEach(c => { catCountMap[c] = DRUG_DATA.filter(d => d.category === c).length; });
+  cats.forEach(c => { catCountMap[c] = settingDrugs.filter(d => d.category === c).length; });
 
   // Group cards by category if showing all
   const renderCards = () => {
@@ -663,7 +667,7 @@ export default function PediatricDosing() {
     return (
       <div>
         {cats.map(cat => {
-          const drugs = DRUG_DATA.filter(d => d.category === cat);
+          const drugs = settingDrugs.filter(d => d.category === cat);
           if (!drugs.length) return null;
           return (
             <div key={cat} style={{ marginBottom: 28 }}>

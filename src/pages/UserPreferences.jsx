@@ -462,7 +462,7 @@ export default function UserAccount() {
             <div style={{ marginBottom:12 }}>
               <Label>YOUR API KEY</Label>
               <div style={{ display:"flex", gap:8 }}>
-                <input readOnly value="ntr_sk_••••••••••••••••••••••••••••••••" style={{ ...inputStyle, fontFamily:"'JetBrains Mono',monospace", fontSize:12, flex:1 }} />
+                <input readOnly value="••••••••••••••••••••••••••••••••" style={{ ...inputStyle, fontFamily:"'JetBrains Mono',monospace", fontSize:12, flex:1 }} />
                 <button style={{ padding:"8px 14px", borderRadius:9, background:C.edge, border:`1px solid ${C.border}`, color:C.dim, fontSize:12, cursor:"pointer", flexShrink:0 }}>Reveal</button>
                 <button style={{ padding:"8px 14px", borderRadius:9, background:"rgba(155,109,255,.1)", border:"1px solid rgba(155,109,255,.28)", color:C.purple, fontSize:12, cursor:"pointer", flexShrink:0, fontWeight:600 }}>Regenerate</button>
               </div>

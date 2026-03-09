@@ -477,7 +477,7 @@ export default function Home() {
 
       {/* Quick Launch */}
       <div style={{ position: "relative", zIndex: 1, padding: "0 28px 24px" }}>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
           {MODULES.slice(0, 6).map((m) => (
             <button
               key={m.id}

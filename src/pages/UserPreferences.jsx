@@ -549,6 +549,7 @@ export default function UserAccount() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+        @keyframes spin{to{transform:rotate(360deg)}}
         ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:2px}
         input,textarea,select{transition:border-color .15s}
         input:focus,textarea:focus,select:focus{border-color:#4a7299 !important;outline:none}

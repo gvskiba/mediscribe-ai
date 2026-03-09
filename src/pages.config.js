@@ -63,7 +63,6 @@ import Dashboard from './pages/Dashboard';
 import DischargePlanning from './pages/DischargePlanning';
 import DrugReference from './pages/DrugReference';
 import DrugsBugs from './pages/DrugsBugs';
-import GuidelineDetail from './pages/GuidelineDetail';
 import Guidelines from './pages/Guidelines';
 import LiveTranscription from './pages/LiveTranscription';
 import LiveTranscriptionStudio from './pages/LiveTranscriptionStudio';
@@ -110,7 +109,6 @@ export const PAGES = {
     "DischargePlanning": DischargePlanning,
     "DrugReference": DrugReference,
     "DrugsBugs": DrugsBugs,
-    "GuidelineDetail": GuidelineDetail,
     "Guidelines": Guidelines,
     "LiveTranscription": LiveTranscription,
     "LiveTranscriptionStudio": LiveTranscriptionStudio,

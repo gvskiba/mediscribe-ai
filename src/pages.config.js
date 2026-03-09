@@ -80,7 +80,6 @@ import PatientEducation from './pages/PatientEducation';
 import PatientHistory from './pages/PatientHistory';
 import PediatricDosing from './pages/PediatricDosing';
 import Procedures from './pages/Procedures';
-import SavedGuidelines from './pages/SavedGuidelines';
 import Search from './pages/Search';
 import Shift from './pages/Shift';
 import ShiftHours from './pages/ShiftHours';
@@ -128,7 +127,6 @@ export const PAGES = {
     "PatientHistory": PatientHistory,
     "PediatricDosing": PediatricDosing,
     "Procedures": Procedures,
-    "SavedGuidelines": SavedGuidelines,
     "Search": Search,
     "Shift": Shift,
     "ShiftHours": ShiftHours,

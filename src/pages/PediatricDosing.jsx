@@ -505,6 +505,7 @@ function LogModal({ onClose, onSave, prefillDrug, weight }) {
 
 // ── Main Page ────────────────────────────────────────────────────────────────
 export default function PediatricDosing() {
+  const navigate = useNavigate();
   const [weight, setWeight] = useState(null);
   const [weightInput, setWeightInput] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');

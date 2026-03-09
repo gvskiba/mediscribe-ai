@@ -672,6 +672,7 @@ function Toast({message,color,onDone}) {
 }
 
 export default function AntibioticStewardship() {
+  const navigate = useNavigate();
   const [selectedInfection, setSelectedInfection]=useState(null);
   const [setting, setSetting]=useState("inpatient");
   const [age, setAge]=useState("");

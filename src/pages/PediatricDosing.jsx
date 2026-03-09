@@ -607,6 +607,7 @@ export default function PediatricDosing() {
   const [weight, setWeight] = useState(null);
   const [weightInput, setWeightInput] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
+  const [settingMode, setSettingMode] = useState('er'); // 'er' | 'outpatient'
   const [doseLog, setDoseLog] = useState(() => {
     try { return JSON.parse(localStorage.getItem('notrya-ped-log') || '[]'); } catch { return []; }
   });

@@ -405,25 +405,9 @@ export default function UserAccount() {
             )}
           </Card>
 
-          <Card title="ACTIVE SESSIONS" icon="💻" badge="3 SESSIONS" badgeColor={C.blue}>
-            {[
-              { device:"Chrome · macOS",  location:"Macon, MO",    time:"Current session", current:true  },
-              { device:"Safari · iPhone", location:"Macon, MO",    time:"2 hr ago",        current:false },
-              { device:"Chrome · Windows",location:"St. Louis, MO",time:"Yesterday",       current:false },
-            ].map((s, i) => (
-              <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 0", borderBottom:i < 2 ? `1px solid ${C.border}` : "none" }}>
-                <div style={{ fontSize:18 }}>{s.device.includes("iPhone") ? "📱" : "💻"}</div>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:12, fontWeight:600, color:C.bright }}>{s.device}</div>
-                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.dim, marginTop:2 }}>{s.location} · {s.time}</div>
-                </div>
-                {s.current
-                  ? <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, padding:"2px 8px", borderRadius:7, background:"rgba(0,212,188,.1)", border:"1px solid rgba(0,212,188,.28)", color:C.teal }}>THIS DEVICE</span>
-                  : <button style={{ padding:"4px 10px", borderRadius:8, fontSize:11, fontWeight:600, cursor:"pointer", background:"rgba(255,92,108,.08)", border:"1px solid rgba(255,92,108,.28)", color:C.red }}>Revoke</button>
-                }
-              </div>
-            ))}
-            <button style={{ marginTop:10, padding:"7px 14px", borderRadius:9, background:"rgba(255,92,108,.07)", border:"1px solid rgba(255,92,108,.28)", color:C.red, fontSize:12, fontWeight:600, cursor:"pointer" }}>
+          <Card title="ACTIVE SESSIONS" icon="💻" badgeColor={C.blue}>
+            <div style={{ fontSize:12, color:C.dim, padding:"10px 0" }}>Session management coming soon.</div>
+            <button style={{ marginTop:6, padding:"7px 14px", borderRadius:9, background:"rgba(255,92,108,.07)", border:"1px solid rgba(255,92,108,.28)", color:C.red, fontSize:12, fontWeight:600, cursor:"pointer" }}>
               Sign Out All Other Sessions
             </button>
           </Card>

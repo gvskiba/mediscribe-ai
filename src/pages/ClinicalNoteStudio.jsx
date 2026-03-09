@@ -548,6 +548,27 @@ export default function ClinicalNoteStudio() {
     </nav>
   );
 
+  const renderNoteTypeBar = () => (
+    <div style={{height:48,background:`linear-gradient(90deg, ${C.panel}, ${C.slate})`,borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",padding:"0 16px",gap:12,flexShrink:0}}>
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+        <span style={{fontSize:14}}>📝</span>
+        <div>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.muted,letterSpacing:".1em"}}>NOTE TYPE · LOCATION</div>
+          <div style={{fontSize:12,fontWeight:600,color:C.bright}}>{pt.type||"Progress Note"} · {pt.mrn||"—"}</div>
+        </div>
+      </div>
+      <div style={{width:1,height:24,background:C.border}} />
+      <div style={{display:"flex",alignItems:"center",gap:3}}>
+        {note?.status==="finalized"&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:6,background:"rgba(46,204,113,.15)",color:C.green,border:`1px solid rgba(46,204,113,.32)`}}>✓ SIGNED</span>}
+      </div>
+      <div style={{flex:1}} />
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+        <button style={{padding:"4px 10px",borderRadius:6,fontSize:10,fontWeight:700,cursor:"pointer",border:`1px solid ${C.border}`,background:C.edge,color:C.dim}}>⬇ Export</button>
+        <button onClick={handleNext} style={{padding:"4px 12px",borderRadius:6,fontSize:11,fontWeight:700,cursor:"pointer",border:"none",background:C.teal,color:C.navy}}>Next Objective →</button>
+      </div>
+    </div>
+  );
+
   // ── STUDIO MODE ──
   if (mode === "studio") {
     return (

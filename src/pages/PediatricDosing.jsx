@@ -696,7 +696,7 @@ export default function PediatricDosing() {
           <div style={{ width: 46, height: 46, background: 'rgba(245,166,35,.1)', border: '1px solid rgba(245,166,35,.25)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>👶</div>
           <div>
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: T.bright }}>Pediatric Dosing Calculator</div>
-            <div style={{ fontSize: 12, color: T.dim, marginTop: 2 }}>Weight-based dosing · Safety caps · Broselow bands · 30 ED medications</div>
+            <div style={{ fontSize: 12, color: T.dim, marginTop: 2 }}>Weight-based dosing · Safety caps · Broselow bands · ER/Inpatient & Outpatient medications</div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

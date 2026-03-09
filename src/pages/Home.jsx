@@ -406,7 +406,7 @@ export default function Home() {
       </nav>
 
       {/* Hero */}
-      <div style={{ position: "relative", zIndex: 1, padding: "52px 28px 36px", maxWidth: 1320, margin: "0 auto", display: "flex", alignItems: "flex-start", gap: 48 }}>
+      <div style={{ position: "relative", zIndex: 1, padding: "52px 28px 36px", display: "flex", alignItems: "flex-start", gap: 48 }}>
         <div style={{ flex: 1 }}>
           <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, color: COLORS.teal, letterSpacing: "0.14em", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ width: 24, height: 1, background: COLORS.teal }} />
@@ -477,7 +477,7 @@ export default function Home() {
       </div>
 
       {/* Quick Launch */}
-      <div style={{ position: "relative", zIndex: 1, padding: "0 28px 24px", maxWidth: 1320, margin: "0 auto", width: "100%" }}>
+      <div style={{ position: "relative", zIndex: 1, padding: "0 28px 24px" }}>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           {MODULES.slice(0, 6).map((m) => (
             <button
@@ -517,7 +517,7 @@ export default function Home() {
       </div>
 
       {/* Core AI Modules */}
-      <div style={{ position: "relative", zIndex: 1, padding: "0 28px 40px", maxWidth: 1320, margin: "0 auto", width: "100%" }}>
+      <div style={{ position: "relative", zIndex: 1, padding: "0 28px 40px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20, paddingBottom: 14, borderBottom: `1px solid ${COLORS.border}` }}>
           <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, color: COLORS.dim, letterSpacing: "0.12em" }}>
             CORE AI MODULES

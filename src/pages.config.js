@@ -64,6 +64,7 @@ import DischargePlanning from './pages/DischargePlanning';
 import DrugReference from './pages/DrugReference';
 import DrugsBugs from './pages/DrugsBugs';
 import Guidelines from './pages/Guidelines';
+import Home from './pages/Home';
 import LiveTranscription from './pages/LiveTranscription';
 import LiveTranscriptionStudio from './pages/LiveTranscriptionStudio';
 import MedicalKnowledgeBase from './pages/MedicalKnowledgeBase';
@@ -88,7 +89,6 @@ import SoapCompiler from './pages/SoapCompiler';
 import SoapCompilerStandalone from './pages/SoapCompilerStandalone';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
-import Home from './pages/Home';
 import __Layout from './Layout.jsx';
 
 
@@ -110,6 +110,7 @@ export const PAGES = {
     "DrugReference": DrugReference,
     "DrugsBugs": DrugsBugs,
     "Guidelines": Guidelines,
+    "Home": Home,
     "LiveTranscription": LiveTranscription,
     "LiveTranscriptionStudio": LiveTranscriptionStudio,
     "MedicalKnowledgeBase": MedicalKnowledgeBase,
@@ -134,7 +135,6 @@ export const PAGES = {
     "SoapCompilerStandalone": SoapCompilerStandalone,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
-    "Home": Home,
 }
 
 export const pagesConfig = {

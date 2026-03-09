@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { X, Plus, Check, Key, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, Trash2, Building2, Users, Newspaper, Globe } from "lucide-react";
+import { X, Plus, Check, Key, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, Trash2, Building2, Users, Newspaper, Globe, LayoutDashboard, Bell, Palette } from "lucide-react";
 
 const T = {
   navy: "#050f1e",

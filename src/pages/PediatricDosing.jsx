@@ -343,7 +343,7 @@ const CAT_COLORS = {
   resuscitation:'#ff5c6c', rsi:'#9b6dff', sedation:'#4a90d9',
   seizure:'#f472b6', respiratory:'#00d4bc', antibiotics:'#2ecc71', other:'#f5a623',
 };
-const CATEGORIES = [
+const ER_CATEGORIES = [
   { id:'all', icon:'⚡', label:'All Medications' },
   { id:'resuscitation', icon:'❤️', label:'Resuscitation' },
   { id:'rsi', icon:'💉', label:'RSI / Airway' },
@@ -351,6 +351,12 @@ const CATEGORIES = [
   { id:'seizure', icon:'🧠', label:'Seizure' },
   { id:'respiratory', icon:'🫁', label:'Respiratory' },
   { id:'antibiotics', icon:'🧬', label:'Antibiotics' },
+  { id:'other', icon:'💊', label:'Other / GI / Fluids' },
+];
+const OP_CATEGORIES = [
+  { id:'all', icon:'⚡', label:'All Medications' },
+  { id:'antibiotics', icon:'🧬', label:'Antibiotics' },
+  { id:'respiratory', icon:'🫁', label:'Respiratory' },
   { id:'other', icon:'💊', label:'Other / GI / Fluids' },
 ];
 const CAT_LABELS = {

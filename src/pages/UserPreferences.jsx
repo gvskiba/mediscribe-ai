@@ -499,22 +499,7 @@ export default function UserAccount() {
             </button>
           </Card>
 
-          <Card title="USAGE STATS — THIS MONTH" icon="📊">
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10 }}>
-              {[
-                {label:"Notes Created",value:"47",  sub:"↑ 12% vs last mo", c:C.teal  },
-                {label:"Notes Signed", value:"44",  sub:"94% sign rate",    c:C.green },
-                {label:"AI Assists",   value:"189", sub:"Avg 4/note",       c:C.purple},
-                {label:"Avg Note Time",value:"6.2m",sub:"↓ 18% vs last mo",c:C.blue  },
-              ].map(s => (
-                <div key={s.label} style={{ background:C.edge, borderRadius:12, padding:"12px 10px", border:`1px solid ${C.border}`, textAlign:"center" }}>
-                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:22, fontWeight:700, color:s.c }}>{s.value}</div>
-                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.muted, marginTop:3 }}>{s.label}</div>
-                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.dim, marginTop:3 }}>{s.sub}</div>
-                </div>
-              ))}
-            </div>
-          </Card>
+
         </div>
       );
 

@@ -798,7 +798,7 @@ Write in formal clinical documentation style.`,
       `}</style>
 
       {/* ── Navbar ─────────────────────────────────────────────── */}
-      <nav style={{ height:52, background:"rgba(11,29,53,.97)", borderBottom:`1px solid ${C.border}`, backdropFilter:"blur(20px)", display:"flex", alignItems:"center", padding:"0 16px", gap:12, flexShrink:0, zIndex:100 }}>
+      <nav style={{ position:"fixed", top:0, left:72, right:0, height:52, background:"rgba(11,29,53,.97)", borderBottom:`1px solid ${C.border}`, backdropFilter:"blur(20px)", display:"flex", alignItems:"center", padding:"0 16px", gap:12, flexShrink:0, zIndex:100 }}>
         <span onClick={()=>navigate(createPageUrl("Home"))} style={{ fontFamily:"'Playfair Display',serif", fontSize:19, fontWeight:700, color:C.bright, cursor:"pointer", letterSpacing:"-.02em" }}>Notrya</span>
         <div style={{ width:1, height:16, background:C.border }} />
         <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:C.teal, letterSpacing:".12em" }}>NOTE CREATION</span>

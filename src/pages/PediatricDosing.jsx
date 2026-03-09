@@ -429,6 +429,72 @@ const DRUG_DATA = [
     concentration:0.8, concLabel:'4 mg ODT tablet / 4 mg/5 mL oral solution',
     note:'Weight-based: <15 kg = 2 mg; 15–30 kg = 4 mg; >30 kg = 4–8 mg. ODT dissolves under tongue — no water needed. Onset ~30 min.',
     warning:null },
+
+  // Additional outpatient antibiotics
+  { id:'nitrofurantoin-po', name:'Nitrofurantoin', indication:'Uncomplicated UTI', category:'antibiotics', setting:'outpatient', critical:false,
+    route:'PO', repeat:'q6h (macrocrystal) or q12h (monohydrate/macrocrystal)',
+    doses:[{ dosePerKg:1.75, unit:'mg', maxDose:100, label:'Per dose (macrocrystal)' }],
+    concentration:5, concLabel:'25 mg/5 mL suspension (5 mg/mL)',
+    note:'Macrocrystal: 5–7 mg/kg/day ÷ q6h (max 400 mg/day). Monohydrate: 100 mg BID. Take with food to reduce GI effects. Duration: 5–7 days uncomplicated UTI. Avoid <1 month age.',
+    warning:'Avoid in neonates <1 month (hemolytic anemia), eGFR <30. Pulmonary/hepatic reactions with prolonged use.' },
+
+  { id:'levofloxacin-po', name:'Levofloxacin', indication:'CAP / Complicated UTI (≥5 yr)', category:'antibiotics', setting:'outpatient', critical:false,
+    route:'PO', repeat:'Once daily',
+    doses:[{ dosePerKg:10, unit:'mg', maxDose:750, label:'Per dose' }],
+    concentration:25, concLabel:'25 mg/mL solution (lemon flavor)',
+    note:'≥5 years: 10 mg/kg/day (max 750 mg). CAP, sinusitis, complicated UTI. Reserve for when first-line agents are not appropriate due to resistance or allergy.',
+    warning:'Risk of tendinopathy and tendon rupture. Avoid in children <5 yr unless no alternative. QT prolongation.' },
+
+  { id:'doxycycline-po', name:'Doxycycline', indication:'Atypical Pneumonia / Lyme / RMSF (≥8 yr)', category:'antibiotics', setting:'outpatient', critical:false,
+    route:'PO', repeat:'q12h',
+    doses:[{ dosePerKg:2.2, unit:'mg', maxDose:100, label:'Per dose (loading & maintenance)' }],
+    concentration:10, concLabel:'25 mg/5 mL suspension (10 mg/mL — Vibramycin)',
+    note:'2.2 mg/kg/dose BID (max 100 mg/dose). CAP/atypical: 2.2 mg/kg BID × 5 days. Lyme/RMSF: 2.2 mg/kg BID × 10–21 days. Take with plenty of water.',
+    warning:'Generally reserved for ≥8 years (tooth discoloration). EXCEPTION: RMSF and Lyme in any age if no alternative — benefit outweighs risk.' },
+
+  // Additional respiratory outpatient
+  { id:'albuterol-po', name:'Albuterol (Inhaler/Neb)', indication:'Asthma / Bronchospasm', category:'respiratory', setting:'outpatient', critical:false,
+    route:'MDI + spacer / Nebulized', repeat:'q4–6h PRN',
+    doses:[{ dosePerKg:0.15, unit:'mg', maxDose:5, label:'Neb dose' }],
+    concentration:5, concLabel:'5 mg/mL (0.5%) or unit-dose 2.5 mg/3 mL',
+    note:'MDI + spacer: 2–4 puffs (90 mcg/puff) q4–6h PRN. Nebulizer: 0.15 mg/kg q4–6h (min 1.25 mg, max 5 mg). Dilute to 3 mL with NS for nebulization.',
+    warning:'Tachycardia, tremor. Increase frequency for acute exacerbation; if needing >2× weekly → escalate controller therapy.' },
+
+  { id:'montelukast-po', name:'Montelukast', indication:'Asthma / Allergic Rhinitis (Controller)', category:'respiratory', setting:'outpatient', critical:false,
+    route:'PO', repeat:'Once daily (evening)',
+    doses:[{ dosePerKg:0, unit:'mg', maxDose:10, fixedDose:true, label:'Age-based fixed dose' }],
+    concentration:1, concLabel:'4 mg chewable (2–5 yr) / 5 mg chewable (6–14 yr) / 10 mg tablet (≥15 yr)',
+    note:'Fixed dose: 6 mo–2 yr: 4 mg granules; 2–5 yr: 4 mg; 6–14 yr: 5 mg; ≥15 yr: 10 mg. Take in the evening. Adjunct controller for mild persistent asthma and seasonal allergic rhinitis.',
+    warning:'Neuropsychiatric side effects (agitation, nightmares, suicidal ideation — rare). Discuss risk with family.' },
+
+  // Additional OTC/other outpatient
+  { id:'polyethylene-glycol', name:'PEG 3350 (MiraLax)', indication:'Constipation / Fecal Impaction', category:'other', setting:'outpatient', critical:false,
+    route:'PO (in liquid)', repeat:'Once daily (maintenance) or divided (cleanout)',
+    doses:[{ dosePerKg:0.5, unit:'g', maxDose:17, label:'Daily maintenance dose' }],
+    concentration:1, concLabel:'17 g / cap (dissolved in 4–8 oz liquid)',
+    note:'Maintenance: 0.4–0.8 g/kg/day (max 17 g/day). Disimpaction: 1–1.5 g/kg/day × 3 days (max 100 g/day). Mix in water, juice, milk. Onset 24–96h.',
+    warning:'Not for <6 months. Electrolyte monitoring for high doses. Ensure adequate fluid intake.' },
+
+  { id:'ranitidine-omeprazole', name:'Omeprazole', indication:'GERD / Peptic Ulcer Disease', category:'other', setting:'outpatient', critical:false,
+    route:'PO', repeat:'Once daily (30 min before meal)',
+    doses:[{ dosePerKg:1, unit:'mg', maxDose:20, label:'Daily dose' }],
+    concentration:2, concLabel:'2 mg/mL suspension / 10–20 mg capsules',
+    note:'1 mg/kg/day once daily (max 20 mg/day). 1–5 yr: 5–10 mg; 6–16 yr: 10–20 mg. Give 30 min before first meal. EGD confirmation preferred for >8 week use.',
+    warning:'Long-term use: risk of hypomagnesemia, B12 deficiency, C. diff. Taper if long-term use to avoid rebound acid hypersecretion.' },
+
+  { id:'hydroxyzine-po', name:'Hydroxyzine', indication:'Anxiety / Urticaria / Pruritus', category:'other', setting:'outpatient', critical:false,
+    route:'PO / IM', repeat:'q6h PRN',
+    doses:[{ dosePerKg:0.6, unit:'mg', maxDose:50, label:'Per dose' }],
+    concentration:2, concLabel:'10 mg/5 mL syrup (2 mg/mL)',
+    note:'0.6 mg/kg/dose q6h PRN (max 50 mg/dose; max 2 mg/kg/day). Used for acute anxiety, urticaria, atopic dermatitis pruritus, and procedural anxiolysis.',
+    warning:'Significant sedation. CNS depression with opioids/benzodiazepines. QT prolongation — ECG if cardiac concerns.' },
+
+  { id:'oral-rehydration', name:'Oral Rehydration Solution', indication:'Mild-Moderate Dehydration / Gastroenteritis', category:'other', setting:'outpatient', critical:false,
+    route:'PO (small sips)', repeat:'Continuously over 4h rehydration phase',
+    doses:[{ dosePerKg:50, unit:'mL', maxDose:2000, label:'Mild dehydration (mL total)' }],
+    concentration:1, concLabel:'Pedialyte, Enfalyte — 45–75 mEq/L Na+',
+    note:'Mild: 50 mL/kg over 4h. Moderate: 100 mL/kg over 4h. Offer 5–10 mL q1–2 min via syringe. Avoid sports drinks (high sugar, low Na+). After rehydration, resume age-appropriate diet.',
+    warning:'Failure: projectile vomiting, altered mental status, severe dehydration → switch to IV fluids. Avoid plain water (hyponatremia risk in infants).' },
 ];
 
 // ── Broselow Bands ──────────────────────────────────────────────────────────

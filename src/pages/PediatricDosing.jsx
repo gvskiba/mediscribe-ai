@@ -712,6 +712,32 @@ export default function PediatricDosing() {
 
   // Group cards by category if showing all
   const renderCards = () => {
+    // Search results view
+    if (isSearching) {
+      if (filtered.length === 0) {
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 300, gap: 14, textAlign: 'center', opacity: .6 }}>
+            <div style={{ fontSize: 48 }}>🔍</div>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, color: T.dim }}>No medications found</div>
+            <div style={{ fontSize: 13, color: T.muted, maxWidth: 320 }}>Try searching by drug name (e.g. "amoxicillin") or a condition (e.g. "ear infection", "seizure", "fever").</div>
+          </div>
+        );
+      }
+      return (
+        <div>
+          <div style={{ marginBottom: 16, padding: '10px 14px', background: 'rgba(0,212,188,.07)', border: '1px solid rgba(0,212,188,.2)', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 14 }}>🔍</span>
+            <span style={{ fontSize: 13, color: T.teal, fontWeight: 700 }}>Results for "{searchQuery}"</span>
+            <span style={{ fontSize: 11.5, color: T.dim, marginLeft: 4 }}>— {filtered.length} medication{filtered.length !== 1 ? 's' : ''} across all settings</span>
+            <button onClick={() => setSearchQuery('')} style={{ marginLeft: 'auto', background: 'none', border: `1px solid ${T.border}`, borderRadius: 6, color: T.dim, cursor: 'pointer', padding: '3px 10px', fontSize: 11, fontFamily: "'DM Sans', sans-serif" }}>Clear search</button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
+            {filtered.map(d => <DrugCard key={d.id} drug={d} weight={weight} onLog={openLog} />)}
+          </div>
+        </div>
+      );
+    }
+
     if (activeCategory !== 'all') {
       return <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
         {filtered.map(d => <DrugCard key={d.id} drug={d} weight={weight} onLog={openLog} />)}

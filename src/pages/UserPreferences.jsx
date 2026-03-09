@@ -192,15 +192,7 @@ export default function UserAccount() {
 
   const activityIcon = { sign:"✍️", create:"📝", lab:"🧪", med:"💊", export:"📤", login:"🔐" };
 
-  // ── Integrations (mock — replace with real connector status) ──
-  const INTEGRATIONS = [
-    { name:"Epic EHR",           status:"connected",    icon:"🏥", note:"Bidirectional sync enabled"         },
-    { name:"Quest Diagnostics",  status:"connected",    icon:"🧪", note:"Lab results auto-import"            },
-    { name:"Radiology PACS",     status:"pending",      icon:"🔬", note:"Awaiting admin approval"            },
-    { name:"Pharmacy Network",   status:"disconnected", icon:"💊", note:"Not configured"                     },
-    { name:"Billing / RCM",      status:"connected",    icon:"💳", note:"ICD-10 auto-coding active"          },
-    { name:"HL7 FHIR Gateway",   status:"disconnected", icon:"🔗", note:"Contact IT to configure"            },
-  ];
+  const INTEGRATIONS = [];
 
   const statusColor = { connected:C.green, pending:C.amber, disconnected:C.muted };
   const statusLabel = { connected:"CONNECTED", pending:"PENDING", disconnected:"DISCONNECTED" };

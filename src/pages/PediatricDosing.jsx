@@ -233,6 +233,111 @@ const DRUG_DATA = [
     note:'D10W (preferred): 5 mL/kg. D25W: 2 mL/kg (>1 month). D50W: 1 mL/kg (adolescents). Neonates: D10W 2 mL/kg.',
     warning:'Neonates: D10W only (D50/D25 hyperosmolar). Use D25 or D50 diluted for infants/children only.' },
 
+  // ── ADDITIONAL ER / INPATIENT MEDICATIONS ────────────────────────────────
+  { id:'naloxone', name:'Naloxone', indication:'Opioid Reversal', category:'other', setting:'er', critical:true,
+    route:'IV / IO / IM / IN', repeat:'q2–3 min PRN (re-sedation risk)',
+    doses:[{ dosePerKg:0.01, unit:'mg', maxDose:0.4, label:'Standard dose' }],
+    concentration:0.4, concLabel:'0.4 mg/mL',
+    note:'IN: 0.1 mg/kg atomized (max 2 mg per naris). Short t1/2 (~1h) — re-sedation likely with long-acting opioids. May need repeat doses or drip. Neonates: 0.01 mg/kg.',
+    warning:'Precipitates acute withdrawal in opioid-dependent patients. Titrate to adequate ventilation — NOT full reversal.' },
+
+  { id:'etomidate', name:'Etomidate', indication:'RSI — Induction Agent', category:'rsi', setting:'er', critical:false,
+    route:'IV (rapid push)', repeat:'Single dose only',
+    doses:[{ dosePerKg:0.3, unit:'mg', maxDose:20, label:'Induction dose' }],
+    concentration:2, concLabel:'2 mg/mL',
+    note:'Onset 30–60 sec, duration 5–10 min. Excellent hemodynamic stability vs ketamine/propofol. Single dose only — adrenal suppression occurs with repeat dosing.',
+    warning:'Single use only for RSI. Adrenal suppression with repeat doses. Not for procedural sedation.' },
+
+  { id:'propofol', name:'Propofol', indication:'Procedural Sedation / Induction', category:'sedation', setting:'er', critical:false,
+    route:'IV (slow push, titrate)', repeat:'0.5 mg/kg incremental boluses q30–60 sec',
+    doses:[
+      { dosePerKg:1.0, unit:'mg', maxDose:200, label:'Initial dose' },
+      { dosePerKg:0.5, unit:'mg', maxDose:50, label:'Incremental bolus' }
+    ],
+    concentration:10, concLabel:'10 mg/mL (1%)',
+    note:'Titrate with 0.5 mg/kg incremental boluses q30–60 sec. Onset 30 sec. Monitor airway closely — apnea common. Propofol infusion syndrome risk >48h.',
+    warning:'Causes hypotension and apnea — airway management must be immediately available. CONTRAINDICATED in egg/soy allergy. Painful on injection.' },
+
+  { id:'dexmedetomidine', name:'Dexmedetomidine', indication:'Procedural / ICU Sedation', category:'sedation', setting:'er', critical:false,
+    route:'IV (loading dose over 10 min)', repeat:'Then 0.2–0.7 mcg/kg/hr infusion',
+    doses:[{ dosePerKg:1, unit:'mcg', maxDose:100, label:'Loading dose' }],
+    concentration:4, concLabel:'4 mcg/mL (after dilution)',
+    note:'Loading: 1 mcg/kg over 10 min (0.5 mcg/kg if hemodynamically unstable). Maintenance: 0.2–0.7 mcg/kg/hr. Alpha-2 agonist — minimal respiratory depression.',
+    warning:'Bradycardia and hypotension common — avoid with beta-blockers. Loading dose may cause transient hypertension. Have atropine available.' },
+
+  { id:'valproate-iv', name:'Valproate (IV)', indication:'Status Epilepticus (2nd–3rd line)', category:'seizure', setting:'er', critical:false,
+    route:'IV (infuse over 5–10 min)', repeat:'Once; then maintenance',
+    doses:[{ dosePerKg:30, unit:'mg', maxDose:3000, label:'Loading dose' }],
+    concentration:100, concLabel:'100 mg/mL (dilute to 5 mg/mL)',
+    note:'20–40 mg/kg IV (max 3g). Infuse at max 6 mg/kg/min. Dilute 1:20 in NS or D5W. Alternative to fosphenytoin/levetiracetam for refractory SE.',
+    warning:'Avoid in mitochondrial disease, hepatic failure, urea cycle disorders. Hyperammonemia and hepatotoxicity risk.' },
+
+  { id:'methylprednisolone', name:'Methylprednisolone', indication:'Severe Asthma / Anaphylaxis Adjunct', category:'respiratory', setting:'er', critical:false,
+    route:'IV / IM', repeat:'q6h (asthma)',
+    doses:[{ dosePerKg:1, unit:'mg', maxDose:60, label:'Per dose' }],
+    concentration:62.5, concLabel:'62.5 mg/mL (Solu-Medrol reconstituted)',
+    note:'Asthma: 1–2 mg/kg/dose IV q6h (max 60 mg/dose). Anaphylaxis: 1–2 mg/kg IV × 1 (adjunct to epi only). Onset of effect delayed 4–6h.',
+    warning:'Adjunct for anaphylaxis only — epinephrine is first-line. Steroid effects delayed. Monitor glucose.' },
+
+  { id:'terbutaline', name:'Terbutaline', indication:'Severe Refractory Asthma', category:'respiratory', setting:'er', critical:false,
+    route:'SQ / IV', repeat:'SQ q15–20 min ×3',
+    doses:[{ dosePerKg:0.01, unit:'mg', maxDose:0.4, label:'SQ dose' }],
+    concentration:1, concLabel:'1 mg/mL',
+    note:'SQ: 0.01 mg/kg q15–20 min × 3 (max 0.4 mg/dose). IV: 2–10 mcg/kg load over 10 min, then infusion 0.1–10 mcg/kg/min. For asthma refractory to albuterol/magnesium.',
+    warning:'Tachycardia and hypokalemia common. Monitor ECG and electrolytes during IV use.' },
+
+  { id:'ketorolac', name:'Ketorolac', indication:'Moderate-Severe Pain (NSAID)', category:'sedation', setting:'er', critical:false,
+    route:'IV / IM', repeat:'q6h (max 5 days)',
+    doses:[{ dosePerKg:0.5, unit:'mg', maxDose:30, label:'Per dose' }],
+    concentration:15, concLabel:'15 mg/mL',
+    note:'0.5 mg/kg IV/IM q6h (max 30 mg/dose). Opioid-sparing analgesic. Infuse IV over 15+ min. Use ≥6 months only. Short courses (max 5 days) — no oral continuation in pediatrics.',
+    warning:'Avoid <6 months, GI bleed, renal impairment, platelet dysfunction, dehydration. Max 5-day course.' },
+
+  { id:'pipetazo', name:'Piperacillin-Tazobactam', indication:'Broad Spectrum / Febrile Neutropenia', category:'antibiotics', setting:'er', critical:false,
+    route:'IV (30 min or extended 4h infusion)', repeat:'q6–8h',
+    doses:[{ dosePerKg:100, unit:'mg', maxDose:4000, label:'Pip component per dose' }],
+    concentration:200, concLabel:'~200 mg/mL pip component (reconstituted)',
+    note:'100 mg/kg/dose (pip) q6–8h (max 4g/dose). Extended 4h infusion preferred for severe infections. Covers gram-negatives, anaerobes, Pseudomonas.',
+    warning:'Do NOT mix with lactated Ringer\'s. Separate IV line from aminoglycosides.' },
+
+  { id:'gentamicin', name:'Gentamicin', indication:'Gram-negative Sepsis / Neonatal Sepsis', category:'antibiotics', setting:'er', critical:false,
+    route:'IV (infuse over 30 min)', repeat:'Once daily (extended interval)',
+    doses:[{ dosePerKg:7, unit:'mg', maxDose:500, label:'Extended interval dose' }],
+    concentration:10, concLabel:'10 mg/mL (after dilution)',
+    note:'Extended interval: 7–7.5 mg/kg q24h (≥1 month). Neonates: 4–5 mg/kg q36–48h based on GA/PNA. Synergy with ampicillin for GBS/Listeria.',
+    warning:'Nephrotoxic and ototoxic. Monitor renal function. Avoid concurrent nephrotoxins.' },
+
+  { id:'clindamycin-iv', name:'Clindamycin (IV)', indication:'MRSA SSTI / Anaerobic Infections', category:'antibiotics', setting:'er', critical:false,
+    route:'IV (infuse over 30–60 min)', repeat:'q6–8h',
+    doses:[{ dosePerKg:10, unit:'mg', maxDose:600, label:'Per dose' }],
+    concentration:6, concLabel:'6 mg/mL (after dilution)',
+    note:'25–40 mg/kg/day ÷ q6–8h IV (max 4800 mg/day). MRSA SSTI, bone/joint infections, anaerobic infections. Confirm D-zone test negative before use.',
+    warning:'C. diff colitis risk. Infuse over ≥30 min — rapid infusion causes hypotension and cardiac arrest.' },
+
+  { id:'metronidazole-iv', name:'Metronidazole (IV)', indication:'Anaerobic / Intra-abdominal / C. diff', category:'antibiotics', setting:'er', critical:false,
+    route:'IV (infuse over 60 min)', repeat:'q6–8h',
+    doses:[
+      { dosePerKg:15, unit:'mg', maxDose:1000, label:'Loading dose' },
+      { dosePerKg:7.5, unit:'mg', maxDose:500, label:'Maintenance (q6h)' }
+    ],
+    concentration:5, concLabel:'5 mg/mL (RTU)',
+    note:'Load: 15 mg/kg × 1 (max 1g). Maintenance: 7.5 mg/kg q6h (max 500 mg). Anaerobic/intra-abdominal coverage. Contains benzyl alcohol — caution in neonates.',
+    warning:'Disulfiram-like reaction with alcohol. Peripheral neuropathy with prolonged use. Caution in neonates (benzyl alcohol).' },
+
+  { id:'flumazenil', name:'Flumazenil', indication:'Benzodiazepine Reversal', category:'other', setting:'er', critical:true,
+    route:'IV (slow push)', repeat:'q1 min; max total 1 mg',
+    doses:[{ dosePerKg:0.01, unit:'mg', maxDose:0.2, label:'Per dose' }],
+    concentration:0.1, concLabel:'0.1 mg/mL',
+    note:'0.01 mg/kg/dose (max 0.2 mg) IV q1 min until adequate response (max total 1 mg). Short t1/2 ~1h — re-sedation highly likely with long-acting BZDs.',
+    warning:'Precipitates seizures in BZD-dependent patients. NEVER use in mixed TCA overdose. Re-sedation common — monitor closely for ≥2h.' },
+
+  { id:'glucagon', name:'Glucagon', indication:'Hypoglycemia / Beta-Blocker & CCB OD', category:'other', setting:'er', critical:true,
+    route:'IM / IV / SC', repeat:'May repeat in 10–15 min',
+    doses:[{ dosePerKg:0.03, unit:'mg', maxDose:1, label:'Hypoglycemia' }],
+    concentration:1, concLabel:'1 mg/mL (reconstituted)',
+    note:'Hypoglycemia: 0.02–0.03 mg/kg IM. <25 kg: 0.5 mg; ≥25 kg: 1 mg. Beta-blocker/CCB OD: 0.05 mg/kg bolus (max 5 mg), then infusion 0.07 mg/kg/hr.',
+    warning:'Vomiting common — turn patient lateral to prevent aspiration. Short action; start IV dextrose simultaneously.' },
+
   // ── OUTPATIENT / PO MEDICATIONS ──────────────────────────────────────────
   { id:'amox-po', name:'Amoxicillin', indication:'AOM / Pharyngitis / Mild CAP', category:'antibiotics', setting:'outpatient', critical:false,
     route:'PO', repeat:'q8–12h × 5–10 days',

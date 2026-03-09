@@ -160,7 +160,26 @@ export default function UserAccount() {
       lastName:  currentUser.last_name  || prev.lastName,
       email:     currentUser.email      || prev.email,
     }));
+    if (currentUser.profile_photo) setProfilePhoto(currentUser.profile_photo);
   }, [currentUser?.id]);
+
+  // ── Upload photo handler ───────────────────────────────────────
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPhoto(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setProfilePhoto(file_url);
+      await base44.auth.updateMe({ profile_photo: file_url });
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+      toast.success("Profile photo updated");
+    } catch (err) {
+      toast.error("Photo upload failed: " + err.message);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   // ── Save profile mutation ──────────────────────────────────────
   const saveProfileMutation = useMutation({

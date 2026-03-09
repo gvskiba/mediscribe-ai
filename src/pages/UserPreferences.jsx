@@ -477,19 +477,19 @@ export default function UserAccount() {
       case "activity": return (
         <div style={{ maxWidth:800, margin:"0 auto", padding:"20px", display:"flex", flexDirection:"column", gap:14 }}>
           <Card title="RECENT ACTIVITY" icon="📋" badge="LAST 24 HR" badgeColor={C.blue}>
-            {ACTIVITY.map((a, i) => (
-              <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 0", borderBottom:i < ACTIVITY.length - 1 ? `1px solid ${C.border}` : "none" }}>
-                <div style={{ width:32, height:32, borderRadius:9, background:C.edge, border:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, flexShrink:0 }}>{activityIcon[a.type]}</div>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:12, fontWeight:500, color:C.bright }}>{a.action}</div>
-                  {a.patient !== "—" && <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.dim, marginTop:1 }}>Patient: {a.patient}</div>}
+            {ACTIVITY.length === 0
+              ? <div style={{ fontSize:12, color:C.dim, padding:"10px 0" }}>No recent activity to display.</div>
+              : ACTIVITY.map((a, i) => (
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 0", borderBottom:i < ACTIVITY.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                  <div style={{ width:32, height:32, borderRadius:9, background:C.edge, border:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, flexShrink:0 }}>{activityIcon[a.type]}</div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:12, fontWeight:500, color:C.bright }}>{a.action}</div>
+                    {a.patient !== "—" && <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.dim, marginTop:1 }}>Patient: {a.patient}</div>}
+                  </div>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.muted, flexShrink:0 }}>{a.time}</div>
                 </div>
-                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.muted, flexShrink:0 }}>{a.time}</div>
-              </div>
-            ))}
-            <button style={{ marginTop:10, padding:"7px 14px", borderRadius:9, background:C.edge, border:`1px solid ${C.border}`, color:C.dim, fontSize:12, cursor:"pointer" }}>
-              Load More →
-            </button>
+              ))
+            }
           </Card>
 
 

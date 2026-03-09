@@ -734,7 +734,21 @@ export default function PediatricDosing() {
           </div>
         </div>
 
-        <span style={{ marginLeft: 'auto', background: 'rgba(0,212,188,.1)', border: '1px solid rgba(0,212,188,.25)', borderRadius: 20, padding: '6px 14px', fontSize: 11.5, fontWeight: 700, color: T.teal }}>
+        {/* Setting Mode Toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(22,45,79,.6)', border: `1px solid ${T.border}`, borderRadius: 10, padding: 3, marginLeft: 'auto' }}>
+          <button
+            onClick={() => { setSettingMode('er'); setActiveCategory('all'); }}
+            style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', background: settingMode === 'er' ? 'linear-gradient(135deg,#ff5c6c,#c94455)' : 'transparent', color: settingMode === 'er' ? '#fff' : T.dim, fontFamily: "'DM Sans', sans-serif", transition: 'all .15s' }}>
+            🏥 ER / Inpatient
+          </button>
+          <button
+            onClick={() => { setSettingMode('outpatient'); setActiveCategory('all'); }}
+            style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', background: settingMode === 'outpatient' ? 'linear-gradient(135deg,#2ecc71,#1aa85a)' : 'transparent', color: settingMode === 'outpatient' ? '#fff' : T.dim, fontFamily: "'DM Sans', sans-serif", transition: 'all .15s' }}>
+            🏠 Outpatient / PO
+          </button>
+        </div>
+
+        <span style={{ background: 'rgba(0,212,188,.1)', border: '1px solid rgba(0,212,188,.25)', borderRadius: 20, padding: '6px 14px', fontSize: 11.5, fontWeight: 700, color: T.teal }}>
           {filtered.length} medication{filtered.length !== 1 ? 's' : ''}
         </span>
       </div>

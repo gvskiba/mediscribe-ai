@@ -406,7 +406,7 @@ export default function Home() {
       </nav>
 
       {/* Hero */}
-      <div style={{ position: "relative", zIndex: 1, padding: "52px 28px 36px", display: "flex", alignItems: "flex-start", gap: 48 }}>
+      <div style={{ position: "relative", zIndex: 1, padding: "52px 28px 36px", maxWidth: 1320, margin: "0 auto", display: "flex", alignItems: "flex-start", gap: 48 }}>
         <div style={{ flex: 1 }}>
           <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, color: COLORS.teal, letterSpacing: "0.14em", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ width: 24, height: 1, background: COLORS.teal }} />

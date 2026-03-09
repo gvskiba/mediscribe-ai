@@ -229,7 +229,28 @@ export default function UserAccount() {
           {/* Avatar + name hero */}
           <Card title="PROFILE OVERVIEW" icon="👤">
             <div style={{ display:"flex", alignItems:"center", gap:18, marginBottom:18 }}>
-              <Avatar name={fullName} size={80} color={C.teal} />
+              {/* Clickable avatar / photo upload */}
+              <div
+                onClick={() => photoInputRef.current?.click()}
+                style={{ position:"relative", width:80, height:80, borderRadius:"50%", cursor:"pointer", flexShrink:0 }}
+                title="Click to change photo"
+              >
+                {profilePhoto ? (
+                  <img src={profilePhoto} alt="Profile" style={{ width:80, height:80, borderRadius:"50%", objectFit:"cover", border:`2px solid ${C.teal}55` }} />
+                ) : (
+                  <Avatar name={fullName} size={80} color={C.teal} />
+                )}
+                <div style={{ position:"absolute", inset:0, borderRadius:"50%", background:"rgba(0,0,0,.45)", display:"flex", alignItems:"center", justifyContent:"center", opacity:uploadingPhoto ? 1 : 0, transition:"opacity .2s" }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = "1"}
+                  onMouseLeave={e => !uploadingPhoto && (e.currentTarget.style.opacity = "0")}
+                >
+                  {uploadingPhoto
+                    ? <div style={{ width:16, height:16, border:`2px solid ${C.teal}`, borderTopColor:"transparent", borderRadius:"50%", animation:"spin .6s linear infinite" }} />
+                    : <span style={{ fontSize:20 }}>📷</span>
+                  }
+                </div>
+                <input ref={photoInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display:"none" }} />
+              </div>
               <div>
                 <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:700, color:C.bright, letterSpacing:"-.02em" }}>{fullName || "Your Name"}</div>
                 <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:C.dim, marginTop:3 }}>{profile.role} · {profile.specialty}</div>

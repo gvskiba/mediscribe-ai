@@ -84,7 +84,6 @@ import Procedures from './pages/Procedures';
 import Search from './pages/Search';
 import Shift from './pages/Shift';
 import ShiftHours from './pages/ShiftHours';
-import SmartTemplates from './pages/SmartTemplates';
 import Snippets from './pages/Snippets';
 import SoapCompiler from './pages/SoapCompiler';
 import SoapCompilerStandalone from './pages/SoapCompilerStandalone';
@@ -131,7 +130,6 @@ export const PAGES = {
     "Search": Search,
     "Shift": Shift,
     "ShiftHours": ShiftHours,
-    "SmartTemplates": SmartTemplates,
     "Snippets": Snippets,
     "SoapCompiler": SoapCompiler,
     "SoapCompilerStandalone": SoapCompilerStandalone,

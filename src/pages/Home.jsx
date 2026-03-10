@@ -167,6 +167,151 @@ const REFERENCE_MODULES = [
   },
 ];
 
+// Active Note Widget Component
+function ActiveNoteWidget({ navigate }) {
+  const [selectedNoteId, setSelectedNoteId] = useState(null);
+
+  const { data: recentNotes = [] } = useQuery({
+    queryKey: ["recentNotesHome"],
+    queryFn: async () => {
+      const notes = await base44.entities.ClinicalNote.list("-updated_date", 10);
+      return notes;
+    },
+  });
+
+  const SECTIONS = [
+    { id: "patient_intake", label: "Subjective", icon: "📝" },
+    { id: "physical_exam", label: "Physical Exam", icon: "🩺" },
+    { id: "labs_imaging", label: "Labs & Imaging", icon: "🧪" },
+    { id: "differential", label: "Diagnoses", icon: "⚕️" },
+    { id: "treatment_plan", label: "Treatment Plan", icon: "💊" },
+    { id: "disposition_plan", label: "Disposition", icon: "🚑" },
+  ];
+
+  return (
+    <div style={{ position: "relative", zIndex: 1, padding: "0 28px 24px" }}>
+      <div style={{ 
+        background: COLORS.panel, 
+        border: `1px solid ${COLORS.border}`, 
+        borderRadius: 18, 
+        padding: "20px 24px",
+        boxShadow: `0 4px 16px ${COLORS.teal}08`
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+          <div style={{ 
+            width: 40, 
+            height: 40, 
+            borderRadius: 10, 
+            background: `linear-gradient(135deg, ${COLORS.teal}20, ${COLORS.blue}15)`,
+            border: `1px solid ${COLORS.teal}40`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 18
+          }}>
+            📋
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ 
+              fontFamily: "'Playfair Display', serif", 
+              fontSize: 18, 
+              fontWeight: 700, 
+              color: COLORS.bright,
+              marginBottom: 2
+            }}>
+              Active Note
+            </div>
+            <div style={{ fontSize: 12, color: COLORS.dim }}>
+              Select a note and jump to any section
+            </div>
+          </div>
+        </div>
+
+        <select
+          value={selectedNoteId || ""}
+          onChange={(e) => setSelectedNoteId(e.target.value || null)}
+          style={{
+            width: "100%",
+            background: COLORS.edge,
+            border: `1px solid ${COLORS.border}`,
+            borderRadius: 10,
+            padding: "10px 14px",
+            color: COLORS.text,
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: "pointer",
+            outline: "none",
+            marginBottom: 16
+          }}
+        >
+          <option value="">Select a clinical note...</option>
+          {recentNotes.map(note => (
+            <option key={note.id} value={note.id}>
+              {note.patient_name || "Unnamed Patient"} — {note.chief_complaint || "No CC"} ({note.date_of_visit || "No date"})
+            </option>
+          ))}
+        </select>
+
+        {selectedNoteId && (
+          <div style={{ 
+            display: "grid", 
+            gridTemplateColumns: "repeat(3, 1fr)", 
+            gap: 8,
+            animation: "fadeUp 0.3s ease"
+          }}>
+            {SECTIONS.map(section => (
+              <button
+                key={section.id}
+                onClick={() => navigate(`${createPageUrl("ClinicalNoteStudio")}?noteId=${selectedNoteId}&tab=${section.id}`)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "10px 14px",
+                  borderRadius: 10,
+                  background: COLORS.edge,
+                  border: `1px solid ${COLORS.border}`,
+                  color: COLORS.text,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = `${COLORS.teal}10`;
+                  e.currentTarget.style.borderColor = `${COLORS.teal}50`;
+                  e.currentTarget.style.color = COLORS.teal;
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = COLORS.edge;
+                  e.currentTarget.style.borderColor = COLORS.border;
+                  e.currentTarget.style.color = COLORS.text;
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                <span style={{ fontSize: 16 }}>{section.icon}</span>
+                <span>{section.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {!selectedNoteId && (
+          <div style={{ 
+            textAlign: "center", 
+            padding: "20px", 
+            color: COLORS.muted,
+            fontSize: 12
+          }}>
+            Select a note above to access quick section navigation
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ModuleCard({ module, navigate }) {
   return (
     <button

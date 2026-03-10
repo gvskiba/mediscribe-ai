@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { createPageUrl } from "@/utils";
+import { useQuery } from "@tanstack/react-query";
 
 const COLORS = {
   navy: "#050f1e",
@@ -475,6 +476,9 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Active Note Widget */}
+      <ActiveNoteWidget navigate={navigate} />
 
       {/* Quick Launch */}
       <div style={{ position: "relative", zIndex: 1, padding: "0 28px 24px" }}>

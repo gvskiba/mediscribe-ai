@@ -111,6 +111,7 @@ export default function ClinicalNoteStudio() {
   const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(window.location.search);
   const noteId = urlParams.get("noteId") || urlParams.get("id");
+  const urlTab = urlParams.get("tab");
 
   // Mode: "studio" = structured input, "notes" = NoteDetail tab view
   // Default to studio; switch to notes only after note has loaded
@@ -132,7 +133,7 @@ export default function ClinicalNoteStudio() {
   const [saving, setSaving] = useState(false);
 
   // NoteDetail state
-  const [activeTab, setActiveTab] = useState("patient_intake");
+  const [activeTab, setActiveTab] = useState(urlTab || "patient_intake");
   const [tabGroups, setTabGroups] = useState(TAB_GROUPS);
   const [customizing, setCustomizing] = useState(false);
   const [showCreateTabDialog, setShowCreateTabDialog] = useState(false);

@@ -462,8 +462,32 @@ export default function Home() {
     .join("")
     .toUpperCase() || "—";
 
+  const NAV_ITEMS = [
+    { section: "CORE", items: [
+      { icon: "🏠", label: "Home", page: "Home" },
+      { icon: "📊", label: "Dashboard", page: "Dashboard" },
+      { icon: "🏥", label: "Shift", page: "Shift" },
+      { icon: "👤", label: "Patients", page: "PatientDashboard" },
+    ]},
+    { section: "DOCUMENTATION", items: [
+      { icon: "🎙️", label: "Transcription", page: "LiveTranscription" },
+      { icon: "📋", label: "SOAP", page: "SoapCompiler" },
+      { icon: "✨", label: "Note Studio", page: "ClinicalNoteStudio" },
+      { icon: "📄", label: "Notes", page: "NotesLibrary" },
+      { icon: "📑", label: "Orders", page: "OrderSetBuilder" },
+      { icon: "🚪", label: "Discharge", page: "DischargePlanning" },
+    ]},
+    { section: "REFERENCE", items: [
+      { icon: "📚", label: "Guidelines", page: "Guidelines" },
+      { icon: "💊", label: "Drugs", page: "DrugReference" },
+      { icon: "🦠", label: "Antibiotics", page: "AntibioticStewardship" },
+      { icon: "🧮", label: "Calculators", page: "Calculators" },
+      { icon: "🧠", label: "Knowledge", page: "MedicalKnowledgeBase" },
+    ]},
+  ];
+
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", background: COLORS.navy, minHeight: "100vh", color: COLORS.text, overflowX: "hidden" }}>
+    <div style={{ fontFamily: "'DM Sans', sans-serif", background: COLORS.navy, minHeight: "100vh", color: COLORS.text, overflowX: "hidden", display: "flex" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
         * { box-sizing: border-box; }
@@ -475,7 +499,100 @@ export default function Home() {
         @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
       `}</style>
 
-      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", background: `radial-gradient(ellipse 70% 50% at 50% 0%, ${COLORS.teal}14 0%, transparent 70%)` }} />
+      {/* Sidebar */}
+      <div style={{ 
+        width: 72, 
+        background: "linear-gradient(180deg, #0a1628 0%, #050f1e 100%)", 
+        borderRight: `1px solid ${COLORS.border}`,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        padding: "20px 0",
+        position: "fixed",
+        left: 0,
+        top: 0,
+        bottom: 0,
+        zIndex: 100,
+        overflowY: "auto"
+      }}>
+        {/* Logo */}
+        <div style={{
+          width: 44,
+          height: 44,
+          borderRadius: 12,
+          background: COLORS.bright,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: "'Playfair Display', serif",
+          fontSize: 20,
+          fontWeight: 900,
+          color: COLORS.navy,
+          marginBottom: 24
+        }}>
+          N.
+        </div>
+
+        {/* Nav sections */}
+        {NAV_ITEMS.map((section, idx) => (
+          <div key={idx} style={{ width: "100%", marginBottom: 16 }}>
+            <div style={{ 
+              fontFamily: "'JetBrains Mono', monospace", 
+              fontSize: 7, 
+              fontWeight: 700, 
+              color: COLORS.muted, 
+              letterSpacing: "0.1em",
+              textAlign: "center",
+              marginBottom: 8,
+              padding: "0 4px"
+            }}>
+              {section.section}
+            </div>
+            {section.items.map(item => (
+              <button
+                key={item.page}
+                onClick={() => navigate(createPageUrl(item.page))}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: "10px 8px",
+                  background: "transparent",
+                  border: "none",
+                  color: COLORS.dim,
+                  fontSize: 24,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  position: "relative"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = `${COLORS.teal}12`;
+                  e.currentTarget.style.color = COLORS.teal;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.color = COLORS.dim;
+                }}
+              >
+                <span>{item.icon}</span>
+                <span style={{ 
+                  fontSize: 9, 
+                  fontWeight: 500, 
+                  fontFamily: "'DM Sans', sans-serif",
+                  textAlign: "center"
+                }}>
+                  {item.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      <div style={{ marginLeft: 72, flex: 1, position: "relative" }}>
+        <div style={{ position: "fixed", inset: 0, left: 72, zIndex: 0, pointerEvents: "none", background: `radial-gradient(ellipse 70% 50% at 50% 0%, ${COLORS.teal}14 0%, transparent 70%)` }} />
 
       {/* Navbar */}
       <nav
@@ -736,6 +853,7 @@ export default function Home() {
            </a>
          </div>
       </footer>
-    </div>
-  );
-}
+      </div>
+      </div>
+      );
+      }

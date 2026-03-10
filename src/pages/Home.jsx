@@ -477,6 +477,11 @@ export default function Home() {
       { icon: "📑", label: "Orders", page: "OrderSetBuilder" },
       { icon: "🚪", label: "Discharge", page: "DischargePlanning" },
     ]},
+    { section: "RESULTS", items: [
+      { icon: "🧪", label: "Labs", page: "Results" },
+      { icon: "🔬", label: "Imaging", page: "Results" },
+      { icon: "❤️", label: "EKG", page: "Results" },
+    ]},
     { section: "REFERENCE", items: [
       { icon: "📚", label: "Guidelines", page: "Guidelines" },
       { icon: "💊", label: "Drugs", page: "DrugReference" },

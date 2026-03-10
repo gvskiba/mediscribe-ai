@@ -36,6 +36,7 @@ const navSections = [
                 { name: "SOAP Compiler (Standalone)", icon: FileText, page: "SoapCompilerStandalone" },
               { name: "Clinical Note Studio", icon: FileText, page: "ClinicalNoteStudio" },
                 { name: "My Notes", icon: FileText, page: "NotesLibrary" },
+                { name: "Results", icon: Activity, page: "Results" },
                 { name: "Discharge Planning", icon: FileText, page: "DischargePlanning" },
               { name: "Order Set Builder", icon: FileText, page: "OrderSetBuilder" },
               { name: "Billing Assistant", icon: FileText, page: "BillingDashboard" },

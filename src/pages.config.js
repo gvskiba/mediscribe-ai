@@ -89,6 +89,7 @@ import SoapCompiler from './pages/SoapCompiler';
 import SoapCompilerStandalone from './pages/SoapCompilerStandalone';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
+import Results from './pages/Results';
 import __Layout from './Layout.jsx';
 
 
@@ -135,6 +136,7 @@ export const PAGES = {
     "SoapCompilerStandalone": SoapCompilerStandalone,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
+    "Results": Results,
 }
 
 export const pagesConfig = {

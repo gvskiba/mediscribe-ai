@@ -400,18 +400,9 @@ Write in formal clinical documentation style.`,
         </div>
 
         {/* Three main mode cards */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16, marginBottom:28 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:16, marginBottom:28 }}>
           {[
-            {
-              mode:"templates",
-              icon:"📋",
-              color:C.teal,
-              title:"Templates",
-              subtitle:"Start from a proven structure",
-              description:"Browse 16+ specialty-specific templates. Each pre-populates your note with the right sections, prompts, and clinical scoring tools for the encounter type.",
-              bullets:["Specialty-filtered library","Clinical scoring built-in","One-click population","Always guideline-aligned"],
-              badge:"16 templates",
-            },
+
             {
               mode:"transcription",
               icon:"🎙️",
@@ -807,7 +798,6 @@ Write in formal clinical documentation style.`,
         <div style={{ display:"flex", gap:2, marginLeft:8 }}>
           {[
             { id:"hub",           label:"⊞ Hub"          },
-            { id:"templates",     label:"📋 Templates"   },
             { id:"transcription", label:"🎙️ Transcription" },
             { id:"detailed",      label:"📝 Detailed"    },
           ].map(m => (
@@ -820,6 +810,14 @@ Write in formal clinical documentation style.`,
               transition:"all .15s",
             }}>{m.label}</button>
           ))}
+          <button onClick={()=>navigate(createPageUrl("NoteTemplates"))} style={{
+            padding:"4px 12px", borderRadius:8, fontSize:11, fontWeight:700, cursor:"pointer",
+            fontFamily:"'JetBrains Mono',monospace", letterSpacing:".04em",
+            background: "transparent",
+            border: `1px solid transparent`,
+            color: C.dim,
+            transition:"all .15s",
+          }}>📋 Templates</button>
         </div>
 
         <div style={{ flex:1 }} />
@@ -853,7 +851,6 @@ Write in formal clinical documentation style.`,
       <div style={{ flex:1, display:"flex", overflow:"hidden", backgroundColor:C.navy, marginTop:52 }}>
         <AnimatePresence mode="wait">
           {mode === "hub"           && renderHub()}
-          {mode === "templates"     && renderTemplates()}
           {mode === "transcription" && renderTranscription()}
           {mode === "detailed"      && renderDetailed()}
         </AnimatePresence>

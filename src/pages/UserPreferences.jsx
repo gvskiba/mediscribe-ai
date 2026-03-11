@@ -107,6 +107,7 @@ export default function UserAccount() {
     lastName: "",
     email: "",
     phone: "",
+    degreeType: "",
     role: "Attending Physician",
     specialty: "Emergency Medicine",
     institution: "",
@@ -191,6 +192,7 @@ export default function UserAccount() {
       firstName: currentUser.first_name || prev.firstName,
       lastName:  currentUser.last_name  || prev.lastName,
       email:     currentUser.email      || prev.email,
+      degreeType: currentUser.degree_type || prev.degreeType,
     }));
     if (currentUser.profile_photo) setProfilePhoto(currentUser.profile_photo);
   }, [currentUser?.id]);
@@ -221,6 +223,7 @@ export default function UserAccount() {
         last_name:  profile.lastName,
         email:      profile.email,
         phone:      profile.phone,
+        degree_type: profile.degreeType,
         role:       profile.role,
         specialty:  profile.specialty,
         institution: profile.institution,

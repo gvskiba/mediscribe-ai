@@ -97,15 +97,26 @@ export default function DashboardTopBar({ user }) {
   const hours = String(time.getHours()).padStart(2, "0");
   const minutes = String(time.getMinutes()).padStart(2, "0");
   
-  const formatDisplayName = (name) => {
-    if (!name) return "Provider";
-    const formatted = name.split('.')
-                         .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-                         .join(' ');
-    return `Dr. ${formatted}`;
+  const formatDisplayName = (user) => {
+    if (!user) return "Provider";
+    
+    // Try to get name from user preferences first
+    if (user.first_name && user.last_name) {
+      return `Dr. ${user.first_name} ${user.last_name}`;
+    }
+    
+    // Fallback to full_name if preferences not set
+    if (user.full_name) {
+      const formatted = user.full_name.split('.')
+                           .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+                           .join(' ');
+      return `Dr. ${formatted}`;
+    }
+    
+    return "Provider";
   };
   
-  const displayName = formatDisplayName(user?.full_name);
+  const displayName = formatDisplayName(user);
 
   const specialty = formData.specialty && SPECIALTIES.find(s => s.value === formData.specialty)?.label;
 

@@ -81,6 +81,7 @@ import PatientEducation from './pages/PatientEducation';
 import PatientHistory from './pages/PatientHistory';
 import PediatricDosing from './pages/PediatricDosing';
 import Procedures from './pages/Procedures';
+import Results from './pages/Results';
 import Search from './pages/Search';
 import Shift from './pages/Shift';
 import ShiftHours from './pages/ShiftHours';
@@ -89,7 +90,6 @@ import SoapCompiler from './pages/SoapCompiler';
 import SoapCompilerStandalone from './pages/SoapCompilerStandalone';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
-import Results from './pages/Results';
 import __Layout from './Layout.jsx';
 
 
@@ -128,6 +128,7 @@ export const PAGES = {
     "PatientHistory": PatientHistory,
     "PediatricDosing": PediatricDosing,
     "Procedures": Procedures,
+    "Results": Results,
     "Search": Search,
     "Shift": Shift,
     "ShiftHours": ShiftHours,
@@ -136,7 +137,6 @@ export const PAGES = {
     "SoapCompilerStandalone": SoapCompilerStandalone,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
-    "Results": Results,
 }
 
 export const pagesConfig = {

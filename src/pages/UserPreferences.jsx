@@ -392,6 +392,17 @@ export default function UserAccount() {
                 <input value={profile.phone} onChange={e => updateProfile("phone", e.target.value)} style={inputStyle} placeholder="+1 (000) 000-0000" />
               </div>
               <div>
+                <Label>DEGREE TYPE</Label>
+                <select value={profile.degreeType} onChange={e => updateProfile("degreeType", e.target.value)} style={selectStyle}>
+                  <option value="">Select degree...</option>
+                  <option value="MD">MD - Doctor of Medicine</option>
+                  <option value="DO">DO - Doctor of Osteopathic Medicine</option>
+                  <option value="ARNP">ARNP - Advanced Registered Nurse Practitioner</option>
+                  <option value="NP">NP - Nurse Practitioner</option>
+                  <option value="PA">PA - Physician Assistant</option>
+                </select>
+              </div>
+              <div>
                 <Label>ROLE</Label>
                 <select value={profile.role} onChange={e => updateProfile("role", e.target.value)} style={selectStyle}>
                   {ROLES.map(r => <option key={r} value={r}>{r}</option>)}

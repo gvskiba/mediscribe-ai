@@ -656,7 +656,28 @@ export default function Home() {
           {clock}
         </span>
         {currentUser && (
-          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 14px", borderRadius: 10, background: COLORS.panel, border: `1px solid ${COLORS.border}` }}>
+          <button
+            onClick={() => navigate(createPageUrl("UserPreferences"))}
+            style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: 10, 
+              padding: "6px 14px", 
+              borderRadius: 10, 
+              background: COLORS.panel, 
+              border: `1px solid ${COLORS.border}`,
+              cursor: "pointer",
+              transition: "all 0.15s"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = COLORS.teal;
+              e.currentTarget.style.background = `${COLORS.teal}10`;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = COLORS.border;
+              e.currentTarget.style.background = COLORS.panel;
+            }}
+          >
             <div
               style={{
                 width: 28,
@@ -677,7 +698,7 @@ export default function Home() {
             <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: COLORS.text, fontWeight: 500 }}>
               {formatDisplayName(currentUser.full_name)}
             </span>
-          </div>
+          </button>
         )}
       </nav>
 

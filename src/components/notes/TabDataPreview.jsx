@@ -8,6 +8,10 @@ export default function TabDataPreview({ tabId, note }) {
   const [copied, setCopied] = useState(false);
 
   const getTabData = () => {
+    if (!note) {
+      return { title: 'Tab Data', fields: [] };
+    }
+    
     const tabDataMap = {
       'hpi_intake': {
         title: 'HPI & Intake Data',

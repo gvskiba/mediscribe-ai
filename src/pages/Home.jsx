@@ -180,12 +180,12 @@ function ActiveNoteWidget({ navigate }) {
   });
 
   const SECTIONS = [
-    { id: "patient_intake", label: "Subjective", icon: "📝", route: "ClinicalNoteStudio" },
-    { id: "physical_exam", label: "Physical Exam", icon: "🩺", route: "ClinicalNoteStudio" },
+    { id: "patient_intake", label: "Subjective", icon: "📝" },
+    { id: "physical_exam", label: "Physical Exam", icon: "🩺" },
     { id: "labs_imaging", label: "Labs & Imaging", icon: "🧪", route: "Results" },
-    { id: "differential", label: "Diagnoses", icon: "⚕️", route: "ClinicalNoteStudio" },
-    { id: "treatment_plan", label: "Treatment Plan", icon: "💊", route: "ClinicalNoteStudio" },
-    { id: "disposition_plan", label: "Disposition", icon: "🚑", route: "ClinicalNoteStudio", tab: "disposition_plan" },
+    { id: "differential", label: "Diagnoses", icon: "⚕️" },
+    { id: "treatment_plan", label: "Treatment Plan", icon: "💊" },
+    { id: "disposition_plan", label: "Disposition", icon: "🚑" },
   ];
 
   return (

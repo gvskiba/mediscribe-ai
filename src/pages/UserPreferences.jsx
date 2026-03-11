@@ -5,6 +5,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { X, Plus, Check, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, Trash2, Building2, Users, Newspaper, Globe } from "lucide-react";
 
 // ── Color tokens — identical to the rest of the Notrya app ─────────
 const C = {
@@ -20,6 +21,7 @@ const ACCOUNT_SECTIONS = [
   { id:"credentials",   icon:"🏥", label:"Clinical Info",     sub:"Specialty, license, NPI"     },
   { id:"preferences",   icon:"⚙️", label:"Preferences",       sub:"Display, notifications"      },
   { id:"security",      icon:"🔒", label:"Security",          sub:"Password, 2FA, sessions"     },
+  { id:"app_settings",  icon:"🔧", label:"App Settings",      sub:"Hospital, API, Dashboard"    },
   { id:"integrations",  icon:"🔗", label:"Integrations",      sub:"EHR, lab, imaging links"     },
   { id:"activity",      icon:"📋", label:"Activity Log",      sub:"Recent actions"              },
 ];
@@ -131,12 +133,29 @@ export default function UserAccount() {
     notifyOnMessage: true,
     soundAlerts: false,
     twoFactor: false,
+    dashboard_layout: '2x2',
+    clock_face_style: 'digital',
+    color_theme: 'light',
+    notifications_email: true,
+    notifications_inapp: true,
   });
 
   const [security, setSecurity] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
+  });
+
+  // App Settings state
+  const [hospitalSettings, setHospitalSettings] = useState(null);
+  const [newAttending, setNewAttending] = useState({ name: "", specialty: "", email: "" });
+  const [appSaveSuccess, setAppSaveSuccess] = useState(false);
+
+  // News API keys state
+  const [newsApiInputs, setNewsApiInputs] = useState({
+    thenewsapi_token: { value: "", show: false, status: null, error: "" },
+    webzio_token: { value: "", show: false, status: null, error: "" },
+    newsdata_token: { value: "", show: false, status: null, error: "" },
   });
 
   // ── Clock ──────────────────────────────────────────────────────
@@ -150,6 +169,19 @@ export default function UserAccount() {
     queryKey: ["currentUser"],
     queryFn: () => base44.auth.me(),
   });
+
+  // ── Fetch hospital settings ────────────────────────────────────
+  const { data: hospitalSettingsData } = useQuery({
+    queryKey: ["hospitalSettings"],
+    queryFn: async () => {
+      const results = await base44.entities.HospitalSettings.list();
+      return results.length > 0 ? results[0] : null;
+    },
+  });
+
+  useEffect(() => {
+    if (hospitalSettingsData) setHospitalSettings(hospitalSettingsData);
+  }, [hospitalSettingsData]);
 
   // ── Hydrate from Base44 user ───────────────────────────────────
   useEffect(() => {
@@ -220,6 +252,75 @@ export default function UserAccount() {
   const updatePrefs   = (key, val) => setPrefs(prev => ({ ...prev, [key]: val }));
 
   const fullName = `${profile.firstName} ${profile.lastName}`.trim();
+
+  // ── Hospital Settings Mutations ────────────────────────────────
+  const saveHospitalMutation = useMutation({
+    mutationFn: (data) => {
+      if (hospitalSettings?.id) return base44.entities.HospitalSettings.update(hospitalSettings.id, data);
+      return base44.entities.HospitalSettings.create(data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hospitalSettings"] });
+      setAppSaveSuccess(true);
+      setTimeout(() => setAppSaveSuccess(false), 2500);
+      toast.success("Hospital settings saved");
+    },
+    onError: (err) => toast.error("Save failed: " + err.message),
+  });
+
+  const handleHospitalInputChange = (field, value) => {
+    setHospitalSettings(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAddAttending = () => {
+    if (!newAttending.name.trim()) return;
+    const id = `attending_${Date.now()}`;
+    setHospitalSettings(prev => ({ ...prev, attendings: [...(prev?.attendings || []), { id, ...newAttending }] }));
+    setNewAttending({ name: "", specialty: "", email: "" });
+  };
+
+  const handleRemoveAttending = (id) => {
+    setHospitalSettings(prev => ({ ...prev, attendings: prev.attendings.filter(a => a.id !== id) }));
+  };
+
+  const handleSetDefault = (id) => {
+    setHospitalSettings(prev => ({ ...prev, default_attending_id: id }));
+  };
+
+  const handleSaveHospital = async () => {
+    await saveHospitalMutation.mutateAsync(hospitalSettings);
+  };
+
+  // ── API Key Validation ─────────────────────────────────────────
+  const validateApiKey = async (keyType, token, validateFn) => {
+    setNewsApiInputs(prev => ({ ...prev, [keyType]: { ...prev[keyType], status: "validating", error: "" } }));
+    try {
+      const res = await base44.functions.invoke(validateFn, { token });
+      if (res.data?.valid) {
+        setNewsApiInputs(prev => ({ ...prev, [keyType]: { ...prev[keyType], status: "valid", value: "" } }));
+        localStorage.setItem(keyType, token);
+        const tokens = { ...(hospitalSettings?.api_tokens || {}), [keyType]: token };
+        const updated = { ...hospitalSettings, api_tokens: tokens };
+        setHospitalSettings(updated);
+        await saveHospitalMutation.mutateAsync(updated);
+        toast.success("API key validated and saved");
+      } else {
+        setNewsApiInputs(prev => ({ ...prev, [keyType]: { ...prev[keyType], status: "invalid", error: res.data?.error || "Invalid token" } }));
+      }
+    } catch {
+      setNewsApiInputs(prev => ({ ...prev, [keyType]: { ...prev[keyType], status: "invalid", error: "Validation failed" } }));
+    }
+  };
+
+  const handleRevokeApiKey = (keyType) => {
+    localStorage.removeItem(keyType);
+    const tokens = { ...(hospitalSettings?.api_tokens || {}), [keyType]: "" };
+    const updated = { ...hospitalSettings, api_tokens: tokens };
+    setHospitalSettings(updated);
+    saveHospitalMutation.mutateAsync(updated);
+    setNewsApiInputs(prev => ({ ...prev, [keyType]: { value: "", show: false, status: null, error: "" } }));
+    toast.success("API key revoked");
+  };
 
   const ACTIVITY = [];
 
@@ -527,6 +628,178 @@ export default function UserAccount() {
         </div>
       );
 
+      // ── APP SETTINGS ──────────────────────────────────────────
+      case "app_settings": return (
+        <div style={{ maxWidth:800, margin:"0 auto", padding:"20px", display:"flex", flexDirection:"column", gap:14 }}>
+          
+          {/* News API Keys */}
+          {[
+            { key: "thenewsapi_token", label: "TheNewsAPI.com", color: C.teal, validateFn: "validateNewsApiKey", url: "https://www.thenewsapi.com", icon: Newspaper },
+            { key: "webzio_token", label: "Webz.io News API", color: C.purple, validateFn: "validateWebzApiKey", url: "https://webz.io", icon: Globe },
+            { key: "newsdata_token", label: "NewsData.io", color: C.blue, validateFn: "validateNewsdataApiKey", url: "https://newsdata.io", icon: Newspaper },
+          ].map(api => {
+            const saved = hospitalSettings?.api_tokens?.[api.key] || localStorage.getItem(api.key) || "";
+            const input = newsApiInputs[api.key];
+            const maskedKey = (k) => k ? `${k.slice(0, 8)}${"•".repeat(18)}${k.slice(-4)}` : "";
+            
+            return (
+              <Card key={api.key} title={api.label} icon={api.icon}>
+                {saved && (
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, padding:"10px 14px", background:`${C.green}08`, border:`1px solid ${C.green}33`, borderRadius:9, marginBottom:12 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <CheckCircle2 size={14} style={{ color:C.green, flexShrink:0 }} />
+                      <div>
+                        <div style={{ fontSize:11, fontWeight:600, color:C.green }}>Active</div>
+                        <div style={{ fontSize:10, color:C.dim, fontFamily:"monospace", marginTop:2 }}>{maskedKey(saved)}</div>
+                      </div>
+                    </div>
+                    <button onClick={() => handleRevokeApiKey(api.key)} style={{ display:"flex", alignItems:"center", gap:5, padding:"4px 10px", borderRadius:6, background:`${C.red}12`, border:`1px solid ${C.red}33`, color:C.red, fontSize:10, fontWeight:600, cursor:"pointer" }}>
+                      <Trash2 size={11} /> Revoke
+                    </button>
+                  </div>
+                )}
+                
+                <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:8 }}>
+                  <div style={{ flex:1, position:"relative" }}>
+                    <input
+                      type={input.show ? "text" : "password"}
+                      value={input.value}
+                      onChange={e => setNewsApiInputs(prev => ({ ...prev, [api.key]: { ...prev[api.key], value: e.target.value, status: null, error: "" } }))}
+                      onKeyDown={e => e.key === "Enter" && input.value.trim() && validateApiKey(api.key, input.value.trim(), api.validateFn)}
+                      placeholder={`Paste your ${api.label} token…`}
+                      style={{ width:"100%", background:C.edge, border:`1.5px solid ${C.border}`, borderRadius:8, padding:"8px 36px 8px 12px", color:C.bright, fontSize:12, fontFamily:"monospace", outline:"none" }}
+                    />
+                    <button onClick={() => setNewsApiInputs(prev => ({ ...prev, [api.key]: { ...prev[api.key], show: !prev[api.key].show } }))}
+                      style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:C.dim, cursor:"pointer", padding:0, display:"flex" }}>
+                      {input.show ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => input.value.trim() && validateApiKey(api.key, input.value.trim(), api.validateFn)}
+                    disabled={!input.value.trim() || input.status === "validating"}
+                    style={{ padding:"8px 14px", borderRadius:8, fontSize:11, fontWeight:700, cursor:!input.value.trim() || input.status === "validating" ? "not-allowed" : "pointer", background:!input.value.trim() || input.status === "validating" ? C.muted : `linear-gradient(135deg,${api.color},${api.color}bb)`, border:"none", color:C.navy, whiteSpace:"nowrap", opacity:!input.value.trim() ? 0.5 : 1, display:"flex", alignItems:"center", gap:5 }}>
+                    {input.status === "validating" ? <><Loader2 size={12} style={{ animation:"spin .8s linear infinite" }} /> Validating…</> : "Validate & Save"}
+                  </button>
+                </div>
+                
+                {input.status === "valid" && <div style={{ display:"flex", alignItems:"center", gap:7, padding:"8px 12px", background:`${C.green}08`, border:`1px solid ${C.green}33`, borderRadius:8, fontSize:11, color:C.green }}><CheckCircle2 size={13} /> Token validated and saved!</div>}
+                {input.status === "invalid" && <div style={{ display:"flex", alignItems:"center", gap:7, padding:"8px 12px", background:`${C.red}08`, border:`1px solid ${C.red}33`, borderRadius:8, fontSize:11, color:C.red }}><AlertCircle size={13} /> {input.error || "Invalid token"}</div>}
+                
+                <div style={{ fontSize:10, color:C.dim, marginTop:8 }}>Get a free token at <a href={api.url} target="_blank" rel="noopener noreferrer" style={{ color:api.color, textDecoration:"none" }}>{api.url.replace("https://", "")}</a></div>
+              </Card>
+            );
+          })}
+
+          {/* Hospital Information */}
+          <Card title="HOSPITAL INFORMATION" icon="🏥">
+            <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+              {[
+                { field: "company_name", label: "COMPANY / PRACTICE NAME", placeholder: "e.g. Riverside Medical Group" },
+                { field: "hospital_name", label: "HOSPITAL / FACILITY NAME", placeholder: "e.g. Riverside General Hospital" },
+                { field: "address", label: "ADDRESS", placeholder: "Hospital address" },
+                { field: "phone", label: "PHONE", placeholder: "Main phone number" },
+              ].map(({ field, label, placeholder }) => (
+                <div key={field}>
+                  <Label>{label}</Label>
+                  <input value={hospitalSettings?.[field] || ""} onChange={e => handleHospitalInputChange(field, e.target.value)} style={inputStyle} placeholder={placeholder} />
+                </div>
+              ))}
+              <button onClick={handleSaveHospital} disabled={saveHospitalMutation.isPending} style={{ padding:"8px 18px", borderRadius:10, fontSize:12, fontWeight:700, cursor:saveHospitalMutation.isPending ? "not-allowed" : "pointer", background:appSaveSuccess ? `linear-gradient(135deg,${C.green},#27ae60)` : `linear-gradient(135deg,${C.teal},#00b8a5)`, border:"none", color:C.navy, alignSelf:"flex-start", marginTop:4 }}>
+                {saveHospitalMutation.isPending ? <><Loader2 size={13} style={{ animation:"spin .8s linear infinite" }} /> Saving…</> : appSaveSuccess ? <><Check size={13} /> Saved!</> : "Save Changes"}
+              </button>
+            </div>
+          </Card>
+
+          {/* Attending Physicians */}
+          <Card title="ATTENDING PHYSICIANS" icon="👨‍⚕️">
+            <div style={{ background:C.edge, border:`1px solid ${C.border}`, borderRadius:10, padding:"14px", marginBottom:14 }}>
+              <Label>ADD NEW PHYSICIAN</Label>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:10 }}>
+                {[
+                  { key: "name", placeholder: "Full Name" },
+                  { key: "specialty", placeholder: "Specialty" },
+                  { key: "email", placeholder: "Email" },
+                ].map(({ key, placeholder }) => (
+                  <input key={key} value={newAttending[key]} onChange={e => setNewAttending(prev => ({ ...prev, [key]: e.target.value }))} onKeyDown={e => e.key === "Enter" && handleAddAttending()} style={inputStyle} placeholder={placeholder} />
+                ))}
+              </div>
+              <button onClick={handleAddAttending} disabled={!newAttending.name.trim()} style={{ display:"flex", alignItems:"center", gap:5, padding:"7px 14px", borderRadius:7, background:newAttending.name.trim() ? `linear-gradient(135deg,${C.teal},#00b8a5)` : C.muted, border:"none", color:C.navy, fontSize:11, fontWeight:700, cursor:newAttending.name.trim() ? "pointer" : "not-allowed", opacity:newAttending.name.trim() ? 1 : 0.5 }}>
+                <Plus size={13} /> Add Physician
+              </button>
+            </div>
+
+            <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
+              {!hospitalSettings?.attendings?.length ? (
+                <div style={{ padding:"20px", textAlign:"center", fontSize:12, color:C.dim }}>No attending physicians added yet</div>
+              ) : (
+                hospitalSettings.attendings.map((a) => {
+                  const isDefault = hospitalSettings.default_attending_id === a.id;
+                  return (
+                    <div key={a.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, padding:"10px 14px", background:isDefault ? `${C.teal}08` : C.edge, border:`1px solid ${isDefault ? `${C.teal}33` : C.border}`, borderRadius:9 }}>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:13, fontWeight:600, color:C.bright }}>{a.name}</div>
+                        <div style={{ fontSize:11, color:C.dim, marginTop:2 }}>{[a.specialty, a.email].filter(Boolean).join(" · ")}</div>
+                      </div>
+                      <div style={{ display:"flex", gap:6, flexShrink:0 }}>
+                        <button onClick={() => handleSetDefault(a.id)} style={{ padding:"4px 10px", borderRadius:6, fontSize:10, fontWeight:600, cursor:"pointer", background:isDefault ? `${C.teal}18` : "transparent", border:`1px solid ${isDefault ? `${C.teal}44` : C.border}`, color:isDefault ? C.teal : C.dim, display:"flex", alignItems:"center", gap:4 }}>
+                          {isDefault ? <><Check size={10} /> Default</> : "Set Default"}
+                        </button>
+                        <button onClick={() => handleRemoveAttending(a.id)} style={{ width:28, height:28, borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:`1px solid ${C.border}`, color:C.dim, cursor:"pointer" }}>
+                          <X size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {hospitalSettings?.attendings?.length > 0 && (
+              <button onClick={handleSaveHospital} disabled={saveHospitalMutation.isPending} style={{ padding:"8px 18px", borderRadius:10, fontSize:12, fontWeight:700, cursor:saveHospitalMutation.isPending ? "not-allowed" : "pointer", background:appSaveSuccess ? `linear-gradient(135deg,${C.green},#27ae60)` : `linear-gradient(135deg,${C.teal},#00b8a5)`, border:"none", color:C.navy, marginTop:14 }}>
+                {saveHospitalMutation.isPending ? <><Loader2 size={13} style={{ animation:"spin .8s linear infinite" }} /> Saving…</> : appSaveSuccess ? <><Check size={13} /> Saved!</> : "Save Changes"}
+              </button>
+            )}
+          </Card>
+
+          {/* Dashboard Preferences */}
+          <Card title="DASHBOARD & APPEARANCE" icon="🎨">
+            <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+              <div>
+                <Label>DASHBOARD LAYOUT</Label>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                  {[{ value: '2x2', label: '2×2 Grid' }, { value: '3x3', label: '3×3 Grid' }, { value: '4x4', label: '4×4 Grid' }, { value: '6x6', label: '6×6 Grid' }, { value: 'horizontal', label: 'Horizontal' }].map(opt => (
+                    <button key={opt.value} onClick={() => updatePrefs('dashboard_layout', opt.value)} style={{ padding:"7px 14px", borderRadius:8, fontSize:12, fontWeight:600, cursor:"pointer", background:prefs.dashboard_layout === opt.value ? `linear-gradient(135deg,${C.teal},#00b8a5)` : C.edge, border:`1px solid ${prefs.dashboard_layout === opt.value ? C.teal : C.border}`, color:prefs.dashboard_layout === opt.value ? C.navy : C.text }}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <Label>CLOCK FACE STYLE</Label>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                  {[{ value: 'digital', label: 'Digital' }, { value: 'analog', label: 'Analog' }, { value: 'minimal', label: 'Minimal' }, { value: 'binary', label: 'Binary' }].map(opt => (
+                    <button key={opt.value} onClick={() => updatePrefs('clock_face_style', opt.value)} style={{ padding:"7px 14px", borderRadius:8, fontSize:12, fontWeight:600, cursor:"pointer", background:prefs.clock_face_style === opt.value ? `linear-gradient(135deg,${C.teal},#00b8a5)` : C.edge, border:`1px solid ${prefs.clock_face_style === opt.value ? C.teal : C.border}`, color:prefs.clock_face_style === opt.value ? C.navy : C.text }}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <Label>COLOR THEME</Label>
+                <div style={{ display:"flex", gap:8 }}>
+                  {[{ value: 'light', label: '☀️ Light' }, { value: 'dark', label: '🌙 Dark' }, { value: 'auto', label: '🔄 Auto' }].map(opt => (
+                    <button key={opt.value} onClick={() => updatePrefs('color_theme', opt.value)} style={{ padding:"7px 18px", borderRadius:8, fontSize:12, fontWeight:600, cursor:"pointer", background:prefs.color_theme === opt.value ? `linear-gradient(135deg,${C.purple},#7c3aed)` : C.edge, border:`1px solid ${prefs.color_theme === opt.value ? C.purple : C.border}`, color:prefs.color_theme === opt.value ? "#fff" : C.text }}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
+
+        </div>
+      );
+
       // ── ACTIVITY LOG ──────────────────────────────────────────
       case "activity": return (
         <div style={{ maxWidth:800, margin:"0 auto", padding:"20px", display:"flex", flexDirection:"column", gap:14 }}>
@@ -658,7 +931,7 @@ export default function UserAccount() {
               </div>
             </div>
             <div style={{ flex:1 }} />
-            {["profile","credentials","preferences"].includes(section) && (
+            {["profile","credentials","preferences","app_settings"].includes(section) && (
               <button onClick={handleSave} disabled={saving} style={{ padding:"7px 18px", borderRadius:10, fontSize:13, fontWeight:700, cursor:saving ? "not-allowed" : "pointer", border:`1px solid ${saved ? "rgba(46,204,113,.4)" : C.border}`, background:saved ? "rgba(46,204,113,.1)" : `linear-gradient(135deg,${C.teal},#00b8a5)`, color:saved ? C.green : saving ? C.dim : C.navy, transition:"all .2s", opacity:saving ? .6 : 1 }}>
                 {saving ? "Saving…" : saved ? "✓ Saved" : "💾 Save Changes"}
               </button>

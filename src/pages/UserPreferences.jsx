@@ -184,10 +184,21 @@ export default function UserAccount() {
   // ── Save profile mutation ──────────────────────────────────────
   const saveProfileMutation = useMutation({
     mutationFn: async () => {
-      await base44.auth.updateProfile({
+      await base44.auth.updateMe({
         first_name: profile.firstName,
         last_name:  profile.lastName,
         email:      profile.email,
+        phone:      profile.phone,
+        role:       profile.role,
+        specialty:  profile.specialty,
+        institution: profile.institution,
+        department: profile.department,
+        npi:        profile.npi,
+        licenseNumber: profile.licenseNumber,
+        licenseState: profile.licenseState,
+        deaNumber:  profile.deaNumber,
+        bio:        profile.bio,
+        preferences: prefs,
       });
     },
     onSuccess: () => {

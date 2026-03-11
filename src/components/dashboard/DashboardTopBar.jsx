@@ -96,7 +96,16 @@ export default function DashboardTopBar({ user }) {
 
   const hours = String(time.getHours()).padStart(2, "0");
   const minutes = String(time.getMinutes()).padStart(2, "0");
-  const lastName = user?.full_name?.split(" ").pop() || "Provider";
+  
+  const formatDisplayName = (name) => {
+    if (!name) return "Provider";
+    const formatted = name.split('.')
+                         .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+                         .join(' ');
+    return `Dr. ${formatted}`;
+  };
+  
+  const displayName = formatDisplayName(user?.full_name);
 
   const specialty = formData.specialty && SPECIALTIES.find(s => s.value === formData.specialty)?.label;
 
@@ -211,7 +220,7 @@ export default function DashboardTopBar({ user }) {
       >
         {/* Left: Welcome */}
         <div style={{ fontSize: "11px", color: T.text, fontWeight: 500, whiteSpace: "nowrap", flexShrink: 0 }}>
-          Welcome, {lastName}{defaultAttending ? ` • Attending: ${defaultAttending.name}` : ""}
+          Welcome, {displayName}{defaultAttending ? ` • Attending: ${defaultAttending.name}` : ""}
         </div>
 
         {/* Stats Buttons - Centered */}

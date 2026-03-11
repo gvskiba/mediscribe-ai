@@ -313,13 +313,13 @@ Provide:
 // ─── Note Completion Ring ────────────────────────────────────────────────────
 function CompletionRing({ note }) {
   const sections = [
-    { label: "Chief Complaint", done: !!note.chief_complaint },
-    { label: "HPI", done: !!note.history_of_present_illness },
-    { label: "Physical Exam", done: !!note.physical_exam },
-    { label: "Assessment", done: !!note.assessment },
-    { label: "Plan", done: !!note.plan },
-    { label: "Diagnoses", done: (note.diagnoses?.length || 0) > 0 },
-    { label: "Medications", done: (note.medications?.length || 0) > 0 },
+    { label: "Chief Complaint", done: !!note?.chief_complaint },
+    { label: "HPI", done: !!note?.history_of_present_illness },
+    { label: "Physical Exam", done: !!note?.physical_exam },
+    { label: "Assessment", done: !!note?.assessment },
+    { label: "Plan", done: !!note?.plan },
+    { label: "Diagnoses", done: (note?.diagnoses?.length || 0) > 0 },
+    { label: "Medications", done: (note?.medications?.length || 0) > 0 },
   ];
   const pct = sections.filter(s => s.done).length / sections.length;
   const circ = 2 * Math.PI * 32;

@@ -111,16 +111,75 @@ const LAB_PANELS = {
 };
 
 // ── EKG findings options ───────────────────────────────────────────
-const EKG_FINDINGS = [
-  "Normal sinus rhythm","Sinus tachycardia","Sinus bradycardia","Atrial fibrillation",
-  "Atrial flutter","SVT","Ventricular tachycardia","Ventricular fibrillation",
-  "First-degree AV block","Second-degree AV block (Mobitz I)","Second-degree AV block (Mobitz II)",
-  "Third-degree (complete) AV block","LBBB","RBBB","Bifascicular block",
-  "ST elevation (STEMI)","ST depression","T-wave inversions","Q waves","Delta waves (WPW)",
-  "Prolonged QTc","Short QT","Peaked T waves","Hyperkalemia pattern","Brugada pattern",
-  "Early repolarization","Pericarditis pattern","LVH","RVH","Poor R-wave progression",
-  "Electrical alternans","Low voltage",
-];
+const EKG_FINDING_CATEGORIES = {
+  rhythm: {
+    label: "RHYTHM DISORDERS",
+    icon: "💓",
+    color: C.teal,
+    findings: [
+      "Normal sinus rhythm",
+      "Sinus tachycardia",
+      "Sinus bradycardia",
+      "Atrial fibrillation",
+      "Atrial flutter",
+      "SVT",
+      "Ventricular tachycardia",
+      "Ventricular fibrillation",
+    ]
+  },
+  conduction: {
+    label: "CONDUCTION BLOCKS",
+    icon: "⚡",
+    color: C.amber,
+    findings: [
+      "First-degree AV block",
+      "Second-degree AV block (Mobitz I)",
+      "Second-degree AV block (Mobitz II)",
+      "Third-degree (complete) AV block",
+      "LBBB",
+      "RBBB",
+      "Bifascicular block",
+    ]
+  },
+  ischemia: {
+    label: "ISCHEMIA / INFARCTION",
+    icon: "🔴",
+    color: C.red,
+    findings: [
+      "ST elevation (STEMI)",
+      "ST depression",
+      "T-wave inversions",
+      "Q waves",
+      "Poor R-wave progression",
+    ]
+  },
+  repolarization: {
+    label: "REPOLARIZATION ABNORMALITIES",
+    icon: "📊",
+    color: C.blue,
+    findings: [
+      "Prolonged QTc",
+      "Short QT",
+      "Peaked T waves",
+      "Hyperkalemia pattern",
+      "Brugada pattern",
+      "Delta waves (WPW)",
+      "Early repolarization",
+    ]
+  },
+  structural: {
+    label: "STRUCTURAL / OTHER",
+    icon: "🫀",
+    color: C.purple,
+    findings: [
+      "LVH",
+      "RVH",
+      "Pericarditis pattern",
+      "Electrical alternans",
+      "Low voltage",
+    ]
+  }
+};
 
 const LEADS = ["I","II","III","aVR","aVL","aVF","V1","V2","V3","V4","V5","V6"];
 
@@ -972,30 +1031,45 @@ Rules:
 
                     {/* Findings checkboxes */}
                     <Card title="EKG FINDINGS" icon="❤️" badge={`${ekgFindings.length} SELECTED`} badgeColor={ekgFindings.length>0?C.teal:C.dim}>
-                      <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                        {EKG_FINDINGS.map(f=>{
-                          const isSel = ekgFindings.includes(f);
-                          const isCrit = ["ST elevation (STEMI)","Ventricular fibrillation","Ventricular tachycardia","Third-degree (complete) AV block","Ventricular tachycardia"].includes(f);
-                          return (
-                            <div key={f} onClick={()=>toggleEkgFinding(f)} style={{
-                              display:"flex", alignItems:"center", gap:6, padding:"5px 10px", borderRadius:8, cursor:"pointer", transition:"all .12s",
-                              background: isSel ? (isCrit?"rgba(255,92,108,.15)":"rgba(0,212,188,.1)") : C.edge,
-                              border:`1px solid ${isSel ? (isCrit?"rgba(255,92,108,.45)":"rgba(0,212,188,.35)") : C.border}`,
-                            }}>
-                              <div style={{ width:14, height:14, borderRadius:4, border:`2px solid ${isSel?(isCrit?C.red:C.teal):C.muted}`, background:isSel?(isCrit?C.red:C.teal):"transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all .12s" }}>
-                                {isSel && <span style={{ fontSize:9, color:C.navy, fontWeight:700 }}>✓</span>}
-                              </div>
-                              <span style={{ fontSize:11, fontWeight:isSel?600:400, color:isSel?(isCrit?C.red:C.teal):C.dim }}>{f}</span>
-                              {isCrit && isSel && <span style={{ fontSize:10 }}>🔴</span>}
+                      <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+                        {Object.entries(EKG_FINDING_CATEGORIES).map(([catId, cat]) => (
+                          <div key={catId}>
+                            <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:8, paddingBottom:6, borderBottom:`1px solid ${C.border}` }}>
+                              <span style={{ fontSize:14 }}>{cat.icon}</span>
+                              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:cat.color, letterSpacing:".1em" }}>
+                                {cat.label}
+                              </span>
+                              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:C.muted, marginLeft:"auto" }}>
+                                {cat.findings.filter(f=>ekgFindings.includes(f)).length}/{cat.findings.length}
+                              </span>
                             </div>
-                          );
-                        })}
+                            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(200px, 1fr))", gap:6 }}>
+                              {cat.findings.map(f=>{
+                                const isSel = ekgFindings.includes(f);
+                                const isCrit = ["ST elevation (STEMI)","Ventricular fibrillation","Ventricular tachycardia","Third-degree (complete) AV block"].includes(f);
+                                return (
+                                  <div key={f} onClick={()=>toggleEkgFinding(f)} style={{
+                                    display:"flex", alignItems:"center", gap:6, padding:"6px 10px", borderRadius:8, cursor:"pointer", transition:"all .12s",
+                                    background: isSel ? (isCrit?"rgba(255,92,108,.15)":"rgba(0,212,188,.1)") : C.edge,
+                                    border:`1px solid ${isSel ? (isCrit?"rgba(255,92,108,.45)":"rgba(0,212,188,.35)") : C.border}`,
+                                  }}>
+                                    <div style={{ width:14, height:14, borderRadius:4, border:`2px solid ${isSel?(isCrit?C.red:C.teal):C.muted}`, background:isSel?(isCrit?C.red:C.teal):"transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all .12s" }}>
+                                      {isSel && <span style={{ fontSize:9, color:C.navy, fontWeight:700 }}>✓</span>}
+                                    </div>
+                                    <span style={{ fontSize:11, fontWeight:isSel?600:400, color:isSel?(isCrit?C.red:C.teal):C.text }}>{f}</span>
+                                    {isCrit && isSel && <span style={{ fontSize:10 }}>🔴</span>}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
                       </div>
 
                       {/* Selected findings summary */}
                       {ekgFindings.length > 0 && (
-                        <div style={{ marginTop:12, padding:"10px 12px", borderRadius:10, background:"rgba(0,212,188,.05)", border:"1px solid rgba(0,212,188,.2)" }}>
-                          <Label>SELECTED FINDINGS</Label>
+                        <div style={{ marginTop:14, padding:"10px 12px", borderRadius:10, background:"rgba(0,212,188,.05)", border:"1px solid rgba(0,212,188,.2)" }}>
+                          <Label>SELECTED FINDINGS ({ekgFindings.length})</Label>
                           <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
                             {ekgFindings.map(f=><Pill key={f} color={["ST elevation (STEMI)","Ventricular fibrillation","Ventricular tachycardia"].includes(f)?C.red:C.teal}>{f}</Pill>)}
                           </div>

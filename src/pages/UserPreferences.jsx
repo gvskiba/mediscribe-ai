@@ -634,9 +634,9 @@ export default function UserAccount() {
           
           {/* News API Keys */}
           {[
-            { key: "thenewsapi_token", label: "TheNewsAPI.com", color: C.teal, validateFn: "validateNewsApiKey", url: "https://www.thenewsapi.com", icon: Newspaper },
-            { key: "webzio_token", label: "Webz.io News API", color: C.purple, validateFn: "validateWebzApiKey", url: "https://webz.io", icon: Globe },
-            { key: "newsdata_token", label: "NewsData.io", color: C.blue, validateFn: "validateNewsdataApiKey", url: "https://newsdata.io", icon: Newspaper },
+            { key: "thenewsapi_token", label: "TheNewsAPI.com", color: C.teal, validateFn: "validateNewsApiKey", url: "https://www.thenewsapi.com", icon: "📰" },
+            { key: "webzio_token", label: "Webz.io News API", color: C.purple, validateFn: "validateWebzApiKey", url: "https://webz.io", icon: "🌐" },
+            { key: "newsdata_token", label: "NewsData.io", color: C.blue, validateFn: "validateNewsdataApiKey", url: "https://newsdata.io", icon: "📰" },
           ].map(api => {
             const saved = hospitalSettings?.api_tokens?.[api.key] || localStorage.getItem(api.key) || "";
             const input = newsApiInputs[api.key];

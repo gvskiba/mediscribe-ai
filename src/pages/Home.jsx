@@ -180,12 +180,12 @@ function ActiveNoteWidget({ navigate }) {
   });
 
   const SECTIONS = [
-    { id: "patient_intake", label: "Subjective", icon: "📝" },
-    { id: "physical_exam", label: "Physical Exam", icon: "🩺" },
-    { id: "labs_imaging", label: "Labs & Imaging", icon: "🧪" },
-    { id: "differential", label: "Diagnoses", icon: "⚕️" },
-    { id: "treatment_plan", label: "Treatment Plan", icon: "💊" },
-    { id: "disposition_plan", label: "Disposition", icon: "🚑" },
+    { id: "patient_intake", label: "Subjective", icon: "📝", route: "ClinicalNoteStudio" },
+    { id: "physical_exam", label: "Physical Exam", icon: "🩺", route: "ClinicalNoteStudio" },
+    { id: "labs_imaging", label: "Labs & Imaging", icon: "🧪", route: "Results" },
+    { id: "differential", label: "Diagnoses", icon: "⚕️", route: "ClinicalNoteStudio" },
+    { id: "treatment_plan", label: "Treatment Plan", icon: "💊", route: "ClinicalNoteStudio" },
+    { id: "disposition_plan", label: "Disposition", icon: "🚑", route: "ClinicalNoteStudio" },
   ];
 
   return (
@@ -262,7 +262,7 @@ function ActiveNoteWidget({ navigate }) {
             {SECTIONS.map(section => (
               <button
                 key={section.id}
-                onClick={() => navigate(`${createPageUrl("ClinicalNoteStudio")}?noteId=${selectedNoteId}&tab=${section.id}`)}
+                onClick={() => navigate(section.route === "Results" ? createPageUrl("Results") : `${createPageUrl("ClinicalNoteStudio")}?noteId=${selectedNoteId}&tab=${section.id}`)}
                 style={{
                   display: "flex",
                   alignItems: "center",

@@ -432,6 +432,14 @@ export default function Home() {
   const [currentUser, setCurrentUser] = useState(null);
   const [clock, setClock] = useState("");
 
+  const formatDisplayName = (name) => {
+    if (!name) return "User";
+    const formatted = name.split('.')
+                         .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+                         .join(' ');
+    return `Dr. ${formatted}`;
+  };
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -667,7 +675,7 @@ export default function Home() {
               {initials}
             </div>
             <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: COLORS.text, fontWeight: 500 }}>
-              {currentUser.full_name || "User"}
+              {formatDisplayName(currentUser.full_name)}
             </span>
           </div>
         )}

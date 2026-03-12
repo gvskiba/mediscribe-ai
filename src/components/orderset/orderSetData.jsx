@@ -761,4 +761,246 @@ export const CONDITIONS = {
       {id:"copds-c1",cat:"consults",priority:"stat",required:true,name:"Pulmonology / Critical Care",detail:"STAT"},
     ]
   },
+
+  acute_myocarditis: {
+    id:"acute_myocarditis", name:"Acute Myocarditis", subtitle:"Inflammatory Cardiomyopathy",
+    icon:"💔", specialty:"Cardiology", acuity:"urgent",
+    guideline:"ESC 2024 Myocarditis Guidelines",
+    tags:["Troponin Elevation","Arrhythmias","Ejection Fraction","Fulminant"],
+    orders:[
+      {id:"myo-a1",cat:"admit",priority:"urgent",required:true,name:"Admit to CCU/ICU",detail:"Hemodynamic monitoring, arrhythmia surveillance"},
+      {id:"myo-v1",cat:"vitals",priority:"urgent",required:true,name:"Continuous Telemetry",detail:"Arrhythmia detection"},
+      {id:"myo-l1",cat:"labs",priority:"stat",required:true,name:"Troponin I serial",detail:"STAT, 3h, 6h. Peak at 3-4 days"},
+      {id:"myo-l2",cat:"labs",priority:"stat",required:true,name:"BNP / NT-proBNP",detail:"Baseline and daily while elevated"},
+      {id:"myo-l3",cat:"labs",priority:"stat",required:true,name:"ESR / CRP",detail:"Inflammatory markers"},
+      {id:"myo-i1",cat:"imaging",priority:"stat",required:true,name:"12-Lead EKG",detail:"STAT — ST elevation, T-wave inversion"},
+      {id:"myo-i2",cat:"imaging",priority:"urgent",required:true,name:"Echocardiogram (TTE)",detail:"Assess EF, wall motion, pericardial effusion"},
+      {id:"myo-i3",cat:"imaging",priority:"urgent",required:false,name:"Cardiac MRI",detail:"Diagnostic gold standard if EF preserved"},
+      {id:"myo-m1",cat:"meds",priority:"routine",required:true,name:"ACE-inhibitor or ARB",detail:"Start after stabilization if reduced EF"},
+      {id:"myo-m2",cat:"meds",priority:"routine",required:true,name:"Beta-blocker low-dose",detail:"Carvedilol 3.125mg BID, titrate slowly"},
+      {id:"myo-c1",cat:"consults",priority:"urgent",required:true,name:"Cardiology",detail:"URGENT for fulminant myocarditis evaluation"},
+      {id:"myo-c2",cat:"consults",priority:"urgent",required:false,name:"Infectious Disease / Virology",detail:"If viral prodrome — consider antiviral therapy"},
+    ]
+  },
+
+  acute_decompensated_hf_hfpef: {
+    id:"hfpef", name:"Acute Decompensated HF with Preserved EF", subtitle:"HFpEF Exacerbation",
+    icon:"❤️", specialty:"Cardiology", acuity:"urgent",
+    guideline:"2022 AHA/ACC/HFSA HFpEF Guidelines",
+    tags:["Hypertension Control","Diastolic Dysfunction","Pulmonary Hypertension"],
+    orders:[
+      {id:"hfpef-a1",cat:"admit",priority:"urgent",required:true,name:"Admit to Cardiology Telemetry",detail:"Telemetry unit preferred"},
+      {id:"hfpef-v1",cat:"vitals",priority:"urgent",required:true,name:"Daily Weight",detail:"Same time, same scale. Alert if > 2 lbs/day"},
+      {id:"hfpef-v2",cat:"vitals",priority:"urgent",required:true,name:"Daily BP",detail:"Target < 130/80. More aggressive than HFrEF"},
+      {id:"hfpef-d1",cat:"diet",priority:"routine",required:true,name:"Sodium-Restricted Diet",detail:"2g sodium daily"},
+      {id:"hfpef-f1",cat:"fluids",priority:"urgent",required:true,name:"IV Furosemide",detail:"40-80mg IV Q12h. Titrate to UO"},
+      {id:"hfpef-l1",cat:"labs",priority:"stat",required:true,name:"BMP Daily",detail:"K⁺, Cr, Na⁺ while on diuretics"},
+      {id:"hfpef-l2",cat:"labs",priority:"stat",required:true,name:"NT-proBNP",detail:"Baseline. May be disproportionately elevated"},
+      {id:"hfpef-i1",cat:"imaging",priority:"urgent",required:true,name:"Echocardiogram (TTE)",detail:"Within 24-48h — EF ≥ 50%, assess diastolic function"},
+      {id:"hfpef-m1",cat:"meds",priority:"routine",required:true,name:"ACE-inhibitor or ARB",detail:"For hypertension control and afterload reduction"},
+      {id:"hfpef-m2",cat:"meds",priority:"routine",required:false,name:"SGLT2 Inhibitor",detail:"Empagliflozin 10mg daily — evidence emerging in HFpEF"},
+      {id:"hfpef-c1",cat:"consults",priority:"urgent",required:true,name:"Cardiology",detail:"URGENT for HFpEF management"},
+    ]
+  },
+
+  acute_aortic_dissection: {
+    id:"aortic_dissection", name:"Acute Aortic Dissection", subtitle:"Type A vs B — Critical Emergencies",
+    icon:"🩸", specialty:"Cardiology", acuity:"stat",
+    guideline:"ACC/AHA 2024 Aortic Dissection Guidelines",
+    tags:["Hypertensive Emergency","Cardiothoracic Surgery","Type A","Type B"],
+    orders:[
+      {id:"aod-a1",cat:"admit",priority:"stat",required:true,name:"Admit to ICU/CVICU",detail:"Highest acuity. Cardiothoracic surgery standby"},
+      {id:"aod-v1",cat:"vitals",priority:"stat",required:true,name:"Arterial Line",detail:"Continuous BP monitoring — both arms"},
+      {id:"aod-v2",cat:"vitals",priority:"stat",required:true,name:"BP Management Target",detail:"SBP < 120 mmHg. Reduce dP/dt (heart rate × SBP)"},
+      {id:"aod-l1",cat:"labs",priority:"stat",required:true,name:"Type & Cross 6 units",detail:"STAT"},
+      {id:"aod-l2",cat:"labs",priority:"stat",required:true,name:"CBC, CMP, Lactate, Troponin",detail:"STAT"},
+      {id:"aod-i1",cat:"imaging",priority:"stat",required:true,name:"CT Chest with Contrast (CTA)",detail:"STAT — gold standard. Type A requires immediate imaging"},
+      {id:"aod-i2",cat:"imaging",priority:"stat",required:true,name:"12-Lead EKG",detail:"STAT — r/o inferior STEMI if type A"},
+      {id:"aod-m1",cat:"meds",priority:"stat",required:true,name:"Labetalol IV",detail:"Start 10-20mg, repeat Q10min. SBP goal < 120",high_alert:true},
+      {id:"aod-m2",cat:"meds",priority:"stat",required:true,name:"Nitroprusside Infusion",detail:"0.5-1.4 mcg/kg/min if BP not controlled with labetalol",high_alert:true},
+      {id:"aod-m3",cat:"meds",priority:"stat",required:true,name:"Beta-blocker (Esmolol or Propranolol)",detail:"HR goal 60 bpm. Give BEFORE vasodilators",high_alert:true},
+      {id:"aod-c1",cat:"consults",priority:"stat",required:true,name:"Cardiothoracic Surgery",detail:"STAT — Type A requires emergent surgical repair"},
+      {id:"aod-c2",cat:"consults",priority:"stat",required:true,name:"Cardiology",detail:"Type B management — anticoagulation, BP control"},
+    ]
+  },
+
+  acute_liver_failure: {
+    id:"acute_liver_failure", name:"Acute Liver Failure", subtitle:"Fulminant Hepatic Failure",
+    icon:"🩺", specialty:"Hepatology", acuity:"stat",
+    guideline:"AASLD 2024 Acute Liver Failure Guidelines",
+    tags:["Encephalopathy","INR Elevation","Hyperammonemia","Transplant Candidate"],
+    orders:[
+      {id:"alf-a1",cat:"admit",priority:"stat",required:true,name:"Admit to ICU",detail:"Highest acuity. Transplant center evaluation"},
+      {id:"alf-v1",cat:"vitals",priority:"stat",required:true,name:"Neurological Checks Q1h",detail:"Glasgow Coma Score. Encephalopathy assessment"},
+      {id:"alf-v2",cat:"vitals",priority:"stat",required:true,name:"Glucose Q1h",detail:"Profound hypoglycemia risk"},
+      {id:"alf-l1",cat:"labs",priority:"stat",required:true,name:"STAT Labs (INR/PT, Bili, AST/ALT, Albumin, Glucose)",detail:"Baseline, then Q4-6h"},
+      {id:"alf-l2",cat:"labs",priority:"stat",required:true,name:"Ammonia Level",detail:"Baseline and q4h if encephalopathy present"},
+      {id:"alf-l3",cat:"labs",priority:"stat",required:true,name:"Blood Cultures × 2",detail:"Sepsis risk high"},
+      {id:"alf-l4",cat:"labs",priority:"urgent",required:false,name:"Acetaminophen Level",detail:"If suspected ingestion — nomogram interpretation"},
+      {id:"alf-l5",cat:"labs",priority:"urgent",required:false,name:"Viral Serology (HAV, HBV, HCV, EBV, CMV)",detail:"Identify etiology"},
+      {id:"alf-f1",cat:"fluids",priority:"stat",required:true,name:"D50 IV For Hypoglycemia",detail:"Target glucose 100-150. Repeat q1h as needed"},
+      {id:"alf-m1",cat:"meds",priority:"urgent",required:true,name:"Lactulose + Rifaxomicin",detail:"Hepatic encephalopathy management"},
+      {id:"alf-m2",cat:"meds",priority:"stat",required:false,name:"N-Acetylcysteine (NAC)",detail:"If acetaminophen toxicity — continued benefit even after 36h"},
+      {id:"alf-i1",cat:"imaging",priority:"stat",required:true,name:"Head CT (non-contrast)",detail:"Rule out intracranial hemorrhage if coma"},
+      {id:"alf-i2",cat:"imaging",priority:"stat",required:true,name:"Abdominal Ultrasound ± Doppler",detail:"Assess liver size, rule out Budd-Chiari"},
+      {id:"alf-c1",cat:"consults",priority:"stat",required:true,name:"Hepatology / Transplant Surgery",detail:"STAT — transplant evaluation"},
+      {id:"alf-c2",cat:"consults",priority:"stat",required:false,name:"Nephrology",detail:"AKI prophylaxis and management"},
+    ]
+  },
+
+  acute_epiglottitis: {
+    id:"acute_epiglottitis", name:"Acute Epiglottitis", subtitle:"Airway Emergency",
+    icon:"🚨", specialty:"Critical Care", acuity:"stat",
+    guideline:"BSAC/NICE 2024 Epiglottitis",
+    tags:["Airway Threat","Intubation","Stridor","Tripod Position"],
+    orders:[
+      {id:"epig-a1",cat:"admit",priority:"stat",required:true,name:"Admit to ICU",detail:"Airway emergency. Prepare for intubation"},
+      {id:"epig-v1",cat:"vitals",priority:"stat",required:true,name:"Continuous Monitoring",detail:"Maintain calm — avoid agitation"},
+      {id:"epig-l1",cat:"labs",priority:"stat",required:true,name:"Blood Cultures × 2",detail:"STAT before antibiotics"},
+      {id:"epig-l2",cat:"labs",priority:"stat",required:true,name:"CBC, CMP",detail:"STAT"},
+      {id:"epig-m1",cat:"meds",priority:"stat",required:true,name:"Ceftriaxone 2g IV Q12h",detail:"STAT first dose",high_alert:true,guideline:"BSAC 2024"},
+      {id:"epig-m2",cat:"meds",priority:"stat",required:false,name:"Dexamethasone 10mg IV",detail:"Reduces edema if stridor present"},
+      {id:"epig-i1",cat:"imaging",priority:"stat",required:true,name:"Lateral Neck X-ray",detail:"Thumb sign — epiglottic enlargement. DO NOT delay intubation"},
+      {id:"epig-c1",cat:"consults",priority:"stat",required:true,name:"Anesthesia / ENT",detail:"STAT airway management — intubation likely needed"},
+      {id:"epig-c2",cat:"consults",priority:"stat",required:true,name:"Infectious Disease",detail:"Antibiotic selection and eradication therapy"},
+    ]
+  },
+
+  acute_coronary_syndrome_unstable_angina: {
+    id:"acs_unstable_angina", name:"ACS — Unstable Angina", subtitle:"No Troponin Elevation",
+    icon:"💔", specialty:"Cardiology", acuity:"urgent",
+    guideline:"ACC/AHA 2023 ACS Guidelines",
+    tags:["No MI","Risk Stratification","Serial Troponin","Stress Testing"],
+    orders:[
+      {id:"acs-a1",cat:"admit",priority:"urgent",required:true,name:"Admit to Telemetry",detail:"Continuous cardiac monitoring"},
+      {id:"acs-v1",cat:"vitals",priority:"urgent",required:true,name:"Continuous Telemetry",detail:"Arrhythmia and ST-segment monitoring"},
+      {id:"acs-l1",cat:"labs",priority:"stat",required:true,name:"Troponin SERIAL",detail:"STAT, 3h, 6h. Must rule out MI"},
+      {id:"acs-l2",cat:"labs",priority:"stat",required:true,name:"BMP, Mg, CBC",detail:"STAT"},
+      {id:"acs-l3",cat:"labs",priority:"stat",required:true,name:"Lipid Panel",detail:"Fasting if possible"},
+      {id:"acs-i1",cat:"imaging",priority:"stat",required:true,name:"12-Lead EKG",detail:"STAT, then repeat with chest pain"},
+      {id:"acs-m1",cat:"meds",priority:"stat",required:true,name:"Aspirin 325mg chew",detail:"STAT if not contraindicated"},
+      {id:"acs-m2",cat:"meds",priority:"stat",required:true,name:"Ticagrelor 180mg or Prasugrel 60mg",detail:"P2Y12 inhibitor loading",high_alert:true},
+      {id:"acs-m3",cat:"meds",priority:"urgent",required:true,name:"Unfractionated Heparin or Enoxaparin",detail:"Anticoagulation per protocol"},
+      {id:"acs-m4",cat:"meds",priority:"routine",required:true,name:"Atorvastatin 80mg",detail:"High-intensity statin"},
+      {id:"acs-m5",cat:"meds",priority:"urgent",required:true,name:"Sublingual NTG Q5min PRN",detail:"For chest pain relief"},
+      {id:"acs-i2",cat:"imaging",priority:"urgent",required:false,name:"Stress Test or Cath Timing",detail:"Risk stratification — defer cath if low-risk"},
+      {id:"acs-c1",cat:"consults",priority:"urgent",required:true,name:"Cardiology",detail:"URGENT for risk stratification and cath timing"},
+    ]
+  },
+
+  acute_pericarditis: {
+    id:"pericarditis", name:"Acute Pericarditis", subtitle:"Pleuritic Chest Pain",
+    icon:"💔", specialty:"Cardiology", acuity:"routine",
+    guideline:"ESC 2024 Pericarditis Guidelines",
+    tags:["Pericardial Effusion","Tamponade Risk","NSAIDs","Colchicine"],
+    orders:[
+      {id:"peri-a1",cat:"admit",priority:"routine",required:false,name:"Admit for Observation",detail:"Observation if uncomplicated. ICU if tamponade"},
+      {id:"peri-v1",cat:"vitals",priority:"routine",required:true,name:"Vital Signs Q4h",detail:"Monitor for tamponade — JVD, pulsus"},
+      {id:"peri-l1",cat:"labs",priority:"stat",required:true,name:"Troponin I",detail:"STAT — may be minimally elevated"},
+      {id:"peri-l2",cat:"labs",priority:"stat",required:true,name:"CRP / ESR",detail:"Inflammatory markers"},
+      {id:"peri-l3",cat:"labs",priority:"stat",required:false,name:"Viral Serology",detail:"If suspected viral pericarditis"},
+      {id:"peri-i1",cat:"imaging",priority:"stat",required:true,name:"12-Lead EKG",detail:"Diffuse ST elevation, PR depression"},
+      {id:"peri-i2",cat:"imaging",priority:"urgent",required:true,name:"Echocardiogram (TTE)",detail:"Assess pericardial effusion size, tamponade physiology"},
+      {id:"peri-m1",cat:"meds",priority:"routine",required:true,name:"Indomethacin 50mg TID",detail:"OR naproxen 500mg BID. NSAIDs are first-line",guideline:"ESC 2024"},
+      {id:"peri-m2",cat:"meds",priority:"routine",required:true,name:"Colchicine 0.5mg BID",detail:"Reduces recurrence. Use with NSAIDs",guideline:"ESC 2024"},
+      {id:"peri-m3",cat:"meds",priority:"urgent",required:false,name:"Corticosteroids",detail:"If pericarditis-induced and NSAIDs contraindicated"},
+      {id:"peri-c1",cat:"consults",priority:"urgent",required:false,name:"Cardiology",detail:"If effusion or recurrent pericarditis"},
+    ]
+  },
+
+  acute_spontaneous_pneumothorax: {
+    id:"pneumothorax", name:"Acute Spontaneous Pneumothorax", subtitle:"PSP vs SSP",
+    icon:"🫁", specialty:"Respiratory", acuity:"urgent",
+    guideline:"BTS 2024 Pneumothorax Guidelines",
+    tags:["Chest Tube","Observation","Tension Pneumothorax","Small vs Large"],
+    orders:[
+      {id:"ptx-a1",cat:"admit",priority:"urgent",required:true,name:"Admit for Observation",detail:"ICU if hemodynamically unstable or tension PTX"},
+      {id:"ptx-v1",cat:"vitals",priority:"urgent",required:true,name:"Continuous SpO₂",detail:"Supplemental O₂ to hasten reabsorption"},
+      {id:"ptx-l1",cat:"labs",priority:"stat",required:true,name:"ABC if indicated",detail:"Assess oxygenation"},
+      {id:"ptx-i1",cat:"imaging",priority:"stat",required:true,name:"Chest X-ray (CXR) PA/Lateral",detail:"STAT — measure pneumothorax size"},
+      {id:"ptx-i2",cat:"imaging",priority:"urgent",required:false,name:"CT Chest Non-contrast",detail:"If recurrent PSP or secondary causes suspected"},
+      {id:"ptx-m1",cat:"meds",priority:"routine",required:false,name:"Analgesia",detail:"Adequate pain control for breathing exercises"},
+      {id:"ptx-n1",cat:"nursing",priority:"urgent",required:false,name:"Chest Tube Placement (if > 2cm)",detail:"BTS guidelines: observe < 2cm; drain if > 2cm or symptoms"},
+      {id:"ptx-n2",cat:"nursing",priority:"routine",required:false,name:"Breathing Exercises",detail:"Incentive spirometry to promote lung re-expansion"},
+      {id:"ptx-c1",cat:"consults",priority:"urgent",required:false,name:"Thoracic Surgery",detail:"If recurrent, bilateral, hemopneumothorax, or failed intervention"},
+    ]
+  },
+
+  hypoglycemic_emergency: {
+    id:"hypoglycemia", name:"Severe Hypoglycemia", subtitle:"Blood Glucose < 70 mg/dL with Altered MS",
+    icon:"🩸", specialty:"Endocrinology", acuity:"stat",
+    guideline:"ADA 2024 Hypoglycemia Guidelines",
+    tags:["Altered Mental Status","Seizures","Loss of Consciousness","Glucose Tabs"],
+    orders:[
+      {id:"hypo-a1",cat:"admit",priority:"stat",required:true,name:"Admit to Medicine/ICU",detail:"ICU if seizures or prolonged altered MS"},
+      {id:"hypo-v1",cat:"vitals",priority:"stat",required:true,name:"POC Glucose STAT",detail:"Fingerstick immediately"},
+      {id:"hypo-l1",cat:"labs",priority:"stat",required:true,name:"Serum Glucose (lab confirmation)",detail:"Stat venous sample for confirmation"},
+      {id:"hypo-m1",cat:"meds",priority:"stat",required:true,name:"Dextrose 50% IV",detail:"25-50mL (12.5-25g glucose) IV bolus STAT",high_alert:true,guideline:"ADA 2024"},
+      {id:"hypo-m2",cat:"meds",priority:"stat",required:false,name:"Glucagon 1mg IM/IV",detail:"If IV access not available — onset 5-10 min"},
+      {id:"hypo-f1",cat:"fluids",priority:"stat",required:true,name:"D5W or D10W Infusion",detail:"Maintenance after initial bolus to prevent recurrence"},
+      {id:"hypo-l2",cat:"labs",priority:"urgent",required:true,name:"BMP",detail:"Renal function, electrolytes"},
+      {id:"hypo-l3",cat:"labs",priority:"urgent",required:true,name:"Insulin + C-peptide",detail:"If hypoglycemia unclear etiology (insulinoma vs meds)"},
+    ]
+  },
+
+  hemolytic_transfusion_reaction: {
+    id:"transfusion_reaction", name:"Acute Hemolytic Transfusion Reaction", subtitle:"Suspected During Blood Transfusion",
+    icon:"🩸", specialty:"Critical Care", acuity:"stat",
+    guideline:"AABB 2024 Transfusion Reaction Guidelines",
+    tags:["Fever","Back Pain","Hemoglobinuria","ABO Incompatibility","Septic Shock"],
+    orders:[
+      {id:"htr-a1",cat:"admit",priority:"stat",required:true,name:"Stop Transfusion IMMEDIATELY",detail:"Disconnect blood product. Keep IV patent with saline"},
+      {id:"htr-v1",cat:"vitals",priority:"stat",required:true,name:"Vital Signs Q15min",detail:"Monitor for shock, renal failure"},
+      {id:"htr-l1",cat:"labs",priority:"stat",required:true,name:"Blood Bank Workup",detail:"Repeat type & cross, DAT (direct antiglobulin test), antibody screen"},
+      {id:"htr-l2",cat:"labs",priority:"stat",required:true,name:"CBC, BMP, Bilirubin, LDH",detail:"Hemolysis markers"},
+      {id:"htr-l3",cat:"labs",priority:"stat",required:true,name:"Urinalysis + Urine Hemoglobin",detail:"Check for hemoglobinuria"},
+      {id:"htr-f1",cat:"fluids",priority:"stat",required:true,name:"NS Wide Open (Aggressive Hydration)",detail:"Goal UO > 200-300 mL/hr to prevent AKI",high_alert:true},
+      {id:"htr-m1",cat:"meds",priority:"urgent",required:true,name:"Furosemide 40-80mg IV",detail:"Maintain high urine output (alkaline urine prevents precipitation)"},
+      {id:"htr-m2",cat:"meds",priority:"urgent",required:true,name:"Sodium Bicarbonate",detail:"If urine pH < 6.5 — add 100 mEq to IV fluids"},
+      {id:"htr-l4",cat:"labs",priority:"stat",required:true,name:"Blood Cultures × 2",detail:"If fever — rule out sepsis from contaminated product"},
+      {id:"htr-c1",cat:"consults",priority:"stat",required:true,name:"Blood Bank / Transfusion Medicine",detail:"STAT investigation"},
+      {id:"htr-c2",cat:"consults",priority:"urgent",required:true,name:"Nephrology",detail:"AKI prevention and management"},
+    ]
+  },
+
+  adrenal_crisis: {
+    id:"adrenal_crisis", name:"Acute Adrenal Crisis", subtitle:"Adrenal Insufficiency — Shock",
+    icon:"⚡", specialty:"Endocrinology", acuity:"stat",
+    guideline:"Endocrine Society 2024 Adrenal Insufficiency",
+    tags:["Refractory Shock","Hypoglycemia","Hyponatremia","Glucocorticoid"],
+    orders:[
+      {id:"adr-a1",cat:"admit",priority:"stat",required:true,name:"Admit to ICU",detail:"Shock physiology — vasopressor likely needed"},
+      {id:"adr-v1",cat:"vitals",priority:"stat",required:true,name:"Arterial Line",detail:"Continuous BP monitoring"},
+      {id:"adr-f1",cat:"fluids",priority:"stat",required:true,name:"NS 1-2L rapid bolus",detail:"Aggressive fluid resuscitation for shock"},
+      {id:"adr-l1",cat:"labs",priority:"stat",required:true,name:"Cortisol AM (random acceptable in crisis)",detail:"STAT — > 20 mcg/dL makes crisis unlikely. Treat first, draw later"},
+      {id:"adr-l2",cat:"labs",priority:"stat",required:true,name:"ACTH + Cortisol",detail:"Obtain before treatment if possible — post-treatment levels unreliable"},
+      {id:"adr-l3",cat:"labs",priority:"stat",required:true,name:"BMP (Na⁺, glucose, K⁺)",detail:"Hyponatremia, hypoglycemia common"},
+      {id:"adr-m1",cat:"meds",priority:"stat",required:true,name:"Hydrocortisone 100mg IV STAT",detail:"Then 50-100mg IV Q6-8h or continuous infusion",high_alert:true,guideline:"Endocrine Society — Class 1"},
+      {id:"adr-m2",cat:"meds",priority:"stat",required:false,name:"Norepinephrine",detail:"If shock persists after fluids and hydrocortisone"},
+      {id:"adr-m3",cat:"meds",priority:"urgent",required:true,name:"Dextrose 50%",detail:"Bolus for hypoglycemia if present"},
+      {id:"adr-c1",cat:"consults",priority:"urgent",required:true,name:"Endocrinology",detail:"Long-term steroid replacement planning"},
+    ]
+  },
+
+  acute_psychosis: {
+    id:"acute_psychosis", name:"Acute Psychosis (First Episode)", subtitle:"Acute Onset Hallucinations/Delusions",
+    icon:"🧠", specialty:"Psychiatry", acuity:"urgent",
+    guideline:"APA 2024 Psychosis Guidelines",
+    tags:["Organic Workup","Antipsychotics","Safety","Restraint Protocol"],
+    orders:[
+      {id:"psy-a1",cat:"admit",priority:"urgent",required:true,name:"Admit to Psychiatry/Medicine",detail:"R/O medical causes first. Psychiatry consult"},
+      {id:"psy-v1",cat:"vitals",priority:"urgent",required:true,name:"Vital Signs Q4h",detail:"Monitor for neuroleptic malignant syndrome"},
+      {id:"psy-l1",cat:"labs",priority:"stat",required:true,name:"Comprehensive Labs",detail:"Glucose, electrolytes, renal function, LFTs"},
+      {id:"psy-l2",cat:"labs",priority:"stat",required:true,name:"Urine Drug Screen (UDS)",detail:"Methamphetamine, cocaine, PCP common mimics"},
+      {id:"psy-l3",cat:"labs",priority:"urgent",required:true,name:"TSH",detail:"Hyperthyroidism can mimic psychosis"},
+      {id:"psy-l4",cat:"labs",priority:"urgent",required:false,name:"Syphilis (RPR) + HIV + Syphilis LP if neuro signs",detail:"Neurosyphilis presents as psychosis"},
+      {id:"psy-i1",cat:"imaging",priority:"urgent",required:true,name:"Head CT (non-contrast)",detail:"Rule out intracranial pathology"},
+      {id:"psy-i2",cat:"imaging",priority:"stat",required:true,name:"12-Lead EKG",detail:"Baseline before antipsychotics (QT prolongation risk)"},
+      {id:"psy-m1",cat:"meds",priority:"urgent",required:true,name:"Olanzapine 5mg IM or Haloperidol 5mg IM",detail:"Acute agitation control",high_alert:true},
+      {id:"psy-m2",cat:"meds",priority:"urgent",required:true,name:"Lorazepam 1-2mg IV/IM Q1h PRN",detail:"Agitation and anxiety"},
+      {id:"psy-m3",cat:"meds",priority:"routine",required:false,name:"Risperidone 2-3mg PO daily",detail:"First-generation atypical antipsychotic"},
+      {id:"psy-c1",cat:"consults",priority:"urgent",required:true,name:"Psychiatry",detail:"URGENT psychosis workup and management"},
+      {id:"psy-c2",cat:"consults",priority:"urgent",required:false,name:"Neurology",detail:"If seizure-like activity or focal deficits"},
+    ]
+  },
 };

@@ -186,7 +186,7 @@ function ActiveNoteWidget({ navigate }) {
     { id: "labs_imaging", label: "Labs & Imaging", icon: "🧪" },
     { id: "differential", label: "Diagnoses", icon: "⚕️" },
     { id: "treatment_plan", label: "Treatment Plan", icon: "💊" },
-    { id: "disposition_plan", label: "Disposition", icon: "🚑" },
+    { id: "disposition_plan", label: "Disposition", icon: "🚑", tab: "disposition_plan" },
   ];
 
   return (
@@ -264,7 +264,8 @@ function ActiveNoteWidget({ navigate }) {
               <button
                 key={section.id}
                 onClick={() => {
-                  navigate(`${createPageUrl("ClinicalNoteStudio")}?noteId=${selectedNoteId}&tab=${section.id}`);
+                  const tab = section.tab || section.id;
+                  navigate(`${createPageUrl("ClinicalNoteStudio")}?noteId=${selectedNoteId}&tab=${tab}`);
                 }}
                 style={{
                   display: "flex",

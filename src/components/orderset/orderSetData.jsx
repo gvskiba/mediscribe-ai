@@ -25,10 +25,13 @@ export const PRI_CFG = {
 };
 
 export const SPECIALTIES = {
-  "Cardiology":    { icon:"❤️",  color:"#ff5c6c", conditions:["chf"] },
-  "Critical Care": { icon:"🚨",  color:"#ff8c42", conditions:["sepsis"] },
-  "Neurology":     { icon:"🧠",  color:"#9b6dff", conditions:["stroke"] },
-  "Endocrinology": { icon:"🩸",  color:"#f5a623", conditions:["dka"] },
+  "Cardiology":    { icon:"❤️",  color:"#ff5c6c", conditions:["chf","acute_mi","nstemi","afib_rvr","pe"] },
+  "Critical Care": { icon:"🚨",  color:"#ff8c42", conditions:["sepsis","anaphylaxis","cardiogenic_shock"] },
+  "Neurology":     { icon:"🧠",  color:"#9b6dff", conditions:["stroke","ich","status_epilepticus"] },
+  "Endocrinology": { icon:"🩸",  color:"#f5a623", conditions:["dka","hhs","thyroid_storm"] },
+  "Respiratory":   { icon:"🫁",  color:"#22d3ee", conditions:["copd","asthma","pneumonia","ards"] },
+  "Gastroenterology": { icon:"🫃", color:"#2ecc71", conditions:["gi_bleed_upper","pancreatitis","bowel_obstruction"] },
+  "Nephrology":    { icon:"🩻",  color:"#f0c040", conditions:["aki","hyperkalemia"] },
 };
 
 const tag = (color, bg, label) => ({ color, bg, label });
@@ -245,6 +248,312 @@ export const CONDITIONS = {
       {id:"dka-n2",cat:"nursing", priority:"urgent",required:false,name:"Foley Catheter",              detail:"Insert if altered mental status, hemodynamically unstable, or strict I&O required"},
       {id:"dka-n3",cat:"nursing", priority:"urgent",required:true, name:"Cardiac Monitoring",          detail:"Continuous ECG monitoring for potassium-related changes. Alert MD for peaked T-waves or widened QRS."},
       {id:"dka-n4",cat:"nursing", priority:"urgent",required:true, name:"Insulin Drip Protocol",       detail:"Two-nurse verification before initiating insulin infusion. Follow institutional DKA insulin protocol exactly."},
+    ]
+  },
+
+  // Additional Cardiovascular Conditions
+  acute_mi: {
+    id:"acute_mi", name:"Acute STEMI", subtitle:"ST-Elevation Myocardial Infarction",
+    icon:"💔", specialty:"Cardiology", acuity:"stat",
+    guideline:"ACC/AHA 2023 STEMI Guidelines",
+    tags:["PCI","Cath Lab","Door-to-Balloon","Antiplatelet"],
+    orders:[
+      {id:"mi-a1",cat:"admit",priority:"stat",required:true,name:"Activate Cath Lab",detail:"STAT Code STEMI. Target door-to-balloon < 90 min",guideline:"ACC/AHA 2023 Class I"},
+      {id:"mi-a2",cat:"admit",priority:"stat",required:true,name:"Admit to CCU",detail:"Coronary Care Unit with telemetry"},
+      {id:"mi-v1",cat:"vitals",priority:"stat",required:true,name:"Continuous Telemetry",detail:"Cardiac monitoring for arrhythmia detection"},
+      {id:"mi-v2",cat:"vitals",priority:"urgent",required:true,name:"Vital Signs Q15min",detail:"Until hemodynamically stable × 1h, then Q1h × 4h"},
+      {id:"mi-l1",cat:"labs",priority:"stat",required:true,name:"Troponin I serial",detail:"STAT, 3h, 6h. Peak typically 12-24h"},
+      {id:"mi-l2",cat:"labs",priority:"stat",required:true,name:"BMP, Mg, CBC",detail:"STAT baseline labs"},
+      {id:"mi-m1",cat:"meds",priority:"stat",required:true,name:"Aspirin 325mg chew",detail:"STAT loading dose. Reduces mortality 23%",guideline:"ACC/AHA 2023 Class I"},
+      {id:"mi-m2",cat:"meds",priority:"stat",required:true,name:"Ticagrelor 180mg OR Prasugrel 60mg",detail:"P2Y12 inhibitor loading. Ticagrelor preferred if > 75yo",high_alert:true,guideline:"ACC/AHA 2023"},
+      {id:"mi-m3",cat:"meds",priority:"stat",required:true,name:"Heparin bolus + infusion",detail:"70 units/kg bolus, then 12 units/kg/hr. Target aPTT 50-70s",high_alert:true},
+      {id:"mi-m4",cat:"meds",priority:"stat",required:true,name:"Atorvastatin 80mg",detail:"High-intensity statin. Start immediately",guideline:"ACC/AHA 2023"},
+      {id:"mi-i1",cat:"imaging",priority:"stat",required:true,name:"12-Lead EKG",detail:"STAT — repeat Q15-30min if pain recurs"},
+      {id:"mi-i2",cat:"imaging",priority:"urgent",required:true,name:"Chest X-ray portable",detail:"On admission"},
+      {id:"mi-c1",cat:"consults",priority:"stat",required:true,name:"Interventional Cardiology",detail:"STAT for emergent PCI"},
+    ]
+  },
+
+  copd: {
+    id:"copd", name:"COPD Exacerbation", subtitle:"Acute Exacerbation of COPD",
+    icon:"🫁", specialty:"Respiratory", acuity:"urgent",
+    guideline:"GOLD 2024 COPD Guidelines",
+    tags:["Bronchodilators","Steroids","ABG","NIV"],
+    orders:[
+      {id:"copd-a1",cat:"admit",priority:"urgent",required:true,name:"Admit to Telemetry",detail:"Medical floor with telemetry. ICU if respiratory failure"},
+      {id:"copd-v1",cat:"vitals",priority:"urgent",required:true,name:"Continuous SpO₂",detail:"Target 88-92%. Avoid hyperoxia (worsens CO₂ retention)",guideline:"GOLD 2024"},
+      {id:"copd-v2",cat:"vitals",priority:"urgent",required:true,name:"Vital Signs Q4h",detail:"HR, BP, RR, SpO₂, Temp"},
+      {id:"copd-l1",cat:"labs",priority:"stat",required:true,name:"ABG",detail:"STAT — assess pH, pCO₂, pO₂. Respiratory acidosis?"},
+      {id:"copd-l2",cat:"labs",priority:"stat",required:true,name:"CBC, BMP",detail:"STAT baseline"},
+      {id:"copd-m1",cat:"meds",priority:"stat",required:true,name:"Albuterol 2.5mg + Ipratropium 0.5mg neb",detail:"Q4h. Continuous albuterol if severe",guideline:"GOLD 2024 Class I"},
+      {id:"copd-m2",cat:"meds",priority:"urgent",required:true,name:"Prednisone 40mg PO daily × 5 days",detail:"OR Methylprednisolone 125mg IV Q6h if NPO",guideline:"GOLD 2024 — reduces length of stay"},
+      {id:"copd-m3",cat:"meds",priority:"urgent",required:true,name:"Azithromycin 500mg PO daily × 5d",detail:"If purulent sputum or increased sputum volume",guideline:"GOLD 2024"},
+      {id:"copd-i1",cat:"imaging",priority:"stat",required:true,name:"Chest X-ray PA/Lateral",detail:"Rule out pneumonia, pneumothorax"},
+      {id:"copd-n1",cat:"nursing",priority:"urgent",required:false,name:"BiPAP Protocol",detail:"If pH < 7.35, pCO₂ > 45, RR > 25. Initiate NIV"},
+    ]
+  },
+
+  asthma: {
+    id:"asthma", name:"Severe Asthma Exacerbation", subtitle:"Acute Asthma Attack",
+    icon:"💨", specialty:"Respiratory", acuity:"urgent",
+    guideline:"GINA 2024 Asthma Guidelines",
+    tags:["Status Asthmaticus","Peak Flow","Beta-Agonist"],
+    orders:[
+      {id:"ast-a1",cat:"admit",priority:"urgent",required:true,name:"Admit to Telemetry / ICU",detail:"ICU if impending respiratory failure, silent chest, altered MS"},
+      {id:"ast-v1",cat:"vitals",priority:"stat",required:true,name:"Peak Flow Monitoring",detail:"Baseline, then Q1h during acute treatment"},
+      {id:"ast-l1",cat:"labs",priority:"stat",required:true,name:"ABG",detail:"If SpO₂ < 92% or severe distress"},
+      {id:"ast-m1",cat:"meds",priority:"stat",required:true,name:"Continuous Albuterol Neb",detail:"2.5-5mg continuous nebulization",guideline:"GINA 2024"},
+      {id:"ast-m2",cat:"meds",priority:"stat",required:true,name:"Ipratropium 0.5mg neb Q20min × 3",detail:"Add to albuterol for severe exacerbation"},
+      {id:"ast-m3",cat:"meds",priority:"stat",required:true,name:"Methylprednisolone 125mg IV",detail:"Q6h × 48h. Switch to prednisone 60mg PO when improved",guideline:"GINA 2024"},
+      {id:"ast-m4",cat:"meds",priority:"urgent",required:false,name:"Magnesium Sulfate 2g IV",detail:"Over 20 min if life-threatening or refractory",guideline:"GINA 2024"},
+      {id:"ast-i1",cat:"imaging",priority:"urgent",required:true,name:"Chest X-ray",detail:"Rule out pneumothorax, pneumomediastinum"},
+    ]
+  },
+
+  pneumonia: {
+    id:"pneumonia", name:"Community-Acquired Pneumonia", subtitle:"CAP — PORT/CURB-65 Stratified",
+    icon:"🦠", specialty:"Respiratory", acuity:"urgent",
+    guideline:"IDSA/ATS 2024 CAP Guidelines",
+    tags:["CURB-65","Antibiotics","Sepsis"],
+    orders:[
+      {id:"pna-a1",cat:"admit",priority:"urgent",required:true,name:"Admit per CURB-65",detail:"Floor if CURB-65 0-1. ICU if severe CAP or sepsis"},
+      {id:"pna-l1",cat:"labs",priority:"stat",required:true,name:"Blood Cultures × 2",detail:"STAT before antibiotics"},
+      {id:"pna-l2",cat:"labs",priority:"stat",required:true,name:"Sputum Culture + Gram Stain",detail:"If productive cough"},
+      {id:"pna-l3",cat:"labs",priority:"stat",required:true,name:"CBC, BMP, Lactate",detail:"STAT"},
+      {id:"pna-m1",cat:"meds",priority:"stat",required:true,name:"Ceftriaxone 2g IV Q24h",detail:"STAT first dose. Covers S. pneumoniae",guideline:"IDSA 2024"},
+      {id:"pna-m2",cat:"meds",priority:"stat",required:true,name:"Azithromycin 500mg IV daily",detail:"Atypical coverage. Switch to PO when improved",guideline:"IDSA 2024"},
+      {id:"pna-i1",cat:"imaging",priority:"stat",required:true,name:"Chest X-ray PA/Lateral",detail:"STAT — confirms infiltrate"},
+    ]
+  },
+
+  gi_bleed_upper: {
+    id:"gi_bleed_upper", name:"Upper GI Bleed", subtitle:"Acute UGIB — Hematemesis / Melena",
+    icon:"🩸", specialty:"Gastroenterology", acuity:"urgent",
+    guideline:"ACG 2021 UGIB Guidelines",
+    tags:["Hematemesis","Melena","Varices","PPI"],
+    orders:[
+      {id:"gib-a1",cat:"admit",priority:"urgent",required:true,name:"Admit to ICU/Step-Down",detail:"ICU if hemodynamically unstable or massive bleed"},
+      {id:"gib-v1",cat:"vitals",priority:"stat",required:true,name:"Vital Signs Q15min",detail:"Until stable, then Q1h"},
+      {id:"gib-f1",cat:"fluids",priority:"stat",required:true,name:"2 large-bore IVs",detail:"18G or larger"},
+      {id:"gib-f2",cat:"fluids",priority:"stat",required:true,name:"LR or NS bolus 1-2L",detail:"Aggressive volume resuscitation. Target MAP > 65"},
+      {id:"gib-l1",cat:"labs",priority:"stat",required:true,name:"Type & Cross 4 units pRBCs",detail:"STAT. Transfuse if Hgb < 7 (restrictive strategy)",guideline:"ACG 2021"},
+      {id:"gib-l2",cat:"labs",priority:"stat",required:true,name:"CBC, BMP, PT/INR, Lactate",detail:"STAT baseline"},
+      {id:"gib-m1",cat:"meds",priority:"stat",required:true,name:"Pantoprazole 80mg IV bolus",detail:"Then 8mg/hr infusion × 72h",guideline:"ACG 2021"},
+      {id:"gib-m2",cat:"meds",priority:"stat",required:false,name:"Octreotide 50mcg bolus + infusion",detail:"If variceal bleed suspected. 50mcg/hr infusion",guideline:"ACG 2021"},
+      {id:"gib-m3",cat:"meds",priority:"stat",required:false,name:"Ceftriaxone 1g IV daily",detail:"If cirrhosis — prevent SBP and bacterial infections",guideline:"ACG 2021"},
+      {id:"gib-c1",cat:"consults",priority:"stat",required:true,name:"GI for Emergent EGD",detail:"STAT — within 12-24h for most; emergent if massive bleed"},
+    ]
+  },
+
+  pancreatitis: {
+    id:"pancreatitis", name:"Acute Pancreatitis", subtitle:"Acute Interstitial Pancreatitis",
+    icon:"🫃", specialty:"Gastroenterology", acuity:"urgent",
+    guideline:"ACG 2023 Pancreatitis Guidelines",
+    tags:["Lipase","ERCP","Ranson Criteria"],
+    orders:[
+      {id:"pan-a1",cat:"admit",priority:"urgent",required:true,name:"Admit to Floor/ICU",detail:"ICU if severe or organ failure"},
+      {id:"pan-d1",cat:"diet",priority:"urgent",required:true,name:"NPO",detail:"Until pain improved, then advance diet as tolerated",guideline:"ACG 2023"},
+      {id:"pan-f1",cat:"fluids",priority:"stat",required:true,name:"LR 250-500 mL/hr",detail:"Aggressive IV fluids. LR superior to NS",guideline:"ACG 2023 Class I"},
+      {id:"pan-l1",cat:"labs",priority:"stat",required:true,name:"Lipase",detail:"STAT — typically > 3× ULN"},
+      {id:"pan-l2",cat:"labs",priority:"stat",required:true,name:"CBC, CMP, Lactate",detail:"STAT"},
+      {id:"pan-m1",cat:"meds",priority:"urgent",required:true,name:"Hydromorphone 0.5-1mg IV Q3h PRN",detail:"Pain control. Avoid morphine"},
+      {id:"pan-i1",cat:"imaging",priority:"urgent",required:true,name:"CT Abdomen/Pelvis + contrast",detail:"If diagnosis uncertain or severe. Wait 72h for necrosis assessment"},
+      {id:"pan-i2",cat:"imaging",priority:"urgent",required:true,name:"RUQ Ultrasound",detail:"Rule out gallstones as etiology"},
+    ]
+  },
+
+  aki: {
+    id:"aki", name:"Acute Kidney Injury", subtitle:"AKI — KDIGO Staging",
+    icon:"🩻", specialty:"Nephrology", acuity:"urgent",
+    guideline:"KDIGO 2024 AKI Guidelines",
+    tags:["Creatinine","Oliguria","Pre-renal","ATN"],
+    orders:[
+      {id:"aki-a1",cat:"admit",priority:"urgent",required:true,name:"Admit to Medicine",detail:"ICU if severe AKI (Stage 3) or hyperkalemia"},
+      {id:"aki-v1",cat:"vitals",priority:"urgent",required:true,name:"Strict I&O",detail:"Q1h. Foley for accurate UOP"},
+      {id:"aki-l1",cat:"labs",priority:"stat",required:true,name:"BMP",detail:"STAT, then Q6-12h"},
+      {id:"aki-l2",cat:"labs",priority:"stat",required:true,name:"Urinalysis + Microscopy",detail:"STAT — assess for ATN (muddy brown casts)"},
+      {id:"aki-l3",cat:"labs",priority:"stat",required:true,name:"Urine Na, Cr, Osmolality",detail:"Calculate FENa (< 1% = pre-renal)"},
+      {id:"aki-f1",cat:"fluids",priority:"urgent",required:true,name:"IV Fluid Challenge",detail:"500mL NS bolus. Assess response. Hold if volume overload"},
+      {id:"aki-m1",cat:"meds",priority:"urgent",required:true,name:"STOP nephrotoxins",detail:"Hold NSAIDs, ACEi/ARB, aminoglycosides, contrast"},
+      {id:"aki-i1",cat:"imaging",priority:"urgent",required:true,name:"Renal Ultrasound",detail:"Rule out obstruction"},
+      {id:"aki-c1",cat:"consults",priority:"urgent",required:false,name:"Nephrology",detail:"If Stage 3 AKI, hyperkalemia > 6.5, or dialysis indication"},
+    ]
+  },
+
+  hyperkalemia: {
+    id:"hyperkalemia", name:"Severe Hyperkalemia", subtitle:"K⁺ > 6.0 mEq/L",
+    icon:"⚡", specialty:"Nephrology", acuity:"stat",
+    guideline:"Nephrology Practice Guidelines 2024",
+    tags:["EKG Changes","Dialysis","Calcium Gluconate"],
+    orders:[
+      {id:"hk-a1",cat:"admit",priority:"stat",required:true,name:"Admit to Telemetry/ICU",detail:"ICU if EKG changes or K⁺ > 7.0"},
+      {id:"hk-v1",cat:"vitals",priority:"stat",required:true,name:"Continuous Telemetry",detail:"Monitor for arrhythmia"},
+      {id:"hk-l1",cat:"labs",priority:"stat",required:true,name:"BMP",detail:"STAT, repeat in 1-2h after treatment"},
+      {id:"hk-i1",cat:"imaging",priority:"stat",required:true,name:"12-Lead EKG",detail:"STAT — peaked T-waves, widened QRS, sine wave pattern"},
+      {id:"hk-m1",cat:"meds",priority:"stat",required:true,name:"Calcium Gluconate 1g IV",detail:"STAT if EKG changes. Cardioprotective. Give over 3 min",high_alert:true},
+      {id:"hk-m2",cat:"meds",priority:"stat",required:true,name:"Insulin 10 units + D50 50mL IV",detail:"Shifts K⁺ intracellularly. Onset 15-30 min",high_alert:true},
+      {id:"hk-m3",cat:"meds",priority:"stat",required:true,name:"Albuterol 10-20mg neb",detail:"Continuous. Shifts K⁺ into cells"},
+      {id:"hk-m4",cat:"meds",priority:"urgent",required:true,name:"Sodium Polystyrene 30g PO/PR",detail:"Removes K⁺ from body. Takes hours"},
+      {id:"hk-c1",cat:"consults",priority:"stat",required:false,name:"Nephrology — Emergent Dialysis",detail:"If K⁺ > 7.5, refractory, or severe EKG changes"},
+    ]
+  },
+
+  anaphylaxis: {
+    id:"anaphylaxis", name:"Anaphylaxis", subtitle:"Severe Allergic Reaction",
+    icon:"🚨", specialty:"Critical Care", acuity:"stat",
+    guideline:"World Allergy Organization 2024",
+    tags:["Epinephrine","Antihistamine","Biphasic Reaction"],
+    orders:[
+      {id:"ana-a1",cat:"admit",priority:"stat",required:true,name:"Admit for Observation",detail:"24h observation for biphasic reaction (10-20% risk)"},
+      {id:"ana-v1",cat:"vitals",priority:"stat",required:true,name:"Continuous SpO₂ + Telemetry",detail:"Monitor airway, breathing, circulation"},
+      {id:"ana-m1",cat:"meds",priority:"stat",required:true,name:"Epinephrine 0.3mg IM",detail:"STAT in lateral thigh. Repeat Q5-15min PRN",high_alert:true,guideline:"WAO 2024 Class I"},
+      {id:"ana-m2",cat:"meds",priority:"urgent",required:true,name:"Diphenhydramine 50mg IV",detail:"H1 blocker"},
+      {id:"ana-m3",cat:"meds",priority:"urgent",required:true,name:"Ranitidine 50mg IV",detail:"H2 blocker"},
+      {id:"ana-m4",cat:"meds",priority:"urgent",required:true,name:"Methylprednisolone 125mg IV",detail:"Prevents late-phase reaction"},
+      {id:"ana-f1",cat:"fluids",priority:"stat",required:true,name:"NS 1-2L rapid bolus",detail:"If hypotensive"},
+      {id:"ana-c1",cat:"consults",priority:"urgent",required:false,name:"Allergy/Immunology",detail:"Outpatient referral for allergy testing and EpiPen prescription"},
+    ]
+  },
+
+  ich: {
+    id:"ich", name:"Intracerebral Hemorrhage", subtitle:"Spontaneous ICH",
+    icon:"🧠", specialty:"Neurology", acuity:"stat",
+    guideline:"AHA/ASA 2022 ICH Guidelines",
+    tags:["BP Control","Reversal","ICP Monitoring"],
+    orders:[
+      {id:"ich-a1",cat:"admit",priority:"stat",required:true,name:"Admit to Neuro ICU",detail:"STAT neurocritical care"},
+      {id:"ich-v1",cat:"vitals",priority:"stat",required:true,name:"BP Control Target",detail:"SBP 140-160 mmHg if no ICP concern",guideline:"AHA 2022 INTERACT-2"},
+      {id:"ich-v2",cat:"vitals",priority:"stat",required:true,name:"Neuro Checks Q1h",detail:"GCS, pupils, motor exam"},
+      {id:"ich-l1",cat:"labs",priority:"stat",required:true,name:"PT/INR, aPTT, CBC",detail:"STAT coagulation studies"},
+      {id:"ich-m1",cat:"meds",priority:"stat",required:true,name:"Reverse Anticoagulation",detail:"If on warfarin: Vitamin K + 4F-PCC. If on DOAC: idarucizumab or andexanet",high_alert:true},
+      {id:"ich-m2",cat:"meds",priority:"stat",required:false,name:"Nicardipine Infusion",detail:"5-15 mg/hr for BP control",high_alert:true},
+      {id:"ich-i1",cat:"imaging",priority:"stat",required:true,name:"CT Head non-contrast",detail:"STAT. Repeat in 6h to assess expansion"},
+      {id:"ich-i2",cat:"imaging",priority:"stat",required:true,name:"CTA Head",detail:"STAT — spot sign predicts hematoma expansion"},
+      {id:"ich-c1",cat:"consults",priority:"stat",required:true,name:"Neurosurgery",detail:"STAT evaluation for EVD or surgical evacuation"},
+    ]
+  },
+
+  status_epilepticus: {
+    id:"status_epilepticus", name:"Status Epilepticus", subtitle:"Prolonged Seizure > 5 min",
+    icon:"⚡", specialty:"Neurology", acuity:"stat",
+    guideline:"Neurocritical Care Society 2024",
+    tags:["Benzodiazepines","Intubation","EEG"],
+    orders:[
+      {id:"se-a1",cat:"admit",priority:"stat",required:true,name:"Admit to ICU",detail:"STAT — airway protection, hemodynamic support"},
+      {id:"se-m1",cat:"meds",priority:"stat",required:true,name:"Lorazepam 4mg IV",detail:"STAT. Repeat × 1 if ongoing. Or Midazolam 10mg IM",high_alert:true,guideline:"NCS 2024 Class I"},
+      {id:"se-m2",cat:"meds",priority:"stat",required:true,name:"Fosphenytoin 20 PE/kg IV",detail:"Load at 100-150 PE/min",high_alert:true},
+      {id:"se-m3",cat:"meds",priority:"stat",required:false,name:"Levetiracetam 60mg/kg IV",detail:"If fosphenytoin contraindicated or ongoing seizure"},
+      {id:"se-m4",cat:"meds",priority:"stat",required:false,name:"Propofol or Midazolam Infusion",detail:"For refractory status. Requires intubation",high_alert:true},
+      {id:"se-l1",cat:"labs",priority:"stat",required:true,name:"BMP, Mg, CBC, AED levels",detail:"STAT"},
+      {id:"se-i1",cat:"imaging",priority:"urgent",required:true,name:"CT Head non-contrast",detail:"URGENT — rule out acute bleed, mass"},
+      {id:"se-c1",cat:"consults",priority:"stat",required:true,name:"Neurology",detail:"STAT"},
+      {id:"se-n1",cat:"nursing",priority:"urgent",required:true,name:"Continuous EEG",detail:"Monitor for non-convulsive seizures"},
+    ]
+  },
+
+  ards: {
+    id:"ards", name:"ARDS", subtitle:"Acute Respiratory Distress Syndrome",
+    icon:"🫁", specialty:"Critical Care", acuity:"stat",
+    guideline:"ARDSNet / ATS 2024",
+    tags:["Mechanical Ventilation","Prone Positioning","Berlin Criteria"],
+    orders:[
+      {id:"ards-a1",cat:"admit",priority:"stat",required:true,name:"Admit to ICU",detail:"STAT — requires mechanical ventilation"},
+      {id:"ards-m1",cat:"meds",priority:"stat",required:true,name:"Low Tidal Volume Ventilation",detail:"6 mL/kg IBW. Plateau pressure < 30 cmH₂O",guideline:"ARDSNet 2024 Class I"},
+      {id:"ards-m2",cat:"meds",priority:"urgent",required:false,name:"Paralysis (Cisatracurium)",detail:"If severe ARDS (P/F < 150) and high ventilator demand"},
+      {id:"ards-n1",cat:"nursing",priority:"urgent",required:false,name:"Prone Positioning",detail:"16h/day if P/F < 150. Mortality benefit",guideline:"PROSEVA Trial"},
+      {id:"ards-l1",cat:"labs",priority:"stat",required:true,name:"ABG",detail:"STAT, then Q4-6h"},
+    ]
+  },
+
+  cardiogenic_shock: {
+    id:"cardiogenic_shock", name:"Cardiogenic Shock", subtitle:"Pump Failure — Post-MI or HF",
+    icon:"💔", specialty:"Critical Care", acuity:"stat",
+    guideline:"SCAI 2024 Cardiogenic Shock",
+    tags:["Inotropes","IABP","ECMO"],
+    orders:[
+      {id:"cs-a1",cat:"admit",priority:"stat",required:true,name:"Admit to CCU",detail:"STAT"},
+      {id:"cs-v1",cat:"vitals",priority:"stat",required:true,name:"Arterial Line",detail:"Continuous BP monitoring"},
+      {id:"cs-m1",cat:"meds",priority:"stat",required:true,name:"Dobutamine 2.5-20 mcg/kg/min",detail:"Positive inotrope. First-line",high_alert:true},
+      {id:"cs-m2",cat:"meds",priority:"stat",required:false,name:"Norepinephrine",detail:"If hypotensive despite dobutamine",high_alert:true},
+      {id:"cs-c1",cat:"consults",priority:"stat",required:true,name:"Cardiology — MCS Evaluation",detail:"IABP, Impella, or ECMO consideration"},
+    ]
+  },
+
+  hhs: {
+    id:"hhs", name:"Hyperosmolar Hyperglycemic State", subtitle:"HHS — Non-Ketotic Hyperglycemia",
+    icon:"💧", specialty:"Endocrinology", acuity:"urgent",
+    guideline:"ADA 2024 HHS Guidelines",
+    tags:["Type 2 DM","Severe Dehydration","Hyperosmolarity"],
+    orders:[
+      {id:"hhs-a1",cat:"admit",priority:"urgent",required:true,name:"Admit to ICU",detail:"Altered mental status, severe dehydration"},
+      {id:"hhs-f1",cat:"fluids",priority:"stat",required:true,name:"0.9% NS 1L/hr × 2-3h",detail:"Then 250-500 mL/hr. Goal replace 50% deficit in 12h",guideline:"ADA 2024"},
+      {id:"hhs-l1",cat:"labs",priority:"stat",required:true,name:"BMP, Serum Osmolality",detail:"STAT. Osmolality typically > 320 mOsm/kg"},
+      {id:"hhs-m1",cat:"meds",priority:"urgent",required:true,name:"Insulin 0.1 units/kg/hr IV",detail:"Start AFTER initial fluid resuscitation",high_alert:true},
+    ]
+  },
+
+  thyroid_storm: {
+    id:"thyroid_storm", name:"Thyroid Storm", subtitle:"Severe Thyrotoxicosis",
+    icon:"🌡️", specialty:"Endocrinology", acuity:"stat",
+    guideline:"ATA 2024 Thyroid Storm",
+    tags:["Hyperthyroidism","PTU","Beta-Blocker"],
+    orders:[
+      {id:"ts-a1",cat:"admit",priority:"stat",required:true,name:"Admit to ICU",detail:"High mortality if untreated"},
+      {id:"ts-m1",cat:"meds",priority:"stat",required:true,name:"Propylthiouracil 600mg PO",detail:"Then 200mg Q6h. Blocks T4→T3 conversion",high_alert:true},
+      {id:"ts-m2",cat:"meds",priority:"stat",required:true,name:"Propranolol 60-80mg PO Q4h",detail:"Beta-blockade. HR goal < 100"},
+      {id:"ts-m3",cat:"meds",priority:"urgent",required:true,name:"Hydrocortisone 100mg IV Q8h",detail:"Prevents adrenal insufficiency"},
+      {id:"ts-l1",cat:"labs",priority:"stat",required:true,name:"TSH, Free T4, T3",detail:"STAT"},
+      {id:"ts-c1",cat:"consults",priority:"stat",required:true,name:"Endocrinology",detail:"STAT"},
+    ]
+  },
+
+  afib_rvr: {
+    id:"afib_rvr", name:"Atrial Fibrillation with RVR", subtitle:"AF with Rapid Ventricular Response",
+    icon:"💓", specialty:"Cardiology", acuity:"urgent",
+    guideline:"AHA/ACC 2023 AFib Guidelines",
+    tags:["Rate Control","Anticoagulation","Cardioversion"],
+    orders:[
+      {id:"afib-a1",cat:"admit",priority:"urgent",required:true,name:"Admit to Telemetry",detail:"Cardiac monitoring"},
+      {id:"afib-v1",cat:"vitals",priority:"urgent",required:true,name:"Continuous Telemetry",detail:"Monitor HR and rhythm"},
+      {id:"afib-m1",cat:"meds",priority:"urgent",required:true,name:"Metoprolol 5mg IV",detail:"Q5min × 3 PRN. Then 25-50mg PO Q6h",guideline:"ACC/AHA 2023"},
+      {id:"afib-m2",cat:"meds",priority:"urgent",required:false,name:"Diltiazem 0.25mg/kg IV",detail:"If beta-blocker contraindicated"},
+      {id:"afib-m3",cat:"meds",priority:"urgent",required:true,name:"Apixaban 5mg PO BID",detail:"Start anticoagulation if CHA₂DS₂-VASc ≥ 2",guideline:"ACC/AHA 2023"},
+      {id:"afib-i1",cat:"imaging",priority:"stat",required:true,name:"12-Lead EKG",detail:"STAT — confirm AF"},
+      {id:"afib-l1",cat:"labs",priority:"stat",required:true,name:"TSH, BMP, Troponin",detail:"STAT"},
+      {id:"afib-i2",cat:"imaging",priority:"urgent",required:true,name:"Echocardiogram",detail:"Within 24h — assess for thrombus before cardioversion"},
+    ]
+  },
+
+  pe: {
+    id:"pe", name:"Pulmonary Embolism", subtitle:"Acute PE — Massive or Submassive",
+    icon:"🫁", specialty:"Cardiology", acuity:"stat",
+    guideline:"ESC 2024 PE Guidelines",
+    tags:["Anticoagulation","Thrombolysis","CTPA"],
+    orders:[
+      {id:"pe-a1",cat:"admit",priority:"stat",required:true,name:"Admit to ICU/Telemetry",detail:"ICU if hemodynamically unstable or RV strain"},
+      {id:"pe-v1",cat:"vitals",priority:"stat",required:true,name:"Continuous SpO₂ + Telemetry",detail:"Monitor for decompensation"},
+      {id:"pe-l1",cat:"labs",priority:"stat",required:true,name:"D-Dimer, Troponin, BNP",detail:"STAT. RV strain markers"},
+      {id:"pe-i1",cat:"imaging",priority:"stat",required:true,name:"CTA Chest (PE Protocol)",detail:"STAT — gold standard for PE diagnosis",guideline:"ESC 2024"},
+      {id:"pe-i2",cat:"imaging",priority:"urgent",required:true,name:"Bilateral LE Doppler US",detail:"Rule out DVT"},
+      {id:"pe-m1",cat:"meds",priority:"stat",required:true,name:"Heparin 80 units/kg bolus",detail:"Then 18 units/kg/hr infusion. Target aPTT 60-80s",high_alert:true,guideline:"ESC 2024 Class I"},
+      {id:"pe-m2",cat:"meds",priority:"stat",required:false,name:"tPA 100mg IV",detail:"ONLY if massive PE with shock. Bleeding risk 10%",high_alert:true,guideline:"ESC 2024"},
+      {id:"pe-c1",cat:"consults",priority:"stat",required:false,name:"Cardiothoracic Surgery",detail:"If massive PE and tPA contraindicated — surgical embolectomy"},
+    ]
+  },
+
+  bowel_obstruction: {
+    id:"bowel_obstruction", name:"Small Bowel Obstruction", subtitle:"SBO — Mechanical Obstruction",
+    icon:"🫃", specialty:"Gastroenterology", acuity:"urgent",
+    guideline:"WSES 2024 SBO Guidelines",
+    tags:["NGT","CT Abdomen","Surgery Consult"],
+    orders:[
+      {id:"sbo-a1",cat:"admit",priority:"urgent",required:true,name:"Admit to Surgery Service",detail:"Observation vs operative management"},
+      {id:"sbo-d1",cat:"diet",priority:"urgent",required:true,name:"NPO",detail:"Strict NPO"},
+      {id:"sbo-f1",cat:"fluids",priority:"urgent",required:true,name:"LR or NS at 125 mL/hr",detail:"Volume resuscitation"},
+      {id:"sbo-l1",cat:"labs",priority:"stat",required:true,name:"CBC, BMP, Lactate",detail:"STAT. Lactate > 4 suggests ischemia"},
+      {id:"sbo-i1",cat:"imaging",priority:"stat",required:true,name:"CT Abdomen/Pelvis + contrast",detail:"STAT — identifies transition point, ischemia"},
+      {id:"sbo-n1",cat:"nursing",priority:"urgent",required:true,name:"NGT to low continuous suction",detail:"Decompression"},
+      {id:"sbo-c1",cat:"consults",priority:"urgent",required:true,name:"General Surgery",detail:"URGENT evaluation for operative vs conservative management"},
     ]
   },
 };

@@ -13,7 +13,7 @@ export default function ConditionSidebar({ conditions, customTemplates, activeId
         <div style={{ fontSize: 10.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".1em", color: G.dim, marginBottom: 2 }}>
           Condition Library
         </div>
-        <div style={{ fontSize: 11, color: G.muted }}>4 evidence-based templates</div>
+        <div style={{ fontSize: 11, color: G.muted }}>{Object.keys(conditions).length} evidence-based templates</div>
       </div>
 
       {/* Specialties */}

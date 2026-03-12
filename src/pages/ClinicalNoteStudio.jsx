@@ -191,9 +191,13 @@ export default function ClinicalNoteStudio() {
   useEffect(() => {
     if (noteId && note) {
       setSavedNoteId(note.id);
-      // Keep in studio mode - don't auto-switch to notes mode
+      // If a specific tab is requested via URL, switch to notes mode
+      if (urlTab) {
+        setMode("notes"); // Switch to notes mode to display the tabbed interface
+        setActiveTab(urlTab); // Set the active tab to the one specified in the URL
+      }
     }
-  }, [noteId, note?.id]);
+  }, [noteId, note?.id, urlTab]);
 
   // Hydrate studio form when existing note loads (only on initial load from URL)
   useEffect(() => {

@@ -489,6 +489,7 @@ export default function Home() {
                   </React.Fragment>
                 );
               })}
+            </AnimatePresence>
 
             {filtered.length === 0 && (
               <div style={{ padding:"32px", textAlign:"center", color:C.muted, fontSize:12, background:C.panel }}>

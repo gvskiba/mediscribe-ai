@@ -84,6 +84,7 @@ export default function Home() {
   const [date, setDate]       = useState("");
   const [search, setSearch]   = useState("");
   const [selected, setSelected] = useState(null);
+  const [expanded, setExpanded] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
   const [sortKey, setSortKey] = useState("triage"); // triage | los | room | name
   const [user, setUser] = useState(null);
@@ -327,7 +328,14 @@ export default function Home() {
                     animate={{ opacity:1, y:0 }}
                     transition={{ delay:i*.03, duration:.15 }}
                     className="patient-row"
-                    onClick={() => { setSelected(p.id); navigate(`${createPageUrl("ClinicalNoteStudio")}?noteId=${p.noteId}`); }}
+                    onClick={() => { 
+                      if (expanded === p.id) {
+                        setExpanded(null);
+                      } else {
+                        setExpanded(p.id);
+                      }
+                      setSelected(p.id);
+                    }}
                     style={{
                       display:"grid",
                       gridTemplateColumns:"34px 2fr 80px 90px 80px 180px 200px 160px 120px 40px",
@@ -399,9 +407,84 @@ export default function Home() {
 
                     {/* Arrow */}
                     <div className="row-arrow" style={{ display:"flex", justifyContent:"center", opacity:.2, transform:"translateX(-4px)", transition:"all .15s" }}>
-                      <span style={{ color:C.teal, fontSize:14, fontWeight:700 }}>→</span>
+                      <span style={{ color:C.teal, fontSize:14, fontWeight:700 }}>{expanded === p.id ? "▼" : "→"}</span>
                     </div>
                   </motion.div>
+
+                  {/* Expanded Quick Actions */}
+                  <AnimatePresence>
+                    {expanded === p.id && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        style={{
+                          background: "rgba(0,212,188,.03)",
+                          borderBottom: i < filtered.length-1 ? `1px solid ${C.border}` : "none",
+                          padding: "16px 20px",
+                          display: "flex",
+                          gap: 12,
+                          justifyContent: "center",
+                          flexWrap: "wrap"
+                        }}
+                      >
+                        {[
+                          { icon: "📝", label: "Subjective", tab: "patient_intake" },
+                          { icon: "🩺", label: "Physical Exam", tab: "physical_exam" },
+                          { icon: "🧪", label: "Labs & Imaging", tab: "labs_imaging" },
+                          { icon: "⚕️", label: "Diagnoses", tab: "differential" },
+                          { icon: "💊", label: "Medications", tab: "medications" },
+                          { icon: "📋", label: "Treatment Plan", tab: "treatment_plan" },
+                          { icon: "🏥", label: "Disposition", tab: "disposition_plan" },
+                          { icon: "📄", label: "Full Note", tab: "clinical_note" }
+                        ].map(action => (
+                          <button
+                            key={action.tab}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`${createPageUrl("ClinicalNoteStudio")}?noteId=${p.noteId}&tab=${action.tab}`);
+                            }}
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              gap: 6,
+                              padding: "12px 16px",
+                              borderRadius: 10,
+                              background: C.panel,
+                              border: `1px solid ${C.border}`,
+                              cursor: "pointer",
+                              transition: "all .15s",
+                              minWidth: 90
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = "rgba(0,212,188,.08)";
+                              e.currentTarget.style.borderColor = "rgba(0,212,188,.4)";
+                              e.currentTarget.style.transform = "translateY(-2px)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = C.panel;
+                              e.currentTarget.style.borderColor = C.border;
+                              e.currentTarget.style.transform = "translateY(0)";
+                            }}
+                          >
+                            <div style={{ fontSize: 24 }}>{action.icon}</div>
+                            <div style={{
+                              fontFamily: "'JetBrains Mono',monospace",
+                              fontSize: 9,
+                              fontWeight: 700,
+                              color: C.text,
+                              textAlign: "center",
+                              letterSpacing: ".05em"
+                            }}>
+                              {action.label}
+                            </div>
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 );
               })}
             </AnimatePresence>

@@ -107,6 +107,94 @@ export const ENHANCED_CONDITIONS = [
   { id: 'rhabdomyolysis', name: 'Rhabdomyolysis', category: 'Metabolic', icd10: 'M62.82' },
   { id: 'hypothermia', name: 'Severe Hypothermia', category: 'Environmental', icd10: 'T68' },
   { id: 'heat_stroke', name: 'Heat Stroke', category: 'Environmental', icd10: 'T67.0' },
+
+  // Additional Cardiovascular
+  { id: 'cardiogenic_shock', name: 'Cardiogenic Shock', category: 'Cardiovascular', icd10: 'R57.0', tags: ['STAT'] },
+  { id: 'pericarditis', name: 'Acute Pericarditis', category: 'Cardiovascular', icd10: 'I30.9' },
+  { id: 'cardiac_tamponade', name: 'Cardiac Tamponade', category: 'Cardiovascular', icd10: 'I31.4', tags: ['STAT'] },
+  { id: 'svt', name: 'Supraventricular Tachycardia', category: 'Cardiovascular', icd10: 'I47.1' },
+  { id: 'vtach', name: 'Ventricular Tachycardia', category: 'Cardiovascular', icd10: 'I47.2', tags: ['STAT'] },
+  { id: 'syncope', name: 'Syncope', category: 'Cardiovascular', icd10: 'R55' },
+
+  // Additional Respiratory
+  { id: 'ards', name: 'Acute Respiratory Distress Syndrome', category: 'Respiratory', icd10: 'J80', tags: ['STAT'] },
+  { id: 'covid_pneumonia', name: 'COVID-19 Pneumonia', category: 'Respiratory', icd10: 'U07.1' },
+  { id: 'aspiration_pneumonia', name: 'Aspiration Pneumonia', category: 'Respiratory', icd10: 'J69.0' },
+  { id: 'lung_abscess', name: 'Lung Abscess', category: 'Respiratory', icd10: 'J85.2' },
+  { id: 'hemoptysis', name: 'Massive Hemoptysis', category: 'Respiratory', icd10: 'R04.2', tags: ['URGENT'] },
+
+  // Additional Infectious
+  { id: 'covid_19', name: 'COVID-19', category: 'Infectious Disease', icd10: 'U07.1' },
+  { id: 'influenza', name: 'Influenza', category: 'Infectious Disease', icd10: 'J11.1' },
+  { id: 'bacterial_sepsis', name: 'Bacterial Sepsis', category: 'Infectious Disease', icd10: 'A41.9' },
+  { id: 'neutropenic_sepsis', name: 'Neutropenic Sepsis', category: 'Infectious Disease', icd10: 'D70.9', tags: ['STAT'] },
+  { id: 'tuberculosis', name: 'Active Tuberculosis', category: 'Infectious Disease', icd10: 'A15.0' },
+  { id: 'osteomyelitis', name: 'Osteomyelitis', category: 'Infectious Disease', icd10: 'M86.9' },
+  { id: 'septic_arthritis', name: 'Septic Arthritis', category: 'Infectious Disease', icd10: 'M00.9' },
+
+  // Additional Neurological
+  { id: 'tia', name: 'Transient Ischemic Attack', category: 'Neurological', icd10: 'G45.9' },
+  { id: 'vertebrobasilar_stroke', name: 'Vertebrobasilar Stroke', category: 'Neurological', icd10: 'I63.9', tags: ['STAT'] },
+  { id: 'myasthenia_crisis', name: 'Myasthenic Crisis', category: 'Neurological', icd10: 'G70.01', tags: ['URGENT'] },
+  { id: 'brain_tumor', name: 'Brain Tumor', category: 'Neurological', icd10: 'C71.9' },
+  { id: 'subdural_hematoma', name: 'Subdural Hematoma', category: 'Neurological', icd10: 'I62.0' },
+  { id: 'epidural_hematoma', name: 'Epidural Hematoma', category: 'Neurological', icd10: 'I62.1', tags: ['STAT'] },
+  { id: 'cauda_equina', name: 'Cauda Equina Syndrome', category: 'Neurological', icd10: 'G83.4', tags: ['STAT'] },
+
+  // Additional GI
+  { id: 'esophageal_varices', name: 'Bleeding Esophageal Varices', category: 'Gastrointestinal', icd10: 'I85.01', tags: ['STAT'] },
+  { id: 'perforated_viscus', name: 'Perforated Viscus', category: 'Gastrointestinal', icd10: 'K63.1', tags: ['STAT'] },
+  { id: 'mesenteric_ischemia', name: 'Acute Mesenteric Ischemia', category: 'Gastrointestinal', icd10: 'K55.0', tags: ['STAT'] },
+  { id: 'ischemic_colitis', name: 'Ischemic Colitis', category: 'Gastrointestinal', icd10: 'K55.0' },
+  { id: 'ileus', name: 'Paralytic Ileus', category: 'Gastrointestinal', icd10: 'K56.0' },
+  { id: 'gastroparesis', name: 'Gastroparesis', category: 'Gastrointestinal', icd10: 'K31.84' },
+
+  // Additional Renal/Endocrine
+  { id: 'esrd', name: 'End Stage Renal Disease', category: 'Renal', icd10: 'N18.6' },
+  { id: 'rhabdo_with_aki', name: 'Rhabdomyolysis with AKI', category: 'Renal', icd10: 'M62.82', tags: ['URGENT'] },
+  { id: 'hypercalcemia', name: 'Severe Hypercalcemia', category: 'Endocrine', icd10: 'E83.52', tags: ['URGENT'] },
+  { id: 'hypocalcemia', name: 'Severe Hypocalcemia', category: 'Endocrine', icd10: 'E83.51' },
+  { id: 'siadh', name: 'SIADH', category: 'Endocrine', icd10: 'E22.2' },
+  { id: 'diabetes_insipidus', name: 'Diabetes Insipidus', category: 'Endocrine', icd10: 'E23.2' },
+
+  // Additional Hematologic
+  { id: 'aplastic_anemia', name: 'Aplastic Anemia', category: 'Hematologic', icd10: 'D61.9' },
+  { id: 'heparin_hit', name: 'Heparin-Induced Thrombocytopenia', category: 'Hematologic', icd10: 'D75.82', tags: ['URGENT'] },
+  { id: 'hemolytic_anemia', name: 'Acute Hemolytic Anemia', category: 'Hematologic', icd10: 'D59.9' },
+  { id: 'polycythemia', name: 'Polycythemia Vera', category: 'Hematologic', icd10: 'D45' },
+  { id: 'bleeding_disorder', name: 'Coagulation Disorder', category: 'Hematologic', icd10: 'D68.9' },
+
+  // Rheumatologic
+  { id: 'giant_cell_arteritis', name: 'Giant Cell Arteritis', category: 'Rheumatologic', icd10: 'M31.6', tags: ['URGENT'] },
+  { id: 'lupus_flare', name: 'SLE Flare', category: 'Rheumatologic', icd10: 'M32.9' },
+  { id: 'vasculitis', name: 'Systemic Vasculitis', category: 'Rheumatologic', icd10: 'M31.8' },
+
+  // Psychiatric Emergencies
+  { id: 'suicidal_ideation', name: 'Suicidal Ideation', category: 'Psychiatric', icd10: 'R45.851', tags: ['URGENT'] },
+  { id: 'acute_psychosis', name: 'Acute Psychosis', category: 'Psychiatric', icd10: 'F29' },
+  { id: 'delirium', name: 'Acute Delirium', category: 'Psychiatric', icd10: 'F05' },
+
+  // Additional Trauma
+  { id: 'flail_chest', name: 'Flail Chest', category: 'Trauma', icd10: 'S22.5', tags: ['URGENT'] },
+  { id: 'tension_pneumothorax', name: 'Tension Pneumothorax', category: 'Trauma', icd10: 'J93.0', tags: ['STAT'] },
+  { id: 'hemorrhagic_shock', name: 'Hemorrhagic Shock', category: 'Trauma', icd10: 'R57.1', tags: ['STAT'] },
+  { id: 'facial_fracture', name: 'Facial Fracture', category: 'Trauma', icd10: 'S02.9' },
+  { id: 'burn_major', name: 'Major Burns', category: 'Trauma', icd10: 'T30.0', tags: ['URGENT'] },
+
+  // Ophthalmologic Emergencies
+  { id: 'acute_angle_closure', name: 'Acute Angle Closure Glaucoma', category: 'Ophthalmologic', icd10: 'H40.21', tags: ['URGENT'] },
+  { id: 'central_retinal_artery', name: 'Central Retinal Artery Occlusion', category: 'Ophthalmologic', icd10: 'H34.1', tags: ['STAT'] },
+  { id: 'retinal_detachment', name: 'Retinal Detachment', category: 'Ophthalmologic', icd10: 'H33.0', tags: ['URGENT'] },
+
+  // ENT Emergencies
+  { id: 'epiglottitis', name: 'Acute Epiglottitis', category: 'ENT', icd10: 'J05.10', tags: ['STAT'] },
+  { id: 'peritonsillar_abscess', name: 'Peritonsillar Abscess', category: 'ENT', icd10: 'J36', tags: ['URGENT'] },
+  { id: 'ludwig_angina', name: "Ludwig's Angina", category: 'ENT', icd10: 'K12.2', tags: ['STAT'] },
+
+  // Dermatologic
+  { id: 'stevens_johnson', name: 'Stevens-Johnson Syndrome', category: 'Dermatologic', icd10: 'L51.1', tags: ['URGENT'] },
+  { id: 'necrotizing_fasciitis', name: 'Necrotizing Fasciitis', category: 'Dermatologic', icd10: 'M72.6', tags: ['STAT'] },
+  { id: 'toxic_epidermal_necrolysis', name: 'Toxic Epidermal Necrolysis', category: 'Dermatologic', icd10: 'L51.2', tags: ['STAT'] },
 ];
 
 export const CONDITION_CATEGORIES = [
@@ -129,5 +217,10 @@ export const CONDITION_CATEGORIES = [
   'Toxicology',
   'Immunologic',
   'Metabolic',
-  'Environmental'
+  'Environmental',
+  'Rheumatologic',
+  'Psychiatric',
+  'Ophthalmologic',
+  'ENT',
+  'Dermatologic'
 ];

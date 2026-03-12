@@ -8,6 +8,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import NursingFlowsheet from './pages/NursingFlowsheet';
+import NursingOverview from './pages/NursingOverview';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -60,6 +61,7 @@ const AuthenticatedApp = () => {
         />
       ))}
       <Route path="/NursingFlowsheet" element={<NursingFlowsheet />} />
+      <Route path="/NursingOverview" element={<NursingOverview />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

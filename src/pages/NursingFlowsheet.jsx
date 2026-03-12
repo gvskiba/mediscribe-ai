@@ -973,27 +973,27 @@ function mkBub(m){
   const me=m.r==="rn",row=document.createElement("div");row.className="mr"+(me?" me":"");
   const avc=m.r==="md"?"md":m.r==="sys"?"sys":"rn",avl=m.r==="md"?"MD":m.r==="sys"?"✦":"RN";
   const bub=m.r==="md"?"md":"rn";
-  let alHead="";if(m.ap){const ps=PS[m.ap];alHead=\\\`<div style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:\\\${ps.c};margin-bottom:5px;">⚡ ALERT — \\\${m.ap}</div>\\\`;}
-  let files="";if(m.files?.length){files=\\\`<div class="fprev">\\\${m.files.map(f=>\\\`<div class="fchip"><span style="font-size:16px;">\\\${f.type?.includes("image")?"🖼️":"📄"}</span><div><div class="fn">\\\${f.name}</div><div class="fs">\\\${f.sz}</div></div></div>\\\`).join("")}</div>\\\`;}
-  const bs=m.ap?\\\`background:\\\${PS[m.ap].bg};border:1px solid \\\${PS[m.ap].br};border-radius:12px;\\\`:"";
-  row.innerHTML=\\\`<div class="av \\\${avc}">\\\${avl}</div><div class="bwrap"><div class="bmeta">\\\${m.s} · \\\${m.t}</div><div class="bub \\\${bub}" style="\\\${bs}">\\\${m.urg?'<div class="burg">URGENT ORDER</div>':""}\ \\\${alHead}<div class="btxt">\\\${m.tx||""}</div>\\\${files}</div></div>\\\`;
+  let alHead="";if(m.ap){const ps=PS[m.ap];alHead=`<div style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:${ps.c};margin-bottom:5px;">⚡ ALERT — ${m.ap}</div>`;}
+  let files="";if(m.files?.length){files=`<div class="fprev">${m.files.map(f=>`<div class="fchip"><span style="font-size:16px;">${f.type?.includes("image")?"🖼️":"📄"}</span><div><div class="fn">${f.name}</div><div class="fs">${f.sz}</div></div></div>`).join("")}</div>`;}
+  const bs=m.ap?`background:${PS[m.ap].bg};border:1px solid ${PS[m.ap].br};border-radius:12px;`:"";
+  row.innerHTML=`<div class="av ${avc}">${avl}</div><div class="bwrap"><div class="bmeta">${m.s} · ${m.t}</div><div class="bub ${bub}" style="${bs}">${m.urg?'<div class="burg">URGENT ORDER</div>':""}\${alHead}<div class="btxt">${m.tx||""}</div>${files}</div></div>`;
   return row;
 }
 
 function scChat(){const w=document.getElementById("cmsg");w.scrollTop=w.scrollHeight;}
 
 function stgF(input){staged=[...staged,...Array.from(input.files||[])];rStg();input.value="";}
-function rStg(){const s=document.getElementById("fstg");if(!staged.length){s.style.display="none";return;}s.style.display="flex";s.innerHTML=staged.map((f,i)=>\\\`<div class="sff"><span style="font-size:14px;">\\\${f.type?.includes("image")?"🖼️":"📄"}</span><span style="font-size:11px;color:var(--bright);">\\\${f.name}</span><span style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--dim);">\\\${(f.size/1024).toFixed(0)}KB</span><button class="srm" onclick="staged.splice(\\\${i},1);rStg()">✕</button></div>\\\`).join("");}
+function rStg(){const s=document.getElementById("fstg");if(!staged.length){s.style.display="none";return;}s.style.display="flex";s.innerHTML=staged.map((f,i)=>`<div class="sff"><span style="font-size:14px;">${f.type?.includes("image")?"🖼️":"📄"}</span><span style="font-size:11px;color:var(--bright);">${f.name}</span><span style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--dim);">${(f.size/1024).toFixed(0)}KB</span><button class="srm" onclick="staged.splice(${i},1);rStg()">✕</button></div>`).join("");}
 document.getElementById("cta").addEventListener("input",function(){document.getElementById("csnd").disabled=!this.value.trim()&&!staged.length;});
 function gta(el){el.style.height="auto";el.style.height=Math.min(el.scrollHeight,100)+"px";}
 function ckd(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sndC();}}
-function sndC(){const ta=document.getElementById("cta"),tx=ta.value.trim();if(!tx&&!staged.length)return;const m={id:Date.now(),r:"rn",s:"Nurse Kim",t:nw(),tx,files:staged.map(f=>({name:f.name,sz:\\\`\\\${(f.size/1024).toFixed(0)}KB\\\`,type:f.type}))};chats.push(m);document.getElementById("cmsg").appendChild(mkBub(m));scChat();ta.value="";ta.style.height="auto";staged=[];rStg();document.getElementById("csnd").disabled=true;}
+function sndC(){const ta=document.getElementById("cta"),tx=ta.value.trim();if(!tx&&!staged.length)return;const m={id:Date.now(),r:"rn",s:"Nurse Kim",t:nw(),tx,files:staged.map(f=>({name:f.name,sz:`${(f.size/1024).toFixed(0)}KB`,type:f.type}))};chats.push(m);document.getElementById("cmsg").appendChild(mkBub(m));scChat();ta.value="";ta.style.height="auto";staged=[];rStg();document.getElementById("csnd").disabled=true;}
 
-function rQA(){const g=document.getElementById("qgrid");g.innerHTML="";QA.forEach(qa=>{const c=document.createElement("div");c.className="qcard";c.innerHTML=\\\`<div class="qi">\\\${qa.icon}</div><div class="ql">\\\${qa.lbl}</div><span class="pill" style="background:\\\${PS[qa.p].bg};color:\\\${PS[qa.p].c};border:1px solid \\\${PS[qa.p].br};font-size:7px;">\\\${qa.p}</span>\\\`;c.addEventListener("mouseenter",()=>{c.style.borderColor=qa.color;c.style.background=\\\`\\\${qa.color}12\\\`.replace("var(--","").replace(")","");});c.addEventListener("mouseleave",()=>{c.style.borderColor="var(--border)";c.style.background="var(--panel)";});c.onclick=()=>{atype=qa.id;apri=qa.p;openModal();};g.appendChild(c);});}
+function rQA(){const g=document.getElementById("qgrid");g.innerHTML="";QA.forEach(qa=>{const c=document.createElement("div");c.className="qcard";c.innerHTML=`<div class="qi">${qa.icon}</div><div class="ql">${qa.lbl}</div><span class="pill" style="background:${PS[qa.p].bg};color:${PS[qa.p].c};border:1px solid ${PS[qa.p].br};font-size:7px;">${qa.p}</span>`;c.addEventListener("mouseenter",()=>{c.style.borderColor=qa.color;c.style.background=`${qa.color}12`.replace("var(--","").replace(")","");});c.addEventListener("mouseleave",()=>{c.style.borderColor="var(--border)";c.style.background="var(--panel)";});c.onclick=()=>{atype=qa.id;apri=qa.p;openModal();};g.appendChild(c);});}
 
 function mkAlert(id,icon,lbl,pri,txt){
   alerts.unshift({id:Date.now(),ic:icon,lb:lbl,p:pri,t:nw(),tx:txt,ack:false});
-  chats.push({id:Date.now()+1,r:"rn",s:"Nurse Kim",t:nw(),tx:\\\`\\\${icon} \\\${lbl}: \\\${txt}\\\`,ap:pri});
+  chats.push({id:Date.now()+1,r:"rn",s:"Nurse Kim",t:nw(),tx:`${icon} ${lbl}: ${txt}`,ap:pri});
   rAlerts();rChat();
 }
 
@@ -1001,11 +1001,11 @@ function rAlerts(){
   const un=alerts.filter(a=>!a.ack).length;
   const ba=document.getElementById("ba"),up=document.getElementById("upill"),uc=document.getElementById("ucnt");
   ba.textContent=un;ba.style.display=un>0?"flex":"none";up.style.display=un>0?"flex":"none";uc.textContent=un;
-  document.getElementById("alc").textContent=\\\`\\\${alerts.length} alert\\\${alerts.length!==1?"s":""}\\\`;
+  document.getElementById("alc").textContent=`${alerts.length} alert${alerts.length!==1?"s":""}`;
   const log=document.getElementById("alog");if(!alerts.length){log.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px;">No alerts yet.</div>';return;}
   log.innerHTML="";alerts.forEach(a=>{
     const ps=PS[a.p];const div=document.createElement("div");div.className="arow";div.style.background=a.ack?"transparent":ps.bg;div.style.border=\\\`1px solid \\\${a.ack?"var(--border)":ps.br}\\\`;
-    div.innerHTML=\\\`<div class="aicn">\\\${a.ic}</div><div class="abdy"><div class="amet"><span class="pill" style="background:\\\${ps.bg};color:\\\${ps.c};border:1px solid \\\${ps.br};">\\\${a.p}</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--text);">\\\${a.lb}</span><span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);margin-left:auto;">\\\${a.t}</span></div><div class="atxt">\\\${a.tx}</div>\\\${a.ack?\\\`<div class="aack">✓ Acknowledged by \\\${a.ab} at \\\${a.at}</div>\\\`:""}</div>\\\${!a.ack?\\\`<button class="btn bsm bgh" style="flex-shrink:0;border-color:rgba(46,204,113,.35);color:var(--green);" onclick="ackA(\\\${a.id})">✓ Ack'd</button>\\\`:""}\\\`;
+    div.innerHTML=`<div class="aicn">${a.ic}</div><div class="abdy"><div class="amet"><span class="pill" style="background:${ps.bg};color:${ps.c};border:1px solid ${ps.br};">${a.p}</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--text);">${a.lb}</span><span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);margin-left:auto;">${a.t}</span></div><div class="atxt">${a.tx}</div>${a.ack?`<div class="aack">✓ Acknowledged by ${a.ab} at ${a.at}</div>`""}</div>${!a.ack?`<button class="btn bsm bgh" style="flex-shrink:0;border-color:rgba(46,204,113,.35);color:var(--green);" onclick="ackA(${a.id})">✓ Ack'd</button>`""}`;
     log.appendChild(div);
   });
 }
@@ -1023,7 +1023,7 @@ function bldMGrid(){
 
 function selP(p){
   apri=p;const ps=PS[p];
-  ["CRITICAL","URGENT","ROUTINE"].forEach(k=>{const b=document.getElementById(\\\`p-\\\${k}\\\`);if(k===p){b.style.background=PS[p].bg;b.style.borderColor=PS[p].c;b.style.color=PS[p].c;}else{b.style.background="transparent";b.style.borderColor="var(--border)";b.style.color="var(--muted)";}});
+  ["CRITICAL","URGENT","ROUTINE"].forEach(k=>{const b=document.getElementById(`p-${k}`);if(k===p){b.style.background=PS[p].bg;b.style.borderColor=PS[p].c;b.style.color=PS[p].c;}else{b.style.background="transparent";b.style.borderColor="var(--border)";b.style.color="var(--muted)";}});
 }
 
 function fireA(){
@@ -1035,44 +1035,44 @@ function fireA(){
 
 function rOrders(){
   const list=document.getElementById("olist"),pend=orders.filter(o=>o.st==="pending").length;
-  const pb=document.getElementById("pbanner");pb.textContent=\\\`\\\${pend} ORDER\\\${pend!==1?"S":""} PENDING ACTION\\\`;pb.style.display=pend>0?"flex":"none";
+  const pb=document.getElementById("pbanner");pb.textContent=`${pend} ORDER${pend!==1?"S":""} PENDING ACTION`;pb.style.display=pend>0?"flex":"none";
   const bo=document.getElementById("bo");bo.textContent=pend;bo.style.display=pend>0?"flex":"none";
   list.innerHTML="";orders.forEach(o=>{
     const done=o.st==="completed"||o.st==="acknowledged",ps=PS[o.p];
     const div=document.createElement("div");div.className="ocard";div.style.borderColor=done?"var(--border)":ps.br;
-    div.innerHTML=\\\`<div class="osta" style="background:\\\${done?"rgba(46,204,113,.12)":ps.bg};border:1.5px solid \\\${done?"rgba(46,204,113,.3)":ps.br};">\\\${done?"✓":"!"}</div><div class="obdy"><div class="omet"><span class="pill" style="background:\\\${done?"rgba(46,204,113,.1)":ps.bg};color:\\\${done?"var(--green)":ps.c};border:1px solid \\\${done?"rgba(46,204,113,.3)":ps.br};">\\\${done?"DONE":o.p}</span><span class="pill" style="background:rgba(74,144,217,.1);color:var(--blue);border:1px solid rgba(74,144,217,.28);font-size:7px;">\\\${o.ty.toUpperCase()}</span><span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);">Ordered \\\${o.t} · \\\${o.pv}</span></div><div class="otxt">\\\${o.tx}</div>\\\${o.no?\\\`<div class="onot">\\\${o.no}</div>\\\`:""}\\\${o.ab?\\\`<div class="oack">✓ Acknowledged by \\\${o.ab} at \\\${o.at}</div>\\\`:""}</div>\\\${!done?\\\`<div class="oact"><button class="btn bsm" style="background:linear-gradient(135deg,var(--green),#27ae60);" onclick="ackO(\\\${o.id})">✓ Acknowledge</button><button class="btn bsm bgh" onclick="msgO('\\\${o.tx.substring(0,55)}')">💬 Ask MD</button></div>\\\`:""}\\\`;
+    div.innerHTML=`<div class="osta" style="background:${done?"rgba(46,204,113,.12)":ps.bg};border:1.5px solid ${done?"rgba(46,204,113,.3)":ps.br};">${done?"✓":"!"}</div><div class="obdy"><div class="omet"><span class="pill" style="background:${done?"rgba(46,204,113,.1)":ps.bg};color:${done?"var(--green)":ps.c};border:1px solid ${done?"rgba(46,204,113,.3)":ps.br};">${done?"DONE":o.p}</span><span class="pill" style="background:rgba(74,144,217,.1);color:var(--blue);border:1px solid rgba(74,144,217,.28);font-size:7px;">${o.ty.toUpperCase()}</span><span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);">Ordered ${o.t} · ${o.pv}</span></div><div class="otxt">${o.tx}</div>${o.no?`<div class="onot">${o.no}</div>`:""} ${o.ab?`<div class="oack">✓ Acknowledged by ${o.ab} at ${o.at}</div>`""}</div>${!done?`<div class="oact"><button class="btn bsm" style="background:linear-gradient(135deg,var(--green),#27ae60);" onclick="ackO(${o.id})">✓ Acknowledge</button><button class="btn bsm bgh" onclick="msgO('${o.tx.substring(0,55)}')">💬 Ask MD</button></div>`""}`;
     list.appendChild(div);
   });
 }
 
-function ackO(id){const o=orders.find(x=>x.id===id);if(!o)return;o.st="acknowledged";o.ab="Nurse Kim";o.at=nw();chats.push({id:Date.now(),r:"rn",s:"Nurse Kim",t:nw(),tx:\\\`✓ Order acknowledged: \\\${o.tx}\\\`});rOrders();rChat();}
-function msgO(tx){document.getElementById("cta").value=\\\`Re order: "\\\${tx}" — \\\`;sw("chat");document.getElementById("cta").focus();}
+function ackO(id){const o=orders.find(x=>x.id===id);if(!o)return;o.st="acknowledged";o.ab="Nurse Kim";o.at=nw();chats.push({id:Date.now(),r:"rn",s:"Nurse Kim",t:nw(),tx:`✓ Order acknowledged: ${o.tx}`});rOrders();rChat();}
+function msgO(tx){document.getElementById("cta").value=`Re order: "${tx}" — `;sw("chat");document.getElementById("cta").focus();}
 
 function addLab(){
   const n=document.getElementById("ln").value.trim(),v=document.getElementById("lv").value.trim();if(!n||!v)return;
   const fl=document.getElementById("lf").value;
   labs.unshift({t:document.getElementById("lt").value||nw(),n,v,u:document.getElementById("lu").value,r:document.getElementById("lr").value,fl});
-  rLabs();if(fl==="CRIT"||fl==="PANIC"){mkAlert("lc","🧪","Critical Lab","CRITICAL",\\\`\\\${n}: \\\${v} \\\${document.getElementById("lu").value} — \\\${fl}. Ref: \\\${document.getElementById("lr").value||"—"}.\\\`);sw("alerts");}
+  rLabs();if(fl==="CRIT"||fl==="PANIC"){mkAlert("lc","🧪","Critical Lab","CRITICAL",`${n}: ${v} ${document.getElementById("lu").value} — ${fl}. Ref: ${document.getElementById("lr").value||"—"}.`);sw("alerts");}
   ["ln","lv","lu","lr"].forEach(id=>document.getElementById(id).value="");document.getElementById("lf").value="WNL";document.getElementById("lt").value=nw();
 }
 
 function rLabs(){
   document.getElementById("llist").innerHTML=labs.map(l=>{
     const fs={WNL:{c:"var(--green)",bg:"rgba(46,204,113,.08)"},LOW:{c:"var(--amber)",bg:"rgba(245,166,35,.1)"},HIGH:{c:"var(--amber)",bg:"rgba(245,166,35,.1)"},CRIT:{c:"var(--red)",bg:"rgba(255,92,108,.12)"},PANIC:{c:"var(--red)",bg:"rgba(255,92,108,.18)"}}[l.fl]||{c:"var(--dim)",bg:"transparent"};
-    return\\\`<div style="display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:9px;background:\\\${fs.bg};border:1px solid \\\${fs.c}30;"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);">\\\${l.t}</span><span style="font-weight:700;color:var(--bright);font-size:13px;flex:1;">\\\${l.n}</span><span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:\\\${fs.c};">\\\${l.v} \\\${l.u}</span><span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);">Ref: \\\${l.r||"—"}</span><span class="pill" style="background:\\\${fs.bg};color:\\\${fs.c};border:1px solid \\\${fs.c}40;">\\\${l.fl}</span></div>\\\`;
+    return`<div style="display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:9px;background:${fs.bg};border:1px solid ${fs.c}30;"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);">${l.t}</span><span style="font-weight:700;color:var(--bright);font-size:13px;flex:1;">${l.n}</span><span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:${fs.c};">${l.v} ${l.u}</span><span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);">Ref: ${l.r||"—"}</span><span class="pill" style="background:${fs.bg};color:${fs.c};border:1px solid ${fs.c}40;">${l.fl}</span></div>`;
   }).join("");
 }
 
 function addMed(){const n=document.getElementById("mn").value.trim();if(!n)return;meds.unshift({t:document.getElementById("mt").value||nw(),n,d:document.getElementById("md2").value,r:document.getElementById("mr2").value,no:document.getElementById("mno").value});rMeds();["mn","md2","mno"].forEach(id=>document.getElementById(id).value="");document.getElementById("mt").value=nw();}
-function rMeds(){document.getElementById("mlist").innerHTML=meds.map(m=>\\\`<div style="display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:9px;background:rgba(155,109,255,.06);border:1px solid rgba(155,109,255,.2);"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);">\\\${m.t}</span><span style="font-weight:700;color:var(--bright);font-size:13px;flex:1;">\\\${m.n}\\\${m.d?\\\` — \\\${m.d}\\\`:""}</span><span class="pill" style="background:rgba(155,109,255,.1);color:var(--purple);border:1px solid rgba(155,109,255,.3);">\\\${m.r}</span>\\\${m.no?\\\`<span style="font-size:11px;color:var(--dim);">\\\${m.no}</span>\\\`:""}</div>\\\`).join("");}
+function rMeds(){document.getElementById("mlist").innerHTML=meds.map(m=>`<div style="display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:9px;background:rgba(155,109,255,.06);border:1px solid rgba(155,109,255,.2);"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);">${m.t}</span><span style="font-weight:700;color:var(--bright);font-size:13px;flex:1;">${m.n}${m.d?` — ${m.d}`:""}</span><span class="pill" style="background:rgba(155,109,255,.1);color:var(--purple);border:1px solid rgba(155,109,255,.3);">${m.r}</span>${m.no?`<span style="font-size:11px;color:var(--dim);">${m.no}</span>`:""}</div>`).join("");}
 
 function addFinding(){const tx=document.getElementById("fx").value.trim();if(!tx)return;const al=document.getElementById("fa").value;findings.unshift({t:document.getElementById("ft").value||nw(),tx,al});rFindings();if(al!=="no"){const p=al==="urgent"?"URGENT":"ROUTINE";mkAlert("ot","📌","Nurse Finding",p,tx);if(al==="urgent")sw("alerts");}document.getElementById("fx").value="";document.getElementById("fa").value="no";document.getElementById("ft").value=nw();}
-function rFindings(){document.getElementById("flist").innerHTML=findings.map(f=>\\\`<div style="display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:9px;background:\\\${f.al!=="no"?"rgba(245,166,35,.08)":"var(--panel)"};border:1px solid \\\${f.al!=="no"?"rgba(245,166,35,.28)":"var(--border)"};"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);">\\\${f.t}</span><span style="font-size:13px;color:var(--text);flex:1;">\\\${f.tx}</span>\\\${f.al!=="no"?'<span class="pill" style="background:rgba(245,166,35,.12);color:var(--amber);border:1px solid rgba(245,166,35,.3);">MD ALERTED</span>':""}</div>\\\`).join("");}
+function rFindings(){document.getElementById("flist").innerHTML=findings.map(f=>`<div style="display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:9px;background:${f.al!=="no"?"rgba(245,166,35,.08)":"var(--panel)"};border:1px solid ${f.al!=="no"?"rgba(245,166,35,.28)":"var(--border)"};"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);">${f.t}</span><span style="font-size:13px;color:var(--text);flex:1;">${f.tx}</span>${f.al!=="no"?'<span class="pill" style="background:rgba(245,166,35,.12);color:var(--amber);border:1px solid rgba(245,166,35,.3);">MD ALERTED</span>':""}</div>`).join("");}
 
 function sw(t){
   document.querySelectorAll(".tb").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
-  document.querySelectorAll(".pane").forEach(p=>p.classList.toggle("on",p.id===\\\`pane-\\\${t}\\\`));
-  document.querySelectorAll(".cpane").forEach(p=>p.classList.toggle("on",p.id===\\\`pane-\\\${t}\\\`));
+  document.querySelectorAll(".pane").forEach(p=>p.classList.toggle("on",p.id===`pane-${t}`));
+  document.querySelectorAll(".cpane").forEach(p=>p.classList.toggle("on",p.id===`pane-${t}`));
   document.getElementById("spane").classList.toggle("on",t==="sum");
   if(t==="chat")setTimeout(scChat,80);
 }
@@ -1081,17 +1081,17 @@ function bldCtx(){
   const r=VR[VR.length-1]||{};
   const ti=IO.filter(x=>x.dr==="IN").reduce((s,x)=>s+(+x.am||0),0);
   const to=IO.filter(x=>x.dr==="OUT").reduce((s,x)=>s+(+x.am||0),0);
-  const ass=Object.entries(window.ASS).filter(([,v])=>v.length>0).map(([k,v])=>\\\`\\\${SL[k]}: \\\${v.join("; ")}\\\`).join("\\\\n")||"Not yet documented";
-  return\\\`PATIENT: Margaret T. Sullivan, 67y F, Room TR-1\\\\nDX: Chest pain, r/o NSTEMI\\\\nALLERGIES: PCN, ASA\\\\nPROVIDER: Dr. Rivera\\\\nCODE: Full Code\\\\n\\\\nLATEST VITALS: HR \\\${r.hr||"—"}, BP \\\${r.sbp||"—"}/\\\${r.dbp||"—"}, SpO₂ \\\${r.spo2||"—"}%, Temp \\\${r.temp||"—"}°F, Pain \\\${r.pain||"—"}/10, RR \\\${r.rr||"—"}\\\\nI&O: IN \\\${ti}mL / OUT \\\${to}mL / Balance \\\${ti-to>=0?"+":""}\\\${ti-to}mL\\\\n\\\\nASSESSMENT:\\\\n\\\${ass}\\\\n\\\\nALERTS: \\\${alerts.slice(0,3).map(a=>\\\`\\\${a.p}: \\\${a.tx}\\\`).join("; ")||"None"}\\\\nPENDING ORDERS: \\\${orders.filter(o=>o.st==="pending").length}\\\`;
+  const ass=Object.entries(window.ASS).filter(([,v])=>v.length>0).map(([k,v])=>`${SL[k]}: ${v.join("; ")}`).join("\n")||"Not yet documented";
+  return`PATIENT: Margaret T. Sullivan, 67y F, Room TR-1\nDX: Chest pain, r/o NSTEMI\nALLERGIES: PCN, ASA\nPROVIDER: Dr. Rivera\nCODE: Full Code\n\nLATEST VITALS: HR ${r.hr||"—"}, BP ${r.sbp||"—"}/${r.dbp||"—"}, SpO₂ ${r.spo2||"—"}%, Temp ${r.temp||"—"}°F, Pain ${r.pain||"—"}/10, RR ${r.rr||"—"}\nI&O: IN ${ti}mL / OUT ${to}mL / Balance ${ti-to>=0?"+":""}${ti-to}mL\n\nASSESSMENT:\n${ass}\n\nALERTS: ${alerts.slice(0,3).map(a=>`${a.p}: ${a.tx}`).join("; ")||"None"}\nPENDING ORDERS: ${orders.filter(o=>o.st==="pending").length}`;
 }
 
 async function genSBAR(){
   const btn=document.getElementById("sbt");btn.textContent="Generating…";
   document.getElementById("sbar-out").style.display="block";document.getElementById("tmpl-empty").style.display="none";
   const te=document.getElementById("sbar-txt");
-  te.innerHTML=[80,65,90,55,75].map(w=>\\\`<div class="skel" style="width:\\\${w}%;"></div>\\\`).join("");
+  te.innerHTML=[80,65,90,55,75].map(w=>`<div class="skel" style="width:${w}%;"></div>`).join("");
   try{
-    const rsp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,messages:[{role:"user",content:\\\`You are a clinical documentation AI assisting an ED nurse. Generate a professional nursing SBAR shift summary.\\\\n\\\\n\\\${bldCtx()}\\\\n\\\\nWrite a clear SBAR note:\\\\n**S — Situation** (1-2 sentences)\\\\n**B — Background** (2-3 sentences)\\\\n**A — Assessment** (bullet-point system review)\\\\n**R — Recommendation** (nursing actions, pending items)\\\\n\\\\nUse standard clinical nursing language. Be specific and accurate.\\\`}]})});
+    const rsp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,messages:[{role:"user",content:`You are a clinical documentation AI assisting an ED nurse. Generate a professional nursing SBAR shift summary.\n\n${bldCtx()}\n\nWrite a clear SBAR note:\n**S — Situation** (1-2 sentences)\n**B — Background** (2-3 sentences)\n**A — Assessment** (bullet-point system review)\n**R — Recommendation** (nursing actions, pending items)\n\nUse standard clinical nursing language. Be specific and accurate.`}]})});
     const d=await rsp.json();te.textContent=d.content?.find(b=>b.type==="text")?.text||"Generation failed.";
   }catch(e){te.textContent="Generation failed. Check connection.";}
   btn.textContent="✦ Generate SBAR";
@@ -1100,21 +1100,21 @@ function cpySBAR(){navigator.clipboard.writeText(document.getElementById("sbar-t
 function cpyNote(){navigator.clipboard.writeText(document.getElementById("note-txt").textContent);}
 
 function selTmpl(id){
-  atmpl=id;document.querySelectorAll(".tbtn").forEach(b=>b.classList.toggle("on",b.id===\\\`tb-\\\${id}\\\`));
+  atmpl=id;document.querySelectorAll(".tbtn").forEach(b=>b.classList.toggle("on",b.id===`tb-${id}`));
   const tmpl=TMPL[id];
   document.getElementById("tmpl-empty").style.display="none";document.getElementById("tmpl-wrap").style.display="block";
   document.getElementById("t-icon").textContent=tmpl.icon;document.getElementById("t-title").textContent=tmpl.name.toUpperCase();
   const c=document.getElementById("t-fields");c.innerHTML="";
-  tmpl.fields.forEach(f=>{const d=document.createElement("div");d.innerHTML=\\\`<div class="lbl">\\\${f.toUpperCase()}</div><textarea class="inp" rows="2" data-f="\\\${f}" placeholder="Enter \\\${f.toLowerCase()}…"></textarea>\\\`;c.appendChild(d);});
-  document.getElementById("note-out").style.display="none";document.getElementById("gnbtxt").textContent=\\\`✦ Generate \\\${tmpl.name}\\\`;
+  tmpl.fields.forEach(f=>{const d=document.createElement("div");d.innerHTML=`<div class="lbl">${f.toUpperCase()}</div><textarea class="inp" rows="2" data-f="${f}" placeholder="Enter ${f.toLowerCase()}…"></textarea>`;c.appendChild(d);});
+  document.getElementById("note-out").style.display="none";document.getElementById("gnbtxt").textContent=`✦ Generate ${tmpl.name}`;
 }
 
 async function genNote(){
   if(!atmpl)return;const tmpl=TMPL[atmpl];const fi={};document.querySelectorAll("#t-fields textarea").forEach(ta=>{if(ta.value.trim())fi[ta.dataset.f]=ta.value.trim();});
   const gb=document.getElementById("gnbtn");gb.disabled=true;document.getElementById("gnbtxt").textContent="Generating…";
-  const fs=Object.entries(fi).map(([k,v])=>\\\`\\\${k}: \\\${v}\\\`).join("\\\\n")||"(No additional context)";
+  const fs=Object.entries(fi).map(([k,v])=>`${k}: ${v}`).join("\n")||"(No additional context)";
   try{
-    const rsp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,messages:[{role:"user",content:\\\`You are a clinical documentation AI assisting an ED nurse. Generate a complete, professional \\\${tmpl.name} for the medical record.\\\\n\\\\n\\\${bldCtx()}\\\\n\\\\nNURSE-PROVIDED INFO:\\\\n\\\${fs}\\\\n\\\\nWrite a complete nursing \\\${tmpl.name} suitable for the medical record. Use standard clinical format. Include date/time and nurse signature line. No AI disclaimers.\\\`}]})});
+    const rsp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,messages:[{role:"user",content:`You are a clinical documentation AI assisting an ED nurse. Generate a complete, professional ${tmpl.name} for the medical record.\n\n${bldCtx()}\n\nNURSE-PROVIDED INFO:\n${fs}\n\nWrite a complete nursing ${tmpl.name} suitable for the medical record. Use standard clinical format. Include date/time and nurse signature line. No AI disclaimers.`}]})});
     const d=await rsp.json();const tx=d.content?.find(b=>b.type==="text")?.text||"Generation failed.";
     document.getElementById("note-txt").textContent=tx;document.getElementById("note-out").style.display="block";
   }catch(e){document.getElementById("note-txt").textContent="Generation failed.";document.getElementById("note-out").style.display="block";}

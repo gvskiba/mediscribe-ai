@@ -1,901 +1,450 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
 import { createPageUrl } from "@/utils";
+import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import PatientSearchBar from "../components/search/PatientSearchBar";
+import { motion, AnimatePresence } from "framer-motion";
+import SepsisPredictionDashboard from "../components/sepsis/SepsisPredictionDashboard";
 
-const COLORS = {
-  navy: "#050f1e",
-  slate: "#0b1d35",
-  panel: "#0d2240",
-  edge: "#162d4f",
-  border: "#1e3a5f",
-  muted: "#2a4d72",
-  dim: "#4a7299",
-  text: "#c8ddf0",
-  bright: "#e8f4ff",
-  teal: "#00d4bc",
-  amber: "#f5a623",
-  red: "#ff5c6c",
-  green: "#2ecc71",
-  purple: "#9b6dff",
-  blue: "#4a90d9",
-  rose: "#f472b6",
-  gold: "#f0c040",
-  orange: "#ff8c42",
-  cyan: "#22d3ee",
+const C = {
+  navy:"#050f1e", slate:"#0b1d35", panel:"#0d2240", edge:"#162d4f",
+  border:"#1e3a5f", muted:"#2a4d72", dim:"#4a7299", text:"#c8ddf0",
+  bright:"#e8f4ff", teal:"#00d4bc", amber:"#f5a623", red:"#ff5c6c",
+  green:"#2ecc71", purple:"#9b6dff", blue:"#4a90d9", rose:"#f472b6",
+  gold:"#f0c040",
 };
 
-const MODULES = [
+
+
+const STATUS_CONFIG = {
+  critical: { color:C.red,    bg:"rgba(255,92,108,.13)",  dot:"#ff5c6c", label:"CRITICAL" },
+  urgent:   { color:C.amber,  bg:"rgba(245,166,35,.11)",  dot:"#f5a623", label:"URGENT"   },
+  active:   { color:C.blue,   bg:"rgba(74,144,217,.1)",   dot:"#4a90d9", label:"ACTIVE"   },
+  stable:   { color:C.green,  bg:"rgba(46,204,113,.09)",  dot:"#2ecc71", label:"STABLE"   },
+};
+
+const TRIAGE_COLOR = {
+  "ESI-1":"#ff5c6c","ESI-2":"#f5a623","ESI-3":"#f0c040","ESI-4":"#2ecc71","ESI-5":"#4a7299",
+};
+
+// ── App navigation pages ───────────────────────────────────────────
+const APP_PAGES = [
   {
-    id: "transcription",
-    title: "Live Transcription Studio",
-    icon: "🎙️",
-    desc: "Ambient mic records patient encounters in real time. AI outputs structured SOAP notes live.",
-    page: "LiveTranscription",
-    color: COLORS.teal,
-    featured: true,
-    badges: ["● LIVE", "FLAGSHIP"],
-    meta: "",
+    page:"NoteCreationHub", icon:"✦", label:"Note Creation",
+    sub:"Templates · Transcription · Detailed",
+    color:C.teal, desc:"Start a new note using your preferred workflow",
+    shortcut:"N",
   },
   {
-    id: "soap",
-    title: "SOAP Note Compiler",
-    icon: "📋",
-    desc: "Compile, structure, and finalize SOAP notes from transcription output or manual entry.",
-    page: "SoapCompiler",
-    color: COLORS.blue,
-    badges: ["SOAP"],
-    meta: "",
+    page:"ClinicalNoteStudio", icon:"📝", label:"Note Studio",
+    sub:"SOAP · AI Assist · Sign",
+    color:C.blue, desc:"Full structured note editor with AI analysis",
+    shortcut:"S",
   },
   {
-    id: "analysis",
-    title: "Clinical Analysis Center",
-    icon: "🔬",
-    desc: "AI-powered lab, imaging, and EKG analysis. Claude interprets abnormalities and generates clinical impressions.",
-    page: "LabsImagingTab",
-    color: COLORS.purple,
-    badges: ["VISION"],
-    meta: "Labs · Imaging · EKG",
+    page:"DiagnosticStewardship", icon:"🔬", label:"Diagnostic Stewardship",
+    sub:"Guideline orders · AI analysis",
+    color:C.purple, desc:"Generate evidence-based order sets from clinical data",
+    shortcut:"D",
   },
   {
-    id: "templates",
-    title: "Note Templates Library",
-    icon: "📄",
-    desc: "50+ specialty-specific note templates. Pick a template, fill key fields, AI completes the narrative.",
-    page: "NoteTemplates",
-    color: COLORS.cyan,
-    badges: ["54 TEMPLATES"],
-    meta: "ED · ICU · Inpatient · Outpatient",
+    page:"Results", icon:"🧪", label:"Results",
+    sub:"Labs · Imaging · EKG",
+    color:C.amber, desc:"Enter and AI-analyze patient results with flagging",
+    shortcut:"R",
   },
   {
-    id: "orders",
-    title: "Order Set Builder",
-    icon: "📑",
-    desc: "Evidence-based order sets for CHF, Sepsis, Stroke, DKA, COPD, CAP, and PE. AI suggests missing orders.",
-    page: "OrderSetBuilder",
-    color: COLORS.rose,
-    badges: ["276 ORDERS"],
-    meta: "7 conditions · AHA/ACC/IDSA",
+    page:"DrugsBugs", icon:"💊", label:"Drugs & Bugs",
+    sub:"Reference · Sepsis · Peds",
+    color:C.green, desc:"ED drug reference, antibiotic stewardship, pediatric dosing",
+    shortcut:"B",
   },
   {
-    id: "discharge",
-    title: "Discharge Planning Center",
-    icon: "🚪",
-    desc: "5-section discharge checklist, AI-generated patient instructions, medication reconciliation, follow-up scheduling.",
-    page: "DischargePlanning",
-    color: COLORS.orange,
-    badges: ["DISCHARGE"],
-    meta: "Med rec · PDF export",
+    page:"UserPreferences", icon:"⚙️", label:"Account",
+    sub:"Profile · Security · Preferences",
+    color:C.dim, desc:"Manage your profile, credentials, and settings",
+    shortcut:"A",
   },
 ];
 
-const COMPLIANCE_MODULES = [
-  {
-    id: "addendum",
-    title: "Addendum & Amendment Manager",
-    icon: "✏️",
-    desc: "Late-entry addenda, attestations, and co-sign workflows. Full audit trail with timestamps.",
-    page: "AddendumManager",
-    color: COLORS.amber,
-    featured: true,
-    badges: ["COMPLIANT"],
-    meta: "",
-  },
-  {
-    id: "shift",
-    title: "Shift Dashboard",
-    icon: "🏥",
-    desc: "Complete shift overview: patient census, task queue, pending orders, lab alerts, and handoff summaries.",
-    page: "Shift",
-    color: COLORS.blue,
-    badges: ["SHIFT"],
-    meta: "Census · Tasks · Handoff",
-  },
-];
-
-const REFERENCE_MODULES = [
-  {
-    id: "drugs",
-    title: "Drug Reference & Interactions",
-    icon: "💊",
-    desc: "Comprehensive drug monographs, real-time interaction checker, contraindications, renal/hepatic dosing.",
-    page: "DrugReference",
-    color: COLORS.green,
-    badges: ["INTERACTIONS"],
-    meta: "Dosing · Interactions · Renal",
-  },
-  {
-    id: "antibiotic",
-    title: "Antibiotic Stewardship Guide",
-    icon: "🦠",
-    desc: "Evidence-based antibiotic selection by infection type. MRSA coverage, ESKAPE pathogens, de-escalation protocols.",
-    page: "AntibioticStewardship",
-    color: COLORS.gold,
-    badges: ["STEWARDSHIP"],
-    meta: "IDSA · De-escalation · MRSA",
-  },
-  {
-    id: "peds",
-    title: "Pediatric Dosing Calculator",
-    icon: "👶",
-    desc: "Weight-based dosing for pediatric medications, age-specific reference ranges, resuscitation drug calculations.",
-    page: "PediatricDosing",
-    color: "#60a5fa",
-    badges: ["PEDS"],
-    meta: "Weight-based · Resuscitation",
-  },
-  {
-    id: "calculators",
-    title: "Medical Calculators",
-    icon: "🧮",
-    desc: "40+ validated clinical calculators: HEART score, CHADS-VASc, Wells criteria, APACHE II, Framingham, GFR.",
-    page: "Calculators",
-    color: COLORS.teal,
-    badges: ["40+ CALC"],
-    meta: "Cardiology · Nephrology · Critical Care",
-  },
-  {
-    id: "guidelines",
-    title: "Clinical Guidelines Search",
-    icon: "📚",
-    desc: "Instant AI-powered search across ACC/AHA, IDSA, GOLD, ADA, ASA, and 20+ society guidelines.",
-    page: "Guidelines",
-    color: COLORS.purple,
-    badges: ["GUIDELINES"],
-    meta: "ACC · AHA · IDSA · ADA · ASA",
-  },
-];
-
-// Active Note Widget Component
-function ActiveNoteWidget({ navigate }) {
-  const [selectedNoteId, setSelectedNoteId] = useState(null);
-
-  const { data: recentNotes = [] } = useQuery({
-    queryKey: ["recentNotesHome"],
-    queryFn: async () => {
-      const notes = await base44.entities.ClinicalNote.list("-updated_date", 10);
-      return notes;
-    },
-  });
-
-  const SECTIONS = [
-    { id: "patient_intake", label: "Subjective", icon: "📝" },
-    { id: "physical_exam", label: "Physical Exam", icon: "🩺" },
-    { id: "labs_imaging", label: "Labs & Imaging", icon: "🧪" },
-    { id: "differential", label: "Diagnoses", icon: "⚕️" },
-    { id: "treatment_plan", label: "Treatment Plan", icon: "💊" },
-    { id: "disposition_plan", label: "Disposition", icon: "🚑", tab: "disposition_plan" },
-  ];
-
-  return (
-    <div style={{ position: "relative", zIndex: 1, padding: "0 28px 24px" }}>
-      <div style={{ 
-        background: COLORS.panel, 
-        border: `1px solid ${COLORS.border}`, 
-        borderRadius: 18, 
-        padding: "20px 24px",
-        boxShadow: `0 4px 16px ${COLORS.teal}08`
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-          <div style={{ 
-            width: 40, 
-            height: 40, 
-            borderRadius: 10, 
-            background: `linear-gradient(135deg, ${COLORS.teal}20, ${COLORS.blue}15)`,
-            border: `1px solid ${COLORS.teal}40`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 18
-          }}>
-            📋
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ 
-              fontFamily: "'Playfair Display', serif", 
-              fontSize: 18, 
-              fontWeight: 700, 
-              color: COLORS.bright,
-              marginBottom: 2
-            }}>
-              Active Note
-            </div>
-            <div style={{ fontSize: 12, color: COLORS.dim }}>
-              Select a note and jump to any section
-            </div>
-          </div>
-        </div>
-
-        <select
-          value={selectedNoteId || ""}
-          onChange={(e) => setSelectedNoteId(e.target.value || null)}
-          style={{
-            width: "100%",
-            background: COLORS.edge,
-            border: `1px solid ${COLORS.border}`,
-            borderRadius: 10,
-            padding: "10px 14px",
-            color: COLORS.text,
-            fontSize: 13,
-            fontWeight: 500,
-            cursor: "pointer",
-            outline: "none",
-            marginBottom: 16
-          }}
-        >
-          <option value="">Select a clinical note...</option>
-          {recentNotes.map(note => (
-            <option key={note.id} value={note.id}>
-              {note.patient_name || "Unnamed Patient"} — {note.chief_complaint || "No CC"} ({note.date_of_visit || "No date"})
-            </option>
-          ))}
-        </select>
-
-        {selectedNoteId && (
-          <div style={{ 
-            display: "grid", 
-            gridTemplateColumns: "repeat(3, 1fr)", 
-            gap: 8,
-            animation: "fadeUp 0.3s ease"
-          }}>
-            {SECTIONS.map(section => (
-              <button
-                key={section.id}
-                onClick={() => {
-                  const tab = section.tab || section.id;
-                  navigate(`${createPageUrl("ClinicalNoteStudio")}?noteId=${selectedNoteId}&tab=${tab}`);
-                }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "10px 14px",
-                  borderRadius: 10,
-                  background: COLORS.edge,
-                  border: `1px solid ${COLORS.border}`,
-                  color: COLORS.text,
-                  fontSize: 12,
-                  fontWeight: 500,
-                  cursor: "pointer",
-                  transition: "all 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = `${COLORS.teal}10`;
-                  e.currentTarget.style.borderColor = `${COLORS.teal}50`;
-                  e.currentTarget.style.color = COLORS.teal;
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = COLORS.edge;
-                  e.currentTarget.style.borderColor = COLORS.border;
-                  e.currentTarget.style.color = COLORS.text;
-                  e.currentTarget.style.transform = "translateY(0)";
-                }}
-              >
-                <span style={{ fontSize: 16 }}>{section.icon}</span>
-                <span>{section.label}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {!selectedNoteId && (
-          <div style={{ 
-            textAlign: "center", 
-            padding: "20px", 
-            color: COLORS.muted,
-            fontSize: 12
-          }}>
-            Select a note above to access quick section navigation
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ModuleCard({ module, navigate }) {
-  return (
-    <button
-      onClick={() => navigate(createPageUrl(module.page))}
-      style={{
-        position: "relative",
-        overflow: "hidden",
-        padding: 20,
-        borderRadius: 14,
-        background: COLORS.panel,
-        border: `1px solid ${COLORS.border}`,
-        textDecoration: "none",
-        color: "inherit",
-        display: "flex",
-        flexDirection: "column",
-        gap: 14,
-        transition: "all 0.22s",
-        cursor: "pointer",
-        animation: "fadeUp 0.4s ease both",
-        gridColumn: module.featured ? "span 2" : undefined,
-        "--card-color": module.color,
-        "--hover-color": module.color,
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = "translateY(-3px)";
-        e.currentTarget.style.borderColor = module.color;
-        e.currentTarget.style.boxShadow = `0 12px 40px rgba(0,0,0,0.4), 0 0 0 1px ${module.color}22`;
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "translateY(0)";
-        e.currentTarget.style.borderColor = COLORS.border;
-        e.currentTarget.style.boxShadow = "none";
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", position: "relative", zIndex: 1 }}>
-        <div
-          style={{
-            width: module.featured ? 60 : 46,
-            height: module.featured ? 60 : 46,
-            borderRadius: 12,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: module.featured ? 28 : 22,
-            flexShrink: 0,
-            background: `${module.color}18`,
-            border: `1px solid ${module.color}40`,
-          }}
-        >
-          {module.icon}
-        </div>
-        {module.badges && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5 }}>
-            {module.badges.map((badge, i) => (
-              <span
-                key={i}
-                style={{
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 9,
-                  fontWeight: 700,
-                  letterSpacing: "0.07em",
-                  padding: "2px 7px",
-                  borderRadius: 8,
-                  background: `${module.color}18`,
-                  color: module.color,
-                  border: `1px solid ${module.color}35`,
-                }}
-              >
-                {badge}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div style={{ position: "relative", zIndex: 1 }}>
-        <div
-          style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: 17,
-            fontWeight: 700,
-            color: COLORS.bright,
-            letterSpacing: "-0.01em",
-            marginBottom: 6,
-            lineHeight: 1.2,
-          }}
-        >
-          {module.title}
-        </div>
-        <p style={{ fontSize: 12, color: COLORS.dim, lineHeight: 1.6 }}>{module.desc}</p>
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          position: "relative",
-          zIndex: 1,
-          paddingTop: 12,
-          borderTop: `1px solid ${COLORS.border}`,
-          marginTop: "auto",
-        }}
-      >
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: COLORS.muted }}>
-          {module.meta || ""}
-        </span>
-        <div style={{ width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, background: COLORS.edge, border: `1px solid ${COLORS.border}`, color: COLORS.dim, transition: "all 0.18s" }}>
-          →
-        </div>
-      </div>
-    </button>
-  );
+// ── Vital flag helper ──────────────────────────────────────────────
+function vitalColor(key, val) {
+  if (!val) return C.dim;
+  if (key==="hr")  return (val>100||val<60) ? C.amber : C.green;
+  if (key==="sbp") return (val<90||val>180) ? C.red   : val<100 ? C.amber : C.green;
+  if (key==="spo2")return val<94 ? C.red : val<97 ? C.amber : C.green;
+  if (key==="temp")return val>100.4 ? C.amber : C.green;
+  return C.green;
 }
 
 export default function Home() {
   const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState(null);
-  const [clock, setClock] = useState("");
+  const [clock, setClock]     = useState("");
+  const [date, setDate]       = useState("");
+  const [search, setSearch]   = useState("");
+  const [selected, setSelected] = useState(null);
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [sortKey, setSortKey] = useState("triage"); // triage | los | room | name
 
-  const formatDisplayName = (name) => {
-    if (!name) return "User";
-    const formatted = name.split('.')
-                         .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-                         .join(' ');
-    return `Dr. ${formatted}`;
-  };
-
+  // Clock
   useEffect(() => {
-    const load = async () => {
-      try {
-        const user = await base44.auth.me();
-        setCurrentUser(user);
-      } catch (e) {
-        console.error(e);
-      }
-    };
-    load();
-  }, []);
-
-  useEffect(() => {
-    const updateClock = () => {
+    const tick = () => {
       const now = new Date();
-      const t = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
-      const d = now.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-      setClock(`${d} · ${t}`);
+      setClock(now.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}));
+      setDate(now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"}));
     };
-    updateClock();
-    const iv = setInterval(updateClock, 1000);
+    tick();
+    const iv = setInterval(tick, 1000);
     return () => clearInterval(iv);
   }, []);
 
-  const initials = currentUser?.full_name
-    ?.split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase() || "—";
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.target.tagName==="INPUT") return;
+      const page = APP_PAGES.find(p => p.shortcut === e.key.toUpperCase());
+      if (page) navigate(createPageUrl(page.page));
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [navigate]);
 
-  const NAV_ITEMS = [
-    { section: "CORE", items: [
-      { icon: "🏠", label: "Home", page: "Home" },
-      { icon: "🎯", label: "Command", page: "CommandCenter" },
-      { icon: "📊", label: "Dashboard", page: "Dashboard" },
-      { icon: "🏥", label: "Shift", page: "Shift" },
-      { icon: "👤", label: "Patients", page: "PatientDashboard" },
-    ]},
-    { section: "DOCUMENTATION", items: [
-      { icon: "🎙️", label: "Transcription", page: "LiveTranscription" },
-      { icon: "📋", label: "SOAP", page: "SoapCompiler" },
-      { icon: "✨", label: "Note Studio", page: "ClinicalNoteStudio" },
-      { icon: "📄", label: "Notes", page: "NotesLibrary" },
-      { icon: "📑", label: "Orders", page: "OrderSetBuilder" },
-      { icon: "🚪", label: "Discharge", page: "DischargePlanning" },
-    ]},
-    { section: "RESULTS", items: [
-      { icon: "🧪", label: "Labs", page: "Results" },
-      { icon: "🔬", label: "Imaging", page: "Results" },
-      { icon: "❤️", label: "EKG", page: "Results" },
-    ]},
-    { section: "REFERENCE", items: [
-      { icon: "📚", label: "Guidelines", page: "Guidelines" },
-      { icon: "💊", label: "Drugs", page: "DrugReference" },
-      { icon: "🦠", label: "Antibiotics", page: "AntibioticStewardship" },
-      { icon: "🧮", label: "Calculators", page: "Calculators" },
-      { icon: "🧠", label: "Knowledge", page: "MedicalKnowledgeBase" },
-    ]},
-  ];
+  // Real data fetch - get all non-finalized notes
+  const { data: liveNotes = [] } = useQuery({
+    queryKey: ["activeNotes"],
+    queryFn: async () => {
+      const notes = await base44.entities.ClinicalNote.list("-updated_date", 50);
+      // Filter out finalized/archived notes to show only active ones
+      return notes.filter(n => n.status !== "finalized" && !n.archived);
+    },
+    retry: false,
+  });
+
+  const patients = liveNotes.map(n => ({
+    id: n.id,
+    name: n.patient_name || "Unknown Patient",
+    age: n.patient_age || "—",
+    sex: n.patient_gender || "—",
+    cc: n.chief_complaint || "—",
+    triage: n.triage_level || "ESI-3",
+    room: n.room || "—",
+    provider: n.provider || "—",
+    status: n.status === "draft" ? "active" : "stable",
+    arrived: n.created_date ? new Date(n.created_date).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:false}) : "—",
+    los: "—",
+    noteId: n.id,
+    vitals: n.vital_signs || { hr:null, sbp:null, spo2:null, temp:null },
+    flags: [],
+  }));
+
+  // Filter + sort
+  const filtered = patients
+    .filter(p => {
+      const q = search.toLowerCase();
+      const matchQ = !q || p.name.toLowerCase().includes(q) || p.room.toLowerCase().includes(q) || p.cc.toLowerCase().includes(q);
+      const matchS = filterStatus==="all" || p.status===filterStatus;
+      return matchQ && matchS;
+    })
+    .sort((a,b) => {
+      if (sortKey==="triage") return a.triage.localeCompare(b.triage);
+      if (sortKey==="los")    return b.los.localeCompare(a.los);
+      if (sortKey==="room")   return a.room.localeCompare(b.room);
+      if (sortKey==="name")   return a.name.localeCompare(b.name);
+      return 0;
+    });
+
+  // Stats
+  const stats = {
+    total:    patients.length,
+    critical: patients.filter(p=>p.status==="critical").length,
+    urgent:   patients.filter(p=>p.status==="urgent").length,
+    flags:    patients.reduce((n,p)=>n+p.flags.length,0),
+  };
 
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", background: COLORS.navy, minHeight: "100vh", color: COLORS.text, overflowX: "hidden", display: "flex" }}>
+    <div style={{ fontFamily:"'DM Sans',sans-serif", background:C.navy, minHeight:"100vh", color:C.text, display:"flex", flexDirection:"column" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
-        * { box-sizing: border-box; }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: ${COLORS.border}; border-radius: 3px; }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes glow { 0%,100% { box-shadow: 0 0 20px ${COLORS.teal}20; } 50% { box-shadow: 0 0 40px ${COLORS.teal}50; } }
-        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+        @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+        ::-webkit-scrollbar{height:4px;width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:2px}
+        input:focus{outline:none;border-color:#4a7299 !important}
+        input::placeholder{color:#2a4d72}
+        button{transition:all .15s}
+        .patient-row:hover{background:rgba(0,212,188,.05) !important;border-color:rgba(0,212,188,.3) !important;cursor:pointer}
+        .patient-row:hover .row-arrow{opacity:1 !important;transform:translateX(0) !important}
+        .nav-card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.3)}
+        .nav-card:hover .nav-arrow{opacity:1 !important}
       `}</style>
 
-      {/* Sidebar */}
-      <div style={{ 
-        width: 72, 
-        background: "linear-gradient(180deg, #0a1628 0%, #050f1e 100%)", 
-        borderRight: `1px solid ${COLORS.border}`,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "20px 0",
-        position: "fixed",
-        left: 0,
-        top: 0,
-        bottom: 0,
-        zIndex: 100,
-        overflowY: "auto"
-      }}>
+      {/* ══════════════════════════════════════════════════════════
+          NAVBAR
+      ══════════════════════════════════════════════════════════ */}
+      <nav style={{ height:52, background:"rgba(11,29,53,.97)", borderBottom:`1px solid ${C.border}`, backdropFilter:"blur(20px)", display:"flex", alignItems:"center", padding:"0 28px 0 28px", gap:16, flexShrink:0, position:"sticky", top:0, zIndex:200 }}>
         {/* Logo */}
-        <div style={{
-          width: 44,
-          height: 44,
-          borderRadius: 12,
-          background: COLORS.bright,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: "'Playfair Display', serif",
-          fontSize: 20,
-          fontWeight: 900,
-          color: COLORS.navy,
-          marginBottom: 24
-        }}>
-          N.
+        <span style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:700, color:C.bright, letterSpacing:"-.02em" }}>Notrya</span>
+        <div style={{ width:1, height:16, background:C.border }} />
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:C.teal, letterSpacing:".14em" }}>COMMAND CENTER</span>
+
+        <div style={{ flex:1 }} />
+
+        {/* Live status */}
+        <div style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 12px", borderRadius:8, background:"rgba(0,212,188,.07)", border:"1px solid rgba(0,212,188,.2)" }}>
+          <div style={{ width:6, height:6, borderRadius:"50%", background:C.teal, animation:"blink 1.4s infinite" }} />
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:C.teal }}>{stats.total} ACTIVE PATIENTS</span>
         </div>
 
-        {/* Nav sections */}
-        {NAV_ITEMS.map((section, idx) => (
-          <div key={idx} style={{ width: "100%", marginBottom: 16 }}>
-            <div style={{ 
-              fontFamily: "'JetBrains Mono', monospace", 
-              fontSize: 7, 
-              fontWeight: 700, 
-              color: COLORS.muted, 
-              letterSpacing: "0.1em",
-              textAlign: "center",
-              marginBottom: 8,
-              padding: "0 4px"
-            }}>
-              {section.section}
-            </div>
-            {section.items.map(item => (
-              <button
-                key={item.page}
-                onClick={() => navigate(createPageUrl(item.page))}
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 4,
-                  padding: "10px 8px",
-                  background: "transparent",
-                  border: "none",
-                  color: COLORS.dim,
-                  fontSize: 24,
-                  cursor: "pointer",
-                  transition: "all 0.15s",
-                  position: "relative"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = `${COLORS.teal}12`;
-                  e.currentTarget.style.color = COLORS.teal;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "transparent";
-                  e.currentTarget.style.color = COLORS.dim;
-                }}
-              >
-                <span>{item.icon}</span>
-                <span style={{ 
-                  fontSize: 9, 
-                  fontWeight: 500, 
-                  fontFamily: "'DM Sans', sans-serif",
-                  textAlign: "center"
-                }}>
-                  {item.label}
-                </span>
-              </button>
-            ))}
+        {stats.critical > 0 && (
+          <div style={{ display:"flex", alignItems:"center", gap:5, padding:"4px 11px", borderRadius:8, background:"rgba(255,92,108,.1)", border:"1px solid rgba(255,92,108,.3)", animation:"pulse 1.8s infinite" }}>
+            <div style={{ width:6, height:6, borderRadius:"50%", background:C.red }} />
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:C.red }}>{stats.critical} CRITICAL</span>
           </div>
-        ))}
-      </div>
-
-      <div style={{ marginLeft: 72, flex: 1, position: "relative" }}>
-        <div style={{ position: "fixed", inset: 0, left: 72, zIndex: 0, pointerEvents: "none", background: `radial-gradient(ellipse 70% 50% at 50% 0%, ${COLORS.teal}14 0%, transparent 70%)` }} />
-
-      {/* Navbar */}
-      <nav
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 200,
-          height: 58,
-          background: "rgba(11,29,53,0.92)",
-          borderBottom: `1px solid ${COLORS.border}`,
-          backdropFilter: "blur(16px)",
-          display: "flex",
-          alignItems: "center",
-          padding: "0 28px",
-          gap: 18,
-        }}
-      >
-        <a
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            navigate(createPageUrl("Home"));
-          }}
-          style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: 22,
-            fontWeight: 700,
-            color: COLORS.bright,
-            letterSpacing: "-0.02em",
-            textDecoration: "none",
-            cursor: "pointer",
-          }}
-        >
-          Notrya
-        </a>
-        <div style={{ width: 1, height: 20, background: COLORS.border }} />
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, color: COLORS.teal, letterSpacing: "0.1em" }}>
-          COMMAND CENTER
-        </span>
-        <div style={{ flex: 1 }} />
-        <div style={{ marginRight: 16, maxWidth: 400 }}>
-          <PatientSearchBar variant="dark" />
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 12px", borderRadius: 20, background: `${COLORS.red}18`, border: `1px solid ${COLORS.red}40` }}>
-          <div style={{ width: 6, height: 6, borderRadius: "50%", background: COLORS.red, animation: "pulse 1.2s infinite" }} />
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, color: COLORS.red, letterSpacing: "0.08em" }}>
-            LIVE
-          </span>
-        </div>
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: COLORS.dim, letterSpacing: "0.05em", minWidth: 160 }}>
-          {clock}
-        </span>
-        {currentUser && (
-          <button
-            onClick={() => navigate(createPageUrl("UserPreferences"))}
-            style={{ 
-              display: "flex", 
-              alignItems: "center", 
-              gap: 10, 
-              padding: "6px 14px", 
-              borderRadius: 10, 
-              background: COLORS.panel, 
-              border: `1px solid ${COLORS.border}`,
-              cursor: "pointer",
-              transition: "all 0.15s"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = COLORS.teal;
-              e.currentTarget.style.background = `${COLORS.teal}10`;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = COLORS.border;
-              e.currentTarget.style.background = COLORS.panel;
-            }}
-          >
-            <div
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: "50%",
-                background: `linear-gradient(135deg, ${COLORS.teal}60, ${COLORS.blue}60)`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 12,
-                fontWeight: 700,
-                color: COLORS.navy,
-                fontFamily: "'JetBrains Mono', monospace",
-              }}
-            >
-              {initials}
-            </div>
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: COLORS.text, fontWeight: 500 }}>
-              {formatDisplayName(currentUser.full_name)}
-            </span>
-          </button>
         )}
+
+        <div style={{ width:1, height:16, background:C.border }} />
+
+        {/* Clock */}
+        <div style={{ textAlign:"right" }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:18, fontWeight:700, color:C.bright, letterSpacing:".04em", lineHeight:1 }}>{clock}</div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.dim, marginTop:2 }}>{date}</div>
+        </div>
       </nav>
 
-      {/* Hero */}
-      <div style={{ position: "relative", zIndex: 1, padding: "52px 28px 36px", display: "flex", alignItems: "flex-start", gap: 48 }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, color: COLORS.teal, letterSpacing: "0.14em", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ width: 24, height: 1, background: COLORS.teal }} />
-            NOTRYA AI PLATFORM
-          </div>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(32px, 4vw, 52px)", fontWeight: 900, color: COLORS.bright, lineHeight: 1.08, letterSpacing: "-0.03em", marginBottom: 16 }}>
-            Command <span style={{ color: COLORS.teal }}>Center.</span>
-          </h1>
-          <p style={{ fontSize: 15, color: COLORS.dim, lineHeight: 1.7, maxWidth: 480, marginBottom: 28 }}>
-            Your complete AI-powered clinical documentation suite. Transcribe, analyze, order, document, and comply — all from one unified platform.
-          </p>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <button
-              onClick={() => navigate(createPageUrl("PatientDashboard"))}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "11px 22px",
-                borderRadius: 11,
-                background: `linear-gradient(135deg, ${COLORS.teal}22, ${COLORS.blue}16)`,
-                border: `1px solid ${COLORS.teal}50`,
-                color: COLORS.teal,
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 14,
-                fontWeight: 700,
-                cursor: "pointer",
-                transition: "all 0.18s",
-                animation: "glow 3s infinite",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
-            >
-              <span>🎙️</span> Start New Session
-            </button>
-            <button
-              onClick={() => navigate(createPageUrl("Shift"))}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "11px 22px",
-                borderRadius: 11,
-                background: COLORS.edge,
-                border: `1px solid ${COLORS.border}`,
-                color: COLORS.dim,
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "all 0.18s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = COLORS.dim;
-                e.currentTarget.style.color = COLORS.text;
-                e.currentTarget.style.transform = "translateY(-1px)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = COLORS.border;
-                e.currentTarget.style.color = COLORS.dim;
-                e.currentTarget.style.transform = "translateY(0)";
-              }}
-            >
-              <span>🏥</span> Shift Dashboard
+      <div style={{ flex:1, padding:"24px 28px 40px 28px", maxWidth:1440, margin:"0 auto", width:"100%" }}>
+
+        {/* ══════════════════════════════════════════════════════
+            SEPSIS PREDICTION DASHBOARD
+        ══════════════════════════════════════════════════════ */}
+        <SepsisPredictionDashboard 
+          patients={liveNotes} 
+          onPatientClick={(p) => navigate(`${createPageUrl("ClinicalNoteStudio")}?noteId=${p.id || p.noteId}`)} 
+        />
+
+        {/* ══════════════════════════════════════════════════════
+            SECTION 1 — ACTIVE PATIENT LIST
+        ══════════════════════════════════════════════════════ */}
+        <div style={{ marginBottom:36 }}>
+
+          {/* Section header row */}
+          <div style={{ display:"flex", alignItems:"center", gap:16, marginBottom:16 }}>
+            <div>
+              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:700, color:C.bright, letterSpacing:"-.02em", lineHeight:1.1 }}>Active Patients</div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.dim, marginTop:3, letterSpacing:".08em" }}>TAP ANY ROW → OPENS ACTIVE NOTE IN STUDIO</div>
+            </div>
+
+            {/* Stat pills */}
+            <div style={{ display:"flex", gap:7, marginLeft:8 }}>
+              {[
+                { label:`${stats.total} Total`,    c:C.dim   },
+                { label:`${stats.critical} Critical`, c:C.red   },
+                { label:`${stats.urgent} Urgent`,  c:C.amber },
+                { label:`${stats.flags} Flags`,    c:C.rose  },
+              ].map(s => (
+                <div key={s.label} style={{ padding:"3px 10px", borderRadius:8, background:`${s.c}14`, border:`1px solid ${s.c}35`, fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:s.c }}>
+                  {s.label}
+                </div>
+              ))}
+            </div>
+
+            <div style={{ flex:1 }} />
+
+            {/* Search */}
+            <div style={{ position:"relative" }}>
+              <span style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", fontSize:13, color:C.muted }}>🔍</span>
+              <input
+                value={search}
+                onChange={e=>setSearch(e.target.value)}
+                placeholder="Search patient, room, CC…"
+                style={{ background:C.edge, border:`1px solid ${C.border}`, borderRadius:9, padding:"7px 12px 7px 32px", color:C.text, fontFamily:"'DM Sans',sans-serif", fontSize:12, width:220 }}
+              />
+            </div>
+
+            {/* Filter */}
+            <div style={{ display:"flex", gap:4 }}>
+              {["all","critical","urgent","active","stable"].map(s => (
+                <button key={s} onClick={()=>setFilterStatus(s)} style={{ padding:"5px 11px", borderRadius:8, fontSize:10, fontWeight:700, fontFamily:"'JetBrains Mono',monospace", cursor:"pointer", letterSpacing:".06em", background: filterStatus===s ? `${s==="all"?C.teal:STATUS_CONFIG[s]?.color||C.teal}22` : "transparent", border:`1px solid ${filterStatus===s ? `${s==="all"?C.teal:STATUS_CONFIG[s]?.color||C.teal}55` : C.border}`, color: filterStatus===s ? (s==="all"?C.teal:STATUS_CONFIG[s]?.color||C.teal) : C.muted }}>
+                  {s.toUpperCase()}
+                </button>
+              ))}
+            </div>
+
+            {/* New note */}
+            <button onClick={()=>navigate(createPageUrl("NoteCreationHub"))} style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 16px", borderRadius:10, fontSize:12, fontWeight:700, cursor:"pointer", border:"none", background:`linear-gradient(135deg,${C.teal},#00b8a5)`, color:C.navy }}>
+              + New Note
             </button>
           </div>
-        </div>
-      </div>
 
-      {/* Active Note Widget */}
-      <ActiveNoteWidget navigate={navigate} />
+          {/* ── Table header ── */}
+          <div style={{ display:"grid", gridTemplateColumns:"34px 2fr 80px 90px 80px 180px 200px 160px 120px 40px", gap:0, padding:"6px 14px", borderRadius:"10px 10px 0 0", background:C.slate, border:`1px solid ${C.border}`, borderBottom:"none" }}>
+            {[
+              { key:"status", label:"" },
+              { key:"name",   label:"PATIENT" },
+              { key:"room",   label:"ROOM" },
+              { key:"triage", label:"TRIAGE" },
+              { key:"los",    label:"LOS" },
+              { key:"cc",     label:"CHIEF COMPLAINT" },
+              { key:"vitals", label:"VITALS" },
+              { key:"flags",  label:"FLAGS" },
+              { key:"status2",label:"STATUS" },
+              { key:"arrow",  label:"" },
+            ].map(col => (
+              <div key={col.key} onClick={()=>col.key!=="status"&&col.key!=="arrow"&&col.key!=="vitals"&&col.key!=="flags"&&col.key!=="status2"&&col.key!=="cc"&&setSortKey(col.key)} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color: sortKey===col.key ? C.teal : C.muted, letterSpacing:".12em", cursor:["name","room","triage","los"].includes(col.key)?"pointer":"default", userSelect:"none", display:"flex", alignItems:"center", gap:3 }}>
+                {col.label}
+                {sortKey===col.key && <span style={{ color:C.teal }}>↑</span>}
+              </div>
+            ))}
+          </div>
 
-      {/* Quick Launch */}
-      <div style={{ position: "relative", zIndex: 1, padding: "0 28px 24px" }}>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          {MODULES.slice(0, 6).map((m) => (
-            <button
-              key={m.id}
-              onClick={() => navigate(createPageUrl(m.page))}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "9px 16px",
-                borderRadius: 10,
-                background: COLORS.edge,
-                border: `1px solid ${COLORS.border}`,
-                textDecoration: "none",
-                color: COLORS.text,
-                fontSize: 13,
-                fontWeight: 500,
-                transition: "all 0.15s",
-                cursor: "pointer",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = `${m.color}50`;
-                e.currentTarget.style.color = m.color;
-                e.currentTarget.style.background = `${m.color}0f`;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = COLORS.border;
-                e.currentTarget.style.color = COLORS.text;
-                e.currentTarget.style.background = COLORS.edge;
-              }}
-            >
-              <span>{m.icon}</span>
-              {m.title.split(" ")[0]}
-            </button>
-          ))}
-        </div>
-      </div>
+          {/* ── Patient rows ── */}
+          <div style={{ border:`1px solid ${C.border}`, borderRadius:"0 0 12px 12px", overflow:"hidden" }}>
+            <AnimatePresence>
+              {filtered.map((p, i) => {
+                const sc = STATUS_CONFIG[p.status];
+                const isSelected = selected===p.id;
+                return (
+                  <motion.div
+                    key={p.id}
+                    layout
+                    initial={{ opacity:0, y:-4 }}
+                    animate={{ opacity:1, y:0 }}
+                    transition={{ delay:i*.03, duration:.15 }}
+                    className="patient-row"
+                    onClick={() => { setSelected(p.id); navigate(`${createPageUrl("ClinicalNoteStudio")}?noteId=${p.noteId}`); }}
+                    style={{
+                      display:"grid",
+                      gridTemplateColumns:"34px 2fr 80px 90px 80px 180px 200px 160px 120px 40px",
+                      gap:0,
+                      padding:"11px 14px",
+                      background: isSelected ? "rgba(0,212,188,.06)" : i%2===0 ? C.panel : `rgba(11,29,53,.6)`,
+                      borderBottom: i < filtered.length-1 ? `1px solid ${C.border}` : "none",
+                      transition:"all .15s",
+                      alignItems:"center",
+                    }}
+                  >
+                    {/* Status dot */}
+                    <div style={{ display:"flex", justifyContent:"center" }}>
+                      <div style={{ width:8, height:8, borderRadius:"50%", background:sc.dot, animation:p.status==="critical"?"pulse 1.2s infinite":"none", boxShadow:`0 0 ${p.status==="critical"?8:4}px ${sc.dot}` }} />
+                    </div>
 
-      {/* Core AI Modules */}
-      <div style={{ position: "relative", zIndex: 1, padding: "0 28px 40px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20, paddingBottom: 14, borderBottom: `1px solid ${COLORS.border}` }}>
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, color: COLORS.dim, letterSpacing: "0.12em" }}>
-            CORE AI MODULES
-          </span>
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: COLORS.muted, padding: "2px 7px", borderRadius: 8, background: COLORS.edge, border: `1px solid ${COLORS.border}` }}>
-            {MODULES.length} tools
-          </span>
-          <div style={{ flex: 1, height: 1, background: COLORS.border }} />
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14 }}>
-          {MODULES.map((m) => (
-            <ModuleCard key={m.id} module={m} navigate={navigate} />
-          ))}
-        </div>
-      </div>
+                    {/* Name */}
+                    <div>
+                      <div style={{ fontWeight:600, fontSize:13, color:C.bright, letterSpacing:"-.01em", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{p.name}</div>
+                      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.dim, marginTop:2 }}>{p.age}y {p.sex} · {p.arrived}</div>
+                    </div>
 
-      {/* Compliance & Administration */}
-      <div style={{ position: "relative", zIndex: 1, padding: "0 28px 40px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20, paddingBottom: 14, borderBottom: `1px solid ${COLORS.border}` }}>
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, color: COLORS.dim, letterSpacing: "0.12em" }}>
-            COMPLIANCE & ADMINISTRATION
-          </span>
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: COLORS.muted, padding: "2px 7px", borderRadius: 8, background: COLORS.edge, border: `1px solid ${COLORS.border}` }}>
-            {COMPLIANCE_MODULES.length} tools
-          </span>
-          <div style={{ flex: 1, height: 1, background: COLORS.border }} />
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14 }}>
-          {COMPLIANCE_MODULES.map((m) => (
-            <ModuleCard key={m.id} module={m} navigate={navigate} />
-          ))}
-        </div>
-      </div>
+                    {/* Room */}
+                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12, fontWeight:700, color:C.text }}>{p.room}</div>
 
-      {/* Clinical Reference */}
-      <div style={{ position: "relative", zIndex: 1, padding: "0 28px 40px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20, paddingBottom: 14, borderBottom: `1px solid ${COLORS.border}` }}>
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, color: COLORS.dim, letterSpacing: "0.12em" }}>
-            CLINICAL REFERENCE
-          </span>
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: COLORS.muted, padding: "2px 7px", borderRadius: 8, background: COLORS.edge, border: `1px solid ${COLORS.border}` }}>
-            {REFERENCE_MODULES.length} tools
-          </span>
-          <div style={{ flex: 1, height: 1, background: COLORS.border }} />
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14, maxWidth: "100%" }}>
-          {REFERENCE_MODULES.map((m) => (
-            <ModuleCard key={m.id} module={m} navigate={navigate} />
-          ))}
-        </div>
-      </div>
+                    {/* Triage */}
+                    <div>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:6, background:`${TRIAGE_COLOR[p.triage]}18`, border:`1px solid ${TRIAGE_COLOR[p.triage]}44`, color:TRIAGE_COLOR[p.triage] }}>
+                        {p.triage}
+                      </span>
+                    </div>
 
-      {/* Footer */}
-      <footer style={{ position: "relative", zIndex: 1, padding: "20px 28px", borderTop: `1px solid ${COLORS.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: COLORS.muted, letterSpacing: "0.06em" }}>
-          NOTRYA AI PLATFORM · v2.4.1 · © 2026 · All clinical data is PHI-protected under HIPAA
+                    {/* LOS */}
+                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:C.dim }}>{p.los}</div>
+
+                    {/* CC */}
+                    <div style={{ fontSize:11, color:C.text, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", paddingRight:8 }}>{p.cc}</div>
+
+                    {/* Vitals */}
+                    <div style={{ display:"flex", gap:6 }}>
+                      {[
+                        { k:"hr",   label:"HR",   val:p.vitals.hr,   unit:"" },
+                        { k:"sbp",  label:"BP",   val:p.vitals.sbp,  unit:"" },
+                        { k:"spo2", label:"SpO₂", val:p.vitals.spo2, unit:"%" },
+                      ].map(v => {
+                        const vc = vitalColor(v.k, v.val);
+                        return (
+                          <div key={v.k} style={{ textAlign:"center" }}>
+                            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12, fontWeight:700, color:vc, lineHeight:1 }}>{v.val}{v.unit}</div>
+                            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7, color:C.muted, marginTop:1 }}>{v.label}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Flags */}
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:3 }}>
+                      {p.flags.slice(0,2).map(f => (
+                        <span key={f} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, padding:"2px 5px", borderRadius:5, background:"rgba(245,166,35,.12)", border:"1px solid rgba(245,166,35,.3)", color:C.amber, whiteSpace:"nowrap" }}>{f}</span>
+                      ))}
+                    </div>
+
+                    {/* Status badge */}
+                    <div>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, padding:"3px 8px", borderRadius:7, background:sc.bg, border:`1px solid ${sc.color}40`, color:sc.color }}>
+                        {sc.label}
+                      </span>
+                    </div>
+
+                    {/* Arrow */}
+                    <div className="row-arrow" style={{ display:"flex", justifyContent:"center", opacity:.2, transform:"translateX(-4px)", transition:"all .15s" }}>
+                      <span style={{ color:C.teal, fontSize:14, fontWeight:700 }}>→</span>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+
+            {filtered.length === 0 && (
+              <div style={{ padding:"32px", textAlign:"center", color:C.muted, fontSize:12, background:C.panel }}>
+                No patients match your filter.
+              </div>
+            )}
+          </div>
+
         </div>
-        <div style={{ display: "flex", gap: 20 }}>
-           <a href="#" onClick={(e) => e.preventDefault()} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: COLORS.muted, textDecoration: "none", letterSpacing: "0.06em", transition: "color 0.15s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.color = COLORS.text} onMouseLeave={(e) => e.currentTarget.style.color = COLORS.muted}>
-             Support
-           </a>
-           <a href="#" onClick={(e) => e.preventDefault()} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: COLORS.muted, textDecoration: "none", letterSpacing: "0.06em", transition: "color 0.15s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.color = COLORS.text} onMouseLeave={(e) => e.currentTarget.style.color = COLORS.muted}>
-             Documentation
-           </a>
-           <a href="#" onClick={(e) => e.preventDefault()} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: COLORS.muted, textDecoration: "none", letterSpacing: "0.06em", transition: "color 0.15s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.color = COLORS.text} onMouseLeave={(e) => e.currentTarget.style.color = COLORS.muted}>
-             Privacy Policy
-           </a>
-         </div>
-      </footer>
+
+        {/* ══════════════════════════════════════════════════════
+            SECTION 2 — APP NAVIGATION
+        ══════════════════════════════════════════════════════ */}
+        <div>
+          <div style={{ display:"flex", alignItems:"baseline", gap:12, marginBottom:16 }}>
+            <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:700, color:C.bright, letterSpacing:"-.02em" }}>Quick Navigation</div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.muted, letterSpacing:".08em" }}>KEYBOARD SHORTCUTS ACTIVE</div>
+          </div>
+
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:12 }}>
+            {APP_PAGES.map((p, i) => (
+              <motion.div
+                key={p.page}
+                className="nav-card"
+                initial={{ opacity:0, y:10 }}
+                animate={{ opacity:1, y:0 }}
+                transition={{ delay:.05 + i*.05, duration:.2 }}
+                onClick={() => navigate(createPageUrl(p.page))}
+                style={{ background:C.panel, border:`1px solid ${C.border}`, borderRadius:14, padding:"18px 16px 16px", cursor:"pointer", transition:"all .18s", position:"relative", overflow:"hidden" }}
+              >
+                {/* Color top accent */}
+                <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${p.color},${p.color}44)` }} />
+
+                {/* Keyboard shortcut badge */}
+                <div style={{ position:"absolute", top:10, right:12, fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, padding:"1px 6px", borderRadius:5, background:`${p.color}14`, border:`1px solid ${p.color}30`, color:p.color, opacity:.7 }}>
+                  {p.shortcut}
+                </div>
+
+                {/* Icon */}
+                <div style={{ fontSize:26, marginBottom:10, lineHeight:1 }}>{p.icon}</div>
+
+                {/* Label */}
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:700, color:C.bright, marginBottom:3, letterSpacing:"-.01em", lineHeight:1.2 }}>{p.label}</div>
+
+                {/* Sub */}
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:p.color, letterSpacing:".07em", marginBottom:8, opacity:.85 }}>{p.sub}</div>
+
+                {/* Desc */}
+                <div style={{ fontSize:11, color:C.dim, lineHeight:1.55 }}>{p.desc}</div>
+
+                {/* Arrow */}
+                <div className="nav-arrow" style={{ position:"absolute", bottom:14, right:14, color:p.color, fontSize:14, fontWeight:700, opacity:0, transition:"opacity .15s" }}>→</div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
       </div>
-      </div>
-      );
-      }
+    </div>
+  );
+}

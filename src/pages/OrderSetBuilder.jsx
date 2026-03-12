@@ -8,6 +8,8 @@ import SignModal from "../components/orderset/SignModal";
 import SaveTemplateModal from "../components/orderset/SaveTemplateModal";
 import PatientContextPanel from "../components/orderset/PatientContextPanel";
 import RecommendationEngine from "../components/orderset/RecommendationEngine";
+import SmartSuggestionsPanel from "../components/orderset/SmartSuggestionsPanel";
+import { getDependentOrders } from "../components/orderset/orderLogicEngine";
 import { Search, X, CheckSquare, Square, Filter } from "lucide-react";
 
 const FILTERS = ["all", "selected", "required", "modified", "high_alert"];
@@ -25,6 +27,8 @@ export default function OrderSetBuilder() {
   const [toastMsg, setToastMsg] = useState(null);
   const [signedSets, setSignedSets] = useState([]);
   const [patientData, setPatientData] = useState({});
+  const [smartSuggestions, setSmartSuggestions] = useState([]);
+  const [dismissedSuggestions, setDismissedSuggestions] = useState(new Set());
 
   // Load user + templates
   useEffect(() => {
@@ -70,7 +74,28 @@ export default function OrderSetBuilder() {
   }
 
   function handleToggle(orderId) {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, selected: !o.selected } : o));
+    setOrders(prev => {
+      const updated = prev.map(o => o.id === orderId ? { ...o, selected: !o.selected } : o);
+      // Check for smart suggestions when toggling ON
+      const toggledOrder = updated.find(o => o.id === orderId);
+      if (toggledOrder?.selected) {
+        updateSmartSuggestions(updated);
+      }
+      return updated;
+    });
+  }
+
+  function updateSmartSuggestions(currentOrders) {
+    const selectedOrders = currentOrders.filter(o => o.selected);
+    const suggestions = getDependentOrders(selectedOrders);
+    
+    // Filter out already selected orders and dismissed suggestions
+    const existingIds = new Set(currentOrders.map(o => o.id));
+    const newSuggestions = suggestions.filter(s => 
+      !existingIds.has(s.id) && !dismissedSuggestions.has(s.id)
+    );
+    
+    setSmartSuggestions(newSuggestions);
   }
 
   function handleEdit(orderId, newDetail) {
@@ -90,8 +115,31 @@ export default function OrderSetBuilder() {
       priority: "routine", required: false,
       selected: true, custom_added: true, modified: false,
     };
-    setOrders(prev => [...prev, newOrder]);
+    setOrders(prev => {
+      const updated = [...prev, newOrder];
+      updateSmartSuggestions(updated);
+      return updated;
+    });
     auditLog("custom_added", { cat, name });
+  }
+
+  function handleAddSuggestion(suggestion) {
+    const newOrder = {
+      ...suggestion,
+      id: `smart-${Date.now()}`,
+      selected: true,
+      smart_suggested: true,
+      modified: false,
+    };
+    setOrders(prev => [...prev, newOrder]);
+    setSmartSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
+    auditLog("smart_suggestion_added", { name: suggestion.name });
+    toast(`✓ Added: ${suggestion.name}`, G.purple);
+  }
+
+  function handleDismissSuggestion(suggestionId) {
+    setSmartSuggestions(prev => prev.filter(s => s.id !== suggestionId));
+    setDismissedSuggestions(prev => new Set([...prev, suggestionId]));
   }
 
   function handleAddRecommendations(recommendedOrders) {
@@ -413,6 +461,13 @@ Respond ONLY with valid JSON array (no markdown, no backticks):
               patientData={patientData}
               existingOrderNames={orders.map(o => o.name)}
               onAddRecommendations={handleAddRecommendations}
+            />
+            
+            {/* Smart Suggestions Panel */}
+            <SmartSuggestionsPanel
+              suggestions={smartSuggestions}
+              onAddSuggestion={handleAddSuggestion}
+              onDismiss={handleDismissSuggestion}
             />
 
             {catOrder.map(cat => {

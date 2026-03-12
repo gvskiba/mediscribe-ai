@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { createPageUrl } from "@/utils";
 import { useQuery } from "@tanstack/react-query";
-import PatientSearchBar from "./components/search/PatientSearchBar";
+import PatientSearchBar from "../components/search/PatientSearchBar";
 
 const COLORS = {
   navy: "#050f1e",

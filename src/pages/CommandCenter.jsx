@@ -109,10 +109,14 @@ export default function CommandCenter() {
     return () => window.removeEventListener("keydown", handler);
   }, [navigate]);
 
-  // Real data fetch
+  // Real data fetch - get all non-finalized notes
   const { data: liveNotes = [] } = useQuery({
     queryKey: ["activeNotes"],
-    queryFn: () => base44.entities.ClinicalNote.filter({ status: "draft" }, { limit: 20 }),
+    queryFn: async () => {
+      const notes = await base44.entities.ClinicalNote.list("-updated_date", 50);
+      // Filter out finalized/archived notes to show only active ones
+      return notes.filter(n => n.status !== "finalized" && !n.archived);
+    },
     retry: false,
   });
 

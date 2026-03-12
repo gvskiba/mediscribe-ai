@@ -136,6 +136,19 @@ export default function Home() {
     retry: false,
   });
 
+  // Fetch custom quick nav links
+  const { data: customNavLinks = [] } = useQuery({
+    queryKey: ["quickNavLinks"],
+    queryFn: async () => {
+      const links = await base44.entities.QuickNavLink.filter({ enabled: true });
+      return links.sort((a, b) => a.order - b.order);
+    },
+    retry: false,
+  });
+
+  // Use custom links if available, otherwise use defaults
+  const navPages = customNavLinks.length > 0 ? customNavLinks : APP_PAGES;
+
   const patients = liveNotes.map(n => ({
     id: n.id,
     name: n.patient_name || "Unknown Patient",
@@ -510,7 +523,7 @@ export default function Home() {
           </div>
 
           <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:12 }}>
-            {APP_PAGES.map((p, i) => (
+            {navPages.map((p, i) => (
               <motion.div
                 key={p.page}
                 className="nav-card"

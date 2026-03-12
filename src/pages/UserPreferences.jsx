@@ -5,7 +5,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { X, Plus, Check, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, Trash2, Building2, Users, Newspaper, Globe } from "lucide-react";
+import { X, Plus, Check, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, Trash2, Building2, Users, Newspaper, Globe, GripVertical, Edit } from "lucide-react";
 
 // ── Color tokens — identical to the rest of the Notrya app ─────────
 const C = {
@@ -20,6 +20,7 @@ const ACCOUNT_SECTIONS = [
   { id:"profile",       icon:"👤", label:"Profile",           sub:"Name, credentials, photo"    },
   { id:"credentials",   icon:"🏥", label:"Clinical Info",     sub:"Specialty, license, NPI"     },
   { id:"preferences",   icon:"⚙️", label:"Preferences",       sub:"Display, notifications"      },
+  { id:"quick_nav",     icon:"🚀", label:"Quick Navigation",  sub:"Customize home page links"   },
   { id:"security",      icon:"🔒", label:"Security",          sub:"Password, 2FA, sessions"     },
   { id:"app_settings",  icon:"🔧", label:"App Settings",      sub:"Hospital, API, Dashboard"    },
   { id:"integrations",  icon:"🔗", label:"Integrations",      sub:"EHR, lab, imaging links"     },
@@ -157,6 +158,12 @@ export default function UserAccount() {
     thenewsapi_token: { value: "", show: false, status: null, error: "" },
     webzio_token: { value: "", show: false, status: null, error: "" },
     newsdata_token: { value: "", show: false, status: null, error: "" },
+  });
+
+  // Quick Nav state
+  const [editingLink, setEditingLink] = useState(null);
+  const [newLink, setNewLink] = useState({
+    page: "", icon: "✦", label: "", sub: "", desc: "", color: "#00d4bc", shortcut: "", enabled: true
   });
 
   // ── Clock ──────────────────────────────────────────────────────
@@ -324,6 +331,49 @@ export default function UserAccount() {
     setNewsApiInputs(prev => ({ ...prev, [keyType]: { value: "", show: false, status: null, error: "" } }));
     toast.success("API key revoked");
   };
+
+  // Quick Nav link queries
+  const { data: quickNavLinks = [] } = useQuery({
+    queryKey: ["quickNavLinks"],
+    queryFn: () => base44.entities.QuickNavLink.list("order", 50),
+  });
+
+  // Quick Nav mutations
+  const createLinkMutation = useMutation({
+    mutationFn: (data) => base44.entities.QuickNavLink.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quickNavLinks"] });
+      toast.success("Link added");
+      setNewLink({ page: "", icon: "✦", label: "", sub: "", desc: "", color: "#00d4bc", shortcut: "", enabled: true });
+    },
+    onError: (err) => toast.error("Failed to add link: " + err.message),
+  });
+
+  const updateLinkMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.QuickNavLink.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quickNavLinks"] });
+      toast.success("Link updated");
+      setEditingLink(null);
+    },
+    onError: (err) => toast.error("Update failed: " + err.message),
+  });
+
+  const deleteLinkMutation = useMutation({
+    mutationFn: (id) => base44.entities.QuickNavLink.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quickNavLinks"] });
+      toast.success("Link removed");
+    },
+    onError: (err) => toast.error("Delete failed: " + err.message),
+  });
+
+  const toggleLinkMutation = useMutation({
+    mutationFn: ({ id, enabled }) => base44.entities.QuickNavLink.update(id, { enabled }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quickNavLinks"] });
+    },
+  });
 
   const ACTIVITY = [];
 
@@ -811,6 +861,136 @@ export default function UserAccount() {
             </div>
           </Card>
 
+        </div>
+      );
+
+      // ── QUICK NAVIGATION ──────────────────────────────────────
+      case "quick_nav": return (
+        <div style={{ maxWidth:900, margin:"0 auto", padding:"20px", display:"flex", flexDirection:"column", gap:14 }}>
+          
+          {/* Add new link */}
+          <Card title="ADD NEW QUICK LINK" icon="➕">
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 }}>
+              <div>
+                <Label>PAGE NAME</Label>
+                <input value={newLink.page} onChange={e => setNewLink(p => ({ ...p, page: e.target.value }))} style={inputStyle} placeholder="e.g. Dashboard, NotesLibrary" />
+              </div>
+              <div>
+                <Label>DISPLAY LABEL</Label>
+                <input value={newLink.label} onChange={e => setNewLink(p => ({ ...p, label: e.target.value }))} style={inputStyle} placeholder="e.g. My Dashboard" />
+              </div>
+              <div>
+                <Label>ICON (emoji)</Label>
+                <input value={newLink.icon} onChange={e => setNewLink(p => ({ ...p, icon: e.target.value }))} style={inputStyle} placeholder="✦" />
+              </div>
+              <div>
+                <Label>COLOR (hex)</Label>
+                <input value={newLink.color} onChange={e => setNewLink(p => ({ ...p, color: e.target.value }))} style={inputStyle} placeholder="#00d4bc" />
+              </div>
+              <div>
+                <Label>SUBTITLE</Label>
+                <input value={newLink.sub} onChange={e => setNewLink(p => ({ ...p, sub: e.target.value }))} style={inputStyle} placeholder="Brief subtitle" />
+              </div>
+              <div>
+                <Label>KEYBOARD SHORTCUT</Label>
+                <input value={newLink.shortcut} onChange={e => setNewLink(p => ({ ...p, shortcut: e.target.value.toUpperCase() }))} style={inputStyle} placeholder="Single letter" maxLength={1} />
+              </div>
+            </div>
+            <div style={{ marginBottom:10 }}>
+              <Label>DESCRIPTION</Label>
+              <input value={newLink.desc} onChange={e => setNewLink(p => ({ ...p, desc: e.target.value }))} style={inputStyle} placeholder="Longer description text" />
+            </div>
+            <button onClick={() => createLinkMutation.mutate({ ...newLink, order: quickNavLinks.length })} disabled={!newLink.page || !newLink.label} style={{ padding:"8px 18px", borderRadius:10, fontSize:12, fontWeight:700, cursor:!newLink.page || !newLink.label ? "not-allowed" : "pointer", background:!newLink.page || !newLink.label ? C.muted : `linear-gradient(135deg,${C.teal},#00b8a5)`, border:"none", color:C.navy, opacity:!newLink.page || !newLink.label ? .5 : 1 }}>
+              <Plus size={13} style={{ display:"inline", marginRight:5 }} /> Add Quick Link
+            </button>
+          </Card>
+
+          {/* Current links */}
+          <Card title="YOUR QUICK LINKS" icon="🚀" badge={`${quickNavLinks.filter(l => l.enabled).length} ACTIVE`} badgeColor={C.teal}>
+            {quickNavLinks.length === 0 ? (
+              <div style={{ padding:"20px", textAlign:"center", fontSize:12, color:C.dim }}>
+                No custom links yet. Using default navigation.
+              </div>
+            ) : (
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {quickNavLinks.map((link, i) => (
+                  <div key={link.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", background:link.enabled ? C.edge : "rgba(0,0,0,.15)", border:`1px solid ${C.border}`, borderRadius:10, opacity:link.enabled ? 1 : .5 }}>
+                    {/* Drag handle */}
+                    <GripVertical size={14} style={{ color:C.muted, cursor:"move", flexShrink:0 }} />
+                    
+                    {/* Icon preview */}
+                    <div style={{ width:40, height:40, borderRadius:9, background:`${link.color}12`, border:`1px solid ${link.color}33`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, flexShrink:0 }}>
+                      {link.icon}
+                    </div>
+
+                    {/* Link info */}
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:600, color:C.bright }}>{link.label}</div>
+                      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.dim, marginTop:2 }}>{link.page} {link.shortcut && `· Key: ${link.shortcut}`}</div>
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{ display:"flex", gap:6, flexShrink:0 }}>
+                      <button onClick={() => toggleLinkMutation.mutate({ id: link.id, enabled: !link.enabled })} style={{ width:28, height:28, borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:`1px solid ${C.border}`, color:link.enabled ? C.green : C.muted, cursor:"pointer" }} title={link.enabled ? "Hide" : "Show"}>
+                        {link.enabled ? <Eye size={13} /> : <EyeOff size={13} />}
+                      </button>
+                      <button onClick={() => setEditingLink(link)} style={{ width:28, height:28, borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:`1px solid ${C.border}`, color:C.dim, cursor:"pointer" }}>
+                        <Edit size={13} />
+                      </button>
+                      <button onClick={() => deleteLinkMutation.mutate(link.id)} style={{ width:28, height:28, borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:`1px solid ${C.border}`, color:C.red, cursor:"pointer" }}>
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          {/* Edit dialog */}
+          {editingLink && (
+            <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.7)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:999 }} onClick={() => setEditingLink(null)}>
+              <div onClick={e => e.stopPropagation()} style={{ background:C.panel, border:`1px solid ${C.border}`, borderRadius:16, padding:"20px", maxWidth:500, width:"90%" }}>
+                <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:700, color:C.bright, marginBottom:16 }}>Edit Quick Link</div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 }}>
+                  <div>
+                    <Label>PAGE NAME</Label>
+                    <input value={editingLink.page} onChange={e => setEditingLink(p => ({ ...p, page: e.target.value }))} style={inputStyle} />
+                  </div>
+                  <div>
+                    <Label>DISPLAY LABEL</Label>
+                    <input value={editingLink.label} onChange={e => setEditingLink(p => ({ ...p, label: e.target.value }))} style={inputStyle} />
+                  </div>
+                  <div>
+                    <Label>ICON</Label>
+                    <input value={editingLink.icon} onChange={e => setEditingLink(p => ({ ...p, icon: e.target.value }))} style={inputStyle} />
+                  </div>
+                  <div>
+                    <Label>COLOR</Label>
+                    <input value={editingLink.color} onChange={e => setEditingLink(p => ({ ...p, color: e.target.value }))} style={inputStyle} />
+                  </div>
+                  <div>
+                    <Label>SUBTITLE</Label>
+                    <input value={editingLink.sub} onChange={e => setEditingLink(p => ({ ...p, sub: e.target.value }))} style={inputStyle} />
+                  </div>
+                  <div>
+                    <Label>SHORTCUT</Label>
+                    <input value={editingLink.shortcut} onChange={e => setEditingLink(p => ({ ...p, shortcut: e.target.value.toUpperCase() }))} style={inputStyle} maxLength={1} />
+                  </div>
+                </div>
+                <div style={{ marginBottom:14 }}>
+                  <Label>DESCRIPTION</Label>
+                  <input value={editingLink.desc} onChange={e => setEditingLink(p => ({ ...p, desc: e.target.value }))} style={inputStyle} />
+                </div>
+                <div style={{ display:"flex", gap:8, justifyContent:"flex-end" }}>
+                  <button onClick={() => setEditingLink(null)} style={{ padding:"7px 14px", borderRadius:8, background:C.edge, border:`1px solid ${C.border}`, color:C.dim, fontSize:12, cursor:"pointer" }}>Cancel</button>
+                  <button onClick={() => updateLinkMutation.mutate({ id: editingLink.id, data: editingLink })} style={{ padding:"7px 14px", borderRadius:8, background:`linear-gradient(135deg,${C.teal},#00b8a5)`, border:"none", color:C.navy, fontSize:12, fontWeight:700, cursor:"pointer" }}>
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       );
 

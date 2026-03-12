@@ -1322,3 +1322,20 @@ async function genNote(){
   gb.disabled=false;document.getElementById("gnbtxt").textContent='✦ Generate ' + tmpl.name;
 }
 </script>
+`;
+
+  return (
+    <div style={{ height: "100vh", width: "100vw", overflow: "hidden" }}>
+      <iframe
+        srcDoc={htmlContent}
+        style={{
+          width: "100%",
+          height: "100%",
+          border: "none",
+          display: "block"
+        }}
+        title="Nursing Flowsheet"
+      />
+    </div>
+  );
+}

@@ -881,41 +881,80 @@ export default function UserAccount() {
           
           {/* Add new link */}
           <Card title="ADD NEW QUICK LINK" icon="➕">
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 }}>
-              <div>
-                <Label>PAGE NAME</Label>
-                <select value={newLink.page} onChange={e => setNewLink(p => ({ ...p, page: e.target.value }))} style={selectStyle}>
-                  <option value="">Select a page...</option>
-                  {AVAILABLE_PAGES.map(page => <option key={page} value={page}>{page}</option>)}
-                </select>
-              </div>
-              <div>
-                <Label>DISPLAY LABEL</Label>
-                <input value={newLink.label} onChange={e => setNewLink(p => ({ ...p, label: e.target.value }))} style={inputStyle} placeholder="e.g. My Dashboard" />
-              </div>
-              <div>
-                <Label>ICON (emoji)</Label>
-                <input value={newLink.icon} onChange={e => setNewLink(p => ({ ...p, icon: e.target.value }))} style={inputStyle} placeholder="✦" />
-              </div>
-              <div>
-                <Label>COLOR (hex)</Label>
-                <input value={newLink.color} onChange={e => setNewLink(p => ({ ...p, color: e.target.value }))} style={inputStyle} placeholder="#00d4bc" />
-              </div>
-              <div>
-                <Label>SUBTITLE</Label>
-                <input value={newLink.sub} onChange={e => setNewLink(p => ({ ...p, sub: e.target.value }))} style={inputStyle} placeholder="Brief subtitle" />
-              </div>
-              <div>
-                <Label>KEYBOARD SHORTCUT</Label>
-                <input value={newLink.shortcut} onChange={e => setNewLink(p => ({ ...p, shortcut: e.target.value.toUpperCase() }))} style={inputStyle} placeholder="Single letter" maxLength={1} />
-              </div>
+            {/* Simple page selector */}
+            <div style={{ marginBottom:16 }}>
+              <Label>SELECT PAGE</Label>
+              <select 
+                value={newLink.page} 
+                onChange={e => {
+                  const page = e.target.value;
+                  setNewLink(p => ({ 
+                    ...p, 
+                    page,
+                    label: page ? page.replace(/([A-Z])/g, ' $1').trim() : "",
+                  }));
+                }} 
+                style={{ ...selectStyle, fontSize:14, padding:"11px 13px" }}
+              >
+                <option value="">Choose a page to add...</option>
+                {AVAILABLE_PAGES.map(page => (
+                  <option key={page} value={page}>{page}</option>
+                ))}
+              </select>
             </div>
-            <div style={{ marginBottom:10 }}>
-              <Label>DESCRIPTION</Label>
-              <input value={newLink.desc} onChange={e => setNewLink(p => ({ ...p, desc: e.target.value }))} style={inputStyle} placeholder="Longer description text" />
-            </div>
-            <button onClick={() => createLinkMutation.mutate({ ...newLink, order: quickNavLinks.length })} disabled={!newLink.page || !newLink.label} style={{ padding:"8px 18px", borderRadius:10, fontSize:12, fontWeight:700, cursor:!newLink.page || !newLink.label ? "not-allowed" : "pointer", background:!newLink.page || !newLink.label ? C.muted : `linear-gradient(135deg,${C.teal},#00b8a5)`, border:"none", color:C.navy, opacity:!newLink.page || !newLink.label ? .5 : 1 }}>
-              <Plus size={13} style={{ display:"inline", marginRight:5 }} /> Add Quick Link
+
+            {/* Advanced options (collapsed by default) */}
+            {newLink.page && (
+              <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:"auto" }} style={{ overflow:"hidden" }}>
+                <div style={{ padding:"14px", background:C.edge, border:`1px solid ${C.border}`, borderRadius:10, marginBottom:12 }}>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:C.dim, letterSpacing:".1em", marginBottom:10 }}>CUSTOMIZE (OPTIONAL)</div>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                    <div>
+                      <Label>DISPLAY LABEL</Label>
+                      <input value={newLink.label} onChange={e => setNewLink(p => ({ ...p, label: e.target.value }))} style={inputStyle} placeholder="Custom name" />
+                    </div>
+                    <div>
+                      <Label>ICON</Label>
+                      <input value={newLink.icon} onChange={e => setNewLink(p => ({ ...p, icon: e.target.value }))} style={inputStyle} placeholder="✦" />
+                    </div>
+                    <div>
+                      <Label>COLOR</Label>
+                      <div style={{ display:"flex", gap:6 }}>
+                        {["#00d4bc","#4a90d9","#9b6dff","#f5a623","#2ecc71","#f472b6"].map(col => (
+                          <button key={col} onClick={() => setNewLink(p => ({ ...p, color: col }))} style={{ width:32, height:32, borderRadius:8, background:col, border:`2px solid ${newLink.color === col ? C.bright : "transparent"}`, cursor:"pointer", flexShrink:0 }} />
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <Label>SHORTCUT KEY</Label>
+                      <input value={newLink.shortcut} onChange={e => setNewLink(p => ({ ...p, shortcut: e.target.value.toUpperCase() }))} style={{ ...inputStyle, textTransform:"uppercase", textAlign:"center" }} placeholder="Letter" maxLength={1} />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            <button 
+              onClick={() => createLinkMutation.mutate({ ...newLink, order: quickNavLinks.length })} 
+              disabled={!newLink.page || !newLink.label || createLinkMutation.isPending} 
+              style={{ 
+                padding:"10px 20px", 
+                borderRadius:10, 
+                fontSize:13, 
+                fontWeight:700, 
+                cursor:!newLink.page || !newLink.label || createLinkMutation.isPending ? "not-allowed" : "pointer", 
+                background:!newLink.page || !newLink.label ? C.muted : `linear-gradient(135deg,${C.teal},#00b8a5)`, 
+                border:"none", 
+                color:C.navy, 
+                opacity:!newLink.page || !newLink.label ? .5 : 1,
+                display:"flex",
+                alignItems:"center",
+                gap:7,
+                justifyContent:"center"
+              }}
+            >
+              {createLinkMutation.isPending ? <Loader2 size={14} style={{ animation:"spin .8s linear infinite" }} /> : <Plus size={14} />}
+              {createLinkMutation.isPending ? "Adding..." : "Add to Quick Navigation"}
             </button>
           </Card>
 

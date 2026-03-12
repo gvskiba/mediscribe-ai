@@ -1004,7 +1004,7 @@ function rAlerts(){
   document.getElementById("alc").textContent=`${alerts.length} alert${alerts.length!==1?"s":""}`;
   const log=document.getElementById("alog");if(!alerts.length){log.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px;">No alerts yet.</div>';return;}
   log.innerHTML="";alerts.forEach(a=>{
-    const ps=PS[a.p];const div=document.createElement("div");div.className="arow";div.style.background=a.ack?"transparent":ps.bg;div.style.border=\\\`1px solid \\\${a.ack?"var(--border)":ps.br}\\\`;
+    const ps=PS[a.p];const div=document.createElement("div");div.className="arow";div.style.background=a.ack?"transparent":ps.bg;div.style.border=`1px solid ${a.ack?"var(--border)":ps.br}`;
     div.innerHTML=`<div class="aicn">${a.ic}</div><div class="abdy"><div class="amet"><span class="pill" style="background:${ps.bg};color:${ps.c};border:1px solid ${ps.br};">${a.p}</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--text);">${a.lb}</span><span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);margin-left:auto;">${a.t}</span></div><div class="atxt">${a.tx}</div>${a.ack?`<div class="aack">✓ Acknowledged by ${a.ab} at ${a.at}</div>`""}</div>${!a.ack?`<button class="btn bsm bgh" style="flex-shrink:0;border-color:rgba(46,204,113,.35);color:var(--green);" onclick="ackA(${a.id})">✓ Ack'd</button>`""}`;
     log.appendChild(div);
   });

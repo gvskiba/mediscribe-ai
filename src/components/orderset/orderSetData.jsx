@@ -1003,4 +1003,142 @@ export const CONDITIONS = {
       {id:"psy-c2",cat:"consults",priority:"urgent",required:false,name:"Neurology",detail:"If seizure-like activity or focal deficits"},
     ]
   },
+
+  acute_intracranial_hemorrhage: {
+    id:"acute_ich_ext", name:"Acute Intracranial Hemorrhage — Extended", subtitle:"Non-Traumatic ICH Management",
+    icon:"🧠", specialty:"Neurology", acuity:"stat",
+    guideline:"AHA/ASA 2024 ICH Guidelines",
+    tags:["Hypertension Control","ICP Monitoring","Osmotic Therapy","Reversal"],
+    orders:[
+      {id:"ich-ext-a1",cat:"admit",priority:"stat",required:true,name:"Admit to Neuro ICU",detail:"Highest acuity. ICP monitoring likely needed"},
+      {id:"ich-ext-v1",cat:"vitals",priority:"stat",required:true,name:"Neuro Checks Q15min",detail:"GCS, pupils, motor exam — document findings"},
+      {id:"ich-ext-v2",cat:"vitals",priority:"stat",required:true,name:"Head Elevation 30°",detail:"Reduces ICP"},
+      {id:"ich-ext-l1",cat:"labs",priority:"stat",required:true,name:"PT/INR, aPTT, Fibrinogen",detail:"STAT — anticoagulation reversal assessment"},
+      {id:"ich-ext-l2",cat:"labs",priority:"stat",required:true,name:"CBC, CMP, Glucose",detail:"STAT baseline"},
+      {id:"ich-ext-i1",cat:"imaging",priority:"stat",required:true,name:"CT Head non-contrast (STAT)",detail:"Hematoma volume, midline shift, hydrocephalus"},
+      {id:"ich-ext-i2",cat:"imaging",priority:"urgent",required:false,name:"CT Angiography (CTA)",detail:"Spot sign predicts hematoma expansion"},
+      {id:"ich-ext-m1",cat:"meds",priority:"stat",required:true,name:"Nicardipine IV Drip",detail:"5-15 mg/hr. SBP target 140-160 mmHg",high_alert:true},
+      {id:"ich-ext-m2",cat:"meds",priority:"stat",required:true,name:"Mannitol or Hypertonic Saline",detail:"If mass effect/herniation. Osmotic therapy for ICP",high_alert:true},
+      {id:"ich-ext-c1",cat:"consults",priority:"stat",required:true,name:"Neurosurgery",detail:"STAT — EVD or surgical evacuation evaluation"},
+      {id:"ich-ext-c2",cat:"consults",priority:"urgent",required:true,name:"Neuroradiology",detail:"Imaging interpretation and monitoring"},
+    ]
+  },
+
+  acute_subarachnoid_hemorrhage: {
+    id:"sah", name:"Acute Subarachnoid Hemorrhage", subtitle:"Ruptured Cerebral Aneurysm",
+    icon:"💥", specialty:"Neurology", acuity:"stat",
+    guideline:"AHA/ASA 2024 SAH Guidelines",
+    tags:["Aneurysm","Vasospasm","Rebleeding","Endovascular Coiling"],
+    orders:[
+      {id:"sah-a1",cat:"admit",priority:"stat",required:true,name:"Admit to Neuro ICU",detail:"Highest acuity. Neurosurgery standby"},
+      {id:"sah-v1",cat:"vitals",priority:"stat",required:true,name:"BP Management Strict",detail:"SBP 140-160 mmHg. Reduce rebleeding risk"},
+      {id:"sah-v2",cat:"vitals",priority:"stat",required:true,name:"Neuro Checks Q15min",detail:"Rapid deterioration indicates rebleeding"},
+      {id:"sah-l1",cat:"labs",priority:"stat",required:true,name:"PT/INR, CBC, CMP",detail:"STAT baseline"},
+      {id:"sah-i1",cat:"imaging",priority:"stat",required:true,name:"CT Head non-contrast (STAT)",detail:"Blood in subarachnoid space. ICH assessment"},
+      {id:"sah-i2",cat:"imaging",priority:"urgent",required:true,name:"CTA Head (Angiography)",detail:"Aneurysm localization and anatomy"},
+      {id:"sah-m1",cat:"meds",priority:"stat",required:true,name:"Nicardipine or Labetalol IV",detail:"BP control to prevent rebleeding",high_alert:true},
+      {id:"sah-m2",cat:"meds",priority:"urgent",required:true,name:"Nimodipine 60mg PO/NG Q4h",detail:"Reduces vasospasm-related ischemia (CGRP)",guideline:"AHA 2024 Class I"},
+      {id:"sah-m3",cat:"meds",priority:"routine",required:true,name:"Stool Softener + PPI",detail:"Prevent straining and GI bleeding"},
+      {id:"sah-c1",cat:"consults",priority:"stat",required:true,name:"Neurosurgery + Neurointerventional",detail:"STAT — aneurysm repair: clipping vs coiling"},
+      {id:"sah-c2",cat:"consults",priority:"urgent",required:true,name:"Neuroradiology",detail:"Imaging review and monitoring"},
+    ]
+  },
+
+  acute_hepatic_encephalopathy: {
+    id:"hepatic_encephalopathy", name:"Hepatic Encephalopathy", subtitle:"Altered Mental Status — Cirrhosis",
+    icon:"🧠", specialty:"Hepatology", acuity:"urgent",
+    guideline:"AASLD 2024 Hepatic Encephalopathy",
+    tags:["Ammonia","Lactulose","Rifaxomicin","Precipitants"],
+    orders:[
+      {id:"he-a1",cat:"admit",priority:"urgent",required:true,name:"Admit to Medicine/ICU",detail:"ICU if severe (Grade 3-4) or refractory"},
+      {id:"he-v1",cat:"vitals",priority:"urgent",required:true,name:"Neuro Checks Q4h",detail:"West Haven Grade scoring"},
+      {id:"he-l1",cat:"labs",priority:"stat",required:true,name:"Ammonia Level",detail:"STAT — >150 mcmol/L concerning. NOT diagnostic but correlates"},
+      {id:"he-l2",cat:"labs",priority:"stat",required:true,name:"Glucose, BMP, INR/PT",detail:"STAT — hypoglycemia common. Check coagulopathy"},
+      {id:"he-l3",cat:"labs",priority:"stat",required:true,name:"Blood Cultures × 2",detail:"SBP and other infections are common precipitants"},
+      {id:"he-l4",cat:"labs",priority:"urgent",required:true,name:"Urinalysis + Urine Culture",detail:"UTI is common precipitant"},
+      {id:"he-i1",cat:"imaging",priority:"urgent",required:true,name:"Head CT (non-contrast)",detail:"Rule out intracranial pathology if atypical"},
+      {id:"he-m1",cat:"meds",priority:"urgent",required:true,name:"Lactulose 30mL Q2h",detail:"Titrate to 2-3 bowel movements/day"},
+      {id:"he-m2",cat:"meds",priority:"urgent",required:true,name:"Rifaxomicin 550mg PO BID",detail:"Non-absorbed antibiotic. Reduces ammonia-producing bacteria",guideline:"AASLD 2024"},
+      {id:"he-m3",cat:"meds",priority:"routine",required:false,name:"Zinc Supplementation",detail:"100-200mg daily — amino acid metabolism"},
+      {id:"he-c1",cat:"consults",priority:"urgent",required:true,name:"Hepatology",detail:"Underlying liver disease management"},
+      {id:"he-c2",cat:"consults",priority:"urgent",required:false,name:"Transplant Surgery",detail:"If acute decompensation or hepatic failure"},
+    ]
+  },
+
+  acute_asthma_attack: {
+    id:"asthma_attack", name:"Acute Asthma Exacerbation (Severe)", subtitle:"Status Asthmaticus",
+    icon:"💨", specialty:"Respiratory", acuity:"urgent",
+    guideline:"GINA 2024 Asthma Exacerbation",
+    tags:["Beta-Agonist","Steroids","Peak Flow","Silent Chest"],
+    orders:[
+      {id:"ast-sv-a1",cat:"admit",priority:"urgent",required:true,name:"Admit to Telemetry/ICU",detail:"ICU if silent chest, severe PEF reduction, or altered MS"},
+      {id:"ast-sv-v1",cat:"vitals",priority:"urgent",required:true,name:"Peak Flow Monitoring",detail:"Baseline and Q1h during treatment. Goal > 50% predicted"},
+      {id:"ast-sv-v2",cat:"vitals",priority:"urgent",required:true,name:"Continuous SpO₂",detail:"Maintain SpO₂ ≥ 92-94%"},
+      {id:"ast-sv-l1",cat:"labs",priority:"stat",required:true,name:"ABG (if SpO₂ < 92%)",detail:"STAT — pH, pCO₂. Elevated pCO₂ = impending respiratory failure"},
+      {id:"ast-sv-l2",cat:"labs",priority:"stat",required:true,name:"CXR PA/Lateral",detail:"Rule out pneumothorax, pneumomediastinum"},
+      {id:"ast-sv-m1",cat:"meds",priority:"stat",required:true,name:"Continuous Albuterol Nebulization",detail:"2.5-5mg continuous (not Q20min intervals) — driven by oxygen",guideline:"GINA 2024 Class I"},
+      {id:"ast-sv-m2",cat:"meds",priority:"stat",required:true,name:"Ipratropium 0.5mg neb Q20min × 3",detail:"Anticholinergic — synergistic with beta-agonist"},
+      {id:"ast-sv-m3",cat:"meds",priority:"stat",required:true,name:"Methylprednisolone 125mg IV Q6h",detail:"Then taper to oral prednisone. High-dose corticosteroids",high_alert:true},
+      {id:"ast-sv-m4",cat:"meds",priority:"urgent",required:false,name:"Magnesium Sulfate 2g IV",detail:"Over 20 min if life-threatening exacerbation"},
+      {id:"ast-sv-c1",cat:"consults",priority:"urgent",required:true,name:"Pulmonology / Critical Care",detail:"URGENT if impending respiratory failure"},
+    ]
+  },
+
+  hyperkalemia_severe: {
+    id:"hyperkalemia_severe", name:"Severe Hyperkalemia with EKG Changes", subtitle:"K⁺ > 6.5 mEq/L",
+    icon:"⚡", specialty:"Nephrology", acuity:"stat",
+    guideline:"Nephrology Practice Guidelines 2024",
+    tags:["Peaked T-Waves","Widened QRS","Dialysis","Calcium Gluconate"],
+    orders:[
+      {id:"hks-a1",cat:"admit",priority:"stat",required:true,name:"Admit to ICU/Telemetry",detail:"Continuous cardiac monitoring — arrhythmia risk"},
+      {id:"hks-v1",cat:"vitals",priority:"stat",required:true,name:"Continuous Telemetry + SpO₂",detail:"Cardiac arrhythmia surveillance"},
+      {id:"hks-l1",cat:"labs",priority:"stat",required:true,name:"Serum K⁺ STAT",detail:"Venous acceptable for treatment initiation"},
+      {id:"hks-i1",cat:"imaging",priority:"stat",required:true,name:"12-Lead EKG STAT",detail:"Peaked T-waves, widened QRS, ST depression, sine wave pattern"},
+      {id:"hks-m1",cat:"meds",priority:"stat",required:true,name:"Calcium Gluconate 1-2g IV",detail:"STAT if EKG changes. Cardioprotective. Onset immediate",high_alert:true,guideline:"Life-saving — Class 1"},
+      {id:"hks-m2",cat:"meds",priority:"stat",required:true,name:"Insulin 10 units IV + Dextrose 25g IV",detail:"Shifts K⁺ intracellularly. Onset 15-30 min",high_alert:true},
+      {id:"hks-m3",cat:"meds",priority:"stat",required:true,name:"Albuterol 10-20mg Nebulized",detail:"Continuous neb. Shifts K⁺ into cells"},
+      {id:"hks-m4",cat:"meds",priority:"urgent",required:true,name:"Sodium Polystyrene (Kayexalate) 30g PO/PR",detail:"Removes K⁺ from body. Slower onset but long-acting"},
+      {id:"hks-c1",cat:"consults",priority:"stat",required:true,name:"Nephrology — EMERGENT Dialysis",detail:"If K⁺ > 7 or refractory to medical management"},
+    ]
+  },
+
+  acute_pulmonary_edema: {
+    id:"pulm_edema_acute", name:"Acute Pulmonary Edema", subtitle:"Flash Pulmonary Edema — Cardiogenic",
+    icon:"🫁", specialty:"Cardiology", acuity:"stat",
+    guideline:"AHA/ACC 2024 Cardiogenic Pulmonary Edema",
+    tags:["Orthopnea","Crackles","Frothy Sputum","CPAP/BiPAP"],
+    orders:[
+      {id:"ape-a1",cat:"admit",priority:"stat",required:true,name:"Admit to ICU/CCU",detail:"Respiratory distress — may need intubation"},
+      {id:"ape-v1",cat:"vitals",priority:"stat",required:true,name:"Continuous SpO₂ + Telemetry",detail:"Maintain SpO₂ ≥ 90-94%"},
+      {id:"ape-v2",cat:"vitals",priority:"stat",required:true,name:"Position: Sitting Upright",detail:"Reduces preload — improves breathing"},
+      {id:"ape-l1",cat:"labs",priority:"stat",required:true,name:"BNP / NT-proBNP",detail:"Diagnosis confirmation"},
+      {id:"ape-l2",cat:"labs",priority:"stat",required:true,name:"BMP, CBC, Troponin",detail:"STAT baseline"},
+      {id:"ape-i1",cat:"imaging",priority:"stat",required:true,name:"Chest X-ray Portable",detail:"Bilateral infiltrates (Kerley B lines, bat wing)"},
+      {id:"ape-i2",cat:"imaging",priority:"stat",required:true,name:"12-Lead EKG",detail:"STAT — assess for concurrent ACS"},
+      {id:"ape-m1",cat:"meds",priority:"stat",required:true,name:"IV Furosemide 80-160mg STAT",detail:"Diuresis. Titrate based on response",high_alert:true},
+      {id:"ape-m2",cat:"meds",priority:"stat",required:true,name:"Nitroglycerin SL or IV",detail:"Afterload reduction. Caution if hypotensive"},
+      {id:"ape-m3",cat:"meds",priority:"stat",required:false,name:"Morphine 2-4mg IV",detail:"Anxiolysis + venodilation. Use cautiously (respiratory depression)"},
+      {id:"ape-n1",cat:"nursing",priority:"stat",required:true,name:"CPAP or BiPAP Mask",detail:"Non-invasive ventilation — first-line respiratory support",guideline:"AHA/ACC 2024 Class I"},
+      {id:"ape-c1",cat:"consults",priority:"urgent",required:true,name:"Cardiology",detail:"Underlying etiology and HF management"},
+    ]
+  },
+
+  acute_coronary_syndrome_nstemi_extended: {
+    id:"nstemi_extended", name:"NSTEMI — Extended Management", subtitle:"Troponin Elevation, No ST Elevation",
+    icon:"💔", specialty:"Cardiology", acuity:"urgent",
+    guideline:"ESC 2024 NSTEMI Guidelines",
+    tags:["Risk Stratification","Clopidogrel","Heparin","Serial Troponins"],
+    orders:[
+      {id:"nstemi-ext-a1",cat:"admit",priority:"urgent",required:true,name:"Admit to Telemetry/CCU",detail:"Continuous monitoring"},
+      {id:"nstemi-ext-v1",cat:"vitals",priority:"urgent",required:true,name:"Continuous Telemetry",detail:"ST-segment monitoring"},
+      {id:"nstemi-ext-l1",cat:"labs",priority:"stat",required:true,name:"High-sensitivity Troponin Serial",detail:"STAT, 3h, 6h. Rule-out algorithm per ESC"},
+      {id:"nstemi-ext-l2",cat:"labs",priority:"stat",required:true,name:"HEART Score or TIMI Risk",detail:"Stratification for invasive vs conservative strategy"},
+      {id:"nstemi-ext-m1",cat:"meds",priority:"stat",required:true,name:"Aspirin 325mg",detail:"STAT loading"},
+      {id:"nstemi-ext-m2",cat:"meds",priority:"stat",required:true,name:"Clopidogrel 600mg or Prasugrel 60mg",detail:"P2Y12 inhibitor loading",high_alert:true},
+      {id:"nstemi-ext-m3",cat:"meds",priority:"stat",required:true,name:"Unfractionated Heparin 80 units/kg bolus",detail:"Then 18 units/kg/hr infusion"},
+      {id:"nstemi-ext-m4",cat:"meds",priority:"urgent",required:true,name:"Atorvastatin 80mg",detail:"High-intensity statin STAT"},
+      {id:"nstemi-ext-m5",cat:"meds",priority:"urgent",required:true,name:"Sublingual NTG Q5min PRN",detail:"Anginal chest pain relief"},
+      {id:"nstemi-ext-c1",cat:"consults",priority:"urgent",required:true,name:"Cardiology",detail:"Early invasive strategy timing discussion"},
+    ]
+  },
 };

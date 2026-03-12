@@ -183,7 +183,7 @@ function ActiveNoteWidget({ navigate }) {
   const SECTIONS = [
     { id: "patient_intake", label: "Subjective", icon: "📝" },
     { id: "physical_exam", label: "Physical Exam", icon: "🩺" },
-    { id: "labs_imaging", label: "Labs & Imaging", icon: "🧪", route: "Results" },
+    { id: "labs_imaging", label: "Labs & Imaging", icon: "🧪" },
     { id: "differential", label: "Diagnoses", icon: "⚕️" },
     { id: "treatment_plan", label: "Treatment Plan", icon: "💊" },
     { id: "disposition_plan", label: "Disposition", icon: "🚑" },
@@ -264,12 +264,7 @@ function ActiveNoteWidget({ navigate }) {
               <button
                 key={section.id}
                 onClick={() => {
-                  if (section.route === "Results") {
-                    navigate(createPageUrl("Results"));
-                  } else {
-                    const tab = section.tab || section.id;
-                    navigate(`${createPageUrl("ClinicalNoteStudio")}?noteId=${selectedNoteId}&tab=${tab}`);
-                  }
+                  navigate(`${createPageUrl("ClinicalNoteStudio")}?noteId=${selectedNoteId}&tab=${section.id}`);
                 }}
                 style={{
                   display: "flex",

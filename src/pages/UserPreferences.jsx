@@ -967,10 +967,15 @@ export default function UserAccount() {
             ) : (
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                 {quickNavLinks.map((link, i) => {
-                  const linkColor = link.color || C.teal;
-                  const linkIcon = link.icon || "✦";
+                  const linkData = link.data || link;
+                  const linkColor = linkData.color || C.teal;
+                  const linkIcon = linkData.icon || "✦";
+                  const linkLabel = linkData.label || link.label;
+                  const linkPage = linkData.page || link.page;
+                  const linkShortcut = linkData.shortcut || link.shortcut;
+                  const isEnabled = linkData.enabled !== undefined ? linkData.enabled : link.enabled;
                   return (
-                    <div key={link.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", background:link.enabled ? C.edge : "rgba(0,0,0,.15)", border:`1px solid ${C.border}`, borderRadius:10, opacity:link.enabled ? 1 : .5 }}>
+                    <div key={link.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", background:isEnabled ? C.edge : "rgba(0,0,0,.15)", border:`1px solid ${C.border}`, borderRadius:10, opacity:isEnabled ? 1 : .5 }}>
                       {/* Drag handle */}
                       <GripVertical size={14} style={{ color:C.muted, cursor:"move", flexShrink:0 }} />
                       
@@ -981,16 +986,16 @@ export default function UserAccount() {
 
                       {/* Link info */}
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:13, fontWeight:600, color:C.bright }}>{link.label}</div>
-                        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.dim, marginTop:2 }}>{link.page} {link.shortcut && `· Key: ${link.shortcut}`}</div>
+                        <div style={{ fontSize:13, fontWeight:600, color:C.bright }}>{linkLabel}</div>
+                        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.dim, marginTop:2 }}>{linkPage} {linkShortcut && `· Key: ${linkShortcut}`}</div>
                       </div>
 
                       {/* Actions */}
                       <div style={{ display:"flex", gap:6, flexShrink:0 }}>
-                        <button onClick={() => toggleLinkMutation.mutate({ id: link.id, enabled: !link.enabled })} style={{ width:28, height:28, borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:`1px solid ${C.border}`, color:link.enabled ? C.green : C.muted, cursor:"pointer" }} title={link.enabled ? "Hide" : "Show"}>
-                          {link.enabled ? <Eye size={13} /> : <EyeOff size={13} />}
+                        <button onClick={() => toggleLinkMutation.mutate({ id: link.id, enabled: !isEnabled })} style={{ width:28, height:28, borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:`1px solid ${C.border}`, color:isEnabled ? C.green : C.muted, cursor:"pointer" }} title={isEnabled ? "Hide" : "Show"}>
+                          {isEnabled ? <Eye size={13} /> : <EyeOff size={13} />}
                         </button>
-                        <button onClick={() => setEditingLink(link)} style={{ width:28, height:28, borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:`1px solid ${C.border}`, color:C.dim, cursor:"pointer" }}>
+                        <button onClick={() => setEditingLink(linkData.id ? linkData : { ...linkData, id: link.id })} style={{ width:28, height:28, borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:`1px solid ${C.border}`, color:C.dim, cursor:"pointer" }}>
                           <Edit size={13} />
                         </button>
                         <button onClick={() => deleteLinkMutation.mutate(link.id)} style={{ width:28, height:28, borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:`1px solid ${C.border}`, color:C.red, cursor:"pointer" }}>

@@ -873,7 +873,7 @@ function rV(){
   const tb=document.getElementById("vbody");tb.innerHTML="";let cr=0;
   VR.forEach((row,ri)=>{
     const tr=document.createElement("tr");tr.style.background=ri%2===0?"var(--panel)":"rgba(11,29,53,.5)";
-    let h=\`<td style="padding-left:14px;">\${row.t}</td>\`;
+    let h=`<td style="padding-left:14px;">${row.t}</td>`;
     VIDS.forEach((id,i)=>{
       const d=VD[i],val=row[id],fl=val?vf(d,val):null,fc=fl?FC[fl]:null;
       const bg=fc&&fl!=="WNL"?fc.bg:"transparent",an=fl==="CRIT"?"animation:pulse 1.5s infinite;":"";
@@ -976,7 +976,7 @@ function mkBub(m){
   let alHead="";if(m.ap){const ps=PS[m.ap];alHead=`<div style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:${ps.c};margin-bottom:5px;">⚡ ALERT — ${m.ap}</div>`;}
   let files="";if(m.files?.length){files=`<div class="fprev">${m.files.map(f=>`<div class="fchip"><span style="font-size:16px;">${f.type?.includes("image")?"🖼️":"📄"}</span><div><div class="fn">${f.name}</div><div class="fs">${f.sz}</div></div></div>`).join("")}</div>`;}
   const bs=m.ap?`background:${PS[m.ap].bg};border:1px solid ${PS[m.ap].br};border-radius:12px;`:"";
-  row.innerHTML=`<div class="av ${avc}">${avl}</div><div class="bwrap"><div class="bmeta">${m.s} · ${m.t}</div><div class="bub ${bub}" style="${bs}">${m.urg?'<div class="burg">URGENT ORDER</div>':""}\${alHead}<div class="btxt">${m.tx||""}</div>${files}</div></div>`;
+  row.innerHTML=`<div class="av ${avc}">${avl}</div><div class="bwrap"><div class="bmeta">${m.s} · ${m.t}</div><div class="bub ${bub}" style="${bs}">${m.urg?'<div class="burg">URGENT ORDER</div>':""} ${alHead}<div class="btxt">${m.tx||""}</div>${files}</div></div>`;
   return row;
 }
 
@@ -1017,7 +1017,7 @@ function closeM(e){if(e.target===document.getElementById("moverlay"))document.ge
 
 function bldMGrid(){
   const g=document.getElementById("mgrid");g.innerHTML="";
-  QA.forEach(qa=>{const b=document.createElement("button");b.className="qaopt"+(atype===qa.id?" sel":"");b.dataset.id=qa.id;b.innerHTML=\\\`<span style="font-size:18px;">\\\${qa.icon}</span><div><span class="qanm">\\\${qa.lbl}</span><span class="pill" style="background:\\\${PS[qa.p].bg};color:\\\${PS[qa.p].c};border:1px solid \\\${PS[qa.p].br};font-size:7px;margin-top:3px;">\\\${qa.p}</span></div>\\\`;b.onclick=()=>{atype=qa.id;apri=qa.p;document.querySelectorAll(".qaopt").forEach(x=>x.classList.toggle("sel",x.dataset.id===qa.id));selP(qa.p);};g.appendChild(b);});
+  QA.forEach(qa=>{const b=document.createElement("button");b.className="qaopt"+(atype===qa.id?" sel":"");b.dataset.id=qa.id;b.innerHTML=`<span style="font-size:18px;">${qa.icon}</span><div><span class="qanm">${qa.lbl}</span><span class="pill" style="background:${PS[qa.p].bg};color:${PS[qa.p].c};border:1px solid ${PS[qa.p].br};font-size:7px;margin-top:3px;">${qa.p}</span></div>`;b.onclick=()=>{atype=qa.id;apri=qa.p;document.querySelectorAll(".qaopt").forEach(x=>x.classList.toggle("sel",x.dataset.id===qa.id));selP(qa.p);};g.appendChild(b);});
   selP(apri||"CRITICAL");
 }
 

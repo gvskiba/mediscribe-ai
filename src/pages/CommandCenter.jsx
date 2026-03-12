@@ -187,7 +187,7 @@ export default function CommandCenter() {
       {/* ══════════════════════════════════════════════════════════
           NAVBAR
       ══════════════════════════════════════════════════════════ */}
-      <nav style={{ height:52, background:"rgba(11,29,53,.97)", borderBottom:`1px solid ${C.border}`, backdropFilter:"blur(20px)", display:"flex", alignItems:"center", padding:"0 24px", gap:16, flexShrink:0, position:"sticky", top:0, zIndex:200 }}>
+      <nav style={{ height:52, background:"rgba(11,29,53,.97)", borderBottom:`1px solid ${C.border}`, backdropFilter:"blur(20px)", display:"flex", alignItems:"center", padding:"0 28px 0 0", gap:16, flexShrink:0, position:"sticky", top:0, zIndex:200, paddingLeft:28 }}>
         {/* Logo */}
         <span style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:700, color:C.bright, letterSpacing:"-.02em" }}>Notrya</span>
         <div style={{ width:1, height:16, background:C.border }} />
@@ -217,7 +217,7 @@ export default function CommandCenter() {
         </div>
       </nav>
 
-      <div style={{ flex:1, padding:"24px 28px 40px", maxWidth:1440, margin:"0 auto", width:"100%" }}>
+      <div style={{ flex:1, padding:"24px 28px 40px 28px", maxWidth:1440, margin:"0 auto", width:"100%", paddingLeft:0 }}>
 
         {/* ══════════════════════════════════════════════════════
             SEPSIS PREDICTION DASHBOARD

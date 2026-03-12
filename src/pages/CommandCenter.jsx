@@ -14,16 +14,7 @@ const C = {
   gold:"#f0c040",
 };
 
-// ── Mock patients (replace with base44.entities.ClinicalNote.list()) ──
-const MOCK_PATIENTS = [
-  { id:"n1", name:"Margaret T. Sullivan", age:67, sex:"F", cc:"Chest pain, diaphoresis", triage:"ESI-2", room:"TR-1", provider:"Dr. Rivera", status:"critical", arrived:"08:14", los:"2h 18m", noteId:"n1", vitals:{ hr:108, sbp:88, spo2:94, temp:98.6 }, flags:["Critical labs","EKG pending"] },
-  { id:"n2", name:"James K. Okonkwo",    age:52, sex:"M", cc:"Shortness of breath",     triage:"ESI-2", room:"B-4",  provider:"Dr. Rivera", status:"urgent",   arrived:"08:41", los:"1h 51m", noteId:"n2", vitals:{ hr:118, sbp:142, spo2:91, temp:99.1 }, flags:["O₂ req"] },
-  { id:"n3", name:"Priya S. Nair",        age:34, sex:"F", cc:"Abdominal pain x 2 days", triage:"ESI-3", room:"C-2",  provider:"Dr. Rivera", status:"active",   arrived:"09:02", los:"1h 30m", noteId:"n3", vitals:{ hr:88, sbp:118, spo2:99, temp:100.4 }, flags:["CT ordered"] },
-  { id:"n4", name:"Robert L. Castillo",   age:71, sex:"M", cc:"Syncope, witnessed fall",  triage:"ESI-2", room:"B-6",  provider:"Dr. Rivera", status:"urgent",   arrived:"09:28", los:"1h 04m", noteId:"n4", vitals:{ hr:52, sbp:102, spo2:97, temp:98.2 }, flags:["HR critical","Neuro consult"] },
-  { id:"n5", name:"Amara O. Mensah",      age:28, sex:"F", cc:"Headache, photophobia",    triage:"ESI-3", room:"C-5",  provider:"Dr. Rivera", status:"active",   arrived:"09:55", los:"0h 37m", noteId:"n5", vitals:{ hr:76, sbp:124, spo2:100,temp:98.8 }, flags:[] },
-  { id:"n6", name:"William B. Torres",    age:45, sex:"M", cc:"Laceration, right hand",   triage:"ESI-4", room:"Fast", provider:"Dr. Rivera", status:"stable",   arrived:"10:05", los:"0h 27m", noteId:"n6", vitals:{ hr:82, sbp:128, spo2:99, temp:98.4 }, flags:[] },
-  { id:"n7", name:"Linda S. Shah",        age:60, sex:"F", cc:"UTI symptoms, fever",       triage:"ESI-3", room:"C-8",  provider:"Dr. Rivera", status:"active",   arrived:"10:18", los:"0h 14m", noteId:"n7", vitals:{ hr:95, sbp:108, spo2:98, temp:101.2 }, flags:["Fever"] },
-];
+
 
 const STATUS_CONFIG = {
   critical: { color:C.red,    bg:"rgba(255,92,108,.13)",  dot:"#ff5c6c", label:"CRITICAL" },
@@ -118,31 +109,29 @@ export default function CommandCenter() {
     return () => window.removeEventListener("keydown", handler);
   }, [navigate]);
 
-  // Real data fetch (falls back to mock)
-  const { data: liveNotes } = useQuery({
+  // Real data fetch
+  const { data: liveNotes = [] } = useQuery({
     queryKey: ["activeNotes"],
     queryFn: () => base44.entities.ClinicalNote.filter({ status: "draft" }, { limit: 20 }),
     retry: false,
   });
 
-  const patients = (liveNotes && liveNotes.length > 0)
-    ? liveNotes.map(n => ({
-        id: n.id,
-        name: n.patient_name || "Unknown Patient",
-        age: n.patient_age || "—",
-        sex: n.patient_sex || "—",
-        cc: n.chief_complaint || "—",
-        triage: n.triage_level || "ESI-3",
-        room: n.room || "—",
-        provider: n.provider || "—",
-        status: n.status === "draft" ? "active" : "stable",
-        arrived: n.created_date ? new Date(n.created_date).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:false}) : "—",
-        los: "—",
-        noteId: n.id,
-        vitals: n.vitals || { hr:null, sbp:null, spo2:null, temp:null },
-        flags: [],
-      }))
-    : MOCK_PATIENTS;
+  const patients = liveNotes.map(n => ({
+    id: n.id,
+    name: n.patient_name || "Unknown Patient",
+    age: n.patient_age || "—",
+    sex: n.patient_gender || "—",
+    cc: n.chief_complaint || "—",
+    triage: n.triage_level || "ESI-3",
+    room: n.room || "—",
+    provider: n.provider || "—",
+    status: n.status === "draft" ? "active" : "stable",
+    arrived: n.created_date ? new Date(n.created_date).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:false}) : "—",
+    los: "—",
+    noteId: n.id,
+    vitals: n.vital_signs || { hr:null, sbp:null, spo2:null, temp:null },
+    flags: [],
+  }));
 
   // Filter + sort
   const filtered = patients
@@ -223,7 +212,7 @@ export default function CommandCenter() {
             SEPSIS PREDICTION DASHBOARD
         ══════════════════════════════════════════════════════ */}
         <SepsisPredictionDashboard 
-          patients={liveNotes || MOCK_PATIENTS} 
+          patients={liveNotes} 
           onPatientClick={(p) => navigate(`${createPageUrl("ClinicalNoteStudio")}?noteId=${p.id || p.noteId}`)} 
         />
 

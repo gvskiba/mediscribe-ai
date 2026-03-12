@@ -169,7 +169,7 @@ export default function CommandCenter() {
   };
 
   return (
-    <div style={{ fontFamily:"'DM Sans',sans-serif", background:C.navy, minHeight:"100vh", color:C.text, display:"flex", flexDirection:"column", marginLeft:72 }}>
+    <div style={{ fontFamily:"'DM Sans',sans-serif", background:C.navy, minHeight:"100vh", color:C.text, display:"flex", flexDirection:"column" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
@@ -217,7 +217,7 @@ export default function CommandCenter() {
         </div>
       </nav>
 
-      <div style={{ flex:1, padding:"24px 28px 40px 0", maxWidth:1440, margin:"0 auto", width:"100%" }}>
+      <div style={{ flex:1, padding:"24px 28px 40px 28px", maxWidth:1440, margin:"0 auto", width:"100%" }}>
 
         {/* ══════════════════════════════════════════════════════
             SEPSIS PREDICTION DASHBOARD

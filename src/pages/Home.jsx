@@ -410,83 +410,86 @@ export default function Home() {
                       <span style={{ color:C.teal, fontSize:14, fontWeight:700 }}>{expanded === p.id ? "▼" : "→"}</span>
                     </div>
                   </motion.div>
-
-                  {/* Expanded Quick Actions */}
-                  <AnimatePresence>
-                    {expanded === p.id && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2 }}
-                        style={{
-                          background: "rgba(0,212,188,.03)",
-                          borderBottom: i < filtered.length-1 ? `1px solid ${C.border}` : "none",
-                          padding: "16px 20px",
-                          display: "flex",
-                          gap: 12,
-                          justifyContent: "center",
-                          flexWrap: "wrap"
-                        }}
-                      >
-                        {[
-                          { icon: "📝", label: "Subjective", tab: "patient_intake" },
-                          { icon: "🩺", label: "Physical Exam", tab: "physical_exam" },
-                          { icon: "🧪", label: "Labs & Imaging", tab: "labs_imaging" },
-                          { icon: "⚕️", label: "Diagnoses", tab: "differential" },
-                          { icon: "💊", label: "Medications", tab: "medications" },
-                          { icon: "📋", label: "Treatment Plan", tab: "treatment_plan" },
-                          { icon: "🏥", label: "Disposition", tab: "disposition_plan" },
-                          { icon: "📄", label: "Full Note", tab: "clinical_note" }
-                        ].map(action => (
-                          <button
-                            key={action.tab}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`${createPageUrl("ClinicalNoteStudio")}?noteId=${p.noteId}&tab=${action.tab}`);
-                            }}
-                            style={{
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "center",
-                              gap: 6,
-                              padding: "12px 16px",
-                              borderRadius: 10,
-                              background: C.panel,
-                              border: `1px solid ${C.border}`,
-                              cursor: "pointer",
-                              transition: "all .15s",
-                              minWidth: 90
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = "rgba(0,212,188,.08)";
-                              e.currentTarget.style.borderColor = "rgba(0,212,188,.4)";
-                              e.currentTarget.style.transform = "translateY(-2px)";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = C.panel;
-                              e.currentTarget.style.borderColor = C.border;
-                              e.currentTarget.style.transform = "translateY(0)";
-                            }}
-                          >
-                            <div style={{ fontSize: 24 }}>{action.icon}</div>
-                            <div style={{
-                              fontFamily: "'JetBrains Mono',monospace",
-                              fontSize: 9,
-                              fontWeight: 700,
-                              color: C.text,
-                              textAlign: "center",
-                              letterSpacing: ".05em"
-                            }}>
-                              {action.label}
-                            </div>
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
                 );
               })}
+            </AnimatePresence>
+
+            {/* Expanded Quick Actions - Rendered separately */}
+            {filtered.map((p, i) => (
+              <AnimatePresence key={`expanded-${p.id}`}>
+                {expanded === p.id && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    style={{
+                      background: "rgba(0,212,188,.03)",
+                      borderBottom: `1px solid ${C.border}`,
+                      padding: "16px 20px",
+                      display: "flex",
+                      gap: 12,
+                      justifyContent: "center",
+                      flexWrap: "wrap"
+                    }}
+                  >
+                    {[
+                      { icon: "📝", label: "Subjective", tab: "patient_intake" },
+                      { icon: "🩺", label: "Physical Exam", tab: "physical_exam" },
+                      { icon: "🧪", label: "Labs & Imaging", tab: "labs_imaging" },
+                      { icon: "⚕️", label: "Diagnoses", tab: "differential" },
+                      { icon: "💊", label: "Medications", tab: "medications" },
+                      { icon: "📋", label: "Treatment Plan", tab: "treatment_plan" },
+                      { icon: "🏥", label: "Disposition", tab: "disposition_plan" },
+                      { icon: "📄", label: "Full Note", tab: "clinical_note" }
+                    ].map(action => (
+                      <button
+                        key={action.tab}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`${createPageUrl("ClinicalNoteStudio")}?noteId=${p.noteId}&tab=${action.tab}`);
+                        }}
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: 6,
+                          padding: "12px 16px",
+                          borderRadius: 10,
+                          background: C.panel,
+                          border: `1px solid ${C.border}`,
+                          cursor: "pointer",
+                          transition: "all .15s",
+                          minWidth: 90
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "rgba(0,212,188,.08)";
+                          e.currentTarget.style.borderColor = "rgba(0,212,188,.4)";
+                          e.currentTarget.style.transform = "translateY(-2px)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = C.panel;
+                          e.currentTarget.style.borderColor = C.border;
+                          e.currentTarget.style.transform = "translateY(0)";
+                        }}
+                      >
+                        <div style={{ fontSize: 24 }}>{action.icon}</div>
+                        <div style={{
+                          fontFamily: "'JetBrains Mono',monospace",
+                          fontSize: 9,
+                          fontWeight: 700,
+                          color: C.text,
+                          textAlign: "center",
+                          letterSpacing: ".05em"
+                        }}>
+                          {action.label}
+                        </div>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            ))}
             </AnimatePresence>
 
             {filtered.length === 0 && (

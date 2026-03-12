@@ -1117,4 +1117,4 @@ async function genNote(){
     document.getElementById("note-txt").textContent=tx;document.getElementById("note-out").style.display="block";
   }catch(e){document.getElementById("note-txt").textContent="Generation failed.";document.getElementById("note-out").style.display="block";}
   gb.disabled=false;document.getElementById("gnbtxt").textContent='✦ Generate ' + tmpl.name;
-  }`;
+  }";

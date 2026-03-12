@@ -23,6 +23,7 @@ import ReturnToNoteButton from "./components/notes/ReturnToNoteButton";
 import DraggableNotificationButtons from "./components/layout/DraggableNotificationButtons";
 import MedicalChatbot from "./components/ai/MedicalChatbot";
 import DashboardTopBar from "./components/dashboard/DashboardTopBar";
+import OfflineSync from "./components/offline/OfflineSync";
 
 const navSections = [
             {
@@ -89,12 +90,20 @@ export default function Layout({ children, currentPageName }) {
       }
     };
     checkAuth();
+
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(err => {
+        console.error('Service worker registration failed:', err);
+      });
+    }
   }, []);
 
   const showSidebar = currentPageName !== 'Home';
 
   return (
     <div className="bg-white flex flex-col h-screen">
+      <OfflineSync />
       <style>{`
         :root {
           --primary: #2563eb;

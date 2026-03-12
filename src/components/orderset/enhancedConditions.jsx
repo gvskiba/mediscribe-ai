@@ -1,6 +1,7 @@
 // Enhanced condition library for OrderSetBuilder
 export const ENHANCED_CONDITIONS = [
   // Cardiovascular
+  { id: 'chf_exacerbation', name: 'CHF Exacerbation', category: 'Cardiovascular', icd10: 'I50.9', tags: ['URGENT'], description: 'Acute Decompensated Heart Failure' },
   { id: 'acute_mi', name: 'Acute Myocardial Infarction (STEMI)', category: 'Cardiovascular', icd10: 'I21.3' },
   { id: 'nstemi', name: 'Non-ST Elevation MI (NSTEMI)', category: 'Cardiovascular', icd10: 'I21.4' },
   { id: 'unstable_angina', name: 'Unstable Angina', category: 'Cardiovascular', icd10: 'I20.0' },
@@ -21,6 +22,9 @@ export const ENHANCED_CONDITIONS = [
   { id: 'pneumothorax', name: 'Pneumothorax', category: 'Respiratory', icd10: 'J93.9' },
   { id: 'pleural_effusion', name: 'Pleural Effusion', category: 'Respiratory', icd10: 'J94.8' },
 
+  // Critical Care
+  { id: 'sepsis_septic_shock', name: 'Sepsis / Septic Shock', category: 'Critical Care', icd10: 'A41.9', tags: ['STAT'], description: 'Acute Life-Threatening Infection' },
+  
   // Infectious Disease
   { id: 'sepsis', name: 'Sepsis', category: 'Infectious Disease', icd10: 'A41.9' },
   { id: 'severe_sepsis', name: 'Severe Sepsis', category: 'Infectious Disease', icd10: 'R65.20' },
@@ -33,6 +37,7 @@ export const ENHANCED_CONDITIONS = [
   { id: 'c_diff', name: 'Clostridioides difficile Infection', category: 'Infectious Disease', icd10: 'A04.7' },
 
   // Neurological
+  { id: 'acute_ischemic_stroke', name: 'Acute Ischemic Stroke', category: 'Neurological', icd10: 'I63.9', tags: ['STAT'], description: 'Acute Stroke With Potential tPA Protocol' },
   { id: 'acute_stroke', name: 'Acute Ischemic Stroke', category: 'Neurological', icd10: 'I63.9' },
   { id: 'ich', name: 'Intracerebral Hemorrhage', category: 'Neurological', icd10: 'I61.9' },
   { id: 'sah', name: 'Subarachnoid Hemorrhage', category: 'Neurological', icd10: 'I60.9' },
@@ -58,7 +63,7 @@ export const ENHANCED_CONDITIONS = [
   { id: 'hyperkalemia', name: 'Hyperkalemia', category: 'Renal', icd10: 'E87.5' },
   { id: 'hyponatremia', name: 'Hyponatremia', category: 'Renal', icd10: 'E87.1' },
   { id: 'metabolic_acidosis', name: 'Metabolic Acidosis', category: 'Renal', icd10: 'E87.2' },
-  { id: 'dka', name: 'Diabetic Ketoacidosis', category: 'Endocrine', icd10: 'E10.10' },
+  { id: 'dka', name: 'Diabetic Ketoacidosis (DKA)', category: 'Endocrinology', icd10: 'E10.10', tags: ['URGENT'], description: 'Acute DKA — ADA Protocol' },
   { id: 'hhs', name: 'Hyperosmolar Hyperglycemic State', category: 'Endocrine', icd10: 'E11.01' },
   { id: 'hypoglycemia', name: 'Severe Hypoglycemia', category: 'Endocrine', icd10: 'E16.2' },
   { id: 'thyroid_storm', name: 'Thyroid Storm', category: 'Endocrine', icd10: 'E05.91' },
@@ -106,6 +111,8 @@ export const ENHANCED_CONDITIONS = [
 
 export const CONDITION_CATEGORIES = [
   'All Conditions',
+  'Cardiology',
+  'Critical Care',
   'Cardiovascular',
   'Respiratory',
   'Infectious Disease',
@@ -113,6 +120,7 @@ export const CONDITION_CATEGORIES = [
   'Gastrointestinal',
   'Renal',
   'Endocrine',
+  'Endocrinology',
   'Hematologic',
   'Oncologic',
   'Trauma',

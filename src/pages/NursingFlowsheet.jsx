@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-const BODY_HTML = `<div id="app">
+const _UNUSED = `<div id="app_placeholder">
 
 <nav>
   <span class="logo">Notrya</span>
@@ -1283,7 +1283,7 @@ function bldCtx(){
   const ti=IO.filter(x=>x.dr==="IN").reduce((s,x)=>s+(+x.am||0),0);
   const to=IO.filter(x=>x.dr==="OUT").reduce((s,x)=>s+(+x.am||0),0);
   const ass=Object.entries(window.ASS).filter(([,v])=>v.length>0).map(([k,v])=>\`\${SL[k]}: \${v.join("; ")}\`).join("\n")||"Not yet documented";
-  return\`PATIENT: Margaret T. Sullivan, 67y F, Room TR-1\nDX: Chest pain, r/o NSTEMI\nALLERGIES: PCN, ASA\nPROVIDER: Dr. Rivera\nCODE: Full Code\n\nLATEST VITALS: HR \${r.hr||"—"}, BP \${r.sbp||"—"}/\${r.dbp||"—"}, SpO₂ \${r.spo2||"—"}%, Temp \${r.temp||"—"}°F, Pain \${r.pain||"—"}/10, RR \${r.rr||"—"}\nI&O: IN \${ti}mL / OUT \${to}mL / Balance \${ti-to>=0?"+":""}${ti-to}mL\n\nASSESSMENT:\n\${ass}\n\nALERTS: \${alerts.slice(0,3).map(a=>\`\${a.p}: \${a.tx}\`).join("; ")||"None"}\nPENDING ORDERS: \${orders.filter(o=>o.st==="pending").length}\`;
+  return\`PATIENT: Margaret T. Sullivan, 67y F, Room TR-1\nDX: Chest pain, r/o NSTEMI\nALLERGIES: PCN, ASA\nPROVIDER: Dr. Rivera\nCODE: Full Code\n\nLATEST VITALS: HR \${r.hr||"—"}, BP \${r.sbp||"—"}/\${r.dbp||"—"}, SpO₂ \${r.spo2||"—"}%, Temp \${r.temp||"—"}°F, Pain \${r.pain||"—"}/10, RR \${r.rr||"—"}\nI&O: IN \${ti}mL / OUT \${to}mL / Balance \${ti-to>=0?"+"":""}\${ti-to}mL\n\nASSESSMENT:\n\${ass}\n\nALERTS: \${alerts.slice(0,3).map(a=>\`\${a.p}: \${a.tx}\`).join("; ")||"None"}\nPENDING ORDERS: \${orders.filter(o=>o.st==="pending").length}\`;
 }
 
 async function genSBAR(){

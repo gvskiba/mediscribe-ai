@@ -28,6 +28,7 @@ const navSections = [
             {
               title: "Primary",
               items: [
+                { name: "Command Center", icon: Activity, page: "CommandCenter" },
                 { name: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
                 { name: "Note Creation Hub", icon: FileText, page: "NoteCreationHub" },
                 { name: "Shift Dashboard", icon: Activity, page: "Shift" },

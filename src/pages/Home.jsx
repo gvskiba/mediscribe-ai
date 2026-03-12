@@ -477,6 +477,7 @@ export default function Home() {
   const NAV_ITEMS = [
     { section: "CORE", items: [
       { icon: "🏠", label: "Home", page: "Home" },
+      { icon: "🎯", label: "Command", page: "CommandCenter" },
       { icon: "📊", label: "Dashboard", page: "Dashboard" },
       { icon: "🏥", label: "Shift", page: "Shift" },
       { icon: "👤", label: "Patients", page: "PatientDashboard" },

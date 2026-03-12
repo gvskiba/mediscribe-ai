@@ -873,7 +873,7 @@ function rV(){
   const tb=document.getElementById("vbody");tb.innerHTML="";let cr=0;
   VR.forEach((row,ri)=>{
     const tr=document.createElement("tr");tr.style.background=ri%2===0?"var(--panel)":"rgba(11,29,53,.5)";
-    let h=\\\`<td style="padding-left:14px;">\\\${row.t}</td>\\\`;
+    let h=\`<td style="padding-left:14px;">\${row.t}</td>\`;
     VIDS.forEach((id,i)=>{
       const d=VD[i],val=row[id],fl=val?vf(d,val):null,fc=fl?FC[fl]:null;
       const bg=fc&&fl!=="WNL"?fc.bg:"transparent",an=fl==="CRIT"?"animation:pulse 1.5s infinite;":"";

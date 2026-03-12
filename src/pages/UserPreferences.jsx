@@ -1048,7 +1048,28 @@ export default function UserAccount() {
                   </div>
                   <div>
                     <Label>ICON</Label>
-                    <input value={editingLink.icon} onChange={e => setEditingLink(p => ({ ...p, icon: e.target.value }))} style={inputStyle} />
+                    <select value={editingLink.icon} onChange={e => setEditingLink(p => ({ ...p, icon: e.target.value }))} style={selectStyle}>
+                      <option value="✦">✦ Sparkle</option>
+                      <option value="📝">📝 Note</option>
+                      <option value="🔬">🔬 Microscope</option>
+                      <option value="🧪">🧪 Test Tube</option>
+                      <option value="💊">💊 Pill</option>
+                      <option value="⚙️">⚙️ Gear</option>
+                      <option value="📋">📋 Clipboard</option>
+                      <option value="🩺">🩺 Stethoscope</option>
+                      <option value="🏥">🏥 Hospital</option>
+                      <option value="📊">📊 Chart</option>
+                      <option value="🔍">🔍 Search</option>
+                      <option value="📚">📚 Books</option>
+                      <option value="⚡">⚡ Lightning</option>
+                      <option value="🎯">🎯 Target</option>
+                      <option value="📈">📈 Trending</option>
+                      <option value="💉">💉 Syringe</option>
+                      <option value="🧬">🧬 DNA</option>
+                      <option value="🔬">🔬 Science</option>
+                      <option value="📱">📱 Mobile</option>
+                      <option value="💼">💼 Briefcase</option>
+                    </select>
                   </div>
                   <div>
                     <Label>COLOR</Label>

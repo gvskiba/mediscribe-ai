@@ -878,21 +878,21 @@ function rV(){
       const d=VD[i],val=row[id],fl=val?vf(d,val):null,fc=fl?FC[fl]:null;
       const bg=fc&&fl!=="WNL"?fc.bg:"transparent",an=fl==="CRIT"?"animation:pulse 1.5s infinite;":"";
       if(fl==="CRIT")cr++;
-      h+=\\\`<td style="background:\\\${bg};\\\${an}"><div class="vv" style="color:\\\${fc?.c||"var(--text)"};">\\\${val||"—"}</div>\\\${fc&&fl!=="WNL"?\\\`<div class="vf \\\${fc.cl}">\\\${fl==="CRIT"?"⚡ CRIT":fl}</div>\\\`:""}</td>\\\`;
+      h+=`<td style="background:${bg};${an}"><div class="vv" style="color:${fc?.c||"var(--text)"};">${val||"—"}</div>${fc&&fl!=="WNL"?`<div class="vf ${fc.cl}">${fl==="CRIT"?"⚡ CRIT":fl}</div>`""}</td>`;
     });
     tr.innerHTML=h;tb.appendChild(tr);
   });
   updSB();
-  const cp=document.getElementById("crit-pill");if(cr>0){cp.textContent=\\\`\\\${cr} CRIT\\\`;cp.style.display="inline-flex";}else cp.style.display="none";
+  const cp=document.getElementById("crit-pill");if(cr>0){cp.textContent=`${cr} CRIT`;cp.style.display="inline-flex";}else cp.style.display="none";
 }
 
 function addV(){
   const r={t:document.getElementById("nv-t").value||nw()};
-  VIDS.forEach(id=>r[id]=document.getElementById(\\\`nv-\\\${id==="spo2"?"sp":id==="temp"?"tp":id==="pain"?"pn":id==="gcs"?"gc":id==="gluc"?"gl":id==="uop"?"up":id}\\\`).value.trim());
+  VIDS.forEach(id=>r[id]=document.getElementById(`nv-${id==="spo2"?"sp":id==="temp"?"tp":id==="pain"?"pn":id==="gcs"?"gc":id==="gluc"?"gl":id==="uop"?"up":id}`).value.trim());
   VR.push(r);rV();clrV();autoAV(r);
 }
 
-function clrV(){VIDS.forEach(id=>document.getElementById(\\\`nv-\\\${id==="spo2"?"sp":id==="temp"?"tp":id==="pain"?"pn":id==="gcs"?"gc":id==="gluc"?"gl":id==="uop"?"up":id}\\\`).value="");document.getElementById("nv-t").value=nw();}
+function clrV(){VIDS.forEach(id=>document.getElementById(`nv-${id==="spo2"?"sp":id==="temp"?"tp":id==="pain"?"pn":id==="gcs"?"gc":id==="gluc"?"gl":id==="uop"?"up":id}`).value="");document.getElementById("nv-t").value=nw();}
 
 function updSB(){
   if(!VR.length)return;const r=VR[VR.length-1];
@@ -901,17 +901,17 @@ function updSB(){
     e.textContent=val||"—";const fl=vf(def,val),fc=fl?FC[fl]:null;e.style.color=fc?.c||"var(--text)";
     if(fc&&fl!=="WNL"){f.textContent=fl==="CRIT"?"⚡ CRIT":fl;f.className="sf "+fc.cl;f.style.display="inline-flex";}else f.style.display="none";
   }
-  sv("s-hr","s-hrf",r.hr,VD[0]);sv("s-bp","s-bpf",r.sbp?\\\`\\\${r.sbp}/\\\${r.dbp}\\\`:"",VD[1],r.sbp);
+  sv("s-hr","s-hrf",r.hr,VD[0]);sv("s-bp","s-bpf",r.sbp?`${r.sbp}/${r.dbp}`:"",VD[1],r.sbp);
   sv("s-sp","s-spf",r.spo2,VD[4]);sv("s-tp","s-tpf",r.temp,VD[5]);
   const pe=document.getElementById("s-pn");pe.textContent=r.pain||"—";pe.style.color=r.pain>=8?"var(--red)":r.pain>=5?"var(--amber)":"var(--text)";
 }
 
 function autoAV(r){
   const c=[];
-  if(+r.sbp<90)c.push(\\\`BP \\\${r.sbp}/\\\${r.dbp}mmHg — hypotensive\\\`);
-  if(+r.spo2<92)c.push(\\\`SpO₂ \\\${r.spo2}% — critical hypoxia\\\`);
-  if(+r.hr>130)c.push(\\\`HR \\\${r.hr}bpm — tachycardia\\\`);
-  if(c.length)mkAlert("vs","❤️","Vital Sign Change","CRITICAL",\\\`Auto-detected at \\\${r.t}: \\\${c.join("; ")}\\\`);
+  if(+r.sbp<90)c.push(`BP ${r.sbp}/${r.dbp}mmHg — hypotensive`);
+  if(+r.spo2<92)c.push(`SpO₂ ${r.spo2}% — critical hypoxia`);
+  if(+r.hr>130)c.push(`HR ${r.hr}bpm — tachycardia`);
+  if(c.length)mkAlert("vs","❤️","Vital Sign Change","CRITICAL",`Auto-detected at ${r.t}: ${c.join("; ")}`);
 }
 
 function rIO(){
@@ -919,13 +919,13 @@ function rIO(){
   IO.forEach((row,i)=>{
     if(row.dr==="IN")ti+=+row.am;else to2+=+row.am;
     const tr=document.createElement("tr");tr.style.borderBottom="1px solid var(--edge)";
-    tr.innerHTML=\\\`<td style="padding:7px 10px;font-family:'JetBrains Mono',monospace;font-weight:700;">\\\${row.t}</td><td style="padding:7px 8px;color:var(--bright);font-weight:600;">\\\${row.ty}</td><td style="padding:7px 8px;color:var(--dim);">\\\${row.ro}</td><td style="text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;">\\\${row.am} mL</td><td style="text-align:center;"><span class="pill" style="background:\\\${row.dr==="IN"?"rgba(74,144,217,.12)":"rgba(244,114,182,.12)"};color:\\\${row.dr==="IN"?"var(--blue)":"var(--rose)"};border:1px solid \\\${row.dr==="IN"?"rgba(74,144,217,.3)":"rgba(244,114,182,.3)"};">\\\${row.dr}</span></td><td style="padding:7px 8px;color:var(--dim);font-size:11px;">\\\${row.no||""}</td>\\\`;
+    tr.innerHTML=`<td style="padding:7px 10px;font-family:'JetBrains Mono',monospace;font-weight:700;">${row.t}</td><td style="padding:7px 8px;color:var(--bright);font-weight:600;">${row.ty}</td><td style="padding:7px 8px;color:var(--dim);">${row.ro}</td><td style="text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;">${row.am} mL</td><td style="text-align:center;"><span class="pill" style="background:${row.dr==="IN"?"rgba(74,144,217,.12)":"rgba(244,114,182,.12)"};color:${row.dr==="IN"?"var(--blue)":"var(--rose)"};border:1px solid ${row.dr==="IN"?"rgba(74,144,217,.3)":"rgba(244,114,182,.3)"};">${row.dr}</span></td><td style="padding:7px 8px;color:var(--dim);font-size:11px;">${row.no||""}</td>`;
     tb.appendChild(tr);
   });
   document.getElementById("ti").textContent=ti;document.getElementById("to").textContent=to2;
   const b=ti-to2;document.getElementById("bal").textContent=(b>=0?"+":"")+b;
-  document.getElementById("balpill").textContent=\\\`Balance: \\\${b>=0?"+":""}\\\${b} mL\\\`;
-  document.getElementById("s-io").textContent=\\\`\\\${ti}/\\\${to2}\\\`;
+  document.getElementById("balpill").textContent=`Balance: ${b>=0?"+":""}${b} mL`;
+  document.getElementById("s-io").textContent=`${ti}/${to2}`;
   const bb=document.getElementById("balbox");bb.style.background=b<0?"rgba(255,92,108,.07)":"rgba(46,204,113,.07)";bb.style.borderColor=b<0?"rgba(255,92,108,.25)":"rgba(46,204,113,.25)";document.getElementById("bal").style.color=b<0?"var(--red)":"var(--green)";
 }
 
@@ -933,7 +933,7 @@ function addIO(){
   const ty=document.getElementById("ni-ty").value.trim(),am=document.getElementById("ni-am").value.trim();
   if(!ty||!am)return;
   IO.push({t:document.getElementById("ni-t").value||nw(),ty,ro:document.getElementById("ni-ro").value,am:+am,dr:document.getElementById("ni-dr").value,no:document.getElementById("ni-no").value});
-  rIO();["ty","ro","am","no"].forEach(id=>document.getElementById(\\\`ni-\\\${id}\\\`).value="");document.getElementById("ni-t").value=nw();
+  rIO();["ty","ro","am","no"].forEach(id=>document.getElementById(`ni-${id}`).value="");document.getElementById("ni-t").value=nw();
 }
 
 function initA(){
@@ -948,7 +948,7 @@ function sws(s){
   anotes[asys]=document.getElementById("anotes").value;asys=s;
   document.querySelectorAll(".stab").forEach(b=>b.classList.toggle("on",b.dataset.s===s));
   rChips();document.getElementById("anotes").value=anotes[s]||"";
-  document.querySelectorAll(".stab").forEach(b=>{const c=(AT[b.dataset.s]||[]).filter(x=>(window.ASS||{})[b.dataset.s]?.includes(x)).length;b.textContent=c>0?\\\`\\\${SL[b.dataset.s]} (\\\${c})\\\`:SL[b.dataset.s];b.classList.toggle("on",b.dataset.s===asys);});
+  document.querySelectorAll(".stab").forEach(b=>{const c=(AT[b.dataset.s]||[]).filter(x=>(window.ASS||{})[b.dataset.s]?.includes(x)).length;b.textContent=c>0?`${SL[b.dataset.s]} (${c})`:SL[b.dataset.s];b.classList.toggle("on",b.dataset.s===asys);});
 }
 
 window.ASS={neuro:[],resp:[],cardio:[],gi:[],gu:[],skin:[],pain:[],safety:[]};
@@ -958,11 +958,11 @@ function rChips(){
   (AT[asys]||[]).forEach(item=>{
     const chk=(window.ASS[asys]||[]).includes(item);
     const ch=document.createElement("div");ch.className="chip"+(chk?" on":"");
-    ch.innerHTML=\\\`<div class="cbox">\\\${chk?'<span style="font-size:9px;color:var(--navy);font-weight:700;">✓</span>':""}</div><span>\\\${item}</span>\\\`;
+    ch.innerHTML=`<div class="cbox">${chk?'<span style="font-size:9px;color:var(--navy);font-weight:700;">✓</span>':""}</div><span>${item}</span>`;
     ch.onclick=()=>{if(!window.ASS[asys])window.ASS[asys]=[];const i=window.ASS[asys].indexOf(item);if(i>=0)window.ASS[asys].splice(i,1);else window.ASS[asys].push(item);rChips();sws(asys);};
     c.appendChild(ch);
   });
-  const tot=Object.values(window.ASS).flat().length;document.getElementById("acpill").textContent=\\\`\\\${tot} items\\\`;
+  const tot=Object.values(window.ASS).flat().length;document.getElementById("acpill").textContent=`${tot} items`;
 }
 
 function rChat(){

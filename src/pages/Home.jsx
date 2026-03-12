@@ -5,6 +5,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import SepsisPredictionDashboard from "../components/sepsis/SepsisPredictionDashboard";
+import AppSidebar from "../components/layout/AppSidebar";
 
 const C = {
   navy:"#050f1e", slate:"#0b1d35", panel:"#0d2240", edge:"#162d4f",
@@ -85,6 +86,20 @@ export default function Home() {
   const [selected, setSelected] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
   const [sortKey, setSortKey] = useState("triage"); // triage | los | room | name
+  const [user, setUser] = useState(null);
+
+  // Load user
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const u = await base44.auth.me();
+        setUser(u);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    loadUser();
+  }, []);
 
   // Clock
   useEffect(() => {
@@ -162,7 +177,10 @@ export default function Home() {
   };
 
   return (
-    <div style={{ fontFamily:"'DM Sans',sans-serif", background:C.navy, minHeight:"100vh", color:C.text, display:"flex", flexDirection:"column" }}>
+    <div style={{ fontFamily:"'DM Sans',sans-serif", background:C.navy, minHeight:"100vh", color:C.text, display:"flex" }}>
+      <AppSidebar user={user} />
+      
+      <div style={{ flex:1, display:"flex", flexDirection:"column", marginLeft:72 }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
@@ -444,6 +462,7 @@ export default function Home() {
           </div>
         </div>
 
+      </div>
       </div>
     </div>
   );

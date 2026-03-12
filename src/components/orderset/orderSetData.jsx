@@ -25,13 +25,15 @@ export const PRI_CFG = {
 };
 
 export const SPECIALTIES = {
-  "Cardiology":    { icon:"❤️",  color:"#ff5c6c", conditions:["chf","acute_mi","nstemi","afib_rvr","pe"] },
-  "Critical Care": { icon:"🚨",  color:"#ff8c42", conditions:["sepsis","anaphylaxis","cardiogenic_shock"] },
-  "Neurology":     { icon:"🧠",  color:"#9b6dff", conditions:["stroke","ich","status_epilepticus"] },
-  "Endocrinology": { icon:"🩸",  color:"#f5a623", conditions:["dka","hhs","thyroid_storm"] },
+  "Cardiology":    { icon:"❤️",  color:"#ff5c6c", conditions:["chf","acute_mi","nstemi","afib_rvr","pe","dvt","hypertensive_emergency"] },
+  "Critical Care": { icon:"🚨",  color:"#ff8c42", conditions:["sepsis","anaphylaxis","cardiogenic_shock","alcohol_withdrawal","copd_exacerbation_severe"] },
+  "Neurology":     { icon:"🧠",  color:"#9b6dff", conditions:["stroke","ich","status_epilepticus","meningitis"] },
+  "Endocrinology": { icon:"🩸",  color:"#f5a623", conditions:["dka","hhs","thyroid_storm","diabetic_foot_ulcer"] },
   "Respiratory":   { icon:"🫁",  color:"#22d3ee", conditions:["copd","asthma","pneumonia","ards"] },
-  "Gastroenterology": { icon:"🫃", color:"#2ecc71", conditions:["gi_bleed_upper","pancreatitis","bowel_obstruction"] },
-  "Nephrology":    { icon:"🩻",  color:"#f0c040", conditions:["aki","hyperkalemia"] },
+  "Gastroenterology": { icon:"🫃", color:"#2ecc71", conditions:["gi_bleed_upper","pancreatitis","bowel_obstruction","cholecystitis","appendicitis"] },
+  "Nephrology":    { icon:"🩻",  color:"#f0c040", conditions:["aki","hyperkalemia","uti_pyelonephritis"] },
+  "Infectious Disease": { icon:"🦠", color:"#ff8c42", conditions:["cellulitis"] },
+  "Rheumatology":  { icon:"🦴",  color:"#9b6dff", conditions:["gout_flare"] },
 };
 
 const tag = (color, bg, label) => ({ color, bg, label });
@@ -554,6 +556,209 @@ export const CONDITIONS = {
       {id:"sbo-i1",cat:"imaging",priority:"stat",required:true,name:"CT Abdomen/Pelvis + contrast",detail:"STAT — identifies transition point, ischemia"},
       {id:"sbo-n1",cat:"nursing",priority:"urgent",required:true,name:"NGT to low continuous suction",detail:"Decompression"},
       {id:"sbo-c1",cat:"consults",priority:"urgent",required:true,name:"General Surgery",detail:"URGENT evaluation for operative vs conservative management"},
+    ]
+  },
+
+  nstemi: {
+    id:"nstemi", name:"NSTEMI / Unstable Angina", subtitle:"Non-ST Elevation Myocardial Infarction",
+    icon:"💔", specialty:"Cardiology", acuity:"urgent",
+    guideline:"ACC/AHA 2023 NSTE-ACS Guidelines",
+    tags:["ACS","GRACE Score","Troponin","Dual Antiplatelet"],
+    orders:[
+      {id:"nst-a1",cat:"admit",priority:"urgent",required:true,name:"Admit to Telemetry/CCU",detail:"Cardiac monitoring. ICU if high GRACE score"},
+      {id:"nst-v1",cat:"vitals",priority:"urgent",required:true,name:"Continuous Telemetry",detail:"Monitor for arrhythmia, ST changes"},
+      {id:"nst-l1",cat:"labs",priority:"stat",required:true,name:"Troponin I serial",detail:"STAT, 3h, 6h. Rising troponin = NSTEMI"},
+      {id:"nst-l2",cat:"labs",priority:"stat",required:true,name:"BMP, Mg, CBC, PT/INR",detail:"STAT"},
+      {id:"nst-m1",cat:"meds",priority:"stat",required:true,name:"Aspirin 325mg",detail:"STAT loading dose",guideline:"ACC/AHA 2023 Class I"},
+      {id:"nst-m2",cat:"meds",priority:"stat",required:true,name:"Ticagrelor 180mg",detail:"P2Y12 inhibitor. Clopidogrel if contraindicated",high_alert:true},
+      {id:"nst-m3",cat:"meds",priority:"stat",required:true,name:"Heparin infusion",detail:"70 units/kg bolus, then 12 units/kg/hr",high_alert:true},
+      {id:"nst-m4",cat:"meds",priority:"urgent",required:true,name:"Atorvastatin 80mg",detail:"High-intensity statin"},
+      {id:"nst-m5",cat:"meds",priority:"urgent",required:true,name:"Metoprolol 25-50mg PO",detail:"Beta-blocker if no contraindication"},
+      {id:"nst-i1",cat:"imaging",priority:"stat",required:true,name:"12-Lead EKG",detail:"STAT, repeat Q8h or PRN for chest pain"},
+      {id:"nst-c1",cat:"consults",priority:"urgent",required:true,name:"Cardiology",detail:"URGENT for risk stratification and cath timing"},
+    ]
+  },
+
+  hypertensive_emergency: {
+    id:"hypertensive_emergency", name:"Hypertensive Emergency", subtitle:"BP > 180/120 with End-Organ Damage",
+    icon:"🩺", specialty:"Critical Care", acuity:"stat",
+    guideline:"AHA 2024 Hypertension Guidelines",
+    tags:["Encephalopathy","Aortic Dissection","Nicardipine"],
+    orders:[
+      {id:"hte-a1",cat:"admit",priority:"stat",required:true,name:"Admit to ICU",detail:"STAT — requires IV antihypertensives"},
+      {id:"hte-v1",cat:"vitals",priority:"stat",required:true,name:"Arterial Line",detail:"Continuous BP monitoring"},
+      {id:"hte-l1",cat:"labs",priority:"stat",required:true,name:"BMP, Troponin, BNP",detail:"STAT — assess end-organ damage"},
+      {id:"hte-l2",cat:"labs",priority:"stat",required:true,name:"UA, Urine Protein",detail:"Renal involvement"},
+      {id:"hte-m1",cat:"meds",priority:"stat",required:true,name:"Nicardipine 5mg/hr IV",detail:"Titrate by 2.5mg/hr Q5-15min. Max 15mg/hr. Target 25% BP reduction in 1h",high_alert:true,guideline:"AHA 2024"},
+      {id:"hte-m2",cat:"meds",priority:"stat",required:false,name:"Labetalol 20mg IV bolus",detail:"Alternative. Repeat Q10min PRN"},
+      {id:"hte-i1",cat:"imaging",priority:"stat",required:true,name:"CT Head non-contrast",detail:"If neuro symptoms — r/o hemorrhage"},
+      {id:"hte-i2",cat:"imaging",priority:"stat",required:true,name:"CTA Chest",detail:"If chest pain — r/o aortic dissection"},
+      {id:"hte-i3",cat:"imaging",priority:"stat",required:true,name:"12-Lead EKG",detail:"STAT — LVH, ischemia"},
+    ]
+  },
+
+  cellulitis: {
+    id:"cellulitis", name:"Cellulitis / Skin/Soft Tissue Infection", subtitle:"SSTI — Non-Purulent",
+    icon:"🦠", specialty:"Infectious Disease", acuity:"routine",
+    guideline:"IDSA 2024 SSTI Guidelines",
+    tags:["MRSA","Cephalosporin","Incision and Drainage"],
+    orders:[
+      {id:"cell-a1",cat:"admit",priority:"routine",required:false,name:"Admit if severe",detail:"Consider admission if systemic toxicity, immunocompromised, or failed outpatient Rx"},
+      {id:"cell-l1",cat:"labs",priority:"urgent",required:false,name:"Blood Cultures × 2",detail:"Only if systemic signs (fever, hypotension)"},
+      {id:"cell-m1",cat:"meds",priority:"urgent",required:true,name:"Cefazolin 2g IV Q8h",detail:"First-line for non-purulent cellulitis",guideline:"IDSA 2024"},
+      {id:"cell-m2",cat:"meds",priority:"urgent",required:false,name:"Vancomycin 15-20mg/kg IV",detail:"If MRSA suspected or purulent drainage",high_alert:true},
+      {id:"cell-i1",cat:"imaging",priority:"urgent",required:false,name:"Ultrasound affected area",detail:"If abscess suspected"},
+      {id:"cell-c1",cat:"consults",priority:"urgent",required:false,name:"General Surgery",detail:"If abscess requires I&D"},
+    ]
+  },
+
+  uti_pyelonephritis: {
+    id:"uti_pyelonephritis", name:"Acute Pyelonephritis", subtitle:"Upper UTI with Systemic Symptoms",
+    icon:"🩺", specialty:"Infectious Disease", acuity:"urgent",
+    guideline:"IDSA 2024 UTI Guidelines",
+    tags:["Flank Pain","Ceftriaxone","Urine Culture"],
+    orders:[
+      {id:"pyelo-a1",cat:"admit",priority:"urgent",required:true,name:"Admit to Medicine",detail:"Observation if mild; floor if moderate-severe"},
+      {id:"pyelo-l1",cat:"labs",priority:"stat",required:true,name:"Urinalysis + Urine Culture",detail:"STAT before antibiotics"},
+      {id:"pyelo-l2",cat:"labs",priority:"stat",required:true,name:"Blood Cultures × 2",detail:"If febrile or septic"},
+      {id:"pyelo-l3",cat:"labs",priority:"stat",required:true,name:"CBC, BMP",detail:"STAT"},
+      {id:"pyelo-m1",cat:"meds",priority:"stat",required:true,name:"Ceftriaxone 1-2g IV Q24h",detail:"Empiric coverage",guideline:"IDSA 2024"},
+      {id:"pyelo-f1",cat:"fluids",priority:"urgent",required:true,name:"NS or LR 125 mL/hr",detail:"Hydration"},
+      {id:"pyelo-i1",cat:"imaging",priority:"urgent",required:false,name:"Renal Ultrasound or CT",detail:"If no improvement in 48-72h — r/o abscess, obstruction"},
+    ]
+  },
+
+  dvt: {
+    id:"dvt", name:"Deep Vein Thrombosis", subtitle:"Acute DVT — Lower Extremity",
+    icon:"🩸", specialty:"Cardiology", acuity:"urgent",
+    guideline:"ACCP 2024 VTE Guidelines",
+    tags:["Wells Score","D-Dimer","Anticoagulation","Doppler"],
+    orders:[
+      {id:"dvt-a1",cat:"admit",priority:"routine",required:false,name:"Outpatient vs Admission",detail:"Admit if massive DVT, hemodynamic instability, or high PE risk"},
+      {id:"dvt-l1",cat:"labs",priority:"stat",required:false,name:"D-Dimer",detail:"Only if low/intermediate Wells score. High sensitivity"},
+      {id:"dvt-l2",cat:"labs",priority:"stat",required:true,name:"CBC, PT/INR, aPTT, BMP",detail:"STAT baseline"},
+      {id:"dvt-i1",cat:"imaging",priority:"stat",required:true,name:"Bilateral LE Doppler US",detail:"STAT — compressibility, flow"},
+      {id:"dvt-m1",cat:"meds",priority:"stat",required:true,name:"Enoxaparin 1mg/kg SQ Q12h",detail:"OR Apixaban 10mg PO BID × 7d, then 5mg BID",high_alert:true,guideline:"ACCP 2024"},
+      {id:"dvt-m2",cat:"meds",priority:"routine",required:false,name:"Rivaroxaban 15mg PO BID",detail:"Alternative DOAC × 3 weeks, then 20mg daily"},
+    ]
+  },
+
+  alcohol_withdrawal: {
+    id:"alcohol_withdrawal", name:"Alcohol Withdrawal Syndrome", subtitle:"AWS — CIWA Protocol",
+    icon:"🧠", specialty:"Critical Care", acuity:"urgent",
+    guideline:"ASAM 2024 Withdrawal Guidelines",
+    tags:["CIWA-Ar","Benzodiazepines","Seizure Risk","Delirium Tremens"],
+    orders:[
+      {id:"aw-a1",cat:"admit",priority:"urgent",required:true,name:"Admit to Telemetry",detail:"ICU if severe withdrawal or DTs"},
+      {id:"aw-v1",cat:"vitals",priority:"urgent",required:true,name:"CIWA-Ar Scoring Q1-4h",detail:"Symptom-triggered benzodiazepine protocol"},
+      {id:"aw-l1",cat:"labs",priority:"stat",required:true,name:"BMP, Mg, Phos, CBC, LFTs",detail:"STAT"},
+      {id:"aw-l2",cat:"labs",priority:"stat",required:true,name:"Blood Alcohol Level",detail:"STAT"},
+      {id:"aw-m1",cat:"meds",priority:"urgent",required:true,name:"Lorazepam 2-4mg IV/PO Q1h PRN",detail:"CIWA-Ar ≥ 10. Titrate to symptoms",high_alert:true,guideline:"ASAM 2024"},
+      {id:"aw-m2",cat:"meds",priority:"urgent",required:true,name:"Thiamine 100mg IV daily",detail:"BEFORE dextrose. Prevents Wernicke's",guideline:"ASAM 2024 Class I"},
+      {id:"aw-m3",cat:"meds",priority:"urgent",required:true,name:"Folic Acid 1mg PO daily",detail:"Nutritional support"},
+      {id:"aw-m4",cat:"meds",priority:"urgent",required:true,name:"Multivitamin daily",detail:"Nutritional repletion"},
+      {id:"aw-d1",cat:"diet",priority:"routine",required:true,name:"Regular Diet",detail:"High-calorie, high-protein. Nutrition consult"},
+    ]
+  },
+
+  cholecystitis: {
+    id:"cholecystitis", name:"Acute Cholecystitis", subtitle:"Calculous Cholecystitis",
+    icon:"🫃", specialty:"Gastroenterology", acuity:"urgent",
+    guideline:"Tokyo Guidelines 2024",
+    tags:["RUQ Pain","Murphy's Sign","Cholecystectomy"],
+    orders:[
+      {id:"chol-a1",cat:"admit",priority:"urgent",required:true,name:"Admit to Surgery Service",detail:"Early cholecystectomy within 72h"},
+      {id:"chol-d1",cat:"diet",priority:"urgent",required:true,name:"NPO",detail:"Nothing by mouth"},
+      {id:"chol-f1",cat:"fluids",priority:"urgent",required:true,name:"NS or LR 125 mL/hr",detail:"IV hydration"},
+      {id:"chol-l1",cat:"labs",priority:"stat",required:true,name:"CBC, CMP, Lipase",detail:"STAT. WBC elevated, Alk Phos elevated"},
+      {id:"chol-m1",cat:"meds",priority:"urgent",required:true,name:"Ceftriaxone 1g IV Q24h + Metronidazole 500mg IV Q8h",detail:"Empiric antibiotics",guideline:"Tokyo 2024"},
+      {id:"chol-m2",cat:"meds",priority:"urgent",required:true,name:"Hydromorphone 0.5-1mg IV Q3h PRN",detail:"Pain control"},
+      {id:"chol-i1",cat:"imaging",priority:"stat",required:true,name:"RUQ Ultrasound",detail:"STAT — gallstones, wall thickening, pericholecystic fluid"},
+      {id:"chol-c1",cat:"consults",priority:"urgent",required:true,name:"General Surgery",detail:"URGENT for cholecystectomy timing"},
+    ]
+  },
+
+  appendicitis: {
+    id:"appendicitis", name:"Acute Appendicitis", subtitle:"Right Lower Quadrant Pain",
+    icon:"🫃", specialty:"Gastroenterology", acuity:"urgent",
+    guideline:"WSES 2024 Appendicitis Guidelines",
+    tags:["RLQ Pain","Appendectomy","Perforation"],
+    orders:[
+      {id:"app-a1",cat:"admit",priority:"urgent",required:true,name:"Admit to Surgery Service",detail:"Appendectomy"},
+      {id:"app-d1",cat:"diet",priority:"urgent",required:true,name:"NPO",detail:"Nothing by mouth"},
+      {id:"app-l1",cat:"labs",priority:"stat",required:true,name:"CBC, BMP, Lactate",detail:"STAT. WBC > 10K typical"},
+      {id:"app-l2",cat:"labs",priority:"stat",required:false,name:"Pregnancy Test (females)",detail:"STAT — affects imaging choice"},
+      {id:"app-i1",cat:"imaging",priority:"stat",required:true,name:"CT Abdomen/Pelvis + contrast",detail:"STAT — sensitivity 95%. US if pediatric/pregnant"},
+      {id:"app-m1",cat:"meds",priority:"urgent",required:true,name:"Piperacillin-Tazobactam 3.375g IV",detail:"Pre-op antibiotics"},
+      {id:"app-c1",cat:"consults",priority:"urgent",required:true,name:"General Surgery",detail:"URGENT evaluation for appendectomy"},
+    ]
+  },
+
+  gout_flare: {
+    id:"gout_flare", name:"Acute Gout Flare", subtitle:"Monoarticular Arthritis",
+    icon:"🦴", specialty:"Rheumatology", acuity:"routine",
+    guideline:"ACR 2024 Gout Guidelines",
+    tags:["Podagra","Uric Acid","Colchicine","NSAIDs"],
+    orders:[
+      {id:"gout-a1",cat:"admit",priority:"routine",required:false,name:"Outpatient Management",detail:"Admit only if polyarticular or septic joint concern"},
+      {id:"gout-l1",cat:"labs",priority:"urgent",required:true,name:"Serum Uric Acid",detail:"May be normal during flare"},
+      {id:"gout-l2",cat:"labs",priority:"urgent",required:false,name:"Arthrocentesis + Synovial Fluid Analysis",detail:"If first flare — confirm urate crystals, r/o septic joint"},
+      {id:"gout-m1",cat:"meds",priority:"urgent",required:true,name:"Colchicine 1.2mg PO × 1",detail:"Then 0.6mg in 1h. Max 1.8mg first day",guideline:"ACR 2024"},
+      {id:"gout-m2",cat:"meds",priority:"urgent",required:false,name:"Indomethacin 50mg PO TID",detail:"NSAID alternative if no renal disease"},
+      {id:"gout-m3",cat:"meds",priority:"routine",required:false,name:"Prednisone 40mg PO daily × 5d",detail:"If colchicine/NSAIDs contraindicated"},
+    ]
+  },
+
+  diabetic_foot_ulcer: {
+    id:"diabetic_foot_ulcer", name:"Diabetic Foot Infection", subtitle:"Complicated DFU with Osteomyelitis Risk",
+    icon:"🦶", specialty:"Infectious Disease", acuity:"urgent",
+    guideline:"IDSA 2024 Diabetic Foot Infection",
+    tags:["Osteomyelitis","Amputation Risk","Vascular Insufficiency"],
+    orders:[
+      {id:"dfu-a1",cat:"admit",priority:"urgent",required:true,name:"Admit to Medicine/Surgery",detail:"Severe infection or vascular compromise"},
+      {id:"dfu-l1",cat:"labs",priority:"stat",required:true,name:"CBC, BMP, HbA1c, ESR/CRP",detail:"STAT. ESR/CRP for osteo"},
+      {id:"dfu-l2",cat:"labs",priority:"stat",required:true,name:"Wound Culture + Gram Stain",detail:"Deep tissue or bone culture if osteo suspected"},
+      {id:"dfu-m1",cat:"meds",priority:"stat",required:true,name:"Vancomycin 15-20mg/kg IV",detail:"MRSA coverage",high_alert:true},
+      {id:"dfu-m2",cat:"meds",priority:"stat",required:true,name:"Piperacillin-Tazobactam 3.375g IV Q6h",detail:"Broad gram-negative + anaerobic coverage"},
+      {id:"dfu-i1",cat:"imaging",priority:"urgent",required:true,name:"Foot X-ray (3 views)",detail:"R/o osteomyelitis, gas"},
+      {id:"dfu-i2",cat:"imaging",priority:"urgent",required:false,name:"MRI Foot with contrast",detail:"If osteo suspected — sensitivity 90%"},
+      {id:"dfu-c1",cat:"consults",priority:"urgent",required:true,name:"Podiatry / Wound Care",detail:"Debridement, offloading"},
+      {id:"dfu-c2",cat:"consults",priority:"urgent",required:true,name:"Vascular Surgery",detail:"ABI, revascularization evaluation"},
+    ]
+  },
+
+  meningitis: {
+    id:"meningitis", name:"Bacterial Meningitis", subtitle:"Acute Bacterial Meningitis — Adult",
+    icon:"🧠", specialty:"Infectious Disease", acuity:"stat",
+    guideline:"IDSA 2024 Meningitis Guidelines",
+    tags:["Lumbar Puncture","Empiric Antibiotics","Dexamethasone"],
+    orders:[
+      {id:"men-a1",cat:"admit",priority:"stat",required:true,name:"Admit to ICU",detail:"STAT — high mortality if delayed treatment"},
+      {id:"men-l1",cat:"labs",priority:"stat",required:true,name:"Blood Cultures × 2",detail:"STAT before antibiotics"},
+      {id:"men-l2",cat:"labs",priority:"stat",required:true,name:"Lumbar Puncture + CSF Studies",detail:"Cell count, glucose, protein, Gram stain, culture. Do NOT delay ABx for LP",guideline:"IDSA 2024 — ABx within 1h"},
+      {id:"men-l3",cat:"labs",priority:"stat",required:true,name:"CBC, BMP, PT/INR",detail:"STAT"},
+      {id:"men-m1",cat:"meds",priority:"stat",required:true,name:"Ceftriaxone 2g IV Q12h",detail:"STAT first dose",high_alert:true,guideline:"IDSA 2024"},
+      {id:"men-m2",cat:"meds",priority:"stat",required:true,name:"Vancomycin 15-20mg/kg IV Q8-12h",detail:"STAT. S. pneumoniae coverage",high_alert:true},
+      {id:"men-m3",cat:"meds",priority:"stat",required:true,name:"Dexamethasone 10mg IV Q6h × 4d",detail:"Give BEFORE or WITH first antibiotic dose. Reduces mortality in pneumococcal meningitis",guideline:"IDSA 2024 Class I"},
+      {id:"men-m4",cat:"meds",priority:"stat",required:false,name:"Ampicillin 2g IV Q4h",detail:"If > 50yo or immunocompromised — Listeria coverage"},
+      {id:"men-i1",cat:"imaging",priority:"stat",required:true,name:"CT Head non-contrast",detail:"Before LP if: altered MS, focal neuro deficit, papilledema, or immunocompromised"},
+      {id:"men-c1",cat:"consults",priority:"stat",required:true,name:"Infectious Disease",detail:"STAT"},
+    ]
+  },
+
+  copd_exacerbation_severe: {
+    id:"copd_exacerbation_severe", name:"Severe COPD Exacerbation", subtitle:"COPD with Respiratory Failure",
+    icon:"🫁", specialty:"Respiratory", acuity:"stat",
+    guideline:"GOLD 2024 COPD",
+    tags:["NIV","BiPAP","Intubation","Respiratory Acidosis"],
+    orders:[
+      {id:"copds-a1",cat:"admit",priority:"stat",required:true,name:"Admit to ICU",detail:"Respiratory failure, pH < 7.35"},
+      {id:"copds-v1",cat:"vitals",priority:"stat",required:true,name:"Continuous SpO₂ + Telemetry",detail:"Target SpO₂ 88-92%"},
+      {id:"copds-l1",cat:"labs",priority:"stat",required:true,name:"ABG",detail:"STAT — pH, pCO₂, pO₂"},
+      {id:"copds-m1",cat:"meds",priority:"stat",required:true,name:"Continuous Albuterol Nebulization",detail:"2.5-5mg continuous"},
+      {id:"copds-m2",cat:"meds",priority:"stat",required:true,name:"Methylprednisolone 125mg IV Q6h",detail:"Then taper to prednisone"},
+      {id:"copds-n1",cat:"nursing",priority:"stat",required:true,name:"BiPAP Initiation",detail:"IPAP 10-20, EPAP 5. If pH < 7.35 and pCO₂ > 45",guideline:"GOLD 2024 — reduces intubation"},
+      {id:"copds-c1",cat:"consults",priority:"stat",required:true,name:"Pulmonology / Critical Care",detail:"STAT"},
     ]
   },
 };

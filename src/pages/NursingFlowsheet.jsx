@@ -837,5 +837,5 @@ async function genNote(){
     const d=await rsp.json();const tx=d.content?.find(b=>b.type==="text")?.text||"Generation failed.";
     document.getElementById("note-txt").textContent=tx;document.getElementById("note-out").style.display="block";
   }catch(e){document.getElementById("note-txt").textContent="Generation failed.";document.getElementById("note-out").style.display="block";}
-  gb.disabled=false;document.getElementById("gnbtxt").textContent=\\\`✦ Generate \\\${tmpl.name}\\\`;
-}\`;
+  gb.disabled=false;document.getElementById("gnbtxt").textContent='✦ Generate ' + tmpl.name;
+}`;

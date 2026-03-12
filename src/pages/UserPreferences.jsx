@@ -966,36 +966,40 @@ export default function UserAccount() {
               </div>
             ) : (
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                {quickNavLinks.map((link, i) => (
-                  <div key={link.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", background:link.enabled ? C.edge : "rgba(0,0,0,.15)", border:`1px solid ${C.border}`, borderRadius:10, opacity:link.enabled ? 1 : .5 }}>
-                    {/* Drag handle */}
-                    <GripVertical size={14} style={{ color:C.muted, cursor:"move", flexShrink:0 }} />
-                    
-                    {/* Icon preview */}
-                    <div style={{ width:40, height:40, borderRadius:9, background:`${link.color}12`, border:`1px solid ${link.color}33`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, flexShrink:0 }}>
-                      {link.icon}
-                    </div>
+                {quickNavLinks.map((link, i) => {
+                  const linkColor = link.color || C.teal;
+                  const linkIcon = link.icon || "✦";
+                  return (
+                    <div key={link.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", background:link.enabled ? C.edge : "rgba(0,0,0,.15)", border:`1px solid ${C.border}`, borderRadius:10, opacity:link.enabled ? 1 : .5 }}>
+                      {/* Drag handle */}
+                      <GripVertical size={14} style={{ color:C.muted, cursor:"move", flexShrink:0 }} />
+                      
+                      {/* Icon preview */}
+                      <div style={{ width:40, height:40, borderRadius:9, background:`${linkColor}12`, border:`1px solid ${linkColor}33`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, flexShrink:0 }}>
+                        {linkIcon}
+                      </div>
 
-                    {/* Link info */}
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:13, fontWeight:600, color:C.bright }}>{link.label}</div>
-                      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.dim, marginTop:2 }}>{link.page} {link.shortcut && `· Key: ${link.shortcut}`}</div>
-                    </div>
+                      {/* Link info */}
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:13, fontWeight:600, color:C.bright }}>{link.label}</div>
+                        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.dim, marginTop:2 }}>{link.page} {link.shortcut && `· Key: ${link.shortcut}`}</div>
+                      </div>
 
-                    {/* Actions */}
-                    <div style={{ display:"flex", gap:6, flexShrink:0 }}>
-                      <button onClick={() => toggleLinkMutation.mutate({ id: link.id, enabled: !link.enabled })} style={{ width:28, height:28, borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:`1px solid ${C.border}`, color:link.enabled ? C.green : C.muted, cursor:"pointer" }} title={link.enabled ? "Hide" : "Show"}>
-                        {link.enabled ? <Eye size={13} /> : <EyeOff size={13} />}
-                      </button>
-                      <button onClick={() => setEditingLink(link)} style={{ width:28, height:28, borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:`1px solid ${C.border}`, color:C.dim, cursor:"pointer" }}>
-                        <Edit size={13} />
-                      </button>
-                      <button onClick={() => deleteLinkMutation.mutate(link.id)} style={{ width:28, height:28, borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:`1px solid ${C.border}`, color:C.red, cursor:"pointer" }}>
-                        <Trash2 size={13} />
-                      </button>
+                      {/* Actions */}
+                      <div style={{ display:"flex", gap:6, flexShrink:0 }}>
+                        <button onClick={() => toggleLinkMutation.mutate({ id: link.id, enabled: !link.enabled })} style={{ width:28, height:28, borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:`1px solid ${C.border}`, color:link.enabled ? C.green : C.muted, cursor:"pointer" }} title={link.enabled ? "Hide" : "Show"}>
+                          {link.enabled ? <Eye size={13} /> : <EyeOff size={13} />}
+                        </button>
+                        <button onClick={() => setEditingLink(link)} style={{ width:28, height:28, borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:`1px solid ${C.border}`, color:C.dim, cursor:"pointer" }}>
+                          <Edit size={13} />
+                        </button>
+                        <button onClick={() => deleteLinkMutation.mutate(link.id)} style={{ width:28, height:28, borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:`1px solid ${C.border}`, color:C.red, cursor:"pointer" }}>
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </Card>

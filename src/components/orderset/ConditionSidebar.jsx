@@ -10,6 +10,13 @@ export default function ConditionSidebar({ conditions, customTemplates, activeId
     setExpandedSpecs(prev => ({ ...prev, [spec]: !prev[spec] }));
   };
 
+  const allExpanded = Object.values(expandedSpecs).every(v => v);
+  
+  const toggleAllSpecs = () => {
+    const newState = !allExpanded;
+    setExpandedSpecs(Object.keys(SPECIALTIES).reduce((acc, spec) => ({ ...acc, [spec]: newState }), {}));
+  };
+
   return (
     <div style={{
       width: 252, flexShrink: 0, background: `linear-gradient(170deg,${G.slate},${G.navy})`,
@@ -18,8 +25,28 @@ export default function ConditionSidebar({ conditions, customTemplates, activeId
     }}>
       {/* Header */}
       <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${G.border}` }}>
-        <div style={{ fontSize: 10.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".1em", color: G.dim, marginBottom: 2 }}>
-          Condition Library
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+          <div style={{ fontSize: 10.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".1em", color: G.dim }}>
+            Condition Library
+          </div>
+          <button
+            onClick={toggleAllSpecs}
+            style={{
+              fontSize: 9,
+              fontWeight: 700,
+              padding: "3px 8px",
+              background: "rgba(155,109,255,.12)",
+              border: `1px solid rgba(155,109,255,.3)`,
+              borderRadius: 5,
+              color: "#9b6dff",
+              cursor: "pointer",
+              transition: "all .15s",
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(155,109,255,.2)"}
+            onMouseLeave={e => e.currentTarget.style.background = "rgba(155,109,255,.12)"}
+          >
+            {allExpanded ? "Collapse All" : "Expand All"}
+          </button>
         </div>
         <div style={{ fontSize: 11, color: G.muted }}>{Object.keys(conditions).length} evidence-based templates</div>
       </div>

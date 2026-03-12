@@ -37,6 +37,17 @@ const SPECIALTIES = [
 // ── Role options ───────────────────────────────────────────────────
 const ROLES = ["Attending Physician","Resident","Fellow","Nurse Practitioner","Physician Assistant","Registered Nurse","Medical Student","Other"];
 
+// ── Available app pages ────────────────────────────────────────────
+const AVAILABLE_PAGES = [
+  "NoteCreationHub","ClinicalNoteStudio","DiagnosticStewardship","Results","DrugsBugs",
+  "Dashboard","Shift","PatientDashboard","SoapCompiler","SoapCompilerStandalone",
+  "NotesLibrary","DischargePlanning","OrderSetBuilder","BillingDashboard",
+  "AntibioticStewardship","PediatricDosing","DrugReference","CMELearningCenter",
+  "Guidelines","MedicalKnowledgeBase","PatientEducation","Calculators",
+  "NoteTemplates","CustomTemplates","Snippets","AddendumManager",
+  "UserPreferences","AppSettings","UserSettings","CommandCenter",
+].sort();
+
 // ── Shared Card ────────────────────────────────────────────────────
 function Card({ title, icon, badge, badgeColor = C.blue, children, style = {} }) {
   return (
@@ -873,7 +884,10 @@ export default function UserAccount() {
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 }}>
               <div>
                 <Label>PAGE NAME</Label>
-                <input value={newLink.page} onChange={e => setNewLink(p => ({ ...p, page: e.target.value }))} style={inputStyle} placeholder="e.g. Dashboard, NotesLibrary" />
+                <select value={newLink.page} onChange={e => setNewLink(p => ({ ...p, page: e.target.value }))} style={selectStyle}>
+                  <option value="">Select a page...</option>
+                  {AVAILABLE_PAGES.map(page => <option key={page} value={page}>{page}</option>)}
+                </select>
               </div>
               <div>
                 <Label>DISPLAY LABEL</Label>
@@ -955,7 +969,9 @@ export default function UserAccount() {
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 }}>
                   <div>
                     <Label>PAGE NAME</Label>
-                    <input value={editingLink.page} onChange={e => setEditingLink(p => ({ ...p, page: e.target.value }))} style={inputStyle} />
+                    <select value={editingLink.page} onChange={e => setEditingLink(p => ({ ...p, page: e.target.value }))} style={selectStyle}>
+                      {AVAILABLE_PAGES.map(page => <option key={page} value={page}>{page}</option>)}
+                    </select>
                   </div>
                   <div>
                     <Label>DISPLAY LABEL</Label>

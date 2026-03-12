@@ -506,7 +506,7 @@ ${BODY_HTML}
   );
 }
 
-const SCRIPT_CONTENT = `const VD=[{id:"hr",lo:60,hi:100,clo:40,chi:150},{id:"sbp",lo:90,hi:180,clo:70,chi:220},{id:"dbp",lo:60,hi:110,clo:40,chi:130},{id:"rr",lo:12,hi:20,clo:8,chi:30},{id:"spo2",lo:95,hi:100,clo:88,chi:null},{id:"temp",lo:97,hi:99,clo:94,chi:104},{id:"pain",lo:0,hi:3,clo:null,chi:8},{id:"gcs",lo:14,hi:15,clo:null,chi:null},{id:"gluc",lo:70,hi:140,clo:50,chi:400},{id:"uop",lo:30,hi:999,clo:null,chi:null}];
+const SCRIPT_CONTENT = "const VD=[{id:\"hr\",lo:60,hi:100,clo:40,chi:150},{id:\"sbp\",lo:90,hi:180,clo:70,chi:220},{id:\"dbp\",lo:60,hi:110,clo:40,chi:130},{id:\"rr\",lo:12,hi:20,clo:8,chi:30},{id:\"spo2\",lo:95,hi:100,clo:88,chi:null},{id:\"temp\",lo:97,hi:99,clo:94,chi:104},{id:\"pain\",lo:0,hi:3,clo:null,chi:8},{id:\"gcs\",lo:14,hi:15,clo:null,chi:null},{id:\"gluc\",lo:70,hi:140,clo:50,chi:400},{id:\"uop\",lo:30,hi:999,clo:null,chi:null}];
 
 <nav>
   <span class="logo">Notrya</span>

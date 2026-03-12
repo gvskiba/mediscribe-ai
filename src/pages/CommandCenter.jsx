@@ -4,6 +4,7 @@ import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
+import SepsisPredictionDashboard from "../components/sepsis/SepsisPredictionDashboard";
 
 const C = {
   navy:"#050f1e", slate:"#0b1d35", panel:"#0d2240", edge:"#162d4f",
@@ -217,6 +218,14 @@ export default function CommandCenter() {
       </nav>
 
       <div style={{ flex:1, padding:"24px 28px 40px", maxWidth:1440, margin:"0 auto", width:"100%" }}>
+
+        {/* ══════════════════════════════════════════════════════
+            SEPSIS PREDICTION DASHBOARD
+        ══════════════════════════════════════════════════════ */}
+        <SepsisPredictionDashboard 
+          patients={liveNotes || MOCK_PATIENTS} 
+          onPatientClick={(p) => navigate(`${createPageUrl("ClinicalNoteStudio")}?noteId=${p.id || p.noteId}`)} 
+        />
 
         {/* ══════════════════════════════════════════════════════
             SECTION 1 — ACTIVE PATIENT LIST

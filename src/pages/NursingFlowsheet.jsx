@@ -1,23 +1,291 @@
 import React, { useState, useEffect } from "react";
 
-export default function NursingFlowsheet() {
-  return (
-    <div style={{ height: "100vh", width: "100vw", overflow: "hidden" }}>
-      <iframe
-        srcDoc={HTML_CONTENT}
-        style={{
-          width: "100%",
-          height: "100%",
-          border: "none",
-          display: "block"
-        }}
-        title="Nursing Flowsheet"
-      />
-    </div>
-  );
-}
+const BODY_HTML = `<div id="app">
 
-const HTML_CONTENT = `<!DOCTYPE html>
+<nav>
+  <span class="logo">Notrya</span>
+  <div class="sep"></div>
+  <span class="nav-badge">NURSING FLOWSHEET</span>
+  <div id="upill" class="npill crit" style="display:none;"><div class="dot"></div><span id="ucnt">0</span>&nbsp;UNACK'D</div>
+  <div class="sp"></div>
+  <div class="pstrip">
+    <div><div class="pname">Margaret T. Sullivan</div><div class="psub">67y F · Room TR-1 · Dr. Rivera · NPO</div></div>
+    <div class="sep"></div>
+    <div style="text-align:right;">
+      <span class="pill" style="background:rgba(255,92,108,.15);color:var(--red);border:1px solid rgba(255,92,108,.35);">Full Code</span>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--muted);margin-top:3px;">⚠ PCN · ASA Allergy</div>
+    </div>
+  </div>
+  <div class="sep"></div>
+  <button class="abtn" onclick="openModal()">🔔 Alert Provider</button>
+  <button class="nbtn" onclick="sw('chat')">💬 Chat MD</button>
+  <button class="nbtn" onclick="sw('orders')">📋 Orders</button>
+  <span class="clk" id="clk">--:--</span>
+</nav>
+
+<div id="sbar2">
+  <div class="sg"><span class="sl">HR</span><span class="sv" id="s-hr">—</span><span class="su">bpm</span><span class="sf" id="s-hrf" style="display:none;"></span></div>
+  <div class="sg"><span class="sl">BP</span><span class="sv" id="s-bp">—</span><span class="su">mmHg</span><span class="sf" id="s-bpf" style="display:none;"></span></div>
+  <div class="sg"><span class="sl">SpO₂</span><span class="sv" id="s-sp">—</span><span class="su">%</span><span class="sf" id="s-spf" style="display:none;"></span></div>
+  <div class="sg"><span class="sl">Temp</span><span class="sv" id="s-tp">—</span><span class="su">°F</span><span class="sf" id="s-tpf" style="display:none;"></span></div>
+  <div class="sg"><span class="sl">Pain</span><span class="sv" id="s-pn">—</span><span class="su">/10</span></div>
+  <div class="sg"><span class="sl">I/O</span><span class="sv" id="s-io">—/—</span><span class="su">mL</span></div>
+  <div style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);">Admitted 10/14 08:14 · Chest pain, r/o NSTEMI</div>
+</div>
+
+<div id="main">
+  <div id="sidebar">
+    <button class="tb on" data-t="flow" onclick="sw('flow')"><span class="ti">📊</span><span class="tl">FLOWSHEET</span></button>
+    <button class="tb" data-t="chat" onclick="sw('chat')"><span class="ti">💬</span><span class="tl">CHAT MD</span><span class="tbadge" id="bc" style="display:none;background:var(--blue);"></span></button>
+    <button class="tb" data-t="alerts" onclick="sw('alerts')"><span class="ti">🔔</span><span class="tl">ALERTS</span><span class="tbadge" id="ba" style="display:none;background:var(--red);"></span></button>
+    <button class="tb" data-t="orders" onclick="sw('orders')"><span class="ti">📋</span><span class="tl">ORDERS</span><span class="tbadge" id="bo" style="display:none;background:var(--amber);"></span></button>
+    <button class="tb" data-t="labs" onclick="sw('labs')"><span class="ti">🧪</span><span class="tl">LABS &amp; MEDS</span></button>
+    <button class="tb" data-t="sum" onclick="sw('sum')"><span class="ti">✦</span><span class="tl">AI SUMMARY</span></button>
+    <div class="pcard" style="margin-top:auto;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;color:var(--teal);letter-spacing:.1em;margin-bottom:7px;">PATIENT</div>
+      <div class="pcr"><span class="pck">MRN</span><span class="pcv">884412</span></div>
+      <div class="pcr"><span class="pck">Room</span><span class="pcv">TR-1-A</span></div>
+      <div class="pcr"><span class="pck">Diet</span><span class="pcv">NPO</span></div>
+      <div class="pcr"><span class="pck">Code</span><span class="pcv" style="color:var(--red);">Full</span></div>
+      <div class="pcr"><span class="pck">Wt</span><span class="pcv">72 kg</span></div>
+      <div class="pcr"><span class="pck">Iso</span><span class="pcv">Standard</span></div>
+    </div>
+  </div>
+
+  <div id="content">
+
+    <!-- FLOWSHEET -->
+    <div class="pane on" id="pane-flow">
+      <div class="card">
+        <div class="ch"><span class="ci">❤️</span><span class="ct" style="color:var(--rose);">VITAL SIGNS FLOWSHEET</span><span class="pill" id="crit-pill" style="background:rgba(255,92,108,.14);color:var(--red);border:1px solid rgba(255,92,108,.3);display:none;"></span></div>
+        <div class="cb" style="padding:0;overflow-x:auto;">
+          <table class="vtbl" id="vtbl">
+            <thead><tr>
+              <th style="text-align:left;padding-left:14px;">TIME</th>
+              <th>HR<br><span style="font-weight:400;opacity:.7;">bpm</span></th>
+              <th>SBP<br><span style="font-weight:400;opacity:.7;">mmHg</span></th>
+              <th>DBP<br><span style="font-weight:400;opacity:.7;">mmHg</span></th>
+              <th>RR<br><span style="font-weight:400;opacity:.7;">/min</span></th>
+              <th>SpO₂<br><span style="font-weight:400;opacity:.7;">%</span></th>
+              <th>Temp<br><span style="font-weight:400;opacity:.7;">°F</span></th>
+              <th>Pain<br><span style="font-weight:400;opacity:.7;">/10</span></th>
+              <th>GCS<br><span style="font-weight:400;opacity:.7;">/15</span></th>
+              <th>Glucose<br><span style="font-weight:400;opacity:.7;">mg/dL</span></th>
+              <th>UOP<br><span style="font-weight:400;opacity:.7;">mL/hr</span></th>
+            </tr></thead>
+            <tbody id="vbody"></tbody>
+            <tfoot><tr style="background:rgba(0,212,188,.04);border-top:1px solid var(--border);">
+              <td style="padding:7px 7px 7px 10px;"><input class="ic" style="width:68px;" id="nv-t" placeholder="HH:MM"></td>
+              <td><input class="ic" id="nv-hr" placeholder="—"></td>
+              <td><input class="ic" id="nv-sbp" placeholder="—"></td>
+              <td><input class="ic" id="nv-dbp" placeholder="—"></td>
+              <td><input class="ic" id="nv-rr" placeholder="—"></td>
+              <td><input class="ic" id="nv-sp" placeholder="—"></td>
+              <td><input class="ic" id="nv-tp" placeholder="—"></td>
+              <td><input class="ic" id="nv-pn" placeholder="—"></td>
+              <td><input class="ic" id="nv-gc" placeholder="—"></td>
+              <td><input class="ic" id="nv-gl" placeholder="—"></td>
+              <td><input class="ic" id="nv-up" placeholder="—"></td>
+            </tr></tfoot>
+          </table>
+          <div style="padding:8px 14px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--border);">
+            <button class="btn bsm" style="background:linear-gradient(135deg,var(--rose),#e060a0);" onclick="addV()">+ Add Vitals</button>
+            <button class="btn bsm bgh" onclick="clrV()">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span class="ci">💧</span><span class="ct" style="color:var(--blue);">INTAKE &amp; OUTPUT</span><span class="pill" id="balpill" style="background:rgba(74,144,217,.12);color:var(--blue);border:1px solid rgba(74,144,217,.3);">Balance: 0 mL</span></div>
+        <div class="cb">
+          <div class="iosummary">
+            <div class="iobox" style="background:rgba(74,144,217,.07);border-color:rgba(74,144,217,.25);"><div class="ionum" style="color:var(--blue);" id="ti">0</div><div class="iolbl" style="color:var(--blue);">TOTAL INTAKE (mL)</div></div>
+            <div class="iobox" style="background:rgba(244,114,182,.07);border-color:rgba(244,114,182,.25);"><div class="ionum" style="color:var(--rose);" id="to">0</div><div class="iolbl" style="color:var(--rose);">TOTAL OUTPUT (mL)</div></div>
+            <div class="iobox" id="balbox" style="background:rgba(46,204,113,.07);border-color:rgba(46,204,113,.25);"><div class="ionum" style="color:var(--green);" id="bal">0</div><div class="iolbl" style="color:var(--green);" id="ballbl">NET BALANCE (mL)</div></div>
+          </div>
+          <div style="overflow-x:auto;"><table class="vtbl" id="iotbl">
+            <thead><tr><th style="text-align:left;padding-left:10px;">TIME</th><th style="text-align:left;">TYPE</th><th style="text-align:left;">ROUTE</th><th>AMOUNT</th><th>DIR</th><th style="text-align:left;">NOTE</th></tr></thead>
+            <tbody id="iobody"></tbody>
+          </table></div>
+          <div style="display:grid;grid-template-columns:68px 1fr 1fr 80px 90px 1fr auto;gap:6px;margin-top:10px;align-items:center;">
+            <input class="inp" id="ni-t" placeholder="HH:MM" style="padding:5px 7px;font-size:11px;">
+            <input class="inp" id="ni-ty" placeholder="Type (IV Fluid, Urine…)" style="padding:5px 8px;">
+            <input class="inp" id="ni-ro" placeholder="Route" style="padding:5px 8px;">
+            <input class="inp" id="ni-am" placeholder="mL" type="number" style="padding:5px 7px;font-size:11px;">
+            <select class="inp" id="ni-dr" style="padding:5px 7px;cursor:pointer;"><option>IN</option><option>OUT</option></select>
+            <input class="inp" id="ni-no" placeholder="Note" style="padding:5px 8px;">
+            <button class="btn bsm" style="background:linear-gradient(135deg,var(--blue),#3a7bc8);white-space:nowrap;" onclick="addIO()">+ Add</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span class="ci">📋</span><span class="ct" style="color:var(--green);">NURSING ASSESSMENT</span><span class="pill" id="acpill" style="background:rgba(46,204,113,.1);color:var(--green);border:1px solid rgba(46,204,113,.25);">0 items</span><span style="margin-left:8px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);">Time:</span><input class="ic" id="atm" style="width:68px;margin-left:4px;"></div>
+        <div class="cb">
+          <div class="stabs" id="stabs"></div>
+          <div class="cgrid" id="cgrid"></div>
+          <textarea class="inp" id="anotes" rows="2" placeholder="Additional notes for this system…" style="margin-top:4px;"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="cpane" id="pane-chat">
+      <div id="cmsg"></div>
+      <div id="cia">
+        <div class="fstg" id="fstg" style="display:none;"></div>
+        <div class="crow">
+          <button class="atbtn" onclick="document.getElementById('fup').click()" title="Attach file or image">📎</button>
+          <input type="file" id="fup" multiple accept="image/*,.pdf,.doc,.docx,.txt" style="display:none;" onchange="stgF(this)">
+          <div class="tawrap"><textarea id="cta" rows="1" placeholder="Message Dr. Rivera… (Enter to send · Shift+Enter for newline)" onkeydown="ckd(event)" oninput="gta(this)"></textarea></div>
+          <button class="sndbtn" id="csnd" onclick="sndC()" disabled>↑</button>
+        </div>
+        <div class="cft">SECURE INTERNAL MESSAGING · HIPAA COMPLIANT · FILES UP TO 25 MB</div>
+      </div>
+    </div>
+
+    <!-- ALERTS -->
+    <div class="pane" id="pane-alerts">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--bright);">Provider Alerts</div>
+        <div style="flex:1;"></div>
+        <button class="btn" style="background:linear-gradient(135deg,var(--red),#e04050);" onclick="openModal()">🔔 New Alert</button>
+      </div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.08em;margin-bottom:16px;">TAP ANY CARD TO PREFILL · ALL ALERTS ALSO SENT TO CHAT</div>
+      <div class="lbl">QUICK FIRE</div>
+      <div class="qgrid" id="qgrid"></div>
+      <div class="card">
+        <div class="ch"><span class="ci">📋</span><span class="ct" style="color:var(--amber);">ALERT LOG</span><span class="pill" id="alc" style="background:rgba(245,166,35,.12);color:var(--amber);border:1px solid rgba(245,166,35,.28);">0</span></div>
+        <div class="cb" id="alog"><div style="text-align:center;padding:20px;color:var(--muted);font-size:12px;">No alerts yet.</div></div>
+      </div>
+    </div>
+
+    <!-- ORDERS -->
+    <div class="pane" id="pane-orders">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--bright);">Active Orders</div>
+        <div id="pbanner" style="display:none;padding:4px 12px;border-radius:8px;background:rgba(245,166,35,.12);border:1px solid rgba(245,166,35,.3);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--amber);animation:pulse 1.8s infinite;"></div>
+      </div>
+      <div id="olist"></div>
+    </div>
+
+    <!-- LABS & MEDS -->
+    <div class="pane" id="pane-labs">
+      <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--bright);margin-bottom:4px;">Labs &amp; Medications</div>
+      <div class="card">
+        <div class="ch"><span class="ci">🧪</span><span class="ct" style="color:var(--teal);">ADD LAB RESULT</span><span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);">Critical values auto-alert provider</span></div>
+        <div class="cb">
+          <div style="display:grid;grid-template-columns:110px 1fr 90px 90px 1fr auto;gap:8px;align-items:end;margin-bottom:10px;">
+            <div><div class="lbl">TIME</div><input class="inp" id="lt" style="padding:6px 8px;"></div>
+            <div><div class="lbl">TEST NAME</div><input class="inp" id="ln" placeholder="Troponin I, WBC…"></div>
+            <div><div class="lbl">VALUE</div><input class="inp" id="lv" placeholder="Result"></div>
+            <div><div class="lbl">UNITS</div><input class="inp" id="lu" placeholder="ng/mL…"></div>
+            <div><div class="lbl">REF RANGE</div><input class="inp" id="lr" placeholder="0.00–0.04"></div>
+            <div style="display:flex;gap:6px;align-items:flex-end;">
+              <div><div class="lbl">FLAG</div><select class="inp" id="lf" style="cursor:pointer;padding:6px 7px;"><option value="WNL">WNL</option><option value="LOW">↓ Low</option><option value="HIGH">↑ High</option><option value="CRIT">⚡ Critical</option><option value="PANIC">🚨 Panic</option></select></div>
+              <button class="btn bsm" style="background:linear-gradient(135deg,var(--teal),var(--teal2));margin-bottom:1px;" onclick="addLab()">+ Add</button>
+            </div>
+          </div>
+          <div id="llist" style="display:flex;flex-direction:column;gap:6px;"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ch"><span class="ci">💊</span><span class="ct" style="color:var(--purple);">MEDICATION ADMINISTRATION RECORD (MAR)</span></div>
+        <div class="cb">
+          <div style="display:grid;grid-template-columns:100px 1fr 100px 80px 1fr auto;gap:8px;align-items:end;margin-bottom:10px;">
+            <div><div class="lbl">TIME</div><input class="inp" id="mt" style="padding:6px 8px;"></div>
+            <div><div class="lbl">MEDICATION</div><input class="inp" id="mn" placeholder="Drug name and dose…"></div>
+            <div><div class="lbl">ROUTE</div><select class="inp" id="mr2" style="cursor:pointer;padding:6px 7px;"><option>IV Push</option><option>IV Infusion</option><option>PO</option><option>SQ</option><option>IM</option><option>Topical</option><option>Other</option></select></div>
+            <div><div class="lbl">DOSE</div><input class="inp" id="md2" placeholder="Dose"></div>
+            <div><div class="lbl">NOTE / RESPONSE</div><input class="inp" id="mno" placeholder="Tolerance, response…"></div>
+            <button class="btn bsm" style="background:linear-gradient(135deg,var(--purple),#7b5adf);margin-bottom:1px;" onclick="addMed()">+ Give</button>
+          </div>
+          <div id="mlist" style="display:flex;flex-direction:column;gap:6px;"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ch"><span class="ci">📌</span><span class="ct" style="color:var(--amber);">NURSE FINDINGS &amp; NOTES</span></div>
+        <div class="cb">
+          <div style="display:grid;grid-template-columns:100px 1fr auto auto;gap:8px;align-items:end;margin-bottom:10px;">
+            <div><div class="lbl">TIME</div><input class="inp" id="ft" style="padding:6px 8px;"></div>
+            <div><div class="lbl">FINDING / NOTE</div><input class="inp" id="fx" placeholder="Describe finding or note…"></div>
+            <div><div class="lbl">ALERT MD</div><select class="inp" id="fa" style="cursor:pointer;padding:6px 7px;"><option value="no">No</option><option value="yes">Yes — Routine</option><option value="urgent">Yes — Urgent</option></select></div>
+            <button class="btn bsm" style="background:linear-gradient(135deg,var(--amber),#d4891e);margin-bottom:1px;" onclick="addFinding()">+ Add</button>
+          </div>
+          <div id="flist" style="display:flex;flex-direction:column;gap:6px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI SUMMARY -->
+    <div id="spane" id="pane-sum">
+      <div id="tsbr">
+        <div class="lbl" style="margin-bottom:10px;padding:0 2px;">NOTE TEMPLATES</div>
+        <button class="tbtn" id="tb-shift"        onclick="selTmpl('shift')"><span class="tic2">🔄</span><div><div class="tnm">Shift Assessment</div><div class="tfd">6 fields</div></div></button>
+        <button class="tbtn" id="tb-admission"    onclick="selTmpl('admission')"><span class="tic2">🏥</span><div><div class="tnm">Admission Assessment</div><div class="tfd">7 fields</div></div></button>
+        <button class="tbtn" id="tb-discharge"    onclick="selTmpl('discharge')"><span class="tic2">🏠</span><div><div class="tnm">Discharge Teaching</div><div class="tfd">5 fields</div></div></button>
+        <button class="tbtn" id="tb-postproc"     onclick="selTmpl('postproc')"><span class="tic2">⚕️</span><div><div class="tnm">Post-Procedure Note</div><div class="tfd">5 fields</div></div></button>
+        <button class="tbtn" id="tb-critical"     onclick="selTmpl('critical')"><span class="tic2">🚨</span><div><div class="tnm">Critical Event Note</div><div class="tfd">5 fields</div></div></button>
+        <button class="tbtn" id="tb-iv"           onclick="selTmpl('iv')"><span class="tic2">💉</span><div><div class="tnm">IV / Line Note</div><div class="tfd">5 fields</div></div></button>
+        <button class="tbtn" id="tb-pain"         onclick="selTmpl('pain')"><span class="tic2">😖</span><div><div class="tnm">Pain Assessment</div><div class="tfd">4 fields</div></div></button>
+        <div class="sdiv"></div>
+        <div class="lbl" style="margin-bottom:10px;padding:0 2px;">SHIFT SUMMARY</div>
+        <button class="btn" style="background:linear-gradient(135deg,var(--purple),#7b5adf);margin-bottom:8px;" onclick="genSBAR()"><span id="sbt">✦ Generate SBAR</span></button>
+        <div style="font-size:10px;color:var(--muted);line-height:1.55;padding:0 2px;">AI synthesizes vitals, assessments, alerts &amp; orders into a structured SBAR note.</div>
+      </div>
+      <div id="tcnt">
+        <div id="sbar-out" style="display:none;">
+          <div class="card">
+            <div class="ch"><span class="ci">✦</span><span class="ct" style="color:var(--purple);">AI-GENERATED SBAR SUMMARY</span><button class="btn bsm bgh" onclick="cpySBAR()">📋 Copy</button><button class="btn bsm bgh" style="margin-left:4px;" onclick="genSBAR()">↻ Regen</button></div>
+            <div class="cb"><div class="aout" id="sbar-txt"></div></div>
+          </div>
+        </div>
+        <div id="tmpl-wrap" style="display:none;">
+          <div class="card">
+            <div class="ch"><span class="ci" id="t-icon"></span><span class="ct" id="t-title" style="color:var(--teal);"></span><button class="btn bsm bgh" onclick="cpyNote()">📋 Copy Note</button><button class="btn bsm bgh" style="margin-left:4px;" onclick="genNote()">↻ Regen</button></div>
+            <div class="cb">
+              <div id="t-fields" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;"></div>
+              <button class="btn" id="gnbtn" style="background:linear-gradient(135deg,var(--teal),var(--teal2));width:100%;" onclick="genNote()"><span id="gnbtxt">✦ Generate Note</span></button>
+              <div id="note-out" style="display:none;margin-top:12px;"><div class="aout" id="note-txt"></div></div>
+            </div>
+          </div>
+        </div>
+        <div id="tmpl-empty" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;text-align:center;">
+          <div style="font-size:52px;margin-bottom:16px;opacity:.1;">✦</div>
+          <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:var(--bright);margin-bottom:10px;">AI Documentation Assistant</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.75;max-width:400px;">Select a template on the left, or click <strong style="color:var(--purple);">Generate SBAR</strong> for a complete shift summary.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- MODAL -->
+<div id="moverlay" onclick="closeM(event)">
+  <div id="modal">
+    <div class="mtit">Alert Provider</div>
+    <div class="msub">NOTIFY DR. RIVERA IMMEDIATELY</div>
+    <div class="lbl">ALERT TYPE</div>
+    <div class="qagrid" id="mgrid"></div>
+    <div class="lbl">PRIORITY</div>
+    <div class="prirow">
+      <button class="prib" id="p-CRITICAL" onclick="selP('CRITICAL')" style="border-color:rgba(255,92,108,.5);background:rgba(255,92,108,.09);color:var(--red);">CRITICAL</button>
+      <button class="prib" id="p-URGENT"   onclick="selP('URGENT')">URGENT</button>
+      <button class="prib" id="p-ROUTINE"  onclick="selP('ROUTINE')">ROUTINE</button>
+    </div>
+    <div class="lbl">MESSAGE TO PROVIDER</div>
+    <textarea class="inp" id="mmsg" rows="4" placeholder="Describe the clinical finding, values, or concern…" style="margin-bottom:16px;"></textarea>
+    <div class="mact">
+      <button class="btn" style="flex:1;background:linear-gradient(135deg,var(--red),#e04050);" onclick="fireA()">🔔 Send Alert to Dr. Rivera</button>
+      <button class="btn bgh" onclick="document.getElementById('moverlay').classList.remove('show')">Cancel</button>
+    </div>
+  </div>
+</div>`;
+
+export default function NursingFlowsheet() {
+  const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -217,12 +485,28 @@ textarea.inp{resize:vertical;line-height:1.65}
 </style>
 </head>
 <body>
-${document.body.innerHTML}
-<script>${document.scripts[0]?.textContent || ""}</script>
+${BODY_HTML}
+<script>${SCRIPT_CONTENT}</script>
 </body>
-</html>`.replace(/\$\{document\.body\.innerHTML\}/g, BODY_HTML).replace(/\$\{document\.scripts\[0\]\.textContent \|\| ""\}/g, SCRIPT_CONTENT);
+</html>`;
 
-const BODY_HTML = `<div id="app">
+  return (
+    <div style={{ height: "100vh", width: "100vw", overflow: "hidden" }}>
+      <iframe
+        srcDoc={htmlContent}
+        style={{
+          width: "100%",
+          height: "100%",
+          border: "none",
+          display: "block"
+        }}
+        title="Nursing Flowsheet"
+      />
+    </div>
+  );
+}
+
+const SCRIPT_CONTENT = `const VD=[{id:"hr",lo:60,hi:100,clo:40,chi:150},{id:"sbp",lo:90,hi:180,clo:70,chi:220},{id:"dbp",lo:60,hi:110,clo:40,chi:130},{id:"rr",lo:12,hi:20,clo:8,chi:30},{id:"spo2",lo:95,hi:100,clo:88,chi:null},{id:"temp",lo:97,hi:99,clo:94,chi:104},{id:"pain",lo:0,hi:3,clo:null,chi:8},{id:"gcs",lo:14,hi:15,clo:null,chi:null},{id:"gluc",lo:70,hi:140,clo:50,chi:400},{id:"uop",lo:30,hi:999,clo:null,chi:null}];
 
 <nav>
   <span class="logo">Notrya</span>

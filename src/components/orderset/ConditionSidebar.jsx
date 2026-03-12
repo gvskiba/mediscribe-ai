@@ -2,6 +2,14 @@ import React from "react";
 import { G, SPECIALTIES, PRI_CFG } from "./orderSetData";
 
 export default function ConditionSidebar({ conditions, customTemplates, activeId, onSelect }) {
+  const [expandedSpecs, setExpandedSpecs] = React.useState(() => 
+    Object.keys(SPECIALTIES).reduce((acc, spec) => ({ ...acc, [spec]: true }), {})
+  );
+
+  const toggleSpec = (spec) => {
+    setExpandedSpecs(prev => ({ ...prev, [spec]: !prev[spec] }));
+  };
+
   return (
     <div style={{
       width: 252, flexShrink: 0, background: `linear-gradient(170deg,${G.slate},${G.navy})`,
@@ -20,17 +28,31 @@ export default function ConditionSidebar({ conditions, customTemplates, activeId
       <div style={{ flex: 1, overflowY: "auto", padding: "8px 8px 0" }}>
         {Object.entries(SPECIALTIES).map(([spec, scfg]) => {
           const specConditions = scfg.conditions.map(id => conditions[id]).filter(Boolean);
+          const isExpanded = expandedSpecs[spec];
           return (
             <div key={spec} style={{ marginBottom: 12 }}>
-              <div style={{
-                display: "flex", alignItems: "center", gap: 7, padding: "5px 8px 6px",
-                fontSize: 9.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".09em",
-                color: scfg.color,
-              }}>
-                <span style={{ fontSize: 13 }}>{scfg.icon}</span>
-                {spec}
-              </div>
-              {specConditions.map(cond => {
+              <button
+                onClick={() => toggleSpec(spec)}
+                style={{
+                  width: "100%", textAlign: "left", background: "transparent", border: "none",
+                  cursor: "pointer", fontFamily: "inherit", padding: 0,
+                }}
+              >
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 7, padding: "5px 8px 6px",
+                  fontSize: 9.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".09em",
+                  color: scfg.color, borderRadius: 6, transition: "background .15s",
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,.03)"}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                >
+                  <span style={{ fontSize: 13 }}>{scfg.icon}</span>
+                  <span style={{ flex: 1 }}>{spec}</span>
+                  <span style={{ fontSize: 10, color: G.muted }}>({specConditions.length})</span>
+                  <span style={{ fontSize: 11, transition: "transform .2s", transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)" }}>▶</span>
+                </div>
+              </button>
+              {isExpanded && specConditions.map(cond => {
                 const isActive = cond.id === activeId;
                 const acuityClr = PRI_CFG[cond.acuity]?.color || G.teal;
                 return (

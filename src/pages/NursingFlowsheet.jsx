@@ -878,7 +878,7 @@ function rV(){
       const d=VD[i],val=row[id],fl=val?vf(d,val):null,fc=fl?FC[fl]:null;
       const bg=fc&&fl!=="WNL"?fc.bg:"transparent",an=fl==="CRIT"?"animation:pulse 1.5s infinite;":"";
       if(fl==="CRIT")cr++;
-      h+=`<td style="background:${bg};${an}"><div class="vv" style="color:${fc?.c||"var(--text)"};">${val||"—"}</div>${fc&&fl!=="WNL"?`<div class="vf ${fc.cl}">${fl==="CRIT"?"⚡ CRIT":fl}</div>`""}</td>`;
+      h+=`<td style="background:${bg};${an}"><div class="vv" style="color:${fc?.c||"var(--text)"};">${val||"—"}</div>${fc&&fl!=="WNL"?`<div class="vf ${fc.cl}">${fl==="CRIT"?"⚡ CRIT":fl}</div>`:""}</td>`;
     });
     tr.innerHTML=h;tb.appendChild(tr);
   });

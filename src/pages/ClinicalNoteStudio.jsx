@@ -31,7 +31,6 @@ import VitalSignsTab from "../components/notes/VitalSignsTab";
 import NoteAbnormalFindingsAnalyzer from "../components/notes/NoteAbnormalFindingsAnalyzer";
 import NoteTopBar from "../components/notes/NoteTopBar";
 import NotePatientVitalsBar from "../components/notes/NotePatientVitalsBar";
-import NoteSOAPNav from "../components/notes/NoteSOAPNav";
 import BillingPanel from "../components/billing/BillingPanel";
 import AISidebar from "../components/ai/AISidebar";
 import AIStructuredNotePreview from "../components/notes/AIStructuredNotePreview";
@@ -729,7 +728,6 @@ export default function ClinicalNoteStudio() {
         {/* NoteTopBar */}
         <NoteTopBar note={note} noteId={savedNoteId} queryClient={queryClient} onNext={handleNext} autoSaveStatus={autoSaveStatus} />
         <NotePatientVitalsBar note={note} />
-        <NoteSOAPNav activeTab={activeTab} onTabChange={setActiveTab} />
 
         {showGuidelinePrompt && note?.linked_guidelines && (
           <GuidelineReviewPrompt

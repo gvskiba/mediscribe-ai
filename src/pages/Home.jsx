@@ -653,6 +653,9 @@ export default function Home() {
           COMMAND CENTER
         </span>
         <div style={{ flex: 1 }} />
+        <div style={{ marginRight: 16, maxWidth: 400 }}>
+          <PatientSearchBar variant="dark" />
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 12px", borderRadius: 20, background: `${COLORS.red}18`, border: `1px solid ${COLORS.red}40` }}>
           <div style={{ width: 6, height: 6, borderRadius: "50%", background: COLORS.red, animation: "pulse 1.2s infinite" }} />
           <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, color: COLORS.red, letterSpacing: "0.08em" }}>

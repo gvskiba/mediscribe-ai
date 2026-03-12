@@ -7,6 +7,7 @@ import { format, differenceInMinutes } from "date-fns";
 import { createPageUrl } from "../utils";
 import LabsImagingAIReview from "../components/notes/LabsImagingAIReview";
 import QuickDrugDosingCalculator from "../components/calculators/QuickDrugDosingCalculator";
+import PatientSearchBar from "../components/search/PatientSearchBar";
 
 export default function PatientDashboard() {
   const navigate = useNavigate();
@@ -224,9 +225,9 @@ Return JSON with:
     <div style={{ background: colors.navy, fontFamily: "DM Sans, sans-serif", minHeight: "100vh", display: "flex", flexDirection: "column", color: colors.text, marginLeft: 0, marginTop: 0 }}>
       {/* Top Navigation Bar */}
       <div style={{ background: colors.slate, borderBottom: `1px solid ${colors.border}`, padding: "12px 16px", display: "flex", flexDirection: "column", gap: "8px" }}>
-        {/* Row 1: Patient Info + Vitals */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        {/* Row 1: Patient Info + Search + Vitals */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: "200px" }}>
             <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: colors.purple, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 600, fontSize: "14px" }}>
               {patient?.name?.charAt(0) || "P"}
             </div>
@@ -235,7 +236,10 @@ Return JSON with:
                 <p style={{ fontSize: "10px", margin: 0, color: colors.dim }}>MRN: {patient?.mrn || "—"}{noteId && <span onClick={() => navigate(createPageUrl(`NoteDetail?id=${noteId}`))} style={{ marginLeft: 8, color: colors.teal, cursor: "pointer", textDecoration: "underline" }}>↗ Open Note</span>}</p>
               </div>
           </div>
-          <div style={{ display: "flex", gap: "12px" }}>
+          <div style={{ flex: 1, maxWidth: "400px" }}>
+            <PatientSearchBar variant="dark" />
+          </div>
+          <div style={{ display: "flex", gap: "12px", flexShrink: 0 }}>
             {[
               { label: "BP", value: vitals?.[0]?.systolicBP ? `${vitals[0].systolicBP}/${vitals[0].diastolicBP}` : "—" },
               { label: "HR", value: vitals?.[0]?.heartRate || "—" },

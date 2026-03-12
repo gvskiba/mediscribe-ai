@@ -57,6 +57,7 @@ import Calendar from './pages/Calendar';
 import CantMissDiagnoses from './pages/CantMissDiagnoses';
 import ClinicalGuidelines from './pages/ClinicalGuidelines';
 import ClinicalNoteStudio from './pages/ClinicalNoteStudio';
+import CommandCenter from './pages/CommandCenter';
 import CustomTemplates from './pages/CustomTemplates';
 import Customize from './pages/Customize';
 import Dashboard from './pages/Dashboard';
@@ -90,7 +91,6 @@ import SoapCompiler from './pages/SoapCompiler';
 import SoapCompilerStandalone from './pages/SoapCompilerStandalone';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
-import CommandCenter from './pages/CommandCenter';
 import __Layout from './Layout.jsx';
 
 
@@ -105,6 +105,7 @@ export const PAGES = {
     "CantMissDiagnoses": CantMissDiagnoses,
     "ClinicalGuidelines": ClinicalGuidelines,
     "ClinicalNoteStudio": ClinicalNoteStudio,
+    "CommandCenter": CommandCenter,
     "CustomTemplates": CustomTemplates,
     "Customize": Customize,
     "Dashboard": Dashboard,
@@ -138,7 +139,6 @@ export const PAGES = {
     "SoapCompilerStandalone": SoapCompilerStandalone,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
-    "CommandCenter": CommandCenter,
 }
 
 export const pagesConfig = {

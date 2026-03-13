@@ -44,6 +44,7 @@ const navSections = [
               { name: "Billing Assistant", icon: FileText, page: "BillingDashboard" },
               { name: "Auto-Coder", icon: Activity, page: "AutoCoder" },
               { name: "Nursing Flowsheet", icon: Activity, page: "NursingFlowsheet" },
+              { name: "Clinical Decision Support", icon: Activity, page: "ClinicalDecisionSupport" },
               { name: "Diagnostic Stewardship", icon: Activity, page: "DiagnosticStewardship" },
               ]
             },

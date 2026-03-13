@@ -2,25 +2,55 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { AlertCircle, Clock, Activity, Pill, Settings, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import VitalsTrendChart from '../components/cds/VitalsTrendChart';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export default function ClinicalDecisionSupport() {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('alerts');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiFullLoading, setAiFullLoading] = useState(false);
-  const [aiAnalysisText, setAiAnalysisText] = useState('This encounter has a high alert burden with 2 critical items needing immediate action. SEP-1 compliance is at risk — the blood culture gap is the most significant issue given antibiotics were already administered.\n\nKey Risk: If repeat lactate is not ordered within 47 minutes, SEP-1 compliance failure will be documented — impacting quality metrics and potential reimbursement.');
+  const [aiAnalysisText, setAiAnalysisText] = useState('');
   const [loadingMessage, setLoadingMessage] = useState('');
-  const [dismissedAlerts, setDismissedAlerts] = useState({});
-  const [alertStatuses, setAlertStatuses] = useState({});
-  const [drugList, setDrugList] = useState([
-    'Vancomycin', 'Piperacillin-Tazo', 'Norepinephrine', 'Hydrocortisone',
-    'Azithromycin', 'Insulin Drip', 'Metoprolol', 'Pantoprazole'
-  ]);
   const [drugInput, setDrugInput] = useState('');
-  const [showRuleModal, setShowRuleModal] = useState(false);
   const [showGuidelineModal, setShowGuidelineModal] = useState(false);
   const [currentGuideline, setCurrentGuideline] = useState(null);
-  const [activeFilter, setActiveFilter] = useState('all');
-  const [ruleToggles, setRuleToggles] = useState({});
+  
+  // Fetch encounters
+  const { data: encounters = [], isLoading: encountersLoading } = useQuery({
+    queryKey: ['cds-encounters'],
+    queryFn: () => base44.entities.CDSEncounter.filter({ status: 'active' }, '-created_date', 1),
+    refetchInterval: 60000
+  });
+
+  // Fetch alerts for active encounter
+  const currentEncounter = encounters[0];
+  const { data: alerts = [], isLoading: alertsLoading } = useQuery({
+    queryKey: ['cds-alerts', currentEncounter?.encounter_id],
+    queryFn: () => currentEncounter ? base44.entities.CDSAlert.filter({ 
+      encounter_id: currentEncounter.encounter_id,
+      status: 'active'
+    }, '-priority_score') : Promise.resolve([]),
+    enabled: !!currentEncounter,
+    refetchInterval: 60000
+  });
+
+  // Fetch CDS rules
+  const { data: rules = [] } = useQuery({
+    queryKey: ['cds-rules'],
+    queryFn: () => base44.entities.CDSRule.filter({ enabled: true })
+  });
+
+  // Acknowledge alert mutation
+  const acknowledgeAlertMutation = useMutation({
+    mutationFn: ({ alertId, status }) => base44.entities.CDSAlert.update(alertId, {
+      status,
+      acknowledged_by: 'current_user',
+      acknowledged_at: new Date().toISOString()
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cds-alerts'] });
+    }
+  });
 
   const tabs = ['alerts', 'sepsis', 'drugs', 'rules', 'history'];
 
@@ -64,6 +94,8 @@ export default function ClinicalDecisionSupport() {
   };
 
   const runAIAnalysis = async () => {
+    if (!currentEncounter) return;
+    
     setAiFullLoading(true);
     setAiLoading(true);
     let msgIndex = 0;
@@ -74,24 +106,25 @@ export default function ClinicalDecisionSupport() {
     }, 900);
 
     try {
+      const alertSummary = alerts.map(a => `${a.alert_type.toUpperCase()}: ${a.title}`).join('\n');
+      
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this septic shock patient and provide a prioritized CDS analysis:
+        prompt: `Analyze this clinical decision support encounter and provide prioritized recommendations:
 
-Patient: Marcus Webb, 58M | Encounter #29341 | Dr. Sarah Chen, MD
-Diagnosis: Septic Shock — Urinary Source (E. coli)
-Vitals: HR 118, BP 88/56, Temp 38.9°C, RR 24, SpO2 94%, GCS 13, Lactate 4.2, QTc 492ms
+Patient: ${currentEncounter.patient_name}, ${currentEncounter.patient_age}${currentEncounter.patient_gender} | Encounter #${currentEncounter.encounter_id}
+Provider: ${currentEncounter.provider_name}
+Diagnosis: ${currentEncounter.diagnosis}
+Vitals: HR ${currentEncounter.vitals?.hr || 'N/A'}, BP ${currentEncounter.vitals?.sbp || 'N/A'}/${currentEncounter.vitals?.dbp || 'N/A'}, SpO2 ${currentEncounter.vitals?.spo2 || 'N/A'}%
+Labs: Lactate ${currentEncounter.labs?.lactate || 'N/A'} mmol/L
 
-ACTIVE ALERTS:
-1. CRITICAL: Blood cultures not confirmed before antibiotics (SEP-1 failure risk)
-2. CRITICAL: Repeat lactate due in 47 minutes
-3. WARNING: QTc 492ms with Azithromycin + possible Metoprolol interaction
-4. WARNING: Vancomycin + Pip/Tazo nephrotoxicity risk (AKI)
-5. INFO: No DVT prophylaxis documented
+ACTIVE ALERTS (${alerts.length}):
+${alertSummary}
 
-SEP-1 Bundle: 57% complete (4/7 elements done)
-Drug Profile: Vancomycin, Pip/Tazo, Norepinephrine, Hydrocortisone, Azithromycin, Insulin, Metoprolol, Pantoprazole
+SEP-1 Bundle: ${currentEncounter.sepsis_bundle_completion || 0}% complete
+Medications: ${currentEncounter.medications?.join(', ') || 'None'}
+SOFA Score: ${currentEncounter.sofa_score || 'N/A'}
 
-Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) any additional alerts AI identifies, (4) quality measure implications. Max 220 words, emoji bullets.`,
+Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) quality measure implications. Max 220 words, clinical focus.`,
         model: 'claude_sonnet_4_6'
       });
       
@@ -106,11 +139,8 @@ Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) any addit
     setAiLoading(false);
   };
 
-  const acknowledgeAlert = (id, type) => {
-    setAlertStatuses(prev => ({ ...prev, [id]: type }));
-    if (type === 'dismiss') {
-      setDismissedAlerts(prev => ({ ...prev, [id]: true }));
-    }
+  const acknowledgeAlert = (alertId, status) => {
+    acknowledgeAlertMutation.mutate({ alertId, status });
   };
 
   const switchTab = (tab) => {
@@ -132,20 +162,53 @@ Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) any addit
   };
 
   const addDrug = () => {
-    if (drugInput.trim()) {
-      setDrugList([...drugList, drugInput.trim()]);
-      setDrugInput('');
+    if (drugInput.trim() && currentEncounter) {
+      const updatedMeds = [...(currentEncounter.medications || []), drugInput.trim()];
+      base44.entities.CDSEncounter.update(currentEncounter.id, { medications: updatedMeds })
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ['cds-encounters'] });
+          setDrugInput('');
+        });
     }
   };
 
-  const removeDrug = (index) => {
-    setDrugList(drugList.filter((_, i) => i !== index));
+  const removeDrug = (drugName) => {
+    if (currentEncounter) {
+      const updatedMeds = (currentEncounter.medications || []).filter(d => d !== drugName);
+      base44.entities.CDSEncounter.update(currentEncounter.id, { medications: updatedMeds })
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ['cds-encounters'] });
+        });
+    }
   };
 
   const viewGuideline = (type) => {
     setCurrentGuideline(guidelines[type]);
     setShowGuidelineModal(true);
   };
+
+  if (encountersLoading) {
+    return (
+      <div style={{ background: C.navy, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: C.purple }}>Loading CDS data...</div>
+      </div>
+    );
+  }
+
+  if (!currentEncounter) {
+    return (
+      <div style={{ background: C.navy, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.text }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 18, marginBottom: 8 }}>No active encounters</div>
+          <div style={{ fontSize: 13, color: C.dim }}>Create a CDSEncounter to begin monitoring</div>
+        </div>
+      </div>
+    );
+  }
+
+  const criticalAlerts = alerts.filter(a => a.alert_type === 'critical').length;
+  const warningAlerts = alerts.filter(a => a.alert_type === 'warning').length;
+  const infoAlerts = alerts.filter(a => a.alert_type === 'info').length;
 
   return (
     <div style={{ background: C.navy, color: C.text, minHeight: '100vh', fontFamily: "'DM Sans', sans-serif" }}>
@@ -161,12 +224,12 @@ Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) any addit
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 12px', background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8 }}>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: C.bright }}>Marcus Webb</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.teal }}>MRN-4821 · 58M</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.bright }}>{currentEncounter.patient_name}</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.teal }}>{currentEncounter.patient_id} · {currentEncounter.patient_age}{currentEncounter.patient_gender}</div>
             </div>
           </div>
-          <span style={{ padding: '3px 10px', borderRadius: 20, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, background: 'rgba(255,92,108,.15)', color: C.red, border: '1px solid rgba(255,92,108,.3)' }}>⚡ 5 Active Alerts</span>
-          <span style={{ padding: '3px 10px', borderRadius: 20, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, background: 'rgba(0,212,188,.1)', color: C.teal, border: '1px solid rgba(0,212,188,.25)' }}>#29341</span>
+          <span style={{ padding: '3px 10px', borderRadius: 20, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, background: 'rgba(255,92,108,.15)', color: C.red, border: '1px solid rgba(255,92,108,.3)' }}>⚡ {alerts.length} Active Alerts</span>
+          <span style={{ padding: '3px 10px', borderRadius: 20, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, background: 'rgba(0,212,188,.1)', color: C.teal, border: '1px solid rgba(0,212,188,.25)' }}>#{currentEncounter.encounter_id}</span>
         </div>
       </nav>
 
@@ -175,32 +238,38 @@ Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) any addit
         <div style={{ padding: '0 14px', fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, color: C.red, whiteSpace: 'nowrap', borderRight: '1px solid rgba(255,92,108,.3)', background: 'rgba(255,92,108,.15)' }}>⚡ LIVE ALERTS</div>
         <div style={{ flex: 1, overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', fontSize: 11, color: C.text, whiteSpace: 'nowrap', animation: 'tickerMove 28s linear infinite' }}>
-            <span style={{ padding: '0 28px', borderRight: '1px solid rgba(255,92,108,.15)' }}><strong style={{ color: C.red }}>CRITICAL:</strong> Sepsis Bundle — Blood cultures not yet obtained · 3h 12m elapsed</span>
-            <span style={{ padding: '0 28px', borderRight: '1px solid rgba(255,92,108,.15)' }}><strong style={{ color: C.red }}>HIGH:</strong> Drug Interaction — Vancomycin + Gentamicin (nephrotoxicity risk)</span>
-            <span style={{ padding: '0 28px', borderRight: '1px solid rgba(255,92,108,.15)' }}><strong style={{ color: C.red }}>CRITICAL:</strong> Lactate 4.2 — Repeat lactate due in 47 minutes</span>
+            {alerts.filter(a => a.alert_type === 'critical').map((alert, i) => (
+              <span key={i} style={{ padding: '0 28px', borderRight: '1px solid rgba(255,92,108,.15)' }}>
+                <strong style={{ color: C.red }}>{alert.alert_type.toUpperCase()}:</strong> {alert.title}
+              </span>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Vitals Bar */}
       <div style={{ position: 'fixed', top: 80, left: 0, right: 0, height: 38, zIndex: 198, background: C.navy, borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', padding: '0 18px', gap: 0 }}>
-        {[
-          { label: 'HR', value: '118', abnormal: true },
-          { label: 'BP', value: '88/56', abnormal: true },
-          { label: 'Temp', value: '38.9°C', abnormal: true },
-          { label: 'RR', value: '24', abnormal: true },
-          { label: 'SpO₂', value: '94%', warn: true },
-          { label: 'GCS', value: '13', warn: true },
-          { label: 'Lactate', value: '4.2', abnormal: true },
-          { label: 'QTc', value: '492ms', warn: true }
-        ].map((vital, i) => (
+        {currentEncounter.vitals && Object.entries({
+          HR: currentEncounter.vitals.hr,
+          BP: `${currentEncounter.vitals.sbp}/${currentEncounter.vitals.dbp}`,
+          Temp: `${currentEncounter.vitals.temp}°C`,
+          RR: currentEncounter.vitals.rr,
+          'SpO₂': `${currentEncounter.vitals.spo2}%`,
+          GCS: currentEncounter.vitals.gcs
+        }).map(([label, value], i) => value && (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRight: `1px solid ${C.border}`, height: '100%' }}>
-            <span style={{ fontSize: 10, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.5 }}>{vital.label}</span>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 600, color: vital.abnormal ? C.red : vital.warn ? C.amber : C.green }}>{vital.value}</span>
+            <span style={{ fontSize: 10, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 600, color: C.text }}>{value}</span>
           </div>
         ))}
+        {currentEncounter.labs?.lactate && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRight: `1px solid ${C.border}`, height: '100%' }}>
+            <span style={{ fontSize: 10, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.5 }}>Lactate</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 600, color: currentEncounter.labs.lactate >= 2 ? C.red : C.green }}>{currentEncounter.labs.lactate}</span>
+          </div>
+        )}
         <div style={{ marginLeft: 'auto', fontSize: 11, color: C.dim, display: 'flex', alignItems: 'center', gap: 6 }}>
-          Provider: <span style={{ color: C.teal, fontWeight: 500 }}>Dr. Sarah Chen, MD</span>
+          Provider: <span style={{ color: C.teal, fontWeight: 500 }}>{currentEncounter.provider_name}</span>
         </div>
       </div>
 
@@ -215,9 +284,9 @@ Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) any addit
 
           <div style={{ padding: '10px 14px 4px', fontSize: 9, color: C.dim, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>Active Monitoring</div>
           {[
-            { id: 'alerts', icon: '🚨', label: 'Active Alerts', badge: '5', badgeColor: C.red },
-            { id: 'sepsis', icon: '🔴', label: 'Sepsis Bundle', badge: '57%', badgeColor: C.amber },
-            { id: 'drugs', icon: '💊', label: 'Drug Interactions', badge: '2', badgeColor: C.red }
+            { id: 'alerts', icon: '🚨', label: 'Active Alerts', badge: alerts.length.toString(), badgeColor: C.red },
+            { id: 'sepsis', icon: '🔴', label: 'Sepsis Bundle', badge: `${currentEncounter.sepsis_bundle_completion || 0}%`, badgeColor: C.amber },
+            { id: 'drugs', icon: '💊', label: 'Drug Interactions', badge: alerts.filter(a => a.category === 'drug_interaction').length.toString(), badgeColor: C.red }
           ].map((item, i) => (
             <div
               key={i}
@@ -232,8 +301,8 @@ Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) any addit
 
           <div style={{ padding: '10px 14px 4px', fontSize: 9, color: C.dim, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginTop: 6 }}>Management</div>
           {[
-            { id: 'rules', icon: '⚙️', label: 'Rule Manager', badge: '12', badgeColor: C.teal },
-            { id: 'history', icon: '📋', label: 'Alert History', badge: '24', badgeColor: C.blue }
+            { id: 'rules', icon: '⚙️', label: 'Rule Manager', badge: rules.length.toString(), badgeColor: C.teal },
+            { id: 'history', icon: '📋', label: 'Alert History', badge: '0', badgeColor: C.blue }
           ].map((item, i) => (
             <div
               key={i}
@@ -252,35 +321,31 @@ Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) any addit
               <h4 style={{ fontSize: 10, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Alert Summary</h4>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}>
                 <span style={{ fontSize: 11, color: C.text }}>🔴 Critical</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.red }}>2</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.red }}>{criticalAlerts}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}>
                 <span style={{ fontSize: 11, color: C.text }}>🟠 Warning</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.amber }}>2</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.amber }}>{warningAlerts}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}>
                 <span style={{ fontSize: 11, color: C.text }}>🔵 Info</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.blue }}>1</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}>
-                <span style={{ fontSize: 11, color: C.text }}>✅ Dismissed</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.green }}>3</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.blue }}>{infoAlerts}</span>
               </div>
             </div>
             <div style={{ padding: 10, background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8, marginTop: 8 }}>
               <h4 style={{ fontSize: 10, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>SEP-1 Bundle</h4>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}>
-                <span style={{ fontSize: 11, color: C.text }}>Completed</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.green }}>4/7</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}>
-                <span style={{ fontSize: 11, color: C.text }}>Time Elapsed</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.amber }}>3h 12m</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}>
                 <span style={{ fontSize: 11, color: C.text }}>Compliance</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.amber }}>57%</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.amber }}>{currentEncounter.sepsis_bundle_completion || 0}%</span>
               </div>
+              {currentEncounter.sepsis_time_zero && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}>
+                  <span style={{ fontSize: 11, color: C.text }}>Time Since T=0</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.amber }}>
+                    {Math.floor((new Date() - new Date(currentEncounter.sepsis_time_zero)) / 3600000)}h {Math.floor(((new Date() - new Date(currentEncounter.sepsis_time_zero)) % 3600000) / 60000)}m
+                  </span>
+                </div>
+              )}
             </div>
           </div>
           <div style={{ margin: '10px 10px' }}>
@@ -299,7 +364,7 @@ Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) any addit
                   <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: C.bright, display: 'flex', alignItems: 'center', gap: 10 }}>
                     🚨 Active Clinical Alerts
                   </div>
-                  <div style={{ fontSize: 12, color: C.dim, marginTop: 4 }}>5 alerts firing · Last updated just now · Auto-refresh every 60s</div>
+                  <div style={{ fontSize: 12, color: C.dim, marginTop: 4 }}>{alerts.length} alerts firing · Last updated just now · Auto-refresh every 60s</div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <button style={{ padding: '7px 14px', borderRadius: 7, cursor: 'pointer', fontSize: 12, fontFamily: "'DM Sans', sans-serif", fontWeight: 500, border: `1px solid ${C.border}`, background: 'transparent', color: C.dim }}>
@@ -311,74 +376,45 @@ Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) any addit
                 </div>
               </div>
               
-              {/* CRITICAL Alert 1 */}
-              <div style={{ background: C.panel, border: `1px solid rgba(255,92,108,.4)`, borderRadius: 11, padding: 0, marginBottom: 10, overflow: 'hidden' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px', borderBottom: `1px solid ${C.border}` }}>
-                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: C.red, animation: 'pulse 2s infinite' }} />
-                  <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, padding: '2px 8px', borderRadius: 4, fontFamily: "'JetBrains Mono', monospace", background: 'rgba(255,92,108,.15)', color: C.red, border: '1px solid rgba(255,92,108,.3)' }}>Critical</span>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: C.bright, flex: 1 }}>SEP-1: Blood Cultures Not Obtained</div>
-                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: C.dim }}>3h 12m ago</div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, cursor: 'pointer', border: `1px solid ${C.border}`, background: 'transparent', color: C.dim, fontFamily: "'DM Sans', sans-serif" }}>
-                      ⏱
-                    </button>
-                    <button onClick={() => acknowledgeAlert('bc', 'override')} style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'rgba(255,92,108,.1)', color: C.red, border: '1px solid rgba(255,92,108,.25)', fontFamily: "'DM Sans', sans-serif" }}>
-                      Override
-                    </button>
-                    <button onClick={() => acknowledgeAlert('bc', 'done')} style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, cursor: 'pointer', background: C.teal, color: '#000', border: 'none', fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}>
-                      ✓ Done
-                    </button>
+              {/* Dynamic Alert Cards */}
+              {alerts.map((alert) => (
+                <div key={alert.id} style={{ background: C.panel, border: `1px solid ${alert.alert_type === 'critical' ? 'rgba(255,92,108,.4)' : alert.alert_type === 'warning' ? 'rgba(245,166,35,.4)' : 'rgba(74,144,217,.4)'}`, borderRadius: 11, padding: 0, marginBottom: 10, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px', borderBottom: `1px solid ${C.border}` }}>
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: alert.alert_type === 'critical' ? C.red : alert.alert_type === 'warning' ? C.amber : C.blue, animation: alert.alert_type === 'critical' ? 'pulse 2s infinite' : 'none' }} />
+                    <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, padding: '2px 8px', borderRadius: 4, fontFamily: "'JetBrains Mono', monospace", background: alert.alert_type === 'critical' ? 'rgba(255,92,108,.15)' : alert.alert_type === 'warning' ? 'rgba(245,166,35,.12)' : 'rgba(74,144,217,.12)', color: alert.alert_type === 'critical' ? C.red : alert.alert_type === 'warning' ? C.amber : C.blue, border: `1px solid ${alert.alert_type === 'critical' ? 'rgba(255,92,108,.3)' : alert.alert_type === 'warning' ? 'rgba(245,166,35,.3)' : 'rgba(74,144,217,.3)'}` }}>{alert.alert_type}</span>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: C.bright, flex: 1 }}>{alert.title}</div>
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: C.dim }}>
+                      {alert.triggered_at ? new Date(alert.triggered_at).toLocaleTimeString() : 'Now'}
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button onClick={() => acknowledgeAlert(alert.id, 'acknowledged')} style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'rgba(255,92,108,.1)', color: C.red, border: '1px solid rgba(255,92,108,.25)', fontFamily: "'DM Sans', sans-serif" }}>
+                        Override
+                      </button>
+                      <button onClick={() => acknowledgeAlert(alert.id, 'resolved')} style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, cursor: 'pointer', background: C.teal, color: '#000', border: 'none', fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}>
+                        ✓ Resolve
+                      </button>
+                    </div>
+                  </div>
+                  <div style={{ padding: '12px 16px 14px' }}>
+                    <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6, marginBottom: 10 }}>
+                      {alert.description}
+                    </div>
+                    {alert.recommendation && (
+                      <div style={{ padding: '9px 12px', background: 'rgba(155,109,255,.07)', border: '1px solid rgba(155,109,255,.2)', borderRadius: 7, fontSize: 11, color: C.text, lineHeight: 1.5 }}>
+                        <strong style={{ color: C.purple }}>Recommendation:</strong> {alert.recommendation}
+                      </div>
+                    )}
+                    {alert.guideline_ref && (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.border}` }}>
+                        <div style={{ fontSize: 10, color: C.dim }}>Guideline: <span style={{ color: C.teal }}>{alert.guideline_ref}</span></div>
+                        <button onClick={() => viewGuideline('sep1')} style={{ padding: '3px 8px', fontSize: 10, borderRadius: 4, cursor: 'pointer', border: `1px solid ${C.border}`, background: 'transparent', color: C.dim, fontFamily: "'DM Sans', sans-serif" }}>
+                          📖 View Guideline
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div style={{ padding: '12px 16px 14px' }}>
-                  <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6, marginBottom: 10 }}>
-                    Sepsis-1 bundle requires blood cultures × 2 sets drawn <strong style={{ color: C.red }}>before antibiotic administration</strong>. No blood culture order confirmed in chart. Antibiotics (Vancomycin + Pip/Tazo) ordered 3h 12m ago — cultures must be collected immediately if not yet done.
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-                    <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 6, border: '1px solid rgba(255,92,108,.3)', background: 'rgba(255,92,108,.07)', color: C.red, fontFamily: "'JetBrains Mono', monospace" }}>Lactate 4.2 mmol/L</span>
-                    <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 6, border: '1px solid rgba(255,92,108,.3)', background: 'rgba(255,92,108,.07)', color: C.red, fontFamily: "'JetBrains Mono', monospace" }}>BP 88/56 mmHg</span>
-                    <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 6, border: '1px solid rgba(255,92,108,.3)', background: 'rgba(255,92,108,.07)', color: C.red, fontFamily: "'JetBrains Mono', monospace" }}>Septic Shock Dx</span>
-                    <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 6, border: '1px solid rgba(245,166,35,.3)', background: 'rgba(245,166,35,.07)', color: C.amber, fontFamily: "'JetBrains Mono', monospace" }}>ABX ordered 09:02</span>
-                  </div>
-                  <div style={{ padding: '9px 12px', background: 'rgba(155,109,255,.07)', border: '1px solid rgba(155,109,255,.2)', borderRadius: 7, fontSize: 11, color: C.text, lineHeight: 1.5 }}>
-                    <strong style={{ color: C.purple }}>Recommendation:</strong> Collect 2 sets of aerobic/anaerobic blood cultures from 2 separate sites IMMEDIATELY if not already done. Document collection time. Note: cultures drawn after antibiotics may yield false negatives.
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.border}` }}>
-                    <div style={{ fontSize: 10, color: C.dim }}>Rule: <span style={{ color: C.teal }}>SEP-1 Compliance Engine</span> · Guideline: <span style={{ color: C.teal }}>CMS SEP-1 2024</span></div>
-                    <button onClick={() => viewGuideline('sep1')} style={{ padding: '3px 8px', fontSize: 10, borderRadius: 4, cursor: 'pointer', border: `1px solid ${C.border}`, background: 'transparent', color: C.dim, fontFamily: "'DM Sans', sans-serif" }}>
-                      📖 View Guideline
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* CRITICAL Alert 2 */}
-              <div style={{ background: C.panel, border: `1px solid rgba(255,92,108,.4)`, borderRadius: 11, padding: 0, marginBottom: 10, overflow: 'hidden' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px', borderBottom: `1px solid ${C.border}` }}>
-                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: C.red, animation: 'pulse 2s infinite' }} />
-                  <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, padding: '2px 8px', borderRadius: 4, fontFamily: "'JetBrains Mono', monospace", background: 'rgba(255,92,108,.15)', color: C.red, border: '1px solid rgba(255,92,108,.3)' }}>Critical</span>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: C.bright, flex: 1 }}>Repeat Lactate Overdue</div>
-                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: C.dim }}>Due in 47m</div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, cursor: 'pointer', border: `1px solid ${C.border}`, background: 'transparent', color: C.dim, fontFamily: "'DM Sans', sans-serif" }}>⏱</button>
-                    <button style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'rgba(255,92,108,.1)', color: C.red, border: '1px solid rgba(255,92,108,.25)', fontFamily: "'DM Sans', sans-serif" }}>Override</button>
-                    <button style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, cursor: 'pointer', background: C.teal, color: '#000', border: 'none', fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}>✓ Ordered</button>
-                  </div>
-                </div>
-                <div style={{ padding: '12px 16px 14px' }}>
-                  <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6, marginBottom: 10 }}>
-                    Initial lactate 4.2 mmol/L qualifies as elevated (≥2 mmol/L). SEP-1 requires repeat lactate within <strong style={{ color: C.amber }}>2–4 hours</strong> of initial measurement to demonstrate clearance. Current lactate was drawn at 06:50; repeat is due before 10:50.
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-                    <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 6, border: '1px solid rgba(255,92,108,.3)', background: 'rgba(255,92,108,.07)', color: C.red, fontFamily: "'JetBrains Mono', monospace" }}>Initial: 4.2 mmol/L</span>
-                    <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 6, border: '1px solid rgba(245,166,35,.3)', background: 'rgba(245,166,35,.07)', color: C.amber, fontFamily: "'JetBrains Mono', monospace" }}>Drawn: 06:50</span>
-                    <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 6, border: '1px solid rgba(245,166,35,.3)', background: 'rgba(245,166,35,.07)', color: C.amber, fontFamily: "'JetBrains Mono', monospace" }}>Due by: 10:50</span>
-                  </div>
-                  <div style={{ padding: '9px 12px', background: 'rgba(155,109,255,.07)', border: '1px solid rgba(155,109,255,.2)', borderRadius: 7, fontSize: 11, color: C.text, lineHeight: 1.5 }}>
-                    <strong style={{ color: C.purple }}>Recommendation:</strong> Order repeat serum lactate now. Target lactate clearance ≥10% or absolute value &lt;2 mmol/L. If lactate remains elevated, escalate vasopressor support and reassess fluid responsiveness.
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
           )}
 
@@ -490,9 +526,9 @@ Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) any addit
               </div>
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16, minHeight: 36, padding: 8, background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8 }}>
-                {drugList.map((drug, i) => (
+                {(currentEncounter.medications || []).map((drug, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 500, background: 'rgba(0,212,188,.12)', color: C.teal, border: '1px solid rgba(0,212,188,.3)', cursor: 'pointer' }}>
-                    {drug} <span onClick={() => removeDrug(i)} style={{ fontSize: 12, opacity: 0.6 }}>✕</span>
+                    {drug} <span onClick={() => removeDrug(drug)} style={{ fontSize: 12, opacity: 0.6 }}>✕</span>
                   </div>
                 ))}
               </div>
@@ -536,27 +572,27 @@ Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) any addit
               <div style={{ fontSize: 11, fontWeight: 600, color: C.purple, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>🚨 ALERT OVERVIEW</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: `1px solid ${C.border}` }}>
                 <span style={{ fontSize: 11, color: C.dim }}>Critical Active</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.red }}>2</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.red }}>{criticalAlerts}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: `1px solid ${C.border}` }}>
                 <span style={{ fontSize: 11, color: C.dim }}>Warnings</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.amber }}>2</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.amber }}>{warningAlerts}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: `1px solid ${C.border}` }}>
                 <span style={{ fontSize: 11, color: C.dim }}>Info</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.blue }}>1</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.blue }}>{infoAlerts}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: `1px solid ${C.border}` }}>
                 <span style={{ fontSize: 11, color: C.dim }}>SEP-1 Compliance</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.amber }}>57%</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.amber }}>{currentEncounter.sepsis_bundle_completion || 0}%</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: `1px solid ${C.border}` }}>
                 <span style={{ fontSize: 11, color: C.dim }}>Drug Interactions</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.red }}>2</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.red }}>{alerts.filter(a => a.category === 'drug_interaction').length}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0' }}>
-                <span style={{ fontSize: 11, color: C.dim }}>Alert Fatigue Score</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.green }}>Low</span>
+                <span style={{ fontSize: 11, color: C.dim }}>Total Meds</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.teal }}>{(currentEncounter.medications || []).length}</span>
               </div>
             </div>
 
@@ -594,12 +630,16 @@ Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) any addit
             <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 9, padding: 12 }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: C.purple, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>📊 SEPSIS RISK SCORE</div>
               <div style={{ textAlign: 'center', padding: '8px 0' }}>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 32, fontWeight: 700, color: C.red }}>8.4</div>
-                <div style={{ fontSize: 10, color: C.dim, marginTop: 2 }}>/ 10 · SOFA-derived</div>
-                <div style={{ margin: '10px 0 4px', height: 6, background: '#162d4f', borderRadius: 3, overflow: 'hidden' }}>
-                  <div style={{ width: '84%', height: '100%', background: 'linear-gradient(90deg,#f5a623,#ff5c6c)', borderRadius: 3 }} />
-                </div>
-                <div style={{ fontSize: 10, color: C.dim }}>Mortality estimate: <span style={{ color: C.red, fontWeight: 600 }}>32–40%</span></div>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 32, fontWeight: 700, color: C.red }}>{currentEncounter.sofa_score || 'N/A'}</div>
+                <div style={{ fontSize: 10, color: C.dim, marginTop: 2 }}>/ 10 · SOFA Score</div>
+                {currentEncounter.sofa_score && (
+                  <>
+                    <div style={{ margin: '10px 0 4px', height: 6, background: '#162d4f', borderRadius: 3, overflow: 'hidden' }}>
+                      <div style={{ width: `${(currentEncounter.sofa_score / 10) * 100}%`, height: '100%', background: 'linear-gradient(90deg,#f5a623,#ff5c6c)', borderRadius: 3 }} />
+                    </div>
+                    <div style={{ fontSize: 10, color: C.dim }}>Sepsis severity: <span style={{ color: C.red, fontWeight: 600 }}>{currentEncounter.sofa_score >= 8 ? 'High' : currentEncounter.sofa_score >= 4 ? 'Moderate' : 'Low'}</span></div>
+                  </>
+                )}
               </div>
             </div>
           </div>

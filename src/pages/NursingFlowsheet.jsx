@@ -209,7 +209,39 @@ export default function NursingFlowsheet() {
   const [generatedNote, setGeneratedNote] = useState("");
 
   // ── Crash Cart Inventory state ───────────────────────────────────
-  const [crashCartItems, setCrashCartItems] = useState([]);
+  const [crashCartItems, setCrashCartItems] = useState([
+    // Medications
+    { id:1, name:"Epinephrine 1mg/mL", category:"Medication", location:"Drawer 1", qty:10, minQty:5, used:0 },
+    { id:2, name:"Atropine 1mg", category:"Medication", location:"Drawer 1", qty:8, minQty:4, used:0 },
+    { id:3, name:"Amiodarone 150mg", category:"Medication", location:"Drawer 1", qty:6, minQty:3, used:0 },
+    { id:4, name:"Lidocaine 100mg", category:"Medication", location:"Drawer 1", qty:8, minQty:4, used:0 },
+    { id:5, name:"Adenosine 6mg", category:"Medication", location:"Drawer 1", qty:5, minQty:3, used:0 },
+    { id:6, name:"Dopamine 400mg", category:"Medication", location:"Drawer 2", qty:4, minQty:2, used:0 },
+    { id:7, name:"Sodium Bicarbonate 50mEq", category:"Medication", location:"Drawer 2", qty:6, minQty:3, used:0 },
+    { id:8, name:"Calcium Chloride 1g", category:"Medication", location:"Drawer 2", qty:5, minQty:3, used:0 },
+    { id:9, name:"Magnesium Sulfate 2g", category:"Medication", location:"Drawer 2", qty:4, minQty:2, used:0 },
+    { id:10, name:"Naloxone 0.4mg", category:"Medication", location:"Drawer 2", qty:8, minQty:4, used:0 },
+    { id:11, name:"Dextrose 50% 50mL", category:"Medication", location:"Drawer 3", qty:6, minQty:3, used:0 },
+    { id:12, name:"Normal Saline 1000mL", category:"Supply", location:"IV Supply", qty:12, minQty:6, used:0 },
+    // Supplies
+    { id:13, name:"Defibrillator Pads (Adult)", category:"Supply", location:"Top Drawer", qty:4, minQty:2, used:0 },
+    { id:14, name:"Defibrillator Pads (Pediatric)", category:"Supply", location:"Top Drawer", qty:3, minQty:2, used:0 },
+    { id:15, name:"ET Tube 7.0", category:"Supply", location:"Airway Drawer", qty:3, minQty:2, used:0 },
+    { id:16, name:"ET Tube 7.5", category:"Supply", location:"Airway Drawer", qty:3, minQty:2, used:0 },
+    { id:17, name:"ET Tube 8.0", category:"Supply", location:"Airway Drawer", qty:3, minQty:2, used:0 },
+    { id:18, name:"Laryngoscope Blade #3", category:"Supply", location:"Airway Drawer", qty:2, minQty:1, used:0 },
+    { id:19, name:"Laryngoscope Blade #4", category:"Supply", location:"Airway Drawer", qty:2, minQty:1, used:0 },
+    { id:20, name:"Bag Valve Mask (Adult)", category:"Supply", location:"Airway Drawer", qty:2, minQty:1, used:0 },
+    { id:21, name:"IV Start Kit", category:"Supply", location:"IV Supply", qty:15, minQty:8, used:0 },
+    { id:22, name:"18G IV Catheter", category:"Supply", location:"IV Supply", qty:10, minQty:5, used:0 },
+    { id:23, name:"20G IV Catheter", category:"Supply", location:"IV Supply", qty:10, minQty:5, used:0 },
+    { id:24, name:"10mL Syringe", category:"Supply", location:"Supply Drawer", qty:20, minQty:10, used:0 },
+    { id:25, name:"3mL Syringe", category:"Supply", location:"Supply Drawer", qty:20, minQty:10, used:0 },
+    { id:26, name:"Alcohol Swabs", category:"Supply", location:"Supply Drawer", qty:50, minQty:25, used:0 },
+    { id:27, name:"Gauze 4x4", category:"Supply", location:"Supply Drawer", qty:30, minQty:15, used:0 },
+    { id:28, name:"Gloves (Large)", category:"Supply", location:"PPE", qty:40, minQty:20, used:0 },
+    { id:29, name:"Gloves (Medium)", category:"Supply", location:"PPE", qty:40, minQty:20, used:0 },
+  ]);
   const [usageLog, setUsageLog] = useState([]);
   const [newUsage, setNewUsage] = useState({ itemId:null, qty:1, event:"", note:"" });
   const [restockNeeded, setRestockNeeded] = useState([]);

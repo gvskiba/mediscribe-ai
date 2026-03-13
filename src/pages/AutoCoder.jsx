@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import CodeSearchPanel from '../components/autocoder/CodeSearchPanel';
 
 export default function AutoCoder() {
   const [activeTab, setActiveTab] = useState('icd10');
@@ -10,6 +11,7 @@ export default function AutoCoder() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [modalType, setModalType] = useState('icd10');
   const [newCode, setNewCode] = useState({ code: '', desc: '', type: 'secondary', poa: 'Y' });
+  const [showCodeSearch, setShowCodeSearch] = useState(false);
 
   const C = {
     navy: '#050f1e',
@@ -151,8 +153,11 @@ export default function AutoCoder() {
           </div>
 
           <div style={{ margin: '12px 10px 0' }}>
-            <button onClick={runFullAICoding} style={{ width: '100%', padding: '9px', borderRadius: 8, cursor: 'pointer', background: 'linear-gradient(135deg, rgba(155,109,255,0.2), rgba(0,212,188,0.1))', border: `1px solid rgba(155,109,255,0.3)`, color: C.purple, fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <button onClick={runFullAICoding} style={{ width: '100%', padding: '9px', borderRadius: 8, cursor: 'pointer', background: 'linear-gradient(135deg, rgba(155,109,255,0.2), rgba(0,212,188,0.1))', border: `1px solid rgba(155,109,255,0.3)`, color: C.purple, fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
               ✦ Re-Run AI Coder
+            </button>
+            <button onClick={() => setShowCodeSearch(!showCodeSearch)} style={{ width: '100%', padding: '9px', borderRadius: 8, cursor: 'pointer', background: showCodeSearch ? C.panel : 'transparent', border: `1px solid ${C.border}`, color: C.teal, fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              📚 Code Lookup
             </button>
           </div>
         </div>
@@ -183,35 +188,41 @@ export default function AutoCoder() {
 
         {/* Right AI Panel */}
         <div style={styles.aiPanel}>
-          <div style={{ padding: '14px 15px', borderBottom: `1px solid ${C.border}` }}>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 600, color: C.bright, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: C.purple, animation: 'pulse 2s infinite' }} />
-              Notrya AI Coder
-            </div>
-            <div style={{ fontSize: 11, color: C.dim, marginTop: 3 }}>claude-sonnet-4 · ICD-10 CM 2025</div>
-          </div>
-
-          <div style={{ flex: 1, overflowY: 'auto', padding: '14px 15px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 9, padding: 12 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: C.purple, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>✦ AI Analysis</div>
-              {aiLoading ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.purple, fontSize: 12 }}>
-                  <div style={{ width: 14, height: 14, border: `2px solid rgba(155,109,255,0.2)`, borderTopColor: C.purple, borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                  Analyzing encounter...
+          {showCodeSearch ? (
+            <CodeSearchPanel />
+          ) : (
+            <>
+              <div style={{ padding: '14px 15px', borderBottom: `1px solid ${C.border}` }}>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 600, color: C.bright, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: C.purple, animation: 'pulse 2s infinite' }} />
+                  Notrya AI Coder
                 </div>
-              ) : aiAnalysisText ? (
-                <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6, whiteSpace: 'pre-line' }}>{aiAnalysisText}</div>
-              ) : (
-                <div style={{ fontSize: 12, color: C.dim, lineHeight: 1.6 }}>Select an encounter and run AI analysis to generate coding recommendations</div>
-              )}
-            </div>
-          </div>
+                <div style={{ fontSize: 11, color: C.dim, marginTop: 3 }}>claude-sonnet-4 · ICD-10 CM 2025</div>
+              </div>
 
-          <div style={{ padding: '12px 15px', borderTop: `1px solid ${C.border}` }}>
-            <button onClick={runFullAICoding} disabled={aiLoading} style={{ width: '100%', padding: 9, borderRadius: 8, cursor: 'pointer', background: 'linear-gradient(135deg, rgba(155,109,255,0.2), rgba(0,212,188,0.1))', border: `1px solid rgba(155,109,255,0.3)`, color: C.purple, fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              ✦ Full AI Re-Analysis
-            </button>
-          </div>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '14px 15px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 9, padding: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: C.purple, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>✦ AI Analysis</div>
+                  {aiLoading ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.purple, fontSize: 12 }}>
+                      <div style={{ width: 14, height: 14, border: `2px solid rgba(155,109,255,0.2)`, borderTopColor: C.purple, borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                      Analyzing encounter...
+                    </div>
+                  ) : aiAnalysisText ? (
+                    <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6, whiteSpace: 'pre-line' }}>{aiAnalysisText}</div>
+                  ) : (
+                    <div style={{ fontSize: 12, color: C.dim, lineHeight: 1.6 }}>Select an encounter and run AI analysis to generate coding recommendations</div>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ padding: '12px 15px', borderTop: `1px solid ${C.border}` }}>
+                <button onClick={runFullAICoding} disabled={aiLoading} style={{ width: '100%', padding: 9, borderRadius: 8, cursor: 'pointer', background: 'linear-gradient(135deg, rgba(155,109,255,0.2), rgba(0,212,188,0.1))', border: `1px solid rgba(155,109,255,0.3)`, color: C.purple, fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  ✦ Full AI Re-Analysis
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

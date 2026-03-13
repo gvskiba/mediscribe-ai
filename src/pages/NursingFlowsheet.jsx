@@ -240,18 +240,18 @@ export default function NursingFlowsheet() {
     chatBottomRef.current?.scrollIntoView({ behavior:"smooth" });
   }, [chatMessages]);
 
+  // ── Check for restock needs ───────────────────────────────────────
+  useEffect(() => {
+    const needsRestock = crashCartItems.filter(item => item.qty <= item.minQty);
+    setRestockNeeded(needsRestock);
+  }, [crashCartItems]);
+
   // ── Derived stats ─────────────────────────────────────────────────
   const latestVitals = vitalRows[vitalRows.length - 1] || {};
   const pendingOrders = orders.filter(o => o.status === "pending").length;
   const unackAlerts = alerts.filter(a => !a.acknowledged).length;
   const totalIn  = ioRows.filter(r=>r.in_out==="IN").reduce((s,r)=>s+(+r.amount||0),0);
   const totalOut = ioRows.filter(r=>r.in_out==="OUT").reduce((s,r)=>s+(+r.amount||0),0);
-
-  // Check for restock needs
-  useEffect(() => {
-    const needsRestock = crashCartItems.filter(item => item.qty <= item.minQty);
-    setRestockNeeded(needsRestock);
-  }, [crashCartItems]);
 
   // ── Add vital row ─────────────────────────────────────────────────
   const addVitalRow = () => {

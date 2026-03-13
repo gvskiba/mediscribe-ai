@@ -12,14 +12,13 @@ import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import {
   FileText, Activity, Beaker, Code, Brain, Pill, Plus, Settings,
-  RotateCcw, ArrowLeft, Sparkles
+  RotateCcw, ArrowLeft
 } from "lucide-react";
 
 // NoteDetail tab components
 import NoteEditorTabs from "../components/notes/NoteEditorTabs";
 
 // Studio section components (inline below)
-import { Sparkles } from "lucide-react";
 
 const C = {
   navy:"#050f1e", slate:"#0b1d35", panel:"#0d2240", edge:"#162d4f",
@@ -478,8 +477,6 @@ export default function ClinicalNoteStudio() {
   const inputS = {width:"100%",background:"transparent",border:`1px solid ${C.border}`,borderRadius:7,padding:"6px 9px",color:C.text,fontFamily:"'DM Sans',sans-serif",fontSize:12,outline:"none"};
   const textareaS = {...inputS,resize:"vertical",minHeight:65,lineHeight:1.65,display:"block"};
   const labelS = {fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:C.dim,letterSpacing:".1em",display:"block",marginBottom:4};
-
-  const urlTab = urlParams.get("tab");
 
   const renderStudioSection = () => {
     switch(cur) {

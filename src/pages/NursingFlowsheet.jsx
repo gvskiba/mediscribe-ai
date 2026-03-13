@@ -164,16 +164,9 @@ export default function NursingFlowsheet() {
   });
 
   // ── Flowsheet state ───────────────────────────────────────────────
-  const [vitalRows, setVitalRows] = useState([
-    { time:"08:30", hr:"108", sbp:"88", dbp:"60", rr:"20", spo2:"94", temp:"98.6", pain:"7", gcs:"15", gluc:"", uop:"" },
-    { time:"09:00", hr:"102", sbp:"92", dbp:"64", rr:"18", spo2:"96", temp:"98.8", pain:"6", gcs:"15", gluc:"142", uop:"30" },
-    { time:"09:30", hr:"96",  sbp:"98", dbp:"66", rr:"17", spo2:"97", temp:"98.7", pain:"5", gcs:"15", gluc:"",  uop:"35" },
-  ]);
+  const [vitalRows, setVitalRows] = useState([]);
   const [newVitals, setNewVitals] = useState({ time:nowStr(), hr:"", sbp:"", dbp:"", rr:"", spo2:"", temp:"", pain:"", gcs:"", gluc:"", uop:"" });
-  const [ioRows, setIoRows] = useState([
-    { time:"08:30", type:"IV Fluid", route:"IV", amount:"500", in_out:"IN",  note:"NS bolus" },
-    { time:"09:00", type:"Urine",    route:"Foley", amount:"80", in_out:"OUT", note:"Clear yellow" },
-  ]);
+  const [ioRows, setIoRows] = useState([]);
   const [newIO, setNewIO] = useState({ time:nowStr(), type:"", route:"", amount:"", in_out:"IN", note:"" });
   const [assessments, setAssessments] = useState({
     neuro:[], resp:[], cardio:[], gi:[], gu:[], skin:[], pain:[], safety:[],
@@ -183,33 +176,20 @@ export default function NursingFlowsheet() {
   const [assessNotes, setAssessNotes] = useState({});
 
   // ── Chat state ────────────────────────────────────────────────────
-  const [chatMessages, setChatMessages] = useState([
-    { id:1, sender:"Dr. Rivera", role:"provider", time:"08:45", text:"Margaret's troponin is back at 0.22. Hold aspirin given allergy history. Start heparin per weight-based protocol.", type:"text", urgent:true },
-    { id:2, sender:"Nurse Kim",  role:"nurse",    time:"08:48", text:"Understood. Starting heparin now. She's in moderate pain, requesting something for nausea also.", type:"text" },
-    { id:3, sender:"Dr. Rivera", role:"provider", time:"08:52", text:"Order placed for Zofran 4mg IV PRN. EKG result attached.", type:"text" },
-  ]);
+  const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [chatFiles, setChatFiles] = useState([]);
   const [sending, setSending] = useState(false);
 
   // ── Alerts state ──────────────────────────────────────────────────
-  const [alerts, setAlerts] = useState([
-    { id:1, type:"lab_crit", icon:"🧪", label:"Critical Lab", priority:"CRITICAL", time:"09:15", text:"Troponin I: 0.22 ng/mL — CRITICAL HIGH. Reported to Dr. Rivera at 09:16.", acknowledged:true, ackBy:"Dr. Rivera", ackTime:"09:18" },
-    { id:2, type:"vitals",   icon:"❤️",  label:"Vital Sign Change", priority:"URGENT", time:"08:30", text:"BP 88/60 on admission. Patient symptomatic. Notified Dr. Rivera.", acknowledged:true, ackBy:"Dr. Rivera", ackTime:"08:35" },
-  ]);
+  const [alerts, setAlerts] = useState([]);
   const [alertModal, setAlertModal] = useState(false);
   const [alertType, setAlertType] = useState(null);
   const [alertText, setAlertText] = useState("");
   const [alertPriority, setAlertPriority] = useState("URGENT");
 
   // ── Orders state ──────────────────────────────────────────────────
-  const [orders, setOrders] = useState([
-    { id:1, time:"08:52", type:"Medication", priority:"ROUTINE", text:"Ondansetron (Zofran) 4mg IV Q6H PRN nausea", status:"pending",   provider:"Dr. Rivera", notes:"" },
-    { id:2, time:"08:48", type:"Medication", priority:"URGENT",  text:"Heparin weight-based protocol — initiate per order set (72 kg)", status:"pending", provider:"Dr. Rivera", notes:"" },
-    { id:3, time:"08:40", type:"Lab",        priority:"ROUTINE", text:"Troponin I — serial at 3h (due at 11:14)", status:"pending",    provider:"Dr. Rivera", notes:"" },
-    { id:4, time:"08:38", type:"Imaging",    priority:"URGENT",  text:"CXR portable — r/o pulmonary edema", status:"completed",       provider:"Dr. Rivera", notes:"Completed 08:55" },
-    { id:5, time:"08:36", type:"Nursing",    priority:"ROUTINE", text:"Continuous cardiac monitoring · 12-lead EKG on arrival · O₂ per protocol", status:"completed", provider:"Dr. Rivera", notes:"" },
-  ]);
+  const [orders, setOrders] = useState([]);
   const [orderNote, setOrderNote] = useState({});
 
   // ── Labs / Meds / Findings state ──────────────────────────────────
@@ -229,20 +209,7 @@ export default function NursingFlowsheet() {
   const [generatedNote, setGeneratedNote] = useState("");
 
   // ── Crash Cart Inventory state ───────────────────────────────────
-  const [crashCartItems, setCrashCartItems] = useState([
-    { id:1, name:"Epinephrine 1mg/mL", category:"Medication", location:"Drawer 1", qty:10, minQty:5, used:0 },
-    { id:2, name:"Atropine 0.5mg", category:"Medication", location:"Drawer 1", qty:8, minQty:4, used:0 },
-    { id:3, name:"Amiodarone 150mg", category:"Medication", location:"Drawer 2", qty:6, minQty:3, used:0 },
-    { id:4, name:"Lidocaine 100mg", category:"Medication", location:"Drawer 2", qty:5, minQty:3, used:0 },
-    { id:5, name:"Adenosine 6mg", category:"Medication", location:"Drawer 2", qty:4, minQty:2, used:0 },
-    { id:6, name:"Sodium Bicarbonate 50mEq", category:"Medication", location:"Drawer 3", qty:6, minQty:3, used:0 },
-    { id:7, name:"Calcium Chloride 1g", category:"Medication", location:"Drawer 3", qty:5, minQty:3, used:0 },
-    { id:8, name:"D50W 50mL", category:"Medication", location:"Drawer 3", qty:8, minQty:4, used:0 },
-    { id:9, name:"18G IV Catheter", category:"Supply", location:"Top Drawer", qty:15, minQty:8, used:0 },
-    { id:10, name:"ET Tube 7.5mm", category:"Supply", location:"Airway Drawer", qty:4, minQty:2, used:0 },
-    { id:11, name:"10mL Syringe", category:"Supply", location:"Top Drawer", qty:25, minQty:10, used:0 },
-    { id:12, name:"Defib Pads (Adult)", category:"Supply", location:"Side Panel", qty:3, minQty:2, used:0 },
-  ]);
+  const [crashCartItems, setCrashCartItems] = useState([]);
   const [usageLog, setUsageLog] = useState([]);
   const [newUsage, setNewUsage] = useState({ itemId:null, qty:1, event:"", note:"" });
   const [restockNeeded, setRestockNeeded] = useState([]);

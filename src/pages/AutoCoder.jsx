@@ -32,12 +32,12 @@ export default function AutoCoder() {
   };
 
   const styles = {
-    page: { minHeight: '100vh', background: C.navy, color: C.text, fontFamily: "'DM Sans', sans-serif" },
-    mainLayout: { display: 'flex', height: '100vh', overflow: 'hidden' },
+    page: { minHeight: '100vh', background: C.navy, color: C.text, fontFamily: "'DM Sans', sans-serif", paddingBottom: 50 },
+    mainLayout: { display: 'flex', height: 'calc(100vh - 50px)', overflow: 'hidden' },
     sidebar: { width: 220, minWidth: 220, background: C.slate, borderRight: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', overflowY: 'auto' },
     center: { flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' },
     aiPanel: { width: 295, minWidth: 295, background: C.slate, borderLeft: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
-    bottomNav: { position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, background: C.slate, borderTop: `1px solid ${C.border}` },
+    bottomNav: { position: 'fixed', bottom: 0, left: 0, right: 0, height: 50, zIndex: 100, background: C.slate, borderTop: `1px solid ${C.border}` },
   };
 
   const tabs = ['icd10', 'cpt', 'em', 'billing', 'audit'];

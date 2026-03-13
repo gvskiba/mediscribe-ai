@@ -10,6 +10,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import NursingFlowsheet from './pages/NursingFlowsheet';
 import AutoCoder from './pages/AutoCoder';
 import ClinicalDecisionSupport from './pages/ClinicalDecisionSupport';
+import NoteEditorTabsPage from './pages/NoteEditorTabs';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -63,6 +64,11 @@ const AuthenticatedApp = () => {
       <Route path="/ClinicalDecisionSupport" element={
         <LayoutWrapper currentPageName="ClinicalDecisionSupport">
           <ClinicalDecisionSupport />
+        </LayoutWrapper>
+      } />
+      <Route path="/NoteEditorTabs" element={
+        <LayoutWrapper currentPageName="NoteEditorTabs">
+          <NoteEditorTabsPage />
         </LayoutWrapper>
       } />
       {Object.entries(Pages).map(([path, Page]) => (

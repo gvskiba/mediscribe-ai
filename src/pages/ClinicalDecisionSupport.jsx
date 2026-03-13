@@ -561,16 +561,141 @@ Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) any addit
 
       {/* Bottom Navigation */}
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200, background: C.slate, borderTop: `1px solid ${C.border}` }}>
-        <div style={{ display: 'flex', padding: '6px 18px', gap: 5, alignItems: 'center', overflowX: 'auto' }}>
-          {tabs.map((tab, i) => (
+        {/* Group Tabs */}
+        <div style={{ display: 'flex', padding: '6px 18px 0', gap: 6, borderBottom: `1px solid ${C.border}` }}>
+          {[
+            { id: 'alerts', icon: '🚨', label: 'Alerts' },
+            { id: 'sepsis', icon: '🔴', label: 'Sepsis' },
+            { id: 'drugs', icon: '💊', label: 'Drugs' },
+            { id: 'rules', icon: '⚙️', label: 'Rules' },
+            { id: 'history', icon: '📋', label: 'History' }
+          ].map((group, i) => (
             <button
               key={i}
-              onClick={() => switchTab(tab)}
-              style={{ padding: '5px 14px', borderRadius: 20, cursor: 'pointer', fontSize: 11, color: activeTab === tab ? C.teal : C.dim, background: activeTab === tab ? 'rgba(0,212,188,.07)' : 'transparent', border: `1px solid ${activeTab === tab ? 'rgba(0,212,188,.3)' : 'transparent'}`, fontWeight: activeTab === tab ? 500 : 400, whiteSpace: 'nowrap', fontFamily: "'DM Sans', sans-serif" }}
+              onClick={() => switchTab(group.id)}
+              style={{
+                padding: '5px 14px',
+                borderRadius: '6px 6px 0 0',
+                cursor: 'pointer',
+                fontSize: 11,
+                color: activeTab === group.id ? C.bright : C.dim,
+                background: activeTab === group.id ? C.panel : 'transparent',
+                border: 'none',
+                borderTop: `2px solid ${activeTab === group.id ? C.red : 'transparent'}`,
+                fontFamily: "'DM Sans', sans-serif",
+                transition: 'all .15s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5
+              }}
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {group.icon} {group.label}
             </button>
           ))}
+        </div>
+        
+        {/* Sub Tabs */}
+        <div style={{ display: 'flex', padding: '6px 18px', gap: 5, alignItems: 'center', overflowX: 'auto' }}>
+          <button
+            onClick={() => switchTab('alerts')}
+            style={{
+              padding: '5px 14px',
+              borderRadius: 20,
+              cursor: 'pointer',
+              fontSize: 11,
+              color: activeTab === 'alerts' ? C.teal : C.dim,
+              background: activeTab === 'alerts' ? 'rgba(0,212,188,.07)' : 'transparent',
+              border: `1px solid ${activeTab === 'alerts' ? 'rgba(0,212,188,.3)' : 'transparent'}`,
+              fontWeight: activeTab === 'alerts' ? 500 : 400,
+              whiteSpace: 'nowrap',
+              fontFamily: "'DM Sans', sans-serif",
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5
+            }}
+          >
+            Active Alerts <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 8, background: 'rgba(255,92,108,.15)', color: C.red }}>5</span>
+          </button>
+          <button
+            onClick={() => switchTab('sepsis')}
+            style={{
+              padding: '5px 14px',
+              borderRadius: 20,
+              cursor: 'pointer',
+              fontSize: 11,
+              color: activeTab === 'sepsis' ? C.teal : C.dim,
+              background: activeTab === 'sepsis' ? 'rgba(0,212,188,.07)' : 'transparent',
+              border: `1px solid ${activeTab === 'sepsis' ? 'rgba(0,212,188,.3)' : 'transparent'}`,
+              fontWeight: activeTab === 'sepsis' ? 500 : 400,
+              whiteSpace: 'nowrap',
+              fontFamily: "'DM Sans', sans-serif",
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5
+            }}
+          >
+            SEP-1 Bundle <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 8, background: 'rgba(245,166,35,.15)', color: C.amber }}>57%</span>
+          </button>
+          <button
+            onClick={() => switchTab('drugs')}
+            style={{
+              padding: '5px 14px',
+              borderRadius: 20,
+              cursor: 'pointer',
+              fontSize: 11,
+              color: activeTab === 'drugs' ? C.teal : C.dim,
+              background: activeTab === 'drugs' ? 'rgba(0,212,188,.07)' : 'transparent',
+              border: `1px solid ${activeTab === 'drugs' ? 'rgba(0,212,188,.3)' : 'transparent'}`,
+              fontWeight: activeTab === 'drugs' ? 500 : 400,
+              whiteSpace: 'nowrap',
+              fontFamily: "'DM Sans', sans-serif",
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5
+            }}
+          >
+            Drug Interactions <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 8, background: 'rgba(255,92,108,.15)', color: C.red }}>2</span>
+          </button>
+          <button
+            onClick={() => switchTab('rules')}
+            style={{
+              padding: '5px 14px',
+              borderRadius: 20,
+              cursor: 'pointer',
+              fontSize: 11,
+              color: activeTab === 'rules' ? C.teal : C.dim,
+              background: activeTab === 'rules' ? 'rgba(0,212,188,.07)' : 'transparent',
+              border: `1px solid ${activeTab === 'rules' ? 'rgba(0,212,188,.3)' : 'transparent'}`,
+              fontWeight: activeTab === 'rules' ? 500 : 400,
+              whiteSpace: 'nowrap',
+              fontFamily: "'DM Sans', sans-serif",
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5
+            }}
+          >
+            Rule Manager <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 8, background: 'rgba(0,212,188,.12)', color: C.teal }}>12</span>
+          </button>
+          <button
+            onClick={() => switchTab('history')}
+            style={{
+              padding: '5px 14px',
+              borderRadius: 20,
+              cursor: 'pointer',
+              fontSize: 11,
+              color: activeTab === 'history' ? C.teal : C.dim,
+              background: activeTab === 'history' ? 'rgba(0,212,188,.07)' : 'transparent',
+              border: `1px solid ${activeTab === 'history' ? 'rgba(0,212,188,.3)' : 'transparent'}`,
+              fontWeight: activeTab === 'history' ? 500 : 400,
+              whiteSpace: 'nowrap',
+              fontFamily: "'DM Sans', sans-serif",
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5
+            }}
+          >
+            Alert History <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 8, background: 'rgba(74,144,217,.15)', color: C.blue }}>24</span>
+          </button>
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
             <button onClick={prevTab} style={{ padding: '5px 14px', borderRadius: 6, cursor: 'pointer', fontSize: 11, border: `1px solid ${C.border}`, background: 'transparent', color: C.dim, fontFamily: "'DM Sans', sans-serif" }}>
               ← Back

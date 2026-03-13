@@ -414,14 +414,14 @@ Write in formal clinical documentation style.`,
               badge:"AI-powered",
             },
             {
-              mode:"detailed",
+              mode:"studio",
               icon:"📝",
               color:C.purple,
               title:"Detailed Note",
-              subtitle:"Build section by section",
-              description:"Guided, structured entry across every note section. AI assist at each step — generate clinical text and auto-complete findings.",
-              bullets:["Guided SOAP structure","AI assist per section","Full editorial control"],
-              badge:"Guided",
+              subtitle:"Full clinical note editor",
+              description:"Complete note editing environment with tabbed workflow, AI assistance, and comprehensive documentation tools.",
+              bullets:["Tabbed SOAP workflow","AI-powered analysis","Full clinical toolkit"],
+              badge:"Studio",
             },
             {
               mode:"templates",
@@ -437,7 +437,7 @@ Write in formal clinical documentation style.`,
             <motion.div
               key={m.mode}
               whileHover={{ y:-3, boxShadow:`0 12px 40px ${m.color}18` }}
-              onClick={() => goMode(m.mode)}
+              onClick={() => m.mode === "studio" ? launchInStudio({}) : goMode(m.mode)}
               style={{
                 background:C.panel, border:`1px solid ${C.border}`, borderRadius:18, overflow:"hidden",
                 cursor:"pointer", transition:"all .18s", position:"relative",
@@ -809,7 +809,6 @@ Write in formal clinical documentation style.`,
           {[
             { id:"hub",           label:"⊞ Hub"          },
             { id:"transcription", label:"🎙️ Transcription" },
-            { id:"detailed",      label:"📝 Detailed"    },
             { id:"templates",     label:"📋 Templates"   },
           ].map(m => (
             <button key={m.id} onClick={()=>goMode(m.id)} style={{

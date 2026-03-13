@@ -14,6 +14,12 @@ export default function ClinicalDecisionSupport() {
   const [drugInput, setDrugInput] = useState('');
   const [showGuidelineModal, setShowGuidelineModal] = useState(false);
   const [currentGuideline, setCurrentGuideline] = useState(null);
+  const [user, setUser] = useState(null);
+
+  // Fetch current user
+  useEffect(() => {
+    base44.auth.me().then(setUser).catch(() => setUser(null));
+  }, []);
   
   // Fetch encounters
   const { data: encounters = [], isLoading: encountersLoading } = useQuery({
@@ -269,7 +275,7 @@ Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) quality m
           </div>
         )}
         <div style={{ marginLeft: 'auto', fontSize: 11, color: C.dim, display: 'flex', alignItems: 'center', gap: 6 }}>
-          Provider: <span style={{ color: C.teal, fontWeight: 500 }}>{currentEncounter.provider_name}</span>
+          Provider: <span style={{ color: C.teal, fontWeight: 500 }}>{user?.attending_name || currentEncounter.provider_name || 'Provider'}</span>
         </div>
       </div>
 

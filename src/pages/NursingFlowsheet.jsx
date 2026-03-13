@@ -228,6 +228,25 @@ export default function NursingFlowsheet() {
   const [generatingNote, setGeneratingNote] = useState(false);
   const [generatedNote, setGeneratedNote] = useState("");
 
+  // ── Crash Cart Inventory state ───────────────────────────────────
+  const [crashCartItems, setCrashCartItems] = useState([
+    { id:1, name:"Epinephrine 1mg/mL", category:"Medication", location:"Drawer 1", qty:10, minQty:5, used:0 },
+    { id:2, name:"Atropine 0.5mg", category:"Medication", location:"Drawer 1", qty:8, minQty:4, used:0 },
+    { id:3, name:"Amiodarone 150mg", category:"Medication", location:"Drawer 2", qty:6, minQty:3, used:0 },
+    { id:4, name:"Lidocaine 100mg", category:"Medication", location:"Drawer 2", qty:5, minQty:3, used:0 },
+    { id:5, name:"Adenosine 6mg", category:"Medication", location:"Drawer 2", qty:4, minQty:2, used:0 },
+    { id:6, name:"Sodium Bicarbonate 50mEq", category:"Medication", location:"Drawer 3", qty:6, minQty:3, used:0 },
+    { id:7, name:"Calcium Chloride 1g", category:"Medication", location:"Drawer 3", qty:5, minQty:3, used:0 },
+    { id:8, name:"D50W 50mL", category:"Medication", location:"Drawer 3", qty:8, minQty:4, used:0 },
+    { id:9, name:"18G IV Catheter", category:"Supply", location:"Top Drawer", qty:15, minQty:8, used:0 },
+    { id:10, name:"ET Tube 7.5mm", category:"Supply", location:"Airway Drawer", qty:4, minQty:2, used:0 },
+    { id:11, name:"10mL Syringe", category:"Supply", location:"Top Drawer", qty:25, minQty:10, used:0 },
+    { id:12, name:"Defib Pads (Adult)", category:"Supply", location:"Side Panel", qty:3, minQty:2, used:0 },
+  ]);
+  const [usageLog, setUsageLog] = useState([]);
+  const [newUsage, setNewUsage] = useState({ itemId:null, qty:1, event:"", note:"" });
+  const [restockNeeded, setRestockNeeded] = useState([]);
+
   // ── Clock ─────────────────────────────────────────────────────────
   useEffect(() => {
     const iv = setInterval(() => setClock(new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:false})), 1000);
@@ -505,25 +524,6 @@ Generate a complete, professional nursing ${tmpl.label} suitable for the medical
       loggedBy: "Nurse Kim",
     }, ...prev]);
   };
-
-  // ── Crash Cart Inventory state ───────────────────────────────────
-  const [crashCartItems, setCrashCartItems] = useState([
-    { id:1, name:"Epinephrine 1mg/mL", category:"Medication", location:"Drawer 1", qty:10, minQty:5, used:0 },
-    { id:2, name:"Atropine 0.5mg", category:"Medication", location:"Drawer 1", qty:8, minQty:4, used:0 },
-    { id:3, name:"Amiodarone 150mg", category:"Medication", location:"Drawer 2", qty:6, minQty:3, used:0 },
-    { id:4, name:"Lidocaine 100mg", category:"Medication", location:"Drawer 2", qty:5, minQty:3, used:0 },
-    { id:5, name:"Adenosine 6mg", category:"Medication", location:"Drawer 2", qty:4, minQty:2, used:0 },
-    { id:6, name:"Sodium Bicarbonate 50mEq", category:"Medication", location:"Drawer 3", qty:6, minQty:3, used:0 },
-    { id:7, name:"Calcium Chloride 1g", category:"Medication", location:"Drawer 3", qty:5, minQty:3, used:0 },
-    { id:8, name:"D50W 50mL", category:"Medication", location:"Drawer 3", qty:8, minQty:4, used:0 },
-    { id:9, name:"18G IV Catheter", category:"Supply", location:"Top Drawer", qty:15, minQty:8, used:0 },
-    { id:10, name:"ET Tube 7.5mm", category:"Supply", location:"Airway Drawer", qty:4, minQty:2, used:0 },
-    { id:11, name:"10mL Syringe", category:"Supply", location:"Top Drawer", qty:25, minQty:10, used:0 },
-    { id:12, name:"Defib Pads (Adult)", category:"Supply", location:"Side Panel", qty:3, minQty:2, used:0 },
-  ]);
-  const [usageLog, setUsageLog] = useState([]);
-  const [newUsage, setNewUsage] = useState({ itemId:null, qty:1, event:"", note:"" });
-  const [restockNeeded, setRestockNeeded] = useState([]);
 
   const TABS = [
     { id:"flowsheet", label:"Flowsheet",    icon:"📊", badge: null },

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import CodeSearchPanel from '../components/autocoder/CodeSearchPanel';
+import PDFUploadPanel from '../components/autocoder/PDFUploadPanel';
 
 export default function AutoCoder() {
   const [activeTab, setActiveTab] = useState('icd10');
@@ -12,6 +13,8 @@ export default function AutoCoder() {
   const [modalType, setModalType] = useState('icd10');
   const [newCode, setNewCode] = useState({ code: '', desc: '', type: 'secondary', poa: 'Y' });
   const [showCodeSearch, setShowCodeSearch] = useState(false);
+  const [showPDFUpload, setShowPDFUpload] = useState(false);
+  const [extractedText, setExtractedText] = useState('');
 
   const C = {
     navy: '#050f1e',
@@ -58,17 +61,36 @@ export default function AutoCoder() {
     if (idx > 0) setActiveTab(tabs[idx - 1]);
   };
 
-  const runFullAICoding = async () => {
+  const runFullAICoding = async (clinicalText = null) => {
     setAiLoading(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a medical coding assistant. Provide general guidance on ICD-10/CPT coding best practices for emergency department encounters. Include: (1) common coding pitfalls, (2) documentation requirements, (3) revenue optimization tips. Keep response under 200 words, use emoji bullets.`
-      });
+      const prompt = clinicalText 
+        ? `Analyze this clinical note and provide ICD-10 and CPT coding recommendations:
+
+${clinicalText}
+
+Provide:
+1. Recommended ICD-10 diagnosis codes with descriptions
+2. Recommended CPT procedure codes with descriptions
+3. E&M level recommendation with justification
+4. Revenue optimization tips
+5. Compliance notes
+
+Keep response under 300 words, use emoji bullets for clarity.`
+        : `You are a medical coding assistant. Provide general guidance on ICD-10/CPT coding best practices for emergency department encounters. Include: (1) common coding pitfalls, (2) documentation requirements, (3) revenue optimization tips. Keep response under 200 words, use emoji bullets.`;
+
+      const result = await base44.integrations.Core.InvokeLLM({ prompt });
       setAiAnalysisText(result);
     } catch (e) {
       setAiAnalysisText('⚠️ AI analysis unavailable. Select a patient encounter to begin auto-coding.');
     }
     setAiLoading(false);
+  };
+
+  const handleTextExtracted = (text) => {
+    setExtractedText(text);
+    setShowPDFUpload(false);
+    runFullAICoding(text);
   };
 
   const exportJSON = () => {
@@ -153,7 +175,10 @@ export default function AutoCoder() {
           </div>
 
           <div style={{ margin: '12px 10px 0' }}>
-            <button onClick={runFullAICoding} style={{ width: '100%', padding: '9px', borderRadius: 8, cursor: 'pointer', background: 'linear-gradient(135deg, rgba(155,109,255,0.2), rgba(0,212,188,0.1))', border: `1px solid rgba(155,109,255,0.3)`, color: C.purple, fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
+            <button onClick={() => setShowPDFUpload(true)} style={{ width: '100%', padding: '9px', borderRadius: 8, cursor: 'pointer', background: 'linear-gradient(135deg, rgba(0,212,188,0.15), rgba(96,165,250,0.1))', border: `1px solid ${C.teal}`, color: C.teal, fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
+              📄 Upload Clinical Note
+            </button>
+            <button onClick={() => runFullAICoding()} style={{ width: '100%', padding: '9px', borderRadius: 8, cursor: 'pointer', background: 'linear-gradient(135deg, rgba(155,109,255,0.2), rgba(0,212,188,0.1))', border: `1px solid rgba(155,109,255,0.3)`, color: C.purple, fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
               ✦ Re-Run AI Coder
             </button>
             <button onClick={() => setShowCodeSearch(!showCodeSearch)} style={{ width: '100%', padding: '9px', borderRadius: 8, cursor: 'pointer', background: showCodeSearch ? C.panel : 'transparent', border: `1px solid ${C.border}`, color: C.teal, fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>

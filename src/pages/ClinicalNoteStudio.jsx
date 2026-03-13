@@ -16,30 +16,10 @@ import {
 } from "lucide-react";
 
 // NoteDetail tab components
-import SubjectiveTab from "../components/notes/SubjectiveTab";
-import PhysicalExamTab from "../components/notes/PhysicalExamTab";
-import LabsImagingTab from "../components/notes/LabsImagingTab";
-import DifferentialTab from "../components/notes/DifferentialTab";
-import MedicalDecisionMakingTab from "../components/notes/MedicalDecisionMakingTab";
-import TreatmentPlanTab from "../components/notes/TreatmentPlanTab";
-import MedicationsTab from "../components/notes/MedicationsTab";
-import ProceduresTabContent from "../components/procedures/ProceduresTabContent";
-import ERDispositionTab from "../components/notes/ERDispositionTab";
-import DischargeSummaryTabNew from "../components/notes/DischargeSummaryTab";
-import ClinicalNoteComposer from "../components/notes/ClinicalNoteComposer";
-import VitalSignsTab from "../components/notes/VitalSignsTab";
-import NoteAbnormalFindingsAnalyzer from "../components/notes/NoteAbnormalFindingsAnalyzer";
-import NoteTopBar from "../components/notes/NoteTopBar";
-import NotePatientVitalsBar from "../components/notes/NotePatientVitalsBar";
-import BillingPanel from "../components/billing/BillingPanel";
-import AISidebar from "../components/ai/AISidebar";
-import AIStructuredNotePreview from "../components/notes/AIStructuredNotePreview";
-import CreateTemplateFromNote from "../components/templates/CreateTemplateFromNote";
-import GuidelineReviewPrompt from "../components/notes/GuidelineReviewPrompt";
-import TabDataPreview from "../components/notes/TabDataPreview";
-import ClinicalNotePreviewButton from "../components/notes/ClinicalNotePreviewButton";
+import NoteEditorTabs from "../components/notes/NoteEditorTabs";
 
 // Studio section components (inline below)
+import { Sparkles } from "lucide-react";
 
 const C = {
   navy:"#050f1e", slate:"#0b1d35", panel:"#0d2240", edge:"#162d4f",
@@ -499,6 +479,8 @@ export default function ClinicalNoteStudio() {
   const textareaS = {...inputS,resize:"vertical",minHeight:65,lineHeight:1.65,display:"block"};
   const labelS = {fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:C.dim,letterSpacing:".1em",display:"block",marginBottom:4};
 
+  const urlTab = urlParams.get("tab");
+
   const renderStudioSection = () => {
     switch(cur) {
       case "overview": return <SectionOverview pt={pt} totalAbn={totalAbn} dxList={dxList} />;
@@ -710,227 +692,22 @@ export default function ClinicalNoteStudio() {
 
   // Full NoteDetail view
   return (
-    <>
-      <div style={{background:C.navy,fontFamily:"DM Sans,sans-serif",minHeight:"100vh",display:"flex",flexDirection:"column"}}>
-        {/* Mode toggle bar */}
-        <div style={{background:"rgba(11,29,53,.97)",borderBottom:`1px solid ${C.border}`,padding:"8px 16px",display:"flex",alignItems:"center",gap:12,flexShrink:0,zIndex:100}}>
-          <a href={createPageUrl("Home")} style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:C.bright,cursor:"pointer",letterSpacing:"-.02em",textDecoration:"none"}}>Notrya</a>
-          <div style={{width:1,height:14,background:C.border}} />
-          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:C.teal,letterSpacing:".12em"}}>CLINICAL NOTE STUDIO</span>
-          <div style={{display:"flex",alignItems:"center",gap:2,padding:"2px",borderRadius:9,background:C.edge,border:`1px solid ${C.border}`}}>
-            <button onClick={()=>setMode("studio")} style={{padding:"3px 11px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:mode==="studio"?C.teal:"transparent",color:mode==="studio"?C.navy:C.dim,transition:"all .15s"}}>✦ Studio</button>
-            <button onClick={()=>setMode("notes")} style={{padding:"3px 11px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:mode==="notes"?C.blue:"transparent",color:mode==="notes"?C.bright:C.dim,transition:"all .15s"}}>📋 Note Detail</button>
-          </div>
-          <div style={{flex:1}} />
-          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.dim}}>{clock}</span>
+    <div style={{background:C.navy,fontFamily:"DM Sans,sans-serif",minHeight:"100vh",display:"flex",flexDirection:"column"}}>
+      {/* Mode toggle bar */}
+      <div style={{background:"rgba(11,29,53,.97)",borderBottom:`1px solid ${C.border}`,padding:"8px 16px",display:"flex",alignItems:"center",gap:12,flexShrink:0,zIndex:100}}>
+        <a href={createPageUrl("Home")} style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:C.bright,cursor:"pointer",letterSpacing:"-.02em",textDecoration:"none"}}>Notrya</a>
+        <div style={{width:1,height:14,background:C.border}} />
+        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:C.teal,letterSpacing:".12em"}}>CLINICAL NOTE STUDIO</span>
+        <div style={{display:"flex",alignItems:"center",gap:2,padding:"2px",borderRadius:9,background:C.edge,border:`1px solid ${C.border}`}}>
+          <button onClick={()=>setMode("studio")} style={{padding:"3px 11px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:mode==="studio"?C.teal:"transparent",color:mode==="studio"?C.navy:C.dim,transition:"all .15s"}}>✦ Studio</button>
+          <button onClick={()=>setMode("notes")} style={{padding:"3px 11px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:mode==="notes"?C.blue:"transparent",color:mode==="notes"?C.bright:C.dim,transition:"all .15s"}}>📋 Note Detail</button>
         </div>
-
-        {/* NoteTopBar */}
-        <NoteTopBar note={note} noteId={savedNoteId} queryClient={queryClient} onNext={handleNext} autoSaveStatus={autoSaveStatus} />
-        <NotePatientVitalsBar note={note} />
-
-        {showGuidelinePrompt && note?.linked_guidelines && (
-          <GuidelineReviewPrompt
-            linkedGuidelines={note.linked_guidelines}
-            onIncorporate={async (guideline) => {
-              const updatedGuidelines = note.linked_guidelines.map(g =>
-                g.guideline_query_id===guideline.guideline_query_id?{...g,incorporated:true,adherence_notes:"Incorporated into plan"}:g
-              );
-              await base44.entities.ClinicalNote.update(savedNoteId,{linked_guidelines:updatedGuidelines});
-              queryClient.invalidateQueries({queryKey:["studioNote",savedNoteId]});
-            }}
-            onDismiss={()=>setShowGuidelinePrompt(false)}
-          />
-        )}
-
-        <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} style={{flex:1,minHeight:0,display:"flex",flexDirection:"column"}}>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col" style={{flex:1,minHeight:0}}>
-            {/* Bottom Navigation */}
-            <div className="fixed bottom-0 left-0 right-0 shadow-2xl z-50 flex flex-col" style={{background:"#0b1d35",borderTop:"1px solid #1e3a5f"}}>
-              {/* Sub-tabs */}
-              {(() => {
-                const activeGroup = tabGroups.find(g=>g.tabs.some(t=>t.id===activeTab));
-                const activeTabBg = {blue:'bg-blue-600 text-white',purple:'bg-purple-600 text-white',emerald:'bg-emerald-600 text-white',rose:'bg-rose-600 text-white',amber:'bg-amber-600 text-white'};
-                if (!activeGroup) return null;
-                return (
-                  <TabsList className="flex flex-row items-center justify-center py-1.5 gap-1 w-full flex-shrink-0 h-auto rounded-none p-0" style={{background:"#0b1d35",borderBottom:"1px solid #1e3a5f"}}>
-                    {activeGroup.tabs.map(tab => {
-                      const isActive = activeTab===tab.id;
-                      return (
-                        <TabsTrigger key={tab.id} value={tab.id} className={`flex-shrink-0 px-3 py-1 text-xs font-medium rounded-md border transition-all whitespace-nowrap ${isActive?`${activeTabBg[activeGroup.color]} border-transparent shadow-sm`:`border-transparent bg-transparent`}`} style={!isActive?{color:"#4a7299"}:{}}>
-                          {tab.label}
-                        </TabsTrigger>
-                      );
-                    })}
-                    {customizing && (
-                      <button onClick={()=>handleCreateTab(activeGroup.id)} className="flex-shrink-0 flex items-center gap-1 px-2 py-1 text-xs text-slate-400 hover:text-slate-600 rounded-md hover:bg-white transition-colors whitespace-nowrap">
-                        <Plus className="w-3 h-3" /><span>Add tab</span>
-                      </button>
-                    )}
-                  </TabsList>
-                );
-              })()}
-
-              {/* Group nav row */}
-              <div className="flex items-center px-2 justify-center gap-4" style={{background:"#0b1d35"}}>
-                <div className="flex items-center gap-1 flex-shrink-0 py-1" style={{zIndex:10,position:'relative'}}>
-                  <button type="button" onMouseDown={e=>{e.preventDefault();e.stopPropagation();setCustomizing(c=>!c);}} className="p-1.5 rounded-md transition-colors cursor-pointer" style={customizing?{background:"rgba(0,212,188,0.15)",color:"#00d4bc"}:{color:"#4a7299"}}><Settings className="w-3.5 h-3.5" /></button>
-                  {customizing && <button type="button" onMouseDown={e=>{e.preventDefault();e.stopPropagation();resetTabLayout();}} className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"><RotateCcw className="w-3.5 h-3.5" /></button>}
-                </div>
-                <div className="flex items-center overflow-x-auto scrollbar-hide">
-                  {tabGroups.map(group => {
-                    const accentDot={blue:'bg-blue-500',purple:'bg-purple-500',emerald:'bg-emerald-500',rose:'bg-rose-500',amber:'bg-amber-500'};
-                    const activeBorder={blue:'border-blue-500',purple:'border-purple-500',emerald:'border-emerald-500',rose:'border-rose-500',amber:'border-amber-500'};
-                    const activeText={blue:'text-blue-600',purple:'text-purple-600',emerald:'text-emerald-600',rose:'text-rose-600',amber:'text-amber-600'};
-                    const hasActive=group.tabs.some(t=>t.id===activeTab);
-                    const firstTabId=group.tabs[0]?.id;
-                    return (
-                      <button key={group.id} onClick={()=>firstTabId&&setActiveTab(firstTabId)} className={`flex flex-col items-center gap-0.5 px-4 py-2 border-t-2 transition-all whitespace-nowrap flex-shrink-0 ${hasActive?`${activeBorder[group.color]} ${activeText[group.color]}`:'border-transparent'}`} style={!hasActive?{color:"#4a7299"}:{}}>
-                        <div className={`w-2 h-2 rounded-full ${accentDot[group.color]}`} />
-                        <span className="text-xs font-semibold">{group.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Dialogs */}
-              {showCreateTabDialog && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                  <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
-                    <h3 className="text-lg font-bold text-slate-900 mb-4">Create New Tab</h3>
-                    <Input autoFocus value={newTabName} onChange={e=>setNewTabName(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')handleSaveNewTab();if(e.key==='Escape')setShowCreateTabDialog(false);}} placeholder="Enter tab name..." className="w-full mb-4" />
-                    <div className="flex gap-3 justify-end">
-                      <Button variant="outline" onClick={()=>setShowCreateTabDialog(false)}>Cancel</Button>
-                      <Button onClick={handleSaveNewTab} className="bg-blue-600 hover:bg-blue-700 text-white">Create Tab</Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {showCreateGroupDialog && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                  <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
-                    <h3 className="text-lg font-bold text-slate-900 mb-4">Create New Group</h3>
-                    <Input autoFocus value={newGroupName} onChange={e=>setNewGroupName(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')handleCreateGroup();if(e.key==='Escape')setShowCreateGroupDialog(false);}} placeholder="Enter group name..." className="w-full mb-4" />
-                    <div className="flex gap-2 mb-4">
-                      {['blue','purple','emerald','rose','amber'].map(color=>(
-                        <button key={color} onClick={()=>setNewGroupColor(color)} className={`w-8 h-8 rounded-full border-2 ${newGroupColor===color?'border-slate-900 scale-110':'border-transparent'} ${color==='blue'?'bg-blue-500':color==='purple'?'bg-purple-500':color==='emerald'?'bg-emerald-500':color==='rose'?'bg-rose-500':'bg-amber-500'}`} />
-                      ))}
-                    </div>
-                    <div className="flex gap-3 justify-end">
-                      <Button variant="outline" onClick={()=>{setShowCreateGroupDialog(false);setNewGroupName("");setNewGroupColor("blue");}}>Cancel</Button>
-                      <Button onClick={handleCreateGroup} className="bg-blue-600 hover:bg-blue-700 text-white">Create Group</Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Tab Content */}
-            <div style={{flex:1,minHeight:0,overflow:"auto",paddingBottom:"120px"}}>
-              <TabsContent value="vital_signs" className="overflow-y-auto" style={{background:C.navy}}>
-                <VitalSignsTab note={note} noteId={savedNoteId} queryClient={queryClient} templates={templates} selectedTemplate={selectedTemplate} setSelectedTemplate={setSelectedTemplate} loadingVitalAnalysis={loadingVitalAnalysis} setLoadingVitalAnalysis={setLoadingVitalAnalysis} vitalSignsAnalysis={vitalSignsAnalysis} setVitalSignsAnalysis={setVitalSignsAnalysis} vitalSignsHistory={vitalSignsHistory} setVitalSignsHistory={setVitalSignsHistory} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
-              </TabsContent>
-
-              <TabsContent value="patient_intake" className="overflow-y-auto" style={{background:C.navy}}>
-                <SubjectiveTab note={note} noteId={savedNoteId} queryClient={queryClient} templates={templates} selectedTemplate={selectedTemplate} setSelectedTemplate={setSelectedTemplate} analyzingRawData={analyzingRawData} setAnalyzingRawData={setAnalyzingRawData} checkingGrammar={checkingGrammar} setCheckingGrammar={setCheckingGrammar} grammarSuggestions={grammarSuggestions} setGrammarSuggestions={setGrammarSuggestions} loadingVitalAnalysis={loadingVitalAnalysis} setLoadingVitalAnalysis={setLoadingVitalAnalysis} vitalSignsAnalysis={vitalSignsAnalysis} setVitalSignsAnalysis={setVitalSignsAnalysis} vitalSignsHistory={vitalSignsHistory} setVitalSignsHistory={setVitalSignsHistory} rosNormal={rosNormal} setRosNormal={setRosNormal} structuredPreview={structuredPreview} setStructuredPreview={setStructuredPreview} showStructuredPreview={showStructuredPreview} setShowStructuredPreview={setShowStructuredPreview} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
-              </TabsContent>
-
-              <TabsContent value="differential" className="overflow-y-auto" style={{background:C.navy}}>
-                <DifferentialTab note={note} noteId={savedNoteId} queryClient={queryClient} templates={templates} selectedTemplate={selectedTemplate} setSelectedTemplate={setSelectedTemplate} loadingDifferential={loadingDifferential} generateDifferentialDiagnosis={async()=>{}} differentialDiagnosis={differentialDiagnosis} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
-              </TabsContent>
-
-              <TabsContent value="labs_imaging" className="overflow-y-auto" style={{background:C.navy}}>
-                <div style={{maxWidth:"900px",margin:"0 auto",padding:"20px 16px",display:"flex",flexDirection:"column",gap:"20px"}}>
-                  <NoteAbnormalFindingsAnalyzer note={note} noteId={savedNoteId} queryClient={queryClient} />
-                  <LabsImagingTab note={note} noteId={savedNoteId} queryClient={queryClient} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
-                </div>
-              </TabsContent>
-
-              <TabsContent value="treatment_plan" className="overflow-y-auto" style={{background:C.navy}}>
-                <TreatmentPlanTab note={note} noteId={savedNoteId} queryClient={queryClient} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
-              </TabsContent>
-
-              <TabsContent value="mdm" className="overflow-y-auto">
-                <MedicalDecisionMakingTab note={note} noteId={savedNoteId} onUpdateNote={async(updates)=>{await base44.entities.ClinicalNote.update(savedNoteId,updates);queryClient.invalidateQueries({queryKey:["studioNote",savedNoteId]});}} />
-              </TabsContent>
-
-              <TabsContent value="medications" className="overflow-y-auto" style={{background:C.navy}}>
-                <MedicationsTab note={note} noteId={savedNoteId} queryClient={queryClient} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
-              </TabsContent>
-
-              <TabsContent value="clinical_note" className="overflow-y-auto" style={{background:C.navy}}>
-                <ClinicalNoteComposer note={note} noteId={savedNoteId} queryClient={queryClient} />
-                <div className="max-w-3xl mx-auto px-4 pb-4">
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                    <BillingPanel note={note} noteId={savedNoteId} />
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="physical_exam" className="overflow-y-auto" style={{background:C.navy}}>
-                <PhysicalExamTab note={note} noteId={savedNoteId} queryClient={queryClient} physicalExamNormal={physicalExamNormal} setPhysicalExamNormal={setPhysicalExamNormal} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
-              </TabsContent>
-
-              <TabsContent value="disposition_plan" className="overflow-y-auto" style={{background:C.navy}}>
-                <ERDispositionTab note={note} noteId={savedNoteId} queryClient={queryClient} finalizeMutation={finalizeMutation} exportNote={exportNote} exportingFormat={exportingFormat} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
-              </TabsContent>
-
-              <TabsContent value="discharge_summary" className="overflow-y-auto" style={{background:C.navy}}>
-                <DischargeSummaryTabNew note={note} noteId={savedNoteId} queryClient={queryClient} isFirstTab={isFirstTab} isLastTab={isLastTab} handleBack={handleBack} handleNext={handleNext} />
-              </TabsContent>
-
-              <TabsContent value="procedures" className="overflow-y-auto" style={{background:C.navy}}>
-                <ProceduresTabContent note={note} />
-              </TabsContent>
-
-              {/* Custom tabs */}
-              {tabGroups.flatMap(g=>g.tabs).filter(t=>t.id.startsWith('custom_')).map(tab=>(
-                <TabsContent key={tab.id} value={tab.id} className="overflow-y-auto" style={{background:C.navy}}>
-                  <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
-                    <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wide">{tab.label}</h2>
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                      <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2.5"><div className="w-2 h-2 rounded-full bg-slate-400" /><span className="text-sm font-semibold text-slate-800">Notes</span></div>
-                      <div className="p-4"><textarea placeholder={`Add notes for ${tab.label}...`} className="w-full min-h-[300px] text-sm resize-none border-slate-200 border rounded-lg p-2" /></div>
-                    </div>
-                    <div className="flex justify-between items-center pt-1 border-t border-slate-700">
-                      <div className="flex gap-2"><TabDataPreview tabId={tab.id} note={note} /><ClinicalNotePreviewButton note={note} /></div>
-                      <div className="flex items-center gap-1.5">{!isFirstTab()&&<button onClick={handleBack} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"><ArrowLeft className="w-3.5 h-3.5"/>Back</button>}{!isLastTab()&&<button onClick={handleNext} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">Next<ArrowLeft className="w-3.5 h-3.5 rotate-180"/></button>}</div>
-                    </div>
-                  </div>
-                </TabsContent>
-              ))}
-            </div>
-          </Tabs>
-        </motion.div>
-
-        {/* Floating AI Button */}
-        <motion.button onClick={()=>setAiSidebarOpen(true)} whileHover={{scale:1.08}} whileTap={{scale:0.95}} className="fixed left-5 bottom-28 z-40 w-14 h-14 rounded-full flex items-center justify-center" style={{background:"white",boxShadow:"0 4px 24px 0 rgba(168,85,247,0.25),0 1.5px 6px 0 rgba(99,102,241,0.15)"}} title="Open AI Assistant">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{background:"linear-gradient(135deg, #f0abfc 0%, #a78bfa 50%, #818cf8 100%)"}}>
-            <Sparkles className="w-6 h-6 text-white drop-shadow" />
-          </div>
-        </motion.button>
-
-        <AISidebar isOpen={aiSidebarOpen} onClose={()=>setAiSidebarOpen(false)} note={note} noteId={savedNoteId} activeTab={activeTab} onUpdateNote={async(updates)=>{await base44.entities.ClinicalNote.update(savedNoteId,updates);queryClient.invalidateQueries({queryKey:["studioNote",savedNoteId]});}} />
-
-        {showStructuredPreview && (
-          <AIStructuredNotePreview structured={structuredPreview} activeTab={activeTab} onClose={()=>setShowStructuredPreview(false)}
-            onApply={async()=>{
-              if(!structuredPreview) return;
-              const stripMd=t=>typeof t==='string'?t.replace(/\*\*([^*]+)\*\*/g,'$1').replace(/\*([^*]+)\*/g,'$1').replace(/^#{1,6}\s+/gm,''):t;
-              const fields=['chief_complaint','history_of_present_illness','medical_history','review_of_systems','physical_exam','assessment','plan','summary','diagnoses','medications','allergies','lab_findings','imaging_findings'];
-              const updates={};
-              fields.forEach(f=>{const v=structuredPreview[f];if(v!==undefined&&v!==null&&v!==''&&!(Array.isArray(v)&&v.length===0)){updates[f]=Array.isArray(v)?v:stripMd(v);}});
-              if(Object.keys(updates).length>0){await base44.entities.ClinicalNote.update(savedNoteId,updates);queryClient.invalidateQueries({queryKey:["studioNote",savedNoteId]});}
-              toast.success(`Applied ${Object.keys(updates).length} fields to note`);
-              setShowStructuredPreview(false);
-            }}
-          />
-        )}
-
-        <CreateTemplateFromNote open={templateDialogOpen} onClose={()=>setTemplateDialogOpen(false)} note={note} onSuccess={()=>setTemplateDialogOpen(false)} />
+        <div style={{flex:1}} />
+        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.dim}}>{clock}</span>
       </div>
-    </>
+
+      <NoteEditorTabs note={note} noteId={savedNoteId} initialTab={urlTab || activeTab} />
+    </div>
   );
 }
 

@@ -251,6 +251,14 @@ Keep response under 300 words, use emoji bullets for clarity.`
         </div>
       </div>
 
+      {/* PDF Upload Modal */}
+      {showPDFUpload && (
+        <PDFUploadPanel 
+          onTextExtracted={handleTextExtracted}
+          onClose={() => setShowPDFUpload(false)}
+        />
+      )}
+
       {/* Bottom Nav */}
       <div style={styles.bottomNav}>
         <div style={{ display: 'flex', padding: '6px 18px', gap: 5, alignItems: 'center', overflowX: 'auto' }}>

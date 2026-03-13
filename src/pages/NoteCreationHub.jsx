@@ -352,29 +352,29 @@ Write in formal clinical documentation style.`,
   };
 
   // ── Launch note in Studio ──────────────────────────────────────
-  const launchInStudio = async (noteData) => {
+  const launchInStudio = async (noteData = {}) => {
     try {
       const payload = {
+        raw_note: noteData.raw_note || "",
         chief_complaint: noteData.cc || noteData.chief_complaint || patient.cc || "",
-        hpi:             noteData.hpi || "",
+        history_of_present_illness: noteData.hpi || noteData.history_of_present_illness || "",
         physical_exam:   noteData.pe || noteData.physical_exam || "",
         assessment:      noteData.assessment || "",
         mdm:             noteData.mdm || "",
-        treatment_plan:  noteData.plan || "",
-        disposition:     noteData.dispo || noteData.disposition || "",
-        review_of_systems: noteData.ros || "",
-        pmh:             noteData.pmh || "",
-        medications:     noteData.meds || noteData.medications || "",
-        allergies:       noteData.allergies || "NKDA",
+        plan:            noteData.plan || "",
+        disposition_plan: noteData.dispo || noteData.disposition || noteData.disposition_plan || "",
+        review_of_systems: noteData.ros || noteData.review_of_systems || "",
+        medical_history: noteData.pmh || noteData.medical_history || "",
+        medications:     noteData.meds || noteData.medications || [],
+        allergies:       noteData.allergies || [],
         status:          "draft",
-        note_type:       noteData.note_type || "ED Visit",
-        template_id:     noteData.template_id || null,
+        note_type:       noteData.note_type || "progress_note",
         patient_name:    noteData.patient_name || patient.name || "",
       };
       const created = await base44.entities.ClinicalNote.create(payload);
       queryClient.invalidateQueries({ queryKey:["clinicalNotes"] });
       toast.success("Note created — opening Studio");
-      navigate(`${createPageUrl("ClinicalNoteStudio")}?noteId=${created.id}`);
+      navigate(`/NoteDetail?noteId=${created.id}`);
     } catch(err) {
       toast.error("Failed to create note: " + err.message);
     }

@@ -247,6 +247,12 @@ export default function NursingFlowsheet() {
   const totalIn  = ioRows.filter(r=>r.in_out==="IN").reduce((s,r)=>s+(+r.amount||0),0);
   const totalOut = ioRows.filter(r=>r.in_out==="OUT").reduce((s,r)=>s+(+r.amount||0),0);
 
+  // Check for restock needs
+  useEffect(() => {
+    const needsRestock = crashCartItems.filter(item => item.qty <= item.minQty);
+    setRestockNeeded(needsRestock);
+  }, [crashCartItems]);
+
   // ── Add vital row ─────────────────────────────────────────────────
   const addVitalRow = () => {
     if (!newVitals.time) return;
@@ -435,12 +441,97 @@ Generate a complete, professional nursing ${tmpl.label} suitable for the medical
     setNewFinding({ time:nowStr(), text:"", alertMD:"no" });
   };
 
+  // ── Crash Cart helpers ────────────────────────────────────────────
+  const logCrashCartUsage = () => {
+    if (!newUsage.itemId || !newUsage.qty) return;
+    const item = crashCartItems.find(i => i.id === +newUsage.itemId);
+    if (!item) return;
+
+    // Update item quantity
+    setCrashCartItems(prev => prev.map(i => 
+      i.id === +newUsage.itemId 
+        ? { ...i, qty: Math.max(0, i.qty - +newUsage.qty), used: i.used + +newUsage.qty }
+        : i
+    ));
+
+    // Log usage
+    const logEntry = {
+      id: Date.now(),
+      time: nowStr(),
+      itemName: item.name,
+      qty: +newUsage.qty,
+      event: newUsage.event,
+      note: newUsage.note,
+      loggedBy: "Nurse Kim",
+    };
+    setUsageLog(prev => [logEntry, ...prev]);
+
+    // Check if restock needed
+    const newQty = item.qty - +newUsage.qty;
+    if (newQty <= item.minQty && !restockNeeded.find(r => r.id === item.id)) {
+      setRestockNeeded(prev => [...prev, { ...item, qtyAfterUse: newQty }]);
+      // Auto-alert
+      const a = {
+        id: Date.now()+1, type:"other", icon:"🚨", label:"Crash Cart Restock",
+        priority:"URGENT", time:nowStr(),
+        text:`${item.name} is below minimum stock (${newQty}/${item.minQty}). Restock required.`,
+        acknowledged:false
+      };
+      setAlerts(prev => [a, ...prev]);
+    }
+
+    setNewUsage({ itemId:null, qty:1, event:"", note:"" });
+  };
+
+  const restockItem = (itemId) => {
+    const item = crashCartItems.find(i => i.id === itemId);
+    if (!item) return;
+    
+    // Reset to original quantity (approximate)
+    const originalQty = item.qty + item.used;
+    setCrashCartItems(prev => prev.map(i =>
+      i.id === itemId ? { ...i, qty: originalQty, used: 0 } : i
+    ));
+    setRestockNeeded(prev => prev.filter(r => r.id !== itemId));
+    
+    // Log restock
+    setUsageLog(prev => [{
+      id: Date.now(),
+      time: nowStr(),
+      itemName: item.name,
+      qty: 0,
+      event: "RESTOCKED",
+      note: `Item restocked to ${originalQty} units`,
+      loggedBy: "Nurse Kim",
+    }, ...prev]);
+  };
+
+  // ── Crash Cart Inventory state ───────────────────────────────────
+  const [crashCartItems, setCrashCartItems] = useState([
+    { id:1, name:"Epinephrine 1mg/mL", category:"Medication", location:"Drawer 1", qty:10, minQty:5, used:0 },
+    { id:2, name:"Atropine 0.5mg", category:"Medication", location:"Drawer 1", qty:8, minQty:4, used:0 },
+    { id:3, name:"Amiodarone 150mg", category:"Medication", location:"Drawer 2", qty:6, minQty:3, used:0 },
+    { id:4, name:"Lidocaine 100mg", category:"Medication", location:"Drawer 2", qty:5, minQty:3, used:0 },
+    { id:5, name:"Adenosine 6mg", category:"Medication", location:"Drawer 2", qty:4, minQty:2, used:0 },
+    { id:6, name:"Sodium Bicarbonate 50mEq", category:"Medication", location:"Drawer 3", qty:6, minQty:3, used:0 },
+    { id:7, name:"Calcium Chloride 1g", category:"Medication", location:"Drawer 3", qty:5, minQty:3, used:0 },
+    { id:8, name:"D50W 50mL", category:"Medication", location:"Drawer 3", qty:8, minQty:4, used:0 },
+    { id:9, name:"18G IV Catheter", category:"Supply", location:"Top Drawer", qty:15, minQty:8, used:0 },
+    { id:10, name:"ET Tube 7.5mm", category:"Supply", location:"Airway Drawer", qty:4, minQty:2, used:0 },
+    { id:11, name:"10mL Syringe", category:"Supply", location:"Top Drawer", qty:25, minQty:10, used:0 },
+    { id:12, name:"Defib Pads (Adult)", category:"Supply", location:"Side Panel", qty:3, minQty:2, used:0 },
+  ]);
+  const [usageLog, setUsageLog] = useState([]);
+  const [newUsage, setNewUsage] = useState({ itemId:null, qty:1, event:"", note:"" });
+  const [restockNeeded, setRestockNeeded] = useState([]);
+
   const TABS = [
     { id:"flowsheet", label:"Flowsheet",    icon:"📊", badge: null },
     { id:"chat",      label:"Provider Chat",icon:"💬", badge: unackAlerts > 0 ? unackAlerts : null },
     { id:"alerts",    label:"Alerts",       icon:"🔔", badge: unackAlerts > 0 ? unackAlerts : null, badgeColor:C.red },
     { id:"orders",    label:"Orders",       icon:"📋", badge: pendingOrders > 0 ? pendingOrders : null, badgeColor:C.amber },
     { id:"labs",      label:"Labs & Meds",  icon:"🧪", badge: null },
+    { id:"crashcart", label:"Crash Cart",   icon:"🚨", badge: restockNeeded.length > 0 ? restockNeeded.length : null, badgeColor:C.red },
     { id:"summary",   label:"AI Summary",   icon:"✦",  badge: null },
   ];
 
@@ -1039,6 +1130,145 @@ Generate a complete, professional nursing ${tmpl.label} suitable for the medical
                     {findings.length === 0 && <div style={{ textAlign:"center", padding:"12px", color:C.muted, fontSize:12 }}>No findings added yet.</div>}
                   </div>
                 </Card>
+              </motion.div>
+            )}
+
+            {/* ════════════════ CRASH CART TAB ════════════════ */}
+            {activeTab === "crashcart" && (
+              <motion.div key="crashcart" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.15}} style={{ flex:1, overflowY:"auto", padding:"16px 18px", display:"flex", flexDirection:"column", gap:16 }}>
+
+                {/* Header */}
+                <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
+                  <div style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:700, color:C.bright }}>Crash Cart Inventory</div>
+                  {restockNeeded.length > 0 && (
+                    <div style={{ padding:"4px 12px", borderRadius:8, background:"rgba(255,92,108,.12)", border:"1px solid rgba(255,92,108,.3)", fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:C.red, animation:"pulse 1.8s infinite" }}>
+                      {restockNeeded.length} ITEM{restockNeeded.length>1?"S":""} NEED RESTOCK
+                    </div>
+                  )}
+                </div>
+
+                {/* Restock alerts */}
+                {restockNeeded.length > 0 && (
+                  <Card title="RESTOCK REQUIRED" icon="⚠️" color={C.red}>
+                    <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                      {restockNeeded.map(item => (
+                        <div key={item.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 12px", borderRadius:9, background:"rgba(255,92,108,.08)", border:"1px solid rgba(255,92,108,.25)" }}>
+                          <span style={{ fontSize:18 }}>🚨</span>
+                          <div style={{ flex:1 }}>
+                            <div style={{ fontWeight:700, color:C.bright, fontSize:13 }}>{item.name}</div>
+                            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.muted, marginTop:2 }}>
+                              {item.location} · Current: {item.qtyAfterUse} / Min: {item.minQty}
+                            </div>
+                          </div>
+                          <Btn onClick={()=>restockItem(item.id)} color={C.green} small>✓ Mark Restocked</Btn>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
+
+                {/* Log usage */}
+                <Card title="LOG CRASH CART USAGE" icon="📝" color={C.amber}>
+                  <div style={{ display:"grid", gridTemplateColumns:"2fr 80px 2fr 1fr auto", gap:8, alignItems:"end", marginBottom:12 }}>
+                    <div>
+                      <Label>ITEM USED</Label>
+                      <select value={newUsage.itemId||""} onChange={e=>setNewUsage(p=>({...p,itemId:e.target.value}))} style={{ ...inputS, cursor:"pointer" }}>
+                        <option value="">Select item…</option>
+                        {crashCartItems.map(item => (
+                          <option key={item.id} value={item.id}>
+                            {item.name} ({item.qty} available)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <Label>QTY</Label>
+                      <input value={newUsage.qty} onChange={e=>setNewUsage(p=>({...p,qty:e.target.value}))} type="number" min="1" style={inputS} />
+                    </div>
+                    <div>
+                      <Label>EVENT / REASON</Label>
+                      <input value={newUsage.event} onChange={e=>setNewUsage(p=>({...p,event:e.target.value}))} placeholder="Code Blue, Rapid Response…" style={inputS} />
+                    </div>
+                    <div>
+                      <Label>NOTE</Label>
+                      <input value={newUsage.note} onChange={e=>setNewUsage(p=>({...p,note:e.target.value}))} placeholder="Optional note…" style={inputS} />
+                    </div>
+                    <Btn onClick={logCrashCartUsage} color={C.amber} small style={{ marginBottom:1 }}>+ Log Use</Btn>
+                  </div>
+
+                  {/* Recent usage log */}
+                  {usageLog.length > 0 && (
+                    <div style={{ marginTop:12 }}>
+                      <Label style={{ marginBottom:8 }}>RECENT USAGE</Label>
+                      <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                        {usageLog.slice(0,5).map(log => (
+                          <div key={log.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:8, background: log.event==="RESTOCKED"?"rgba(46,204,113,.06)":"rgba(245,166,35,.06)", border:`1px solid ${log.event==="RESTOCKED"?"rgba(46,204,113,.2)":"rgba(245,166,35,.2)"}` }}>
+                            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.dim, flexShrink:0 }}>{log.time}</span>
+                            <span style={{ fontWeight:700, fontSize:12, color:C.bright, flex:1 }}>{log.itemName}</span>
+                            {log.event !== "RESTOCKED" && <Pill color={C.amber}>−{log.qty}</Pill>}
+                            {log.event && <span style={{ fontSize:11, color:C.dim }}>{log.event}</span>}
+                            {log.note && <span style={{ fontSize:10, color:C.muted, fontStyle:"italic" }}>{log.note}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </Card>
+
+                {/* Inventory grid by category */}
+                {["Medication", "Supply"].map(cat => {
+                  const items = crashCartItems.filter(i => i.category === cat);
+                  return (
+                    <Card key={cat} title={`${cat.toUpperCase()} INVENTORY`} icon={cat==="Medication"?"💊":"📦"} color={cat==="Medication"?C.purple:C.blue}>
+                      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))", gap:10 }}>
+                        {items.map(item => {
+                          const isLow = item.qty <= item.minQty;
+                          const pct = Math.min(100, (item.qty / (item.qty + item.used)) * 100);
+                          return (
+                            <div key={item.id} style={{ padding:"12px", borderRadius:10, background: isLow?"rgba(255,92,108,.08)":C.edge, border:`1px solid ${isLow?"rgba(255,92,108,.3)":C.border}`, transition:"all .15s" }}>
+                              <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:8 }}>
+                                <div style={{ flex:1 }}>
+                                  <div style={{ fontWeight:700, fontSize:12, color:C.bright, lineHeight:1.3 }}>{item.name}</div>
+                                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.muted, marginTop:2 }}>{item.location}</div>
+                                </div>
+                                {isLow && <span style={{ fontSize:16, marginLeft:4 }}>⚠️</span>}
+                              </div>
+
+                              {/* Progress bar */}
+                              <div style={{ height:6, borderRadius:3, background:C.border, overflow:"hidden", marginBottom:8 }}>
+                                <div style={{ height:"100%", width:`${pct}%`, background: isLow?C.red:C.green, transition:"width .3s" }} />
+                              </div>
+
+                              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, fontWeight:700, color: isLow?C.red:C.text }}>
+                                  {item.qty} / {item.minQty} min
+                                </div>
+                                {item.used > 0 && <Pill color={C.amber} style={{ fontSize:7 }}>−{item.used} USED</Pill>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </Card>
+                  );
+                })}
+
+                {/* Full usage history */}
+                {usageLog.length > 5 && (
+                  <Card title="COMPLETE USAGE HISTORY" icon="📜" color={C.dim}>
+                    <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+                      {usageLog.map(log => (
+                        <div key={log.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 10px", borderRadius:7, background:C.edge, fontSize:11 }}>
+                          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.dim, flexShrink:0 }}>{log.time}</span>
+                          <span style={{ fontWeight:600, color:C.text, flex:1 }}>{log.itemName}</span>
+                          {log.event !== "RESTOCKED" && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.amber }}>−{log.qty}</span>}
+                          <span style={{ fontSize:10, color:C.muted }}>{log.event}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
+
               </motion.div>
             )}
 

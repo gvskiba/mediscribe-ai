@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import NursingFlowsheet from './pages/NursingFlowsheet';
 import AutoCoder from './pages/AutoCoder';
+import ClinicalDecisionSupport from './pages/ClinicalDecisionSupport';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -57,6 +58,11 @@ const AuthenticatedApp = () => {
       <Route path="/AutoCoder" element={
         <LayoutWrapper currentPageName="AutoCoder">
           <AutoCoder />
+        </LayoutWrapper>
+      } />
+      <Route path="/ClinicalDecisionSupport" element={
+        <LayoutWrapper currentPageName="ClinicalDecisionSupport">
+          <ClinicalDecisionSupport />
         </LayoutWrapper>
       } />
       {Object.entries(Pages).map(([path, Page]) => (

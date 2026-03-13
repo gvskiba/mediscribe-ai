@@ -208,6 +208,14 @@ export default function NursingFlowsheet() {
   const [generatingNote, setGeneratingNote] = useState(false);
   const [generatedNote, setGeneratedNote] = useState("");
 
+  // ── Dosing Calculator state ──────────────────────────────────────
+  const [patientWeight, setPatientWeight] = useState("");
+  const [drugName, setDrugName] = useState("");
+  const [dose, setDose] = useState("");
+  const [concentration, setConcentration] = useState("");
+  const [calculatedRate, setCalculatedRate] = useState(null);
+  const [savedCalculations, setSavedCalculations] = useState([]);
+
   // ── Crash Cart Inventory state ───────────────────────────────────
   const [crashCartItems, setCrashCartItems] = useState([
     // Medications
@@ -524,12 +532,39 @@ Generate a complete, professional nursing ${tmpl.label} suitable for the medical
     }, ...prev]);
   };
 
+  // ── Calculate dosing ──────────────────────────────────────────────
+  const calculateDosing = () => {
+    if (!patientWeight || !dose || !concentration) return;
+    
+    const weight = parseFloat(patientWeight);
+    const doseRate = parseFloat(dose);
+    const conc = parseFloat(concentration);
+    
+    // Calculate mL/hr = (dose mcg/kg/min × weight kg × 60 min/hr) / (concentration mcg/mL)
+    const rate = (doseRate * weight * 60) / conc;
+    
+    const result = {
+      id: Date.now(),
+      time: nowStr(),
+      drug: drugName,
+      weight: weight,
+      dose: doseRate,
+      concentration: conc,
+      rate: rate.toFixed(2),
+      calculatedBy: "Nurse Kim",
+    };
+    
+    setCalculatedRate(result);
+    setSavedCalculations(prev => [result, ...prev]);
+  };
+
   const TABS = [
     { id:"flowsheet", label:"Flowsheet",    icon:"📊", badge: null },
     { id:"chat",      label:"Provider Chat",icon:"💬", badge: unackAlerts > 0 ? unackAlerts : null },
     { id:"alerts",    label:"Alerts",       icon:"🔔", badge: unackAlerts > 0 ? unackAlerts : null, badgeColor:C.red },
     { id:"orders",    label:"Orders",       icon:"📋", badge: pendingOrders > 0 ? pendingOrders : null, badgeColor:C.amber },
     { id:"labs",      label:"Labs & Meds",  icon:"🧪", badge: null },
+    { id:"dosing",    label:"Dosing Calc",  icon:"🧮", badge: null },
     { id:"crashcart", label:"Crash Cart",   icon:"🚨", badge: restockNeeded.length > 0 ? restockNeeded.length : null, badgeColor:C.red },
     { id:"summary",   label:"AI Summary",   icon:"✦",  badge: null },
   ];
@@ -1129,6 +1164,181 @@ Generate a complete, professional nursing ${tmpl.label} suitable for the medical
                     {findings.length === 0 && <div style={{ textAlign:"center", padding:"12px", color:C.muted, fontSize:12 }}>No findings added yet.</div>}
                   </div>
                 </Card>
+              </motion.div>
+            )}
+
+            {/* ════════════════ DOSING CALCULATOR TAB ════════════════ */}
+            {activeTab === "dosing" && (
+              <motion.div key="dosing" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.15}} style={{ flex:1, overflowY:"auto", padding:"16px 18px", display:"flex", flexDirection:"column", gap:16 }}>
+
+                <div style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:700, color:C.bright, marginBottom:8 }}>Weight-Based Dosing Calculator</div>
+
+                {/* Calculator */}
+                <Card title="CALCULATE INFUSION RATE" icon="🧮" color={C.teal}>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:16 }}>
+                    <div>
+                      <Label>PATIENT WEIGHT (kg)</Label>
+                      <input 
+                        value={patientWeight} 
+                        onChange={e=>setPatientWeight(e.target.value)} 
+                        placeholder="e.g., 70" 
+                        type="number" 
+                        step="0.1"
+                        style={inputS} 
+                      />
+                    </div>
+                    <div>
+                      <Label>DRUG NAME</Label>
+                      <input 
+                        value={drugName} 
+                        onChange={e=>setDrugName(e.target.value)} 
+                        placeholder="e.g., Dopamine, Norepinephrine" 
+                        style={inputS} 
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:16 }}>
+                    <div>
+                      <Label>ORDERED DOSE (mcg/kg/min)</Label>
+                      <input 
+                        value={dose} 
+                        onChange={e=>setDose(e.target.value)} 
+                        placeholder="e.g., 5" 
+                        type="number" 
+                        step="0.1"
+                        style={inputS} 
+                      />
+                    </div>
+                    <div>
+                      <Label>CONCENTRATION (mcg/mL)</Label>
+                      <input 
+                        value={concentration} 
+                        onChange={e=>setConcentration(e.target.value)} 
+                        placeholder="e.g., 1600" 
+                        type="number"
+                        style={inputS} 
+                      />
+                      <div style={{ fontSize:9, color:C.muted, marginTop:4, lineHeight:1.4 }}>
+                        Standard: Dopamine 1600 mcg/mL, Norepinephrine 16 mcg/mL, Epinephrine 4 mcg/mL
+                      </div>
+                    </div>
+                  </div>
+
+                  <Btn onClick={calculateDosing} disabled={!patientWeight||!dose||!concentration} color={C.teal} style={{ width:"100%" }}>
+                    🧮 Calculate Infusion Rate
+                  </Btn>
+
+                  {calculatedRate && (
+                    <div style={{ marginTop:16, padding:"16px", background:"rgba(0,212,188,.08)", border:"1px solid rgba(0,212,188,.3)", borderRadius:12 }}>
+                      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:C.dim, marginBottom:8 }}>
+                        {calculatedRate.drug} · {calculatedRate.weight} kg · {calculatedRate.dose} mcg/kg/min
+                      </div>
+                      <div style={{ display:"flex", alignItems:"baseline", gap:8, marginBottom:4 }}>
+                        <span style={{ fontSize:11, color:C.muted }}>Infusion Rate:</span>
+                        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:32, fontWeight:700, color:C.teal }}>
+                          {calculatedRate.rate}
+                        </span>
+                        <span style={{ fontSize:16, color:C.text, fontWeight:700 }}>mL/hr</span>
+                      </div>
+                      <div style={{ fontSize:10, color:C.muted, fontFamily:"'JetBrains Mono',monospace" }}>
+                        Concentration: {calculatedRate.concentration} mcg/mL
+                      </div>
+                    </div>
+                  )}
+                </Card>
+
+                {/* Common Drug Presets */}
+                <Card title="QUICK PRESETS — STANDARD CONCENTRATIONS" icon="💊" color={C.purple}>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:8 }}>
+                    {[
+                      { drug:"Dopamine", conc:1600, range:"2-20 mcg/kg/min" },
+                      { drug:"Dobutamine", conc:1000, range:"2-20 mcg/kg/min" },
+                      { drug:"Norepinephrine", conc:16, range:"0.05-2 mcg/kg/min" },
+                      { drug:"Epinephrine", conc:4, range:"0.05-1 mcg/kg/min" },
+                      { drug:"Vasopressin", conc:20, range:"0.01-0.04 units/min (not weight-based)" },
+                      { drug:"Milrinone", conc:200, range:"0.375-0.75 mcg/kg/min" },
+                    ].map(preset => (
+                      <div 
+                        key={preset.drug} 
+                        onClick={()=>{ setDrugName(preset.drug); setConcentration(preset.conc.toString()); }}
+                        style={{ 
+                          padding:"10px 12px", 
+                          borderRadius:10, 
+                          background:C.edge, 
+                          border:`1px solid ${C.border}`,
+                          cursor:"pointer",
+                          transition:"all .15s"
+                        }}
+                        onMouseEnter={e=>{e.currentTarget.style.borderColor=`${C.purple}55`;e.currentTarget.style.background=`${C.purple}0a`;}}
+                        onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.edge;}}
+                      >
+                        <div style={{ fontWeight:700, fontSize:13, color:C.bright, marginBottom:3 }}>{preset.drug}</div>
+                        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.purple, marginBottom:3 }}>
+                          {preset.conc} mcg/mL
+                        </div>
+                        <div style={{ fontSize:9, color:C.muted, lineHeight:1.4 }}>
+                          Typical: {preset.range}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+
+                {/* Saved Calculations */}
+                {savedCalculations.length > 0 && (
+                  <Card title="RECENT CALCULATIONS" icon="📋" color={C.blue}>
+                    <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                      {savedCalculations.slice(0,10).map(calc => (
+                        <div key={calc.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 12px", borderRadius:9, background:C.edge, border:`1px solid ${C.border}` }}>
+                          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.dim, flexShrink:0 }}>{calc.time}</span>
+                          <div style={{ flex:1 }}>
+                            <div style={{ fontWeight:700, fontSize:13, color:C.bright, marginBottom:2 }}>{calc.drug}</div>
+                            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.muted }}>
+                              {calc.weight} kg × {calc.dose} mcg/kg/min @ {calc.concentration} mcg/mL
+                            </div>
+                          </div>
+                          <div style={{ textAlign:"right" }}>
+                            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:18, fontWeight:700, color:C.teal }}>
+                              {calc.rate}
+                            </div>
+                            <div style={{ fontSize:9, color:C.muted }}>mL/hr</div>
+                          </div>
+                          <button 
+                            onClick={()=>{ 
+                              setDrugName(calc.drug); 
+                              setPatientWeight(calc.weight.toString()); 
+                              setDose(calc.dose.toString()); 
+                              setConcentration(calc.concentration.toString());
+                            }}
+                            style={{ padding:"4px 10px", borderRadius:7, fontSize:10, fontWeight:700, cursor:"pointer", border:`1px solid ${C.blue}44`, background:"rgba(74,144,217,.1)", color:C.blue }}
+                          >
+                            Reload
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
+
+                {/* Reference Guide */}
+                <Card title="REFERENCE GUIDE" icon="📖" color={C.amber}>
+                  <div style={{ fontSize:12, color:C.text, lineHeight:1.7 }}>
+                    <div style={{ marginBottom:12 }}>
+                      <div style={{ fontWeight:700, color:C.bright, marginBottom:4 }}>Formula:</div>
+                      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:C.teal, background:C.edge, padding:"8px 10px", borderRadius:8, border:`1px solid ${C.border}` }}>
+                        Rate (mL/hr) = (Dose × Weight × 60) / Concentration
+                      </div>
+                    </div>
+                    <div style={{ fontSize:11, color:C.muted, lineHeight:1.6 }}>
+                      • Dose in mcg/kg/min<br/>
+                      • Weight in kg<br/>
+                      • Concentration in mcg/mL<br/>
+                      • Always verify with pharmacy and double-check calculations
+                    </div>
+                  </div>
+                </Card>
+
               </motion.div>
             )}
 

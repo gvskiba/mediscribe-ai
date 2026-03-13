@@ -153,6 +153,101 @@ export default function NursingFlowsheet() {
 
   // ── Tab state ─────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState("flowsheet");
+  
+  // ── Patient List state ────────────────────────────────────────────
+  const [patients, setPatients] = useState([
+    {
+      id: 1,
+      name: "Sarah Mitchell",
+      age: 45,
+      sex: "F",
+      mrn: "MRN-102456",
+      room: "TR-1",
+      bed: "A",
+      acuity: "HIGH",
+      diagnosis: "Septic shock, pneumonia",
+      expanded: false,
+      sbar: {
+        situation: "45F in septic shock from community-acquired pneumonia, on vasopressors.",
+        background: "Admitted 6hrs ago with fever, hypotension, tachycardia. Past medical history: DM2, HTN. No known allergies.",
+        assessment: "HR 118, BP 92/58 on Levophed 0.15 mcg/kg/min, RR 24, SpO₂ 94% on 4L NC, Temp 38.9°C. Alert but fatigued. Lungs with crackles RLL. Lactate 4.2, WBC 18.5. Receiving broad-spectrum antibiotics.",
+        recommendation: "Continue vasopressor support, serial lactates q4h, consider central line placement. Monitor for end-organ dysfunction. Awaiting culture results."
+      }
+    },
+    {
+      id: 2,
+      name: "Robert Chen",
+      age: 68,
+      sex: "M",
+      mrn: "MRN-204881",
+      room: "TR-2",
+      bed: "B",
+      acuity: "MEDIUM",
+      diagnosis: "NSTEMI",
+      expanded: false,
+      sbar: {
+        situation: "68M with NSTEMI, chest pain resolved post-nitro and morphine.",
+        background: "Presented with substernal chest pressure × 2hrs. Known CAD, prior stent 2019. On aspirin, clopidogrel at home.",
+        assessment: "Chest pain 0/10 currently. HR 72, BP 128/76, SpO₂ 98% on RA. Troponin trending down (0.8 → 0.6). EKG with ST depressions V4-V6 improving. Cardiology consulted.",
+        recommendation: "Continue ACS protocol. Serial troponins. Plan for cath lab in AM. Monitor for recurrent chest pain or arrhythmias."
+      }
+    },
+    {
+      id: 3,
+      name: "Maria Rodriguez",
+      age: 34,
+      sex: "F",
+      mrn: "MRN-308922",
+      room: "TR-3",
+      bed: "A",
+      acuity: "LOW",
+      diagnosis: "Viral gastroenteritis",
+      expanded: false,
+      sbar: {
+        situation: "34F with viral gastroenteritis, improving with IV hydration.",
+        background: "3 days N/V/D, unable to tolerate PO. No recent travel. No blood in stool.",
+        assessment: "HR 88, BP 118/72, afebrile. Abdomen soft, mild diffuse tenderness. Tolerating small sips. Last emesis 4hrs ago. BMP improved after 2L NS.",
+        recommendation: "Continue IV hydration. Advance diet as tolerated. Antiemetics PRN. Consider discharge if tolerating PO and no recurrent vomiting."
+      }
+    },
+    {
+      id: 4,
+      name: "James Patterson",
+      age: 72,
+      sex: "M",
+      mrn: "MRN-411267",
+      room: "TR-4",
+      bed: "C",
+      acuity: "HIGH",
+      diagnosis: "Acute stroke, tPA candidate",
+      expanded: false,
+      sbar: {
+        situation: "72M acute ischemic stroke, within tPA window, neurology evaluating.",
+        background: "Last seen normal 2hrs ago. Sudden onset L-sided weakness and slurred speech. NIHSS 8. No contraindications to tPA identified.",
+        assessment: "Neuro: L facial droop, L arm drift, dysarthria. NIHSS 8. BP 165/92, HR 78, SpO₂ 97% on RA. CT head negative for hemorrhage. Glucose 145.",
+        recommendation: "Awaiting neurology for tPA administration. NPO. Frequent neuro checks q15min. BP management per stroke protocol. Family at bedside, informed of risks/benefits."
+      }
+    },
+    {
+      id: 5,
+      name: "Emily Johnson",
+      age: 28,
+      sex: "F",
+      mrn: "MRN-509334",
+      room: "TR-5",
+      bed: "B",
+      acuity: "MEDIUM",
+      diagnosis: "Asthma exacerbation",
+      expanded: false,
+      sbar: {
+        situation: "28F with moderate asthma exacerbation, responding to treatment.",
+        background: "3 days progressive SOB and cough. Non-compliant with home inhalers. No recent steroid use.",
+        assessment: "RR 22, SpO₂ 92% on 2L NC (was 88% on RA). Mild expiratory wheezes bilaterally. Speaking in full sentences. Peak flow 60% predicted. Received albuterol/ipratropium nebs × 3, methylprednisolone 125mg IV.",
+        recommendation: "Continue nebulizer treatments q4h. Monitor respiratory status. Plan for admission if no improvement. Respiratory therapy following."
+      }
+    }
+  ]);
+  const [selectedPatientId, setSelectedPatientId] = useState(null);
 
   // ── Patient context ───────────────────────────────────────────────
   const [patient] = useState({
@@ -558,7 +653,15 @@ Generate a complete, professional nursing ${tmpl.label} suitable for the medical
     setSavedCalculations(prev => [result, ...prev]);
   };
 
+  // ── Toggle patient expansion ──────────────────────────────────────
+  const togglePatient = (patientId) => {
+    setPatients(prev => prev.map(p => 
+      p.id === patientId ? { ...p, expanded: !p.expanded } : p
+    ));
+  };
+
   const TABS = [
+    { id:"patients",  label:"Patients",     icon:"👥", badge: patients.length },
     { id:"flowsheet", label:"Flowsheet",    icon:"📊", badge: null },
     { id:"chat",      label:"Provider Chat",icon:"💬", badge: unackAlerts > 0 ? unackAlerts : null },
     { id:"alerts",    label:"Alerts",       icon:"🔔", badge: unackAlerts > 0 ? unackAlerts : null, badgeColor:C.red },
@@ -696,6 +799,247 @@ Generate a complete, professional nursing ${tmpl.label} suitable for the medical
         {/* ── Tab content ─────────────────────────────────────────── */}
         <div style={{ flex:1, overflow:"hidden", display:"flex", flexDirection:"column" }}>
           <AnimatePresence mode="wait">
+
+            {/* ════════════════ PATIENTS TAB ════════════════ */}
+            {activeTab === "patients" && (
+              <motion.div key="patients" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.15}} style={{ flex:1, overflowY:"auto", padding:"16px 18px" }}>
+
+                <div style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:700, color:C.bright, marginBottom:16 }}>
+                  Active Patients ({patients.length})
+                </div>
+
+                <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                  {patients.map(pt => {
+                    const acuityConfig = {
+                      HIGH: { color: C.red, bg: "rgba(255,92,108,.12)", border: "rgba(255,92,108,.35)" },
+                      MEDIUM: { color: C.amber, bg: "rgba(245,166,35,.1)", border: "rgba(245,166,35,.3)" },
+                      LOW: { color: C.green, bg: "rgba(46,204,113,.08)", border: "rgba(46,204,113,.25)" }
+                    }[pt.acuity];
+
+                    return (
+                      <motion.div 
+                        key={pt.id}
+                        initial={{opacity:0,y:10}} 
+                        animate={{opacity:1,y:0}}
+                        style={{ 
+                          background: C.panel, 
+                          border: `1px solid ${C.border}`, 
+                          borderRadius: 14, 
+                          overflow: "hidden",
+                          transition: "all .2s"
+                        }}
+                      >
+                        {/* Patient Header - Clickable */}
+                        <div 
+                          onClick={() => togglePatient(pt.id)}
+                          style={{ 
+                            padding: "14px 16px", 
+                            cursor: "pointer",
+                            background: pt.expanded ? "rgba(0,212,188,.04)" : "transparent",
+                            borderBottom: pt.expanded ? `1px solid ${C.border}` : "none",
+                            transition: "all .15s"
+                          }}
+                        >
+                          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                            {/* Expansion indicator */}
+                            <div style={{ 
+                              width: 24, 
+                              height: 24, 
+                              borderRadius: 6, 
+                              background: acuityConfig.bg, 
+                              border: `1px solid ${acuityConfig.border}`,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: 12,
+                              color: acuityConfig.color,
+                              fontWeight: 700,
+                              transition: "transform .2s",
+                              transform: pt.expanded ? "rotate(90deg)" : "rotate(0deg)"
+                            }}>
+                              ▶
+                            </div>
+
+                            {/* Patient Info */}
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                                <span style={{ fontWeight:700, fontSize:15, color:C.bright }}>{pt.name}</span>
+                                <Pill color={acuityConfig.color}>{pt.acuity}</Pill>
+                                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.dim }}>
+                                  {pt.age}y {pt.sex} · {pt.mrn}
+                                </span>
+                              </div>
+                              <div style={{ fontSize:12, color:C.text }}>
+                                {pt.diagnosis}
+                              </div>
+                              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.muted, marginTop:3 }}>
+                                Room {pt.room}-{pt.bed}
+                              </div>
+                            </div>
+
+                            {/* Quick action button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedPatientId(pt.id);
+                                setActiveTab("flowsheet");
+                              }}
+                              style={{
+                                padding: "6px 12px",
+                                borderRadius: 8,
+                                fontSize: 10,
+                                fontWeight: 700,
+                                cursor: "pointer",
+                                border: `1px solid ${C.border}`,
+                                background: C.edge,
+                                color: C.teal,
+                                transition: "all .15s"
+                              }}
+                            >
+                              Open Chart
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* SBAR Dropdown Content */}
+                        <AnimatePresence>
+                          {pt.expanded && (
+                            <motion.div
+                              initial={{height:0,opacity:0}}
+                              animate={{height:"auto",opacity:1}}
+                              exit={{height:0,opacity:0}}
+                              transition={{duration:.2}}
+                              style={{ overflow:"hidden" }}
+                            >
+                              <div style={{ padding:"16px", background:"rgba(0,0,0,.15)" }}>
+                                
+                                {/* Situation */}
+                                <div style={{ marginBottom:14 }}>
+                                  <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
+                                    <div style={{ width:6, height:6, borderRadius:"50%", background:C.blue }} />
+                                    <Label style={{ margin:0 }}>SITUATION</Label>
+                                  </div>
+                                  <div style={{ 
+                                    padding:"10px 12px", 
+                                    background:"rgba(74,144,217,.08)", 
+                                    border:"1px solid rgba(74,144,217,.25)",
+                                    borderRadius:10,
+                                    fontSize:12,
+                                    color:C.text,
+                                    lineHeight:1.7
+                                  }}>
+                                    {pt.sbar.situation}
+                                  </div>
+                                </div>
+
+                                {/* Background */}
+                                <div style={{ marginBottom:14 }}>
+                                  <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
+                                    <div style={{ width:6, height:6, borderRadius:"50%", background:C.purple }} />
+                                    <Label style={{ margin:0 }}>BACKGROUND</Label>
+                                  </div>
+                                  <div style={{ 
+                                    padding:"10px 12px", 
+                                    background:"rgba(155,109,255,.08)", 
+                                    border:"1px solid rgba(155,109,255,.25)",
+                                    borderRadius:10,
+                                    fontSize:12,
+                                    color:C.text,
+                                    lineHeight:1.7
+                                  }}>
+                                    {pt.sbar.background}
+                                  </div>
+                                </div>
+
+                                {/* Assessment */}
+                                <div style={{ marginBottom:14 }}>
+                                  <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
+                                    <div style={{ width:6, height:6, borderRadius:"50%", background:C.amber }} />
+                                    <Label style={{ margin:0 }}>ASSESSMENT</Label>
+                                  </div>
+                                  <div style={{ 
+                                    padding:"10px 12px", 
+                                    background:"rgba(245,166,35,.08)", 
+                                    border:"1px solid rgba(245,166,35,.25)",
+                                    borderRadius:10,
+                                    fontSize:12,
+                                    color:C.text,
+                                    lineHeight:1.7
+                                  }}>
+                                    {pt.sbar.assessment}
+                                  </div>
+                                </div>
+
+                                {/* Recommendation */}
+                                <div>
+                                  <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
+                                    <div style={{ width:6, height:6, borderRadius:"50%", background:C.green }} />
+                                    <Label style={{ margin:0 }}>RECOMMENDATION</Label>
+                                  </div>
+                                  <div style={{ 
+                                    padding:"10px 12px", 
+                                    background:"rgba(46,204,113,.08)", 
+                                    border:"1px solid rgba(46,204,113,.25)",
+                                    borderRadius:10,
+                                    fontSize:12,
+                                    color:C.text,
+                                    lineHeight:1.7
+                                  }}>
+                                    {pt.sbar.recommendation}
+                                  </div>
+                                </div>
+
+                                {/* Action buttons */}
+                                <div style={{ display:"flex", gap:8, marginTop:12, justifyContent:"flex-end" }}>
+                                  <Btn 
+                                    onClick={() => {
+                                      const sbarText = `SBAR - ${pt.name}\n\nSITUATION:\n${pt.sbar.situation}\n\nBACKGROUND:\n${pt.sbar.background}\n\nASSESSMENT:\n${pt.sbar.assessment}\n\nRECOMMENDATION:\n${pt.sbar.recommendation}`;
+                                      navigator.clipboard.writeText(sbarText);
+                                    }}
+                                    color={C.blue} 
+                                    small
+                                  >
+                                    📋 Copy SBAR
+                                  </Btn>
+                                  <Btn 
+                                    onClick={() => {
+                                      setChatInput(`Re: ${pt.name} (${pt.room}) - `);
+                                      setActiveTab("chat");
+                                    }}
+                                    color={C.teal} 
+                                    small
+                                  >
+                                    💬 Message MD
+                                  </Btn>
+                                </div>
+
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+
+                {/* Summary stats */}
+                <div style={{ marginTop:20, display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10 }}>
+                  {[
+                    { label:"High Acuity", count: patients.filter(p=>p.acuity==="HIGH").length, color:C.red },
+                    { label:"Medium Acuity", count: patients.filter(p=>p.acuity==="MEDIUM").length, color:C.amber },
+                    { label:"Low Acuity", count: patients.filter(p=>p.acuity==="LOW").length, color:C.green }
+                  ].map(stat => (
+                    <div key={stat.label} style={{ padding:"12px", background:C.edge, border:`1px solid ${C.border}`, borderRadius:10, textAlign:"center" }}>
+                      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:24, fontWeight:700, color:stat.color }}>
+                        {stat.count}
+                      </div>
+                      <div style={{ fontSize:10, color:C.muted, marginTop:2 }}>{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+              </motion.div>
+            )}
 
             {/* ════════════════ FLOWSHEET TAB ════════════════ */}
             {activeTab === "flowsheet" && (

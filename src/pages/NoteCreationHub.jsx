@@ -422,6 +422,7 @@ Write in formal clinical documentation style.`,
               description:"Complete note editing environment with tabbed workflow, AI assistance, and comprehensive documentation tools.",
               bullets:["Tabbed SOAP workflow","AI-powered analysis","Full clinical toolkit"],
               badge:"Studio",
+              routeTo:"ClinicalNoteStudio",
             },
             {
               mode:"templates",
@@ -437,7 +438,7 @@ Write in formal clinical documentation style.`,
             <motion.div
               key={m.mode}
               whileHover={{ y:-3, boxShadow:`0 12px 40px ${m.color}18` }}
-              onClick={() => m.mode === "studio" ? launchInStudio({}) : goMode(m.mode)}
+              onClick={() => m.routeTo ? navigate(createPageUrl(m.routeTo)) : goMode(m.mode)}
               style={{
                 background:C.panel, border:`1px solid ${C.border}`, borderRadius:18, overflow:"hidden",
                 cursor:"pointer", transition:"all .18s", position:"relative",

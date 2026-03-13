@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { AlertCircle, Clock, Activity, Pill, Settings, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import VitalsTrendChart from '../components/cds/VitalsTrendChart';
 
 export default function ClinicalDecisionSupport() {
   const [activeTab, setActiveTab] = useState('alerts');
@@ -385,12 +386,18 @@ Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) any addit
             <div>
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: C.bright }}>🔴 SEP-1 Bundle Tracker</div>
-                <div style={{ fontSize: 12, color: C.dim, marginTop: 4 }}>CMS Sepsis-1 compliance · Encounter #29341</div>
+                <div style={{ fontSize: 12, color: C.dim, marginTop: 4 }}>CMS Sepsis-1 compliance · Encounter #29341 · T=0 at 06:42 presentation</div>
               </div>
+
+              {/* Trend Chart */}
+              <VitalsTrendChart C={C} />
               
               <div style={{ background: 'linear-gradient(135deg,rgba(255,92,108,.12),rgba(245,166,35,.06))', border: '1px solid rgba(255,92,108,.3)', borderRadius: 11, padding: '16px 20px', marginBottom: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700, color: C.bright }}>SEP-1 Hour-1 Bundle</div>
+                  <div>
+                    <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700, color: C.bright }}>SEP-1 Hour-1 Bundle</div>
+                    <div style={{ fontSize: 11, color: C.dim, marginTop: 3 }}>Surviving Sepsis Campaign 2021 · CMS Core Measure</div>
+                  </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 28, fontWeight: 700, color: C.amber, lineHeight: 1 }}>57%</div>
                     <div style={{ fontSize: 10, color: C.dim, marginTop: 2 }}>4 of 7 complete</div>
@@ -400,11 +407,63 @@ Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) any addit
                   <div style={{ height: '100%', width: '57%', borderRadius: 3, background: 'linear-gradient(90deg,#ff5c6c,#f5a623)', transition: 'width 1s ease' }} />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', fontSize: 10, color: C.dim }}>
-                  <span>T+0 Presentation</span>
-                  <div style={{ flex: 1, height: 1, background: C.border, margin: '0 8px' }} />
-                  <span>T+60 min Target</span>
-                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.amber, fontWeight: 600, marginLeft: 'auto' }}>⏱ 3h 12m elapsed</div>
+                  <span style={{ color: C.dim }}>T+0 Presentation</span>
+                  <div style={{ flex: 1, height: 1, background: C.border, margin: '0 8px', position: 'relative' }}>
+                    <div style={{ position: 'absolute', left: '57%', top: -3, width: 8, height: 8, borderRadius: '50%', background: C.amber }} />
+                  </div>
+                  <span style={{ color: C.dim }}>T+60 min Target</span>
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.amber, fontWeight: 600, marginLeft: 12 }}>⏱ 3h 12m elapsed</div>
                 </div>
+              </div>
+
+              {/* Bundle Items Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+                {[
+                  { name: 'Lactate Measurement', target: 'T+0–60m', status: 'done', detail: 'Serum lactate obtained at presentation. Result: 4.2 mmol/L (critically elevated).', time: '✓ Completed 06:50 · T+8m', timeColor: C.green },
+                  { name: 'Blood Cultures × 2 Sets', target: 'Before ABX', status: 'overdue', detail: 'Two sets from separate sites required before antibiotic administration. Status unconfirmed.', time: '⚠ OVERDUE — ABX given at 09:02', timeColor: C.red },
+                  { name: 'Broad-Spectrum Antibiotics', target: 'T+0–60m', status: 'done', detail: 'Vancomycin + Pip/Tazo ordered and administered. Appropriate empiric coverage for urosepsis.', time: '✓ Administered 09:02 · T+140m (late)', timeColor: C.green },
+                  { name: '30 mL/kg Crystalloid Bolus', target: 'T+0–60m', status: 'done', detail: 'Weight 82kg → target 2,460mL. Normal saline 3L ordered and infusing. 2,100mL given so far.', time: '✓ In progress — 2,100/2,460 mL', timeColor: C.green },
+                  { name: 'Vasopressors if MAP <65', target: 'After fluid', status: 'pending', detail: 'MAP currently 55 mmHg. After 30 mL/kg fluid, if MAP remains <65 mmHg, norepinephrine must be initiated.', time: '⏳ Pending — assess after fluid complete', timeColor: C.amber },
+                  { name: 'Stress-Dose Steroids', target: 'If vasopressor-dependent', status: 'done', detail: 'Hydrocortisone 200mg/day ordered for refractory septic shock. Appropriate for vasopressor-dependent patient.', time: '✓ Ordered 09:35', timeColor: C.green },
+                  { name: 'Repeat Lactate (if ≥2)', target: 'Within 2–4h', status: 'overdue', detail: 'Initial lactate 4.2 requires repeat within 2–4h to document clearance. Due by 10:50 AM.', time: '⚠ Due in 47 min — Order immediately', timeColor: C.red }
+                ].map((item, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      background: C.panel,
+                      borderRadius: 9,
+                      padding: '13px 14px',
+                      border: `1px solid ${item.status === 'done' ? 'rgba(46,204,113,.3)' : item.status === 'overdue' ? 'rgba(255,92,108,.35)' : 'rgba(245,166,35,.3)'}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                      <div style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 10,
+                        background: item.status === 'done' ? 'rgba(46,204,113,.15)' : item.status === 'overdue' ? 'rgba(255,92,108,.15)' : 'rgba(245,166,35,.12)',
+                        color: item.status === 'done' ? C.green : item.status === 'overdue' ? C.red : C.amber
+                      }}>
+                        {item.status === 'done' ? '✓' : item.status === 'overdue' ? '!' : '○'}
+                      </div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: C.bright, flex: 1 }}>{item.name}</div>
+                      <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: C.dim }}>{item.target}</div>
+                    </div>
+                    <div style={{ fontSize: 11, color: C.text, lineHeight: 1.4 }}>{item.detail}</div>
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, marginTop: 5, color: item.timeColor }}>{item.time}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Compliance Warning */}
+              <div style={{ padding: '12px 16px', background: 'rgba(245,166,35,.07)', border: '1px solid rgba(245,166,35,.25)', borderRadius: 9, fontSize: 12, color: C.text }}>
+                <strong style={{ color: C.amber }}>⚠ SEP-1 Compliance Risk:</strong> Two overdue elements (blood cultures + repeat lactate) may result in non-compliance with CMS SEP-1 quality measure. Document any clinical justification for deviation.
               </div>
             </div>
           )}

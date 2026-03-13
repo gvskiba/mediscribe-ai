@@ -33,13 +33,11 @@ export default function AutoCoder() {
 
   const styles = {
     page: { minHeight: '100vh', background: C.navy, color: C.text, fontFamily: "'DM Sans', sans-serif" },
-    navbar: { position: 'fixed', top: 0, left: 72, right: 0, height: 50, zIndex: 100, background: C.slate, borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 18px' },
-    vitalsBar: { position: 'fixed', top: 50, left: 72, right: 0, height: 38, zIndex: 99, background: C.navy, borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', padding: '0 18px', gap: 0, overflowX: 'auto' },
-    mainLayout: { position: 'fixed', top: 88, left: 72, right: 0, bottom: 95, display: 'flex', overflow: 'hidden' },
+    mainLayout: { display: 'flex', height: '100vh', overflow: 'hidden' },
     sidebar: { width: 220, minWidth: 220, background: C.slate, borderRight: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', overflowY: 'auto' },
     center: { flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' },
     aiPanel: { width: 295, minWidth: 295, background: C.slate, borderLeft: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
-    bottomNav: { position: 'fixed', bottom: 0, left: 72, right: 0, zIndex: 100, background: C.slate, borderTop: `1px solid ${C.border}` },
+    bottomNav: { position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, background: C.slate, borderTop: `1px solid ${C.border}` },
   };
 
   const tabs = ['icd10', 'cpt', 'em', 'billing', 'audit'];
@@ -62,52 +60,30 @@ export default function AutoCoder() {
     setAiLoading(true);
     try {
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Review this ED encounter and provide a brief coding analysis:
-
-Patient: Marcus Webb, 58M
-Encounter: #29341
-Chief Complaint: Fever with altered mental status
-Final Diagnosis: Septic Shock — Urinary Source
-Provider: Dr. Sarah Chen, MD
-
-Assigned Codes:
-- A41.51 (Sepsis due to E. coli) — Primary
-- R65.21 (Severe sepsis with septic shock)
-- N39.0 (UTI, unspecified)
-- E11.9 (Type 2 DM without complications)
-- I10 (Essential hypertension)
-- 99285 (ED E&M Level 5)
-
-Vitals: HR 118, BP 88/56, Temp 38.9°C, RR 24, SpO2 94%, GCS 13, Lactate 4.2
-
-Provide: (1) coding accuracy assessment, (2) any missed codes, (3) revenue optimization tips, (4) compliance notes. Keep response under 200 words, use emoji bullets.`
+        prompt: `You are a medical coding assistant. Provide general guidance on ICD-10/CPT coding best practices for emergency department encounters. Include: (1) common coding pitfalls, (2) documentation requirements, (3) revenue optimization tips. Keep response under 200 words, use emoji bullets.`
       });
       setAiAnalysisText(result);
     } catch (e) {
-      setAiAnalysisText('⚠️ AI analysis unavailable. Codes have been pre-validated by system rules.');
+      setAiAnalysisText('⚠️ AI analysis unavailable. Select a patient encounter to begin auto-coding.');
     }
     setAiLoading(false);
   };
 
   const exportJSON = () => {
     const codeSet = {
-      encounter: '#29341',
-      patient: 'Marcus Webb',
-      mrn: 'MRN-4821',
-      provider: 'Dr. Sarah Chen, MD',
+      encounter: '',
+      patient: '',
       date: new Date().toISOString().split('T')[0],
-      icd10: [
-        { code: 'A41.51', desc: 'Sepsis due to Escherichia coli', type: 'primary', poa: 'Y' },
-        { code: 'R65.21', desc: 'Severe sepsis with septic shock', type: 'secondary', poa: 'Y' },
-      ],
-      totalRVU: 12.83,
-      estimatedRevenue: 2140,
+      icd10: [],
+      cpt: [],
+      totalRVU: 0,
+      estimatedRevenue: 0,
     };
     const blob = new Blob([JSON.stringify(codeSet, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'notrya-codes-29341.json';
+    a.download = 'code-export.json';
     a.click();
     setShowExportModal(false);
   };
@@ -134,38 +110,38 @@ Provide: (1) coding accuracy assessment, (2) any missed codes, (3) revenue optim
         <div style={styles.sidebar}>
           <div style={{ padding: '14px 14px 10px', borderBottom: `1px solid ${C.border}` }}>
             <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 13, color: C.bright, fontWeight: 600 }}>Code Sets</h3>
-            <p style={{ fontSize: 10, color: C.dim, marginTop: 2 }}>Encounter #29341 · Auto-coded</p>
+            <p style={{ fontSize: 10, color: C.dim, marginTop: 2 }}>Select an encounter</p>
           </div>
 
           <div style={{ padding: '10px 14px 4px', fontSize: 9, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>Diagnoses</div>
           <div onClick={() => switchTab('icd10')} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 14px', cursor: 'pointer', borderLeft: `3px solid ${activeTab === 'icd10' ? C.teal : 'transparent'}`, background: activeTab === 'icd10' ? C.panel : 'transparent' }}>
             <span style={{ fontSize: 15 }}>🏷️</span>
             <span style={{ fontSize: 12, color: activeTab === 'icd10' ? C.bright : C.text, flex: 1, fontWeight: activeTab === 'icd10' ? 500 : 400 }}>ICD-10 Codes</span>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 10, background: 'rgba(0,212,188,0.12)', color: C.teal }}>6</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 10, background: 'rgba(0,212,188,0.12)', color: C.teal }}>0</span>
           </div>
 
           <div style={{ padding: '10px 14px 4px', fontSize: 9, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>Procedures</div>
           <div onClick={() => switchTab('cpt')} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 14px', cursor: 'pointer', borderLeft: `3px solid ${activeTab === 'cpt' ? C.teal : 'transparent'}`, background: activeTab === 'cpt' ? C.panel : 'transparent' }}>
             <span style={{ fontSize: 15 }}>⚙️</span>
             <span style={{ fontSize: 12, color: activeTab === 'cpt' ? C.bright : C.text, flex: 1 }}>CPT Procedures</span>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 10, background: 'rgba(244,114,182,0.15)', color: C.rose }}>6</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 10, background: 'rgba(244,114,182,0.15)', color: C.rose }}>0</span>
           </div>
 
           <div style={{ padding: '10px 14px 4px', fontSize: 9, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>Billing</div>
           <div onClick={() => switchTab('billing')} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 14px', cursor: 'pointer', borderLeft: `3px solid ${activeTab === 'billing' ? C.teal : 'transparent'}`, background: activeTab === 'billing' ? C.panel : 'transparent' }}>
             <span style={{ fontSize: 15 }}>💳</span>
             <span style={{ fontSize: 12, color: activeTab === 'billing' ? C.bright : C.text, flex: 1 }}>Billing Summary</span>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 10, background: 'rgba(240,192,64,0.15)', color: C.gold }}>12</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 10, background: 'rgba(240,192,64,0.15)', color: C.gold }}>0</span>
           </div>
 
           <div style={{ height: 1, background: C.border, margin: '6px 14px' }} />
           <div style={{ margin: '10px 10px 0', padding: 10, background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8 }}>
             <h4 style={{ fontSize: 10, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Quick Stats</h4>
             {[
-              { label: 'Total Codes', value: '12' },
-              { label: 'Total RVUs', value: '12.83' },
-              { label: 'Est. Revenue', value: '$2,140' },
-              { label: 'Confidence', value: '94%' },
+              { label: 'Total Codes', value: '0' },
+              { label: 'Total RVUs', value: '0.00' },
+              { label: 'Est. Revenue', value: '$0' },
+              { label: 'Confidence', value: '--' },
             ].map((s, i) => (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}>
                 <span style={{ fontSize: 11, color: C.text }}>{s.label}</span>
@@ -190,7 +166,7 @@ Provide: (1) coding accuracy assessment, (2) any missed codes, (3) revenue optim
                   <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: C.bright, display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span>🏷️</span>ICD-10 Diagnosis Codes
                   </div>
-                  <div style={{ fontSize: 12, color: C.dim, marginTop: 4 }}>AI-extracted from clinical note · Encounter #29341 · 6 codes assigned</div>
+                  <div style={{ fontSize: 12, color: C.dim, marginTop: 4 }}>AI-extracted from clinical note · No encounter selected</div>
                 </div>
               </div>
 
@@ -243,9 +219,9 @@ Provide: (1) coding accuracy assessment, (2) any missed codes, (3) revenue optim
       <div style={styles.bottomNav}>
         <div style={{ display: 'flex', padding: '6px 18px', gap: 5, alignItems: 'center', overflowX: 'auto' }}>
           {[
-            { id: 'icd10', label: 'ICD-10 Diagnoses', count: '6', color: C.teal },
-            { id: 'cpt', label: 'CPT Procedures', count: '6', color: C.rose },
-            { id: 'billing', label: 'Billing Summary', count: '$2,140', color: C.gold },
+            { id: 'icd10', label: 'ICD-10 Diagnoses', count: '0', color: C.teal },
+            { id: 'cpt', label: 'CPT Procedures', count: '0', color: C.rose },
+            { id: 'billing', label: 'Billing Summary', count: '$0', color: C.gold },
           ].map((t) => (
             <button key={t.id} onClick={() => switchTab(t.id)} style={{ padding: '5px 14px', borderRadius: 20, cursor: 'pointer', fontSize: 11, color: activeTab === t.id ? t.color : C.dim, background: activeTab === t.id ? `rgba(0,212,188,0.07)` : 'transparent', border: `1px solid ${activeTab === t.id ? 'rgba(0,212,188,0.3)' : 'transparent'}`, fontWeight: activeTab === t.id ? 500 : 400, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 5 }}>
               {t.label} <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700 }}>{t.count}</span>

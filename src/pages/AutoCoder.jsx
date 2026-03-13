@@ -4,9 +4,7 @@ import { base44 } from '@/api/base44Client';
 export default function AutoCoder() {
   const [activeTab, setActiveTab] = useState('icd10');
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiAnalysisText, setAiAnalysisText] = useState(
-    "Septic shock (urinary source) encounter correctly coded with A41.51 as primary. R65.21 sequenced per ICD-10-CM guidelines. E&M Level 5 appropriate given critical presentation, multiple comorbidities, and procedures performed.\n\nRevenue Optimization: Consider documenting critical care time to upgrade from 99285 → 99291 (+$248 est.)."
-  );
+  const [aiAnalysisText, setAiAnalysisText] = useState('');
   const [selectedEM, setSelectedEM] = useState('99285');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -130,48 +128,6 @@ Provide: (1) coding accuracy assessment, (2) any missed codes, (3) revenue optim
         }
       `}</style>
 
-      {/* Navbar */}
-      <nav style={styles.navbar}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 8, background: `linear-gradient(135deg, ${C.teal}, ${C.purple})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700, color: '#fff' }}>Rx</div>
-          <div>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 600, color: C.bright }}>Notrya</div>
-            <div style={{ fontSize: 11, color: C.dim }}>ICD-10 / CPT Auto-Coder</div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 12px', background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8 }}>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: C.bright }}>Marcus Webb</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.teal }}>MRN-4821 · 58M</div>
-            </div>
-          </div>
-          <span style={{ padding: '3px 10px', borderRadius: 20, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, background: 'rgba(255,92,108,0.15)', color: C.red, border: `1px solid rgba(255,92,108,0.3)` }}>⚡ Septic Shock</span>
-          <span style={{ padding: '3px 10px', borderRadius: 20, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, background: 'rgba(0,212,188,0.1)', color: C.teal, border: `1px solid rgba(0,212,188,0.25)` }}>#29341</span>
-        </div>
-      </nav>
-
-      {/* Vitals Bar */}
-      <div style={styles.vitalsBar}>
-        {[
-          { label: 'HR', value: '118', abnormal: true },
-          { label: 'BP', value: '88/56', abnormal: true },
-          { label: 'Temp', value: '38.9°C', abnormal: true },
-          { label: 'RR', value: '24', abnormal: true },
-          { label: 'SpO₂', value: '94%', warn: true },
-          { label: 'GCS', value: '13', warn: true },
-          { label: 'Lactate', value: '4.2', abnormal: true },
-        ].map((v, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRight: `1px solid ${C.border}`, height: '100%' }}>
-            <span style={{ fontSize: 10, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.5 }}>{v.label}</span>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 600, color: v.abnormal ? C.red : v.warn ? C.amber : C.green, animation: v.abnormal ? 'redglow 2s ease-in-out infinite' : 'none' }}>{v.value}</span>
-          </div>
-        ))}
-        <div style={{ marginLeft: 'auto', fontSize: 11, color: C.dim, display: 'flex', alignItems: 'center', gap: 6 }}>
-          Provider: <span style={{ color: C.teal, fontWeight: 500 }}>Dr. Sarah Chen, MD</span>
-        </div>
-      </div>
-
       {/* Main Layout */}
       <div style={styles.mainLayout}>
         {/* Left Sidebar */}
@@ -238,26 +194,11 @@ Provide: (1) coding accuracy assessment, (2) any missed codes, (3) revenue optim
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {/* Sample Code Card */}
-                <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderLeft: `4px solid ${C.teal}`, borderRadius: 10, padding: '14px 16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700, padding: '4px 10px', borderRadius: 6, background: 'rgba(0,212,188,0.12)', color: C.teal, border: `1px solid rgba(0,212,188,0.25)` }}>A41.51</span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: C.bright }}>Sepsis due to Escherichia coli</div>
-                      <div style={{ fontSize: 11, color: C.dim, marginTop: 2 }}>Primary Diagnosis · Septicemia & Bacteremia category</div>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                      <div style={{ width: 80, height: 4, background: C.edge, borderRadius: 2, overflow: 'hidden' }}>
-                        <div style={{ width: '98%', height: '100%', background: C.green, borderRadius: 2 }} />
-                      </div>
-                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: C.dim }}>98% confidence</span>
-                    </div>
-                  </div>
-                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, border: `1px solid rgba(0,212,188,0.3)`, color: C.teal, background: 'rgba(0,212,188,0.07)' }}>PRIMARY</span>
-                    <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, border: `1px solid rgba(155,109,255,0.3)`, color: C.purple, background: 'rgba(155,109,255,0.07)' }}>✦ AI Selected</span>
-                  </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40, textAlign: 'center', color: C.dim }}>
+                <div>
+                  <div style={{ fontSize: 36, marginBottom: 12, opacity: 0.5 }}>📋</div>
+                  <div style={{ fontSize: 14, color: C.text, marginBottom: 6 }}>No Codes Available</div>
+                  <div style={{ fontSize: 12 }}>Select a patient encounter to begin auto-coding</div>
                 </div>
               </div>
             </div>
@@ -282,8 +223,10 @@ Provide: (1) coding accuracy assessment, (2) any missed codes, (3) revenue optim
                   <div style={{ width: 14, height: 14, border: `2px solid rgba(155,109,255,0.2)`, borderTopColor: C.purple, borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
                   Analyzing encounter...
                 </div>
-              ) : (
+              ) : aiAnalysisText ? (
                 <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6, whiteSpace: 'pre-line' }}>{aiAnalysisText}</div>
+              ) : (
+                <div style={{ fontSize: 12, color: C.dim, lineHeight: 1.6 }}>Select an encounter and run AI analysis to generate coding recommendations</div>
               )}
             </div>
           </div>

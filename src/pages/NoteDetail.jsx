@@ -7,22 +7,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FileText } from "lucide-react";
 import NoteEditorTabs from "../components/notes/NoteEditorTabs";
 
-
-
 export default function NoteDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const noteId = urlParams.get("id");
   const urlTab = urlParams.get("tab");
 
-export default function NoteDetail() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const noteId = urlParams.get("id");
-  const urlTab = urlParams.get("tab");
-
-export default function NoteDetail() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const noteId = urlParams.get("id");
-  const urlTab = urlParams.get("tab");
+  const { data: note, isLoading } = useQuery({
+    queryKey: ["note", noteId],
+    queryFn: async () => {
+      const results = await base44.entities.ClinicalNote.filter({ id: noteId });
+      return results?.[0] || null;
+    },
+    enabled: !!noteId,
+  });
 
   if (isLoading) {
     return (

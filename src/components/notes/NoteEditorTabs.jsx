@@ -381,11 +381,6 @@ Provide results with: diagnosis, likelihood_rank (1-5, 5 being most likely), cli
 
             <TabsContent value="clinical_note" className="overflow-y-auto" style={{background:C.navy}}>
               <ClinicalNoteComposer note={note} noteId={noteId} queryClient={queryClient} />
-              <div className="max-w-3xl mx-auto px-4 pb-4">
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                  <BillingPanel note={note} noteId={noteId} />
-                </div>
-              </div>
             </TabsContent>
 
             <TabsContent value="physical_exam" className="overflow-y-auto" style={{background:C.navy}}>

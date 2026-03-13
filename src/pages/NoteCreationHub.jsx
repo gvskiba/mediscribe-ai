@@ -400,7 +400,7 @@ Write in formal clinical documentation style.`,
         </div>
 
         {/* Three main mode cards */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:16, marginBottom:28 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14, marginBottom:28 }}>
           {[
 
             {
@@ -409,8 +409,8 @@ Write in formal clinical documentation style.`,
               color:C.rose,
               title:"Live Transcription",
               subtitle:"Dictate the encounter naturally",
-              description:"Speak freely with your patient. Notrya AI listens in real time, then instantly structures everything into a complete clinical note — CC, HPI, exam, plan and more.",
-              bullets:["Real-time ambient capture","AI-powered structuring","SOAP auto-format","Review before committing"],
+              description:"Speak freely with your patient. Notrya AI listens in real time, then instantly structures everything into a complete clinical note.",
+              bullets:["Real-time ambient capture","AI-powered structuring","SOAP auto-format"],
               badge:"AI-powered",
             },
             {
@@ -419,9 +419,19 @@ Write in formal clinical documentation style.`,
               color:C.purple,
               title:"Detailed Note",
               subtitle:"Build section by section",
-              description:"Guided, structured entry across every note section. AI assist at each step — generate clinical text, auto-complete findings, and get real-time writing support.",
-              bullets:["Guided SOAP structure","AI assist per section","Rich text each field","Full editorial control"],
+              description:"Guided, structured entry across every note section. AI assist at each step — generate clinical text and auto-complete findings.",
+              bullets:["Guided SOAP structure","AI assist per section","Full editorial control"],
               badge:"Guided",
+            },
+            {
+              mode:"templates",
+              icon:"📋",
+              color:C.blue,
+              title:"Note Templates",
+              subtitle:"Start with proven structure",
+              description:"Choose from specialty-specific templates with pre-configured sections, workflows, and documentation requirements.",
+              bullets:["40+ clinical templates","Specialty-optimized","Instant customization"],
+              badge:"Library",
             },
           ].map(m => (
             <motion.div
@@ -800,6 +810,7 @@ Write in formal clinical documentation style.`,
             { id:"hub",           label:"⊞ Hub"          },
             { id:"transcription", label:"🎙️ Transcription" },
             { id:"detailed",      label:"📝 Detailed"    },
+            { id:"templates",     label:"📋 Templates"   },
           ].map(m => (
             <button key={m.id} onClick={()=>goMode(m.id)} style={{
               padding:"4px 12px", borderRadius:8, fontSize:11, fontWeight:700, cursor:"pointer",
@@ -810,14 +821,6 @@ Write in formal clinical documentation style.`,
               transition:"all .15s",
             }}>{m.label}</button>
           ))}
-          <button onClick={()=>navigate(createPageUrl("NoteTemplates"))} style={{
-            padding:"4px 12px", borderRadius:8, fontSize:11, fontWeight:700, cursor:"pointer",
-            fontFamily:"'JetBrains Mono',monospace", letterSpacing:".04em",
-            background: "transparent",
-            border: `1px solid transparent`,
-            color: C.dim,
-            transition:"all .15s",
-          }}>📋 Templates</button>
         </div>
 
         <div style={{ flex:1 }} />
@@ -851,6 +854,7 @@ Write in formal clinical documentation style.`,
       <div style={{ flex:1, display:"flex", overflow:"hidden", backgroundColor:C.navy, marginTop:52 }}>
         <AnimatePresence mode="wait">
           {mode === "hub"           && renderHub()}
+          {mode === "templates"     && renderTemplates()}
           {mode === "transcription" && renderTranscription()}
           {mode === "detailed"      && renderDetailed()}
         </AnimatePresence>

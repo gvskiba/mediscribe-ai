@@ -156,11 +156,11 @@ export default function NursingFlowsheet() {
 
   // ── Patient context ───────────────────────────────────────────────
   const [patient] = useState({
-    name:"Margaret T. Sullivan", age:67, sex:"F", dob:"03/14/1957",
-    mrn:"MRN-884412", room:"TR-1", bed:"A", provider:"Dr. Rivera",
-    dx:"Chest pain, r/o NSTEMI", allergies:"Penicillin, Aspirin",
-    code:"Full Code", iso:"Standard", diet:"NPO",
-    admitted:"10/14/2025 08:14", weight:"72 kg", height:"5'4\"",
+    name:"", age:"", sex:"", dob:"",
+    mrn:"", room:"", bed:"", provider:"",
+    dx:"", allergies:"",
+    code:"Full Code", iso:"Standard", diet:"",
+    admitted:"", weight:"", height:"",
   });
 
   // ── Flowsheet state ───────────────────────────────────────────────

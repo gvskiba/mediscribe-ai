@@ -245,7 +245,44 @@ Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) any addit
             </div>
           ))}
 
-          <div style={{ margin: '10px 10px', marginTop: 8 }}>
+          <div style={{ height: 1, background: C.border, margin: '6px 14px' }} />
+          <div style={{ margin: '8px 10px' }}>
+            <div style={{ padding: 10, background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8 }}>
+              <h4 style={{ fontSize: 10, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Alert Summary</h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}>
+                <span style={{ fontSize: 11, color: C.text }}>🔴 Critical</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.red }}>2</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}>
+                <span style={{ fontSize: 11, color: C.text }}>🟠 Warning</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.amber }}>2</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}>
+                <span style={{ fontSize: 11, color: C.text }}>🔵 Info</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.blue }}>1</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}>
+                <span style={{ fontSize: 11, color: C.text }}>✅ Dismissed</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.green }}>3</span>
+              </div>
+            </div>
+            <div style={{ padding: 10, background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8, marginTop: 8 }}>
+              <h4 style={{ fontSize: 10, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>SEP-1 Bundle</h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}>
+                <span style={{ fontSize: 11, color: C.text }}>Completed</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.green }}>4/7</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}>
+                <span style={{ fontSize: 11, color: C.text }}>Time Elapsed</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.amber }}>3h 12m</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}>
+                <span style={{ fontSize: 11, color: C.text }}>Compliance</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.amber }}>57%</span>
+              </div>
+            </div>
+          </div>
+          <div style={{ margin: '10px 10px' }}>
             <button onClick={runAIAnalysis} style={{ width: '100%', padding: '5px', borderRadius: 6, cursor: 'pointer', background: 'linear-gradient(135deg,rgba(155,109,255,.2),rgba(0,212,188,.1))', border: '1px solid rgba(155,109,255,.3)', color: C.purple, fontSize: 11, fontWeight: 600, fontFamily: "'DM Sans', sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
               ✦ AI Risk Analysis
             </button>
@@ -256,25 +293,88 @@ Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) any addit
         <div style={{ flex: 1, overflowY: 'auto', padding: '18px 22px' }}>
           {activeTab === 'alerts' && (
             <div>
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: C.bright }}>🚨 Active Clinical Alerts</div>
-                <div style={{ fontSize: 12, color: C.dim, marginTop: 4 }}>5 alerts firing · Last updated just now · Auto-refresh every 60s</div>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
+                <div>
+                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: C.bright, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    🚨 Active Clinical Alerts
+                  </div>
+                  <div style={{ fontSize: 12, color: C.dim, marginTop: 4 }}>5 alerts firing · Last updated just now · Auto-refresh every 60s</div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <button style={{ padding: '7px 14px', borderRadius: 7, cursor: 'pointer', fontSize: 12, fontFamily: "'DM Sans', sans-serif", fontWeight: 500, border: `1px solid ${C.border}`, background: 'transparent', color: C.dim }}>
+                    Dismiss All Info
+                  </button>
+                  <button onClick={runAIAnalysis} style={{ padding: '7px 14px', borderRadius: 7, cursor: 'pointer', fontSize: 12, fontWeight: 500, border: 'none', background: 'linear-gradient(135deg,rgba(155,109,255,.2),rgba(0,212,188,.1))', color: C.purple, border: '1px solid rgba(155,109,255,.3)', fontFamily: "'DM Sans', sans-serif", display: 'flex', alignItems: 'center', gap: 6 }}>
+                    ✦ AI Triage
+                  </button>
+                </div>
               </div>
               
-              {/* Alerts would be mapped here - showing placeholder */}
+              {/* CRITICAL Alert 1 */}
               <div style={{ background: C.panel, border: `1px solid rgba(255,92,108,.4)`, borderRadius: 11, padding: 0, marginBottom: 10, overflow: 'hidden' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px', borderBottom: `1px solid ${C.border}` }}>
-                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: C.red }} />
-                  <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, padding: '2px 8px', borderRadius: 4, fontFamily: "'JetBrains Mono', monospace", background: 'rgba(255,92,108,.15)', color: C.red }}>Critical</span>
+                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: C.red, animation: 'pulse 2s infinite' }} />
+                  <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, padding: '2px 8px', borderRadius: 4, fontFamily: "'JetBrains Mono', monospace", background: 'rgba(255,92,108,.15)', color: C.red, border: '1px solid rgba(255,92,108,.3)' }}>Critical</span>
                   <div style={{ fontSize: 13, fontWeight: 600, color: C.bright, flex: 1 }}>SEP-1: Blood Cultures Not Obtained</div>
                   <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: C.dim }}>3h 12m ago</div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, cursor: 'pointer', border: `1px solid ${C.border}`, background: 'transparent', color: C.dim, fontFamily: "'DM Sans', sans-serif" }}>
+                      ⏱
+                    </button>
+                    <button onClick={() => acknowledgeAlert('bc', 'override')} style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'rgba(255,92,108,.1)', color: C.red, border: '1px solid rgba(255,92,108,.25)', fontFamily: "'DM Sans', sans-serif" }}>
+                      Override
+                    </button>
+                    <button onClick={() => acknowledgeAlert('bc', 'done')} style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, cursor: 'pointer', background: C.teal, color: '#000', border: 'none', fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}>
+                      ✓ Done
+                    </button>
+                  </div>
                 </div>
                 <div style={{ padding: '12px 16px 14px' }}>
                   <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6, marginBottom: 10 }}>
-                    Sepsis-1 bundle requires blood cultures × 2 sets drawn <strong style={{ color: C.red }}>before antibiotic administration</strong>. No blood culture order confirmed in chart.
+                    Sepsis-1 bundle requires blood cultures × 2 sets drawn <strong style={{ color: C.red }}>before antibiotic administration</strong>. No blood culture order confirmed in chart. Antibiotics (Vancomycin + Pip/Tazo) ordered 3h 12m ago — cultures must be collected immediately if not yet done.
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                    <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 6, border: '1px solid rgba(255,92,108,.3)', background: 'rgba(255,92,108,.07)', color: C.red, fontFamily: "'JetBrains Mono', monospace" }}>Lactate 4.2 mmol/L</span>
+                    <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 6, border: '1px solid rgba(255,92,108,.3)', background: 'rgba(255,92,108,.07)', color: C.red, fontFamily: "'JetBrains Mono', monospace" }}>BP 88/56 mmHg</span>
+                    <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 6, border: '1px solid rgba(255,92,108,.3)', background: 'rgba(255,92,108,.07)', color: C.red, fontFamily: "'JetBrains Mono', monospace" }}>Septic Shock Dx</span>
+                    <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 6, border: '1px solid rgba(245,166,35,.3)', background: 'rgba(245,166,35,.07)', color: C.amber, fontFamily: "'JetBrains Mono', monospace" }}>ABX ordered 09:02</span>
                   </div>
                   <div style={{ padding: '9px 12px', background: 'rgba(155,109,255,.07)', border: '1px solid rgba(155,109,255,.2)', borderRadius: 7, fontSize: 11, color: C.text, lineHeight: 1.5 }}>
-                    <strong style={{ color: C.purple }}>Recommendation:</strong> Collect 2 sets of aerobic/anaerobic blood cultures from 2 separate sites IMMEDIATELY if not already done.
+                    <strong style={{ color: C.purple }}>Recommendation:</strong> Collect 2 sets of aerobic/anaerobic blood cultures from 2 separate sites IMMEDIATELY if not already done. Document collection time. Note: cultures drawn after antibiotics may yield false negatives.
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.border}` }}>
+                    <div style={{ fontSize: 10, color: C.dim }}>Rule: <span style={{ color: C.teal }}>SEP-1 Compliance Engine</span> · Guideline: <span style={{ color: C.teal }}>CMS SEP-1 2024</span></div>
+                    <button onClick={() => viewGuideline('sep1')} style={{ padding: '3px 8px', fontSize: 10, borderRadius: 4, cursor: 'pointer', border: `1px solid ${C.border}`, background: 'transparent', color: C.dim, fontFamily: "'DM Sans', sans-serif" }}>
+                      📖 View Guideline
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* CRITICAL Alert 2 */}
+              <div style={{ background: C.panel, border: `1px solid rgba(255,92,108,.4)`, borderRadius: 11, padding: 0, marginBottom: 10, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px', borderBottom: `1px solid ${C.border}` }}>
+                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: C.red, animation: 'pulse 2s infinite' }} />
+                  <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, padding: '2px 8px', borderRadius: 4, fontFamily: "'JetBrains Mono', monospace", background: 'rgba(255,92,108,.15)', color: C.red, border: '1px solid rgba(255,92,108,.3)' }}>Critical</span>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.bright, flex: 1 }}>Repeat Lactate Overdue</div>
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: C.dim }}>Due in 47m</div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, cursor: 'pointer', border: `1px solid ${C.border}`, background: 'transparent', color: C.dim, fontFamily: "'DM Sans', sans-serif" }}>⏱</button>
+                    <button style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'rgba(255,92,108,.1)', color: C.red, border: '1px solid rgba(255,92,108,.25)', fontFamily: "'DM Sans', sans-serif" }}>Override</button>
+                    <button style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, cursor: 'pointer', background: C.teal, color: '#000', border: 'none', fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}>✓ Ordered</button>
+                  </div>
+                </div>
+                <div style={{ padding: '12px 16px 14px' }}>
+                  <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6, marginBottom: 10 }}>
+                    Initial lactate 4.2 mmol/L qualifies as elevated (≥2 mmol/L). SEP-1 requires repeat lactate within <strong style={{ color: C.amber }}>2–4 hours</strong> of initial measurement to demonstrate clearance. Current lactate was drawn at 06:50; repeat is due before 10:50.
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                    <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 6, border: '1px solid rgba(255,92,108,.3)', background: 'rgba(255,92,108,.07)', color: C.red, fontFamily: "'JetBrains Mono', monospace" }}>Initial: 4.2 mmol/L</span>
+                    <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 6, border: '1px solid rgba(245,166,35,.3)', background: 'rgba(245,166,35,.07)', color: C.amber, fontFamily: "'JetBrains Mono', monospace" }}>Drawn: 06:50</span>
+                    <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 6, border: '1px solid rgba(245,166,35,.3)', background: 'rgba(245,166,35,.07)', color: C.amber, fontFamily: "'JetBrains Mono', monospace" }}>Due by: 10:50</span>
+                  </div>
+                  <div style={{ padding: '9px 12px', background: 'rgba(155,109,255,.07)', border: '1px solid rgba(155,109,255,.2)', borderRadius: 7, fontSize: 11, color: C.text, lineHeight: 1.5 }}>
+                    <strong style={{ color: C.purple }}>Recommendation:</strong> Order repeat serum lactate now. Target lactate clearance ≥10% or absolute value &lt;2 mmol/L. If lactate remains elevated, escalate vasopressor support and reassess fluid responsiveness.
                   </div>
                 </div>
               </div>
@@ -372,8 +472,56 @@ Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) any addit
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '14px 15px', display: 'flex', flexDirection: 'column', gap: 11 }}>
+            {/* Alert Overview */}
             <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 9, padding: 12 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: C.purple, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>✦ AI Analysis</div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: C.purple, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>🚨 ALERT OVERVIEW</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: `1px solid ${C.border}` }}>
+                <span style={{ fontSize: 11, color: C.dim }}>Critical Active</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.red }}>2</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: `1px solid ${C.border}` }}>
+                <span style={{ fontSize: 11, color: C.dim }}>Warnings</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.amber }}>2</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: `1px solid ${C.border}` }}>
+                <span style={{ fontSize: 11, color: C.dim }}>Info</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.blue }}>1</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: `1px solid ${C.border}` }}>
+                <span style={{ fontSize: 11, color: C.dim }}>SEP-1 Compliance</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.amber }}>57%</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: `1px solid ${C.border}` }}>
+                <span style={{ fontSize: 11, color: C.dim }}>Drug Interactions</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.red }}>2</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0' }}>
+                <span style={{ fontSize: 11, color: C.dim }}>Alert Fatigue Score</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: C.green }}>Low</span>
+              </div>
+            </div>
+
+            {/* Priority Actions */}
+            <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 9, padding: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: C.purple, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>⚡ PRIORITY ACTIONS</div>
+              {[
+                { text: 'Order repeat lactate IMMEDIATELY — due in 47 min for SEP-1', priority: 'NOW', color: C.red },
+                { text: 'Confirm blood culture collection status and document in chart', priority: 'URGENT', color: C.red },
+                { text: 'Check Mg²⁺ — essential with QTc 492ms + Azithromycin', priority: 'HIGH', color: C.amber },
+                { text: 'Initiate AUC-guided Vancomycin monitoring per ASHP 2020', priority: 'HIGH', color: C.amber },
+                { text: 'Order DVT prophylaxis — Enoxaparin 40mg SQ daily', priority: 'MOD', color: C.blue }
+              ].map((action, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '7px 0', borderBottom: i < 4 ? `1px solid ${C.border}` : 'none' }}>
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: action.color, flexShrink: 0, marginTop: 4, animation: action.priority === 'NOW' || action.priority === 'URGENT' ? 'pulse 1.8s infinite' : 'none' }} />
+                  <div style={{ fontSize: 11, color: C.text, lineHeight: 1.4, flex: 1 }}>{action.text}</div>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3, background: `rgba(${action.color === C.red ? '255,92,108' : action.color === C.amber ? '245,166,35' : '74,144,217'},.12)`, color: action.color, flexShrink: 0, marginTop: 2 }}>{action.priority}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* AI Analysis */}
+            <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 9, padding: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: C.purple, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>✦ AI ANALYSIS</div>
               {aiLoading && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.purple, fontSize: 12, marginBottom: 8 }}>
                   <div style={{ width: 14, height: 14, border: `2px solid rgba(155,109,255,.2)`, borderTopColor: C.purple, borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
@@ -381,6 +529,19 @@ Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) any addit
                 </div>
               )}
               <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6, whiteSpace: 'pre-line' }}>{aiAnalysisText}</div>
+            </div>
+
+            {/* Sepsis Risk Score */}
+            <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 9, padding: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: C.purple, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>📊 SEPSIS RISK SCORE</div>
+              <div style={{ textAlign: 'center', padding: '8px 0' }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 32, fontWeight: 700, color: C.red }}>8.4</div>
+                <div style={{ fontSize: 10, color: C.dim, marginTop: 2 }}>/ 10 · SOFA-derived</div>
+                <div style={{ margin: '10px 0 4px', height: 6, background: '#162d4f', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{ width: '84%', height: '100%', background: 'linear-gradient(90deg,#f5a623,#ff5c6c)', borderRadius: 3 }} />
+                </div>
+                <div style={{ fontSize: 10, color: C.dim }}>Mortality estimate: <span style={{ color: C.red, fontWeight: 600 }}>32–40%</span></div>
+              </div>
             </div>
           </div>
 
@@ -437,6 +598,7 @@ Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) any addit
       <style>{`
         @keyframes tickerMove { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
       `}</style>
     </div>
   );

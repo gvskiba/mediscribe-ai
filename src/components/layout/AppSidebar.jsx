@@ -15,6 +15,7 @@ const navGroups = [
   {
     label: "Documentation",
     items: [
+      { emoji: "✨", label: "Note Hub", page: "NoteCreationHub" },
       { emoji: "🎙️", label: "Transcription", page: "LiveTranscription" },
       { emoji: "📋", label: "SOAP", page: "SoapCompiler" },
       { emoji: "🩺", label: "Note Studio", page: "ClinicalNoteStudio" },

@@ -94,13 +94,6 @@ export default function Layout({ children, currentPageName }) {
       }
     };
     checkAuth();
-
-    // Register service worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(err => {
-        console.error('Service worker registration failed:', err);
-      });
-    }
   }, []);
 
   const showSidebar = currentPageName !== 'Home';

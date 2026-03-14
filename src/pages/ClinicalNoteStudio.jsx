@@ -498,7 +498,7 @@ export default function ClinicalNoteStudio() {
   // ── Shared Navbar ──
   const renderNavbar = () => (
     <nav style={{height:52,background:"rgba(11,29,53,.97)",borderBottom:`1px solid ${C.border}`,backdropFilter:"blur(20px)",display:"flex",alignItems:"center",padding:"0 16px",gap:12,flexShrink:0,zIndex:100}}>
-      <a href={createPageUrl("Home")} style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,color:C.bright,cursor:"pointer",letterSpacing:"-.02em",textDecoration:"none"}}>Notrya</a>
+      <Link to="/Home" style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,color:C.bright,cursor:"pointer",letterSpacing:"-.02em",textDecoration:"none"}}>Notrya</Link>
       <div style={{width:1,height:16,background:C.border}} />
       <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:C.teal,letterSpacing:".12em"}}>CLINICAL NOTE STUDIO</span>
 
@@ -506,7 +506,7 @@ export default function ClinicalNoteStudio() {
       <div style={{display:"flex",alignItems:"center",gap:2,padding:"3px",borderRadius:10,background:C.edge,border:`1px solid ${C.border}`}}>
         <button onClick={()=>setMode("studio")} style={{padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:mode==="studio"?C.teal:"transparent",color:mode==="studio"?C.navy:C.dim,transition:"all .15s"}}>✦ Studio</button>
         <button onClick={()=>setMode("notes")} style={{padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:mode==="notes"?C.blue:"transparent",color:mode==="notes"?C.bright:C.dim,transition:"all .15s"}}>📋 Note Detail</button>
-        <a href={createPageUrl("NoteTemplates")} style={{padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:"transparent",color:C.purple,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:4}}>📄 Templates</a>
+        <Link to="/NoteTemplates" style={{padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:"transparent",color:C.purple,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:4}}>📄 Templates</Link>
       </div>
 
       <div style={{flex:1}} />
@@ -692,7 +692,7 @@ export default function ClinicalNoteStudio() {
     <div style={{background:C.navy,fontFamily:"DM Sans,sans-serif",minHeight:"100vh",display:"flex",flexDirection:"column"}}>
       {/* Mode toggle bar */}
       <div style={{background:"rgba(11,29,53,.97)",borderBottom:`1px solid ${C.border}`,padding:"8px 16px",display:"flex",alignItems:"center",gap:12,flexShrink:0,zIndex:100}}>
-        <a href={createPageUrl("Home")} style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:C.bright,cursor:"pointer",letterSpacing:"-.02em",textDecoration:"none"}}>Notrya</a>
+        <Link to="/Home" style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:C.bright,cursor:"pointer",letterSpacing:"-.02em",textDecoration:"none"}}>Notrya</Link>
         <div style={{width:1,height:14,background:C.border}} />
         <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:C.teal,letterSpacing:".12em"}}>CLINICAL NOTE STUDIO</span>
         <div style={{display:"flex",alignItems:"center",gap:2,padding:"2px",borderRadius:9,background:C.edge,border:`1px solid ${C.border}`}}>

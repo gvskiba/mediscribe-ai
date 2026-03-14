@@ -258,7 +258,7 @@ Provide results with: diagnosis, likelihood_rank (1-5, 5 being most likely), cli
 
   return (
     <>
-      <NoteTopBar note={note} noteId={noteId} queryClient={queryClient} onNext={handleNext} autoSaveStatus={autoSaveStatus} />
+      <NoteTopBar note={note} noteId={noteId} queryClient={queryClient} onNext={handleNext} autoSaveStatus={autoSaveStatus} isOnline={isOnline} />
       <NotePatientVitalsBar note={note} />
 
       {showGuidelinePrompt && note?.linked_guidelines && (

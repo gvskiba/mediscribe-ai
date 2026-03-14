@@ -155,7 +155,18 @@ export default function NoteTopBar({ note, noteId, queryClient, onNext, autoSave
         {/* Export */}
         <ExportPDFButton note={note} noteId={noteId} />
 
-        {/* Autosave status */}
+        {/* Online/Offline + Autosave status */}
+        {!isOnline && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 5,
+            padding: "4px 10px", borderRadius: 20,
+            background: "rgba(245,166,35,0.12)", border: "1px solid rgba(245,166,35,0.3)",
+            fontSize: 11, fontWeight: 600, color: T.amber,
+          }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: T.amber }} />
+            OFFLINE
+          </div>
+        )}
         {autoSaveStatus && (
           <div style={{
             display: "flex", alignItems: "center", gap: 5,
@@ -169,7 +180,7 @@ export default function NoteTopBar({ note, noteId, queryClient, onNext, autoSave
             {autoSaveStatus === 'saving' ? (
               <><Clock size={10} style={{ animation: "spin 1s linear infinite" }} /> Saving…</>
             ) : (
-              <><Sparkles size={10} /> Saved</>
+              <><Sparkles size={10} /> {isOnline ? "Synced" : "Saved locally"}</>
             )}
           </div>
         )}

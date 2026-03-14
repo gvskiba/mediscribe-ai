@@ -18,7 +18,7 @@ const T = {
   red: "#ff5c6c",
 };
 
-export default function NoteTopBar({ note, noteId, queryClient, onNext, autoSaveStatus }) {
+export default function NoteTopBar({ note, noteId, queryClient, onNext, autoSaveStatus, isOnline = true }) {
   const navigate = useNavigate();
   const [elapsed, setElapsed] = useState("00:00");
   const [timerStopped, setTimerStopped] = useState(false);

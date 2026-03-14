@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
+import { useOfflineNoteSync } from "../offline/useOfflineNoteSync";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,9 @@ export default function NoteEditorTabs({ note, noteId, initialTab = "patient_int
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [exportingFormat, setExportingFormat] = useState(null);
 
+  // Offline sync
+  const { saveNote, isOnline } = useOfflineNoteSync(noteId, note, queryClient);
+
   const { data: templates = [] } = useQuery({
     queryKey: ["noteTemplates"],
     queryFn: () => base44.entities.NoteTemplate.list()
@@ -121,8 +125,17 @@ export default function NoteEditorTabs({ note, noteId, initialTab = "patient_int
   }, [customTabGroups]);
 
   useEffect(() => {
-    if (noteId) localStorage.setItem('currentOpenNote', noteId);
+    if (noteId) {
+      localStorage.setItem('currentOpenNote', noteId);
+    }
   }, [noteId]);
+
+  // Auto-save changes to local storage and sync
+  useEffect(() => {
+    if (note && noteId) {
+      saveNote(note);
+    }
+  }, [note?.chief_complaint, note?.history_of_present_illness, note?.physical_exam, note?.assessment, note?.plan, note?.review_of_systems, note?.medical_history, noteId]);
 
   useEffect(() => {
     const handler = () => setAiSidebarOpen(true);

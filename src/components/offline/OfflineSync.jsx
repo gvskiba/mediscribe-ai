@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
-import { Wifi, WifiOff, RefreshCw } from "lucide-react";
+import { Wifi, WifiOff, RefreshCw, Cloud } from "lucide-react";
+import { getUnsyncedNotesCount } from "./useOfflineNoteSync";
 
 const STORAGE_KEYS = {
   PENDING_NOTES: 'notrya_pending_notes',
@@ -52,7 +53,8 @@ export default function OfflineSync() {
   const updatePendingCount = () => {
     try {
       const pending = JSON.parse(localStorage.getItem(STORAGE_KEYS.PENDING_NOTES) || '[]');
-      setPendingCount(pending.length);
+      const unsyncedNotes = getUnsyncedNotesCount();
+      setPendingCount(pending.length + unsyncedNotes);
     } catch (e) {
       console.error('Failed to update pending count:', e);
     }
@@ -130,11 +132,11 @@ export default function OfflineSync() {
       fontWeight: 700,
       color: isOnline ? '#2ecc71' : '#ff5c6c',
     }}>
-      {isOnline ? <Wifi size={14} /> : <WifiOff size={14} />}
+      {isOnline ? (pendingCount > 0 ? <Cloud size={14} /> : <Wifi size={14} />) : <WifiOff size={14} />}
       <span>
         {isOnline 
           ? pendingCount > 0 
-            ? `Syncing ${pendingCount} change${pendingCount > 1 ? 's' : ''}...` 
+            ? `Syncing ${pendingCount} note${pendingCount > 1 ? 's' : ''}...` 
             : 'Online'
           : 'Offline Mode'}
       </span>

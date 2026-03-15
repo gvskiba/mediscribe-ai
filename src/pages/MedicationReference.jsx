@@ -621,7 +621,13 @@ function MedRow({med, isExpanded, onToggle, weightKg}){
     </div>
     {isExpanded&&(
       <div className="mdet">
-        <div className="dgrid">
+        {med.moa && (
+        <div style={{marginBottom:11,padding:"8px 12px",background:"rgba(0,196,160,0.05)",border:"1px solid rgba(0,196,160,0.18)",borderRadius:"var(--r)"}}>
+          <div className="dlbl" style={{marginBottom:4}}>Mechanism of Action</div>
+          <div style={{fontSize:12,color:"var(--tx2)",lineHeight:1.6}}>{med.moa}</div>
+        </div>
+      )}
+    <div className="dgrid">
           <div>
             <div className="dlbl">Adult Dose</div>
             <div className="dval tl">{med.adult_dose}</div>

@@ -256,7 +256,7 @@ export default function DrugsAndBugs(){
                 </button>
               ))}
             </div>
-            <button onClick={()=>navigate(PAGES.DrugReference))} style={{padding:"7px 14px",borderRadius:10,background:`linear-gradient(135deg,${C.teal},#00b8a5)`,border:"none",color:C.navy,fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>Full Reference →</button>
+            <button onClick={()=>navigate(PAGES.DrugReference)} style={{padding:"7px 14px",borderRadius:10,background:`linear-gradient(135deg,${C.teal},#00b8a5)`,border:"none",color:C.navy,fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>Full Reference →</button>
           </div>
 
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))",gap:10}}>
@@ -272,7 +272,7 @@ export default function DrugsAndBugs(){
                 </div>
                 <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.teal,fontWeight:600,marginBottom:4}}>{med.dose}</div>
                 <div style={{display:"flex",gap:6,marginTop:8,justifyContent:"flex-end"}}>
-                  <button onClick={()=>navigate(PAGES.DrugReference))} style={{padding:"3px 10px",borderRadius:7,fontSize:10,fontWeight:600,cursor:"pointer",background:"transparent",border:`1px solid ${C.border}`,color:C.dim}}>Full Info</button>
+                  <button onClick={()=>navigate(PAGES.DrugReference)} style={{padding:"3px 10px",borderRadius:7,fontSize:10,fontWeight:600,cursor:"pointer",background:"transparent",border:`1px solid ${C.border}`,color:C.dim}}>Full Info</button>
                   {med.cat==="antimicrobials"&&<button onClick={()=>navigate(PAGES.AntibioticStewardship))} style={{padding:"3px 10px",borderRadius:7,fontSize:10,fontWeight:600,cursor:"pointer",background:"rgba(46,204,113,.1)",border:"1px solid rgba(46,204,113,.28)",color:C.green}}>Stewardship</button>}
                 </div>
               </motion.div>

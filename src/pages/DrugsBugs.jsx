@@ -401,7 +401,7 @@ export default function DrugsAndBugs(){
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:C.bright}}>Pediatric Quick Reference</div>
             <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:7,background:"rgba(155,109,255,.12)",border:"1px solid rgba(155,109,255,.3)",color:C.purple}}>PHOENIX 2024</span>
             <div style={{flex:1}} />
-            <button onClick={()=>navigate(PAGES.PediatricDosing))} style={{padding:"7px 14px",borderRadius:10,background:`linear-gradient(135deg,${C.purple},#7c3aed)`,border:"none",color:C.bright,fontSize:12,fontWeight:700,cursor:"pointer"}}>Full Peds Dosing Calculator →</button>
+            <button onClick={()=>navigate(PAGES.PediatricDosing)} style={{padding:"7px 14px",borderRadius:10,background:`linear-gradient(135deg,${C.purple},#7c3aed)`,border:"none",color:C.bright,fontSize:12,fontWeight:700,cursor:"pointer"}}>Full Peds Dosing Calculator →</button>
           </div>
 
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>

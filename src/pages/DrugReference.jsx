@@ -389,6 +389,29 @@ export default function DrugReference() {
                           <span className="font-semibold">Recommendation: </span>{r.recommendation}
                         </div>
                       )}
+                      {r.alternatives && Object.entries(r.alternatives).some(([, alts]) => alts.length > 0) && (
+                        <div className="mt-3 border-t border-slate-700/50 pt-3">
+                          <p className="text-xs font-semibold text-emerald-400 mb-2">💊 Safer Alternatives (same class):</p>
+                          <div className="space-y-2">
+                            {Object.entries(r.alternatives).map(([drug, alts]) =>
+                              alts.length > 0 ? (
+                                <div key={drug}>
+                                  <p className="text-xs text-slate-400 mb-1">Instead of <span className="text-white font-medium">{drug}</span>:</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {alts.map(alt => (
+                                      <div key={alt.name} className="bg-emerald-950/40 border border-emerald-700/40 rounded px-2.5 py-1.5">
+                                        <p className="text-xs font-semibold text-emerald-300">{alt.name}</p>
+                                        <p className="text-xs text-slate-400">{alt.brand}</p>
+                                        <p className="text-xs text-slate-500 italic">{alt.drugClass}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : null
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

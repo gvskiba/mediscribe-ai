@@ -147,7 +147,18 @@ export default function Home() {
   });
 
   // Use custom links if available, otherwise use defaults
-  const navPages = customNavLinks.length > 0 ? customNavLinks : APP_PAGES;
+  // Normalize custom links to have same shape as APP_PAGES
+  const navPages = customNavLinks.length > 0
+    ? customNavLinks.map(l => ({
+        page: l.page || l.url || "",
+        icon: l.icon || "🔗",
+        label: l.label || l.title || "",
+        sub: l.sub || "",
+        color: l.color || C.dim,
+        desc: l.desc || l.description || "",
+        shortcut: l.shortcut || "",
+      }))
+    : APP_PAGES;
 
   const patients = liveNotes.map(n => ({
     id: n.id,

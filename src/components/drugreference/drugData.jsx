@@ -1,4 +1,5 @@
 export const DRUG_DB = [
+export const DRUG_DB = [
   {
     id:"warfarin", name:"Warfarin", brand:"Coumadin, Jantoven", category:"anticoag",
     drugClass:"Vitamin K Antagonist", highAlert:true, pregnancy:"X", color:"#ef4444",

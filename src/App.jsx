@@ -78,11 +78,6 @@ const AuthenticatedApp = () => {
           <ClinicalNoteStudio />
         </LayoutWrapper>
       } />
-      <Route path="/DrugReference" element={
-        <LayoutWrapper currentPageName="DrugReference">
-          <DrugReference />
-        </LayoutWrapper>
-      } />
       <Route path="/MedicationReference" element={
         <LayoutWrapper currentPageName="MedicationReference">
           <MedicationReference />

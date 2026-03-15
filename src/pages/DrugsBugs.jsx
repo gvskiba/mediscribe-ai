@@ -12,9 +12,9 @@ const C = {
 
 // ── Sub-page route map — update slugs to match your Base44 pages ───
 const PAGES = {
-  DrugReference:        "DrugReference",
-  AntibioticStewardship:"AntibioticStewardship",
-  PediatricDosing:      "PediatricDosing",
+  DrugReference:        "/DrugReference",
+  AntibioticStewardship:"/AntibioticStewardship",
+  PediatricDosing:      "/PediatricDosing",
 };
 
 // ── Quick-reference medication data (from MedicationReference JSON) ─

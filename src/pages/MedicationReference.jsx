@@ -101,6 +101,7 @@ body{font-family:var(--f);background:var(--bg);color:var(--tx);min-height:100vh;
 .tb-pri{padding:6px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;background:var(--teal);border:none;color:#080e1a;font-family:var(--f);transition:opacity .15s;}
 .tb-pri:hover{opacity:.85;}
 .main{margin-left:56px;margin-top:52px;padding:18px;}
+.lay{overflow:hidden;}
 .sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .sh-l{display:flex;align-items:center;gap:10px;}
 .sh-ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;background:var(--tdim);}

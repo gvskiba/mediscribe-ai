@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ER_MEDICATIONS as MEDICATIONS } from "../components/drugreference/drugData";
+import { DRUG_DB as MEDICATIONS } from "../components/drugreference/drugData";
 import SaveCaseModal from "../components/medicationreference/SaveCaseModal";
 import SavedCasesPanel from "../components/medicationreference/SavedCasesPanel";
 import WeightWidget from "../components/medicationreference/WeightWidget";

@@ -7,12 +7,13 @@ import AIDoseAnalyzer from "../components/medicationreference/AIDoseAnalyzer";
 
 const CATEGORIES = [
   { id:"all", label:"All", icon:"💊", color:"#00c4a0" },
-  { id:"analgesics", label:"Analgesics & Sedation", icon:"🩹", color:"#f97316" },
-  { id:"cardiovascular", label:"Cardiovascular", icon:"🫀", color:"#ef4444" },
-  { id:"respiratory", label:"Respiratory & Airway", icon:"🫁", color:"#06b6d4" },
-  { id:"antimicrobials", label:"Antimicrobials", icon:"🦠", color:"#22c55e" },
-  { id:"neuro", label:"Neurological", icon:"🧠", color:"#8b5cf6" },
-  { id:"gi_gu_ob", label:"GI / GU / OB", icon:"💉", color:"#f59e0b" },
+  { id:"anticoag", label:"Anticoagulants", icon:"🩸", color:"#ef4444" },
+  { id:"cardiac", label:"Cardiac", icon:"🫀", color:"#f97316" },
+  { id:"psych", label:"Psychiatric", icon:"🧠", color:"#8b5cf6" },
+  { id:"analgesic", label:"Analgesics", icon:"🩹", color:"#fb7185" },
+  { id:"abx", label:"Antibiotics", icon:"🦠", color:"#22c55e" },
+  { id:"gi", label:"GI", icon:"💊", color:"#f59e0b" },
+  { id:"other", label:"Other", icon:"⚗️", color:"#06b6d4" },
 ];
 const CAT_COLOR = Object.fromEntries(CATEGORIES.map(c=>[c.id,c.color]));
 

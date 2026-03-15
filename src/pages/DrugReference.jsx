@@ -13,10 +13,10 @@ const G = {
   green:"#2ecc71", purple:"#9b6dff", blue:"#4a90d9", rose:"#f472b6",
 };
 
-// ── DRUG DATABASE — see components/drugreference/drugData.js ─────────────────
+// ── DRUG DATABASE imported from components/drugreference/drugData.js ─────────
 
-const _REMOVE_START = {
-    id:"REMOVE", name:"REMOVE", brand:"REMOVE", category:"anticoag",
+const __sentinel = {
+    id:"SENTINEL", name:"SENTINEL", brand:"SENTINEL", category:"anticoag",
     drugClass:"Vitamin K Antagonist", highAlert:true, pregnancy:"X", color:"#ef4444",
     mechanism:"Inhibits VKORC1, reducing synthesis of clotting factors II, VII, IX, X and proteins C & S. Effect delayed 2–3 days; highly variable (CYP2C9, VKORC1 polymorphisms).",
     indications:"Non-valvular and valvular AF, VTE treatment/prevention, mechanical heart valves, hypercoagulable states.",

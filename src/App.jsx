@@ -78,6 +78,11 @@ const AuthenticatedApp = () => {
           <ClinicalNoteStudio />
         </LayoutWrapper>
       } />
+      <Route path="/DrugReference" element={
+        <LayoutWrapper currentPageName="DrugReference">
+          <DrugReference />
+        </LayoutWrapper>
+      } />
       {Object.entries(Pages).map(([path, Page]) => (
         <Route
           key={path}

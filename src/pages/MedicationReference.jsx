@@ -285,6 +285,18 @@ export default function MedicationReferencePage() {
   return(
     <>
       <style>{CSS}</style>
+      {showSaveModal && weight && (
+        <SaveCaseModal
+          weight={weight}
+          pedAge={pedAge}
+          pedUnit={pedUnit}
+          pedWt={pedWt}
+          pedCat={pedCat}
+          bz={bz}
+          onClose={()=>setShowSaveModal(false)}
+          onSaved={()=>setSavedCasesKey(k=>k+1)}
+        />
+      )}
       <div className="lay">
         <div className="sb">
           <div className="sb-logo">Rx</div>

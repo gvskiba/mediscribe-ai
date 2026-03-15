@@ -14,9 +14,8 @@ const G = {
 };
 
 // ── DRUG DATABASE — moved to components/drugreference/drugData.js ─────────────
-// const DRUG_DB = [ ... ] — imported above
 
-const _placeholder_start = {
+const _unused = {
     id:"warfarin", name:"Warfarin", brand:"Coumadin, Jantoven", category:"anticoag",
     drugClass:"Vitamin K Antagonist", highAlert:true, pregnancy:"X", color:"#ef4444",
     mechanism:"Inhibits VKORC1, reducing synthesis of clotting factors II, VII, IX, X and proteins C & S. Effect delayed 2–3 days; highly variable (CYP2C9, VKORC1 polymorphisms).",

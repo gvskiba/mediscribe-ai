@@ -244,6 +244,9 @@ export default function MedicationReferencePage() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showSavedCases, setShowSavedCases] = useState(false);
   const [savedCasesKey, setSavedCasesKey] = useState(0);
+  // Global weight widget for medications tab
+  const [globalWeight, setGlobalWeight] = useState(null);
+  const [globalWeightUnit, setGlobalWeightUnit] = useState("kg");
 
   const weight = useMemo(()=>{
     if(pedWt) return parseFloat(pedWt)||null;

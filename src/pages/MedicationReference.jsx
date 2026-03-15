@@ -262,7 +262,8 @@ export default function MedicationReferencePage() {
     if(cat!=="all"&&m.category!==cat) return false;
     const q=search.toLowerCase();
     if(!q) return true;
-    return m.name.toLowerCase().includes(q)||m.indications.join(" ").toLowerCase().includes(q)||m.subtitle.toLowerCase().includes(q)||m.code.toLowerCase().includes(q);
+    const indicStr = Array.isArray(m.indications) ? m.indications.join(" ") : "";
+    return m.name.toLowerCase().includes(q)||indicStr.toLowerCase().includes(q)||m.drugClass.toLowerCase().includes(q)||(m.brand && m.brand.toLowerCase().includes(q));
   }),[cat,search]);
 
   const pedResults = useMemo(()=>{

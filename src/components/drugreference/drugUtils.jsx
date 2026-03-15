@@ -1,3 +1,22 @@
+import { DRUG_DB } from "./drugData";
+
+// Given a drug name, find alternatives from the same class in DRUG_DB that are NOT in the current med list
+function findAlternatives(drugName, conflictingDrugName, currentMeds) {
+  const drug = DRUG_DB.find(d => d.name.toLowerCase() === drugName.toLowerCase());
+  if (!drug) return [];
+  const ml = currentMeds.map(m => m.toLowerCase());
+  return DRUG_DB
+    .filter(d =>
+      d.drugClass === drug.drugClass &&
+      d.id !== drug.id &&
+      !ml.some(m => m.includes(d.name.toLowerCase())) &&
+      // exclude the conflicting drug's class overlap
+      d.name.toLowerCase() !== conflictingDrugName.toLowerCase()
+    )
+    .slice(0, 3)
+    .map(d => ({ name: d.name, brand: d.brand, drugClass: d.drugClass }));
+}
+
 export function calculateWeightBasedDose(doseString, weight, unit) {
   if (!weight || weight <= 0) return null;
   const wt = unit === "lbs" ? weight / 2.205 : weight;

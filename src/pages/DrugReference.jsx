@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
+import { DRUG_DB } from "@/components/drugreference/drugData";
+import { PROC_RULES } from "@/components/drugreference/procRules";
+import { calculateWeightBasedDose, ruleBasedScan, parseMedList } from "@/components/drugreference/drugUtils";
 
 // ── STYLES ────────────────────────────────────────────────────────────────────
 const G = {

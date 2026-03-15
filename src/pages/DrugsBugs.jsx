@@ -467,7 +467,7 @@ export default function DrugsAndBugs(){
 
   // ── Render ─────────────────────────────────────────────────────
   return(
-    <div style={{fontFamily:"'DM Sans',sans-serif",background:C.navy,color:C.text}}>
+    <div style={{fontFamily:"'DM Sans',sans-serif",background:C.navy,color:C.text,minHeight:"100vh",display:"flex",flexDirection:"column"}}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}

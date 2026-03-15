@@ -434,7 +434,7 @@ export default function MedicationReferencePage() {
                 {filtered.length===0?(
                   <div className="empty"><div className="empty-i">🔍</div><div className="empty-t">No medications match your search</div></div>
                 ):(
-                  <div className="mlist">{filtered.map(med=><MedRow key={med.id} med={med} isExpanded={expanded===med.id} onToggle={()=>setExpanded(expanded===med.id?null:med.id)} weightKg={globalWeight ? (globalWeightUnit==="lbs" ? Math.round(globalWeight/2.205*10)/10 : globalWeight) : null}/>)}</div>
+                  <div className="mlist">{filtered.map(med=><MedRow key={med.id} med={med} isExpanded={expanded===med.id} onToggle={()=>setExpanded(expanded===med.id?null:med.id)} weightKg={globalWeight ? (globalWeightUnit==="lbs" ? Math.round(globalWeight/2.205*10)/10 : globalWeight) : null} isSelected={selectedMeds.some(m=>m.id===med.id)} onSelect={(checked)=>{if(checked){setSelectedMeds([...selectedMeds,med]);}else{setSelectedMeds(selectedMeds.filter(m=>m.id!==med.id));}}}/>)}</div>
                 )}
               </div>
             </div>

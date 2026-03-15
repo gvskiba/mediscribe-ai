@@ -291,6 +291,7 @@ export default function MedicationReferencePage() {
           {[["medications","💊"],["calculator","⚖️"],["sepsis","🔴"]].map(([id,ic])=>(
             <div key={id} className={`sbi ${tab===id?"on":""}`} onClick={()=>setTab(id)} title={id}>{ic}</div>
           ))}
+          <div className={`sbi ${showSavedCases?"on":""}`} onClick={()=>setShowSavedCases(!showSavedCases)} title="Saved Cases">📋</div>
           <div className="sb-bot">
             <div className="sbi" title="Settings">⚙️</div>
             <div style={{width:32,height:32,borderRadius:"50%",background:"#162240",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:"var(--teal)",cursor:"pointer"}}>ER</div>

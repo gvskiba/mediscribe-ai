@@ -5,6 +5,7 @@ import ClinicalNotePreview from "./ClinicalNotePreview";
 import PatientSearchPanel from "./PatientSearchPanel";
 import PatientSummaryPanel from "./PatientSummaryPanel";
 import AutoPopulateButton from "./AutoPopulateButton";
+import CollapsiblePatientList from "./CollapsiblePatientList";
 
 export default function ClinicalNoteComposer({ note, noteId, queryClient }) {
   const [selectedNoteType, setSelectedNoteType] = useState(null);
@@ -42,14 +43,20 @@ export default function ClinicalNoteComposer({ note, noteId, queryClient }) {
       </div>
 
       {/* Right Column: Clinical Note Preview */}
-      <div className="flex-1 overflow-hidden">
-        <ClinicalNotePreview
-          note={note}
-          noteId={noteId}
-          queryClient={queryClient}
-          selectedNoteType={selectedNoteType}
-          selectedTemplate={selectedTemplate}
+      <div className="flex-1 overflow-hidden flex flex-col gap-3">
+        <CollapsiblePatientList
+          onSelectPatient={setSelectedPatient}
+          selectedPatient={selectedPatient}
         />
+        <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+          <ClinicalNotePreview
+            note={note}
+            noteId={noteId}
+            queryClient={queryClient}
+            selectedNoteType={selectedNoteType}
+            selectedTemplate={selectedTemplate}
+          />
+        </div>
       </div>
     </div>
   );

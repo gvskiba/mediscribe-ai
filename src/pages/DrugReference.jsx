@@ -113,7 +113,7 @@ export default function DrugReference() {
         </div>
       </div>
 
-      <div className="flex-1 max-w-7xl mx-auto w-full px-4 py-6 flex gap-5">
+      <div className="flex-1 max-w-7xl mx-auto w-full px-4 py-6 flex gap-5 overflow-hidden">
 
         {/* === DRUG REFERENCE VIEW === */}
         {activeView === "reference" && (

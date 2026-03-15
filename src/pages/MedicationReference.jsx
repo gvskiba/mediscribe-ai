@@ -615,7 +615,7 @@ function MedRow({med, isExpanded, onToggle, weightKg}){
             </span>
           )}
         </div>
-        <div className="mrs">{med.drugClass} {med.indications?.slice(0,2).join(" · ") || ""}</div>
+        <div className="mrs">{med.drugClass} · {typeof med.indications === "string" ? med.indications.split(",")[0].trim() : ""}</div>
       </div>
       <div className="mrr">
         <span className="dpill">{doseStr.slice(0,40)}{doseStr.length>40?"…":""}</span>

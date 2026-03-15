@@ -311,7 +311,38 @@ export default function MedicationReferencePage() {
           </div>
         </div>
 
-        <div className="main">
+        {/* Saved Cases Panel */}
+        {showSavedCases && (
+          <div style={{
+            position:"fixed",top:0,left:56,width:280,bottom:0,zIndex:150,
+            background:"#060b15",borderRight:"1px solid rgba(0,196,160,0.18)",
+            display:"flex",flexDirection:"column"
+          }}>
+            <div style={{padding:"14px 16px",borderBottom:"1px solid rgba(0,196,160,0.12)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div>
+                <div style={{fontSize:11,fontWeight:700,letterSpacing:".1em",textTransform:"uppercase",color:"#94a3b8"}}>SAVED CASES</div>
+                <div style={{fontSize:10,color:"#4a6080",marginTop:2}}>Ped calculator scenarios</div>
+              </div>
+              <button onClick={()=>setShowSavedCases(false)} style={{background:"transparent",border:"none",color:"#4a6080",fontSize:16,cursor:"pointer",lineHeight:1}}>✕</button>
+            </div>
+            <SavedCasesPanel
+              key={savedCasesKey}
+              onLoadCase={(c) => {
+                setTab("calculator");
+                if (c.patient_age) {
+                  const parts = c.patient_age.split(" ");
+                  if (parts[0]) setPedAge(parts[0]);
+                  if (parts[1]) setPedUnit(parts[1]);
+                }
+                if (c.weight_source === "measured") setPedWt(String(c.weight_kg));
+                if (c.category_filter) setPedCat(c.category_filter);
+                setShowSavedCases(false);
+              }}
+            />
+          </div>
+        )}
+
+        <div className="main" style={showSavedCases ? {marginLeft: 336} : {}}>
           {/* AI Panel */}
           <div className="aip">
             <div className="aih">

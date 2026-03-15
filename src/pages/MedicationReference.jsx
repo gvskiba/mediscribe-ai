@@ -610,14 +610,14 @@ function calcWeightDose(doseStr, weightKg) {
   };
 }
 
-function MedRow({med, isExpanded, onToggle, weightKg}){
+function MedRow({med, isExpanded, onToggle, weightKg, isSelected, onSelect}){
   const color = CAT_COLOR[med.category]||"#00c4a0";
   const dosing = med.dosing?.[0];
   const doseStr = dosing?.dose || "";
   const wDose = weightKg && med.ped?.mgkg ? {low: Math.round(weightKg * med.ped.mgkg * 10)/10, high: Math.round(weightKg * med.ped.mgkg * 10)/10, unit: med.ped.unit} : null;
 
   return(<>
-    <div className={`mrow ${isExpanded?"ex":""}`} onClick={onToggle}>
+    <div className={`mrow ${isExpanded?"ex":""}`} style={isSelected?{background:"rgba(0,196,160,0.12)",borderColor:"rgba(0,196,160,0.4)"}:{}} onClick={onToggle}>
       <div className="mdot" style={{background:color}}/>
       <div className="mrm">
         <div className="mrn">

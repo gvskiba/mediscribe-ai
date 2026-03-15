@@ -249,6 +249,8 @@ export default function MedicationReferencePage() {
   // Global weight widget for medications tab
   const [globalWeight, setGlobalWeight] = useState(null);
   const [globalWeightUnit, setGlobalWeightUnit] = useState("kg");
+  // Drug interaction checker
+  const [selectedMeds, setSelectedMeds] = useState([]);
 
   const weight = useMemo(()=>{
     if(pedWt) return parseFloat(pedWt)||null;

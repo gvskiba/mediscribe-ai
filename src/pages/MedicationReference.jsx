@@ -390,7 +390,7 @@ export default function MedicationReferencePage() {
           {tab==="medications"&&(<>
             <div className="sh">
               <div className="sh-l"><div className="sh-ico">💊</div><span className="sh-ttl">ER MEDICATION REFERENCE</span></div>
-              <span className="sh-m">ACEP Guidelines · {filtered.length} medications</span>
+              <span className="sh-m">ACEP Guidelines · {filtered.length} medications {selectedMeds.length > 0 && `· ${selectedMeds.length} selected`}</span>
             </div>
             <div style={{display:"flex",gap:10,marginBottom:13,alignItems:"center",flexWrap:"wrap"}}>
               <div className="sw" style={{flex:1,minWidth:200}}>

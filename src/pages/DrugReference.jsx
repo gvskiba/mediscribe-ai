@@ -1238,12 +1238,62 @@ export default function DrugReference() {
     toastTimer.current = setTimeout(() => setToast(null), 3200);
   }, []);
 
-  const filteredDrugs = DRUG_DB.filter(d => {
-    const matchCat = activeCat === "all" || d.category === activeCat;
-    const q = searchQ.toLowerCase();
-    const matchQ = !q || d.name.toLowerCase().includes(q) || d.brand.toLowerCase().includes(q) || d.drugClass.toLowerCase().includes(q) || d.indications.toLowerCase().includes(q);
-    return matchCat && matchQ;
-  });
+  // ── Fuzzy search engine ────────────────────────────────────────────────────
+  function fuzzyScore(drug, q) {
+    if (!q) return { match: true, score: 0, fields: [] };
+    const ql = q.toLowerCase().trim();
+    const tokens = ql.split(/\s+/).filter(Boolean);
+    const fields = [
+      { key: "name",        weight: 100, val: drug.name },
+      { key: "brand",       weight: 80,  val: drug.brand },
+      { key: "drugClass",   weight: 60,  val: drug.drugClass },
+      { key: "indications", weight: 40,  val: drug.indications },
+      { key: "mechanism",   weight: 20,  val: drug.mechanism },
+      { key: "monitoring",  weight: 15,  val: drug.monitoring || "" },
+      { key: "interactions",weight: 10,  val: (drug.interactions || []).join(" ") },
+    ];
+
+    let totalScore = 0;
+    const matchedFields = [];
+
+    for (const token of tokens) {
+      let tokenMatched = false;
+      for (const f of fields) {
+        const vl = f.val.toLowerCase();
+        if (vl.includes(token)) {
+          // Exact word boundary bonus
+          const wordBoundary = new RegExp(`\\b${token.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}`, 'i').test(f.val);
+          const bonus = wordBoundary ? 2 : 1;
+          const startBonus = vl.startsWith(token) ? 3 : 1;
+          totalScore += f.weight * bonus * startBonus;
+          if (!matchedFields.includes(f.key)) matchedFields.push(f.key);
+          tokenMatched = true;
+        }
+      }
+      if (!tokenMatched) {
+        // Try substring fuzzy: all chars of token appear in order in name/brand
+        const nameL = drug.name.toLowerCase();
+        const brandL = drug.brand.toLowerCase();
+        let ni = 0, bi = 0;
+        for (const ch of token) { if (nameL.indexOf(ch, ni) !== -1) { ni = nameL.indexOf(ch, ni) + 1; } }
+        for (const ch of token) { if (brandL.indexOf(ch, bi) !== -1) { bi = brandL.indexOf(ch, bi) + 1; } }
+        if (ni >= token.length) { totalScore += 10; if (!matchedFields.includes("name")) matchedFields.push("name"); }
+        else if (bi >= token.length) { totalScore += 8; if (!matchedFields.includes("brand")) matchedFields.push("brand"); }
+        else return { match: false, score: 0, fields: [] }; // unmatched token → exclude
+      }
+    }
+    return { match: totalScore > 0, score: totalScore, fields: matchedFields };
+  }
+
+  const filteredDrugs = (() => {
+    const matchCat = d => activeCat === "all" || d.category === activeCat;
+    if (!searchQ.trim()) return DRUG_DB.filter(matchCat);
+    return DRUG_DB
+      .map(d => ({ drug: d, ...fuzzyScore(d, searchQ) }))
+      .filter(r => r.match && matchCat(r.drug))
+      .sort((a, b) => b.score - a.score)
+      .map(r => r.drug);
+  })();
 
   const parsedMeds = parseMedList(medListText);
 

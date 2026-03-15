@@ -235,7 +235,7 @@ export default function DrugsAndBugs(){
                   <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.dim}}>{abx.add}</div>
                 </div>
               ))}
-              <button onClick={()=>navigate(PAGES.AntibioticStewardship))} style={{marginTop:6,width:"100%",padding:"8px",borderRadius:10,background:"rgba(46,204,113,.07)",border:"1px solid rgba(46,204,113,.28)",color:C.green,fontSize:12,fontWeight:600,cursor:"pointer"}}>All Regimens in Stewardship →</button>
+              <button onClick={()=>navigate(PAGES.AntibioticStewardship)} style={{marginTop:6,width:"100%",padding:"8px",borderRadius:10,background:"rgba(46,204,113,.07)",border:"1px solid rgba(46,204,113,.28)",color:C.green,fontSize:12,fontWeight:600,cursor:"pointer"}}>All Regimens in Stewardship →</button>
             </Card>
           </div>
         </div>
@@ -273,7 +273,7 @@ export default function DrugsAndBugs(){
                 <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.teal,fontWeight:600,marginBottom:4}}>{med.dose}</div>
                 <div style={{display:"flex",gap:6,marginTop:8,justifyContent:"flex-end"}}>
                   <button onClick={()=>navigate(PAGES.DrugReference)} style={{padding:"3px 10px",borderRadius:7,fontSize:10,fontWeight:600,cursor:"pointer",background:"transparent",border:`1px solid ${C.border}`,color:C.dim}}>Full Info</button>
-                  {med.cat==="antimicrobials"&&<button onClick={()=>navigate(PAGES.AntibioticStewardship))} style={{padding:"3px 10px",borderRadius:7,fontSize:10,fontWeight:600,cursor:"pointer",background:"rgba(46,204,113,.1)",border:"1px solid rgba(46,204,113,.28)",color:C.green}}>Stewardship</button>}
+                  {med.cat==="antimicrobials"&&<button onClick={()=>navigate(PAGES.AntibioticStewardship)} style={{padding:"3px 10px",borderRadius:7,fontSize:10,fontWeight:600,cursor:"pointer",background:"rgba(46,204,113,.1)",border:"1px solid rgba(46,204,113,.28)",color:C.green}}>Stewardship</button>}
                 </div>
               </motion.div>
             ))}
@@ -294,7 +294,7 @@ export default function DrugsAndBugs(){
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:C.bright}}>Sepsis Protocol</div>
             <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:7,background:"rgba(255,92,108,.12)",border:"1px solid rgba(255,92,108,.3)",color:C.red}}>SSC 2018</span>
             <div style={{flex:1}} />
-            <button onClick={()=>navigate(PAGES.AntibioticStewardship))} style={{padding:"7px 14px",borderRadius:10,background:`linear-gradient(135deg,${C.green},#1db862)`,border:"none",color:C.navy,fontSize:12,fontWeight:700,cursor:"pointer"}}>Full Stewardship Module →</button>
+            <button onClick={()=>navigate(PAGES.AntibioticStewardship)} style={{padding:"7px 14px",borderRadius:10,background:`linear-gradient(135deg,${C.green},#1db862)`,border:"none",color:C.navy,fontSize:12,fontWeight:700,cursor:"pointer"}}>Full Stewardship Module →</button>
           </div>
 
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
@@ -356,7 +356,7 @@ export default function DrugsAndBugs(){
           <div style={{display:"flex",gap:10,marginBottom:16,alignItems:"center"}}>
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:C.bright}}>Empiric Antibiotic Selection</div>
             <div style={{flex:1}} />
-            <button onClick={()=>navigate(PAGES.AntibioticStewardship))} style={{padding:"7px 14px",borderRadius:10,background:`linear-gradient(135deg,${C.green},#1db862)`,border:"none",color:C.navy,fontSize:12,fontWeight:700,cursor:"pointer"}}>Full Stewardship Module →</button>
+            <button onClick={()=>navigate(PAGES.AntibioticStewardship)} style={{padding:"7px 14px",borderRadius:10,background:`linear-gradient(135deg,${C.green},#1db862)`,border:"none",color:C.navy,fontSize:12,fontWeight:700,cursor:"pointer"}}>Full Stewardship Module →</button>
           </div>
 
           <div style={{background:"rgba(245,166,35,.06)",border:"1px solid rgba(245,166,35,.3)",borderRadius:12,padding:"10px 14px",marginBottom:14,display:"flex",gap:10,alignItems:"flex-start"}}>
@@ -375,7 +375,7 @@ export default function DrugsAndBugs(){
                   <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:abx.color,letterSpacing:".1em",marginBottom:6}}>{abx.severity}</div>
                   <div style={{fontSize:13,fontWeight:600,color:C.bright,marginBottom:4}}>{abx.regimen}</div>
                   <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.dim,marginBottom:10}}>{abx.add}</div>
-                  <button onClick={()=>navigate(PAGES.AntibioticStewardship))} style={{padding:"4px 10px",borderRadius:8,fontSize:10,fontWeight:600,cursor:"pointer",background:`${abx.color}12`,border:`1px solid ${abx.color}33`,color:abx.color}}>View protocol →</button>
+                  <button onClick={()=>navigate(PAGES.AntibioticStewardship)} style={{padding:"4px 10px",borderRadius:8,fontSize:10,fontWeight:600,cursor:"pointer",background:`${abx.color}12`,border:`1px solid ${abx.color}33`,color:abx.color}}>View protocol →</button>
                 </div>
               </div>
             ))}

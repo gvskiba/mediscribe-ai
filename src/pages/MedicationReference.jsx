@@ -422,6 +422,11 @@ export default function MedicationReferencePage() {
                       <div className="cstat"><div className="csv" style={{color:"var(--pur)"}}>{(weight*0.01).toFixed(2)} mg</div><div className="csl">EPI ARREST</div></div>
                     </div>
                     <div className="bzb" style={{background:bz.hex+"20",color:bz.hex,border:`1px solid ${bz.hex}40`}}>● {bz.zone}</div>
+                    <button onClick={()=>setShowSaveModal(true)} style={{
+                      padding:"5px 12px",borderRadius:7,fontSize:11,fontWeight:700,cursor:"pointer",
+                      background:"rgba(0,196,160,0.12)",border:"1px solid rgba(0,196,160,0.3)",
+                      color:"#00c4a0",fontFamily:"inherit",whiteSpace:"nowrap"
+                    }}>💾 Save Case</button>
                   </div>
                   <div className="card" style={{background:"var(--c2)"}}>
                     <div className="chdr"><span className="sh-ttl">CALCULATED DOSES — {weight} kg PATIENT</span><span className="sh-m">{pedResults.length} medications</span></div>

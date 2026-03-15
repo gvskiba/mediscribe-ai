@@ -239,6 +239,9 @@ export default function MedicationReferencePage() {
   const [complaint, setComplaint] = useState("");
   const [aiText, setAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showSavedCases, setShowSavedCases] = useState(false);
+  const [savedCasesKey, setSavedCasesKey] = useState(0);
 
   const weight = useMemo(()=>{
     if(pedWt) return parseFloat(pedWt)||null;

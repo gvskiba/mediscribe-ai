@@ -578,8 +578,25 @@ export default function MedicationReferencePage() {
   );
 }
 
-function MedRow({med,isExpanded,onToggle}){
+function calcWeightDose(doseStr, weightKg) {
+  // Parse mg/kg or mcg/kg patterns and compute for given weight
+  const match = doseStr.match(/([\d.]+)\s*(?:–|-)\s*([\d.]+)\s*(mg|mcg|g|mEq|units?)\/kg/i);
+  if (!match) return null;
+  const low = parseFloat(match[1]);
+  const high = parseFloat(match[2]);
+  const unit = match[3];
+  return {
+    low: Math.round(low * weightKg * 10) / 10,
+    high: Math.round(high * weightKg * 10) / 10,
+    unit,
+    perKg: `${low}–${high} ${unit}/kg`
+  };
+}
+
+function MedRow({med, isExpanded, onToggle, weightKg}){
   const color = CAT_COLOR[med.category]||"#00c4a0";
+  const wDose = weightKg ? calcWeightDose(med.adult_dose, weightKg) : null;
+
   return(<>
     <div className={`mrow ${isExpanded?"ex":""}`} onClick={onToggle}>
       <div className="mdot" style={{background:med.line==="first"?color:"#f59e0b"}}/>
@@ -588,6 +605,11 @@ function MedRow({med,isExpanded,onToggle}){
           <span className="mcod">{med.code}</span>
           {med.name}
           <span className={`mlb ${med.line==="first"?"l1":"l2"}`}>{med.line==="first"?"1ST LINE":"2ND LINE"}</span>
+          {wDose && (
+            <span style={{fontSize:10,padding:"2px 8px",borderRadius:4,background:"rgba(0,196,160,0.12)",border:"1px solid rgba(0,196,160,0.3)",color:"#00c4a0",fontFamily:"monospace",fontWeight:700}}>
+              ⚖ {wDose.low}–{wDose.high} {wDose.unit}
+            </span>
+          )}
         </div>
         <div className="mrs">{med.subtitle} · {med.indications.slice(0,3).join(" · ")}</div>
       </div>
@@ -600,11 +622,32 @@ function MedRow({med,isExpanded,onToggle}){
     {isExpanded&&(
       <div className="mdet">
         <div className="dgrid">
-          <div><div className="dlbl">Adult Dose</div><div className="dval tl">{med.adult_dose}</div></div>
+          <div>
+            <div className="dlbl">Adult Dose</div>
+            <div className="dval tl">{med.adult_dose}</div>
+            {wDose && (
+              <div style={{marginTop:6,padding:"5px 8px",background:"rgba(0,196,160,0.08)",borderRadius:6,border:"1px solid rgba(0,196,160,0.2)"}}>
+                <div style={{fontSize:9,color:"#4a6080",letterSpacing:".08em",marginBottom:2}}>⚖ FOR {weightKg} KG PATIENT</div>
+                <div style={{fontSize:13,fontWeight:700,color:"#00c4a0",fontFamily:"monospace"}}>{wDose.low}–{wDose.high} {wDose.unit}</div>
+                <div style={{fontSize:9,color:"#4a6080",marginTop:1}}>({wDose.perKg})</div>
+              </div>
+            )}
+          </div>
           <div><div className="dlbl">Pediatric Dose (weight-based)</div>
             {med.ped?.mgkg?(
               <div className="dval tl">{med.ped.mgkg} {med.ped.unit}/kg {med.ped.route}
                 {med.ped.max&&<span style={{color:"var(--yel)",marginLeft:6,fontSize:11}}>max {med.ped.max} {med.ped.unit}</span>}
+                {weightKg && (
+                  <div style={{marginTop:5,padding:"4px 7px",background:"rgba(0,196,160,0.08)",borderRadius:5,border:"1px solid rgba(0,196,160,0.2)"}}>
+                    <div style={{fontSize:9,color:"#4a6080",marginBottom:1}}>⚖ CALCULATED</div>
+                    <div style={{fontSize:12,fontWeight:700,color:"#00c4a0",fontFamily:"monospace"}}>
+                      {med.ped.max && (weightKg * med.ped.mgkg) > med.ped.max
+                        ? <>{med.ped.max} {med.ped.unit} <span style={{fontSize:9,color:"#f59e0b"}}>MAX</span></>
+                        : <>{Math.round(weightKg * med.ped.mgkg * 10)/10} {med.ped.unit}</>
+                      }
+                    </div>
+                  </div>
+                )}
                 <div style={{fontSize:11,color:"var(--tx2)",fontFamily:"inherit",fontWeight:400,marginTop:3}}>{med.ped.notes}</div>
               </div>
             ):<div className="dval" style={{color:"var(--tx2)"}}>{med.ped?.notes||"Adult dosing"}</div>}
@@ -618,6 +661,7 @@ function MedRow({med,isExpanded,onToggle}){
           <div><div className="dlbl">Warnings & Precautions</div>{med.warnings.map((w,i)=><div key={i} className="wr"><span style={{color:"var(--yel)",flexShrink:0}}>⚠</span><span>{w}</span></div>)}</div>
           <div><div className="dlbl">Monitoring Parameters</div>{med.monitoring.map((m,i)=><div key={i} style={{fontSize:11,color:"var(--tx2)",padding:"2px 0",display:"flex",gap:6,alignItems:"center"}}><span style={{color:"var(--teal)",fontSize:8}}>●</span>{m}</div>)}</div>
         </div>
+        <AIDoseAnalyzer med={med} weightKg={weightKg} />
         <div className="rtags">
           <span style={{fontSize:10,color:"var(--tx3)",alignSelf:"center"}}>References:</span>
           {med.refs.map((r,i)=><span key={i} className="rtag">{r}</span>)}

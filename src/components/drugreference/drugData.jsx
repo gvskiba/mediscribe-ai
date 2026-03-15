@@ -1,13 +1,3 @@
-export const CAT_COLORS = {
-  cardiac:"#ef4444", anticoag:"#3b82f6", abx:"#10b981",
-  analgesic:"#f97316", psych:"#ec4899", gi:"#0ea5e9", other:"#a855f7",
-};
-export const CAT_LABELS = {
-  all:"All", cardiac:"❤️ Cardiac", anticoag:"🩸 Anticoag",
-  abx:"🧬 Antibiotics", analgesic:"💊 Analgesic", psych:"🧠 Psych",
-  gi:"🫃 GI", other:"⚙️ Other",
-};
-
 export const DRUG_DB = [
   {
     id:"warfarin", name:"Warfarin", brand:"Coumadin, Jantoven", category:"anticoag",
@@ -62,9 +52,7 @@ export const DRUG_DB = [
       {indication:"Stable VT (IV load)",dose:"150mg over 10 min, then 1mg/min ×6h, then 0.5mg/min",route:"IV",duration:"24h then oral",notes:"Monitor for hypotension."},
       {indication:"AF / Maintenance",dose:"Load 400–800mg/day ×1–3 wk; Maintenance 100–400mg/day",route:"PO",duration:"Lifelong typically",notes:"Lowest effective maintenance dose."},
     ],
-    renal:[
-      {tier:"All levels",dose:"No adjustment",note:"Not significantly renally eliminated"},
-    ],
+    renal:[{tier:"All levels",dose:"No adjustment",note:"Not significantly renally eliminated"}],
     hepatic:"Use with caution — amiodarone causes hepatotoxicity itself. Monitor LFTs q6 months. Dose reduction in severe hepatic disease.",
     contraindications:["Sinus bradycardia / SA block (without pacemaker)","2nd/3rd-degree AV block (without pacemaker)","Cardiogenic shock","Iodine/amiodarone hypersensitivity"],
     warnings:["⚠ Pulmonary toxicity — can be fatal","⚠ Thyroid dysfunction (37% iodine by weight)","⚠ Hepatotoxicity","⚠ Corneal microdeposits; rare optic neuropathy","Doubles INR on warfarin — reduce warfarin 30–50%","Increases digoxin levels 2×","QT prolongation","Half-life 40–55 days — interactions persist months after stopping"],
@@ -82,9 +70,7 @@ export const DRUG_DB = [
       {indication:"HFrEF",dose:"Succinate: Start 12.5–25mg daily; max 200mg",route:"PO",duration:"Ongoing",notes:"Must be euvolemic first. Start low, titrate slowly."},
       {indication:"AF rate / STEMI",dose:"2.5–5mg IV q5 min ×up to 3 doses",route:"IV",duration:"Then oral",notes:"Monitor HR and BP closely."},
     ],
-    renal:[
-      {tier:"All CrCl levels",dose:"No adjustment",note:"Primarily hepatic metabolism"},
-    ],
+    renal:[{tier:"All CrCl levels",dose:"No adjustment",note:"Primarily hepatic metabolism"}],
     hepatic:"Reduce dose in severe hepatic impairment. Consider starting at 50% of usual dose.",
     contraindications:["Severe bradycardia (HR <45–50)","High-degree AV block without pacemaker","Decompensated heart failure (acute)","Sick sinus syndrome without pacemaker"],
     warnings:["Never abruptly discontinue — rebound HTN, angina, MI","Masks hypoglycemia in diabetics (except sweating)","Caution in COPD/asthma — not truly β1-selective at high doses","May worsen peripheral vascular disease"],
@@ -863,9 +849,7 @@ export const DRUG_DB = [
       {indication:"Status Epilepticus (IV)",dose:"Fosphenytoin: 20 mg PE/kg IV at max 150 mg PE/min; Phenytoin: 20 mg/kg IV at max 50 mg/min",route:"IV",duration:"Loading dose; follow with maintenance",notes:"Fosphenytoin preferred (water-soluble, faster rate). Monitor ECG/BP during infusion."},
       {indication:"Maintenance (oral)",dose:"300–400mg/day PO divided TID or QD (extended-release)",route:"PO",duration:"Ongoing — level-guided",notes:"Capitalize on Dilantin ER once-daily dosing. Target level 10–20 mcg/mL (total) or 1–2.5 mcg/mL (free)."},
     ],
-    renal:[
-      {tier:"CrCl <30",dose:"Monitor free phenytoin levels (protein binding altered)",note:"Total levels unreliable in CKD — use free levels"},
-    ],
+    renal:[{tier:"CrCl <30",dose:"Monitor free phenytoin levels (protein binding altered)",note:"Total levels unreliable in CKD — use free levels"}],
     hepatic:"Primarily hepatic (CYP2C9/2C19). Reduce dose and monitor free levels in hepatic impairment.",
     contraindications:["Sinus bradycardia / SA block / AV block","Adams-Stokes syndrome","History of phenytoin hypersensitivity","Concurrent delavirdine"],
     warnings:["Zero-order kinetics — small dose changes = large level changes (saturable metabolism)","Purple glove syndrome (IV phenytoin extravasation — use fosphenytoin)","Cardiac arrhythmias / hypotension with rapid IV infusion","Gingival hyperplasia (long-term)","Hirsutism, coarsening of facial features","Osteoporosis with chronic use","DRESS/Stevens-Johnson syndrome (HLA-B*1502 in Asian patients)","Many drug interactions (enzyme inducer)"],

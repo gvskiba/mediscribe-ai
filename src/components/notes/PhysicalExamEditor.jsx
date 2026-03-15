@@ -478,7 +478,10 @@ export default function PhysicalExamEditor({ examData, onUpdate, onAddToNote, no
   };
 
   const analyzeRelevantSections = async () => {
-    if (!note?.chief_complaint && !note?.history_of_present_illness) return;
+    if (!note?.chief_complaint && !note?.history_of_present_illness) {
+      toast.error("Add chief complaint or HPI first");
+      return;
+    }
     setLoadingAI(true);
     try {
       const result = await base44.integrations.Core.InvokeLLM({
@@ -498,7 +501,8 @@ Always include "general". Return 4-8 relevant section IDs.`,
       setSystems(reordered);
       setAnalyzed(true);
       toast.success(`${relevantIds.size} relevant sections identified`);
-    } catch {
+    } catch (err) {
+      console.error("AI analysis error:", err);
       toast.error("Could not analyze sections");
       setAnalyzed(true);
     } finally {
@@ -576,10 +580,10 @@ Always include "general". Return 4-8 relevant section IDs.`,
             </>
           )}
 
-          <button onClick={analyzeRelevantSections} disabled={loadingAI}
-            style={{ padding: "7px 16px", borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: "pointer", border: `1px solid ${T.border}`, background: "transparent", color: T.dim, display: "flex", alignItems: "center", gap: 6, transition: "all 0.2s" }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = T.muted; e.currentTarget.style.color = T.text; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.dim; }}
+          <button onClick={(e) => { e.stopPropagation(); analyzeRelevantSections(); }} disabled={loadingAI}
+            style={{ padding: "7px 16px", borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: loadingAI ? "not-allowed" : "pointer", border: `1px solid ${T.border}`, background: "transparent", color: T.dim, display: "flex", alignItems: "center", gap: 6, transition: "all 0.2s", opacity: loadingAI ? 0.6 : 1 }}
+            onMouseEnter={e => { if (!loadingAI) { e.currentTarget.style.borderColor = T.muted; e.currentTarget.style.color = T.text; } }}
+            onMouseLeave={e => { if (!loadingAI) { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.dim; } }}
           >
             {loadingAI ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
             {loadingAI ? "Analyzing…" : "AI Analyze"}

@@ -335,7 +335,7 @@ export default function Home() {
                 const isSelected = selected===p.id;
                 const isExpanded = expanded === p.id;
                 return (
-                  <React.Fragment key={p.id}>
+                  <div key={p.id}>
                   <motion.div
                     layout
                     initial={{ opacity:0, y:-4 }}
@@ -499,7 +499,7 @@ export default function Home() {
                       </motion.div>
                     )}
                   </AnimatePresence>
-                  </React.Fragment>
+                  </div>
                 );
               })}
             </AnimatePresence>

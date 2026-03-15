@@ -625,57 +625,30 @@ function MedRow({med, isExpanded, onToggle, weightKg}){
     </div>
     {isExpanded&&(
       <div className="mdet">
-        {med.moa && (
+        {med.mechanism && (
         <div style={{marginBottom:11,padding:"8px 12px",background:"rgba(0,196,160,0.05)",border:"1px solid rgba(0,196,160,0.18)",borderRadius:"var(--r)"}}>
           <div className="dlbl" style={{marginBottom:4}}>Mechanism of Action</div>
-          <div style={{fontSize:12,color:"var(--tx2)",lineHeight:1.6}}>{med.moa}</div>
+          <div style={{fontSize:12,color:"var(--tx2)",lineHeight:1.6}}>{med.mechanism}</div>
         </div>
       )}
     <div className="dgrid">
           <div>
             <div className="dlbl">Adult Dose</div>
-            <div className="dval tl">{med.adult_dose}</div>
-            {wDose && (
-              <div style={{marginTop:6,padding:"5px 8px",background:"rgba(0,196,160,0.08)",borderRadius:6,border:"1px solid rgba(0,196,160,0.2)"}}>
-                <div style={{fontSize:9,color:"#4a6080",letterSpacing:".08em",marginBottom:2}}>⚖ FOR {weightKg} KG PATIENT</div>
-                <div style={{fontSize:13,fontWeight:700,color:"#00c4a0",fontFamily:"monospace"}}>{wDose.low}–{wDose.high} {wDose.unit}</div>
-                <div style={{fontSize:9,color:"#4a6080",marginTop:1}}>({wDose.perKg})</div>
-              </div>
-            )}
+            <div className="dval tl">{med.dosing?.[0]?.dose || "See dosing table"}</div>
           </div>
-          <div><div className="dlbl">Pediatric Dose (weight-based)</div>
-            {med.ped?.mgkg?(
-              <div className="dval tl">{med.ped.mgkg} {med.ped.unit}/kg {med.ped.route}
-                {med.ped.max&&<span style={{color:"var(--yel)",marginLeft:6,fontSize:11}}>max {med.ped.max} {med.ped.unit}</span>}
-                {weightKg && (
-                  <div style={{marginTop:5,padding:"4px 7px",background:"rgba(0,196,160,0.08)",borderRadius:5,border:"1px solid rgba(0,196,160,0.2)"}}>
-                    <div style={{fontSize:9,color:"#4a6080",marginBottom:1}}>⚖ CALCULATED</div>
-                    <div style={{fontSize:12,fontWeight:700,color:"#00c4a0",fontFamily:"monospace"}}>
-                      {med.ped.max && (weightKg * med.ped.mgkg) > med.ped.max
-                        ? <>{med.ped.max} {med.ped.unit} <span style={{fontSize:9,color:"#f59e0b"}}>MAX</span></>
-                        : <>{Math.round(weightKg * med.ped.mgkg * 10)/10} {med.ped.unit}</>
-                      }
-                    </div>
-                  </div>
-                )}
-                <div style={{fontSize:11,color:"var(--tx2)",fontFamily:"inherit",fontWeight:400,marginTop:3}}>{med.ped.notes}</div>
-              </div>
-            ):<div className="dval" style={{color:"var(--tx2)"}}>{med.ped?.notes||"Adult dosing"}</div>}
-          </div>
-          <div><div className="dlbl">Onset / Duration</div><div className="dval"><span style={{color:"var(--teal)"}}>{med.onset}</span><span style={{color:"var(--tx3)"}}> → </span>{med.duration}</div>
-            {med.reversal&&<><div className="dlbl" style={{marginTop:8}}>Reversal</div><div style={{fontSize:11,color:"var(--pur)",fontFamily:"monospace"}}>{med.reversal}</div></>}
-          </div>
+          <div><div className="dlbl">Onset / Duration</div><div className="dval"><span style={{color:"var(--teal)"}}>{med.halfLife}</span></div></div>
+          <div><div className="dlbl">Pregnancy Category</div><div className="dval tl">{med.pregnancy}</div></div>
         </div>
         <div className="dgrid">
-          <div><div className="dlbl">Contraindications</div>{med.contraindications.map((ci,i)=><div key={i} className="cir"><span style={{flexShrink:0}}>✕</span><span>{ci}</span></div>)}</div>
-          <div><div className="dlbl">Warnings & Precautions</div>{med.warnings.map((w,i)=><div key={i} className="wr"><span style={{color:"var(--yel)",flexShrink:0}}>⚠</span><span>{w}</span></div>)}</div>
-          <div><div className="dlbl">Monitoring Parameters</div>{med.monitoring.map((m,i)=><div key={i} style={{fontSize:11,color:"var(--tx2)",padding:"2px 0",display:"flex",gap:6,alignItems:"center"}}><span style={{color:"var(--teal)",fontSize:8}}>●</span>{m}</div>)}</div>
+          <div><div className="dlbl">Contraindications</div>{med.contraindications?.slice(0,3).map((ci,i)=><div key={i} className="cir"><span style={{flexShrink:0}}>✕</span><span>{ci}</span></div>)}</div>
+          <div><div className="dlbl">Warnings</div>{med.warnings?.slice(0,3).map((w,i)=><div key={i} className="wr"><span style={{color:"var(--yel)",flexShrink:0}}>⚠</span><span>{w}</span></div>)}</div>
+          <div><div className="dlbl">Monitoring</div><div style={{fontSize:11,color:"var(--tx2)",lineHeight:1.5}}>{med.monitoring}</div></div>
         </div>
-        <AIDoseAnalyzer med={med} weightKg={weightKg} />
         <div className="rtags">
-          <span style={{fontSize:10,color:"var(--tx3)",alignSelf:"center"}}>References:</span>
-          {med.refs.map((r,i)=><span key={i} className="rtag">{r}</span>)}
-          {med.reversal&&<span className="rvtag">⟲ {med.reversal}</span>}
+          <span style={{fontSize:10,color:"var(--tx3)",alignSelf:"center"}}>Key Info:</span>
+          <span className="rtag">{med.drugClass}</span>
+          <span className="rtag">Category: {med.pregnancy}</span>
+          {med.highAlert&&<span className="rvtag">HIGH ALERT</span>}
         </div>
       </div>
     )}

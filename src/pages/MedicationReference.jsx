@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
+import { ER_MEDICATIONS as MEDICATIONS } from "../components/drugreference/drugData";
 
-// ─── DATA ─────────────────────────────────────────────────────────────────────
-const MEDICATIONS = [
+// ─── REMOVED: local MEDICATIONS array — now imported from components/drugreference/drugData.js ───
+const _PLACEHOLDER = [
   { id:"ketamine_pain", category:"analgesics", name:"Ketamine", subtitle:"Sub-dissociative Analgesic", code:"KET-SD", line:"first", indications:["Acute pain","Procedural sedation"], adult_dose:"0.1–0.3 mg/kg IV over 10 min", ped:{mgkg:0.3,unit:"mg",route:"IV",max:30,notes:"Over 10 min"}, onset:"1–2 min IV", duration:"15–30 min", contraindications:["Elevated ICP","Schizophrenia","STEMI"], warnings:["Emergence reactions — consider midazolam 0.05 mg/kg","Increased secretions — consider atropine"], monitoring:["HR","BP","O₂ sat","Mental status on emergence"], reversal:null, refs:["ACEP 2019","EM:RAP"] },
   { id:"fentanyl", category:"analgesics", name:"Fentanyl", subtitle:"Opioid Analgesic", code:"FEN-IV", line:"first", indications:["Moderate–severe pain","Procedural sedation adjunct"], adult_dose:"1–2 mcg/kg IV q30–60min PRN", ped:{mgkg:1.5,unit:"mcg",route:"IV/IN",max:100,notes:"IN: 2 mcg/kg max 100 mcg"}, onset:"1–2 min IV", duration:"30–60 min", contraindications:["Respiratory depression","MAO inhibitors within 14 days"], warnings:["Chest wall rigidity at high doses","Naloxone reversal available"], monitoring:["RR","O₂ sat","LOC"], reversal:"Naloxone 0.01 mg/kg IV", refs:["ACEP","WHO"] },
   { id:"morphine", category:"analgesics", name:"Morphine Sulfate", subtitle:"Opioid Analgesic", code:"MS-IV", line:"first", indications:["Moderate–severe pain","ACS pain management"], adult_dose:"2–4 mg IV q15–30min PRN; max 20 mg", ped:{mgkg:0.1,unit:"mg",route:"IV",max:5,notes:"Titrate q15–30 min"}, onset:"5–10 min IV", duration:"3–5 hr", contraindications:["Respiratory depression","Paralytic ileus","Head injury with AMS"], warnings:["Hypotension","Avoid in STEMI — CRUSADE data"], monitoring:["RR","BP","O₂ sat"], reversal:"Naloxone", refs:["ACEP","CRUSADE"] },

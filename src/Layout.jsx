@@ -54,7 +54,7 @@ const navSections = [
         items: [
           { name: "Drugs & Bugs", icon: BookOpen, page: "DrugsBugs" },
           { name: "Antibiotic Guide", icon: BookOpen, page: "AntibioticStewardship" },
-          { name: "Drug Reference", icon: BookOpen, page: "DrugReference" },
+          { name: "Drug Reference", icon: BookOpen, page: "MedicationReference" },
           { name: "CME & Learning", icon: BookOpen, page: "CMELearningCenter" },
           { name: "Pediatric Dosing", icon: Activity, page: "PediatricDosing" },
           { name: "Guidelines", icon: BookOpen, page: "Guidelines" },

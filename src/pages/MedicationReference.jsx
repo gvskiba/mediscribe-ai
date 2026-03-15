@@ -597,26 +597,28 @@ function calcWeightDose(doseStr, weightKg) {
 
 function MedRow({med, isExpanded, onToggle, weightKg}){
   const color = CAT_COLOR[med.category]||"#00c4a0";
-  const wDose = weightKg ? calcWeightDose(med.adult_dose, weightKg) : null;
+  const dosing = med.dosing?.[0];
+  const doseStr = dosing?.dose || "";
+  const wDose = weightKg && med.ped?.mgkg ? {low: Math.round(weightKg * med.ped.mgkg * 10)/10, high: Math.round(weightKg * med.ped.mgkg * 10)/10, unit: med.ped.unit} : null;
 
   return(<>
     <div className={`mrow ${isExpanded?"ex":""}`} onClick={onToggle}>
-      <div className="mdot" style={{background:med.line==="first"?color:"#f59e0b"}}/>
+      <div className="mdot" style={{background:color}}/>
       <div className="mrm">
         <div className="mrn">
-          <span className="mcod">{med.code}</span>
+          <span className="mcod">{med.id}</span>
           {med.name}
-          <span className={`mlb ${med.line==="first"?"l1":"l2"}`}>{med.line==="first"?"1ST LINE":"2ND LINE"}</span>
+          {med.highAlert && <span className={`mlb l1`} style={{background:"rgba(239, 68, 68, 0.1)", color:"#ef4444", border:"1px solid rgba(239, 68, 68, 0.3)"}}>HIGH ALERT</span>}
           {wDose && (
             <span style={{fontSize:10,padding:"2px 8px",borderRadius:4,background:"rgba(0,196,160,0.12)",border:"1px solid rgba(0,196,160,0.3)",color:"#00c4a0",fontFamily:"monospace",fontWeight:700}}>
-              ⚖ {wDose.low}–{wDose.high} {wDose.unit}
+              ⚖ {wDose.low} {wDose.unit}
             </span>
           )}
         </div>
-        <div className="mrs">{med.subtitle} · {med.indications.slice(0,3).join(" · ")}</div>
+        <div className="mrs">{med.drugClass} {med.indications?.slice(0,2).join(" · ") || ""}</div>
       </div>
       <div className="mrr">
-        <span className="dpill">{med.adult_dose.split(";")[0].slice(0,38)}{med.adult_dose.length>38?"…":""}</span>
+        <span className="dpill">{doseStr.slice(0,40)}{doseStr.length>40?"…":""}</span>
         <button className="obtn" onClick={e=>{e.stopPropagation();}}>Order →</button>
         <span style={{color:"var(--tx3)",fontSize:11,transform:isExpanded?"rotate(180deg)":"none",transition:"transform .15s"}}>▼</span>
       </div>

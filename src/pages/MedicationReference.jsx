@@ -634,6 +634,7 @@ function MedRow({med, isExpanded, onToggle, weightKg, isSelected, onSelect}){
       </div>
       <div className="mrr">
         <span className="dpill">{doseStr.slice(0,40)}{doseStr.length>40?"…":""}</span>
+        <input type="checkbox" checked={isSelected} onChange={e=>{e.stopPropagation(); onSelect(!isSelected);}} style={{cursor:"pointer",width:16,height:16}} title="Select for interaction check"/>
         <button className="obtn" onClick={e=>{e.stopPropagation();}}>Order →</button>
         <span style={{color:"var(--tx3)",fontSize:11,transform:isExpanded?"rotate(180deg)":"none",transition:"transform .15s"}}>▼</span>
       </div>

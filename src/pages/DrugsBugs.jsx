@@ -182,7 +182,7 @@ export default function DrugsAndBugs(){
           {/* Three sub-page navigation cards */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:20}}>
             {SUB_PAGES.map(sp=>(
-              <motion.div key={sp.page} whileHover={{y:-3,boxShadow:`0 12px 40px ${sp.color}18`}} transition={{duration:.15}} onClick={()=>navigate(sp.page))} style={{background:C.panel,border:`1px solid ${C.border}`,borderRadius:16,padding:"18px",cursor:"pointer",position:"relative",overflow:"hidden"}}>
+              <motion.div key={sp.page} whileHover={{y:-3,boxShadow:`0 12px 40px ${sp.color}18`}} transition={{duration:.15}} onClick={()=>navigate(sp.page)} style={{background:C.panel,border:`1px solid ${C.border}`,borderRadius:16,padding:"18px",cursor:"pointer",position:"relative",overflow:"hidden"}}>
                 {/* Accent glow */}
                 <div style={{position:"absolute",top:0,right:0,width:120,height:120,borderRadius:"50%",background:`radial-gradient(circle,${sp.color}12,transparent 70%)`,pointerEvents:"none"}} />
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>

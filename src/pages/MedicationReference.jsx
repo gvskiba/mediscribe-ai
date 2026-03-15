@@ -262,7 +262,7 @@ export default function MedicationReferencePage() {
     if(cat!=="all"&&m.category!==cat) return false;
     const q=search.toLowerCase();
     if(!q) return true;
-    const indicStr = Array.isArray(m.indications) ? m.indications.join(" ") : "";
+    const indicStr = typeof m.indications === "string" ? m.indications : "";
     return m.name.toLowerCase().includes(q)||indicStr.toLowerCase().includes(q)||m.drugClass.toLowerCase().includes(q)||(m.brand && m.brand.toLowerCase().includes(q));
   }),[cat,search]);
 

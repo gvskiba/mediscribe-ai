@@ -11,6 +11,7 @@ import NursingFlowsheet from './pages/NursingFlowsheet';
 import AutoCoder from './pages/AutoCoder';
 import ClinicalDecisionSupport from './pages/ClinicalDecisionSupport';
 import NoteEditorTabsPage from './pages/NoteEditorTabs';
+import ClinicalNoteStudio from './pages/ClinicalNoteStudio';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -69,6 +70,11 @@ const AuthenticatedApp = () => {
       <Route path="/NoteEditorTabs" element={
         <LayoutWrapper currentPageName="NoteEditorTabs">
           <NoteEditorTabsPage />
+        </LayoutWrapper>
+      } />
+      <Route path="/ClinicalNoteStudio" element={
+        <LayoutWrapper currentPageName="ClinicalNoteStudio">
+          <ClinicalNoteStudio />
         </LayoutWrapper>
       } />
       {Object.entries(Pages).map(([path, Page]) => (

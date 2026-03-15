@@ -492,7 +492,7 @@ export default function DrugsAndBugs(){
       </div>
 
       {/* ── Main Content ───────────────────────────────────────── */}
-      <div style={{overflowY:"auto"}}>
+      <div style={{overflowY:"auto",flex:1}}>
         <AnimatePresence mode="wait">
           <motion.div key={activeSection} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-4}} transition={{duration:.15}}>
             {renderContent()}

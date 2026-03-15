@@ -79,7 +79,7 @@ export default function DrugReference() {
   const procData = PROC_RULES[selectedProc];
 
   return (
-    <div className="h-full bg-[#050f1e] text-slate-200 flex flex-col" style={{minHeight: '100vh'}}>
+    <div className="bg-[#050f1e] text-slate-200 flex flex-col" style={{minHeight: '100vh'}}>
       {/* Header */}
       <div className="border-b border-slate-700/50 bg-[#071525] px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-3">

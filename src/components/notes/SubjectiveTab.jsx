@@ -350,16 +350,16 @@ Write a single paragraph narrative HPI in third person, past tense. Be specific 
       <PanelHeader icon="📋" title="History of Present Illness"
         action={
           <div style={{ display: "flex", gap: 6 }}>
-            <button onClick={generateHPI} disabled={generatingHPI}
-              style={{ padding: "4px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer", border: `1px solid ${T.border}`, background: "transparent", color: T.dim, display: "flex", alignItems: "center", gap: 5, transition: "all 0.15s" }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = T.purple; e.currentTarget.style.color = T.purple; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.dim; }}
+            <button onClick={(e) => { e.stopPropagation(); generateHPI(); }} disabled={generatingHPI}
+              style={{ padding: "4px 12px", borderRadius: 6, fontSize: 11, cursor: generatingHPI ? "not-allowed" : "pointer", border: `1px solid ${T.border}`, background: "transparent", color: T.dim, display: "flex", alignItems: "center", gap: 5, transition: "all 0.15s", opacity: generatingHPI ? 0.6 : 1 }}
+              onMouseEnter={e => { if (!generatingHPI) { e.currentTarget.style.borderColor = T.purple; e.currentTarget.style.color = T.purple; } }}
+              onMouseLeave={e => { if (!generatingHPI) { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.dim; } }}
             >
               {generatingHPI ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
               AI Draft
             </button>
-            <button onClick={analyzeNote} disabled={analyzingRawData}
-              style={{ padding: "4px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer", border: "none", background: `linear-gradient(135deg, ${T.teal}, ${T.teal2})`, color: T.navy, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}
+            <button onClick={(e) => { e.stopPropagation(); analyzeNote(); }} disabled={analyzingRawData}
+              style={{ padding: "4px 12px", borderRadius: 6, fontSize: 11, cursor: analyzingRawData ? "not-allowed" : "pointer", border: "none", background: `linear-gradient(135deg, ${T.teal}, ${T.teal2})`, color: T.navy, fontWeight: 600, display: "flex", alignItems: "center", gap: 5, opacity: analyzingRawData ? 0.6 : 1 }}
             >
               {analyzingRawData ? <Loader2 size={10} className="animate-spin" /> : <Zap size={10} />}
               AI Structure
@@ -536,15 +536,15 @@ Return which symptoms are present (true) or absent (false) for each system.`,
         action={
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
             {saving && <Loader2 size={10} className="animate-spin" style={{ color: T.dim }} />}
-            <button onClick={markAllNormal}
+            <button onClick={(e) => { e.stopPropagation(); markAllNormal(); }}
               style={{ padding: "3px 9px", borderRadius: 5, fontSize: 10, cursor: "pointer", border: `1px solid ${T.border}`, background: "transparent", color: T.dim, transition: "all 0.15s" }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = T.green; e.currentTarget.style.color = T.green; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.dim; }}
             >All Normal</button>
-            <button onClick={generateROS} disabled={generatingROS}
-              style={{ padding: "3px 9px", borderRadius: 5, fontSize: 10, cursor: "pointer", border: `1px solid ${T.border}`, background: "transparent", color: T.dim, display: "flex", alignItems: "center", gap: 4, transition: "all 0.15s" }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = T.purple; e.currentTarget.style.color = T.purple; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.dim; }}
+            <button onClick={(e) => { e.stopPropagation(); generateROS(); }} disabled={generatingROS}
+              style={{ padding: "3px 9px", borderRadius: 5, fontSize: 10, cursor: generatingROS ? "not-allowed" : "pointer", border: `1px solid ${T.border}`, background: "transparent", color: T.dim, display: "flex", alignItems: "center", gap: 4, transition: "all 0.15s", opacity: generatingROS ? 0.6 : 1 }}
+              onMouseEnter={e => { if (!generatingROS) { e.currentTarget.style.borderColor = T.purple; e.currentTarget.style.color = T.purple; } }}
+              onMouseLeave={e => { if (!generatingROS) { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.dim; } }}
             >
               {generatingROS ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />} AI
             </button>

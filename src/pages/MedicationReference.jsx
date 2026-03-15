@@ -387,12 +387,19 @@ export default function MedicationReferencePage() {
               <div className="sh-l"><div className="sh-ico">💊</div><span className="sh-ttl">ER MEDICATION REFERENCE</span></div>
               <span className="sh-m">ACEP Guidelines · {filtered.length} medications</span>
             </div>
-            <div style={{display:"flex",gap:10,marginBottom:13}}>
-              <div className="sw">
+            <div style={{display:"flex",gap:10,marginBottom:13,alignItems:"center",flexWrap:"wrap"}}>
+              <div className="sw" style={{flex:1,minWidth:200}}>
                 <span style={{color:"var(--tx3)",fontSize:14}}>🔍</span>
                 <input placeholder="Search medications, indications, drug codes..." value={search} onChange={e=>setSearch(e.target.value)}/>
                 {search&&<span onClick={()=>setSearch("")} style={{cursor:"pointer",color:"var(--tx3)",fontSize:14}}>✕</span>}
               </div>
+              <WeightWidget
+                weight={globalWeight}
+                weightUnit={globalWeightUnit}
+                onWeightChange={setGlobalWeight}
+                onUnitChange={setGlobalWeightUnit}
+                onClear={()=>{ setGlobalWeight(null); }}
+              />
             </div>
             <div className="fps">
               {CATEGORIES.map(c=>(

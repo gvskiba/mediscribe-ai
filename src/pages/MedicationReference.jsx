@@ -2,6 +2,8 @@ import { useState, useMemo } from "react";
 import { ER_MEDICATIONS as MEDICATIONS } from "../components/drugreference/drugData";
 import SaveCaseModal from "../components/medicationreference/SaveCaseModal";
 import SavedCasesPanel from "../components/medicationreference/SavedCasesPanel";
+import WeightWidget from "../components/medicationreference/WeightWidget";
+import AIDoseAnalyzer from "../components/medicationreference/AIDoseAnalyzer";
 
 const CATEGORIES = [
   { id:"all", label:"All", icon:"💊", color:"#00c4a0" },

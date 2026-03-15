@@ -12,6 +12,7 @@ import AutoCoder from './pages/AutoCoder';
 import ClinicalDecisionSupport from './pages/ClinicalDecisionSupport';
 import NoteEditorTabsPage from './pages/NoteEditorTabs';
 import ClinicalNoteStudio from './pages/ClinicalNoteStudio';
+import DrugReference from './pages/DrugReference';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];

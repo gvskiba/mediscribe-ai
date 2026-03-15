@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { createPageUrl } from "@/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 // ── Color tokens — identical to ClinicalNoteStudio ─────────────────

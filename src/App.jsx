@@ -84,6 +84,11 @@ const AuthenticatedApp = () => {
           <DrugReference />
         </LayoutWrapper>
       } />
+      <Route path="/MedicationReference" element={
+        <LayoutWrapper currentPageName="MedicationReference">
+          <MedicationReference />
+        </LayoutWrapper>
+      } />
       {Object.entries(Pages).map(([path, Page]) => (
         <Route
           key={path}

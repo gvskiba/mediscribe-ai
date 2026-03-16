@@ -33,6 +33,16 @@ const QUICK_DRUG_LINKS = [
   { name: "Google Scholar", url: "https://scholar.google.com/", icon: "📖" },
 ];
 
+const QUICK_CONDITION_LINKS = [
+  { name: "UpToDate", url: "https://www.uptodate.com/", icon: "📋" },
+  { name: "MedlinePlus", url: "https://medlineplus.gov/", icon: "🏥" },
+  { name: "Merck Manual", url: "https://www.merckmanuals.com/professional", icon: "📘" },
+  { name: "NORD", url: "https://rarediseases.org/", icon: "🧬" },
+  { name: "CDC Conditions", url: "https://www.cdc.gov/az/", icon: "🔬" },
+  { name: "BMJ Best Practice", url: "https://bestpractice.bmj.com/", icon: "🩺" },
+  { name: "OMIM", url: "https://www.omim.org/", icon: "🧪" },
+];
+
 function ResultCard({ title, content, color = "blue", expandable = false, defaultExpanded = true }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const colorMap = {

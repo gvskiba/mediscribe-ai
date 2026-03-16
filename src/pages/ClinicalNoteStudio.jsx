@@ -141,6 +141,8 @@ export default function ClinicalNoteStudio() {
   const [differentialDiagnosis, setDifferentialDiagnosis] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [exportingFormat, setExportingFormat] = useState(null);
+  const [showTranscription, setShowTranscription] = useState(false);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
 
   // Load the saved/existing note for NoteDetail view
   const { data: note, isLoading: noteLoading } = useQuery({

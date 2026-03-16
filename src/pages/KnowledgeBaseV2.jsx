@@ -571,32 +571,48 @@ const GUIDELINES_DATA = {
       {org:'AHA / ACC / HRS',title:'2023 ACC/AHA/ACEP Guideline: Management of Atrial Fibrillation',desc:'Updated AF management including rhythm vs rate control, anticoagulation decisions, and ablation indications.',year:'2023',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.ahajournals.org/doi/10.1161/CIR.0000000000001123'},
       {org:'ACC / AHA',title:'2022 AHA/ACC Guideline for Coronary Artery Disease',desc:'Evidence-based recommendations for stable and unstable CAD, revascularisation, and secondary prevention.',year:'2023',pill:'Focused Update',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.ahajournals.org/doi/10.1161/CIR.0000000000001063'},
       {org:'AHA / ACC / HFSA',title:'2022 AHA/ACC/HFSA Guideline for Heart Failure',desc:'Comprehensive HF management covering HFrEF, HFmrEF, HFpEF, device therapy, and hospitalisation management.',year:'2022',pill:'New',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.ahajournals.org/doi/10.1161/CIR.0000000000001172'},
-      {org:'ESC',title:'ESC Clinical Practice Guidelines Hub',desc:"European Society of Cardiology guidelines library covering ACS, HF, arrhythmia, prevention, and more.",year:'2024',pill:'Active',pillStyle:{background:'#0d2520',color:'#3dffa0'},url:'https://www.escardio.org/Guidelines/Clinical-Practice-Guidelines'},
+      {org:'ESC',title:'ESC Clinical Practice Guidelines Hub',desc:'European Society of Cardiology guidelines library covering ACS, HF, arrhythmia, prevention, and more.',year:'2024',pill:'Active',pillStyle:{background:'#0d2520',color:'#3dffa0'},url:'https://www.escardio.org/Guidelines/Clinical-Practice-Guidelines'},
       {org:'ACC / AHA',title:'2017 ACC/AHA Guideline for High Blood Pressure',desc:'Hypertension definition, classification (≥130/80 mmHg), and treatment thresholds with cardiovascular risk stratification.',year:'2017',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.ahajournals.org/doi/10.1161/HYP.0000000000000065'},
+      {org:'ESC',title:'2022 ESC Guidelines for Ventricular Arrhythmias & SCD Prevention',desc:'Management of patients at risk of SCD including ICD indications, antiarrhythmic therapy, and genetic cardiomyopathies.',year:'2022',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.escardio.org/Guidelines/Clinical-Practice-Guidelines/Ventricular-Arrhythmias-and-the-Prevention-of-Sudden-Cardiac-Death'},
+      {org:'ACC / AHA',title:'2022 AHA/ACC Guideline on Valvular Heart Disease',desc:'Comprehensive evaluation and management of aortic, mitral, tricuspid, and pulmonic valve disease including TAVR/SAVR decision-making.',year:'2021',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.ahajournals.org/doi/10.1161/CIR.0000000000001036'},
+      {org:'ESC / EAS',title:'2019 ESC/EAS Guidelines for Dyslipidaemias',desc:'LDL targets by cardiovascular risk category, statin therapy, ezetimibe, and PCSK9 inhibitor indications.',year:'2019',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.escardio.org/Guidelines/Clinical-Practice-Guidelines/Dyslipidaemias-Management-of'},
+      {org:'ACC / AHA',title:'2023 AHA/ACC Guideline for Peripheral Artery Disease',desc:'PAD diagnosis, ankle-brachial index, revascularisation, antiplatelet therapy, and risk factor management.',year:'2024',pill:'New',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.ahajournals.org/doi/10.1161/CIR.0000000000001123'},
     ]
   },
   'Infectious Diseases': {
-    icon:'🦠', orgs:'IDSA • SCCM • WHO',
+    icon:'🦠', orgs:'IDSA • SCCM • WHO • CDC',
     items: [
       {org:'SCCM / ESICM',title:'Surviving Sepsis Campaign: International Guidelines',desc:'Hour-1 bundle, vasopressor selection, source control, antimicrobial stewardship for sepsis and septic shock.',year:'2021',pill:'Critical Care',pillStyle:{background:'#1a0505',color:'#ff6b6b'},url:'https://www.idsociety.org/practice-guideline/sepsis/'},
       {org:'IDSA / ATS',title:'IDSA/ATS Community-Acquired Pneumonia Guidelines',desc:'CAP diagnosis, severity assessment (PSI/CURB-65), empiric antibiotic selection, and outpatient vs inpatient criteria.',year:'2019',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.idsociety.org/practice-guideline/community-acquired-pneumonia-cap-in-adults/'},
       {org:'IDSA',title:'IDSA Urinary Tract Infection Guidelines',desc:'Uncomplicated UTI, pyelonephritis, catheter-associated UTI, and recurrent UTI diagnosis and treatment.',year:'2022',pill:'Updated',pillStyle:{background:'#0d2520',color:'#3dffa0'},url:'https://www.idsociety.org/practice-guideline/urinary-tract-infection-uti/'},
       {org:'IDSA',title:'IDSA Skin and Soft Tissue Infections Guidelines',desc:'Cellulitis, abscess, necrotising fasciitis — classification, diagnosis, empiric treatment, and MRSA management.',year:'2014',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.idsociety.org/practice-guideline/skin-and-soft-tissue-infections/'},
+      {org:'IDSA',title:'IDSA Bacterial Meningitis Guidelines',desc:'Empiric antibiotics, dexamethasone timing, CSF interpretation, and prophylaxis for bacterial meningitis in adults and children.',year:'2004',pill:'Reference',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.idsociety.org/practice-guideline/bacterial-meningitis/'},
+      {org:'IDSA',title:'IDSA HIV Management Guidelines',desc:'Antiretroviral therapy selection, when to start, drug interactions, opportunistic infection prophylaxis, and monitoring.',year:'2024',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.idsociety.org/practice-guideline/hiv-primary-care/'},
+      {org:'CDC / IDSA',title:'Clostridioides difficile Infection Guidelines',desc:'C. diff diagnosis, severity classification, fidaxomicin vs vancomycin vs metronidazole, and fecal microbiota transplantation.',year:'2021',pill:'Updated',pillStyle:{background:'#0d2520',color:'#3dffa0'},url:'https://www.idsociety.org/practice-guideline/clostridium-difficile/'},
+      {org:'IDSA / ATS',title:'Hospital-Acquired & Ventilator-Associated Pneumonia',desc:'HAP/VAP diagnosis, de-escalation strategies, anti-MRSA and anti-pseudomonal coverage decisions.',year:'2016',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.idsociety.org/practice-guideline/hospital-acquired-pneumonia-ventilator-associated-pneumonia/'},
+      {org:'IDSA',title:'IDSA Infective Endocarditis Guidelines',desc:'Diagnosis (Duke criteria), surgical vs medical management, antibiotic regimens, and duration of therapy.',year:'2015',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.idsociety.org/practice-guideline/infective-endocarditis/'},
     ]
   },
   Pulmonology: {
-    icon:'🫁', orgs:'GOLD • GINA • ATS • BTS',
+    icon:'🫁', orgs:'GOLD • GINA • ATS • BTS • ERS',
     items: [
       {org:'GOLD',title:'2024 GOLD Report: COPD Diagnosis, Management & Prevention',desc:'Updated spirometric criteria, ABCD groups replaced by GOLD A-E, inhaler selection algorithm, and exacerbation management.',year:'2024',pill:'Latest',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://goldcopd.org/2024-gold-report/'},
       {org:'GINA',title:'2024 GINA Global Strategy for Asthma Management',desc:'Step-up/step-down therapy, LABA+ICS combinations, biologics for severe asthma, and acute exacerbation protocols.',year:'2024',pill:'Latest',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://ginasthma.org/2024-gina-report/'},
       {org:'ATS / ERS / ESICM',title:'Berlin Definition & ARDS Management Guidelines',desc:'ARDS diagnosis, lung protective ventilation (6 mL/kg IBW), prone positioning, PEEP strategies, and neuromuscular blockade.',year:'2017',pill:'Critical Care',pillStyle:{background:'#1a0505',color:'#ff6b6b'},url:'https://www.thoracic.org/statements/pages/mtpi/icu-guidelines.php'},
+      {org:'ESC / ERS',title:'2019 ESC/ERS Pulmonary Hypertension Guidelines',desc:'PH classification (WHO groups), right heart catheterisation, vasoreactivity testing, PAH-specific pharmacotherapy, and transplant.',year:'2022',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.escardio.org/Guidelines/Clinical-Practice-Guidelines/Pulmonary-Hypertension'},
+      {org:'ATS / ERS / JRS',title:'ATS/ERS/JRS/ALAT Idiopathic Pulmonary Fibrosis Guidelines',desc:'IPF diagnosis (UIP pattern), antifibrotic therapy (nintedanib, pirfenidone), and multidisciplinary team management.',year:'2022',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.thoracic.org/statements/ipf.php'},
+      {org:'ACCP / ERS',title:'VTE and Pulmonary Embolism Diagnosis & Management',desc:'PE risk stratification (PESI), anticoagulation selection, thrombolysis indications, and duration of treatment.',year:'2021',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.chestnet.org/Guidelines-and-Resources/Guidelines-and-Consensus-Statements/Antithrombotic-Therapy'},
     ]
   },
   Endocrinology: {
-    icon:'🧬', orgs:'ADA • AACE • ENDOCRINE SOCIETY',
+    icon:'🧬', orgs:'ADA • AACE • ENDOCRINE SOCIETY • AACE',
     items: [
       {org:'ADA',title:'2024 ADA Standards of Medical Care in Diabetes',desc:'Classification, diagnosis, glucose targets, pharmacotherapy selection, cardiovascular risk reduction, and technology use in T1D/T2D.',year:'2024',pill:'Annual Update',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://diabetesjournals.org/care/issue/47/Supplement_1'},
       {org:'ENDOCRINE SOCIETY',title:'Thyroid Nodule & Differentiated Thyroid Cancer Guidelines',desc:'US evaluation, FNA indications, risk stratification (ATA risk groups), surgical and radioiodine therapy decisions.',year:'2015',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.endocrine.org/clinical-practice-guidelines/thyroid-nodules'},
+      {org:'AACE / ACE',title:'2022 AACE Clinical Practice Guideline: Obesity',desc:'Comprehensive obesity management including lifestyle, pharmacotherapy (GLP-1 agonists), and bariatric surgery criteria.',year:'2022',pill:'New',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.aace.com/disease-state-resources/metabolic/clinical-practice-guidelines'},
+      {org:'ENDOCRINE SOCIETY',title:'Adrenal Incidentaloma Clinical Practice Guideline',desc:'Evaluation of adrenal masses, biochemical screening, imaging criteria for resection, and long-term follow-up.',year:'2016',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.endocrine.org/clinical-practice-guidelines/adrenal-incidentaloma'},
+      {org:'ATA',title:'American Thyroid Association Hypothyroidism Guidelines',desc:'Diagnosis, TSH targets, levothyroxine dosing, subclinical hypothyroidism management, and special populations.',year:'2014',pill:'Reference',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.thyroid.org/professionals/ata-professional-guidelines/'},
+      {org:'ENDOCRINE SOCIETY',title:'Cushing Syndrome Clinical Practice Guideline',desc:'Screening tests, confirmatory testing, imaging, and treatment of hypercortisolism from pituitary, adrenal, and ectopic sources.',year:'2015',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.endocrine.org/clinical-practice-guidelines/cushing-syndrome'},
     ]
   },
   'Emergency Medicine': {
@@ -605,31 +621,208 @@ const GUIDELINES_DATA = {
       {org:'ACEP',title:'ACEP Clinical Policies & Practice Guidelines',desc:'All ACEP evidence-based clinical policies covering ED presentations, procedures, and management decisions.',year:'2024',pill:'Hub',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.acep.org/clinical---practice-management/clinical-policies/'},
       {org:'AHA / ERC',title:'2020 AHA Guidelines for CPR and Emergency Cardiovascular Care',desc:'BLS/ACLS/PALS algorithms, post-cardiac arrest care, ROSC management, and therapeutic hypothermia.',year:'2020',pill:'Critical',pillStyle:{background:'#1a0505',color:'#ff6b6b'},url:'https://www.ahajournals.org/doi/10.1161/CIR.0000000000001122'},
       {org:'ACEP / ASA',title:'Acute Ischemic Stroke: tPA / Thrombolysis Guidelines',desc:'Inclusion/exclusion criteria for IV alteplase, time windows, BP management, and mechanical thrombectomy referral.',year:'2023',pill:'Time-Critical',pillStyle:{background:'#1a0505',color:'#ff6b6b'},url:'https://www.acep.org/globalassets/new-pdfs/clinical-policies/stroke.pdf'},
+      {org:'ACEP',title:'ACEP Guideline: Evaluation of Syncope',desc:'Risk stratification, ECG evaluation, admission criteria, and San Francisco syncope rule in ED syncope presentations.',year:'2007',pill:'Reference',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.acep.org/clinical---practice-management/clinical-policies/'},
+      {org:'ACEP / AAP',title:'Pediatric Fever Management in the ED',desc:'Febrile infant evaluation (<60 days), lumbar puncture indications, empiric antibiotics, and disposition criteria.',year:'2021',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.acep.org/clinical---practice-management/clinical-policies/'},
     ]
   },
   Neurology: {
-    icon:'🧠', orgs:'AAN • ASA • ESO',
+    icon:'🧠', orgs:'AAN • ASA • ESO • AES',
     items: [
       {org:'AAN',title:'AAN Clinical Practice Guidelines Library',desc:'Comprehensive collection of neurology guidelines including epilepsy, MS, migraine, dementia, and neurocritical care.',year:'2024',pill:'Hub',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.aan.com/Guidelines/'},
       {org:'ASA / AHA',title:'2021 ASA/AHA Guideline for Stroke Prevention',desc:'Secondary stroke prevention including antiplatelet therapy, anticoagulation for AF, BP control, and lipid management.',year:'2021',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.ahajournals.org/doi/10.1161/STR.0000000000000375'},
+      {org:'AAN / AES',title:'Status Epilepticus Treatment Guideline',desc:'Benzodiazepine first-line dosing, second-line AED selection (levetiracetam, fosphenytoin, valproate), and refractory SE management.',year:'2016',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.aan.com/Guidelines/'},
+      {org:'AAN',title:'AAN Epilepsy Management Guidelines',desc:'Initial antiseizure medication selection by seizure type, monotherapy vs polytherapy, drug interactions, and driving guidelines.',year:'2023',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.aan.com/Guidelines/'},
+      {org:'AAN',title:'Multiple Sclerosis Disease-Modifying Therapy',desc:'DMT initiation criteria, head-to-head comparisons of high vs low efficacy therapies, monitoring, and switch strategies.',year:'2022',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.aan.com/Guidelines/'},
+      {org:'AAN / AHS',title:'Migraine Acute & Preventive Treatment Guidelines',desc:'Triptans, CGRP antagonists (gepants), preventive therapy (topiramate, propranolol, anti-CGRP mAbs), and refractory migraine.',year:'2021',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.aan.com/Guidelines/'},
+      {org:'AAN',title:'Guillain-Barré Syndrome Management',desc:'Diagnosis, IVIg vs plasmapheresis, nerve conduction studies, ICU indications (respiratory failure), and prognostication.',year:'2012',pill:'Reference',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.aan.com/Guidelines/'},
+    ]
+  },
+  Gastroenterology: {
+    icon:'🫀', orgs:'ACG • AGA • ASGE • EASL',
+    items: [
+      {org:'ACG',title:'ACG Clinical Guideline: Upper GI Bleeding',desc:'Risk stratification (Glasgow-Blatchford), endoscopy timing, PPI dosing, variceal vs non-variceal bleed management.',year:'2021',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://gi.org/guidelines/'},
+      {org:'AGA',title:'AGA Clinical Practice Guidelines: H. pylori',desc:'Test-and-treat strategy, eradication regimens (clarithromycin-based, bismuth quadruple, rifabutin-based), and confirmation of cure.',year:'2022',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.gastro.org/guidelines'},
+      {org:'ACG',title:'ACG Guideline: Acute Pancreatitis Management',desc:'Severity assessment (BISAP, Ranson), fluid resuscitation, nutrition (early enteral), antibiotics, and ERCP indications.',year:'2013',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://gi.org/guidelines/'},
+      {org:'AASLD',title:'AASLD Cirrhosis Practice Guidance',desc:'Variceal screening, SBP prophylaxis, hepatic encephalopathy management, HRS diagnosis, and liver transplant referral.',year:'2021',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.aasld.org/practice-guidelines'},
+      {org:'ACG',title:'ACG Guideline: Crohn Disease & Ulcerative Colitis',desc:'Induction and maintenance therapy, biologic selection (anti-TNF, vedolizumab, ustekinumab), and surgery criteria.',year:'2023',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://gi.org/guidelines/'},
+      {org:'ACG',title:'ACG Guideline: Colorectal Cancer Screening',desc:'Colonoscopy intervals, CT colonography, FIT/gFOBT, stool DNA testing, and high-risk group surveillance.',year:'2021',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://gi.org/guidelines/'},
+    ]
+  },
+  Nephrology: {
+    icon:'🫘', orgs:'KDIGO • ASN • ERA-EDTA',
+    items: [
+      {org:'KDIGO',title:'KDIGO 2022 AKI Clinical Practice Guideline',desc:'AKI definition and staging (KDIGO), fluid management, RRT initiation criteria, contrast nephropathy prevention.',year:'2022',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://kdigo.org/guidelines/acute-kidney-injury/'},
+      {org:'KDIGO',title:'KDIGO 2024 CKD Clinical Practice Guideline',desc:'GFR classification, albuminuria staging, CKD progression slowing (RAAS inhibition, SGLT2i), cardiovascular risk management.',year:'2024',pill:'Latest',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://kdigo.org/guidelines/ckd-evaluation-and-management/'},
+      {org:'KDIGO',title:'KDIGO Blood Pressure in CKD Guideline',desc:'BP targets in CKD (<120 mmHg systolic for non-dialysis CKD), antihypertensive selection, and proteinuria reduction.',year:'2021',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://kdigo.org/guidelines/blood-pressure-in-ckd/'},
+      {org:'KDIGO',title:'KDIGO Glomerulonephritis Guideline',desc:'Diagnosis and management of IgA nephropathy, membranous nephropathy, FSGS, lupus nephritis, and ANCA vasculitis.',year:'2021',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://kdigo.org/guidelines/gn/'},
+      {org:'KDOQI',title:'KDOQI Hemodialysis Adequacy Guidelines',desc:'Target Kt/V (≥1.4), access surveillance, dialysate composition, membrane selection, and intradialytic hypotension management.',year:'2015',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.kidney.org/professionals/guidelines'},
+    ]
+  },
+  Oncology: {
+    icon:'🎗️', orgs:'ASCO • NCCN • ESMO • ASTRO',
+    items: [
+      {org:'NCCN',title:'NCCN Clinical Practice Guidelines in Oncology',desc:'Comprehensive evidence-based cancer guidelines across 60+ tumor types, treatment algorithms, and supportive care.',year:'2024',pill:'Hub',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.nccn.org/guidelines/category_1'},
+      {org:'ASCO',title:'ASCO Guideline: Antiemesis in Cancer Patients',desc:'Serotonin antagonists, NK1 antagonists, dexamethasone, and olanzapine for CINV prophylaxis by emetogenicity category.',year:'2020',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.asco.org/research-guidelines/quality-guidelines/guidelines'},
+      {org:'ESMO',title:'ESMO Febrile Neutropenia Guidelines',desc:'Risk stratification (MASCC score), oral vs IV antibiotics, G-CSF indications, and antifungal prophylaxis.',year:'2021',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.esmo.org/guidelines'},
+      {org:'ASCO',title:'ASCO Guideline: VTE Prophylaxis in Cancer',desc:'Apixaban and rivaroxaban for outpatient VTE prevention, LMWH in hospitalized patients, and treatment of cancer-associated thrombosis.',year:'2023',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.asco.org/research-guidelines/quality-guidelines/guidelines'},
+      {org:'NCCN',title:'NCCN Palliative Care Guidelines',desc:'Pain management (WHO ladder), dyspnoea, delirium, existential distress, and goals-of-care communication frameworks.',year:'2024',pill:'Latest',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.nccn.org/guidelines/category_3'},
+    ]
+  },
+  Rheumatology: {
+    icon:'🦴', orgs:'ACR • EULAR • BSR',
+    items: [
+      {org:'ACR',title:'2021 ACR Guideline for Rheumatoid Arthritis Treatment',desc:'Treat-to-target strategy, csDMARD initiation, biologic and JAK inhibitor sequencing, and monitoring for toxicity.',year:'2021',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.rheumatology.org/Practice-Quality/Clinical-Support/Clinical-Practice-Guidelines'},
+      {org:'ACR / EULAR',title:'2019 ACR/EULAR SLE Classification Criteria',desc:'Updated SLE classification score, organ domain weighting, anti-dsDNA, complement, and immunologic criteria.',year:'2019',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.rheumatology.org/Practice-Quality/Clinical-Support/Clinical-Practice-Guidelines'},
+      {org:'ACR',title:'2020 ACR Guideline for Gout Management',desc:'Urate-lowering therapy initiation, allopurinol dosing, febuxostat, acute flare prophylaxis, and dietary recommendations.',year:'2020',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.rheumatology.org/Practice-Quality/Clinical-Support/Clinical-Practice-Guidelines'},
+      {org:'ACR',title:'ACR Guideline for Osteoporosis Treatment',desc:'FRAX-based intervention thresholds, bisphosphonates, denosumab, romosozumab, and drug holiday recommendations.',year:'2022',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.rheumatology.org/Practice-Quality/Clinical-Support/Clinical-Practice-Guidelines'},
+      {org:'EULAR',title:'EULAR Recommendations for Antiphospholipid Syndrome',desc:'Anticoagulation (warfarin vs DOAC), aspirin, hydroxychloroquine, and catastrophic APS management.',year:'2019',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.eular.org/recommendations_management.cfm'},
+    ]
+  },
+  Psychiatry: {
+    icon:'🧩', orgs:'APA • NICE • CANMAT • WFSBP',
+    items: [
+      {org:'APA',title:'APA Practice Guideline: Major Depressive Disorder',desc:'Antidepressant selection, augmentation strategies, ECT/TMS indications, psychotherapy, and treatment-resistant depression.',year:'2023',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.psychiatry.org/psychiatrists/practice/clinical-practice-guidelines'},
+      {org:'APA',title:'APA Practice Guideline: Schizophrenia',desc:'Antipsychotic selection (FGA vs SGA), clozapine indications, metabolic monitoring, long-acting injectable formulations.',year:'2021',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.psychiatry.org/psychiatrists/practice/clinical-practice-guidelines'},
+      {org:'APA',title:'APA Practice Guideline: Bipolar Disorder',desc:'Mood stabiliser selection (lithium, valproate, lamotrigine), atypical antipsychotics, and management of acute mania vs depression.',year:'2002',pill:'Reference',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.psychiatry.org/psychiatrists/practice/clinical-practice-guidelines'},
+      {org:'SAMHSA',title:'SAMHSA Opioid Use Disorder Treatment Guidelines',desc:'Buprenorphine/naloxone initiation, methadone program criteria, naltrexone extended-release, and harm reduction principles.',year:'2023',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.samhsa.gov/medication-assisted-treatment'},
+      {org:'VA / DoD',title:'VA/DoD Clinical Practice Guideline: PTSD',desc:'Trauma-focused CBT (PE, CPT), EMDR, pharmacotherapy (sertraline, paroxetine), and assessment tools (PCL-5).',year:'2023',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.healthquality.va.gov/guidelines/MH/ptsd/'},
+    ]
+  },
+  Surgery: {
+    icon:'🔪', orgs:'EAST • ACS • SSI • SAGES',
+    items: [
+      {org:'ACS / SAGES',title:'ACS/SAGES Acute Appendicitis Guidelines',desc:'CT vs US vs MRI diagnosis, laparoscopic vs open appendectomy, antibiotics-first for uncomplicated appendicitis.',year:'2020',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.facs.org/quality-programs/trauma/quality/clinical-resources'},
+      {org:'EAST',title:'EAST Trauma Practice Management Guidelines',desc:'Hemorrhage control, damage control surgery, TBI management, splenic and liver injury grading, and REBOA.',year:'2023',pill:'Updated',pillStyle:{background:'#1a0505',color:'#ff6b6b'},url:'https://www.east.org/practice-management-guidelines'},
+      {org:'ACS',title:'ACS Surgical Site Infection Prevention Guidelines',desc:'Preoperative antibiotics timing and selection, glucose control, normothermia, and wound class-based SSI prevention.',year:'2017',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.facs.org/quality-programs/trauma/quality/clinical-resources'},
+      {org:'SAGES',title:'SAGES Laparoscopic Cholecystectomy Guidelines',desc:'Cholangiography indications, bile duct injury prevention, critical view of safety, and conversion criteria.',year:'2022',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.sages.org/publications/guidelines/'},
+    ]
+  },
+  Pediatrics: {
+    icon:'👶', orgs:'AAP • PALS • CHOP • RCPCH',
+    items: [
+      {org:'AAP',title:'AAP Guideline: Febrile Infant Evaluation',desc:'Rochester criteria, Step-by-Step algorithm for febrile infants <60 days, blood/urine/LP workup, and empiric antibiotics.',year:'2021',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.aap.org/en/patient-care/febrile-infant/'},
+      {org:'AAP',title:'AAP Clinical Practice Guideline: Bronchiolitis',desc:'RSV bronchiolitis management: no epinephrine/albuterol/steroids, oxygen thresholds (90%), and hospitalization criteria.',year:'2014',pill:'Reference',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://pediatrics.aappublications.org/content/134/5/e1474'},
+      {org:'AAP',title:'AAP Guideline: Pediatric Hypertension',desc:'BP normative values (percentile-based), screening, lifestyle modifications, and pharmacotherapy in children.',year:'2017',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.aap.org/en/patient-care/hypertension-in-children/'},
+      {org:'AAP',title:'AAP Guideline: Acute Otitis Media',desc:'Diagnosis criteria, observation vs antibiotics, amoxicillin dosing (high-dose 80-90 mg/kg/day), and tympanostomy indications.',year:'2013',pill:'Reference',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://pediatrics.aappublications.org/content/131/3/e964'},
+      {org:'AAP / PALS',title:'Pediatric Advanced Life Support 2020',desc:'Pediatric BLS/ACLS, fluid resuscitation in septic shock, IO access, vasopressor dosing, and post-resuscitation care.',year:'2020',pill:'Critical',pillStyle:{background:'#1a0505',color:'#ff6b6b'},url:'https://www.ahajournals.org/doi/10.1161/CIR.0000000000001039'},
     ]
   },
 };
 
+const SYSTEM_TABS = [
+  {id:'all', label:'All Systems', icon:'🏥'},
+  {id:'Cardiology', label:'Cardiology', icon:'❤️'},
+  {id:'Infectious Diseases', label:'Infectious Diseases', icon:'🦠'},
+  {id:'Pulmonology', label:'Pulmonology', icon:'🫁'},
+  {id:'Endocrinology', label:'Endocrinology', icon:'🧬'},
+  {id:'Emergency Medicine', label:'Emergency Medicine', icon:'🚨'},
+  {id:'Neurology', label:'Neurology', icon:'🧠'},
+  {id:'Gastroenterology', label:'Gastroenterology', icon:'🫀'},
+  {id:'Nephrology', label:'Nephrology', icon:'🫘'},
+  {id:'Oncology', label:'Oncology', icon:'🎗️'},
+  {id:'Rheumatology', label:'Rheumatology', icon:'🦴'},
+  {id:'Psychiatry', label:'Psychiatry', icon:'🧩'},
+  {id:'Surgery', label:'Surgery', icon:'🔪'},
+  {id:'Pediatrics', label:'Pediatrics', icon:'👶'},
+];
+
 function GuidelinesTab() {
+  const [activeSystem, setActiveSystem] = useState('all');
+  const [search, setSearch] = useState('');
+
+  const visibleSystems = activeSystem === 'all'
+    ? Object.entries(GUIDELINES_DATA)
+    : Object.entries(GUIDELINES_DATA).filter(([cat]) => cat === activeSystem);
+
+  const filteredSystems = visibleSystems.map(([cat, data]) => {
+    const q = search.toLowerCase();
+    if (!q) return [cat, data];
+    const filteredItems = data.items.filter(g =>
+      g.title.toLowerCase().includes(q) || g.desc.toLowerCase().includes(q) || g.org.toLowerCase().includes(q)
+    );
+    return [cat, { ...data, items: filteredItems }];
+  }).filter(([, data]) => data.items.length > 0);
+
+  const totalCount = Object.values(GUIDELINES_DATA).reduce((s, d) => s + d.items.length, 0);
+
   return (
     <div>
       <div className="kb2-section-title">📋 Clinical Guidelines</div>
-      <div className="kb2-section-sub">Major society guidelines from leading medical associations</div>
-      {Object.entries(GUIDELINES_DATA).map(([cat, data]) => (
+      <div className="kb2-section-sub">
+        {totalCount} guidelines across {Object.keys(GUIDELINES_DATA).length} medical specialties
+      </div>
+
+      {/* Search */}
+      <div style={{marginBottom:14}}>
+        <div className="kb2-drug-search-wrap" style={{marginBottom:0,padding:'10px 14px'}}>
+          <div className="kb2-drug-search-row" style={{marginBottom:0}}>
+            <input
+              className="kb2-drug-input"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search guidelines: sepsis, COPD, diabetes, stroke..."
+            />
+            {search && <button className="kb2-drug-btn" onClick={() => setSearch('')} style={{whiteSpace:'nowrap'}}>Clear</button>}
+          </div>
+        </div>
+      </div>
+
+      {/* System tabs - horizontal scroll */}
+      <div style={{
+        display:'flex',gap:6,overflowX:'auto',paddingBottom:10,marginBottom:18,
+        scrollbarWidth:'none',msOverflowStyle:'none'
+      }}>
+        {SYSTEM_TABS.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setActiveSystem(t.id)}
+            style={{
+              flexShrink:0,
+              display:'flex',alignItems:'center',gap:5,
+              padding:'6px 14px',
+              borderRadius:20,
+              fontSize:11,fontWeight:activeSystem === t.id ? 600 : 400,
+              cursor:'pointer',
+              border: activeSystem === t.id ? '1px solid #3b9eff' : '1px solid #1a3555',
+              background: activeSystem === t.id ? '#0a2040' : 'var(--bg-card)',
+              color: activeSystem === t.id ? '#3b9eff' : '#4a6a8a',
+              transition:'all .15s',
+              fontFamily:'DM Sans,sans-serif',
+            }}
+          >
+            <span>{t.icon}</span><span>{t.label}</span>
+            {t.id !== 'all' && GUIDELINES_DATA[t.id] && (
+              <span style={{
+                fontSize:9,fontFamily:'JetBrains Mono,monospace',padding:'1px 5px',
+                borderRadius:8,background:activeSystem===t.id?'#1a3555':'var(--bg-elevated)',
+                color: activeSystem===t.id?'#3b9eff':'#2e4a6a'
+              }}>
+                {GUIDELINES_DATA[t.id].items.length}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Guidelines list */}
+      {filteredSystems.length === 0 && (
+        <div className="kb2-no-results">
+          <div className="kb2-no-results-icon">📋</div>
+          No guidelines match "{search}"
+        </div>
+      )}
+      {filteredSystems.map(([cat, data]) => (
         <div key={cat}>
           <div className="kb2-guide-cat-header">
             <span className="kb2-guide-cat-icon">{data.icon}</span>
             <span className="kb2-guide-cat-title">{cat}</span>
             <span className="kb2-guide-cat-count">{data.orgs}</span>
+            <span style={{marginLeft:'auto',fontSize:10,color:'var(--text-muted)',fontFamily:'JetBrains Mono,monospace'}}>
+              {data.items.length} guidelines
+            </span>
           </div>
           <div className="kb2-guide-grid">
-            {data.items.map((g,i)=>(
+            {data.items.map((g, i) => (
               <a key={i} className="kb2-guide-card" href={g.url} target="_blank" rel="noopener noreferrer">
                 <div className="kb2-guide-org">{g.org}</div>
                 <div className="kb2-guide-title">{g.title}</div>

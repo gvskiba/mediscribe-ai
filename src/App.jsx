@@ -92,7 +92,11 @@ const AuthenticatedApp = () => {
           <SmartTemplates />
         </LayoutWrapper>
       } />
-      <Route path="/KnowledgeBaseV2" element={<KnowledgeBaseV2 />} />
+      <Route path="/KnowledgeBaseV2" element={
+        <LayoutWrapper currentPageName="KnowledgeBaseV2">
+          <KnowledgeBaseV2 />
+        </LayoutWrapper>
+      } />
       {Object.entries(Pages).map(([path, Page]) => (
         <Route
           key={path}

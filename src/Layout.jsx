@@ -57,7 +57,7 @@ const navSections = [
           { name: "Drug Reference", icon: BookOpen, page: "MedicationReference" },
           { name: "CME & Learning", icon: BookOpen, page: "CMELearningCenter" },
           { name: "Pediatric Dosing", icon: Activity, page: "PediatricDosing" },
-          { name: "Guidelines", icon: BookOpen, page: "Guidelines" },
+
           { name: "Knowledge Base", icon: BookOpen, page: "MedicalKnowledgeBase" },
           { name: "Knowledge Base V2", icon: BookOpen, page: "KnowledgeBaseV2" },
           { name: "Patient Education", icon: BookOpen, page: "PatientEducation" },

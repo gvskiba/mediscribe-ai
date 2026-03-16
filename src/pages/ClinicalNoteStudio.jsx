@@ -112,6 +112,7 @@ export default function ClinicalNoteStudio() {
   const [completion, setCompletion] = useState(45);
   const [savedNoteId, setSavedNoteId] = useState(noteId || null);
   const [saving, setSaving] = useState(false);
+  const [aiPanelTab, setAiPanelTab] = useState("analysis"); // "analysis" | "summary"
 
   // NoteDetail state
   const [activeTab, setActiveTab] = useState(urlTab || "patient_intake");

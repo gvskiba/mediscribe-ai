@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import ClinicalContextPanel from "@/components/knowledgebase/ClinicalContextPanel";
 
 // ─── DATA ────────────────────────────────────────────────────────────────────
 

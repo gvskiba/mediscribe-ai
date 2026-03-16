@@ -119,6 +119,7 @@ const CSS = `
 .kb2-topnav {
   height:44px;background:#040c18;border-bottom:1px solid var(--border);
   display:flex;align-items:center;padding:0 16px 0 88px;gap:12px;flex-shrink:0;
+  margin-left:0;
 }
 .kb2-topnav-brand{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .kb2-topnav-logo{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--text-primary)}

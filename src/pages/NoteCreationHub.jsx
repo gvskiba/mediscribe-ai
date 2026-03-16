@@ -810,7 +810,7 @@ Write in formal clinical documentation style.`,
         <div style={{ display:"flex", gap:2, marginLeft:8 }}>
           {[
             { id:"hub",           label:"⊞ Hub"          },
-            { id:"transcription", label:"🎙️ Transcription" },
+            { id:"transcription", label:"🎙️ Transcription", routeTo:"LiveTranscription" },
             { id:"templates",     label:"📋 Templates"   },
           ].map(m => (
             <button key={m.id} onClick={()=>goMode(m.id)} style={{

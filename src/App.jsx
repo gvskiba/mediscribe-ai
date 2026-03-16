@@ -98,6 +98,11 @@ const AuthenticatedApp = () => {
           <KnowledgeBaseV2 />
         </LayoutWrapper>
       } />
+      <Route path="/NewPatientInput" element={
+        <LayoutWrapper currentPageName="NewPatientInput">
+          <NewPatientInput />
+        </LayoutWrapper>
+      } />
       {Object.entries(Pages).map(([path, Page]) => (
         <Route
           key={path}

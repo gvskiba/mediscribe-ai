@@ -16,6 +16,7 @@ import DrugReference from './pages/DrugReference.jsx';
 import MedicationReference from './pages/MedicationReference.jsx';
 import SmartTemplates from './pages/SmartTemplates.jsx';
 import KnowledgeBaseV2 from './pages/KnowledgeBaseV2.jsx';
+import NewPatientInput from './pages/NewPatientInput.jsx';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];

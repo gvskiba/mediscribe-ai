@@ -675,15 +675,44 @@ export default function ClinicalNoteStudio() {
 
           {/* Right AI Panel */}
           <div style={{width:310,flexShrink:0,background:C.panel,borderLeft:`1px solid ${C.border}`,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-            <div style={{padding:"12px 14px 10px",borderBottom:`1px solid ${C.border}`,flexShrink:0,display:"flex",alignItems:"center",gap:8}}>
-              <div style={{width:7,height:7,borderRadius:"50%",background:C.purple,animation:"pulse .8s infinite"}} />
-              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:C.purple,letterSpacing:".12em",flex:1}}>✦ AI ANALYSIS</div>
+            <div style={{padding:"10px 14px 0",borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                <div style={{width:7,height:7,borderRadius:"50%",background:C.purple,animation:"pulse .8s infinite"}} />
+                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:C.purple,letterSpacing:".12em",flex:1}}>✦ AI ASSISTANT</div>
+              </div>
+              {/* Tab switcher */}
+              <div style={{display:"flex",gap:2,paddingBottom:0}}>
+                {[
+                  {id:"analysis", label:"Section Analysis"},
+                  {id:"summary", label:"Auto Summary"},
+                ].map(tab => (
+                  <button key={tab.id} onClick={()=>setAiPanelTab(tab.id)} style={{
+                    flex:1, padding:"5px 8px", borderRadius:"7px 7px 0 0", fontSize:10, fontWeight:600, cursor:"pointer",
+                    border:`1px solid ${aiPanelTab===tab.id ? C.border : "transparent"}`,
+                    borderBottom: aiPanelTab===tab.id ? `1px solid ${C.panel}` : `1px solid ${C.border}`,
+                    background: aiPanelTab===tab.id ? C.panel : "transparent",
+                    color: aiPanelTab===tab.id ? C.teal : C.dim,
+                    fontFamily:"'DM Sans',sans-serif", transition:"all .15s",
+                  }}>
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
             </div>
             <div style={{flex:1,overflowY:"auto",padding:"12px 14px"}}>
-              {rpContent==="loading" && <AILoadingState />}
-              {rpContent==="analysis" && rpData && <AIAnalysisPanel data={rpData} />}
-              {rpContent==="summary" && rpData && <AISummaryPanel data={rpData} />}
-              {rpContent==="default" && <AIDefaultState />}
+              {aiPanelTab === "analysis" && <>
+                {rpContent==="loading" && <AILoadingState />}
+                {rpContent==="analysis" && rpData && <AIAnalysisPanel data={rpData} />}
+                {rpContent==="summary" && rpData && <AISummaryPanel data={rpData} />}
+                {rpContent==="default" && <AIDefaultState />}
+              </>}
+              {aiPanelTab === "summary" && (
+                <AINoteSummaryPanel
+                  noteId={savedNoteId}
+                  pt={pt}
+                  onApply={handleApplySummary}
+                />
+              )}
             </div>
           </div>
         </div>

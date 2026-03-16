@@ -611,6 +611,91 @@ function GuidelinesTab() {
   );
 }
 
+function DiseaseItem({ d }) {
+  const [summary, setSummary] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  const fetchSummary = async (e) => {
+    e.stopPropagation();
+    if (summary) { setExpanded(v => !v); return; }
+    setLoading(true);
+    setExpanded(true);
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a clinical knowledge assistant. Provide a concise evidence-based summary for clinicians about: "${d.name}" (also known as: ${d.aka}).
+
+Include:
+1. **Key Diagnosis Criteria** (2-3 bullet points)
+2. **First-line Treatment** (2-3 bullet points)
+3. **Critical Pearls** (1-2 high-yield clinical pearls)
+4. **Guideline Reference**: ${d.guide}
+
+Keep it under 150 words. Use markdown bullet points. Be clinical and concise.`,
+        add_context_from_internet: false,
+      });
+      setSummary(typeof res === 'string' ? res : JSON.stringify(res));
+    } catch {
+      setSummary('⚠ Unable to load summary. Please try again.');
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="kb2-disease-item" style={{flexDirection:'column'}}>
+      <div style={{display:'flex',alignItems:'stretch'}}>
+        <div className="kb2-disease-body" style={{flex:1}}>
+          <div className="kb2-disease-name">{d.name}</div>
+          {d.aka && <div className="kb2-disease-aka">{d.aka}</div>}
+        </div>
+        <div style={{display:'flex',alignItems:'center',padding:'0 10px',borderLeft:'1px solid var(--border)'}}>
+          <button
+            onClick={fetchSummary}
+            style={{
+              padding:'4px 10px',fontSize:10,fontWeight:600,cursor:'pointer',
+              background: expanded ? '#1a0d35' : 'var(--bg-elevated)',
+              border:`1px solid ${expanded ? 'var(--accent-purple)' : 'var(--border)'}`,
+              borderRadius:5,color: expanded ? 'var(--accent-purple)' : 'var(--text-muted)',
+              transition:'all .15s',fontFamily:'DM Sans,sans-serif',whiteSpace:'nowrap',
+              display:'flex',alignItems:'center',gap:4
+            }}
+          >
+            {loading ? '⏳' : '✨'} {loading ? 'Loading...' : expanded ? 'Hide AI' : 'AI Summary'}
+          </button>
+        </div>
+        <div className="kb2-disease-links">
+          <a className="kb2-dis-link uptodate" href={`https://www.uptodate.com/contents/search?search=${encodeURIComponent(d.name)}`} target="_blank" rel="noopener noreferrer">📖<span className="dl-label">UpToDate</span></a>
+          {d.guideUrl && <a className="kb2-dis-link guide" href={d.guideUrl} target="_blank" rel="noopener noreferrer">📋<span className="dl-label">{d.guide}</span></a>}
+          <a className="kb2-dis-link pubmed" href={`https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(d.name)}`} target="_blank" rel="noopener noreferrer">📚<span className="dl-label">PubMed</span></a>
+        </div>
+      </div>
+      {expanded && (
+        <div style={{
+          padding:'12px 14px',borderTop:'1px solid var(--border)',
+          background:'#0a0520',fontSize:11,lineHeight:1.7,color:'var(--text-secondary)',
+          fontFamily:'DM Sans,sans-serif'
+        }}>
+          {loading ? (
+            <div style={{display:'flex',gap:6,alignItems:'center'}}>
+              <div className="kb2-typing-dot"/><div className="kb2-typing-dot"/><div className="kb2-typing-dot"/>
+              <span style={{color:'var(--text-muted)',marginLeft:4}}>Generating clinical summary...</span>
+            </div>
+          ) : (
+            <div>
+              <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}>
+                <div className="kb2-ai-dot"/>
+                <span style={{fontSize:9,fontWeight:700,letterSpacing:'.6px',textTransform:'uppercase',color:'var(--accent-teal)'}}>AI Clinical Summary</span>
+                <span style={{marginLeft:'auto',fontSize:9,color:'var(--text-dim)',fontFamily:'JetBrains Mono,monospace'}}>Guideline: {d.guide}</span>
+              </div>
+              <div style={{whiteSpace:'pre-wrap'}}>{summary}</div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DiseasesTab() {
   const [search, setSearch] = useState('');
   const [alpha, setAlpha] = useState('all');
@@ -630,7 +715,7 @@ function DiseasesTab() {
   return (
     <div>
       <div className="kb2-section-title">🩺 Diseases &amp; Conditions</div>
-      <div className="kb2-section-sub">Alphabetical index — click condition for UpToDate, guidelines, and PubMed</div>
+      <div className="kb2-section-sub">Alphabetical index — click ✨ AI Summary for instant clinical overview, or open in UpToDate, guidelines, and PubMed</div>
       <div className="kb2-drug-search-wrap" style={{borderColor:'rgba(155,109,255,0.3)'}}>
         <div className="kb2-drug-search-row">
           <input className="kb2-drug-input" style={{borderColor:'var(--accent-purple)'}} value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search conditions: pneumonia, STEMI, sepsis, DVT..."/>
@@ -648,17 +733,7 @@ function DiseasesTab() {
           <div className="kb2-disease-letter">{letter}</div>
           <div className="kb2-disease-list">
             {items.map((d,i)=>(
-              <div key={i} className="kb2-disease-item">
-                <div className="kb2-disease-body">
-                  <div className="kb2-disease-name">{d.name}</div>
-                  {d.aka && <div className="kb2-disease-aka">{d.aka}</div>}
-                </div>
-                <div className="kb2-disease-links">
-                  <a className="kb2-dis-link uptodate" href={`https://www.uptodate.com/contents/search?search=${encodeURIComponent(d.name)}`} target="_blank" rel="noopener noreferrer">📖<span className="dl-label">UpToDate</span></a>
-                  {d.guideUrl && <a className="kb2-dis-link guide" href={d.guideUrl} target="_blank" rel="noopener noreferrer">📋<span className="dl-label">{d.guide}</span></a>}
-                  <a className="kb2-dis-link pubmed" href={`https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(d.name)}`} target="_blank" rel="noopener noreferrer">📚<span className="dl-label">PubMed</span></a>
-                </div>
-              </div>
+              <DiseaseItem key={i} d={d} />
             ))}
           </div>
         </div>

@@ -410,7 +410,7 @@ export default function DashboardTopBar({ user }) {
               e.currentTarget.style.opacity = "1";
             }}
           >
-            + New Note
+            + New Patient
           </button>
         </div>
       </div>

@@ -351,7 +351,7 @@ const CSS = `
 .kb2-ai-send-btn:hover{background:#0a3030;border-color:var(--accent-teal)}
 
 /* Bottom Nav */
-.kb2-bottom-nav{background:#040d1a;border-top:1px solid var(--border);flex-shrink:0}
+.kb2-bottom-nav{background:#040d1a;border-top:1px solid var(--border);flex-shrink:0;margin-left:72px}
 .kb2-bnav-row{display:flex;gap:2px;padding:6px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap}
 .kb2-bnav-row:last-child{border-bottom:none}
 .kb2-bnav-tab{padding:5px 14px;border-radius:6px;border:none;background:transparent;color:var(--text-muted);font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;white-space:nowrap}

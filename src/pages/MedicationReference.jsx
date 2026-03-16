@@ -48,6 +48,9 @@ const SEPSIS = {
       {severity:"Moderate Sepsis — Community-Acquired",dot:"#f59e0b",primary:"Ceftriaxone 2 g IV q24h",addition:"+ Azithromycin 500 mg IV if pneumonia suspected",notes:"Add metronidazole for abdominal source; add vancomycin if MRSA risk"},
       {severity:"Severe Sepsis / Septic Shock",dot:"#ef4444",primary:"Piperacillin-Tazobactam 4.5 g IV q6–8h (extended infusion preferred)",addition:"+ Vancomycin 25–30 mg/kg IV load if MRSA risk",notes:"Add antifungal if immunocompromised; de-escalate at 48–72 hr with cultures"},
       {severity:"High ESBL Risk / HAP / Recent Antibiotics",dot:"#b91c1c",primary:"Meropenem 1–2 g IV q8h (extended infusion 3 hr preferred)",addition:"+ Vancomycin if MRSA risk",notes:"Reserve carbapenem for true ESBL/MDR; stewardship consultation; reassess 48–72 hr"},
+      {severity:"Pseudomonas / Carbapenem-Resistant Risk",dot:"#7c3aed",primary:"Ceftazidime-Avibactam 2.5 g IV q8h (extended 3 hr infusion)",addition:"+ Colistin or Polymyxin B if pan-resistant; consult ID",notes:"For CRE or CRAB; Imipenem-Cilastatin-Relebactam as alternative; ID consult mandatory"},
+      {severity:"Healthcare-Associated (HAP/VAP)",dot:"#0891b2",primary:"Cefepime 2 g IV q8h OR Pip-Tazo 4.5 g IV q6h",addition:"+ Vancomycin OR Linezolid 600 mg IV q12h (MRSA coverage)",notes:"Add antipseudomonal if ICU or structural lung disease; de-escalate at 48–72 hr"},
+      {severity:"Immunocompromised / Febrile Neutropenia — High Risk",dot:"#059669",primary:"Meropenem 2 g IV q8h (extended infusion)",addition:"+ Micafungin 100 mg IV q24h if fungal risk; + Vancomycin if catheter suspected",notes:"ANC <500; MASCC risk score ≥21 = low risk; initiate within 60 min of triage"},
     ],
     sources:[
       {source:"Pneumonia (CAP)",primary:"Ceftriaxone 1–2 g IV + Azithromycin 500 mg IV",alt:"Levofloxacin 750 mg IV (PCN allergy or atypical)",duration:"5–7 d (CAP); 7–14 d (HCAP)"},

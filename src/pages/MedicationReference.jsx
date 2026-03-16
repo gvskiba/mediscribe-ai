@@ -251,6 +251,7 @@ export default function MedicationReferencePage() {
   const [pedCat, setPedCat] = useState("all");
   const [sepTab, setSepTab] = useState("criteria");
   const [abxTab, setAbxTab] = useState("empiric");
+  const [sourceFilter, setSourceFilter] = useState("all");
   const [complaint, setComplaint] = useState("");
   const [aiText, setAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);

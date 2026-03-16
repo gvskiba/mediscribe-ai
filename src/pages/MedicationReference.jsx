@@ -587,12 +587,35 @@ export default function MedicationReferencePage() {
                   <div className="abdy"><div><div className="al">PRIMARY REGIMEN</div><div className="ad">{r.primary}</div></div><div><div className="al">ADD-ON COVERAGE</div><div className="aa">{r.addition}</div></div><div><div className="al">NOTES</div><div className="an">{r.notes}</div></div></div>
                 </div>
               ))}
-              {abxTab==="sources"&&SEPSIS.antibiotics.sources.map((s,i)=>(
-                <div className="arow" key={i}>
-                  <div className="asev"><span style={{color:"var(--teal)"}}>📍</span>{s.source}</div>
-                  <div className="abdy"><div><div className="al">PRIMARY</div><div className="ad">{s.primary}</div></div><div><div className="al">ALTERNATIVE / PCN ALLERGY</div><div className="aa">{s.alt}</div></div><div><div className="al">DURATION</div><div className="an">{s.duration}</div></div></div>
+              {abxTab==="sources"&&(<>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+                  {[
+                    {id:"all",icon:"🔍",label:"All Systems"},
+                    {id:"pulm",icon:"🫁",label:"Pulmonary"},
+                    {id:"gu",icon:"🫘",label:"GU / Renal"},
+                    {id:"gi",icon:"🫃",label:"GI / Abdominal"},
+                    {id:"ssti",icon:"🩹",label:"SSTI / Skin"},
+                    {id:"neuro",icon:"🧠",label:"Neuro / CNS"},
+                    {id:"cardio",icon:"❤️",label:"Cardiac / Vascular"},
+                    {id:"hem",icon:"🩸",label:"Hematologic"},
+                    {id:"bone",icon:"🦴",label:"Bone & Joint"},
+                  ].map(f=>(
+                    <button key={f.id} onClick={()=>setSourceFilter(f.id)} style={{
+                      padding:"5px 12px",borderRadius:20,fontSize:11,fontWeight:500,cursor:"pointer",
+                      border:"1px solid",transition:"all .15s",fontFamily:"inherit",
+                      borderColor:sourceFilter===f.id?"var(--teal)":"var(--br)",
+                      background:sourceFilter===f.id?"rgba(0,196,160,0.12)":"var(--c1)",
+                      color:sourceFilter===f.id?"var(--teal)":"var(--tx2)",
+                    }}>{f.icon} {f.label}</button>
+                  ))}
                 </div>
-              ))}
+                {SEPSIS.antibiotics.sources.filter(s=>sourceFilter==="all"||s.id===sourceFilter).map((s,i)=>(
+                  <div className="arow" key={i}>
+                    <div className="asev"><span style={{marginRight:4}}>{s.icon}</span>{s.source}</div>
+                    <div className="abdy"><div><div className="al">PRIMARY</div><div className="ad">{s.primary}</div></div><div><div className="al">ALTERNATIVE / PCN ALLERGY</div><div className="aa">{s.alt}</div></div><div><div className="al">DURATION</div><div className="an">{s.duration}</div></div></div>
+                  </div>
+                ))}
+              </>)}
               {abxTab==="pediatric"&&SEPSIS.antibiotics.pediatric.map((r,i)=>(
                 <div className="arow" key={i}>
                   <div className="asev"><span style={{color:"var(--pur)"}}>👶</span>{r.age}</div>

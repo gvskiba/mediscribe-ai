@@ -813,7 +813,7 @@ Write in formal clinical documentation style.`,
             { id:"transcription", label:"🎙️ Transcription", routeTo:"LiveTranscription" },
             { id:"templates",     label:"📋 Templates"   },
           ].map(m => (
-            <button key={m.id} onClick={()=>goMode(m.id)} style={{
+            <button key={m.id} onClick={()=>m.routeTo ? navigate(createPageUrl(m.routeTo)) : goMode(m.id)} style={{
               padding:"4px 12px", borderRadius:8, fontSize:11, fontWeight:700, cursor:"pointer",
               fontFamily:"'JetBrains Mono',monospace", letterSpacing:".04em",
               background: mode===m.id ? "rgba(0,212,188,.12)":"transparent",

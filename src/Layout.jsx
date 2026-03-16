@@ -140,7 +140,7 @@ export default function Layout({ children, currentPageName }) {
       {showSidebar && <AppSidebar user={user} />}
 
       {/* Dashboard Top Bar */}
-      {currentPageName !== 'Home' && currentPageName !== 'ClinicalNoteStudio' && currentPageName !== 'NoteDetail' && currentPageName !== 'NoteTemplates' && currentPageName !== 'CustomTemplates' && currentPageName !== 'PatientDashboard' && currentPageName !== 'DischargePlanning' && currentPageName !== 'UserPreferences' && currentPageName !== 'DiagnosticStewardship' && currentPageName !== 'NoteCreationHub' && currentPageName !== 'AutoCoder' && currentPageName !== 'NursingFlowsheet' && currentPageName !== 'ClinicalDecisionSupport' && currentPageName !== 'DrugReference' && currentPageName !== 'MedicationReference' && currentPageName !== 'KnowledgeBaseV2' && <DashboardTopBar user={user} />}
+      {currentPageName !== 'Home' && currentPageName !== 'ClinicalNoteStudio' && currentPageName !== 'NoteDetail' && currentPageName !== 'NoteTemplates' && currentPageName !== 'CustomTemplates' && currentPageName !== 'PatientDashboard' && currentPageName !== 'DischargePlanning' && currentPageName !== 'UserPreferences' && currentPageName !== 'DiagnosticStewardship' && currentPageName !== 'NoteCreationHub' && currentPageName !== 'AutoCoder' && currentPageName !== 'NursingFlowsheet' && currentPageName !== 'ClinicalDecisionSupport' && currentPageName !== 'DrugReference' && currentPageName !== 'MedicationReference' && currentPageName !== 'KnowledgeBaseV2' && currentPageName !== 'NewPatientInput' && <DashboardTopBar user={user} />}
 
 
 

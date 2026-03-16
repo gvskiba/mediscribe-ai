@@ -348,7 +348,7 @@ export default function MedicationReferencePage() {
         {/* Saved Cases Panel */}
         {showSavedCases && (
           <div style={{
-            position:"fixed",top:0,left:56,width:280,bottom:0,zIndex:150,
+            position:"fixed",top:0,left:56,width:280,bottom:0,zIndex:150,marginTop:52,
             background:"#060b15",borderRight:"1px solid rgba(0,196,160,0.18)",
             display:"flex",flexDirection:"column"
           }}>

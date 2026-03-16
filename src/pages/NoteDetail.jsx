@@ -9,7 +9,7 @@ import NoteEditorTabs from "../components/notes/NoteEditorTabs";
 
 export default function NoteDetail() {
   const urlParams = new URLSearchParams(window.location.search);
-  const noteId = urlParams.get("id");
+  const noteId = urlParams.get("noteId") || urlParams.get("id");
   const urlTab = urlParams.get("tab");
 
   const { data: note, isLoading } = useQuery({

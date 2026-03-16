@@ -412,6 +412,7 @@ Write in formal clinical documentation style.`,
               description:"Speak freely with your patient. Notrya AI listens in real time, then instantly structures everything into a complete clinical note.",
               bullets:["Real-time ambient capture","AI-powered structuring","SOAP auto-format"],
               badge:"AI-powered",
+              routeTo:"LiveTranscription",
             },
             {
               mode:"studio",

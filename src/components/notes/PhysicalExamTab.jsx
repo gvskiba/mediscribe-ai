@@ -18,6 +18,8 @@ export default function PhysicalExamTab({
     green: "#2ecc71", purple: "#9b6dff", blue: "#4a90d9",
   };
 
+  if (!note) return null;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, minHeight: "100%", background: T.navy, padding: "0 0 20px 0" }}>
       <PhysicalExamEditor

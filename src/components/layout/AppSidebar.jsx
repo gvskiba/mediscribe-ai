@@ -31,7 +31,7 @@ const navGroups = [
       { emoji: "💊", label: "Drugs", page: "MedicationReference" },
       { emoji: "🦠", label: "Antibiotics", page: "AntibioticStewardship" },
       { emoji: "🧮", label: "Calculators", page: "Calculators" },
-      { emoji: "🔬", label: "Knowledge", page: "MedicalKnowledgeBase" },
+      { emoji: "🔬", label: "Knowledge", page: "KnowledgeBaseV2" },
     ],
   },
   {

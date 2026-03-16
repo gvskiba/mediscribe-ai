@@ -357,13 +357,13 @@ function highlight(text, q) {
 
 // ─── SUB COMPONENTS ──────────────────────────────────────────────────────────
 
-function VitalsBar() {
+function VitalsBar({ user }) {
   return (
     <div className="kb2-vitals">
       <div className="kb2-patient-chip">
         <div>
-          <div className="kb2-patient-name">Demo Patient</div>
-          <div className="kb2-patient-mrn">MRN: 00-000-000</div>
+          <div className="kb2-patient-name">{user?.full_name || 'Clinician'}</div>
+          <div className="kb2-patient-mrn">{user?.email || 'Knowledge Base Mode'}</div>
         </div>
       </div>
       <div className="kb2-vit-sep"/>

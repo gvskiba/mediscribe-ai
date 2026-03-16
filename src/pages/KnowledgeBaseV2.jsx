@@ -1201,7 +1201,7 @@ const TABS = [
 const SIDEBAR_NAV = [
   {id:'search', icon:'🔍', label:'Global Search', badge:null},
   {id:'drugs', icon:'💊', label:'Drug Information', badge:{cls:'cyan', text:'450+'}},
-  {id:'guidelines', icon:'📋', label:'Clinical Guidelines', badge:{cls:'blue', text:'38'}},
+  {id:'guidelines', icon:'📋', label:'Clinical Guidelines', badge:{cls:'blue', text:'75+'}},
   {id:'diseases', icon:'🩺', label:'Diseases & Conditions', badge:{cls:'purple', text:'120+'}},
   {id:'ed', icon:'🚨', label:'ED Resources', badge:{cls:'red', text:'24'}},
 ];

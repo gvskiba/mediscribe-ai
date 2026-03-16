@@ -134,7 +134,7 @@ const CSS = `
 /* Vitals Bar */
 .kb2-vitals {
   height:40px;background:#060f1c;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;padding:0 12px 0 88px;gap:6px;overflow-x:auto;flex-shrink:0;
+  display:flex;align-items:center;padding:0 12px;gap:6px;overflow-x:auto;flex-shrink:0;margin-left:72px;
 }
 .kb2-vitals::-webkit-scrollbar{display:none}
 .kb2-vit-item {

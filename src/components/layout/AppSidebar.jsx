@@ -28,7 +28,6 @@ const navGroups = [
   {
     label: "Reference",
     items: [
-      { emoji: "📚", label: "Guidelines", page: "Guidelines" },
       { emoji: "💊", label: "Drugs", page: "MedicationReference" },
       { emoji: "🦠", label: "Antibiotics", page: "AntibioticStewardship" },
       { emoji: "🧮", label: "Calculators", page: "Calculators" },

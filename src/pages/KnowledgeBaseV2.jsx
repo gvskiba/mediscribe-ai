@@ -611,10 +611,24 @@ function GuidelinesTab() {
   );
 }
 
+function formatSummaryAsText(s) {
+  if (!s) return '';
+  const lines = [];
+  lines.push(`${s.condition} — Clinical Summary (${s.guideline})\n`);
+  lines.push('DIAGNOSIS CRITERIA');
+  s.diagnosis.forEach(item => lines.push(`  • ${item}`));
+  lines.push('\nFIRST-LINE TREATMENT');
+  s.treatment.forEach(item => lines.push(`  • ${item}`));
+  lines.push('\nCLINICAL PEARLS');
+  s.pearls.forEach(item => lines.push(`  • ${item}`));
+  return lines.join('\n');
+}
+
 function DiseaseItem({ d }) {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [addedToNote, setAddedToNote] = useState(false);
 
   const fetchSummary = async (e) => {
     e.stopPropagation();
@@ -623,22 +637,52 @@ function DiseaseItem({ d }) {
     setExpanded(true);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a clinical knowledge assistant. Provide a concise evidence-based summary for clinicians about: "${d.name}" (also known as: ${d.aka}).
+        prompt: `You are a clinical knowledge assistant. Return a structured JSON summary for clinicians about: "${d.name}" (also known as: ${d.aka}). Guideline: ${d.guide}.
 
-Include:
-1. **Key Diagnosis Criteria** (2-3 bullet points)
-2. **First-line Treatment** (2-3 bullet points)
-3. **Critical Pearls** (1-2 high-yield clinical pearls)
-4. **Guideline Reference**: ${d.guide}
+Return ONLY valid JSON (no markdown fences), with this exact schema:
+{
+  "condition": "Full condition name",
+  "guideline": "Guideline reference",
+  "diagnosis": ["criterion 1", "criterion 2", "criterion 3"],
+  "treatment": ["treatment 1", "treatment 2", "treatment 3"],
+  "pearls": ["pearl 1", "pearl 2"]
+}
 
-Keep it under 150 words. Use markdown bullet points. Be clinical and concise.`,
+Be concise and clinical. No markdown, no asterisks, no bold formatting in values.`,
         add_context_from_internet: false,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            condition: { type: 'string' },
+            guideline: { type: 'string' },
+            diagnosis: { type: 'array', items: { type: 'string' } },
+            treatment: { type: 'array', items: { type: 'string' } },
+            pearls: { type: 'array', items: { type: 'string' } },
+          }
+        }
       });
-      setSummary(typeof res === 'string' ? res : JSON.stringify(res));
+      setSummary(res);
     } catch {
-      setSummary('⚠ Unable to load summary. Please try again.');
+      setSummary({ error: true });
     }
     setLoading(false);
+  };
+
+  const addToMDM = async () => {
+    if (!summary || summary.error) return;
+    const text = formatSummaryAsText(summary);
+    try {
+      const notes = await base44.entities.ClinicalNote.filter({ status: 'draft' }, '-updated_date', 1);
+      if (notes.length === 0) { alert('No draft notes found. Please open a note first.'); return; }
+      const note = notes[0];
+      const existing = note.mdm || '';
+      const separator = existing ? '\n\n---\n' : '';
+      await base44.entities.ClinicalNote.update(note.id, { mdm: existing + separator + text });
+      setAddedToNote(true);
+      setTimeout(() => setAddedToNote(false), 3000);
+    } catch {
+      alert('Failed to add to note. Please try again.');
+    }
   };
 
   return (
@@ -648,7 +692,7 @@ Keep it under 150 words. Use markdown bullet points. Be clinical and concise.`,
           <div className="kb2-disease-name">{d.name}</div>
           {d.aka && <div className="kb2-disease-aka">{d.aka}</div>}
         </div>
-        <div style={{display:'flex',alignItems:'center',padding:'0 10px',borderLeft:'1px solid var(--border)'}}>
+        <div style={{display:'flex',alignItems:'center',padding:'0 10px',gap:6,borderLeft:'1px solid var(--border)'}}>
           <button
             onClick={fetchSummary}
             style={{
@@ -671,25 +715,60 @@ Keep it under 150 words. Use markdown bullet points. Be clinical and concise.`,
       </div>
       {expanded && (
         <div style={{
-          padding:'12px 14px',borderTop:'1px solid var(--border)',
-          background:'#0a0520',fontSize:11,lineHeight:1.7,color:'var(--text-secondary)',
-          fontFamily:'DM Sans,sans-serif'
+          padding:'14px 16px',borderTop:'1px solid var(--border)',
+          background:'#07122a',fontFamily:'DM Sans,sans-serif'
         }}>
           {loading ? (
             <div style={{display:'flex',gap:6,alignItems:'center'}}>
               <div className="kb2-typing-dot"/><div className="kb2-typing-dot"/><div className="kb2-typing-dot"/>
-              <span style={{color:'var(--text-muted)',marginLeft:4}}>Generating clinical summary...</span>
+              <span style={{color:'var(--text-muted)',marginLeft:4,fontSize:11}}>Generating clinical summary...</span>
             </div>
-          ) : (
+          ) : summary?.error ? (
+            <div style={{fontSize:11,color:'var(--accent-coral)'}}>Unable to load summary. Please try again.</div>
+          ) : summary ? (
             <div>
-              <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}>
-                <div className="kb2-ai-dot"/>
-                <span style={{fontSize:9,fontWeight:700,letterSpacing:'.6px',textTransform:'uppercase',color:'var(--accent-teal)'}}>AI Clinical Summary</span>
-                <span style={{marginLeft:'auto',fontSize:9,color:'var(--text-dim)',fontFamily:'JetBrains Mono,monospace'}}>Guideline: {d.guide}</span>
+              {/* Header */}
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                  <div className="kb2-ai-dot"/>
+                  <span style={{fontSize:10,fontWeight:700,letterSpacing:'.6px',textTransform:'uppercase',color:'var(--accent-teal)'}}>AI Clinical Summary</span>
+                  <span style={{fontSize:9,color:'var(--text-dim)',fontFamily:'JetBrains Mono,monospace',background:'var(--bg-elevated)',padding:'1px 6px',borderRadius:3}}>{summary.guideline}</span>
+                </div>
+                <button
+                  onClick={addToMDM}
+                  style={{
+                    padding:'5px 12px',fontSize:10,fontWeight:600,cursor:'pointer',
+                    background: addedToNote ? '#0d2e20' : '#0a1e35',
+                    border:`1px solid ${addedToNote ? 'var(--accent-green)' : 'rgba(59,158,255,0.4)'}`,
+                    borderRadius:5,color: addedToNote ? 'var(--accent-green)' : 'var(--accent-blue)',
+                    transition:'all .2s',fontFamily:'DM Sans,sans-serif',
+                    display:'flex',alignItems:'center',gap:5
+                  }}
+                >
+                  {addedToNote ? '✓ Added to Note' : '+ Add to MDM'}
+                </button>
               </div>
-              <div style={{whiteSpace:'pre-wrap'}}>{summary}</div>
+
+              {/* Summary Sections */}
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12}}>
+                {[
+                  {label:'Diagnosis Criteria', items: summary.diagnosis, color:'#3b9eff', bg:'#0a1e35'},
+                  {label:'First-line Treatment', items: summary.treatment, color:'#00e5c0', bg:'#062020'},
+                  {label:'Clinical Pearls', items: summary.pearls, color:'#f5c842', bg:'#1e1505'},
+                ].map(section => (
+                  <div key={section.label} style={{background:section.bg,border:`1px solid ${section.color}22`,borderRadius:8,padding:'10px 12px'}}>
+                    <div style={{fontSize:9,fontWeight:700,letterSpacing:'.8px',textTransform:'uppercase',color:section.color,marginBottom:8}}>{section.label}</div>
+                    {section.items?.map((item, i) => (
+                      <div key={i} style={{display:'flex',gap:6,marginBottom:5,fontSize:11,color:'var(--text-secondary)',lineHeight:1.5}}>
+                        <span style={{color:section.color,flexShrink:0,marginTop:1}}>›</span>
+                        <span>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
             </div>
-          )}
+          ) : null}
         </div>
       )}
     </div>

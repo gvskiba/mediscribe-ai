@@ -10,6 +10,7 @@ const navGroups = [
       { emoji: "🧠", label: "Dashboard", page: "Dashboard" },
       { emoji: "🏥", label: "Shift", page: "Shift" },
       { emoji: "👤", label: "Patients", page: "PatientDashboard" },
+      { emoji: "🆕", label: "New Pt", page: "NewPatientInput" },
     ],
   },
   {

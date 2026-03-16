@@ -390,14 +390,7 @@ export default function DashboardTopBar({ user }) {
           </div>
 
           <button
-            onClick={async () => {
-              const newNote = await base44.entities.ClinicalNote.create({
-                raw_note: "",
-                patient_name: "New Patient",
-                status: "draft"
-              });
-              window.location.href = createPageUrl(`ClinicalNoteStudio?id=${newNote.id}`);
-            }}
+            onClick={() => { window.location.href = createPageUrl('NewPatientInput'); }}
             style={{
               padding: "4px 10px",
               borderRadius: "6px",

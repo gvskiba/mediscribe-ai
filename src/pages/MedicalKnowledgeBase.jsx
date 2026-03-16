@@ -402,6 +402,30 @@ Return structured literature review:
             ))}
           </div>
         </div>
+
+        {/* Condition Library Quick Links */}
+        {activeTab === "condition" && (
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <p className="text-xs text-slate-500 mb-2 font-medium flex items-center gap-1.5">
+              <Globe className="w-3.5 h-3.5" /> Condition Libraries:
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {QUICK_CONDITION_LINKS.map(link => (
+                <a
+                  key={link.name}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition-all"
+                >
+                  <span>{link.icon}</span>
+                  {link.name}
+                  <ExternalLink className="w-3 h-3 opacity-60" />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Loading */}

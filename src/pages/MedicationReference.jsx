@@ -93,14 +93,14 @@ const CSS = `
 }
 body{font-family:var(--f);background:var(--bg);color:var(--tx);min-height:100vh;}
 .lay{display:flex;min-height:100vh;}
-.sb{width:56px;background:var(--nav);border-right:1px solid var(--br);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;position:fixed;left:0;top:0;bottom:0;z-index:200;}
+.sb{width:56px;background:var(--nav);border-right:1px solid var(--br);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;position:fixed;left:72px;top:0;bottom:0;z-index:200;}
 .sb-logo{width:36px;height:36px;border-radius:10px;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;color:#080e1a;margin-bottom:12px;}
 .sbi{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;transition:background .15s;color:var(--tx3);position:relative;}
 .sbi:hover{background:var(--tdim);color:var(--teal);}
 .sbi.on{background:var(--tdim);color:var(--teal);}
 .sbi.on::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:24px;background:var(--teal);border-radius:0 3px 3px 0;}
 .sb-bot{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:4px;}
-.topbar{position:fixed;top:0;left:56px;right:0;height:52px;z-index:100;background:rgba(8,14,26,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--br);display:flex;align-items:center;justify-content:space-between;padding:0 20px;}
+.topbar{position:fixed;top:0;left:128px;right:0;height:52px;z-index:100;background:rgba(8,14,26,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--br);display:flex;align-items:center;justify-content:space-between;padding:0 20px;}
 .tbl{display:flex;align-items:center;gap:8px;}
 .tb-title{font-size:15px;font-weight:600;}
 .tb-sep{color:var(--tx3);font-size:12px;}
@@ -113,7 +113,7 @@ body{font-family:var(--f);background:var(--bg);color:var(--tx);min-height:100vh;
 .tb-btn:hover{background:var(--tdim);color:var(--teal);}
 .tb-pri{padding:6px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;background:var(--teal);border:none;color:#080e1a;font-family:var(--f);transition:opacity .15s;}
 .tb-pri:hover{opacity:.85;}
-.main{margin-left:56px;margin-top:52px;padding:18px;}
+.main{margin-left:128px;margin-top:52px;padding:18px;}
 .sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .sh-l{display:flex;align-items:center;gap:10px;}
 .sh-ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;background:var(--tdim);}
@@ -348,7 +348,7 @@ export default function MedicationReferencePage() {
         {/* Saved Cases Panel */}
         {showSavedCases && (
           <div style={{
-            position:"fixed",top:0,left:56,width:280,bottom:0,zIndex:150,marginTop:52,
+            position:"fixed",top:0,left:56,width:280,bottom:0,zIndex:150,
             background:"#060b15",borderRight:"1px solid rgba(0,196,160,0.18)",
             display:"flex",flexDirection:"column"
           }}>

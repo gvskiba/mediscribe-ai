@@ -86,7 +86,7 @@ const CSS = `
   --txt:#e8f0fe;--txt2:#8aaccc;--txt3:#4a6a8a;--txt4:#2e4a6a;
   background:var(--bg);color:var(--txt);
   font-family:'DM Sans',sans-serif;font-size:13px;
-  position:fixed;top:48px;left:72px;right:0;bottom:0;padding-top:8px;
+  position:fixed;top:0;left:0;right:0;bottom:0;
   display:flex;flex-direction:column;overflow:hidden;
 }
 .npi-root * { box-sizing:border-box; }

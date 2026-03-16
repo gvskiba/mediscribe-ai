@@ -422,6 +422,18 @@ export default function ClinicalNoteStudio() {
     showToast("Transcription applied to note", "s");
   };
 
+  // Apply AI summary (Assessment & Plan) to the studio form
+  const handleApplySummary = (result) => {
+    if (result.assessment) updatePt("assessment", result.assessment);
+    if (result.plan) updatePt("plan", result.plan);
+    if (result.chief_complaint && !pt.cc) updatePt("cc", result.chief_complaint);
+    if (result.summary) updatePt("hpi", pt.hpi ? pt.hpi + "\n\n" + result.summary : result.summary);
+    if (result.diagnoses?.length) {
+      setDxList(result.diagnoses.map(dx => ({ dx, plan: "" })));
+    }
+    showToast("Assessment & Plan applied to note", "s");
+  };
+
   // Apply template-generated note to the studio form
   const handleApplyTemplate = ({ generatedNote, template }) => {
     if (generatedNote) {

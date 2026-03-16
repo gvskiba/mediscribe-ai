@@ -59,6 +59,7 @@ const navSections = [
           { name: "Pediatric Dosing", icon: Activity, page: "PediatricDosing" },
           { name: "Guidelines", icon: BookOpen, page: "Guidelines" },
           { name: "Knowledge Base", icon: BookOpen, page: "MedicalKnowledgeBase" },
+          { name: "Knowledge Base V2", icon: BookOpen, page: "KnowledgeBaseV2" },
           { name: "Patient Education", icon: BookOpen, page: "PatientEducation" },
           { name: "Calculators", icon: Activity, page: "Calculators" },
           { name: "Templates", icon: FileText, page: "NoteTemplates" },

@@ -17,6 +17,8 @@ import {
 
 // NoteDetail tab components
 import NoteEditorTabs from "../components/notes/NoteEditorTabs";
+import TranscriptionModal from "../components/studio/TranscriptionModal";
+import TemplatePicker from "../components/studio/TemplatePicker";
 
 // Studio section components (inline below)
 

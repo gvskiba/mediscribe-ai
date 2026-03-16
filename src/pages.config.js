@@ -121,7 +121,6 @@ export const PAGES = {
     "DischargePlanning": DischargePlanning,
     "DrugReference": DrugReference,
     "DrugsBugs": DrugsBugs,
-    "Guidelines": Guidelines,
     "Home": Home,
     "KnowledgeBaseV2": KnowledgeBaseV2,
     "LiveTranscription": LiveTranscription,

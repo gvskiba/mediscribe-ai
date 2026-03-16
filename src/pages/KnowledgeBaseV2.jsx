@@ -1039,6 +1039,7 @@ export default function KnowledgeBaseV2() {
   return (
     <div className="kb2-root">
       <style>{CSS}</style>
+      <TopNavBar user={user} tab={tab} setTab={setTab} />
       <VitalsBar user={user} />
       <div className="kb2-layout">
         {/* Sidebar */}

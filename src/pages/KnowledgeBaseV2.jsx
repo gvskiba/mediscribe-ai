@@ -839,11 +839,16 @@ const CALC_LINKS = [
 
 export default function KnowledgeBaseV2() {
   const [tab, setTab] = useState('search');
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    base44.auth.me().then(setUser).catch(() => {});
+  }, []);
 
   return (
     <div className="kb2-root">
       <style>{CSS}</style>
-      <VitalsBar />
+      <VitalsBar user={user} />
       <div className="kb2-layout">
         {/* Sidebar */}
         <aside className="kb2-sidebar">

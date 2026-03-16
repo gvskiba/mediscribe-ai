@@ -93,14 +93,19 @@ const CSS = `
 .npi-root input, .npi-root select, .npi-root textarea { font-family:'DM Sans',sans-serif; }
 
 /* NAVBAR */
-.npi-nav{height:48px;background:#040d1a;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0}
-.npi-logo{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--txt)}
-.npi-logo span{color:var(--cyan)}
-.npi-ndiv{width:1px;height:18px;background:var(--border)}
-.npi-ntitle{font-family:'Playfair Display',serif;font-size:13px;color:var(--txt2);font-style:italic}
-.npi-nav-right{margin-left:auto;display:flex;align-items:center;gap:8px}
-.npi-save-btn{height:30px;padding:0 14px;background:var(--teal);border:none;border-radius:20px;color:#050f1e;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s}
+.npi-nav{height:44px;background:#040d1a;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0}
+.npi-logo{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--txt)}
+.npi-ndiv{width:1px;height:16px;background:var(--border)}
+.npi-ntitle{font-size:12px;color:var(--txt2);font-style:italic;font-family:'DM Sans',sans-serif}
+.npi-nav-right{margin-left:auto;display:flex;align-items:center;gap:7px}
+.npi-nav-btn{height:30px;padding:0 13px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;display:flex;align-items:center;gap:5px}
+.npi-nav-btn.new{background:#0a2040;border:1px solid var(--blue);color:var(--blue)}
+.npi-nav-btn.new:hover{background:#0e2a55}
+.npi-nav-btn.kb{background:#0a2535;border:1px solid rgba(0,212,255,.3);color:var(--cyan)}
+.npi-nav-btn.kb:hover{background:#0e3040}
+.npi-save-btn{height:30px;padding:0 14px;background:var(--teal);border:none;border-radius:6px;color:#050f1e;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;display:flex;align-items:center;gap:5px}
 .npi-save-btn:hover{background:#00ffd0}
+.npi-avatar{width:30px;height:30px;border-radius:50%;background:#0a2040;border:1.5px solid var(--border-hi);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--blue);cursor:pointer;flex-shrink:0}
 
 /* VITALS BAR */
 .npi-vbar{height:36px;background:#060f1c;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:6px;overflow-x:auto;flex-shrink:0}

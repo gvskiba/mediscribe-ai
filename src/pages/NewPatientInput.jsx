@@ -766,11 +766,14 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
 
       {/* NAVBAR */}
       <nav className="npi-nav">
-        <span className="npi-logo">Notr<span>ya</span></span>
+        <span className="npi-logo">Notrya</span>
         <div className="npi-ndiv"/>
         <span className="npi-ntitle">New Patient Input</span>
         <div className="npi-nav-right">
+          <button className="npi-nav-btn new" onClick={() => { setDemo({firstName:'',lastName:'',age:'',dob:'',sex:'',mrn:'',nhs:'',insurance:'',address:'',city:'',phone:'',email:'',emerg:'',height:'',weight:'',interp:'',lang:'',notes:'',pronouns:''});setCC({text:'',onset:'',duration:'',severity:'',quality:'',radiation:'',aggravate:'',relieve:'',assoc:'',hpi:''});setVitals({});setMedications([]);setAllergies([]);setPmhSelected({});setRosState({});setRosSymptoms({});setRosNotes({});setPeState({});setPeFindings({});setSelectedCC(-1);setCurrentTab('demo');setParseText('');toast.success('New patient form cleared'); }}>＋ New Patient</button>
+          <button className="npi-nav-btn kb" onClick={() => window.open('/KnowledgeBaseV2','_blank')}>📚 Knowledge Base</button>
           <button className="npi-save-btn" onClick={savePatient}>💾 Save Patient</button>
+          <div className="npi-avatar">DR</div>
         </div>
       </nav>
 

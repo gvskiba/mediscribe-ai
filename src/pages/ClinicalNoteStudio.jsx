@@ -680,6 +680,20 @@ export default function ClinicalNoteStudio() {
             <div key={t.id} style={{padding:"10px 14px",borderRadius:10,fontSize:12,animation:"fadeUp .2s ease",backdropFilter:"blur(8px)",background:t.type==='s'?"rgba(46,204,113,.11)":t.type==='e'?"rgba(255,92,108,.11)":"rgba(74,144,217,.11)",border:`1px solid ${t.type==='s'?"rgba(46,204,113,.38)":t.type==='e'?"rgba(255,92,108,.38)":"rgba(74,144,217,.38)"}`,color:t.type==='s'?C.green:t.type==='e'?C.red:C.blue}}>{t.msg}</div>
           ))}
         </div>
+
+        {/* Transcription Modal */}
+        <TranscriptionModal
+          open={showTranscription}
+          onClose={()=>setShowTranscription(false)}
+          onApplyToNote={handleApplyTranscription}
+        />
+
+        {/* Template Picker Modal */}
+        <TemplatePicker
+          open={showTemplatePicker}
+          onClose={()=>setShowTemplatePicker(false)}
+          onApply={handleApplyTemplate}
+        />
       </div>
     );
   }

@@ -1083,8 +1083,8 @@ export default function KnowledgeBaseV2() {
           {tab === 'ed' && <EDTab />}
         </main>
 
-        {/* AI Panel */}
-        <AIPanel />
+        {/* Clinical Context Panel */}
+        <ClinicalContextPanel />
       </div>
 
       {/* Bottom Nav */}

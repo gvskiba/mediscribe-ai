@@ -414,6 +414,22 @@ export default function ClinicalNoteStudio() {
     finally { setSaving(false); }
   };
 
+  // Apply transcription output to the studio form
+  const handleApplyTranscription = ({ cc, hpi }) => {
+    if (cc) updatePt("cc", cc);
+    if (hpi) updatePt("hpi", hpi);
+    showToast("Transcription applied to note", "s");
+  };
+
+  // Apply template-generated note to the studio form
+  const handleApplyTemplate = ({ generatedNote, template }) => {
+    if (generatedNote) {
+      updatePt("hpi", generatedNote.slice(0, 1200));
+      if (template?.name) updatePt("type", template.name);
+    }
+    showToast("Template applied to note", "s");
+  };
+
   const secContent = (id) => {
     const v = pt.vitals;
     const map = {

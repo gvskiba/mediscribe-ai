@@ -374,6 +374,26 @@ function highlight(text, q) {
 
 // ─── SUB COMPONENTS ──────────────────────────────────────────────────────────
 
+function TopNavBar({ user, tab, setTab }) {
+  const initials = user?.full_name ? user.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : 'DR';
+  return (
+    <div className="kb2-topnav">
+      <div className="kb2-topnav-brand">
+        <span className="kb2-topnav-logo">Notrya</span>
+        <div className="kb2-topnav-sep"/>
+        <span className="kb2-topnav-subtitle">Medical Knowledge Base</span>
+      </div>
+      <div className="kb2-topnav-spacer"/>
+      <div className="kb2-topnav-btns">
+        <button className={`kb2-topnav-btn${tab==='search'||tab==='drugs'||tab==='guidelines'||tab==='diseases'||tab==='ed' ? ' active':''}`} onClick={()=>setTab('search')}>🏥 Knowledge Base</button>
+        <a className="kb2-topnav-btn" href="/NoteEditorTabs" target="_blank" rel="noopener noreferrer">📝 Clinical Notes</a>
+        <a className="kb2-topnav-btn" href="/Dashboard" target="_blank" rel="noopener noreferrer">📊 Dashboard</a>
+      </div>
+      <div className="kb2-topnav-avatar">{initials}</div>
+    </div>
+  );
+}
+
 function VitalsBar({ user }) {
   return (
     <div className="kb2-vitals">

@@ -67,7 +67,6 @@ import DiagnosticStewardship from './pages/DiagnosticStewardship';
 import DischargePlanning from './pages/DischargePlanning';
 import DrugReference from './pages/DrugReference';
 import DrugsBugs from './pages/DrugsBugs';
-import Guidelines from './pages/Guidelines';
 import Home from './pages/Home';
 import KnowledgeBaseV2 from './pages/KnowledgeBaseV2';
 import LiveTranscription from './pages/LiveTranscription';

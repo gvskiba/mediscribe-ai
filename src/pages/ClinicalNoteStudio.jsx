@@ -361,6 +361,7 @@ export default function ClinicalNoteStudio() {
       patient_gender:pt.sex?.toLowerCase()||"male", date_of_birth:pt.dob,
       date_of_visit:pt.encounter||new Date().toISOString().split("T")[0],
       note_type:"progress_note", chief_complaint:pt.cc, history_of_present_illness:pt.hpi,
+      assessment:pt.assessment||"", plan:pt.plan||"",
       medical_history:pt.pmh.join(", "), allergies:pt.allergies.filter(Boolean),
       diagnoses:dxList.map(d=>d.dx).filter(Boolean), disposition_plan:pt.dc,
       vital_signs:{},

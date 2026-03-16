@@ -155,7 +155,7 @@ const CSS = `
 .kb2-patient-mrn{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted)}
 
 /* Layout */
-.kb2-layout{display:flex;flex:1;overflow:hidden;padding-left:72px}
+.kb2-layout{display:flex;flex:1;overflow:hidden;margin-left:72px}
 
 /* Sidebar */
 .kb2-sidebar {

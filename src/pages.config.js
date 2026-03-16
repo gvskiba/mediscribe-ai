@@ -50,11 +50,13 @@
 import AddendumManager from './pages/AddendumManager';
 import AntibioticStewardship from './pages/AntibioticStewardship';
 import AppSettings from './pages/AppSettings';
+import AutoCoder from './pages/AutoCoder';
 import BillingDashboard from './pages/BillingDashboard';
 import CMELearningCenter from './pages/CMELearningCenter';
 import Calculators from './pages/Calculators';
 import Calendar from './pages/Calendar';
 import CantMissDiagnoses from './pages/CantMissDiagnoses';
+import ClinicalDecisionSupport from './pages/ClinicalDecisionSupport';
 import ClinicalGuidelines from './pages/ClinicalGuidelines';
 import ClinicalNoteStudio from './pages/ClinicalNoteStudio';
 import CommandCenter from './pages/CommandCenter';
@@ -67,14 +69,18 @@ import DrugReference from './pages/DrugReference';
 import DrugsBugs from './pages/DrugsBugs';
 import Guidelines from './pages/Guidelines';
 import Home from './pages/Home';
+import KnowledgeBaseV2 from './pages/KnowledgeBaseV2';
 import LiveTranscription from './pages/LiveTranscription';
 import MedicalKnowledgeBase from './pages/MedicalKnowledgeBase';
 import MedicalNews from './pages/MedicalNews';
+import MedicationReference from './pages/MedicationReference';
 import NewNote from './pages/NewNote';
 import NoteCreationHub from './pages/NoteCreationHub';
 import NoteDetail from './pages/NoteDetail';
+import NoteEditorTabs from './pages/NoteEditorTabs';
 import NoteTemplates from './pages/NoteTemplates';
 import NotesLibrary from './pages/NotesLibrary';
+import NursingFlowsheet from './pages/NursingFlowsheet';
 import OrderSetBuilder from './pages/OrderSetBuilder';
 import OrdersQueue from './pages/OrdersQueue';
 import PatientDashboard from './pages/PatientDashboard';
@@ -86,6 +92,7 @@ import Results from './pages/Results';
 import Search from './pages/Search';
 import Shift from './pages/Shift';
 import ShiftHours from './pages/ShiftHours';
+import SmartTemplates from './pages/SmartTemplates';
 import Snippets from './pages/Snippets';
 import SoapCompiler from './pages/SoapCompiler';
 import SoapCompilerStandalone from './pages/SoapCompilerStandalone';
@@ -98,11 +105,13 @@ export const PAGES = {
     "AddendumManager": AddendumManager,
     "AntibioticStewardship": AntibioticStewardship,
     "AppSettings": AppSettings,
+    "AutoCoder": AutoCoder,
     "BillingDashboard": BillingDashboard,
     "CMELearningCenter": CMELearningCenter,
     "Calculators": Calculators,
     "Calendar": Calendar,
     "CantMissDiagnoses": CantMissDiagnoses,
+    "ClinicalDecisionSupport": ClinicalDecisionSupport,
     "ClinicalGuidelines": ClinicalGuidelines,
     "ClinicalNoteStudio": ClinicalNoteStudio,
     "CommandCenter": CommandCenter,
@@ -115,14 +124,18 @@ export const PAGES = {
     "DrugsBugs": DrugsBugs,
     "Guidelines": Guidelines,
     "Home": Home,
+    "KnowledgeBaseV2": KnowledgeBaseV2,
     "LiveTranscription": LiveTranscription,
     "MedicalKnowledgeBase": MedicalKnowledgeBase,
     "MedicalNews": MedicalNews,
+    "MedicationReference": MedicationReference,
     "NewNote": NewNote,
     "NoteCreationHub": NoteCreationHub,
     "NoteDetail": NoteDetail,
+    "NoteEditorTabs": NoteEditorTabs,
     "NoteTemplates": NoteTemplates,
     "NotesLibrary": NotesLibrary,
+    "NursingFlowsheet": NursingFlowsheet,
     "OrderSetBuilder": OrderSetBuilder,
     "OrdersQueue": OrdersQueue,
     "PatientDashboard": PatientDashboard,
@@ -134,6 +147,7 @@ export const PAGES = {
     "Search": Search,
     "Shift": Shift,
     "ShiftHours": ShiftHours,
+    "SmartTemplates": SmartTemplates,
     "Snippets": Snippets,
     "SoapCompiler": SoapCompiler,
     "SoapCompilerStandalone": SoapCompilerStandalone,

@@ -114,6 +114,23 @@ const CSS = `
 .kb2-root * { box-sizing:border-box; }
 .kb2-root a { color:inherit; text-decoration:none; }
 
+/* Top Nav Bar */
+.kb2-topnav {
+  height:44px;background:#040c18;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;
+  z-index:10;
+}
+.kb2-topnav-brand{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.kb2-topnav-logo{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--text-primary)}
+.kb2-topnav-sep{width:1px;height:18px;background:var(--border-bright)}
+.kb2-topnav-subtitle{font-size:11px;color:var(--text-muted);font-style:italic}
+.kb2-topnav-spacer{flex:1}
+.kb2-topnav-btns{display:flex;align-items:center;gap:6px}
+.kb2-topnav-btn{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-muted);transition:all .15s;font-family:'DM Sans',sans-serif;text-decoration:none}
+.kb2-topnav-btn:hover{border-color:var(--border-bright);color:var(--text-primary);background:var(--bg-card)}
+.kb2-topnav-btn.active{border-color:var(--accent-blue);background:#0a2040;color:var(--accent-blue)}
+.kb2-topnav-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#3b9eff,#9b6dff);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;cursor:pointer;border:1px solid var(--border-bright)}
+
 /* Vitals Bar */
 .kb2-vitals {
   height:40px;background:#060f1c;border-bottom:1px solid var(--border);

@@ -14,6 +14,7 @@ import NoteEditorTabsPage from './pages/NoteEditorTabs';
 import ClinicalNoteStudio from './pages/ClinicalNoteStudio';
 import DrugReference from './pages/DrugReference.jsx';
 import MedicationReference from './pages/MedicationReference.jsx';
+import SmartTemplates from './pages/SmartTemplates.jsx';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];

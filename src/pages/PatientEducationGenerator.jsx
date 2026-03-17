@@ -98,7 +98,7 @@ const CSS = `
 .peg-vit-sep{color:var(--border2);}
 .peg-vit-patient{font-family:var(--serif);font-size:13px;color:var(--text);margin-right:4px;}
 .peg-body{display:flex;flex:1;overflow:hidden;min-height:0;}
-.peg-sidebar{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:12px 0;display:flex;flex-direction:column;gap:2px;}
+.peg-sidebar{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:12px 0;display:flex;flex-direction:column;gap:2px;min-height:0;}
 .peg-sidebar::-webkit-scrollbar{width:3px;}
 .peg-sidebar::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
 .peg-sb-sec{padding:6px 14px 4px;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;}

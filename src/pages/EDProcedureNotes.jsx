@@ -920,7 +920,7 @@ Write a formal procedure note using ALL CAPS section headers. Third-person past 
                       </div>
                     </div>
                     <div style={{ background:'rgba(0,198,255,.05)', border:'1px solid rgba(0,198,255,.2)', borderRadius:8, padding:'10px 14px', fontSize:12, color:'#8aacc6', display:'flex', alignItems:'flex-start', gap:8 }}>
-                      <span>✏️</span><span>Fully editable. Verify all details against clinical findings before signing.</span>
+                      <span>✏️</span><span>Fully editable. Auto-saves every 30 seconds. Verify all details against clinical findings before signing.</span>
                     </div>
                   </>
                 )}

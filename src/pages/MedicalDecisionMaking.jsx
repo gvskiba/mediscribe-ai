@@ -481,6 +481,8 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
+    paddingTop: '20px',
+    paddingLeft: '20px',
   },
   navbar: {
     position: 'fixed',

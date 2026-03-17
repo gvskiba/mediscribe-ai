@@ -136,7 +136,6 @@ export const PAGES = {
     "OrderSetBuilder": OrderSetBuilder,
     "OrdersQueue": OrdersQueue,
     "PatientDashboard": PatientDashboard,
-    "PatientEducation": PatientEducation,
     "PatientHistory": PatientHistory,
     "PediatricDosing": PediatricDosing,
     "Procedures": Procedures,

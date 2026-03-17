@@ -380,9 +380,12 @@ const P = {
 const PROCEDURE_GROUPS = [
   { label:'Wound & Soft Tissue', icon:'🩹', keys:['lac','iand','fb','wc'] },
   { label:'Orthopedic', icon:'🦴', keys:['sp','red'] },
-  { label:'Airway Management', icon:'🌬️', keys:['intub','sed'] },
-  { label:'Invasive Procedures', icon:'🩺', keys:['cl','lp','ct','cv','par','arth'] },
-  { label:'Special Notes', icon:'📋', keys:['fast','dth'] },
+  { label:'Airway Management', icon:'🌬️', keys:['intub','sed','cryo','npa','opa'] },
+  { label:'Vascular Access', icon:'💉', keys:['piv','art','io'] },
+  { label:'Thoracic', icon:'🫁', keys:['cl','ct','fin'] },
+  { label:'Procedures', icon:'🩺', keys:['lp','cv','par','arth','ngt','foley'] },
+  { label:'Trauma & Critical', icon:'⚡', keys:['fast','resh','esch'] },
+  { label:'Special Notes', icon:'📋', keys:['dth'] },
 ];
 
 const TABS = ['select','document','note'];

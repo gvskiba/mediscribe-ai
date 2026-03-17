@@ -175,7 +175,7 @@ const CSS = `
 .peg-level-rail{display:flex;gap:8px;}
 .peg-level-opt{flex:1;padding:24px 10px 20px;text-align:center;cursor:pointer;transition:.15s;border:1px solid var(--border2);border-radius:8px;font-size:13px;color:var(--text2);font-weight:500;line-height:1.5;background:var(--bg5);}
 .peg-level-opt:hover{background:var(--bg4);color:var(--text2);border-color:var(--border3);}
-.peg-level-opt.sel{background:rgba(0,198,255,.15);color:var(--accent);font-weight:600;border-color:var(--accent2);}
+.peg-level-opt.sel{background:rgba(0,198,255,.25);color:var(--accent);font-weight:600;border-color:var(--accent);}
 .peg-level-grade{font-family:var(--mono);font-size:16px;font-weight:700;display:block;margin-bottom:4px;}
 .peg-tip{background:rgba(0,198,255,.06);border:1px solid rgba(0,198,255,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text2);display:flex;align-items:flex-start;gap:8px;line-height:1.6;}
 .peg-tip-ico{font-size:14px;flex-shrink:0;margin-top:1px;}

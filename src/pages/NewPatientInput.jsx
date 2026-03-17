@@ -421,6 +421,7 @@ export default function NewPatientInput() {
   const [allergyInput, setAllergyInput] = useState('');
   const [parseText, setParseText] = useState('');
   const [parsing, setParsing] = useState(false);
+  const [pmhExpanded, setPmhExpanded] = useState({ cardio: true, endo: true });
   const [avpu, setAvpu] = useState('');
   const [o2del, setO2del] = useState('');
   const [pain, setPain] = useState('');

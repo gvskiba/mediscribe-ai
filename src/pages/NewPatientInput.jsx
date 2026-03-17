@@ -58,11 +58,47 @@ const PE_SYSTEMS = [
   {id:'msk_pe',icon:'🦴',name:'Musculoskeletal',normal:'Full ROM all major joints. No joint swelling or effusion. No bony tenderness. Normal muscle bulk and tone.'},
 ];
 
-const PMH_CONDITIONS = [
-  'Hypertension','Type 2 Diabetes','Type 1 Diabetes','Hyperlipidaemia','Coronary Artery Disease','Atrial Fibrillation',
-  'Heart Failure','Asthma','COPD','Obstructive Sleep Apnoea','Previous MI','Previous Stroke / TIA','DVT / PE',
-  'Peripheral Vascular Disease','CKD','Chronic Liver Disease','Epilepsy','Depression','Anxiety','Dementia',
-  'Hypothyroidism','Hyperthyroidism','Osteoporosis','Arthritis','Inflammatory Bowel Disease','Reflux / GORD','Migraine','Cancer','HIV/AIDS',
+const PMH_SYSTEMS = [
+  {
+    id: 'cardio', icon: '❤️', name: 'Cardiovascular',
+    conditions: ['Hypertension','Coronary Artery Disease','Previous MI','Heart Failure','Atrial Fibrillation','Peripheral Vascular Disease','DVT / PE','Cardiomyopathy','Valvular Heart Disease','Aortic Stenosis','Aortic Aneurysm','Pacemaker / ICD'],
+  },
+  {
+    id: 'resp', icon: '🫁', name: 'Respiratory',
+    conditions: ['Asthma','COPD','Obstructive Sleep Apnoea','Pulmonary Fibrosis','Pulmonary Hypertension','Previous PE','Bronchiectasis','Lung Cancer','Tuberculosis'],
+  },
+  {
+    id: 'neuro', icon: '🧠', name: 'Neurological',
+    conditions: ['Previous Stroke / TIA','Epilepsy','Migraine','Dementia','Parkinson\'s Disease','Multiple Sclerosis','Peripheral Neuropathy','Spinal Cord Injury','Brain Tumour','Myasthenia Gravis'],
+  },
+  {
+    id: 'endo', icon: '⚗️', name: 'Endocrine / Metabolic',
+    conditions: ['Type 2 Diabetes','Type 1 Diabetes','Hypothyroidism','Hyperthyroidism','Cushing\'s Syndrome','Addison\'s Disease','Hyperlipidaemia','Obesity','Gout','Metabolic Syndrome'],
+  },
+  {
+    id: 'gi', icon: '🫃', name: 'Gastrointestinal',
+    conditions: ['Reflux / GORD','Peptic Ulcer Disease','Inflammatory Bowel Disease','Crohn\'s Disease','Ulcerative Colitis','Chronic Liver Disease','Cirrhosis','Hepatitis B','Hepatitis C','Pancreatitis','Colorectal Cancer','Coeliac Disease'],
+  },
+  {
+    id: 'renal', icon: '🫗', name: 'Renal / Urological',
+    conditions: ['CKD','Dialysis','Renal Transplant','Recurrent UTIs','Nephrolithiasis','Prostate Disease','Bladder Cancer','Polycystic Kidney Disease'],
+  },
+  {
+    id: 'msk', icon: '🦴', name: 'Musculoskeletal',
+    conditions: ['Osteoarthritis','Rheumatoid Arthritis','Osteoporosis','Gout','Ankylosing Spondylitis','Systemic Lupus Erythematosus','Psoriatic Arthritis','Fibromyalgia','Previous Fracture'],
+  },
+  {
+    id: 'psych', icon: '🧘', name: 'Psychiatric',
+    conditions: ['Depression','Anxiety','Bipolar Disorder','Schizophrenia','PTSD','ADHD','Eating Disorder','Substance Use Disorder','Alcohol Use Disorder','Insomnia'],
+  },
+  {
+    id: 'haem', icon: '🩸', name: 'Haematologic / Oncologic',
+    conditions: ['Anaemia','Iron Deficiency','Sickle Cell Disease','Thalassaemia','Haemophilia','Leukaemia','Lymphoma','Myeloma','Previous Cancer','HIV/AIDS','Immunodeficiency'],
+  },
+  {
+    id: 'other', icon: '🏥', name: 'Other',
+    conditions: ['Arthritis','Chronic Pain','Thyroid Cancer','Skin Cancer','Allergic Rhinitis','Eczema / Atopic Dermatitis','Psoriasis','Chronic Kidney Disease','Previous Surgery (other)','Transplant'],
+  },
 ];
 
 const VITAL_DEFS = [

@@ -885,6 +885,9 @@ Write a formal procedure note using ALL CAPS section headers. Third-person past 
                   <div style={{ display:'flex', gap:8 }}>
                     <button className="epn-btn" onClick={generateNote} disabled={generating}>↺ Regenerate</button>
                     <button className="epn-btn s" onClick={copyNote} disabled={!generatedNote || generating}>Copy to Clipboard</button>
+                    <button className="epn-btn s" onClick={() => saveProcedureNote(false)} disabled={!generatedNote || saving} style={{ display:'flex', alignItems:'center', gap:6 }}>
+                      {saving ? '⏳ Saving…' : '💾 Save'}
+                    </button>
                   </div>
                 </div>
 

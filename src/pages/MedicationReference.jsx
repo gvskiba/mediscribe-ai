@@ -178,6 +178,8 @@ const CSS = `
 `;
 
 export default function MedicationReferencePage() {
+  const [medications, setMedications]     = useState([]);
+  const [loadingMeds, setLoadingMeds]     = useState(true);
   const [tab, setTab]                     = useState("medications");
   const [cat, setCat]                     = useState("all");
   const [search, setSearch]               = useState("");

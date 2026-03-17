@@ -162,7 +162,7 @@ const CSS = `
 .peg-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
 .peg-card-hdr{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--bg3);}
 .peg-card-title{font-size:11px;font-weight:600;color:var(--text);letter-spacing:.06em;text-transform:uppercase;}
-.peg-card-body{padding:16px;}
+.peg-card-body{padding:24px;}
 .peg-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .peg-form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
 .peg-form-group{display:flex;flex-direction:column;gap:5px;}

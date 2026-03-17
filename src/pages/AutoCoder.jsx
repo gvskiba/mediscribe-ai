@@ -521,6 +521,20 @@ ${noteText}`;
               <button className="nbtn" onClick={copyBilling}>📋 Copy</button>
               <button className="nbtn success" onClick={exportCSV}>↓ Export</button>
             </div>
+
+            {/* Validation Engine */}
+            {(selIcd.length + selCpt.length > 0) && (
+              <div className="card">
+                <div className="card-hdr">
+                  <span style={{ fontSize: 14 }}>🛡️</span>
+                  <span className="card-title">CLAIM VALIDATION — NCCI EDITS &amp; LCD CHECKS</span>
+                </div>
+                <div className="card-body">
+                  <ClaimValidationPanel selIcd={selIcd} selCpt={selCpt} />
+                </div>
+              </div>
+            )}
+
             <div className="sum-grid">
               <div className="sum-card"><div className="sum-label">ICD-10 Codes</div><div className="sum-val" style={{ color: 'var(--accent)' }}>{selIcd.length}</div></div>
               <div className="sum-card"><div className="sum-label">CPT Codes</div><div className="sum-val" style={{ color: 'var(--accent)' }}>{selCpt.length}</div></div>

@@ -590,6 +590,35 @@ export default function ClinicalNoteStudio() {
     </div>
   );
 
+  // ── INTAKE MODE ──
+  if (mode === "intake") {
+    return (
+      <div style={{fontFamily:"'DM Sans',sans-serif",background:C.navy,height:"100vh",color:C.text,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+        `}</style>
+        {/* Minimal top bar for mode switching */}
+        <nav style={{height:40,background:"rgba(11,29,53,.97)",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",padding:"0 16px",gap:12,flexShrink:0,zIndex:100}}>
+          <Link to="/Home" style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:C.bright,cursor:"pointer",letterSpacing:"-.02em",textDecoration:"none"}}>Notrya</Link>
+          <div style={{width:1,height:14,background:C.border}} />
+          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:C.teal,letterSpacing:".12em"}}>CLINICAL NOTE STUDIO</span>
+          <div style={{display:"flex",alignItems:"center",gap:2,padding:"2px",borderRadius:9,background:C.edge,border:`1px solid ${C.border}`}}>
+            <button style={{padding:"3px 10px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:C.green,color:C.navy,transition:"all .15s"}}>➕ New Patient</button>
+            <button onClick={()=>setMode("studio")} style={{padding:"3px 10px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:"transparent",color:C.dim,transition:"all .15s"}}>✦ Studio</button>
+            {savedNoteId && <button onClick={()=>setMode("notes")} style={{padding:"3px 10px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:"transparent",color:C.dim,transition:"all .15s"}}>📋 Note Detail</button>}
+          </div>
+          <div style={{flex:1}} />
+          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.dim}}>{clock}</span>
+        </nav>
+        {/* NewPatientInput fills the rest — override its margin-left since we're inside studio */}
+        <div style={{flex:1,overflow:"hidden",position:"relative"}}>
+          <style>{`.npi-root { margin-left: 0 !important; height: calc(100vh - 40px) !important; }`}</style>
+          <NewPatientInput />
+        </div>
+      </div>
+    );
+  }
+
   // ── STUDIO MODE ──
   if (mode === "studio") {
     return (

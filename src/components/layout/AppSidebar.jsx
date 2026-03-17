@@ -42,6 +42,7 @@ const navGroups = [
       { emoji: "🚨", label: "Can't-Miss", page: "CantMissDiagnoses" },
       { emoji: "📅", label: "Calendar", page: "Calendar" },
       { emoji: "📰", label: "News", page: "MedicalNews" },
+      { emoji: "📚", label: "Pt. Edu", page: "PatientEducationGenerator" },
     ],
   },
 ];

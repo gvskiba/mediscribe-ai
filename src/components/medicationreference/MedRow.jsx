@@ -1,9 +1,13 @@
+import { useState } from "react";
+import MedDetailModal from "./MedDetailModal";
+
 const CAT_COLOR = {
   all: "#00c4a0", anticoag: "#ef4444", cardiac: "#f97316", psych: "#8b5cf6",
   analgesic: "#fb7185", abx: "#22c55e", gi: "#f59e0b", other: "#06b6d4",
 };
 
-export default function MedRow({ med, isExpanded, onToggle, weightKg, isSelected, onSelect }) {
+export default function MedRow({ med, weightKg, isSelected, onSelect }) {
+  const [showModal, setShowModal] = useState(false);
   const color = CAT_COLOR[med.category] || "#00c4a0";
   const dosing = med.dosing?.[0];
   const doseStr = dosing?.dose || "";
@@ -14,9 +18,9 @@ export default function MedRow({ med, isExpanded, onToggle, weightKg, isSelected
   return (
     <>
       <div
-        className={`mrow ${isExpanded ? "ex" : ""}`}
-        style={isSelected ? { background: "rgba(0,196,160,0.12)", borderColor: "rgba(0,196,160,0.4)" } : {}}
-        onClick={onToggle}
+        className="mrow"
+        style={isSelected ? { background: "rgba(0,196,160,0.12)", borderColor: "rgba(0,196,160,0.4)", cursor: "pointer" } : { cursor: "pointer" }}
+        onClick={() => setShowModal(true)}
       >
         <div className="mdot" style={{ background: color }} />
         <div className="mrm">
@@ -41,62 +45,15 @@ export default function MedRow({ med, isExpanded, onToggle, weightKg, isSelected
             type="checkbox"
             checked={isSelected}
             onChange={e => { e.stopPropagation(); onSelect(!isSelected); }}
+            onClick={e => e.stopPropagation()}
             style={{ cursor: "pointer", width: 16, height: 16 }}
             title="Select for interaction check"
           />
           <button className="obtn" onClick={e => e.stopPropagation()}>Order →</button>
-          <span style={{ color: "var(--tx3)", fontSize: 11, transform: isExpanded ? "rotate(180deg)" : "none", transition: "transform .15s" }}>▼</span>
         </div>
       </div>
 
-      {isExpanded && (
-        <div className="mdet">
-          {med.mechanism && (
-            <div style={{ marginBottom: 11, padding: "8px 12px", background: "rgba(0,196,160,0.05)", border: "1px solid rgba(0,196,160,0.18)", borderRadius: "var(--r)" }}>
-              <div className="dlbl" style={{ marginBottom: 4 }}>Mechanism of Action</div>
-              <div style={{ fontSize: 12, color: "var(--tx2)", lineHeight: 1.6 }}>{med.mechanism}</div>
-            </div>
-          )}
-          <div className="dgrid">
-            <div>
-              <div className="dlbl">Adult Dose</div>
-              <div className="dval tl">{med.dosing?.[0]?.dose || "See dosing table"}</div>
-            </div>
-            <div>
-              <div className="dlbl">Onset / Duration</div>
-              <div className="dval"><span style={{ color: "var(--teal)" }}>{med.halfLife}</span></div>
-            </div>
-            <div>
-              <div className="dlbl">Pregnancy Category</div>
-              <div className="dval tl">{med.pregnancy}</div>
-            </div>
-          </div>
-          <div className="dgrid">
-            <div>
-              <div className="dlbl">Contraindications</div>
-              {med.contraindications?.slice(0, 3).map((ci, i) => (
-                <div key={i} className="cir"><span style={{ flexShrink: 0 }}>✕</span><span>{ci}</span></div>
-              ))}
-            </div>
-            <div>
-              <div className="dlbl">Warnings</div>
-              {med.warnings?.slice(0, 3).map((w, i) => (
-                <div key={i} className="wr"><span style={{ color: "var(--yel)", flexShrink: 0 }}>⚠</span><span>{w}</span></div>
-              ))}
-            </div>
-            <div>
-              <div className="dlbl">Monitoring</div>
-              <div style={{ fontSize: 11, color: "var(--tx2)", lineHeight: 1.5 }}>{med.monitoring}</div>
-            </div>
-          </div>
-          <div className="rtags">
-            <span style={{ fontSize: 10, color: "var(--tx3)", alignSelf: "center" }}>Key Info:</span>
-            <span className="rtag">{med.drugClass}</span>
-            <span className="rtag">Category: {med.pregnancy}</span>
-            {med.highAlert && <span className="rvtag">HIGH ALERT</span>}
-          </div>
-        </div>
-      )}
+      {showModal && <MedDetailModal med={med} onClose={() => setShowModal(false)} />}
     </>
   );
 }

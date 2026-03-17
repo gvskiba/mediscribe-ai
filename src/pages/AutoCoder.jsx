@@ -390,7 +390,7 @@ ${noteText}`;
             { id: 'note', icon: '📋', label: 'Note Input', badge: noteText ? '✓' : '—', bc: 'n' },
             { id: 'icd', icon: '🏥', label: 'ICD-10 Codes', badge: icdCodes.length, bc: 'info' },
             { id: 'cpt', icon: '⚕️', label: 'CPT Codes', badge: cptCodes.length, bc: 'info' },
-            { id: 'billing', icon: '💳', label: 'Billing Summary', badge: selIcd.length + selCpt.length || '—', bc: selIcd.length + selCpt.length > 0 ? 'ok' : 'n' },
+            { id: 'billing', icon: '💳', label: 'Billing Summary', badge: denialCount > 0 ? `⚠ ${denialCount}` : selIcd.length + selCpt.length || '—', bc: denialCount > 0 ? 'alert' : selIcd.length + selCpt.length > 0 ? 'ok' : 'n' },
           ].map(s => (
             <div key={s.id} className={`sb-item${tab === s.id ? ' on' : ''}`} onClick={() => switchTab(s.id)}>
               <span style={{ fontSize: 14 }}>{s.icon}</span>{s.label}

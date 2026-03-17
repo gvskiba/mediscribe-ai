@@ -439,12 +439,17 @@ CRITICAL RULES:
 
         {/* Vitals Bar */}
         <div className="peg-vitals-bar">
-          <span className="peg-vit-patient">{ptName}</span>
-          <span className="peg-vit-sep">|</span>
-          <div className="peg-vit"><span className="peg-vit-lbl">DOB</span><span className="peg-vit-val">{ptDob}</span></div>
-          <div className="peg-vit"><span className="peg-vit-lbl">BP</span><span className="peg-vit-val abn">158/96</span></div>
-          <div className="peg-vit"><span className="peg-vit-lbl">HR</span><span className="peg-vit-val">88</span></div>
-          <div className="peg-vit"><span className="peg-vit-lbl">SpO₂</span><span className="peg-vit-val">96%</span></div>
+          {ptName ? (
+            <>
+              <span className="peg-vit-patient">{ptPref || ptName}</span>
+              {ptDob && <><span className="peg-vit-sep">|</span><div className="peg-vit"><span className="peg-vit-lbl">DOB</span><span className="peg-vit-val">{ptDob}</span></div></>}
+              {condition && <><span className="peg-vit-sep">|</span><div className="peg-vit"><span className="peg-vit-lbl">Condition</span><span className="peg-vit-val">{condition}</span></div></>}
+              {selectedLevel && <><span className="peg-vit-sep">|</span><div className="peg-vit"><span className="peg-vit-lbl">Reading Level</span><span className="peg-vit-val">{selectedLevel} Grade</span></div></>}
+              <span className="peg-vit-sep">|</span><div className="peg-vit"><span className="peg-vit-lbl">Language</span><span className="peg-vit-val">{ptLang}</span></div>
+            </>
+          ) : (
+            <span style={{ color: 'var(--text3)', fontSize: 12 }}>No patient configured — fill in Patient Setup to begin</span>
+          )}
         </div>
 
         {/* Body */}

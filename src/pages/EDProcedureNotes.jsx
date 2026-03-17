@@ -491,8 +491,10 @@ export default function EDProcedureNotes() {
   const [aiReviewing, setAiReviewing] = useState(false);
   const [toast, setToast] = useState('');
   const [clock, setClock] = useState('');
+  const [saving, setSaving] = useState(false);
   const aiTimer = useRef(null);
   const aiReqId = useRef(0);
+  const autoSaveTimer = useRef(null);
 
   // Load clinical notes for patient context
   const { data: notes = [] } = useQuery({

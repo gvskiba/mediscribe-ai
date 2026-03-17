@@ -368,7 +368,9 @@ export default function MedicationReferencePage() {
                 <span className="sh-m">Evidence-based · Tap row for full details</span>
               </div>
               <div style={{ padding: "10px 13px" }}>
-                {filtered.length === 0 ? (
+                {loadingMeds ? (
+                  <div className="empty"><div className="empty-i" style={{fontSize:24}}>⏳</div><div className="empty-t">Loading medications...</div></div>
+                ) : filtered.length === 0 ? (
                   <div className="empty"><div className="empty-i">🔍</div><div className="empty-t">No medications match your search</div></div>
                 ) : (
                   <div className="mlist">

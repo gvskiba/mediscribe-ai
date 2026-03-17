@@ -204,7 +204,6 @@ ${noteText}`;
   // Run validation for badge counts
   const { denialCount, warningCount } = useMemo(() => {
     if (selIcd.length + selCpt.length === 0) return { denialCount: 0, warningCount: 0 };
-    const { runValidation } = require('../components/autocoder/claimValidation');
     const findings = runValidation(selIcd, selCpt);
     return {
       denialCount: findings.filter(f => f.type === 'denial').length,

@@ -540,6 +540,7 @@ export default function ClinicalNoteStudio() {
 
       {/* Mode toggle */}
       <div style={{display:"flex",alignItems:"center",gap:2,padding:"3px",borderRadius:10,background:C.edge,border:`1px solid ${C.border}`}}>
+        <button onClick={()=>setMode("intake")} style={{padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:mode==="intake"?C.green:"transparent",color:mode==="intake"?C.navy:C.dim,transition:"all .15s"}}>➕ New Patient</button>
         <button onClick={()=>setMode("studio")} style={{padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:mode==="studio"?C.teal:"transparent",color:mode==="studio"?C.navy:C.dim,transition:"all .15s"}}>✦ Studio</button>
         <button onClick={()=>setMode("notes")} style={{padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:mode==="notes"?C.blue:"transparent",color:mode==="notes"?C.bright:C.dim,transition:"all .15s"}}>📋 Note Detail</button>
         <button onClick={()=>setShowTemplatePicker(true)} style={{padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:"transparent",color:C.purple}}>📄 Templates</button>

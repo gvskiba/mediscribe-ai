@@ -18,6 +18,7 @@ import SmartTemplates from './pages/SmartTemplates.jsx';
 import KnowledgeBaseV2 from './pages/KnowledgeBaseV2.jsx';
 import NewPatientInput from './pages/NewPatientInput.jsx';
 import PatientEducationGenerator from './pages/PatientEducationGenerator.jsx';
+import EDProcedureNotes from './pages/EDProcedureNotes.jsx';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];

@@ -151,7 +151,7 @@ const CSS = `
 .peg-btn:disabled{opacity:.4;pointer-events:none;}
 .peg-bsp{flex:1;}
 .peg-step-info{font-size:11px;color:var(--text3);font-family:var(--mono);}
-.peg-tab-panel{display:none;flex:1;flex-direction:column;padding:20px;gap:16px;overflow-y:auto;}
+.peg-tab-panel{display:none;flex:1;flex-direction:column;padding:20px;gap:16px;overflow-y:auto;min-height:0;}
 .peg-tab-panel.active{display:flex;}
 .peg-tab-panel::-webkit-scrollbar{width:5px;}
 .peg-tab-panel::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}

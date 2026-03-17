@@ -200,6 +200,17 @@ ${noteText}`;
     a.click();
   };
 
+  // Run validation for badge counts
+  const { denialCount, warningCount } = useMemo(() => {
+    if (selIcd.length + selCpt.length === 0) return { denialCount: 0, warningCount: 0 };
+    const { runValidation } = require('../components/autocoder/claimValidation');
+    const findings = runValidation(selIcd, selCpt);
+    return {
+      denialCount: findings.filter(f => f.type === 'denial').length,
+      warningCount: findings.filter(f => f.type === 'warning').length,
+    };
+  }, [selIcd, selCpt]);
+
   const avgConf = selIcd.length + selCpt.length > 0
     ? Math.round([...selIcd, ...selCpt].reduce((a, c) => a + c.confidence, 0) / (selIcd.length + selCpt.length))
     : null;

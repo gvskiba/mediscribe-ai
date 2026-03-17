@@ -261,8 +261,20 @@ const CSS = `
 .npi-quick-med{color:var(--cyan);cursor:pointer;margin-right:2px}
 .npi-quick-med:hover{text-decoration:underline}
 
-/* PMH CHIPS */
-.npi-pmh-grid{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+/* PMH SYSTEMS */
+.npi-pmh-systems{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.npi-pmh-sys{background:var(--bg-card);border:1.5px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .2s}
+.npi-pmh-sys.has-sel{border-color:var(--blue)}
+.npi-pmh-sys-hdr{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;user-select:none;transition:background .15s}
+.npi-pmh-sys-hdr:hover{background:var(--bg-up)}
+.npi-pmh-sys-ico{font-size:16px;flex-shrink:0}
+.npi-pmh-sys-name{font-size:12px;font-weight:600;color:var(--txt);flex:1}
+.npi-pmh-sys-count{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;padding:1px 7px;border-radius:10px;background:#0a2040;color:var(--blue);min-width:20px;text-align:center}
+.npi-pmh-sys-count.zero{background:var(--bg-up);color:var(--txt4)}
+.npi-pmh-sys-chevron{font-size:11px;color:var(--txt3);transition:transform .2s;flex-shrink:0}
+.npi-pmh-sys-chevron.open{transform:rotate(90deg)}
+.npi-pmh-sys-body{padding:8px 12px 10px;border-top:1px solid var(--border);display:none;flex-wrap:wrap;gap:5px}
+.npi-pmh-sys-body.open{display:flex}
 .npi-pmh-chip{padding:4px 10px;border-radius:5px;border:1.5px solid var(--border);background:transparent;color:var(--txt3);font-size:11px;cursor:pointer;transition:all .18s;user-select:none}
 .npi-pmh-chip:hover{border-color:var(--border-hi);color:var(--txt2)}
 .npi-pmh-chip.sel{background:#0a2040;border-color:var(--blue);color:var(--blue);font-weight:500}

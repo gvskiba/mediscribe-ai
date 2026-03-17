@@ -615,20 +615,23 @@ Write a formal procedure note using ALL CAPS section headers. Third-person past 
     if (!selProc || !generatedNote) return;
     setSaving(true);
     try {
-      const noteData = {
+      const logData = {
         patient_name: ptCtx.patientName || '',
         patient_id: ptCtx.mrn || '',
         procedure_name: proc.name,
-        procedure_type: Object.keys(PROCEDURE_GROUPS).find(key => PROCEDURE_GROUPS[key].keys.includes(selProc)) || 'special',
-        encounter_date: ptCtx.encounterDate,
-        form_data: formData,
-        generated_note: generatedNote,
-        status: 'draft',
-        provider_name: ptCtx.physicianName || '',
-        notes: ''
+        indication: formData.ind || '',
+        date_performed: new Date().toISOString(),
+        operator: ptCtx.physicianName || '',
+        technique: formData.tech || generatedNote.slice(0, 500),
+        findings: formData.find || '',
+        complications: formData.comp || '',
+        outcome: formData.outcome || 'successful',
+        post_procedure_plan: formData.plan || '',
+        status: 'completed',
+        documentation_files: []
       };
-      await base44.entities.ProcedureNote.create(noteData);
-      showToast(autoSave ? 'Auto-saved' : 'Procedure note saved successfully');
+      await base44.entities.ProcedureLog.create(logData);
+      showToast(autoSave ? 'Auto-saved' : 'Procedure logged successfully');
     } catch (e) {
       showToast('Save failed — please try again');
       console.error('Save error:', e);

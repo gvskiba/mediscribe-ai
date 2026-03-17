@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 
 const TABS = ['setup', 'content', 'preview', 'export'];

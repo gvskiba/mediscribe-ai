@@ -699,6 +699,7 @@ CRITICAL RULES:
                 <div className="peg-card-hdr">
                   <span className="peg-card-title">Clinical Note / Diagnosis Context</span>
                   <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+                    {selectedNoteId && <button className="peg-btn success" onClick={() => loadFromNote(selectedNoteId)}>↺ Reload from Note</button>}
                     <button className="peg-btn" onClick={() => setClinicalNote(SAMPLE_NOTE)}>Load Sample</button>
                     <button className="peg-btn" onClick={() => setClinicalNote('')}>Clear</button>
                   </div>

@@ -19,6 +19,7 @@ import KnowledgeBaseV2 from './pages/KnowledgeBaseV2.jsx';
 import NewPatientInput from './pages/NewPatientInput.jsx';
 import PatientEducationGenerator from './pages/PatientEducationGenerator.jsx';
 import EDProcedureNotes from './pages/EDProcedureNotes.jsx';
+import MedicalDecisionMaking from './pages/MedicalDecisionMaking.jsx';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -113,6 +114,11 @@ const AuthenticatedApp = () => {
       <Route path="/EDProcedureNotes" element={
         <LayoutWrapper currentPageName="EDProcedureNotes">
           <EDProcedureNotes />
+        </LayoutWrapper>
+      } />
+      <Route path="/MedicalDecisionMaking" element={
+        <LayoutWrapper currentPageName="MedicalDecisionMaking">
+          <MedicalDecisionMaking />
         </LayoutWrapper>
       } />
       {Object.entries(Pages).map(([path, Page]) => (

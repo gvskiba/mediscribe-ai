@@ -432,9 +432,9 @@ CRITICAL RULES:
           <div className="peg-nav-div" />
           <span className="peg-nav-title">Patient Education Generator</span>
           <div className="peg-nav-sp" />
-          <span className="peg-nav-pill">Encounter: 2026-03-16</span>
+          <span className="peg-nav-pill">Encounter: {new Date().toISOString().slice(0, 10)}</span>
           <span className="peg-nav-pill live">● AI Ready</span>
-          <a href="/Home" className="peg-nav-back">← Home</a>
+          <Link to="/Home" className="peg-nav-back">← Home</Link>
         </nav>
 
         {/* Vitals Bar */}

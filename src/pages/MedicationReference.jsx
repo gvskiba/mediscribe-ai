@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { DRUG_DB as MEDICATIONS } from "../components/drugreference/drugData";
+import { useState, useMemo, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
 import SaveCaseModal from "../components/medicationreference/SaveCaseModal";
 import SavedCasesPanel from "../components/medicationreference/SavedCasesPanel";
 import WeightWidget from "../components/medicationreference/WeightWidget";

@@ -198,7 +198,7 @@ export default function MedicationReferencePage() {
   const [selectedMeds, setSelectedMeds]   = useState([]);
 
   useEffect(() => {
-    base44.entities.Medication.list().then(data => {
+    base44.entities.Medication.list('-name', 200).then(data => {
       setMedications(data);
       setLoadingMeds(false);
     });

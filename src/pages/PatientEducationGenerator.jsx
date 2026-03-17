@@ -110,7 +110,7 @@ const CSS = `
 .peg-sb-badge.n{background:var(--bg4);color:var(--text3);}
 .peg-sb-badge.ok{background:rgba(0,229,160,.12);color:var(--green);}
 .peg-sb-badge.warn{background:rgba(245,166,35,.15);color:var(--amber);animation:peg-glow-red 1.8s infinite;}
-.peg-main{flex:1;overflow-y:auto;background:var(--bg);display:flex;flex-direction:column;}
+.peg-main{flex:1;overflow-y:auto;background:var(--bg);display:flex;flex-direction:column;min-width:0;min-height:0;}
 .peg-main::-webkit-scrollbar{width:5px;}
 .peg-main::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
 .peg-ai-panel{width:var(--ai-panel);flex-shrink:0;background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}

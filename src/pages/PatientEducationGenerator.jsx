@@ -173,7 +173,7 @@ const CSS = `
 .peg-form-select option{background:var(--bg2);}
 .peg-form-textarea{resize:vertical;min-height:160px;line-height:1.65;}
 .peg-level-rail{display:flex;gap:8px;}
-.peg-level-opt{flex:1;padding:14px 8px;text-align:center;cursor:pointer;transition:.15s;border:1px solid var(--border2);border-radius:8px;font-size:11px;color:var(--text3);font-weight:500;line-height:1.5;background:var(--bg3);}
+.peg-level-opt{flex:1;padding:16px 8px 14px;text-align:center;cursor:pointer;transition:.15s;border:1px solid var(--border2);border-radius:8px;font-size:12px;color:var(--text2);font-weight:500;line-height:1.4;background:var(--bg4);}
 .peg-level-opt:hover{background:var(--bg4);color:var(--text2);border-color:var(--border3);}
 .peg-level-opt.sel{background:rgba(0,198,255,.15);color:var(--accent);font-weight:600;border-color:var(--accent2);}
 .peg-level-grade{font-family:var(--mono);font-size:16px;font-weight:700;display:block;margin-bottom:4px;}

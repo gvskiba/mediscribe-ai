@@ -5,6 +5,7 @@ import SavedCasesPanel from "../components/medicationreference/SavedCasesPanel";
 import WeightWidget from "../components/medicationreference/WeightWidget";
 import AIDoseAnalyzer from "../components/medicationreference/AIDoseAnalyzer";
 import DrugInteractionChecker from "../components/medicationreference/DrugInteractionChecker";
+import ERConditions from "../components/medicationreference/ERConditions";
 
 const CATEGORIES = [
   { id:"all", label:"All", icon:"💊", color:"#00c4a0" },
@@ -322,7 +323,7 @@ export default function MedicationReferencePage() {
       <div className="lay">
         <div className="sb">
           <div className="sb-logo">Rx</div>
-          {[["medications","💊"],["calculator","⚖️"],["sepsis","🔴"]].map(([id,ic])=>(
+          {[["medications","💊"],["calculator","⚖️"],["sepsis","🔴"],["conditions","🏥"]].map(([id,ic])=>(
             <div key={id} className={`sbi ${tab===id?"on":""}`} onClick={()=>setTab(id)} title={id}>{ic}</div>
           ))}
           <div className={`sbi ${showSavedCases?"on":""}`} onClick={()=>setShowSavedCases(!showSavedCases)} title="Saved Cases">📋</div>
@@ -393,7 +394,7 @@ export default function MedicationReferencePage() {
 
           {/* Main Tabs */}
           <div className="ntabs">
-            {[["medications","💊 MEDICATIONS"],["calculator","⚖️ PED CALCULATOR"],["sepsis","🔴 SEPSIS PROTOCOL"]].map(([id,label])=>(
+            {[["medications","💊 MEDICATIONS"],["calculator","⚖️ PED CALCULATOR"],["sepsis","🔴 SEPSIS PROTOCOL"],["conditions","🏥 ER CONDITIONS"]].map(([id,label])=>(
               <button key={id} className={`ntab ${tab===id?"on":""}`} onClick={()=>setTab(id)}>{label}</button>
             ))}
           </div>
@@ -503,6 +504,11 @@ export default function MedicationReferencePage() {
               </div>
             </div>
           </>)}
+
+          {/* ER CONDITIONS */}
+          {tab==="conditions"&&(
+            <ERConditions />
+          )}
 
           {/* SEPSIS PROTOCOL */}
           {tab==="sepsis"&&(<>

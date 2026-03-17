@@ -611,6 +611,44 @@ Write a formal procedure note using ALL CAPS section headers. Third-person past 
     setTimeout(() => setToast(''), 2500);
   };
 
+  const saveProcedureNote = async (autoSave = false) => {
+    if (!selProc || !generatedNote) return;
+    setSaving(true);
+    try {
+      const noteData = {
+        patient_name: ptCtx.patientName || '',
+        patient_id: ptCtx.mrn || '',
+        procedure_name: proc.name,
+        procedure_type: Object.keys(PROCEDURE_GROUPS).find(key => PROCEDURE_GROUPS[key].keys.includes(selProc)) || 'special',
+        encounter_date: ptCtx.encounterDate,
+        form_data: formData,
+        generated_note: generatedNote,
+        status: 'draft',
+        provider_name: ptCtx.physicianName || '',
+        notes: ''
+      };
+      await base44.entities.ProcedureNote.create(noteData);
+      showToast(autoSave ? 'Auto-saved' : 'Procedure note saved successfully');
+    } catch (e) {
+      showToast('Save failed — please try again');
+      console.error('Save error:', e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const debouncedAutoSave = () => {
+    clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => {
+      if (generatedNote && selProc) saveProcedureNote(true);
+    }, 30000);
+  };
+
+  useEffect(() => {
+    if (generatedNote) debouncedAutoSave();
+    return () => clearTimeout(autoSaveTimer.current);
+  }, [generatedNote]);
+
   const proc = selProc ? P[selProc] : null;
   const pctColor = aiPct >= 80 ? '#00e5a0' : aiPct >= 50 ? '#f5a623' : '#ff4757';
 

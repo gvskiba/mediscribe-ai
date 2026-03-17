@@ -225,7 +225,7 @@ export default function MedicationReferencePage() {
 
   const pedResults = useMemo(() => {
     if (!weight) return [];
-    return MEDICATIONS.filter(m => (pedCat === "all" || m.category === pedCat) && m.ped?.mgkg).map(m => {
+    return medications.filter(m => (pedCat === "all" || m.category === pedCat) && m.ped?.mgkg).map(m => {
       const raw = weight * m.ped.mgkg;
       const capped = m.ped.max !== null && raw > m.ped.max;
       const dose = capped ? m.ped.max : Math.round(raw * 10) / 10;

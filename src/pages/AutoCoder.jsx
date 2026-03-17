@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import ClaimValidationPanel from '../components/autocoder/ClaimValidationPanel';
 

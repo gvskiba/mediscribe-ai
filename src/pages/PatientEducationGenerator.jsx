@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
 
 const TABS = ['setup', 'content', 'preview', 'export'];
 

@@ -20,6 +20,7 @@ import NoteEditorTabs from "../components/notes/NoteEditorTabs";
 import TranscriptionModal from "../components/studio/TranscriptionModal";
 import TemplatePicker from "../components/studio/TemplatePicker";
 import AINoteSummaryPanel from "../components/studio/AINoteSummaryPanel";
+import NewPatientInput from "./NewPatientInput";
 
 // Studio section components (inline below)
 

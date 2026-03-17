@@ -97,7 +97,7 @@ const CSS = `
 @keyframes peg-glow-red{0%,100%{text-shadow:0 0 4px rgba(255,71,87,.4);}50%{text-shadow:0 0 12px rgba(255,71,87,.9),0 0 20px rgba(255,71,87,.4);}}
 .peg-vit-sep{color:var(--border2);}
 .peg-vit-patient{font-family:var(--serif);font-size:13px;color:var(--text);margin-right:4px;}
-.peg-body{display:flex;flex:1;overflow:hidden;}
+.peg-body{display:flex;flex:1;overflow:hidden;min-height:0;}
 .peg-sidebar{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:12px 0;display:flex;flex-direction:column;gap:2px;}
 .peg-sidebar::-webkit-scrollbar{width:3px;}
 .peg-sidebar::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}

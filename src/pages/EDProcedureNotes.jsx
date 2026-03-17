@@ -697,7 +697,7 @@ Write a formal procedure note using ALL CAPS section headers. Third-person past 
               </div>
             ))}
             <div style={{ padding:'10px 14px 3px', fontSize:10, fontWeight:600, color:'#4a7a9b', letterSpacing:'.1em', textTransform:'uppercase', marginTop:8 }}>Quick Select</div>
-            {['lac','iand','intub','sed','lp','cl'].map(k => (
+            {['lac','iand','intub','cryo','piv','io','cl','ct','lp','ngt','foley','fast'].map(k => (
               <div key={k} className={`epn-sb-item${selProc===k?' active':''}`} onClick={()=>{selectProc(k);setTab('document');}}>
                 <span style={{ fontSize:14, width:18, textAlign:'center' }}>{P[k].ico}</span>{P[k].name}
               </div>

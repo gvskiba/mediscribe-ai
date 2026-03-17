@@ -50,7 +50,7 @@ const CSS = `
   --red:#ef4444;--yel:#f59e0b;--grn:#22c55e;--pur:#8b5cf6;--blu:#3b82f6;
   --r:10px;--r2:14px;--f:'Inter',sans-serif;
 }
-.medref-root{background:var(--bg);color:var(--tx);min-height:100vh;padding:16px 20px;font-family:var(--f);}
+.medref-root{background:var(--bg);color:var(--tx);min-height:100vh;padding:16px 20px;font-family:var(--f);margin-left:72px;}
 .sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .sh-l{display:flex;align-items:center;gap:10px;}
 .sh-ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;background:var(--tdim);}

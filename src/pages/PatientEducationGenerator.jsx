@@ -1,26 +1,26 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 
 const TABS = ['setup', 'content', 'preview', 'export'];
 
 const LEVEL_DESCS = {
-  '3rd': '<strong style={{color:"#8aacc6"}}>3rd Grade:</strong> Very simple words only. Short sentences. No medical terms. Uses everyday analogies (like comparing a heart to a pump). Best for low-literacy or pediatric caregivers.',
-  '5th': '<strong>5th Grade:</strong> Simple common words. Avoids most jargon. Uses comparisons and examples. Good for patients with limited health literacy.',
-  '8th': '<strong>8th Grade:</strong> Standard health literacy. Uses common medical terms with brief explanations. Recommended for most adult patients.',
-  'HS': '<strong>High School:</strong> Includes medical terminology with context. More detail. Good for engaged patients who want to understand their care.',
-  'College': '<strong>College Level:</strong> Full clinical language. Minimal simplification. Suited for patients with medical/science backgrounds or who prefer detailed information.'
+  '3rd':    '<strong style="color:#8aacc6;">3rd Grade:</strong> Very simple words only. Short sentences. No medical terms. Uses everyday analogies (like comparing a heart to a pump). Best for low-literacy or pediatric caregivers.',
+  '5th':    '<strong style="color:#8aacc6;">5th Grade:</strong> Simple common words. Avoids most jargon. Uses comparisons and examples. Good for patients with limited health literacy.',
+  '8th':    '<strong style="color:#8aacc6;">8th Grade:</strong> Standard health literacy. Uses common medical terms with brief explanations. Recommended for most adult patients.',
+  'HS':     '<strong style="color:#8aacc6;">High School:</strong> Includes medical terminology with context. More detail. Good for engaged patients who want to understand their care.',
+  'College':'<strong style="color:#8aacc6;">College Level:</strong> Full clinical language. Minimal simplification. Suited for patients with medical/science backgrounds or who prefer detailed information.'
 };
 
-const SECTIONS_CONFIG = [
-  { id: 'diagnosis', icon: '🔍', name: 'Your Diagnosis', desc: 'Plain-language explanation of the condition', on: true },
-  { id: 'medications', icon: '💊', name: 'Your Medications', desc: 'What to take, when, and why', on: true },
-  { id: 'activity', icon: '🏃', name: 'Activity & Rest', desc: 'What you can and cannot do', on: true },
-  { id: 'diet', icon: '🥗', name: 'Diet & Nutrition', desc: 'Foods to eat, avoid, or limit', on: true },
-  { id: 'followup', icon: '📅', name: 'Follow-Up Care', desc: 'Appointments, labs, who to call', on: true },
-  { id: 'warning', icon: '⚠️', name: 'Warning Signs', desc: 'Symptoms that need urgent attention', on: true },
-  { id: 'emergency', icon: '🚨', name: 'When to Call 911', desc: 'Life-threatening emergency signs', on: true },
-  { id: 'resources', icon: '📚', name: 'Resources & Support', desc: 'Websites, support groups, phone numbers', on: false },
+const SECTIONS_INIT = [
+  { id:'diagnosis',   icon:'🔍', name:'Your Diagnosis',      desc:'Plain-language explanation of the condition',  on:true  },
+  { id:'medications', icon:'💊', name:'Your Medications',     desc:'What to take, when, and why',                  on:true  },
+  { id:'activity',    icon:'🏃', name:'Activity & Rest',      desc:'What you can and cannot do',                   on:true  },
+  { id:'diet',        icon:'🥗', name:'Diet & Nutrition',     desc:'Foods to eat, avoid, or limit',                on:true  },
+  { id:'followup',    icon:'📅', name:'Follow-Up Care',       desc:'Appointments, labs, who to call',              on:true  },
+  { id:'warning',     icon:'⚠️', name:'Warning Signs',        desc:'Symptoms that need urgent attention',           on:true  },
+  { id:'emergency',   icon:'🚨', name:'When to Call 911',     desc:'Life-threatening emergency signs',             on:true  },
+  { id:'resources',   icon:'📚', name:'Resources & Support',  desc:'Websites, support groups, phone numbers',      on:false },
 ];
 
 const SAMPLE_NOTE = `ASSESSMENT & PLAN:
@@ -67,7 +67,7 @@ EMERGENCY INSTRUCTIONS:
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,500;1,400&display=swap');
 
-.peg-root {
+.peg {
   --bg:#050f1e;--bg2:#0a1929;--bg3:#0d2035;--bg4:#102840;--bg5:#152f4a;
   --border:#1a3550;--border2:#1e4060;--border3:#254d75;
   --text:#e4eef8;--text2:#8aacc6;--text3:#4a7a9b;
@@ -80,6 +80,8 @@ const CSS = `
   background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;
   position:fixed;top:48px;left:72px;right:0;bottom:0;overflow:hidden;display:flex;flex-direction:column;z-index:10;
 }
+
+/* NAVBAR */
 .peg-navbar{height:var(--navbar);background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;}
 .peg-nav-logo{font-family:var(--serif);font-size:20px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.5px;}
 .peg-nav-div{width:1px;height:24px;background:var(--border2);margin:0 4px;}
@@ -89,6 +91,8 @@ const CSS = `
 .peg-nav-pill.live{border-color:var(--green);color:var(--green);}
 .peg-nav-back{display:flex;align-items:center;gap:5px;padding:5px 12px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--text2);cursor:pointer;font-family:var(--sans);font-size:12px;text-decoration:none;transition:.15s;}
 .peg-nav-back:hover{background:var(--bg3);color:var(--text);border-color:var(--accent);}
+
+/* VITALS */
 .peg-vitals-bar{height:var(--vitals);background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px 0 calc(var(--sidebar) + 16px);gap:22px;flex-shrink:0;font-family:var(--mono);font-size:11px;}
 .peg-vit{display:flex;align-items:center;gap:6px;}
 .peg-vit-lbl{color:var(--text3);}
@@ -97,22 +101,28 @@ const CSS = `
 @keyframes peg-glow-red{0%,100%{text-shadow:0 0 4px rgba(255,71,87,.4);}50%{text-shadow:0 0 12px rgba(255,71,87,.9),0 0 20px rgba(255,71,87,.4);}}
 .peg-vit-sep{color:var(--border2);}
 .peg-vit-patient{font-family:var(--serif);font-size:13px;color:var(--text);margin-right:4px;}
+
+/* LAYOUT */
 .peg-body{display:flex;flex:1;overflow:hidden;min-height:0;}
+
+/* SIDEBAR */
 .peg-sidebar{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:12px 0;display:flex;flex-direction:column;gap:2px;min-height:0;}
 .peg-sidebar::-webkit-scrollbar{width:3px;}
 .peg-sidebar::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
 .peg-sb-sec{padding:6px 14px 4px;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;}
-.peg-sb-item{display:flex;align-items:center;gap:9px;padding:8px 14px;cursor:pointer;border-left:2px solid transparent;transition:.15s;color:var(--text2);font-size:13px;}
+.peg-sb-item{display:flex;align-items:center;gap:9px;padding:8px 14px;cursor:pointer;border-left:2px solid transparent;transition:.15s;color:var(--text2);font-size:13px;text-decoration:none;}
 .peg-sb-item:hover{background:var(--bg3);color:var(--text);}
 .peg-sb-item.active{background:var(--bg3);color:var(--accent);border-left-color:var(--accent);}
 .peg-sb-ico{font-size:14px;width:18px;text-align:center;}
 .peg-sb-badge{margin-left:auto;font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:10px;min-width:20px;text-align:center;}
 .peg-sb-badge.n{background:var(--bg4);color:var(--text3);}
 .peg-sb-badge.ok{background:rgba(0,229,160,.12);color:var(--green);}
-.peg-sb-badge.warn{background:rgba(245,166,35,.15);color:var(--amber);animation:peg-glow-red 1.8s infinite;}
+.peg-sb-badge.warn{background:rgba(245,166,35,.15);color:var(--amber);}
+
+/* MAIN */
 .peg-main{flex:1;overflow:hidden;background:var(--bg);display:flex;flex-direction:column;min-width:0;min-height:0;}
-.peg-main::-webkit-scrollbar{width:5px;}
-.peg-main::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+/* AI PANEL */
 .peg-ai-panel{width:var(--ai-panel);flex-shrink:0;background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;min-height:0;}
 .peg-ai-hdr{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;}
 .peg-ai-hdr-title{font-size:12px;font-weight:600;color:var(--text);letter-spacing:.04em;}
@@ -132,6 +142,8 @@ const CSS = `
 .peg-dots span:nth-child(3){animation-delay:.4s;}
 @keyframes peg-blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
 .peg-ai-think{display:flex;align-items:center;gap:8px;padding:8px;font-size:12px;color:var(--text3);}
+
+/* BOTTOM NAV */
 .peg-bottom-nav{flex-shrink:0;background:var(--bg2);border-top:1px solid var(--border);height:var(--bottom);display:flex;flex-direction:column;}
 .peg-btabs-row{display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--border);height:38px;gap:2px;}
 .peg-btab{padding:0 16px;height:38px;display:flex;align-items:center;gap:6px;cursor:pointer;border-bottom:2px solid transparent;color:var(--text3);font-size:12px;font-weight:500;transition:.15s;white-space:nowrap;background:transparent;border-top:none;border-left:none;border-right:none;}
@@ -151,34 +163,53 @@ const CSS = `
 .peg-btn:disabled{opacity:.4;pointer-events:none;}
 .peg-bsp{flex:1;}
 .peg-step-info{font-size:11px;color:var(--text3);font-family:var(--mono);}
-.peg-tab-panel{display:none;flex:1;flex-direction:column;padding:20px;padding-bottom:20px;gap:16px;overflow-y:auto;min-height:0;}
+
+/* TAB PANELS */
+.peg-tab-panel{display:none;flex-direction:column;padding:24px;gap:20px;overflow-y:auto;flex:1;}
 .peg-tab-panel.active{display:flex;}
 .peg-tab-panel::-webkit-scrollbar{width:5px;}
 .peg-tab-panel::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+/* SECTION HEADER */
 .peg-sec-hdr{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;}
 .peg-sec-title{font-family:var(--serif);font-size:22px;font-weight:600;color:var(--text);}
 .peg-sec-sub{font-size:12px;color:var(--text3);margin-top:4px;}
 .peg-sec-sp{flex:1;}
-.peg-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
-.peg-card-hdr{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--bg3);}
+
+/* CARDS */
+.peg-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:visible;}
+.peg-card-hdr{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--bg3);border-radius:10px 10px 0 0;}
 .peg-card-title{font-size:11px;font-weight:600;color:var(--text);letter-spacing:.06em;text-transform:uppercase;}
-.peg-card-body{padding:24px;}
-.peg-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.peg-form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
-.peg-form-group{display:flex;flex-direction:column;gap:5px;}
+.peg-card-body{padding:20px;border-radius:0 0 10px 10px;}
+
+/* FORM */
+.peg-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.peg-form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+.peg-form-group{display:flex;flex-direction:column;gap:7px;}
 .peg-form-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
-.peg-form-input,.peg-form-select,.peg-form-textarea{background:var(--bg4);border:2px solid var(--accent);border-radius:6px;color:var(--text);font-family:var(--sans);font-size:13px;padding:12px 16px;outline:none;transition:.2s;width:100%;min-height:48px;}
+.peg-form-input,.peg-form-select,.peg-form-textarea{
+  background:var(--bg3);border:1px solid var(--border2);border-radius:7px;
+  color:var(--text);font-family:var(--sans);font-size:14px;
+  padding:11px 13px;outline:none;transition:.2s;width:100%;min-height:42px;
+}
 .peg-form-input:focus,.peg-form-select:focus,.peg-form-textarea:focus{border-color:var(--accent2);box-shadow:0 0 0 2px rgba(0,150,214,.12);}
 .peg-form-select{cursor:pointer;}
 .peg-form-select option{background:var(--bg2);}
-.peg-form-textarea{resize:vertical;min-height:160px;line-height:1.65;}
-.peg-level-rail{display:flex;gap:8px;}
-.peg-level-opt{flex:1;padding:24px 10px 20px;text-align:center;cursor:pointer;transition:.15s;border:1px solid var(--border2);border-radius:8px;font-size:13px;color:var(--text2);font-weight:500;line-height:1.5;background:var(--bg5);}
-.peg-level-opt:hover{background:var(--bg4);color:var(--text2);border-color:var(--border3);}
-.peg-level-opt.sel{background:rgba(0,198,255,.25);color:var(--accent);font-weight:600;border-color:var(--accent);}
-.peg-level-grade{font-family:var(--mono);font-size:18px;font-weight:700;display:block;margin-bottom:4px;}
+.peg-form-textarea{resize:vertical;min-height:130px;line-height:1.65;}
+
+/* READING LEVEL */
+.peg-level-rail{display:grid;grid-template-columns:repeat(5,1fr);gap:0;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;overflow:hidden;}
+.peg-level-opt{padding:16px 8px;text-align:center;cursor:pointer;transition:.15s;border-right:1px solid var(--border2);font-size:12px;color:var(--text3);font-weight:500;}
+.peg-level-opt:last-child{border-right:none;}
+.peg-level-opt:hover{background:var(--bg4);color:var(--text2);}
+.peg-level-opt.sel{background:rgba(0,198,255,.15);color:var(--accent);font-weight:600;}
+.peg-level-grade{font-family:var(--mono);font-size:18px;font-weight:600;display:block;margin-bottom:4px;}
+
+/* TIP */
 .peg-tip{background:rgba(0,198,255,.06);border:1px solid rgba(0,198,255,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text2);display:flex;align-items:flex-start;gap:8px;line-height:1.6;}
 .peg-tip-ico{font-size:14px;flex-shrink:0;margin-top:1px;}
+
+/* SECTION TOGGLES */
 .peg-section-toggle-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .peg-sec-toggle{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border2);border-radius:8px;cursor:pointer;transition:.15s;background:transparent;}
 .peg-sec-toggle:hover{border-color:var(--border3);background:var(--bg3);}
@@ -191,25 +222,26 @@ const CSS = `
 .peg-toggle-sw.on{background:var(--accent2);}
 .peg-toggle-sw::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.2s;}
 .peg-toggle-sw.on::after{left:16px;}
+
+/* LOADER */
 .peg-loader-row{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text3);}
 .peg-spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--border2);border-top-color:var(--accent);animation:peg-spin .8s linear infinite;flex-shrink:0;}
 @keyframes peg-spin{to{transform:rotate(360deg)}}
+
+/* GEN BUTTON */
 .peg-gen-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:600;background:linear-gradient(135deg,var(--accent2),var(--green2));color:#fff;border:none;cursor:pointer;font-family:var(--sans);transition:.2s;letter-spacing:.02em;}
 .peg-gen-btn:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(0,198,255,.25);}
 .peg-gen-btn:disabled{opacity:.5;pointer-events:none;transform:none;box-shadow:none;}
+
+/* DOC PREVIEW */
 .peg-doc-toolbar{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:10px 10px 0 0;border-bottom:none;}
 .peg-doc-toolbar-title{font-size:12px;color:var(--text2);font-weight:500;}
 .peg-doc-sp{flex:1;}
-.peg-doc-preview-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:0 0 10px 10px;overflow:auto;max-height:600px;}
+.peg-doc-preview-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:0 0 10px 10px;overflow:auto;}
 .peg-doc-preview-wrap::-webkit-scrollbar{width:5px;}
 .peg-doc-preview-wrap::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
-.peg-empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:48px;text-align:center;color:var(--text3);border:1px dashed var(--border);border-radius:10px;flex:1;}
-.peg-empty-ico{font-size:40px;opacity:.3;}
-.peg-empty-ttl{font-size:14px;font-weight:500;color:var(--text2);}
-.peg-empty-sub{font-size:12px;line-height:1.6;max-width:280px;}
-.peg-toast{position:fixed;bottom:90px;right:20px;background:var(--green2);color:#fff;padding:8px 16px;border-radius:6px;font-size:12px;font-weight:600;opacity:0;transform:translateY(10px);transition:.3s;pointer-events:none;z-index:200;}
-.peg-toast.show{opacity:1;transform:none;}
-/* Patient doc styles */
+
+/* PATIENT DOC */
 .patient-doc{background:#fff;color:#1a1a1a;max-width:720px;margin:20px auto;border-radius:6px;font-family:'Lora',Georgia,serif;line-height:1.7;box-shadow:0 2px 20px rgba(0,0,0,.3);overflow:hidden;}
 .pdoc-header{background:linear-gradient(135deg,#0a3d62,#1e6f9f);color:#fff;padding:28px 36px 24px;}
 .pdoc-logo{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;opacity:.7;letter-spacing:-.3px;}
@@ -233,6 +265,17 @@ const CSS = `
 .pdoc-table th{text-align:left;font-size:12px;font-weight:700;color:#4a5568;padding:6px 8px;background:#f7fafc;border:1px solid #e2e8f0;font-family:'Outfit',sans-serif;}
 .pdoc-table td{font-size:13px;color:#2d3748;padding:8px;border:1px solid #e2e8f0;vertical-align:top;}
 .pdoc-table tr:nth-child(even) td{background:#f7fafc;}
+
+/* EMPTY STATE */
+.peg-empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:48px;text-align:center;color:var(--text3);border:1px dashed var(--border);border-radius:10px;flex:1;}
+.peg-empty-ico{font-size:40px;opacity:.3;}
+.peg-empty-ttl{font-size:14px;font-weight:500;color:var(--text2);}
+.peg-empty-sub{font-size:12px;line-height:1.6;max-width:280px;}
+
+/* TOAST */
+.peg-toast{position:fixed;bottom:90px;right:20px;background:var(--green2);color:#fff;padding:8px 16px;border-radius:6px;font-size:12px;font-weight:600;opacity:0;transform:translateY(10px);transition:.3s;pointer-events:none;z-index:200;}
+.peg-toast.show{opacity:1;transform:none;}
+
 @media print{
   .peg-navbar,.peg-vitals-bar,.peg-sidebar,.peg-ai-panel,.peg-bottom-nav,.peg-doc-toolbar{display:none!important;}
   .patient-doc{box-shadow:none!important;margin:0!important;border-radius:0!important;}
@@ -242,42 +285,51 @@ const CSS = `
 export default function PatientEducationGenerator() {
   const [currentTab, setCurrentTab] = useState('setup');
   const [selectedLevel, setSelectedLevel] = useState('8th');
-  const [sections, setSections] = useState(SECTIONS_CONFIG.map(s => ({ ...s })));
-  const [clinicalNote, setClinicalNote] = useState('');
-  const [ptName, setPtName] = useState('');
-  const [ptDob, setPtDob] = useState('');
-  const [ptPref, setPtPref] = useState('');
+  const [sections, setSections] = useState(SECTIONS_INIT.map(s => ({ ...s })));
+
+  // Patient info
+  const [ptName, setPtName] = useState('James A. Hartwell');
+  const [ptDob, setPtDob] = useState('1958-07-14');
+  const [ptSex, setPtSex] = useState('male');
+  const [ptPref, setPtPref] = useState('Mr. Hartwell');
   const [ptLang, setPtLang] = useState('English');
   const [ptTone, setPtTone] = useState('clear and direct');
   const [ptFormat, setPtFormat] = useState('bullet points with brief explanations');
   const [ptSpecial, setPtSpecial] = useState('');
-  const [condition, setCondition] = useState('');
-  const [followupProvider, setFollowupProvider] = useState('');
-  const [followupDate, setFollowupDate] = useState('');
-  const [providerName, setProviderName] = useState('');
+
+  // Content
+  const [clinicalNote, setClinicalNote] = useState('');
+  const [condition, setCondition] = useState('Unstable Angina & Hypertension');
+  const [followupProvider, setFollowupProvider] = useState('Dr. Chen, Cardiology');
+  const [followupDate, setFollowupDate] = useState('Within 1 week');
+  const [providerName, setProviderName] = useState('Dr. Sarah Reyes, MD');
+
+  // Generated doc
   const [generatedDocHTML, setGeneratedDocHTML] = useState('');
   const [generatedDocText, setGeneratedDocText] = useState('');
   const [documentGenerated, setDocumentGenerated] = useState(false);
-  const [generating, setGenerating] = useState(false);
-  const [previewBadge, setPreviewBadge] = useState('—');
-  const [exportBadge, setExportBadge] = useState('—');
   const [docMetaLabel, setDocMetaLabel] = useState('');
   const [expInfo, setExpInfo] = useState({});
-  const [aiPanel, setAiPanel] = useState({ type: 'empty' });
+
+  // AI panel
+  const [aiState, setAiState] = useState({ type: 'empty' });
   const [aiProgress, setAiProgress] = useState(0);
   const [aiProgressLabel, setAiProgressLabel] = useState('');
+
+  const [generating, setGenerating] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const progTimer = useRef(null);
 
-  const switchTab = (tab) => setCurrentTab(tab);
   const navIdx = TABS.indexOf(currentTab);
+
+  const switchTab = (tab) => setCurrentTab(tab);
 
   const toggleSection = (id) => {
     setSections(prev => prev.map(s => s.id === id ? { ...s, on: !s.on } : s));
   };
 
   const startAIThinking = () => {
-    setAiPanel({ type: 'thinking' });
+    setAiState({ type: 'thinking' });
     setAiProgress(0);
     const steps = ['Analyzing clinical note…', 'Adapting vocabulary to reading level…', 'Translating content…', 'Formatting sections…', 'Finalizing document…'];
     let i = 0;
@@ -289,6 +341,8 @@ export default function PatientEducationGenerator() {
       i++;
     }, 600);
   };
+
+  useEffect(() => () => { if (progTimer.current) clearInterval(progTimer.current); }, []);
 
   const generateDocument = async () => {
     if (!clinicalNote.trim()) {
@@ -367,7 +421,6 @@ CRITICAL RULES:
 
       clearInterval(progTimer.current);
 
-      // Build doc HTML
       const ptAge = ptDob ? Math.floor((Date.now() - new Date(ptDob)) / (365.25 * 24 * 3600 * 1000)) : '';
       let sectionsHTML = '';
       for (const sec of (parsed.sections || [])) {
@@ -387,15 +440,13 @@ CRITICAL RULES:
       tmp.innerHTML = html;
       setGeneratedDocText(tmp.innerText);
       setDocumentGenerated(true);
-      setPreviewBadge('✓');
-      setExportBadge('✓');
       setDocMetaLabel(`${ptLang} · ${selectedLevel} Grade · ${(parsed.word_count || 0).toLocaleString()} words`);
       setExpInfo({ ptName, level: selectedLevel + ' Grade', lang: ptLang, sections: enabledSections.length, condition, time: new Date().toLocaleTimeString() });
-      setAiPanel({ type: 'result', parsed, lang: ptLang, sectionCount: enabledSections.length });
+      setAiState({ type: 'result', parsed, lang: ptLang, sectionCount: enabledSections.length });
       setCurrentTab('preview');
     } catch (err) {
       clearInterval(progTimer.current);
-      setAiPanel({ type: 'error', msg: err.message });
+      setAiState({ type: 'error', msg: err.message });
     } finally {
       setGenerating(false);
     }
@@ -424,7 +475,7 @@ CRITICAL RULES:
   return (
     <>
       <style>{CSS}</style>
-      <div className="peg-root">
+      <div className="peg">
         {/* Navbar */}
         <nav className="peg-navbar">
           <span className="peg-nav-logo">Notrya</span>
@@ -443,7 +494,7 @@ CRITICAL RULES:
               <span className="peg-vit-patient">{ptPref || ptName}</span>
               {ptDob && <><span className="peg-vit-sep">|</span><div className="peg-vit"><span className="peg-vit-lbl">DOB</span><span className="peg-vit-val">{ptDob}</span></div></>}
               {condition && <><span className="peg-vit-sep">|</span><div className="peg-vit"><span className="peg-vit-lbl">Condition</span><span className="peg-vit-val">{condition}</span></div></>}
-              {selectedLevel && <><span className="peg-vit-sep">|</span><div className="peg-vit"><span className="peg-vit-lbl">Reading Level</span><span className="peg-vit-val">{selectedLevel} Grade</span></div></>}
+              <span className="peg-vit-sep">|</span><div className="peg-vit"><span className="peg-vit-lbl">Reading Level</span><span className="peg-vit-val">{selectedLevel} Grade</span></div>
               <span className="peg-vit-sep">|</span><div className="peg-vit"><span className="peg-vit-lbl">Language</span><span className="peg-vit-val">{ptLang}</span></div>
             </>
           ) : (
@@ -456,24 +507,28 @@ CRITICAL RULES:
           {/* Sidebar */}
           <aside className="peg-sidebar">
             <div className="peg-sb-sec">Education</div>
-            {[['setup','👤','Patient Setup'], ['content','📋','Content & Note'], ['preview','📄','Document Preview'], ['export','📤','Print / Export']].map(([tab, ico, label], i) => (
+            {[['setup','👤','Patient Setup'],['content','📋','Content & Note'],['preview','📄','Document Preview'],['export','📤','Print / Export']].map(([tab, ico, label]) => (
               <div key={tab} className={`peg-sb-item ${currentTab === tab ? 'active' : ''}`} onClick={() => switchTab(tab)}>
                 <span className="peg-sb-ico">{ico}</span> {label}
-                <span className={`peg-sb-badge ${tab === 'preview' || tab === 'export' ? (documentGenerated ? 'ok' : 'n') : 'n'}`}>
-                  {tab === 'preview' ? previewBadge : tab === 'export' ? exportBadge : '—'}
+                <span className={`peg-sb-badge ${(tab === 'preview' || tab === 'export') && documentGenerated ? 'ok' : 'n'}`}>
+                  {(tab === 'preview' || tab === 'export') ? (documentGenerated ? '✓' : '—') : '—'}
                 </span>
               </div>
             ))}
-            <div className="peg-sb-sec" style={{ marginTop: 12 }}>Navigate To</div>
-            <Link to="/AutoCoder" className="peg-sb-item" style={{ textDecoration: 'none' }}><span className="peg-sb-ico">🏥</span>Auto-Coder</Link>
-            <Link to="/ClinicalNoteStudio" className="peg-sb-item" style={{ textDecoration: 'none' }}><span className="peg-sb-ico">🩺</span>Note Studio</Link>
-            <Link to="/NoteCreationHub" className="peg-sb-item" style={{ textDecoration: 'none' }}><span className="peg-sb-ico">✨</span>Note Hub</Link>
-            <Link to="/PatientDashboard" className="peg-sb-item" style={{ textDecoration: 'none' }}><span className="peg-sb-ico">👤</span>Patients</Link>
-            <Link to="/BillingDashboard" className="peg-sb-item" style={{ textDecoration: 'none' }}><span className="peg-sb-ico">💳</span>Billing</Link>
+            <div className="peg-sb-sec" style={{ marginTop: 12 }}>Patient</div>
+            <div className="peg-sb-item"><span className="peg-sb-ico">💊</span>Medications<span className="peg-sb-badge n">7</span></div>
+            <div className="peg-sb-item"><span className="peg-sb-ico">⚠️</span>Allergies<span className="peg-sb-badge warn">2</span></div>
+            <div className="peg-sb-item"><span className="peg-sb-ico">📁</span>Past Encounters<span className="peg-sb-badge n">14</span></div>
+            <div className="peg-sb-sec" style={{ marginTop: 12 }}>Tools</div>
+            <Link to="/AutoCoder" className="peg-sb-item"><span className="peg-sb-ico">🏥</span>ICD-10 / CPT Coder</Link>
+            <Link to="/ClinicalNoteStudio" className="peg-sb-item"><span className="peg-sb-ico">🩺</span>Clinical Note</Link>
+            <Link to="/NoteCreationHub" className="peg-sb-item"><span className="peg-sb-ico">✨</span>Note Hub</Link>
+            <Link to="/PatientDashboard" className="peg-sb-item"><span className="peg-sb-ico">👤</span>Patients</Link>
           </aside>
 
           {/* Main */}
           <main className="peg-main">
+
             {/* TAB: SETUP */}
             <div className={`peg-tab-panel ${currentTab === 'setup' ? 'active' : ''}`}>
               <div className="peg-sec-hdr">
@@ -484,23 +539,30 @@ CRITICAL RULES:
               </div>
               <div className="peg-tip">
                 <span className="peg-tip-ico">🌟</span>
-                <span>The AI tailors vocabulary, sentence length, examples, and tone to match the patient's reading level and language.</span>
+                <span>The AI tailors vocabulary, sentence length, examples, and tone to match the patient's reading level and language. A 3rd-grade level uses everyday words; 8th-grade uses standard medical terminology with explanations.</span>
               </div>
               <div className="peg-card">
                 <div className="peg-card-hdr"><span className="peg-card-title">Patient Information</span></div>
                 <div className="peg-card-body">
-                   <div className="peg-form-grid-3">
-                     <div className="peg-form-group"><label className="peg-form-label">Patient Name</label><input className="peg-form-input" value={ptName} onChange={e => setPtName(e.target.value)} /></div>
-                     <div className="peg-form-group"><label className="peg-form-label">Date of Birth</label><input className="peg-form-input" type="date" value={ptDob} onChange={e => setPtDob(e.target.value)} /></div>
-                     <div className="peg-form-group"><label className="peg-form-label">Preferred Name / Salutation</label><input className="peg-form-input" value={ptPref} onChange={e => setPtPref(e.target.value)} /></div>
-                   </div>
-                 </div>
+                  <div className="peg-form-grid" style={{ marginBottom: 16 }}>
+                    <div className="peg-form-group"><label className="peg-form-label">Patient Name</label><input className="peg-form-input" value={ptName} onChange={e => setPtName(e.target.value)} /></div>
+                    <div className="peg-form-group"><label className="peg-form-label">Date of Birth</label><input className="peg-form-input" type="date" value={ptDob} onChange={e => setPtDob(e.target.value)} /></div>
+                    <div className="peg-form-group"><label className="peg-form-label">Sex</label>
+                      <select className="peg-form-select" value={ptSex} onChange={e => setPtSex(e.target.value)}>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="nonbinary">Non-binary</option>
+                      </select>
+                    </div>
+                    <div className="peg-form-group"><label className="peg-form-label">Preferred Name / Salutation</label><input className="peg-form-input" value={ptPref} onChange={e => setPtPref(e.target.value)} /></div>
+                  </div>
+                </div>
               </div>
               <div className="peg-card">
                 <div className="peg-card-hdr"><span className="peg-card-title">Reading Level</span></div>
                 <div className="peg-card-body">
                   <div className="peg-level-rail">
-                    {[['3rd','3rd','Grade'], ['5th','5th','Grade'], ['8th','8th','Grade'], ['HS','HS','High School'], ['College','Col','College']].map(([val, grade, label]) => (
+                    {[['3rd','3rd','Grade'],['5th','5th','Grade'],['8th','8th','Grade'],['HS','HS','High School'],['College','Col','College']].map(([val, grade, label]) => (
                       <div key={val} className={`peg-level-opt ${selectedLevel === val ? 'sel' : ''}`} onClick={() => setSelectedLevel(val)}>
                         <span className="peg-level-grade">{grade}</span>{label}
                       </div>
@@ -666,17 +728,17 @@ CRITICAL RULES:
                   </div>
                   <div className="peg-form-grid">
                     {[
-                      { icon: '🖨️', title: 'Print Document', desc: 'Opens print dialog — formatted for letter paper.', action: printDoc, btnClass: 'primary', btnLabel: 'Print Now' },
-                      { icon: '⬇️', title: 'Download HTML', desc: 'Save as a standalone HTML file. Can be emailed or printed later.', action: downloadHTML, btnClass: 'amber', btnLabel: 'Download' },
-                      { icon: '📋', title: 'Copy Plain Text', desc: 'Copies formatted plain text. Paste into Epic or any EHR.', action: copyDocText, btnClass: '', btnLabel: 'Copy to Clipboard' },
-                      { icon: '🌐', title: 'Patient Portal', desc: 'Send directly to patient portal inbox (requires EHR integration).', action: null, btnClass: '', btnLabel: 'Send (EHR Required)', disabled: true },
+                      { icon:'🖨️', title:'Print Document', desc:'Opens print dialog — formatted for letter paper.', action:printDoc, btnClass:'primary', btnLabel:'Print Now' },
+                      { icon:'⬇️', title:'Download HTML', desc:'Save as a standalone HTML file. Can be emailed or printed later.', action:downloadHTML, btnClass:'amber', btnLabel:'Download' },
+                      { icon:'📋', title:'Copy Plain Text', desc:'Copies formatted plain text. Paste into Epic or any EHR.', action:copyDocText, btnClass:'', btnLabel:'Copy to Clipboard' },
+                      { icon:'🌐', title:'Patient Portal', desc:'Send directly to patient portal inbox (requires EHR integration).', action:null, btnClass:'', btnLabel:'Send (EHR Required)', disabled:true },
                     ].map(({ icon, title, desc, action, btnClass, btnLabel, disabled }) => (
-                      <div key={title} className="peg-card" style={{ cursor: action ? 'pointer' : 'default' }} onClick={action || undefined}>
-                        <div className="peg-card-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: 28 }}>
+                      <div key={title} className="peg-card" style={{ cursor: action ? 'pointer' : 'default' }}>
+                        <div className="peg-card-body" style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:10, padding:28 }}>
                           <div style={{ fontSize: 40 }}>{icon}</div>
                           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{title}</div>
                           <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center' }}>{desc}</div>
-                          <button className={`peg-btn ${btnClass}`} style={{ width: '100%', opacity: disabled ? 0.5 : 1 }} disabled={disabled} onClick={e => { e.stopPropagation(); if (action) action(); }}>{btnLabel}</button>
+                          <button className={`peg-btn ${btnClass}`} style={{ width:'100%', opacity: disabled ? 0.5 : 1 }} disabled={disabled} onClick={() => action && action()}>{btnLabel}</button>
                         </div>
                       </div>
                     ))}
@@ -685,7 +747,7 @@ CRITICAL RULES:
                     <div className="peg-card-hdr"><span className="peg-card-title">Document Summary</span></div>
                     <div className="peg-card-body">
                       <div className="peg-form-grid-3">
-                        {[['Patient', expInfo.ptName], ['Reading Level', expInfo.level], ['Language', expInfo.lang], ['Sections', expInfo.sections], ['Condition', expInfo.condition], ['Generated', expInfo.time]].map(([label, val]) => (
+                        {[['Patient', expInfo.ptName],['Reading Level', expInfo.level],['Language', expInfo.lang],['Sections', expInfo.sections],['Condition', expInfo.condition],['Generated', expInfo.time]].map(([label, val]) => (
                           <div key={label}>
                             <div className="peg-form-label" style={{ marginBottom: 4 }}>{label}</div>
                             <div style={{ fontSize: 14, color: 'var(--text)', fontFamily: label === 'Sections' ? 'var(--mono)' : undefined }}>{val || '—'}</div>
@@ -704,18 +766,19 @@ CRITICAL RULES:
             <div className="peg-ai-hdr">
               <div className="peg-ai-dot" />
               <span className="peg-ai-hdr-title">AI EDUCATION ASSISTANT</span>
-              <div style={{ marginLeft: 'auto', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--text3)' }}>claude-sonnet</div>
+              <div style={{ marginLeft:'auto', fontFamily:'var(--mono)', fontSize:10, color:'var(--text3)' }}>claude-sonnet</div>
             </div>
             <div className="peg-ai-body">
-              {aiPanel.type === 'empty' && (
+              {aiState.type === 'empty' && (
                 <div className="peg-ai-empty">
                   <div style={{ fontSize: 36, opacity: 0.35 }}>📚</div>
                   <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center', lineHeight: 1.7 }}>
-                    Configure patient settings and generate a document to see AI analysis here.
+                    Configure patient settings and generate a document to see AI analysis here.<br /><br />
+                    The assistant will show readability scores, key points, and language adaptation notes.
                   </div>
                 </div>
               )}
-              {aiPanel.type === 'thinking' && (
+              {aiState.type === 'thinking' && (
                 <>
                   <div className="peg-ai-think">
                     <div className="peg-dots"><span /><span /><span /></div>
@@ -728,12 +791,12 @@ CRITICAL RULES:
                   </div>
                 </>
               )}
-              {aiPanel.type === 'result' && aiPanel.parsed && (
+              {aiState.type === 'result' && aiState.parsed && (
                 <>
                   <div className="peg-ai-msg">
                     <div className="peg-ai-sec-lbl">Document Stats</div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                      {[['READING LEVEL', aiPanel.parsed.readability_score || selectedLevel, 'var(--accent)'], ['WORD COUNT', (aiPanel.parsed.word_count || 0).toLocaleString(), 'var(--green)'], ['LANGUAGE', aiPanel.lang, 'var(--text)'], ['SECTIONS', aiPanel.sectionCount, 'var(--amber)']].map(([lbl, val, color]) => (
+                      {[['READING LEVEL', aiState.parsed.readability_score || selectedLevel, 'var(--accent)'],['WORD COUNT', (aiState.parsed.word_count||0).toLocaleString(), 'var(--green)'],['LANGUAGE', aiState.lang, 'var(--text)'],['SECTIONS', aiState.sectionCount, 'var(--amber)']].map(([lbl, val, color]) => (
                         <div key={lbl} style={{ background: 'var(--bg4)', borderRadius: 6, padding: 8 }}>
                           <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>{lbl}</div>
                           <div style={{ fontFamily: 'var(--mono)', fontSize: 15, fontWeight: 600, color }}>{val}</div>
@@ -741,29 +804,29 @@ CRITICAL RULES:
                       ))}
                     </div>
                   </div>
-                  {(aiPanel.parsed.key_messages || []).length > 0 && (
+                  {(aiState.parsed.key_messages || []).length > 0 && (
                     <div className="peg-ai-msg">
                       <div className="peg-ai-sec-lbl">Key Patient Messages</div>
-                      {aiPanel.parsed.key_messages.map((m, i) => (
-                        <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 6, fontSize: 11 }}>
-                          <span style={{ color: 'var(--green)', flexShrink: 0 }}>✓</span>
-                          <span style={{ color: 'var(--text2)' }}>{m}</span>
+                      {aiState.parsed.key_messages.map((m, i) => (
+                        <div key={i} style={{ display:'flex', gap:6, marginBottom:6, fontSize:11 }}>
+                          <span style={{ color:'var(--green)', flexShrink:0 }}>✓</span>
+                          <span style={{ color:'var(--text2)' }}>{m}</span>
                         </div>
                       ))}
                     </div>
                   )}
-                  {aiPanel.parsed.ai_notes && (
+                  {aiState.parsed.ai_notes && (
                     <div className="peg-ai-msg">
                       <div className="peg-ai-sec-lbl">Clinician Notes</div>
-                      <span style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.65 }}>{aiPanel.parsed.ai_notes}</span>
+                      <span style={{ fontSize:12, color:'var(--text2)', lineHeight:1.65 }}>{aiState.parsed.ai_notes}</span>
                     </div>
                   )}
                 </>
               )}
-              {aiPanel.type === 'error' && (
+              {aiState.type === 'error' && (
                 <div className="peg-ai-msg">
                   <b style={{ color: 'var(--red)' }}>Generation Error</b><br />
-                  <span style={{ fontSize: 12 }}>{aiPanel.msg}</span>
+                  <span style={{ fontSize: 12 }}>{aiState.msg}</span>
                 </div>
               )}
             </div>
@@ -773,9 +836,9 @@ CRITICAL RULES:
         {/* Bottom Nav */}
         <div className="peg-bottom-nav">
           <div className="peg-btabs-row">
-            {[['setup', '👤 Setup'], ['content', '📋 Content'], ['preview', '📄 Preview'], ['export', '📤 Export']].map(([tab, label]) => (
+            {[['setup','👤 Setup'],['content','📋 Content'],['preview','📄 Preview'],['export','📤 Export']].map(([tab, label]) => (
               <button key={tab} className={`peg-btab ${currentTab === tab ? 'active' : ''}`} onClick={() => switchTab(tab)}>
-                {label} <span className="tc">{tab === 'preview' ? previewBadge : tab === 'export' ? exportBadge : '—'}</span>
+                {label} <span className="tc">{(tab === 'preview' || tab === 'export') ? (documentGenerated ? '✓' : '—') : '—'}</span>
               </button>
             ))}
             <div style={{ flex: 1 }} />

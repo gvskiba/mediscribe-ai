@@ -255,6 +255,126 @@ const P = {
       ]}
     ]
   },
+  cryo: { name:'Cricothyrotomy', ico:'🌬️', sub:'Emergency surgical airway procedure', tips:'Last resort — failed intubation/obstruction, not routine; landmark vs palpation technique, TT tube size (6.0-6.5), CXR + bronchoscopy post-placement mandatory',
+    secs:[
+      {ic:'🌬️',t:'Indication & Pre-Procedure',rows:[
+        {t:'tip',cls:'rd',txt:'⚠️ Emergency surgical airway. Document failed intubation attempts, obstruction type, and backup plans exhausted.'},
+        [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Airway obstruction — cannot intubate','Failed intubation ≥2 attempts','Facial trauma / massive edema','Epiglottitis refractory to medical management','Severe angioedema','Post-operative airway loss']},{t:'s',id:'method',lbl:'Technique',req:1,o:['Landmark palpation — cricothyroid membrane identified','Ultrasound guidance','Scalpel incision — classic','Needle/cannula approach']}],
+        {t:'i',id:'prespo2',lbl:'SpO₂ Prior to Attempt',ph:'e.g., 78%'},
+        {t:'c',id:'prep',lbl:'Preparation',o:['*Surgeon present / on call','*Operating room alerted','*Tracheostomy kit available','*Blood products ordered']}
+      ]},
+      {ic:'🔪',t:'Procedure Details',rows:[
+        [{t:'i',id:'location',lbl:'Incision Location',ph:'Cricothyroid membrane'},{t:'i',id:'size',lbl:'Incision Size',ph:'e.g., 10-15mm'}],
+        [{t:'s',id:'blade',lbl:'Blade/Scalpel',o:['#11 blade — needle approach','#15 blade — surgical approach','Scalpel for open technique']},{t:'s',id:'tube',lbl:'Airway Tube Size',o:['6.0 endotracheal tube','6.5 endotracheal tube','Tracheostomy tube (later conversion)']},{t:'s',id:'conf',lbl:'Confirmation',o:['Bilateral breath sounds ✓','Capnography positive ✓','Chest rise bilaterally','Tube secured + taped']}]
+      ]},
+      {ic:'✅',t:'Post-Procedure',rows:[
+        {t:'c',id:'post',lbl:'Post-Cricothyrotomy',o:['*CXR ordered — tip position','*Bronchoscopy scheduled','*Anesthesia / ICU notified','*Tracheostomy planned within 24h']},
+        {t:'c',id:'comp',lbl:'Complications',o:['*No complications','Subglottic stenosis risk','Laryngeal injury','Tracheal stenosis']},
+        {t:'a',id:'addl',lbl:'Notes',ph:'Airway secured in extremis. Tracheostomy consultation ongoing…'}
+      ]}
+    ]
+  },
+  npa: { name:'Nasopharyngeal Airway', ico:'👃', sub:'Nasopharyngeal airway (NPA) insertion', tips:'Size appropriate for patient (typically 6-8 French), tube obstruction post-insertion, avoid if basilar skull fracture/massive epistaxis, lubricated insertion technique',
+    secs:[{ic:'👃',t:'Airway Details & Insertion',rows:[
+      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Nasopharyngeal airway — awake patient','Anterior airway obstruction relief','Failed oral airway tolerance']},{t:'s',id:'size',lbl:'Tube Size (Fr)',req:1,o:['6 Fr — small/child','7 Fr — medium','8 Fr — large adult']}],
+      [{t:'s',id:'side',lbl:'Naris Selected',o:['Right naris','Left naris','Alternated']}],
+      [{t:'i',id:'depth',lbl:'Insertion Depth (cm)',ph:'Length from naris to angle of jaw'}],
+      {t:'c',id:'tech',lbl:'Technique',o:['*Lubricated with viscous lidocaine','*Gentle advancement — no force','*Bevel oriented posteriorly','*Patent after insertion']}
+    ]}]
+  },
+  opa: { name:'Oropharyngeal Airway', ico:'👄', sub:'Oropharyngeal airway (OPA) insertion', tips:'Correct sizing (tooth to angle of jaw), head-tilt/chin-lift position, avoid tongue trauma, patient must be unconscious/deeply sedated',
+    secs:[{ic:'👄',t:'Airway Details & Sizing',rows:[
+      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Unconscious patient — airway support','Apnea management','Post-sedation airway patent']},{t:'s',id:'size',lbl:'Size',req:1,o:['Small — child','Medium — average adult','Large — tall/large adult']}],
+      [{t:'i',id:'depth',lbl:'Insertion Depth (measured)',ph:'Angle of jaw to corner of mouth'},{t:'s',id:'tech',lbl:'Insertion Technique',req:1,o:['Tongue depressor down — direct insertion','Upside-down 180° rotation — classic method']}],
+      {t:'c',id:'check',lbl:'Confirmation',o:['*No gag reflex triggered','*Airway patent — air flows','*Tongue not occluded','*Bilateral breath sounds']}
+    ]}]
+  },
+  io: { name:'Intraosseous (IO) Access', ico:'💉', sub:'Intraosseous vascular access for resuscitation', tips:'Last resort for access — proximal humerus or proximal tibia standard, marrow aspiration before fluids, compartment syndrome risk if extravasation, labs/blood culture not reliable',
+    secs:[
+      {ic:'💉',t:'Indication & Site Selection',rows:[
+        {t:'tip',cls:'rd',txt:'⚠️ High-risk. Document failed peripheral access, patient age/anatomy, and post-placement confirmation.'},
+        [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Cardiac arrest — no IV access','Severe shock — failed peripheral access','Pediatric resuscitation','Burns — extensive access difficulty']},{t:'s',id:'site',lbl:'Site',req:1,o:['Proximal humerus — anterolateral','Proximal tibia — medial (preferred peds)','Distal tibia — alternative','Distal femur — alternative']}],
+        {t:'i',id:'att',lbl:'Attempts',ph:'e.g., 1 attempt successful'}
+      ]},
+      {ic:'🔧',t:'Procedure Details',rows:[
+        [{t:'s',id:'needle',lbl:'Needle Gauge',o:['15G — adult','18G — adult','20G — pediatric','25G — neonate']},{t:'s',id:'ang',lbl:'Angle of Insertion',ph:'90° perpendicular to bone surface'},{t:'s',id:'asp',lbl:'Marrow Aspiration',o:['Aspirate before fluids — confirm placement','Blood return achieved','No aspirate — still patent']}],
+        {t:'c',id:'conf',lbl:'Confirmation',o:['*Needle firm in bone','*Marrow aspirate obtained','*Free flow of fluid','*No extravasation']}
+      ]},
+      {ic:'✅',t:'Post-Placement',rows:[
+        {t:'s',id:'secure',lbl:'Securing',o:['Gauze + tape around needle','Keyed connector secured']},
+        {t:'c',id:'comp',lbl:'Complications & Follow-Up',o:['*No compartment syndrome','Osteomyelitis risk','Fracture risk in osteoporosis']},
+        {t:'a',id:'addl',lbl:'Notes',ph:'IO access secured for medication/fluid administration…'}
+      ]}
+    ]
+  },
+  art: { name:'Arterial Line Placement', ico:'🩸', sub:'Radial or femoral arterial line for hemodynamics', tips:'Radial preferred (collateral circulation via ulnar), Allen test before radial, femoral for resuscitation, waveform analysis mandatory, infection risk if >48h',
+    secs:[{ic:'🩸',t:'Indication & Site Selection',rows:[
+      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Continuous BP monitoring','Frequent lab draws / ABGs','Vasopressor infusion','Hemodynamic instability — need trending']},{t:'s',id:'site',lbl:'Site',req:1,o:['Radial artery','Femoral artery','Axillary artery (alternative)']}],
+      [{t:'s',id:'allen',lbl:'Allen Test (if radial)',o:['Positive — ulnar collateral patent','Negative — do not use radial','Not performed']},{t:'i',id:'size',lbl:'Catheter Size',ph:'e.g., 20G or 18G'}],
+      {t:'c',id:'us',lbl:'Technique',o:['*Ultrasound guidance','*Landmark palpation','*Waveform-assisted (Doppler)']}
+    ]}]
+  },
+  piv: { name:'Peripheral IV Access', ico:'💉', sub:'Peripheral intravenous line insertion', tips:'Two large-bore IVs standard for resuscitation, arm veins preferred (antecubital > wrist > hand), avoid lower extremities in abdominal trauma, assess for infiltration',
+    secs:[{ic:'💉',t:'IV Details & Placement',rows:[
+      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['IV access — medications/fluids','Resuscitation access','Blood draw access']},{t:'s',id:'gauge',lbl:'Gauge',req:1,o:['18G — large bore / resuscitation','20G — standard','22G — peds / difficult access']}],
+      [{t:'s',id:'site',lbl:'Site',req:1,o:['Antecubital fossa — preferred','Wrist / forearm vein','Hand — last resort','Lower extremity — avoid if abdominal trauma']},{t:'i',id:'att',lbl:'Attempts',ph:'e.g., 1 attempt successful'}],
+      {t:'c',id:'conf',lbl:'Confirmation',o:['*Blood return on needle pull-back','*Fluid infuses without resistance','*No swelling around site','*Secured with securement device']}
+    ]}]
+  },
+  ngt: { name:'Nasogastric Tube', ico:'🧴', sub:'Nasogastric tube (NGT) insertion for decompression/feeds', tips:'Size 16-18 Fr standard, pH <6 confirms gastric placement, CXR if any doubt, tube obstruction/ileus common, contraindicated in basilar skull fracture',
+    secs:[{ic:'🧴',t:'Indication & Tube Selection',rows:[
+      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Gastric decompression — ileus','Aspiration risk — NPO patient','Medication administration','Enteral feeding — long-term']},{t:'s',id:'size',lbl:'Tube Size (Fr)',o:['14 Fr — small / pediatric','16 Fr — standard adult','18 Fr — large adult / suction']}],
+      [{t:'s',id:'side',lbl:'Naris Selected',o:['Right naris','Left naris','Route: oral (if nasal contraindicated)']}]
+    ]},
+    {ic:'✅',t:'Placement & Confirmation',rows:[
+      [{t:'i',id:'depth',lbl:'Insertion Depth (cm)',ph:'e.g., 50cm at naris'},{t:'s',id:'conf',lbl:'Confirmation',req:1,o:['*Gastric aspirate obtained','*pH <6 on aspirate','*CXR — tube position confirmed','*Auscultation — air in stomach']}],
+      {t:'c',id:'comp',lbl:'Complications',o:['*No complications','Right mainstem (rare)','Sinusitis risk']},
+      {t:'a',id:'addl',lbl:'Notes',ph:'Tube secured at naris. Gastrointestinal function being assessed…'}
+    ]}]
+  },
+  foley: { name:'Foley Catheter', ico:'🚽', sub:'Indwelling urinary catheter placement', tips:'18-22 Fr standard, aseptic technique mandatory, check for hematuria post-placement, monitor for UTI/urosepsis, daily assessment for removal',
+    secs:[{ic:'🚽',t:'Indication & Catheter Selection',rows:[
+      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Acute urinary retention','Sepsis — accurate I/Os','Hemodynamically unstable — UOP monitor','Burn / severe injury — fluid balance']},{t:'s',id:'size',lbl:'Catheter Size (Fr)',req:1,o:['16 Fr','18 Fr — standard','20 Fr','22 Fr — latex allergy patients']}],
+      {t:'s',id:'allergy',lbl:'Latex Allergy Status',o:['No allergy — standard catheter','Latex allergy — silicone catheter','Unknown — latex-free precautions']}
+    ]},
+    {ic:'✅',t:'Placement & Confirmation',rows:[
+      [{t:'c',id:'tech',lbl:'Technique',o:['*Sterile field maintained','*Betadine / chlorhexidine prep','*Straight shot — no resistance','*Urine return in bag']},{t:'i',id:'urine',lbl:'Urine Output at Insertion',ph:'e.g., 400 mL clear yellow'}],
+      {t:'s',id:'color',lbl:'Urine Color/Character',req:1,o:['Clear / pale yellow','Cloudy','Tea-colored (hemoglobinuria)','Bloody / gross hematuria']},
+      {t:'c',id:'comp',lbl:'Complications',o:['*No urethral trauma','*No hematuria','Inability to pass (retention/obstruction)','Bladder perforation']},
+      {t:'a',id:'addl',lbl:'Notes',ph:'Foley secured. Hourly UOP monitoring begun…'}
+    ]}]
+  },
+  resh: { name:'Resuscitative Hysterotomy', ico:'👶', sub:'Perimortem cesarean delivery for maternal resuscitation', tips:'Performed at ~4-5 min maternal cardiac arrest; left uterine displacement inadequate; increase CO if no return of spontaneous circulation; consider fetal prognosis post-delivery',
+    secs:[{ic:'👶',t:'Indication & Procedure',rows:[
+      {t:'tip',cls:'rd',txt:'⚠️ Emergency obstetric procedure. Document arrest time, hysterotomy indication, and fetal viability assessment.'},
+      [{t:'i',id:'gest',lbl:'Gestational Age',ph:'e.g., 32 weeks'},{t:'s',id:'ind',lbl:'Indication for Hysterotomy',req:1,o:['Maternal cardiac arrest >4 minutes unresponsive to ACLS','Severe uterine compression impeding CPR','Suspected placental abruption / obstetric emergency']}],
+      [{t:'i',id:'arrest_t',lbl:'Time of Maternal Arrest',ph:'HH:MM'},{t:'i',id:'hyst_t',lbl:'Time of Hysterotomy',ph:'HH:MM (interval)'},{t:'s',id:'outcome',lbl:'Maternal Response',o:['ROSC — return of spontaneous circulation','No ROSC — ongoing resuscitation','Died during hysterotomy']}]
+    ]},
+    {ic:'🍼',t:'Fetal Outcome',rows:[
+      [{t:'s',id:'fetal_out',lbl:'Fetal Status Post-Delivery',o:['Live birth — resuscitation initiated','Meconium staining — suctioning','Stillbirth','Unable to assess']}],
+      {t:'c',id:'comp',lbl:'Maternal Complications',o:['*No massive hemorrhage','Uterine atony — oxytocin','Placental abruption noted','Amniotic fluid embolism suspected']}
+    ]}]
+  },
+  fin: { name:'Finger Thoracostomy', ico:'⚡', sub:'Finger-directed thoracostomy for hemothorax/pneumothorax', tips:'Emergency procedure for unstable patients; finger thoracostomy bridges to chest tube; confirm placement — blood/air return; post-placement CXR required',
+    secs:[{ic:'⚡',t:'Indication & Procedure',rows:[
+      {t:'tip',cls:'rd',txt:'⚠️ Emergency trauma procedure. Document shock state, bilateral breath sounds, and clinical response.'},
+      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Massive hemothorax — hypotension','Tension pneumothorax unresponsive to needle decompression','Simultaneous hemopneumothorax']},{t:'s',id:'side',lbl:'Side',req:1,o:['Right','Left','Bilateral']}],
+      [{t:'s',id:'site',lbl:'Insertion Site',o:['4th/5th ICS anterior axillary line','5th ICS midaxillary line']},{t:'i',id:'outcome',lbl:'Fluid/Air Return',ph:'e.g., 500 mL blood; immediate air leak'},{t:'s',id:'resp',lbl:'Hemodynamic Response',o:['BP improved immediately','HR normalized','Breath sounds returned (pneumothorax)','No improvement — ongoing resuscitation']}]
+    ]},
+    {ic:'✅',t:'Post-Procedure',rows:[
+      {t:'c',id:'post',lbl:'Management',o:['*Chest tube placement scheduled','*Cross-matched blood ordered','*CXR ordered','*ICU admission']}
+    ]}]
+  },
+  esch: { name:'Escharotomy', ico:'🔥', sub:'Surgical incision through eschar for burn management', tips:'Circumferential burns — threat to limb perfusion; escharotomy within first 24h of burn; bloodless field (consider exsanguination); assess limb perfusion before/after',
+    secs:[{ic:'🔥',t:'Indication & Assessment',rows:[
+      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Circumferential deep burn — limb perfusion at risk','Circumferential thoracic burn — respiratory compromise','High-voltage electrical burn — compartment syndrome risk']},{t:'s',id:'side',lbl:'Extremity Affected',o:['Right upper extremity','Left upper extremity','Right lower extremity','Left lower extremity','Chest / abdomen']}],
+      {t:'c',id:'pre',lbl:'Pre-Escharotomy Assessment',o:['*Pulse present distal to eschar','*Capillary refill delayed / absent','*Pain / paresthesias documented','*Temperature gradient loss']}
+    ]},
+    {ic:'🔪',t:'Procedure & Outcome',rows:[
+      [{t:'s',id:'method',lbl:'Method',o:['Electrocautery / scalpel incision','Laser (if available)']},{t:'i',id:'length',lbl:'Incision Length',ph:'Full length of circumferential burn'},{t:'s',id:'depth',lbl:'Depth',o:['Through eschar only — fat layer visible','Full thickness burn — limited bleeding']}],
+      {t:'c',id:'post',lbl:'Post-Escharotomy Assessment',o:['*Distal pulses restored / improved','*Capillary refill normalized','*Pain / paresthesia improved','*Limb perfusion adequate']}
+    ]}]
+  },
 };
 
 const PROCEDURE_GROUPS = [

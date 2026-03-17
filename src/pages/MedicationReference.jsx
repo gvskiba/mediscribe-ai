@@ -182,7 +182,7 @@ export default function MedicationReferencePage() {
   const [tab, setTab]                     = useState("medications");
   const [cat, setCat]                     = useState("all");
   const [search, setSearch]               = useState("");
-  const [expanded, setExpanded]           = useState(null);
+  const [expanded, setExpanded]           = useState(null); // kept for compat
   const [pedAge, setPedAge]               = useState("");
   const [pedUnit, setPedUnit]             = useState("months");
   const [pedWt, setPedWt]                 = useState("");

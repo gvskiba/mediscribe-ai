@@ -198,6 +198,13 @@ export default function MedicationReferencePage() {
   const [globalWeightUnit, setGlobalWeightUnit] = useState("kg");
   const [selectedMeds, setSelectedMeds]   = useState([]);
 
+  useEffect(() => {
+    base44.entities.Medication.list().then(data => {
+      setMedications(data);
+      setLoadingMeds(false);
+    });
+  }, []);
+
   const weight = useMemo(() => {
     if (pedWt) return parseFloat(pedWt) || null;
     if (!pedAge) return null;

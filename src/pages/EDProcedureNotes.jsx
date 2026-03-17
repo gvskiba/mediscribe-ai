@@ -594,47 +594,74 @@ Write a formal procedure note using ALL CAPS section headers. Third-person past 
 
             {/* SELECT TAB */}
             {tab === 'select' && (
-              <div style={{ flex:1, overflowY:'auto', padding:'24px', display:'flex', flexDirection:'column', gap:20 }}>
-                <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
-                  <div>
-                    <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:600, color:'#e4eef8' }}>Select Procedure</div>
-                    <div style={{ fontSize:12, color:'#4a7a9b', marginTop:4 }}>Choose a procedure — form fields populate automatically</div>
-                  </div>
-                  <div style={{ flex:1 }} />
-                  {selProc && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#00e5a0', alignSelf:'center' }}>✓ {proc?.name} selected</span>}
-                </div>
-                <div style={{ background:'rgba(0,198,255,.06)', border:'1px solid rgba(0,198,255,.2)', borderRadius:8, padding:'10px 14px', fontSize:12, color:'#8aacc6', display:'flex', alignItems:'flex-start', gap:8 }}>
-                  <span>💡</span><span>AI guidance activates on selection. Templates aligned with billing and medicolegal standards.</span>
+              <div style={{ flex:1, overflowY:'auto', padding:'28px 32px', display:'flex', flexDirection:'column', gap:24 }}>
+                {/* Header */}
+                <div>
+                  <div style={{ fontFamily:"'Playfair Display',serif", fontSize:28, fontWeight:700, color:'#e4eef8', marginBottom:4 }}>Select Procedure</div>
+                  <div style={{ fontSize:13, color:'#4a7a9b' }}>Choose procedure — form fields populate automatically</div>
                 </div>
 
+                {/* AI Info Box */}
+                <div style={{ background:'rgba(0,198,255,.06)', border:'1px solid rgba(0,198,255,.25)', borderRadius:10, padding:'12px 15px', fontSize:12, color:'#8aacc6', display:'flex', alignItems:'flex-start', gap:10 }}>
+                  <span style={{ fontSize:14, flexShrink:0 }}>💡</span>
+                  <span>AI guidance activates on selection. Templates aligned with billing and medicolegal standards.</span>
+                </div>
+
+                {/* Procedure Groups */}
                 {PROCEDURE_GROUPS.map(grp => (
-                  <div key={grp.label} style={{ background:'#0a1929', border:'1px solid #1a3550', borderRadius:10, overflow:'hidden' }}>
-                    <div style={{ padding:'11px 18px', background:'#0d2035', borderBottom:'1px solid #1a3550', display:'flex', alignItems:'center', gap:8 }}>
-                      <span>{grp.icon}</span>
-                      <span style={{ fontSize:11, fontWeight:600, color:'#e4eef8', letterSpacing:'.06em', textTransform:'uppercase' }}>{grp.label}</span>
+                  <div key={grp.label}>
+                    {/* Group Header */}
+                    <div style={{ display:'flex', alignItems:'center', gap:10, padding:'0 0 16px 0', borderBottom:'1px solid #1a3550', marginBottom:14 }}>
+                      <span style={{ fontSize:20 }}>{grp.icon}</span>
+                      <span style={{ fontSize:13, fontWeight:700, color:'#e4eef8', letterSpacing:'.05em', textTransform:'uppercase' }}>{grp.label}</span>
                     </div>
-                    <div style={{ padding:'16px', display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:10 }}>
+                    
+                    {/* Procedure Cards */}
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:14 }}>
                       {grp.keys.map(k => {
                         const p = P[k];
                         const isHigh = ['intub','cl','ct','cv'].includes(k);
                         const isMod = ['red','sed','lp','par'].includes(k);
                         return (
-                          <div key={k} className={`epn-pc${selProc===k?' sel':''}`} onClick={()=>{selectProc(k);setTab('document');}}>
-                            <div style={{ fontSize:26 }}>{p.ico}</div>
-                            <div style={{ fontSize:13, fontWeight:600, color:'#e4eef8', lineHeight:1.3 }}>{p.name}</div>
-                            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#4a7a9b' }}>{p.sub.split(' ').slice(0,3).join(' ').toUpperCase()}</div>
-                            {isHigh && <div style={{ position:'absolute', top:9, right:9, fontSize:9, fontFamily:"'JetBrains Mono',monospace", padding:'2px 6px', borderRadius:8, background:'rgba(255,71,87,.15)', color:'#ff4757', border:'1px solid rgba(255,71,87,.28)' }}>HIGH RISK</div>}
-                            {isMod && <div style={{ position:'absolute', top:9, right:9, fontSize:9, fontFamily:"'JetBrains Mono',monospace", padding:'2px 6px', borderRadius:8, background:'rgba(245,166,35,.15)', color:'#f5a623', border:'1px solid rgba(245,166,35,.28)' }}>MOD RISK</div>}
+                          <div
+                            key={k}
+                            onClick={()=>{selectProc(k);setTab('document');}}
+                            style={{
+                              background:'#0a1929',
+                              border: selProc===k ? '1.5px solid #00c6ff' : '1px solid #1a3550',
+                              borderRadius:12,
+                              padding:'18px 16px',
+                              cursor:'pointer',
+                              transition:'.2s',
+                              position:'relative',
+                              overflow:'hidden',
+                              boxShadow: selProc===k ? '0 0 0 1px #00c6ff, 0 8px 24px rgba(0,150,214,.15)' : 'none',
+                              transform: selProc===k ? 'translateY(-2px)' : 'none',
+                            }}
+                            onMouseEnter={e => {
+                              if (selProc!==k) {
+                                e.currentTarget.style.borderColor = '#1e4060';
+                                e.currentTarget.style.background = '#0d2035';
+                              }
+                            }}
+                            onMouseLeave={e => {
+                              if (selProc!==k) {
+                                e.currentTarget.style.borderColor = '#1a3550';
+                                e.currentTarget.style.background = '#0a1929';
+                              }
+                            }}
+                          >
+                            <div style={{ fontSize:32, marginBottom:10 }}>{p.ico}</div>
+                            <div style={{ fontSize:14, fontWeight:700, color:'#e4eef8', lineHeight:1.3, marginBottom:6 }}>{p.name}</div>
+                            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#4a7a9b', letterSpacing:'.05em' }}>{p.sub.split(' ').slice(0,3).join(' ').toUpperCase()}</div>
+                            {isHigh && <div style={{ position:'absolute', top:12, right:12, fontSize:8, fontFamily:"'JetBrains Mono',monospace", padding:'3px 8px', borderRadius:5, background:'rgba(255,71,87,.2)', color:'#ff8c96', border:'1px solid rgba(255,71,87,.4)', fontWeight:700, letterSpacing:'.08em' }}>HIGH RISK</div>}
+                            {isMod && <div style={{ position:'absolute', top:12, right:12, fontSize:8, fontFamily:"'JetBrains Mono',monospace", padding:'3px 8px', borderRadius:5, background:'rgba(245,166,35,.2)', color:'#f5b755', border:'1px solid rgba(245,166,35,.4)', fontWeight:700, letterSpacing:'.08em' }}>MOD RISK</div>}
                           </div>
                         );
                       })}
                     </div>
                   </div>
                 ))}
-
-                <div style={{ display:'flex', justifyContent:'flex-end' }}>
-                  <button className="epn-btn p" disabled={!selProc} onClick={()=>setTab('document')}>Document Selected Procedure →</button>
-                </div>
               </div>
             )}
 

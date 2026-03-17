@@ -95,9 +95,9 @@ export default function ClinicalNoteStudio() {
   const noteId = urlParams.get("noteId") || urlParams.get("id");
   const urlTab = urlParams.get("tab");
 
-  // Mode: "studio" = structured input, "notes" = NoteDetail tab view
-  // Default to studio; switch to notes only after note has loaded
-  const [mode, setMode] = useState("studio");
+  // Mode: "intake" = new patient input, "studio" = structured input, "notes" = NoteDetail tab view
+  // Default to intake when no noteId; switch to studio after note created/loaded
+  const [mode, setMode] = useState(noteId ? "studio" : "intake");
   const [clock, setClock] = useState("");
 
   // Studio state

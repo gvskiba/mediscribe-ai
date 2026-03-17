@@ -507,6 +507,10 @@ export default function NewPatientInput() {
   const togglePMH = (name) => {
     setPmhSelected(prev => ({ ...prev, [name]: ((prev[name] || 0) + 1) % 3 }));
   };
+  const togglePmhSystem = (id) => {
+    setPmhExpanded(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+  const getPmhSystemCount = (conditions) => conditions.filter(c => (pmhSelected[c] || 0) > 0).length;
 
   // ── Tab navigation ───────────────────────────────────────────────
   const showTab = (name) => setCurrentTab(name);

@@ -167,7 +167,7 @@ const CSS = `
 .peg-form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
 .peg-form-group{display:flex;flex-direction:column;gap:5px;}
 .peg-form-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
-.peg-form-input,.peg-form-select,.peg-form-textarea{background:var(--bg4);border:1px solid var(--border3);border-radius:6px;color:var(--text);font-family:var(--sans);font-size:13px;padding:10px 12px;outline:none;transition:.2s;width:100%;min-height:38px;}
+.peg-form-input,.peg-form-select,.peg-form-textarea{background:var(--bg5);border:2px solid var(--accent3);border-radius:6px;color:var(--text);font-family:var(--sans);font-size:13px;padding:10px 12px;outline:none;transition:.2s;width:100%;min-height:38px;}
 .peg-form-input:focus,.peg-form-select:focus,.peg-form-textarea:focus{border-color:var(--accent2);box-shadow:0 0 0 2px rgba(0,150,214,.12);}
 .peg-form-select{cursor:pointer;}
 .peg-form-select option{background:var(--bg2);}

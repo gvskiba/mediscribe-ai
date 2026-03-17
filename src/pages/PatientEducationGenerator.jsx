@@ -465,14 +465,12 @@ CRITICAL RULES:
                 </span>
               </div>
             ))}
-            <div className="peg-sb-sec" style={{ marginTop: 12 }}>Patient</div>
-            <div className="peg-sb-item"><span className="peg-sb-ico">💊</span>Medications<span className="peg-sb-badge n">7</span></div>
-            <div className="peg-sb-item"><span className="peg-sb-ico">⚠️</span>Allergies<span className="peg-sb-badge warn">2</span></div>
-            <div className="peg-sb-item"><span className="peg-sb-ico">📁</span>Past Encounters<span className="peg-sb-badge n">14</span></div>
-            <div className="peg-sb-sec" style={{ marginTop: 12 }}>Tools</div>
-            <div className="peg-sb-item"><span className="peg-sb-ico">🏥</span>ICD-10 / CPT Coder</div>
-            <div className="peg-sb-item"><span className="peg-sb-ico">🧬</span>DDx Engine</div>
-            <div className="peg-sb-item"><span className="peg-sb-ico">📝</span>Clinical Note</div>
+            <div className="peg-sb-sec" style={{ marginTop: 12 }}>Navigate To</div>
+            <Link to="/AutoCoder" className="peg-sb-item" style={{ textDecoration: 'none' }}><span className="peg-sb-ico">🏥</span>Auto-Coder</Link>
+            <Link to="/ClinicalNoteStudio" className="peg-sb-item" style={{ textDecoration: 'none' }}><span className="peg-sb-ico">🩺</span>Note Studio</Link>
+            <Link to="/NoteCreationHub" className="peg-sb-item" style={{ textDecoration: 'none' }}><span className="peg-sb-ico">✨</span>Note Hub</Link>
+            <Link to="/PatientDashboard" className="peg-sb-item" style={{ textDecoration: 'none' }}><span className="peg-sb-ico">👤</span>Patients</Link>
+            <Link to="/BillingDashboard" className="peg-sb-item" style={{ textDecoration: 'none' }}><span className="peg-sb-ico">💳</span>Billing</Link>
           </aside>
 
           {/* Main */}

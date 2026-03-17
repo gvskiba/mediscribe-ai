@@ -1073,13 +1073,38 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
             </div>
 
             <div className="npi-hdiv"/>
-            <div style={{fontSize:12,fontWeight:600,color:'var(--txt)',marginBottom:7}}>🏥 Past Medical History</div>
-            <div className="npi-hint">Tap once to mark as present · Tap again to mark as significant/active</div>
-            <div className="npi-pmh-grid">
-              {PMH_CONDITIONS.map(cond => {
-                const state = pmhSelected[cond] || 0;
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:7}}>
+              <span style={{fontSize:12,fontWeight:600,color:'var(--txt)'}}>🏥 Past Medical History</span>
+              <span style={{fontSize:10,color:'var(--txt3)'}}>— organised by system</span>
+              <div style={{marginLeft:'auto',display:'flex',gap:5}}>
+                <button onClick={()=>setPmhExpanded(PMH_SYSTEMS.reduce((a,s)=>({...a,[s.id]:true}),{}))} style={{fontSize:10,padding:'2px 8px',borderRadius:4,border:'1px solid var(--border)',background:'transparent',color:'var(--txt3)',cursor:'pointer',fontFamily:"'DM Sans',sans-serif"}}>Expand All</button>
+                <button onClick={()=>setPmhExpanded({})} style={{fontSize:10,padding:'2px 8px',borderRadius:4,border:'1px solid var(--border)',background:'transparent',color:'var(--txt3)',cursor:'pointer',fontFamily:"'DM Sans',sans-serif"}}>Collapse All</button>
+              </div>
+            </div>
+            <div className="npi-hint">Tap a condition once to mark as <strong style={{color:'var(--blue)'}}>present</strong> · tap again to mark as <strong style={{color:'var(--teal)'}}>active/significant</strong> · tap again to clear</div>
+            <div className="npi-pmh-systems">
+              {PMH_SYSTEMS.map(sys => {
+                const count = getPmhSystemCount(sys.conditions);
+                const isOpen = pmhExpanded[sys.id] ?? false;
                 return (
-                  <div key={cond} className={`npi-pmh-chip${state > 0 ? ' sel' : ''}${state === 2 ? ' active-pmh' : ''}`} onClick={()=>togglePMH(cond)}>{cond}</div>
+                  <div key={sys.id} className={`npi-pmh-sys${count > 0 ? ' has-sel' : ''}`}>
+                    <div className="npi-pmh-sys-hdr" onClick={()=>togglePmhSystem(sys.id)}>
+                      <span className="npi-pmh-sys-ico">{sys.icon}</span>
+                      <span className="npi-pmh-sys-name">{sys.name}</span>
+                      <span className={`npi-pmh-sys-count${count === 0 ? ' zero' : ''}`}>{count > 0 ? count : sys.conditions.length}</span>
+                      <span className={`npi-pmh-sys-chevron${isOpen ? ' open' : ''}`}>▶</span>
+                    </div>
+                    <div className={`npi-pmh-sys-body${isOpen ? ' open' : ''}`}>
+                      {sys.conditions.map(cond => {
+                        const state = pmhSelected[cond] || 0;
+                        return (
+                          <div key={cond} className={`npi-pmh-chip${state > 0 ? ' sel' : ''}${state === 2 ? ' active-pmh' : ''}`} onClick={()=>togglePMH(cond)}>
+                            {state === 2 ? '★ ' : state === 1 ? '✓ ' : ''}{cond}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 );
               })}
             </div>

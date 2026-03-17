@@ -571,6 +571,34 @@ CRITICAL RULES:
                   <div className="peg-sec-sub">Configure personalization — language, reading level, demographics</div>
                 </div>
               </div>
+
+              {/* Note Picker */}
+              <div className="peg-card">
+                <div className="peg-card-hdr"><span className="peg-card-title">Load from Clinical Note</span></div>
+                <div className="peg-card-body" style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div className="peg-form-group" style={{ flex: 1, minWidth: 200 }}>
+                    <label className="peg-form-label">Select a Note</label>
+                    <select className="peg-form-select" value={selectedNoteId} onChange={e => setSelectedNoteId(e.target.value)}>
+                      <option value="">— Select a clinical note —</option>
+                      {notesLoading && <option disabled>Loading notes…</option>}
+                      {notes.map(n => (
+                        <option key={n.id} value={n.id}>
+                          {n.patient_name || 'Unknown Patient'} — {n.date_of_visit || n.created_date?.slice(0,10) || ''}{n.chief_complaint ? ` · ${n.chief_complaint.slice(0,40)}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    className="peg-btn primary"
+                    style={{ marginTop: 18 }}
+                    disabled={!selectedNoteId}
+                    onClick={() => loadFromNote(selectedNoteId)}
+                  >
+                    Load Patient Data →
+                  </button>
+                </div>
+              </div>
+
               <div className="peg-tip">
                 <span className="peg-tip-ico">🌟</span>
                 <span>The AI tailors vocabulary, sentence length, examples, and tone to match the patient's reading level and language. A 3rd-grade level uses everyday words; 8th-grade uses standard medical terminology with explanations.</span>

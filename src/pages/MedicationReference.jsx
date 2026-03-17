@@ -295,7 +295,7 @@ export default function MedicationReferencePage() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <div>
             <h1 style={{ fontSize: 20, fontWeight: 700, color: "var(--tx)", margin: 0 }}>Medication Reference</h1>
-            <div style={{ fontSize: 12, color: "var(--tx3)", marginTop: 3 }}>Emergency Department · ACEP Guidelines · {MEDICATIONS.length} medications</div>
+            <div style={{ fontSize: 12, color: "var(--tx3)", marginTop: 3 }}>Emergency Department · ACEP Guidelines · {medications.length} medications</div>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600, letterSpacing: ".04em", background: "rgba(0,196,160,.12)", border: "1px solid rgba(0,196,160,.3)", color: "var(--teal)" }}>

@@ -60,7 +60,7 @@ const navSections = [
 
           { name: "Knowledge Base", icon: BookOpen, page: "MedicalKnowledgeBase" },
           { name: "Knowledge Base V2", icon: BookOpen, page: "KnowledgeBaseV2" },
-          { name: "Patient Education", icon: BookOpen, page: "PatientEducation" },
+          { name: "Patient Education", icon: BookOpen, page: "PatientEducationGenerator" },
           { name: "Calculators", icon: Activity, page: "Calculators" },
           { name: "Templates", icon: FileText, page: "NoteTemplates" },
           { name: "Custom Templates", icon: FileText, page: "CustomTemplates" },

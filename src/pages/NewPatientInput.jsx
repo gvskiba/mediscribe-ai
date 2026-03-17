@@ -445,7 +445,7 @@ export default function NewPatientInput() {
     if (demo.firstName || demo.age) s++;
     if (cc.text) s++;
     if (Object.values(vitals).some(v => v)) s++;
-    if (medications.length > 0 || Object.values(pmhSelected).some(v => v > 0)) s++;
+    if (medications.length > 0 || Object.values(pmhSelected).some(Boolean)) s++;
     if (Object.values(rosState).some(v => v > 0)) s++;
     if (Object.values(peState).some(v => v > 0)) s++;
     return Math.round((s / 6) * 100);

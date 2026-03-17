@@ -171,7 +171,7 @@ const CSS = `
 .peg-form-input:focus,.peg-form-select:focus,.peg-form-textarea:focus{border-color:var(--accent2);box-shadow:0 0 0 2px rgba(0,150,214,.12);}
 .peg-form-select{cursor:pointer;}
 .peg-form-select option{background:var(--bg2);}
-.peg-form-textarea{resize:vertical;min-height:130px;line-height:1.65;}
+.peg-form-textarea{resize:vertical;min-height:160px;line-height:1.65;}
 .peg-level-rail{display:flex;gap:8px;}
 .peg-level-opt{flex:1;padding:14px 8px;text-align:center;cursor:pointer;transition:.15s;border:1px solid var(--border2);border-radius:8px;font-size:11px;color:var(--text3);font-weight:500;line-height:1.5;background:var(--bg3);}
 .peg-level-opt:hover{background:var(--bg4);color:var(--text2);border-color:var(--border3);}

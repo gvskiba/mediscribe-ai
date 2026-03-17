@@ -589,10 +589,15 @@ Text: ${parseText}`,
       }));
       (result.medications || []).forEach(m => { if (m) addMed(m); });
       (result.allergies || []).forEach(a => { if (a) addAllergy(a); });
+      const allPmhConditions = PMH_SYSTEMS.flatMap(s => s.conditions);
       (result.pmh || []).forEach(c => {
-        PMH_CONDITIONS.forEach(pc => {
+        allPmhConditions.forEach(pc => {
           if (pc.toLowerCase().includes(c.toLowerCase().split(' ')[0])) {
             setPmhSelected(prev => ({ ...prev, [pc]: prev[pc] || 1 }));
+            // Auto-expand the system containing this condition
+            PMH_SYSTEMS.forEach(sys => {
+              if (sys.conditions.includes(pc)) setPmhExpanded(prev => ({ ...prev, [sys.id]: true }));
+            });
           }
         });
       });

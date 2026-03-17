@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import ClaimValidationPanel from '../components/autocoder/ClaimValidationPanel';
 
 const TABS = ['note', 'icd', 'cpt', 'billing'];
 

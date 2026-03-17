@@ -7,7 +7,6 @@ import DrugInteractionChecker from "../components/medicationreference/DrugIntera
 import ERConditions from "../components/medicationreference/ERConditions";
 import SepsisProtocol from "../components/medicationreference/SepsisProtocol";
 import MedRow from "../components/medicationreference/MedRow";
-import { base44 } from "@/api/base44Client";
 
 const CATEGORIES = [
   { id: "all",      label: "All",            icon: "💊", color: "#00c4a0" },

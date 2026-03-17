@@ -288,11 +288,44 @@ export default function PatientEducationGenerator() {
   const [selectedLevel, setSelectedLevel] = useState('8th');
   const [sections, setSections] = useState(SECTIONS_INIT.map(s => ({ ...s })));
 
+  // Note selector
+  const [selectedNoteId, setSelectedNoteId] = useState('');
+
+  const { data: notes = [], isLoading: notesLoading } = useQuery({
+    queryKey: ['clinicalNotes'],
+    queryFn: () => base44.entities.ClinicalNote.list('-updated_date', 50),
+  });
+
+  const loadFromNote = (noteId) => {
+    const note = notes.find(n => n.id === noteId);
+    if (!note) return;
+    setSelectedNoteId(noteId);
+    if (note.patient_name) setPtName(note.patient_name);
+    if (note.date_of_birth) setPtDob(note.date_of_birth);
+    if (note.patient_gender) setPtSex(note.patient_gender);
+    // Build preferred name from name
+    if (note.patient_name) setPtPref(note.patient_name);
+    // Compose clinical note text from available fields
+    const parts = [];
+    if (note.raw_note) parts.push(note.raw_note);
+    else {
+      if (note.chief_complaint) parts.push(`CHIEF COMPLAINT:\n${note.chief_complaint}`);
+      if (note.history_of_present_illness) parts.push(`HISTORY OF PRESENT ILLNESS:\n${note.history_of_present_illness}`);
+      if (note.assessment) parts.push(`ASSESSMENT:\n${note.assessment}`);
+      if (note.plan) parts.push(`PLAN:\n${note.plan}`);
+      if (note.medications?.length) parts.push(`MEDICATIONS:\n${note.medications.join('\n')}`);
+      if (note.diagnoses?.length) parts.push(`DIAGNOSES:\n${note.diagnoses.join('\n')}`);
+      if (note.discharge_summary) parts.push(`DISCHARGE SUMMARY:\n${note.discharge_summary}`);
+    }
+    if (parts.length) setClinicalNote(parts.join('\n\n'));
+    if (note.diagnoses?.length) setCondition(note.diagnoses.slice(0, 2).join(' / '));
+  };
+
   // Patient info
-  const [ptName, setPtName] = useState('James A. Hartwell');
-  const [ptDob, setPtDob] = useState('1958-07-14');
+  const [ptName, setPtName] = useState('');
+  const [ptDob, setPtDob] = useState('');
   const [ptSex, setPtSex] = useState('male');
-  const [ptPref, setPtPref] = useState('Mr. Hartwell');
+  const [ptPref, setPtPref] = useState('');
   const [ptLang, setPtLang] = useState('English');
   const [ptTone, setPtTone] = useState('clear and direct');
   const [ptFormat, setPtFormat] = useState('bullet points with brief explanations');
@@ -300,10 +333,10 @@ export default function PatientEducationGenerator() {
 
   // Content
   const [clinicalNote, setClinicalNote] = useState('');
-  const [condition, setCondition] = useState('Unstable Angina & Hypertension');
-  const [followupProvider, setFollowupProvider] = useState('Dr. Chen, Cardiology');
-  const [followupDate, setFollowupDate] = useState('Within 1 week');
-  const [providerName, setProviderName] = useState('Dr. Sarah Reyes, MD');
+  const [condition, setCondition] = useState('');
+  const [followupProvider, setFollowupProvider] = useState('');
+  const [followupDate, setFollowupDate] = useState('');
+  const [providerName, setProviderName] = useState('');
 
   // Generated doc
   const [generatedDocHTML, setGeneratedDocHTML] = useState('');

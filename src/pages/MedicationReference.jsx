@@ -354,7 +354,7 @@ export default function MedicationReferencePage() {
                 </div>
               ))}
             </div>
-            <DrugInteractionChecker selectedMeds={selectedMeds} medications={MEDICATIONS} />
+            <DrugInteractionChecker selectedMeds={selectedMeds} medications={medications} />
             {selectedMeds.length > 0 && (
               <div style={{ marginBottom: 14 }}>
                 <button onClick={() => setSelectedMeds([])} style={{ fontSize: 11, fontWeight: 700, padding: "6px 14px", borderRadius: 7, background: "transparent", border: "1px solid rgba(0,196,160,0.3)", color: "var(--teal)", cursor: "pointer", fontFamily: "inherit" }}>

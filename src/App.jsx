@@ -104,11 +104,6 @@ const AuthenticatedApp = () => {
           <NewPatientInput />
         </LayoutWrapper>
       } />
-      <Route path="/PatientEducationGenerator" element={
-        <LayoutWrapper currentPageName="PatientEducationGenerator">
-          <PatientEducationGenerator />
-        </LayoutWrapper>
-      } />
       {Object.entries(Pages).map(([path, Page]) => (
         <Route
           key={path}

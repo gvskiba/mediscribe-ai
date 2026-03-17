@@ -489,12 +489,12 @@ CRITICAL RULES:
               <div className="peg-card">
                 <div className="peg-card-hdr"><span className="peg-card-title">Patient Information</span></div>
                 <div className="peg-card-body">
-                  <div className="peg-form-grid">
-                    <div className="peg-form-group"><label className="peg-form-label">Patient Name</label><input className="peg-form-input" value={ptName} onChange={e => setPtName(e.target.value)} /></div>
-                    <div className="peg-form-group"><label className="peg-form-label">Date of Birth</label><input className="peg-form-input" type="date" value={ptDob} onChange={e => setPtDob(e.target.value)} /></div>
-                    <div className="peg-form-group"><label className="peg-form-label">Preferred Name / Salutation</label><input className="peg-form-input" value={ptPref} onChange={e => setPtPref(e.target.value)} /></div>
-                  </div>
-                </div>
+                   <div className="peg-form-grid-3">
+                     <div className="peg-form-group"><label className="peg-form-label">Patient Name</label><input className="peg-form-input" value={ptName} onChange={e => setPtName(e.target.value)} /></div>
+                     <div className="peg-form-group"><label className="peg-form-label">Date of Birth</label><input className="peg-form-input" type="date" value={ptDob} onChange={e => setPtDob(e.target.value)} /></div>
+                     <div className="peg-form-group"><label className="peg-form-label">Preferred Name / Salutation</label><input className="peg-form-input" value={ptPref} onChange={e => setPtPref(e.target.value)} /></div>
+                   </div>
+                 </div>
               </div>
               <div className="peg-card">
                 <div className="peg-card-hdr"><span className="peg-card-title">Reading Level</span></div>

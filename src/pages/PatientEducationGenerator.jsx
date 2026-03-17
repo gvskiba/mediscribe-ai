@@ -113,7 +113,7 @@ const CSS = `
 .peg-main{flex:1;overflow-y:auto;background:var(--bg);display:flex;flex-direction:column;min-width:0;min-height:0;}
 .peg-main::-webkit-scrollbar{width:5px;}
 .peg-main::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
-.peg-ai-panel{width:var(--ai-panel);flex-shrink:0;background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.peg-ai-panel{width:var(--ai-panel);flex-shrink:0;background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;min-height:0;}
 .peg-ai-hdr{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;}
 .peg-ai-hdr-title{font-size:12px;font-weight:600;color:var(--text);letter-spacing:.04em;}
 .peg-ai-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:peg-pulse-g 2s infinite;}

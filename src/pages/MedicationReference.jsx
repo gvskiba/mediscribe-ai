@@ -215,7 +215,7 @@ export default function MedicationReferencePage() {
 
   const bz = weight ? getBroselow(weight) : null;
 
-  const filtered = useMemo(() => MEDICATIONS.filter(m => {
+  const filtered = useMemo(() => medications.filter(m => {
     if (cat !== "all" && m.category !== cat) return false;
     const q = search.toLowerCase();
     if (!q) return true;

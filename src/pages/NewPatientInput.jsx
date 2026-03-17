@@ -87,7 +87,7 @@ const CSS = `
   background:var(--bg);color:var(--txt);
   font-family:'DM Sans',sans-serif;font-size:13px;
   display:flex;flex-direction:column;overflow:hidden;
-  height:100vh;
+  height:100vh;margin-left:72px;
 }
 .npi-root * { box-sizing:border-box; }
 .npi-root input, .npi-root select, .npi-root textarea { font-family:'DM Sans',sans-serif; }

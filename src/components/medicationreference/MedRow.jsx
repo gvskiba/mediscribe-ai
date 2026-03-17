@@ -21,7 +21,6 @@ export default function MedRow({ med, isExpanded, onToggle, weightKg, isSelected
         <div className="mdot" style={{ background: color }} />
         <div className="mrm">
           <div className="mrn">
-            <span className="mcod">{med.med_id}</span>
             {med.name}
             {med.highAlert && (
               <span className="mlb" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)" }}>

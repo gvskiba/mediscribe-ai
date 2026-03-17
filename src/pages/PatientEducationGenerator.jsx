@@ -78,7 +78,7 @@ const CSS = `
   --mono:'JetBrains Mono',monospace;--serif:'Playfair Display',Georgia,serif;
   --sans:'Outfit',sans-serif;--doc-serif:'Lora',Georgia,serif;
   background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;
-  height:100%;overflow:hidden;display:flex;flex-direction:column;
+  position:fixed;top:0;left:72px;right:0;bottom:0;overflow:hidden;display:flex;flex-direction:column;
 }
 .peg-navbar{height:var(--navbar);background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;}
 .peg-nav-logo{font-family:var(--serif);font-size:20px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.5px;}

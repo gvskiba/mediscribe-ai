@@ -377,8 +377,6 @@ export default function MedicationReferencePage() {
                       <MedRow
                         key={med.id}
                         med={med}
-                        isExpanded={expanded === med.id}
-                        onToggle={() => setExpanded(expanded === med.id ? null : med.id)}
                         weightKg={weightKg}
                         isSelected={selectedMeds.some(m => m.id === med.id)}
                         onSelect={(checked) => {

@@ -1286,6 +1286,7 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
           <button className="npi-bnav-back" onClick={navBack}>← Back</button>
           <button className="npi-bnav-next" onClick={navNext}>Next →</button>
           <div style={{fontSize:10,color:'var(--txt3)',marginLeft:'auto'}}>All fields optional · Saves as ClinicalNote draft</div>
+          <button className="npi-nav-btn kb" style={{height:26,fontSize:10}} onClick={() => navigate('/ERPlanBuilder')}>🩺 ER Plan Builder →</button>
         </div>
       </div>
     </div>

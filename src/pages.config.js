@@ -87,7 +87,6 @@ import PatientHistory from './pages/PatientHistory';
 import PediatricDosing from './pages/PediatricDosing';
 import Procedures from './pages/Procedures';
 import Results from './pages/Results';
-import Search from './pages/Search';
 import Shift from './pages/Shift';
 import ShiftHours from './pages/ShiftHours';
 import SmartTemplates from './pages/SmartTemplates';

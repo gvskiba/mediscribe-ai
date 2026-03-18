@@ -92,8 +92,6 @@ import Shift from './pages/Shift';
 import ShiftHours from './pages/ShiftHours';
 import SmartTemplates from './pages/SmartTemplates';
 import Snippets from './pages/Snippets';
-import SoapCompiler from './pages/SoapCompiler';
-import SoapCompilerStandalone from './pages/SoapCompilerStandalone';
 import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
 import __Layout from './Layout.jsx';

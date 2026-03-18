@@ -264,6 +264,15 @@ function getInteractions(drug) {
 
 export default function ERx() {
   const navigate = useNavigate();
+
+  // Load drugs from Medication entity
+  const { data: rawMeds = [], isLoading: drugsLoading } = useQuery({
+    queryKey: ['medications-erx'],
+    queryFn: () => base44.entities.Medication.list(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const DRUGS = useMemo(() => rawMeds.map(r => dbToErxDrug(r.data ? r.data : r)), [rawMeds]);
+
   const [query, setQuery] = useState('');
   const [showDrop, setShowDrop] = useState(false);
   const [selectedDrug, setSelectedDrug] = useState(null);

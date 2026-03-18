@@ -990,8 +990,7 @@ const styles = {
     cursor: 'pointer',
   },
   aiPanel: {
-    width: '295px',
-    flexShrink: 0,
+    flex: '0 0 295px',
     background: '#081628',
     borderLeft: '1px solid #1a3555',
     display: 'flex',

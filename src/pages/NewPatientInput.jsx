@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import MDMPanel from "@/components/mdm/MDMPanel";
-import { lazy, Suspense } from 'react';
-const ERPlanBuilderEmbed = lazy(() => import('./ERPlanBuilder'));
+
 
 // ─── DATA ──────────────────────────────────────────────────────────────────────
 
@@ -113,7 +112,7 @@ const VITAL_DEFS = [
   {id:'gcs',icon:'🧠',label:'GCS',unit:'/15',ph:'15',lo:14,hi:null},
 ];
 
-const TABS = ['demo','cc','vit','meds','ros','pe','sum','mdm','erplan'];
+const TABS = ['demo','cc','vit','meds','ros','pe','sum','mdm'];
 
 // ─── CSS ────────────────────────────────────────────────────────────────────────
 const CSS = `
@@ -1216,15 +1215,6 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
             </div>
           </div>
 
-          {/* ── ER PLAN ── */}
-          {currentTab === 'erplan' && (
-            <div style={{ display: 'flex', flex: 1, minHeight: 0, margin: '-16px -18px', height: 'calc(100vh - 200px)' }}>
-              <Suspense fallback={<div style={{padding:20,color:'var(--txt3)'}}>Loading ER Plan Builder…</div>}>
-                <ERPlanBuilderEmbed />
-              </Suspense>
-            </div>
-          )}
-
           {/* ── MDM ── */}
           {currentTab === 'mdm' && (
             <div style={{ display: 'flex', flex: 1, minHeight: 0, margin: '-16px -18px', height: 'calc(100vh - 200px)' }}>
@@ -1245,8 +1235,8 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
 
         </main>
 
-        {/* AI PANEL — hidden on MDM and ER Plan tabs since they have their own layout */}
-        <aside className="npi-ai-panel" style={{display: (currentTab === 'mdm' || currentTab === 'erplan') ? 'none' : 'flex'}}>
+        {/* AI PANEL — hidden on MDM tab since MDM has its own layout */}
+        <aside className="npi-ai-panel" style={{display: currentTab === 'mdm' ? 'none' : 'flex'}}>
           <div className="npi-ai-header">
             <div className="npi-ai-hrow">
               <div className="npi-ai-dot"/>
@@ -1305,7 +1295,7 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
             </button>
           ))}
           <div className="npi-bnav-divider"/>
-          <button className={`npi-btab npi-btab-er${currentTab === 'erplan' ? ' active' : ''}`} onClick={() => showTab('erplan')}>
+          <button className="npi-btab npi-btab-er" onClick={() => navigate('/ERPlanBuilder')}>
             <span className="npi-btab-icon">🩺</span>ER Plan
           </button>
           <button className="npi-btab npi-btab-rx" onClick={() => navigate('/ERx')}>

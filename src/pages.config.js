@@ -143,8 +143,6 @@ export const PAGES = {
     "ShiftHours": ShiftHours,
     "SmartTemplates": SmartTemplates,
     "Snippets": Snippets,
-    "SoapCompiler": SoapCompiler,
-    "SoapCompilerStandalone": SoapCompilerStandalone,
     "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
 }

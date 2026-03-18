@@ -603,8 +603,7 @@ const styles = {
     minHeight: 0,
   },
   sidebar: {
-    width: '220px',
-    flexShrink: 0,
+    flex: '0 0 220px',
     background: '#081628',
     borderRight: '1px solid #1a3555',
     overflowY: 'auto',

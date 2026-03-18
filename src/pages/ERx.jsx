@@ -352,7 +352,11 @@ export default function ERx() {
     setRxRoute(drug.route || 'PO');
     setSigDose('1 ' + (drug.forms?.[0] || 'tablet').toLowerCase());
     setShowCS(!!drug.schedule);
-    const conflict = drug.allergy && PATIENT_ALLERGIES.some(a => a.toLowerCase() === drug.allergy.toLowerCase() || drug.allergy.toLowerCase().includes(a.toLowerCase()));
+    const conflict = drug.allergy && PATIENT_ALLERGIES.some(a =>
+      a.toLowerCase() === drug.allergy.toLowerCase() ||
+      drug.allergy.toLowerCase().includes(a.toLowerCase()) ||
+      a.toLowerCase().includes(drug.allergy.toLowerCase())
+    );
     setShowConflict(conflict);
     // interactions
     setLoadingInt(true);

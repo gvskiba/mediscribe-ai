@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import MDMPanel from "@/components/mdm/MDMPanel";
+import DischargePlanningWrapper from "@/components/discharge/DischargePlanningWrapper";
 import ClinicalTabBar from "@/components/shared/ClinicalTabBar";
 
 

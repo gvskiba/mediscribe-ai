@@ -1265,7 +1265,7 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
             {id:'sum',label:'📋 Summary'},
             {id:'mdm',label:'⚖️ MDM'},
           ].map(t => (
-            <button key={t.id} className={`npi-btab${currentTab === t.id ? ' active' : ''}`} onClick={()=>showTab(t.id)}>{t.label}</button>
+            <button key={t.id} className={`npi-btab${currentTab === t.id ? ' active' : ''}`} onClick={()=> t.id === 'mdm' ? navigate('/MedicalDecisionMaking') : showTab(t.id)}>{t.label}</button>
           ))}
         </div>
         <div className="npi-bnav-r2">

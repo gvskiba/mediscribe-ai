@@ -382,17 +382,23 @@ const CSS = `
 .npi-ai-send:hover{background:#0a3030}
 
 /* BOTTOM NAV */
-.npi-bnav{position:sticky;bottom:0;background:#040d1a;border-top:1px solid var(--border);flex-shrink:0;z-index:50}
-.npi-bnav-r1{display:flex;gap:2px;padding:5px 10px 3px;border-bottom:1px solid var(--border);overflow-x:auto}
-.npi-bnav-r1::-webkit-scrollbar{display:none}
-.npi-bnav-r2{display:flex;align-items:center;gap:7px;padding:4px 10px 5px}
-.npi-btab{padding:4px 10px;border-radius:6px;border:none;background:transparent;color:var(--txt3);font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0}
-.npi-btab:hover{background:var(--bg-card);color:var(--txt2)}
-.npi-btab.active{background:#0a2040;color:var(--blue);font-weight:600}
-.npi-bnav-next{height:26px;padding:0 12px;background:var(--blue);border:none;border-radius:5px;color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s}
-.npi-bnav-next:hover{background:#5aadff}
-.npi-bnav-back{height:26px;padding:0 12px;background:var(--bg-up);border:1px solid var(--border);border-radius:5px;color:var(--txt2);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s}
+.npi-bnav{position:sticky;bottom:0;background:rgba(4,13,26,.96);backdrop-filter:blur(12px);border-top:1px solid var(--border);flex-shrink:0;z-index:50;padding:7px 16px 8px;display:flex;align-items:center;justify-content:center;gap:6px}
+.npi-bnav-tabs{display:flex;align-items:center;gap:2px;background:#060f1e;border:1px solid var(--border);border-radius:12px;padding:3px;overflow-x:auto;max-width:100%}
+.npi-bnav-tabs::-webkit-scrollbar{display:none}
+.npi-btab{display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:9px;border:none;background:transparent;color:var(--txt3);font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .18s;white-space:nowrap;flex-shrink:0;font-weight:500}
+.npi-btab:hover{background:var(--bg-up);color:var(--txt2)}
+.npi-btab.active{background:linear-gradient(135deg,#0a2040,#0d2a52);color:var(--blue);font-weight:600;box-shadow:0 1px 6px rgba(59,158,255,.2)}
+.npi-btab-icon{font-size:13px;line-height:1}
+.npi-bnav-divider{width:1px;height:22px;background:var(--border);margin:0 3px;flex-shrink:0}
+.npi-btab-er{color:var(--teal)!important}
+.npi-btab-er:hover{background:rgba(0,229,192,.08)!important;color:var(--teal)!important}
+.npi-btab-rx{color:var(--blue)!important}
+.npi-btab-rx:hover{background:rgba(59,158,255,.08)!important}
+.npi-bnav-nav{display:flex;align-items:center;gap:5px;margin-left:6px;flex-shrink:0}
+.npi-bnav-back{height:28px;padding:0 12px;background:var(--bg-up);border:1px solid var(--border);border-radius:7px;color:var(--txt2);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s}
 .npi-bnav-back:hover{border-color:var(--border-hi);color:var(--txt)}
+.npi-bnav-next{height:28px;padding:0 14px;background:var(--blue);border:none;border-radius:7px;color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s}
+.npi-bnav-next:hover{filter:brightness(1.15)}
 `;
 
 // ─── COMPONENT ───────────────────────────────────────────────────────────────
@@ -1272,28 +1278,32 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
 
       {/* BOTTOM NAV */}
       <div className="npi-bnav">
-        <div className="npi-bnav-r1">
+        <div className="npi-bnav-tabs">
           {[
-            {id:'demo',label:'👤 Demographics'},
-            {id:'cc',label:'🗣️ Chief Complaint'},
-            {id:'vit',label:'📊 Vitals'},
-            {id:'meds',label:'💊 Meds & PMH'},
-            {id:'ros',label:'🔍 Review of Systems'},
-            {id:'pe',label:'🩺 Physical Exam'},
-            {id:'sum',label:'📋 Summary'},
-            {id:'mdm',label:'⚖️ MDM'},
+            {id:'demo',icon:'👤',label:'Demographics'},
+            {id:'cc',icon:'🗣️',label:'CC'},
+            {id:'vit',icon:'📊',label:'Vitals'},
+            {id:'meds',icon:'💊',label:'Meds & PMH'},
+            {id:'ros',icon:'🔍',label:'ROS'},
+            {id:'pe',icon:'🩺',label:'Exam'},
+            {id:'sum',icon:'📋',label:'Summary'},
+            {id:'mdm',icon:'⚖️',label:'MDM'},
           ].map(t => (
-            <button key={t.id} className={`npi-btab${currentTab === t.id ? ' active' : ''}`} onClick={() => showTab(t.id)}>{t.label}</button>
+            <button key={t.id} className={`npi-btab${currentTab === t.id ? ' active' : ''}`} onClick={() => showTab(t.id)}>
+              <span className="npi-btab-icon">{t.icon}</span>{t.label}
+            </button>
           ))}
-          <button className="npi-btab" style={{color:'var(--teal)',fontWeight:600}} onClick={() => navigate('/ERPlanBuilder')}>🩺 ER Plan</button>
-          <button className="npi-btab" style={{color:'var(--blue)',fontWeight:600}} onClick={() => navigate('/ERx')}>💊 eRx</button>
-
+          <div className="npi-bnav-divider"/>
+          <button className="npi-btab npi-btab-er" onClick={() => navigate('/ERPlanBuilder')}>
+            <span className="npi-btab-icon">🩺</span>ER Plan
+          </button>
+          <button className="npi-btab npi-btab-rx" onClick={() => navigate('/ERx')}>
+            <span className="npi-btab-icon">💊</span>eRx
+          </button>
         </div>
-        <div className="npi-bnav-r2">
+        <div className="npi-bnav-nav">
           <button className="npi-bnav-back" onClick={navBack}>← Back</button>
           <button className="npi-bnav-next" onClick={navNext}>Next →</button>
-          <div style={{fontSize:10,color:'var(--txt3)',marginLeft:'auto'}}>All fields optional · Saves as ClinicalNote draft</div>
-          <button className="npi-nav-btn kb" style={{height:26,fontSize:10}} onClick={() => navigate('/ERPlanBuilder')}>🩺 ER Plan Builder →</button>
         </div>
       </div>
     </div>

@@ -621,7 +621,18 @@ Diagnosis: ${rxDx || '—'}`;
                   <div className="erx-cs-title">SCHEDULE {selectedDrug?.schedule <= 2 ? 'II' : 'IV'} CONTROLLED SUBSTANCE</div>
                   <div className="erx-cs-body">DEA registration required · No refills permitted · PDMP query recommended before prescribing</div>
                 </div>
+                <button className="erx-btn-ghost" style={{fontSize:11}} onClick={() => setShowPDMP(!showPDMP)}>🔍 {showPDMP ? 'Hide' : 'Check'} PDMP</button>
               </div>
+            )}
+
+            {showPDMP && (
+              <PDMPAlertPanel 
+                patientName="Martinez, Rosa E."
+                patientDob="1962-04-22"
+                patientId="00847291"
+                state="TX"
+                onClose={() => setShowPDMP(false)}
+              />
             )}
 
             <div className="erx-grid-3 erx-mb-12">

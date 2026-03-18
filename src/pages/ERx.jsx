@@ -275,6 +275,7 @@ function getInteractions(drug) {
 }
 
 export default function ERx() {
+  const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [showDrop, setShowDrop] = useState(false);
   const [selectedDrug, setSelectedDrug] = useState(null);
@@ -828,6 +829,7 @@ Diagnosis: ${rxDx || '—'}`;
         </aside>
 
       </div>
+      <ClinicalTabBar currentPage="ERx" />
     </div>
   );
 }

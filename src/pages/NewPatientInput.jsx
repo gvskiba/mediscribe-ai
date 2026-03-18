@@ -1278,36 +1278,15 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
 
       </div>
 
-      {/* BOTTOM NAV */}
-      <div className="npi-bnav">
-        <div className="npi-bnav-tabs">
-          {[
-            {id:'demo',icon:'👤',label:'Demographics'},
-            {id:'cc',icon:'🗣️',label:'CC'},
-            {id:'vit',icon:'📊',label:'Vitals'},
-            {id:'meds',icon:'💊',label:'Meds & PMH'},
-            {id:'ros',icon:'🔍',label:'ROS'},
-            {id:'pe',icon:'🩺',label:'Exam'},
-            {id:'sum',icon:'📋',label:'Summary'},
-            {id:'mdm',icon:'⚖️',label:'MDM'},
-          ].map(t => (
-            <button key={t.id} className={`npi-btab${currentTab === t.id ? ' active' : ''}`} onClick={() => showTab(t.id)}>
-              <span className="npi-btab-icon">{t.icon}</span>{t.label}
-            </button>
-          ))}
-          <div className="npi-bnav-divider"/>
-          <button className="npi-btab npi-btab-er" onClick={() => navigate('/ERPlanBuilder')}>
-            <span className="npi-btab-icon">🩺</span>ER Plan
-          </button>
-          <button className="npi-btab npi-btab-rx" onClick={() => navigate('/ERx')}>
-            <span className="npi-btab-icon">💊</span>eRx
-          </button>
-        </div>
-        <div className="npi-bnav-nav">
-          <button className="npi-bnav-back" onClick={navBack}>← Back</button>
-          <button className="npi-bnav-next" onClick={navNext}>Next →</button>
-        </div>
-      </div>
+      {/* BOTTOM TAB BAR */}
+      <ClinicalTabBar
+        currentPage="NewPatientInput"
+        currentTab={currentTab}
+        onTabChange={showTab}
+        showNav={true}
+        onBack={navBack}
+        onNext={navNext}
+      />
     </div>
   );
 }

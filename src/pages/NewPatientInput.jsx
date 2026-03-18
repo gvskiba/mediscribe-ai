@@ -111,7 +111,7 @@ const VITAL_DEFS = [
   {id:'gcs',icon:'🧠',label:'GCS',unit:'/15',ph:'15',lo:14,hi:null},
 ];
 
-const TABS = ['demo','cc','vit','meds','ros','pe','sum'];
+const TABS = ['demo','cc','vit','meds','ros','pe','sum','mdm'];
 
 // ─── CSS ────────────────────────────────────────────────────────────────────────
 const CSS = `

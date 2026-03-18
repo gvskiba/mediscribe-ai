@@ -248,15 +248,18 @@ const HIST = [
 ];
 
 function getInteractions(drug) {
-  const n = (drug.name + drug.generic + drug.class).toLowerCase();
-  const ints = [];
-  if (n.includes('metronidazole')) ints.push({sev:'severe',drugs:`${drug.name} + Alcohol / Disulfiram`,desc:'Disulfiram-like reaction: flushing, tachycardia, nausea. Avoid alcohol during and 48h after treatment.',label:'AVOID',action:'avoid'});
-  if (n.includes('ciprofloxacin') || n.includes('levofloxacin')) ints.push({sev:'moderate',drugs:`${drug.name} + Metformin`,desc:'FQ antibiotics may alter glycemic control — monitor blood glucose.',label:'MONITOR GLUCOSE',action:'monitor'});
-  if (n.includes('statin') || n.includes('atorvastatin')) ints.push({sev:'moderate',drugs:`${drug.name} + Amlodipine`,desc:'Amlodipine inhibits CYP3A4 metabolism — max atorvastatin dose 80mg/day.',label:'MONITOR',action:'monitor'});
-  if (n.includes('opioid') || n.includes('oxycodone') || n.includes('tramadol') || n.includes('hydrocodone')) ints.push({sev:'moderate',drugs:`${drug.name} + CNS Depressants`,desc:'Concurrent use increases risk of respiratory depression. Use lowest dose for shortest duration.',label:'RISK — USE CAUTION',action:'monitor'});
-  if (n.includes('benzodiazepine') || n.includes('lorazepam') || n.includes('alprazolam')) ints.push({sev:'severe',drugs:`${drug.name} + Opioids (if co-prescribed)`,desc:'FDA black box warning for fatal respiratory depression with concurrent BZD + opioid use.',label:'BLACK BOX — AVOID',action:'avoid'});
-  if (!ints.length) ints.push({sev:'mild',drugs:`${drug.name} + Current Medications`,desc:'No major interactions identified with the current medication list.',label:'NO SIGNIFICANT INTERACTIONS',action:'info'});
-  return ints;
+  // Use interactions from DB if available
+  const dbInts = drug.interactions || [];
+  if (dbInts.length > 0) {
+    return dbInts.map(intStr => {
+      const sev = /avoid|black box|contraindicated|severe/i.test(intStr) ? 'severe'
+                : /monitor|caution|moderate/i.test(intStr) ? 'moderate' : 'mild';
+      const action = sev === 'severe' ? 'avoid' : sev === 'moderate' ? 'monitor' : 'info';
+      const label = sev === 'severe' ? 'AVOID' : sev === 'moderate' ? 'MONITOR' : 'INFO';
+      return { sev, drugs: `${drug.name} — Interaction`, desc: intStr, label, action };
+    });
+  }
+  return [{ sev: 'mild', drugs: `${drug.name} + Current Medications`, desc: 'No major interactions identified with the current medication list.', label: 'NO SIGNIFICANT INTERACTIONS', action: 'info' }];
 }
 
 export default function ERx() {

@@ -543,15 +543,14 @@ const styles = {
     transition: 'all 0.15s',
   },
   vitalsBar: {
-    height: '38px',
     background: '#081628',
     borderBottom: '1px solid #1a3555',
     display: 'flex',
     alignItems: 'center',
-    padding: '0 14px',
+    padding: '6px 14px',
     gap: '10px',
-    zIndex: 99,
     overflow: 'hidden',
+    flexShrink: 0,
   },
   vbPatient: {
     display: 'flex',

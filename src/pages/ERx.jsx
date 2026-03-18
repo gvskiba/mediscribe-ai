@@ -364,7 +364,7 @@ export default function ERx() {
 
   const loadFav = (fav) => {
     const drugName = fav.drugName || fav.name;
-    const drug = DRUGS.find(d => d.name.toLowerCase() === drugName.toLowerCase()) || {name:fav.name,generic:fav.name,class:'',emoji:'💊',strengths:[fav.rx.strength],forms:[fav.rx.form],route:fav.rx.route};
+    const drug = DRUGS.find(d => d.name.toLowerCase() === drugName.toLowerCase()) || {name:fav.name,generic:fav.name,class:'',emoji:'💊',strengths:[fav.rx.strength],forms:[fav.rx.form],route:fav.rx.route,interactions:[],warnings:[],contraindications:[],renal:[]};
     selectDrug(drug);
     setTimeout(() => {
       setRxStrength(fav.rx.strength);

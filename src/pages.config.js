@@ -137,7 +137,6 @@ export const PAGES = {
     "PediatricDosing": PediatricDosing,
     "Procedures": Procedures,
     "Results": Results,
-    "Search": Search,
     "Shift": Shift,
     "ShiftHours": ShiftHours,
     "SmartTemplates": SmartTemplates,

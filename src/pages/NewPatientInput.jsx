@@ -425,7 +425,10 @@ export default function NewPatientInput() {
   const [peState, setPeState] = useState({});
   const [peFindings, setPeFindings] = useState({});
   const [selectedCC, setSelectedCC] = useState(-1);
-  const [currentTab, setCurrentTab] = useState('demo');
+  const [currentTab, setCurrentTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('tab') || 'demo';
+  });
   const [medInput, setMedInput] = useState('');
   const [allergyInput, setAllergyInput] = useState('');
   const [parseText, setParseText] = useState('');

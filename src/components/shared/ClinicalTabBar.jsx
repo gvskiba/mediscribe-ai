@@ -26,6 +26,9 @@ const CSS = `
 .ctb-tab-rx{color:#3b9eff!important;}
 .ctb-tab-rx:hover{background:rgba(59,158,255,.08)!important;}
 .ctb-tab-rx.ctb-active{background:rgba(59,158,255,.12)!important;border:1px solid rgba(59,158,255,.3)!important;color:#3b9eff!important;}
+.ctb-tab-proc{color:#9b6dff!important;}
+.ctb-tab-proc:hover{background:rgba(155,109,255,.08)!important;color:#9b6dff!important;}
+.ctb-tab-proc.ctb-active{background:rgba(155,109,255,.12)!important;border:1px solid rgba(155,109,255,.3)!important;color:#9b6dff!important;}
 .ctb-nav{display:flex;align-items:center;gap:5px;margin-left:6px;flex-shrink:0;}
 .ctb-back{height:28px;padding:0 12px;background:#0e2544;border:1px solid #1a3555;border-radius:7px;color:#8aaccc;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;}
 .ctb-back:hover{border-color:#2a4f7a;color:#e8f0fe;}
@@ -65,6 +68,9 @@ export default function ClinicalTabBar({ currentPage = 'NewPatientInput', curren
           </button>
           <button className={`ctb-tab ctb-tab-rx${currentPage === 'ERx' ? ' ctb-active' : ''}`} onClick={() => navigate('/ERx')}>
             <span className="ctb-tab-icon">💊</span>eRx
+          </button>
+          <button className={`ctb-tab ctb-tab-proc${currentPage === 'EDProcedureNotes' ? ' ctb-active' : ''}`} onClick={() => navigate('/EDProcedureNotes')}>
+            <span className="ctb-tab-icon">🩹</span>Procedures
           </button>
         </div>
         {showNav && (

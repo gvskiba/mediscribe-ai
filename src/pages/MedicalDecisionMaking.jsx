@@ -484,9 +484,9 @@ const styles = {
     borderBottom: '1px solid #1a3555',
     display: 'flex',
     alignItems: 'center',
-    padding: '0 16px',
+    padding: '8px 16px',
     gap: '12px',
-    zIndex: 100,
+    flexShrink: 0,
   },
   navLogo: {
     fontFamily: "'Playfair Display', serif",

@@ -480,7 +480,6 @@ const styles = {
     flexGrow: 1,
   },
   navbar: {
-    height: '50px',
     background: '#081628',
     borderBottom: '1px solid #1a3555',
     display: 'flex',

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import ClinicalTabBar from '@/components/shared/ClinicalTabBar';
 
 // ─── Anesthetic + Shared Options ────────────────────────────────────────────
 const LIDO = ['Lidocaine 1% plain','Lidocaine 1% with epinephrine','Lidocaine 2% plain','Lidocaine 2% with epinephrine','Bupivacaine 0.25%','Bupivacaine 0.5%'];

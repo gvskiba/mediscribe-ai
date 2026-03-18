@@ -922,6 +922,9 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
           <div className="npi-sb-item" style={{background:'rgba(0,229,192,.06)',border:'1px solid rgba(0,229,192,.25)',borderRadius:7,color:'var(--teal)',fontWeight:600}} onClick={() => navigate('/ERPlanBuilder')}>
             <span>🩺</span><span style={{flex:1}}>ER Plan Builder</span><span style={{fontSize:9,color:'var(--teal)',opacity:.7}}>→</span>
           </div>
+          <div className="npi-sb-item" style={{background:'rgba(155,109,255,.06)',border:'1px solid rgba(155,109,255,.25)',borderRadius:7,color:'#9b6dff',fontWeight:600,marginTop:4}} onClick={() => navigate('/EDProcedureNotes')}>
+            <span>🩹</span><span style={{flex:1}}>Procedures</span><span style={{fontSize:9,color:'#9b6dff',opacity:.7}}>→</span>
+          </div>
         </aside>
 
         {/* MAIN */}

@@ -34,8 +34,6 @@ const navSections = [
                 { name: "Note Creation Hub", icon: FileText, page: "NoteCreationHub" },
                 { name: "Shift Dashboard", icon: Activity, page: "Shift" },
                 { name: "Patient Dashboard", icon: Activity, page: "PatientDashboard" },
-                { name: "SOAP Compiler", icon: FileText, page: "SoapCompiler" },
-                { name: "SOAP Compiler (Standalone)", icon: FileText, page: "SoapCompilerStandalone" },
               { name: "Clinical Note Studio", icon: FileText, page: "ClinicalNoteStudio" },
                 { name: "Note Editor", icon: FileText, page: "NoteEditorTabs" },
                 { name: "My Notes", icon: FileText, page: "NotesLibrary" },

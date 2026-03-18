@@ -597,9 +597,10 @@ const styles = {
     border: '1px solid rgba(0,229,192,0.3)',
   },
   mainWrap: {
-    flex: 1,
+    flexGrow: 1,
     display: 'flex',
     overflow: 'hidden',
+    minHeight: 0,
   },
   sidebar: {
     width: '220px',

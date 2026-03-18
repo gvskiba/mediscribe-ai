@@ -1263,6 +1263,7 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
             {id:'ros',label:'🔍 Review of Systems'},
             {id:'pe',label:'🩺 Physical Exam'},
             {id:'sum',label:'📋 Summary'},
+            {id:'mdm',label:'⚖️ MDM'},
           ].map(t => (
             <button key={t.id} className={`npi-btab${currentTab === t.id ? ' active' : ''}`} onClick={()=>showTab(t.id)}>{t.label}</button>
           ))}

@@ -1129,10 +1129,6 @@ const styles = {
     fontFamily: 'inherit',
   },
   bottomNav: {
-    position: 'fixed',
-    bottom: 0,
-    left: 0,
-    right: 0,
     height: '60px',
     background: '#081628',
     borderTop: '1px solid #1a3555',

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import ClinicalTabBar from "@/components/shared/ClinicalTabBar";
 import { base44 } from '@/api/base44Client';
 
 /* ─── CSS ─────────────────────────────────────────────────────────────── */

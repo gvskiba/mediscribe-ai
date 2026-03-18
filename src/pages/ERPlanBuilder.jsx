@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import ClinicalTabBar from "@/components/shared/ClinicalTabBar";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 

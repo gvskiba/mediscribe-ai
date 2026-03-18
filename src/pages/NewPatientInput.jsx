@@ -1222,8 +1222,8 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
 
         </main>
 
-        {/* AI PANEL */}
-        <aside className="npi-ai-panel">
+        {/* AI PANEL — hidden on MDM tab since MDM has its own layout */}
+        <aside className="npi-ai-panel" style={{display: currentTab === 'mdm' ? 'none' : 'flex'}}>
           <div className="npi-ai-header">
             <div className="npi-ai-hrow">
               <div className="npi-ai-dot"/>

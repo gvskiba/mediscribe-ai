@@ -306,6 +306,7 @@ export default function ERx() {
   const [togCounsel, setTogCounsel] = useState(false);
   const [showCS, setShowCS] = useState(false);
   const [showConflict, setShowConflict] = useState(false);
+  const [showPDMP, setShowPDMP] = useState(false);
 
   const aiMsgsRef = useRef(null);
   const aiInputRef = useRef(null);

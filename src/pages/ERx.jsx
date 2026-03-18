@@ -531,7 +531,7 @@ Diagnosis: ${rxDx || '—'}`;
           <div className="erx-sec">
             <div className="erx-sec-hdr">
               <span style={{fontSize:17}}>🔍</span>
-              <div><div className="erx-sec-title">Drug Search</div><div className="erx-sec-sub">Search by brand name, generic, NDC, or drug class</div></div>
+              <div><div className="erx-sec-title">Drug Search</div><div className="erx-sec-sub">{drugsLoading ? 'Loading drug database from server…' : `Search by brand name, generic, or drug class · ${DRUGS.length} drugs loaded`}</div></div>
             </div>
             <div className="erx-search-wrap">
               <span className="erx-search-icon">💊</span>

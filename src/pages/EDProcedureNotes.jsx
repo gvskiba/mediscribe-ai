@@ -1010,6 +1010,8 @@ Write a formal procedure note using ALL CAPS section headers. Third-person past 
         {toast && (
           <div style={{ position:'fixed', bottom:90, right:20, background:'#00b880', color:'#fff', padding:'8px 16px', borderRadius:6, fontSize:12, fontWeight:600, zIndex:300 }}>{toast}</div>
         )}
+
+        <ClinicalTabBar currentPage="EDProcedureNotes" />
       </div>
     </>
   );

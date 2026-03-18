@@ -1234,6 +1234,23 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
             </div>
           )}
 
+          {/* ── DISCHARGE PLANNING ── */}
+          {currentTab === 'discharge' && (
+            <div style={{ display: 'flex', flex: 1, minHeight: 0, margin: '-16px -18px', height: 'calc(100vh - 200px)' }}>
+              <DischargePlanningWrapper
+                patientName={patientName}
+                patientDob={demo.dob}
+                patientId={demo.mrn}
+                patientAge={demo.age}
+                patientGender={demo.sex}
+                chiefComplaint={cc.text}
+                diagnoses={[]}
+                medications={medications}
+                allergies={allergies}
+              />
+            </div>
+          )}
+
           {/* ── SUMMARY ── */}
           <div className={`npi-panel${currentTab === 'sum' ? ' active' : ''}`}>
             <div className="npi-sec-title">📋 Patient Summary</div>

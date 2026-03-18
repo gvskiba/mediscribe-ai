@@ -812,6 +812,7 @@ Apply clinical decision rules (HEART, PERC, Wells, Ottawa, NEXUS, CURB-65, sepsi
         </aside>
 
       </div>
+      <ClinicalTabBar currentPage="ERPlanBuilder" />
     </div>
   );
 }

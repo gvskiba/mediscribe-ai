@@ -538,7 +538,7 @@ Diagnosis: ${rxDx || '—'}`;
               <input className="erx-search-inp" value={query} onChange={e => { setQuery(e.target.value); setShowDrop(true); }}
                 onFocus={() => query.length >= 2 && setShowDrop(true)}
                 onBlur={() => setTimeout(() => setShowDrop(false), 150)}
-                placeholder="Search drugs, generics, drug class…" />
+                placeholder={drugsLoading ? 'Loading drug database…' : `Search ${DRUGS.length} drugs, generics, drug class…`} />
               {query && <span className="erx-search-clear" onClick={() => { setQuery(''); setShowDrop(false); }}>✕</span>}
               {showDrop && filteredDrugs.length > 0 && (
                 <div className="erx-dropdown">

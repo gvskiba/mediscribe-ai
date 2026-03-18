@@ -480,10 +480,6 @@ const styles = {
     overflow: 'hidden',
   },
   navbar: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
     height: '50px',
     background: '#081628',
     borderBottom: '1px solid #1a3555',

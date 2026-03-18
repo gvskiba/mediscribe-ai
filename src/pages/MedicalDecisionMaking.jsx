@@ -544,10 +544,6 @@ const styles = {
     transition: 'all 0.15s',
   },
   vitalsBar: {
-    position: 'fixed',
-    top: '50px',
-    left: 0,
-    right: 0,
     height: '38px',
     background: '#081628',
     borderBottom: '1px solid #1a3555',

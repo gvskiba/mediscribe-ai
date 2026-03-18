@@ -900,6 +900,7 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
             {id:'ros',icon:'🔍',label:'Review of Systems'},
             {id:'pe',icon:'🩺',label:'Physical Exam'},
             {id:'sum',icon:'📋',label:'Summary'},
+            {id:'mdm',icon:'⚖️',label:'MDM'},
           ].map(item => (
             <div key={item.id} className={`npi-sb-item${currentTab === item.id ? ' active' : ''}`} onClick={() => showTab(item.id)}>
               <span>{item.icon}</span><span style={{flex:1}}>{item.label}</span>

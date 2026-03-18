@@ -812,6 +812,7 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
         <div className="npi-sum-btns">
           <button className="npi-sum-studio-btn" onClick={savePatient}>📝 Save & Open in Studio →</button>
           <button className="npi-sum-generate-btn" onClick={aiGenerateNote}>✨ AI Generate Note</button>
+          <button className="npi-sum-studio-btn" style={{borderColor:'var(--teal)',color:'var(--teal)',background:'rgba(0,229,192,.06)'}} onClick={() => navigate('/ERPlanBuilder')}>🩺 Open ER Plan Builder →</button>
         </div>
       </div>
     );

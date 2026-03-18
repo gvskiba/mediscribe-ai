@@ -470,14 +470,14 @@ const ImpressionCard = ({ title, variant }) => {
 const styles = {
   root: {
     width: '100%',
-    height: '100%',
     background: '#050f1e',
     color: '#e8f0fe',
     fontFamily: "'DM Sans', sans-serif",
     fontSize: '14px',
     display: 'flex',
     flexDirection: 'column',
-    overflow: 'hidden',
+    minHeight: 0,
+    flexGrow: 1,
   },
   navbar: {
     height: '50px',

@@ -1286,6 +1286,7 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
             <button key={t.id} className={`npi-btab${currentTab === t.id ? ' active' : ''}`} onClick={() => showTab(t.id)}>{t.label}</button>
           ))}
           <button className="npi-btab" style={{color:'var(--teal)',fontWeight:600}} onClick={() => navigate('/ERPlanBuilder')}>🩺 ER Plan</button>
+          <button className="npi-btab" style={{color:'var(--blue)',fontWeight:600}} onClick={() => navigate('/ERx')}>💊 eRx</button>
 
         </div>
         <div className="npi-bnav-r2">

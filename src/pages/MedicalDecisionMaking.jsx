@@ -368,16 +368,109 @@ function ImpressionCard({ variant, evidence, onAddEvidence, onRemoveEvidence }) 
   const [dx, setDx] = useState('');
   const [rationale, setRationale] = useState('');
   const [icd, setIcd] = useState('');
+  const [icdLoading, setIcdLoading] = useState(false);
   const [disp, setDisp] = useState('');
   const [evInput, setEvInput] = useState('');
   const [evType, setEvType] = useState('vital');
+  const [suggestions, setSuggestions] = useState([]);
+  const [sugLoading, setSugLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const sugTimerRef = useRef(null);
   const isInitial = variant === 'initial';
+
+  // AI diagnosis autocomplete — fires after 400ms of inactivity, min 3 chars
+  const handleDxChange = (val) => {
+    setDx(val);
+    setSuggestions([]);
+    if (sugTimerRef.current) clearTimeout(sugTimerRef.current);
+    if (val.trim().length < 3) { setShowSuggestions(false); return; }
+    sugTimerRef.current = setTimeout(async () => {
+      setSugLoading(true);
+      setShowSuggestions(true);
+      try {
+        const res = await base44.integrations.Core.InvokeLLM({
+          prompt: `You are a clinical coding assistant. Given the partial diagnosis text "${val}", return exactly 5 complete diagnosis suggestions as a JSON array of strings. Each should be a concise, standard clinical diagnosis name. Return ONLY a JSON array, no explanation.`,
+          response_json_schema: { type: 'object', properties: { suggestions: { type: 'array', items: { type: 'string' } } }, required: ['suggestions'] }
+        });
+        setSuggestions(res.suggestions || []);
+      } catch {
+        setSuggestions([]);
+      } finally {
+        setSugLoading(false);
+      }
+    }, 400);
+  };
+
+  // When a suggestion is picked on final card, also fetch ICD-10
+  const pickSuggestion = async (val) => {
+    setDx(val);
+    setShowSuggestions(false);
+    setSuggestions([]);
+    if (!isInitial) fetchICD(val);
+  };
+
+  // Fetch ICD-10 for final impression
+  const fetchICD = async (diagnosisText) => {
+    if (!diagnosisText.trim()) return;
+    setIcdLoading(true);
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a clinical coding assistant. For the diagnosis "${diagnosisText}", provide the most accurate ICD-10-CM code and a brief description. Return ONLY a JSON object.`,
+        response_json_schema: { type: 'object', properties: { code: { type: 'string' }, description: { type: 'string' } }, required: ['code', 'description'] }
+      });
+      if (res.code) setIcd(res.code);
+    } catch {
+      // silent fail
+    } finally {
+      setIcdLoading(false);
+    }
+  };
+
+  // On blur from dx input on final card, auto-fetch ICD if not already set
+  const handleDxBlur = () => {
+    setTimeout(() => setShowSuggestions(false), 150);
+    if (!isInitial && dx.trim() && !icd) fetchICD(dx);
+  };
 
   return (
     <div className={`impression-card ${variant}`}>
       <div className={`imp-label ${variant}`}>{isInitial ? '⚡ Initial Impression' : '✅ Final Impression / Diagnosis'}</div>
-      <input className="imp-dx-input" value={dx} onChange={e => setDx(e.target.value)}
-        placeholder={isInitial ? 'Working diagnosis on presentation…' : 'Confirmed diagnosis at disposition…'} />
+      <div style={{ position: 'relative' }}>
+        <input className="imp-dx-input" value={dx}
+          onChange={e => handleDxChange(e.target.value)}
+          onBlur={handleDxBlur}
+          onFocus={() => dx.length >= 3 && suggestions.length > 0 && setShowSuggestions(true)}
+          placeholder={isInitial ? 'Working diagnosis on presentation…' : 'Confirmed diagnosis at disposition…'} />
+        {/* Suggestions dropdown */}
+        {showSuggestions && (
+          <div style={{
+            position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+            background: 'var(--bg-card)', border: '1px solid var(--border-hi)',
+            borderRadius: 'var(--r)', overflow: 'hidden',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.5)', marginTop: 2
+          }}>
+            {sugLoading ? (
+              <div style={{ padding: '10px 12px', fontSize: 11, color: 'var(--teal)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: 'var(--teal)', animation: 'ai-pulse 1s infinite' }} />
+                AI completing…
+              </div>
+            ) : suggestions.map((s, i) => (
+              <div key={i}
+                onMouseDown={() => pickSuggestion(s)}
+                style={{
+                  padding: '8px 12px', fontSize: 13, color: 'var(--txt)', cursor: 'pointer',
+                  borderBottom: i < suggestions.length - 1 ? '1px solid var(--border)' : 'none',
+                  transition: 'background .1s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-up)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                {s}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
       <div className="evidence-label">Supporting evidence from chart</div>
       <div className="evidence-chips">
         {evidence.map((e, i) => (
@@ -404,7 +497,11 @@ function ImpressionCard({ variant, evidence, onAddEvidence, onRemoveEvidence }) 
       {!isInitial && (
         <div className="imp-icd-row">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label className="of-label">ICD-10 Code</label>
+            <label className="of-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              ICD-10 Code
+              {icdLoading && <span style={{ fontSize: 10, color: 'var(--teal)' }}>✨ AI fetching…</span>}
+              {!icdLoading && icd && <span style={{ fontSize: 10, color: 'var(--teal)' }}>✓ AI</span>}
+            </label>
             <input className="of-input" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12 }}
               value={icd} onChange={e => setIcd(e.target.value)} placeholder="e.g. I21.9" />
           </div>

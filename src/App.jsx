@@ -21,6 +21,7 @@ import PatientEducationGenerator from './pages/PatientEducationGenerator.jsx';
 import EDProcedureNotes from './pages/EDProcedureNotes.jsx';
 import MedicalDecisionMaking from './pages/MedicalDecisionMaking.jsx';
 import ERPlanBuilder from './pages/ERPlanBuilder.jsx';
+import ERx from './pages/ERx.jsx';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -125,6 +126,11 @@ const AuthenticatedApp = () => {
       <Route path="/ERPlanBuilder" element={
         <LayoutWrapper currentPageName="ERPlanBuilder">
           <ERPlanBuilder />
+        </LayoutWrapper>
+      } />
+      <Route path="/ERx" element={
+        <LayoutWrapper currentPageName="ERx">
+          <ERx />
         </LayoutWrapper>
       } />
       {Object.entries(Pages).map(([path, Page]) => (

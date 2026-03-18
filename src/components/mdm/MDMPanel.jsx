@@ -692,36 +692,6 @@ export default function MDMPanel({ patientName, chiefComplaint, vitals }) {
         </div>
       </main>
 
-      {/* AI PANEL */}
-      <aside className="mdm-ai-aside">
-        <div className="mdm-ai-hdr">
-          <div className="mdm-ai-hrow">
-            <div className="mdm-ai-dot" />
-            <div className="mdm-ai-title">Notrya AI — MDM</div>
-            <div className="mdm-ai-model">claude-sonnet</div>
-          </div>
-          <div className="mdm-ai-qbtns">
-            {[['📋 Workup', 'Review my diagnostic workup and suggest additional tests.'],
-              ['🔀 DDx', 'List top 3 differentials with brief reasoning.'],
-              ['🔬 Results', 'Explain clinical significance of abnormal findings.'],
-              ['📝 Draft Note', aiGenerateMDMNote],
-              ['⚖️ MDM Level', 'What MDM complexity level is appropriate?'],
-            ].map(([label, action]) => (
-              <button key={label} className="mdm-ai-qbtn" onClick={() => typeof action === 'string' ? aiQ(action) : action()}>{label}</button>
-            ))}
-          </div>
-        </div>
-        <div className="mdm-ai-chat" ref={aiMsgsRef}>
-          {aiMessages.map((msg, i) => (
-            <div key={i} className={`mdm-ai-msg ${msg.role}`} dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
-          ))}
-          {aiLoading && <div className="mdm-ai-loading"><div className="mdm-ai-tdot" /><div className="mdm-ai-tdot" /><div className="mdm-ai-tdot" /></div>}
-        </div>
-        <div className="mdm-ai-inp-wrap">
-          <input className="mdm-ai-inp" value={aiInput} onChange={e => setAiInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendAI()} placeholder="Ask a clinical question…" />
-          <button className="mdm-ai-send" onClick={sendAI}>↑</button>
-        </div>
-      </aside>
     </div>
   );
 }

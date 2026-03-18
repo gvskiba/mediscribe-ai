@@ -9,6 +9,7 @@ const TABS = [
   {id:'pe',icon:'🩺',label:'Exam', path:'/NewPatientInput', tab:'pe'},
   {id:'sum',icon:'📋',label:'Summary', path:'/NewPatientInput', tab:'sum'},
   {id:'mdm',icon:'⚖️',label:'MDM', path:'/NewPatientInput', tab:'mdm'},
+  {id:'discharge',icon:'🏥',label:'Discharge', path:'/NewPatientInput', tab:'discharge'},
 ];
 
 const CSS = `

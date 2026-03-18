@@ -907,6 +907,10 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
               <span>{item.icon}</span><span style={{flex:1}}>{item.label}</span>
             </div>
           ))}
+          <div style={{height:1,background:'var(--border)',margin:'6px 0'}}/>
+          <div className="npi-sb-item" style={{background:'rgba(0,229,192,.06)',border:'1px solid rgba(0,229,192,.25)',borderRadius:7,color:'var(--teal)',fontWeight:600}} onClick={() => navigate('/ERPlanBuilder')}>
+            <span>🩺</span><span style={{flex:1}}>ER Plan Builder</span><span style={{fontSize:9,color:'var(--teal)',opacity:.7}}>→</span>
+          </div>
         </aside>
 
         {/* MAIN */}
@@ -1281,6 +1285,7 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
           ].map(t => (
             <button key={t.id} className={`npi-btab${currentTab === t.id ? ' active' : ''}`} onClick={() => showTab(t.id)}>{t.label}</button>
           ))}
+          <button className="npi-btab" style={{color:'var(--teal)',borderLeft:'1px solid var(--border)',paddingLeft:10,marginLeft:4}} onClick={() => navigate('/ERPlanBuilder')}>🩺 ER Plan →</button>
         </div>
         <div className="npi-bnav-r2">
           <button className="npi-bnav-back" onClick={navBack}>← Back</button>

@@ -469,11 +469,8 @@ const ImpressionCard = ({ title, variant }) => {
 
 const styles = {
   root: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    width: '100%',
+    height: '100%',
     background: '#050f1e',
     color: '#e8f0fe',
     fontFamily: "'DM Sans', sans-serif",
@@ -481,8 +478,6 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
-    paddingTop: '20px',
-    paddingLeft: '20px',
   },
   navbar: {
     position: 'fixed',

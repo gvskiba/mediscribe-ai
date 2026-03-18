@@ -607,12 +607,9 @@ const styles = {
     border: '1px solid rgba(0,229,192,0.3)',
   },
   mainWrap: {
-    position: 'fixed',
-    top: '88px',
-    left: 0,
-    right: 0,
-    bottom: '60px',
+    flex: 1,
     display: 'flex',
+    overflow: 'hidden',
   },
   sidebar: {
     width: '220px',

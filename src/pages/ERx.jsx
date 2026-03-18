@@ -196,46 +196,30 @@ const CSS = `
 .erx-ai-send{background:var(--teal);color:var(--bg);border:none;border-radius:var(--r);padding:7px 12px;font-size:13px;cursor:pointer;font-weight:700;}
 `;
 
-/* ─── DRUG DATABASE ──────────────────────────────────────────────────── */
-const DRUGS = [
-  {name:'Amoxicillin',generic:'amoxicillin',class:'Antibiotic',emoji:'💊',strengths:['250mg','500mg','875mg'],forms:['Capsule','Tablet','Liquid'],route:'PO'},
-  {name:'Augmentin',generic:'amoxicillin-clavulanate',class:'Antibiotic',emoji:'💊',strengths:['500/125mg','875/125mg'],forms:['Tablet'],route:'PO'},
-  {name:'Azithromycin',generic:'azithromycin',class:'Antibiotic',emoji:'💊',strengths:['250mg','500mg'],forms:['Tablet','Liquid'],route:'PO'},
-  {name:'Ciprofloxacin',generic:'ciprofloxacin',class:'Antibiotic/FQ',emoji:'💊',strengths:['250mg','500mg','750mg'],forms:['Tablet'],route:'PO'},
-  {name:'Doxycycline',generic:'doxycycline hyclate',class:'Antibiotic/TC',emoji:'💊',strengths:['50mg','100mg'],forms:['Capsule','Tablet'],route:'PO'},
-  {name:'Metronidazole',generic:'metronidazole',class:'Antibiotic',emoji:'💊',strengths:['250mg','500mg'],forms:['Tablet'],route:'PO'},
-  {name:'Clindamycin',generic:'clindamycin',class:'Antibiotic',emoji:'💊',strengths:['150mg','300mg'],forms:['Capsule'],route:'PO'},
-  {name:'Levofloxacin',generic:'levofloxacin',class:'Antibiotic/FQ',emoji:'💊',strengths:['250mg','500mg','750mg'],forms:['Tablet'],route:'PO'},
-  {name:'Cephalexin',generic:'cephalexin',class:'Cephalosporin (1G)',emoji:'💊',strengths:['250mg','500mg'],forms:['Capsule'],route:'PO'},
-  {name:'Trimethoprim-Sulfamethoxazole',generic:'TMP-SMX',class:'Antibiotic',emoji:'🚫',strengths:['80/400mg','160/800mg'],forms:['Tablet'],route:'PO',allergy:'Sulfonamides'},
-  {name:'Acetaminophen',generic:'acetaminophen',class:'Analgesic/Antipyretic',emoji:'💊',strengths:['325mg','500mg','650mg'],forms:['Tablet','Capsule','Liquid'],route:'PO'},
-  {name:'Ibuprofen',generic:'ibuprofen',class:'NSAID',emoji:'🚫',strengths:['200mg','400mg','600mg','800mg'],forms:['Tablet'],route:'PO',allergy:'NSAIDs'},
-  {name:'Naproxen',generic:'naproxen',class:'NSAID',emoji:'🚫',strengths:['250mg','375mg','500mg'],forms:['Tablet'],route:'PO',allergy:'NSAIDs'},
-  {name:'Tramadol',generic:'tramadol HCl',class:'Opioid (Weak)',emoji:'🔒',strengths:['50mg','100mg'],forms:['Tablet'],route:'PO',schedule:4},
-  {name:'Oxycodone',generic:'oxycodone HCl',class:'Opioid',emoji:'🔒',strengths:['5mg','10mg','15mg','20mg'],forms:['Tablet'],route:'PO',schedule:2},
-  {name:'Oxycodone/APAP',generic:'oxycodone-acetaminophen',class:'Opioid Combo',emoji:'🔒',strengths:['5/325mg','7.5/325mg','10/325mg'],forms:['Tablet'],route:'PO',schedule:2},
-  {name:'Hydrocodone/APAP',generic:'hydrocodone-acetaminophen',class:'Opioid Combo',emoji:'🔒',strengths:['5/325mg','7.5/325mg','10/325mg'],forms:['Tablet'],route:'PO',schedule:2},
-  {name:'Gabapentin',generic:'gabapentin',class:'Neuropathic',emoji:'💊',strengths:['100mg','300mg','400mg','600mg'],forms:['Capsule','Tablet'],route:'PO'},
-  {name:'Ondansetron',generic:'ondansetron',class:'Antiemetic (5-HT3)',emoji:'💊',strengths:['4mg','8mg'],forms:['Tablet','ODT','Liquid'],route:'PO/SL'},
-  {name:'Metoclopramide',generic:'metoclopramide',class:'Antiemetic',emoji:'💊',strengths:['5mg','10mg'],forms:['Tablet'],route:'PO'},
-  {name:'Omeprazole',generic:'omeprazole',class:'PPI',emoji:'💊',strengths:['10mg','20mg','40mg'],forms:['Capsule'],route:'PO'},
-  {name:'Pantoprazole',generic:'pantoprazole',class:'PPI',emoji:'💊',strengths:['20mg','40mg'],forms:['Tablet'],route:'PO'},
-  {name:'Lisinopril',generic:'lisinopril',class:'ACE Inhibitor',emoji:'❤️',strengths:['2.5mg','5mg','10mg','20mg','40mg'],forms:['Tablet'],route:'PO'},
-  {name:'Metoprolol Succinate',generic:'metoprolol succinate',class:'Beta-Blocker',emoji:'❤️',strengths:['25mg','50mg','100mg'],forms:['Tablet (ER)'],route:'PO'},
-  {name:'Amlodipine',generic:'amlodipine',class:'Calcium Channel Blocker',emoji:'❤️',strengths:['2.5mg','5mg','10mg'],forms:['Tablet'],route:'PO'},
-  {name:'Atorvastatin',generic:'atorvastatin',class:'Statin',emoji:'❤️',strengths:['10mg','20mg','40mg','80mg'],forms:['Tablet'],route:'PO'},
-  {name:'Prednisone',generic:'prednisone',class:'Corticosteroid',emoji:'💊',strengths:['5mg','10mg','20mg','50mg'],forms:['Tablet'],route:'PO'},
-  {name:'Methylprednisolone Dosepak',generic:'methylprednisolone',class:'Corticosteroid',emoji:'💊',strengths:['4mg'],forms:['Tablet Pack'],route:'PO'},
-  {name:'Lorazepam',generic:'lorazepam',class:'Benzodiazepine',emoji:'🔒',strengths:['0.5mg','1mg','2mg'],forms:['Tablet'],route:'PO',schedule:4},
-  {name:'Alprazolam',generic:'alprazolam',class:'Benzodiazepine',emoji:'🔒',strengths:['0.25mg','0.5mg','1mg'],forms:['Tablet'],route:'PO',schedule:4},
-  {name:'Zolpidem',generic:'zolpidem tartrate',class:'Non-BZD Hypnotic',emoji:'🔒',strengths:['5mg','10mg'],forms:['Tablet'],route:'PO',schedule:4},
-  {name:'Albuterol Inhaler',generic:'albuterol sulfate',class:'SABA Bronchodilator',emoji:'🌬️',strengths:['90mcg/actuation'],forms:['Inhaler (HFA)'],route:'INH'},
-  {name:'Fluticasone Inhaler',generic:'fluticasone propionate',class:'ICS',emoji:'🌬️',strengths:['44mcg','110mcg','220mcg'],forms:['Inhaler (HFA)'],route:'INH'},
-  {name:'Diphenhydramine',generic:'diphenhydramine',class:'Antihistamine (1G)',emoji:'💊',strengths:['25mg','50mg'],forms:['Tablet','Capsule','Liquid'],route:'PO'},
-  {name:'Cetirizine',generic:'cetirizine',class:'Antihistamine (2G)',emoji:'💊',strengths:['5mg','10mg'],forms:['Tablet'],route:'PO'},
-  {name:'Fluconazole',generic:'fluconazole',class:'Antifungal',emoji:'💊',strengths:['100mg','150mg','200mg'],forms:['Tablet'],route:'PO'},
-  {name:'Epinephrine Auto-Injector',generic:'epinephrine',class:'Sympathomimetic',emoji:'💉',strengths:['0.15mg','0.3mg'],forms:['Auto-Injector'],route:'IM'},
-];
+/* ─── Helper: map DB record to ERx drug shape ────────────────────────── */
+function dbToErxDrug(rec) {
+  return {
+    id: rec.id,
+    name: rec.name,
+    generic: rec.brand ? `${rec.brand} (${rec.name})` : rec.name,
+    class: rec.drugClass,
+    emoji: rec.emoji || '💊',
+    strengths: rec.strengths || [],
+    forms: rec.forms || ['Tablet'],
+    route: rec.route || 'PO',
+    schedule: rec.schedule || null,
+    allergy: rec.allergy || null,
+    interactions: rec.interactions || [],
+    warnings: rec.warnings || [],
+    contraindications: rec.contraindications || [],
+    renal: rec.renal || [],
+    indications: rec.indications || '',
+    mechanism: rec.mechanism || '',
+    monitoring: rec.monitoring || '',
+    halfLife: rec.halfLife || '',
+    pregnancy: rec.pregnancy || '',
+  };
+}
 
 const PATIENT_ALLERGIES = ['Penicillin','Penicillins','Sulfonamides','Sulfa','NSAIDs','Ibuprofen','Naproxen'];
 const PATIENT_MEDS = ['Metformin 500mg BID','Lisinopril 10mg daily','Atorvastatin 40mg QHS','Amlodipine 5mg daily','Aspirin 81mg daily'];

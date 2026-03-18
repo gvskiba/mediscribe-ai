@@ -1285,7 +1285,7 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
           ].map(t => (
             <button key={t.id} className={`npi-btab${currentTab === t.id ? ' active' : ''}`} onClick={() => showTab(t.id)}>{t.label}</button>
           ))}
-          <button className="npi-btab" style={{color:'var(--teal)',borderLeft:'1px solid var(--border)',paddingLeft:10,marginLeft:4}} onClick={() => navigate('/ERPlanBuilder')}>🩺 ER Plan →</button>
+
         </div>
         <div className="npi-bnav-r2">
           <button className="npi-bnav-back" onClick={navBack}>← Back</button>

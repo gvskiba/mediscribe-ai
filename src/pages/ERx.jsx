@@ -335,7 +335,12 @@ export default function ERx() {
   })();
 
   const filteredDrugs = query.length >= 2
-    ? DRUGS.filter(d => d.name.toLowerCase().includes(query.toLowerCase()) || d.generic.toLowerCase().includes(query.toLowerCase()) || d.class.toLowerCase().includes(query.toLowerCase())).slice(0, 10)
+    ? DRUGS.filter(d => 
+        d.name.toLowerCase().includes(query.toLowerCase()) ||
+        d.generic.toLowerCase().includes(query.toLowerCase()) ||
+        d.class.toLowerCase().includes(query.toLowerCase()) ||
+        (d.indications && d.indications.toLowerCase().includes(query.toLowerCase()))
+      ).slice(0, 12)
     : [];
 
   const selectDrug = (drug) => {

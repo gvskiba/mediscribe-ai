@@ -168,11 +168,18 @@ const CSS = `
 .npi-layout{display:flex;flex:1;overflow:hidden}
 
 /* SIDEBAR */
-.npi-sb{width:210px;flex-shrink:0;background:#060e1c;border-right:1px solid var(--border);overflow-y:auto;padding:10px 0}
+.npi-sb{flex-shrink:0;background:#060e1c;border-right:1px solid var(--border);overflow-y:auto;padding:10px 0;transition:width .25s cubic-bezier(.4,0,.2,1);overflow:hidden}
+.npi-sb.open{width:210px}
+.npi-sb.collapsed{width:36px;overflow-y:hidden}
 .npi-sb::-webkit-scrollbar{width:3px}
 .npi-sb::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.npi-sb-toggle{display:flex;align-items:center;justify-content:center;padding:8px 0;cursor:pointer;color:var(--txt4);font-size:16px;transition:color .15s;flex-shrink:0}
+.npi-sb-toggle:hover{color:var(--teal)}
+.npi-sb.collapsed .npi-sb-toggle{justify-content:center}
+.npi-sb.collapsed .npi-sb-inner{display:none}
+.npi-sb-inner{min-width:210px}
 .npi-sb-head{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--txt4);padding:5px 12px 3px}
-.npi-sb-item{display:flex;align-items:center;gap:7px;padding:7px 12px;cursor:pointer;transition:background .15s;border-left:2px solid transparent;font-size:12px;color:var(--txt2)}
+.npi-sb-item{display:flex;align-items:center;gap:7px;padding:7px 12px;cursor:pointer;transition:background .15s;border-left:2px solid transparent;font-size:12px;color:var(--txt2);white-space:nowrap}
 .npi-sb-item:hover{background:var(--bg-card);color:var(--txt)}
 .npi-sb-item.active{background:#0a2040;border-left-color:var(--blue);color:var(--blue);font-weight:500}
 .npi-sb-badge{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;padding:1px 5px;border-radius:10px;background:var(--bg-up);color:var(--txt3)}

@@ -38,7 +38,7 @@ const CSS = `
 .erp-btn-primary:hover{filter:brightness(1.15)}
 
 /* VITALS BAR */
-.erp-vbar{height:36px;background:#060f1c;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:8px;overflow-x:auto;flex-shrink:0;position:relative;z-index:50}
+.erp-vbar{height:36px;background:#060f1c;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:8px;overflow-x:auto;flex-shrink:0}
 .erp-vbar::-webkit-scrollbar{display:none}
 .erp-vchip{display:flex;align-items:center;gap:4px;background:var(--bg-card);border:1px solid var(--border);border-radius:5px;padding:2px 8px;flex-shrink:0}
 .erp-vl{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;font-family:'JetBrains Mono',monospace}

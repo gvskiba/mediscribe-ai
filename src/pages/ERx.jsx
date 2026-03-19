@@ -385,14 +385,26 @@ export default function ERx() {
     return s.trim();
   })();
 
-  const filteredDrugs = query.length >= 2
-    ? DRUGS.filter(d => 
+  const filteredDrugs = useMemo(() => {
+    let result = DRUGS;
+    
+    // Filter by category if selected
+    if (selectedCategory) {
+      result = result.filter(d => (d.category || 'other') === selectedCategory);
+    }
+    
+    // Filter by search query
+    if (query.length >= 2) {
+      result = result.filter(d => 
         d.name.toLowerCase().includes(query.toLowerCase()) ||
         d.generic.toLowerCase().includes(query.toLowerCase()) ||
         d.class.toLowerCase().includes(query.toLowerCase()) ||
         (d.indications && d.indications.toLowerCase().includes(query.toLowerCase()))
-      ).slice(0, 12)
-    : [];
+      );
+    }
+    
+    return result.slice(0, 12);
+  }, [DRUGS, query, selectedCategory]);
 
   const selectDrug = (drug) => {
     setSelectedDrug(drug);

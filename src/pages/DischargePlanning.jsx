@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Notrya AI — Discharge Planning Center
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { createPageUrl } from "@/utils";
@@ -305,9 +305,8 @@ export default function DischargePlanning() {
   });
   const toastRef = useRef(null);
 
-  useEffect(() => { if (medications?.length) setLocalMeds(medications); }, [selectedNoteId]);
   useEffect(() => {
-    setLocalMeds([]);
+    setLocalMeds(medications?.length ? medications : []);
     setLocalFollowups([]);
     setSelectedEdu([]);
     setInstructions(EMPTY_INSTRUCTIONS);
@@ -330,7 +329,7 @@ export default function DischargePlanning() {
   const patientMRN        = patient?.mrn ?? patient?.id ?? "—";
   const patientGender     = patient?.gender ?? "—";
   const patientDOB        = patient?.dateOfBirth ?? null;
-  const patientRoom       = "—";
+
   const primaryDx         = encounter?.primaryDiagnosis ?? "—";
   const secondaryDx       = encounter?.secondaryDiagnoses ?? [];
   const allergies         = patient?.allergies ?? [];
@@ -411,7 +410,7 @@ Be concise, clinically accurate, and professional. Use standard medical abbrevia
     setAiGenerating(false);
   }
 
-  async function saveNewFollowup() {
+  function saveNewFollowup() {
     if (!newFollowup.type || !newFollowup.date) {
       showToast("Appointment type and date are required", G.red); return;
     }
@@ -422,7 +421,7 @@ Be concise, clinically accurate, and professional. Use standard medical abbrevia
     showToast("Follow-up appointment added ✓", G.purple);
   }
 
-  async function deleteFollowup(id) {
+  function deleteFollowup(id) {
     setLocalFollowups(p => p.filter(f => f.id !== id));
   }
 
@@ -658,9 +657,6 @@ Be concise, clinically accurate, and professional. Use standard medical abbrevia
   }
 
   function MedicationsSection() {
-    const activeMeds = localMeds.filter(m => (m.status ?? "continued") !== "discontinued");
-    const discMeds   = localMeds.filter(m => m.status === "discontinued");
-
     return (
       <div style={{ padding:24, display:"flex", flexDirection:"column", gap:16 }}>
         <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>

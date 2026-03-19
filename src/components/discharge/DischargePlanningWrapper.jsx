@@ -829,7 +829,7 @@ export default function DischargePlanningWrapper({ patientName='New Patient', pa
                   <span style={{fontSize:18}}>{f.icon}</span>
                   <div style={{display:'flex',flexDirection:'column',flex:1,gap:3}}>
                     <div style={{fontSize:12,fontWeight:600,color:'#e8f0fe'}}>{f.specialty}</div>
-                    <input className="dc3-row-inp" style={{fontSize:11}} defaultValue={f.note} placeholder="Timeframe / instructions…"/>
+                    <input className="dc3-row-inp" style={{fontSize:11}} value={f.note} onChange={e=>setFuList(p=>p.map(x=>x.id===f.id?{...x,note:e.target.value}:x))} placeholder="Timeframe / instructions…"/>
                   </div>
                   <span className={`dc3-chip ${f.urgency==='Urgent'?'dc3-chip-urg':'dc3-chip-rtn'}`}>{f.urgency.toUpperCase()}</span>
                   <button className="dc3-row-del" onClick={()=>setFuList(p=>p.filter(x=>x.id!==f.id))}>×</button>

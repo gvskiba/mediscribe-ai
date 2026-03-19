@@ -4,6 +4,7 @@ import ClinicalTabBar from "@/components/shared/ClinicalTabBar";
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import PDMPAlertPanel from '@/components/erx/PDMPAlertPanel';
+import MedicationCategoryFilter from '@/components/erx/MedicationCategoryFilter';
 
 /* ─── CSS ─────────────────────────────────────────────────────────────── */
 const CSS = `

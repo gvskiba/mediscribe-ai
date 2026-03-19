@@ -276,6 +276,7 @@ export default function DischargePlanning() {
   const [emProcCpt, setEmProcCpt] = useState("");
   const [dots, setDots] = useState({});
   const [dcStatus, setDcStatus] = useState("DRAFT");
+  const [aiOpen, setAiOpen] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
   const toastRef = useRef(null);

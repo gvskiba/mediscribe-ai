@@ -254,12 +254,18 @@ export default function ERx() {
   });
 
   // Load drugs from Medication entity
-  const { data: rawMeds = [], isLoading: drugsLoading } = useQuery({
+  const { data: rawMeds = [], isLoading: drugsLoading, refetch: refetchMeds } = useQuery({
     queryKey: ['medications-erx'],
-    queryFn: () => base44.entities.Medication.list(),
+    queryFn: async () => {
+      const meds = await base44.entities.Medication.list();
+      return meds || [];
+    },
     staleTime: 5 * 60 * 1000,
   });
-  const DRUGS = useMemo(() => rawMeds.map(r => dbToErxDrug(r.data ? r.data : r)), [rawMeds]);
+  const DRUGS = useMemo(() => {
+    const drugs = rawMeds.map(r => dbToErxDrug(r.data ? r.data : r));
+    return drugs;
+  }, [rawMeds]);
 
   const patientName = [patientData.firstName, patientData.lastName].filter(Boolean).join(', ') || 'Patient';
   const PATIENT_ALLERGIES = patientData.allergies || [];

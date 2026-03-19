@@ -48,6 +48,10 @@ const CSS = `
 .dc3-vital{display:flex;align-items:center;gap:3px;font-size:11px;white-space:nowrap}
 .dc3-vital .lbl{color:var(--txt4);font-size:8.5px;text-transform:uppercase;letter-spacing:.04em}
 .dc3-vital .val{font-family:'JetBrains Mono',monospace;color:var(--txt2);font-weight:600}
+.dc3-vital-inline{display:inline-flex;align-items:baseline;gap:3px;font-size:11px;white-space:nowrap;margin-left:8px}
+.dc3-vital-inline .lbl{color:var(--txt4);font-size:8.5px;text-transform:uppercase;letter-spacing:.04em}
+.dc3-vital-inline .val{font-family:'JetBrains Mono',monospace;color:var(--txt2);font-weight:600;font-size:12px}
+.dc3-vital-val-cc{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;color:var(--orange);margin-left:4px;white-space:nowrap}
 /* body */
 .dc3-body{display:flex;flex:1;overflow:hidden}
 /* sidebar */

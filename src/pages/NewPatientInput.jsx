@@ -1281,6 +1281,7 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
               <div className="npi-ai-dot"/>
               <div className="npi-ai-title">Notrya AI</div>
               <div className="npi-ai-model">GPT-4o</div>
+              <button onClick={() => setAiOpen(false)} style={{ marginLeft:8, background:'none', border:'none', color:'#4a6a8a', cursor:'pointer', fontSize:15, lineHeight:1, padding:'0 2px' }} title="Collapse">›</button>
             </div>
             <div className="npi-ai-qbtns">
               {[

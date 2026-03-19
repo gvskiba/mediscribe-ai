@@ -356,7 +356,10 @@ export default function ERx() {
     setInteractions([]);
     setTimeout(() => { setInteractions(getInteractions(drug)); setLoadingInt(false); }, 800);
     // AI auto-brief
-    aiQ(`I'm prescribing ${drug.name} (${drug.generic}, ${drug.class}) to a 62yo female with CrCl 44 mL/min, weight 68kg. Allergies: Penicillin (anaphylaxis), Sulfonamides, NSAIDs. Current meds: ${PATIENT_MEDS.join(', ')}. Briefly: 1) Any safety concerns? 2) Renal dose adjustment? 3) Key drug interactions? 4) Key counselling points.`);
+    const ageGender = patientData.age && patientData.sex ? `${patientData.age}yo ${patientData.sex.charAt(0)}` : 'patient';
+    const medsStr = PATIENT_MEDS.length > 0 ? PATIENT_MEDS.join(', ') : 'none listed';
+    const allergyStr = PATIENT_ALLERGIES.length > 0 ? PATIENT_ALLERGIES.join(', ') : 'none listed';
+    aiQ(`I'm prescribing ${drug.name} (${drug.generic}, ${drug.class}) to ${ageGender}${patientData.crCl ? ` with CrCl ${patientData.crCl} mL/min` : ''}${patientData.weight ? `, weight ${patientData.weight}kg` : ''}. Allergies: ${allergyStr}. Current meds: ${medsStr}. Briefly: 1) Any safety concerns? 2) Renal dose adjustment? 3) Key drug interactions? 4) Key counselling points.`);
   };
 
   const loadFav = (fav) => {
@@ -404,13 +407,18 @@ export default function ERx() {
     appendMsg('sys','🗑 Prescription cleared.');
   };
 
-  const buildCtx = () => `Patient: Martinez, Rosa E. | 62yo F | CrCl 44 mL/min | Wt 68kg
-Allergies: Penicillin (anaphylaxis), Sulfonamides, NSAIDs
-Current Meds: ${PATIENT_MEDS.join(' · ')}
+  const buildCtx = () => {
+    const ageGender = patientData.age && patientData.sex ? `${patientData.age}yo ${patientData.sex.charAt(0)}` : '—';
+    const crClStr = patientData.crCl ? `CrCl ${patientData.crCl} mL/min` : '—';
+    const wtStr = patientData.weight ? `Wt ${patientData.weight}kg` : '—';
+    return `Patient: ${patientName} | ${ageGender} | ${crClStr} | ${wtStr}
+Allergies: ${PATIENT_ALLERGIES.length > 0 ? PATIENT_ALLERGIES.join(', ') : 'None'}
+Current Meds: ${PATIENT_MEDS.length > 0 ? PATIENT_MEDS.join(' · ') : 'None'}
 Drug: ${selectedDrug ? selectedDrug.name : '(none)'} ${rxStrength} ${rxForm} ${rxRoute}
 SIG: ${sig}
 Qty: ${rxQty} ${rxQtyUnit} · Days: ${rxDays} · Refills: ${rxRefills}
 Diagnosis: ${rxDx || '—'}`;
+  };
 
   const appendMsg = (role, text) => setAiMessages(prev => [...prev, {role, text}]);
 
@@ -452,7 +460,7 @@ Diagnosis: ${rxDx || '—'}`;
         <span className="erx-badge">eRx</span>
         <div className="erx-nav-right">
           <button className="erx-btn-ghost" onClick={clearRx}>✕ Clear Rx</button>
-          <button className="erx-btn-ghost" onClick={() => selectedDrug && aiQ(`Perform a comprehensive safety check for ${selectedDrug.name} in this patient. Check: 1) Allergy conflicts 2) DDI with current meds 3) Renal dose adjustment for CrCl 44 mL/min 4) Contraindications.`)}>🔍 Safety Check</button>
+          <button className="erx-btn-ghost" onClick={() => selectedDrug && aiQ(`Perform a comprehensive safety check for ${selectedDrug.name} in this patient. Check: 1) Allergy conflicts 2) DDI with current meds${patientData.crCl ? ` 3) Renal dose adjustment for CrCl ${patientData.crCl} mL/min` : ''} 4) Contraindications.`)}>🔍 Safety Check</button>
           <button className="erx-btn-ghost" onClick={addToQueue}>⏸ Hold</button>
           <Link to="/NewPatientInput" className="erx-btn-ghost">← Patient Input</Link>
           <button className="erx-btn-primary" onClick={signRx}>✍ Sign & Send</button>
@@ -599,9 +607,9 @@ Diagnosis: ${rxDx || '—'}`;
 
             {showPDMP && (
               <PDMPAlertPanel 
-                patientName="Martinez, Rosa E."
-                patientDob="1962-04-22"
-                patientId="00847291"
+                patientName={patientName}
+                patientDob={patientData.dob || ''}
+                patientId={patientData.mrn || ''}
                 state="TX"
                 onClose={() => setShowPDMP(false)}
               />
@@ -690,7 +698,7 @@ Diagnosis: ${rxDx || '—'}`;
               </div>
               <div className="erx-field">
                 <label className="erx-lbl">Notes to Pharmacist</label>
-                <input className="erx-inp" placeholder="Dispense as written, counselling required…"/>
+                <input className="erx-inp" value={rxNotes} onChange={e => setRxNotes(e.target.value)} placeholder="Dispense as written, counselling required…"/>
               </div>
             </div>
 
@@ -746,7 +754,7 @@ Diagnosis: ${rxDx || '—'}`;
             <div className="erx-sec-hdr">
               <span style={{fontSize:17}}>⚡</span>
               <div><div className="erx-sec-title">Drug Interactions & Safety</div><div className="erx-sec-sub">Real-time interaction screening against current medication list</div></div>
-              <button className="erx-btn-ghost" style={{marginLeft:'auto',fontSize:11}} onClick={() => selectedDrug && aiQ(`Perform a comprehensive drug interaction check for ${selectedDrug.name} against: ${PATIENT_MEDS.join(', ')}. Classify each by severity.`)}>🔍 Full Check</button>
+              <button className="erx-btn-ghost" style={{marginLeft:'auto',fontSize:11}} onClick={() => selectedDrug && PATIENT_MEDS.length > 0 && aiQ(`Perform a comprehensive drug interaction check for ${selectedDrug.name} against: ${PATIENT_MEDS.join(', ')}. Classify each by severity.`)}>🔍 Full Check</button>
             </div>
             {loadingInt && <div className="erx-ai-loader"><div className="erx-ai-tdot"/><div className="erx-ai-tdot"/><div className="erx-ai-tdot"/><span style={{marginLeft:6,fontSize:11,color:'var(--txt3)'}}>Running interaction screen…</span></div>}
             {!loadingInt && interactions.length === 0 && <div style={{fontSize:12,color:'var(--txt3)',padding:'6px 0'}}>Select a drug above to run interaction screening.</div>}
@@ -777,7 +785,7 @@ Diagnosis: ${rxDx || '—'}`;
             <div className="erx-ai-qbtns">
               {[
                 ['⚡ DDI Check','Check this prescription for drug-drug interactions against current medications. Classify by severity: severe/moderate/mild.'],
-                ['⚖ Renal Dosing','What is the appropriate dosing for this drug given CrCl of 44 mL/min (moderate renal impairment, weight 68kg, age 62)?'],
+                ['⚖ Renal Dosing',`What is the appropriate dosing for this drug given${patientData.crCl ? ` CrCl of ${patientData.crCl} mL/min` : ' the patient renal function'}${patientData.weight ? `, weight ${patientData.weight}kg` : ''}${patientData.age ? `, age ${patientData.age}` : ''}?`],
                 ['🔄 Alternatives','Suggest safe alternatives to the current prescription given the patient allergies and current medications.'],
                 ['📋 Counselling','What patient counselling points should I communicate for this medication?'],
                 ['💳 Formulary','Is prior authorization likely to be required? What is the typical formulary status?'],

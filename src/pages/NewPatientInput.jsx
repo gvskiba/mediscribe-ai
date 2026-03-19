@@ -940,7 +940,7 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
           <div className="npi-sb-item" style={{background:'rgba(155,109,255,.06)',border:'1px solid rgba(155,109,255,.25)',borderRadius:7,color:'#9b6dff',fontWeight:600,marginTop:4}} onClick={() => navigate('/EDProcedureNotes')}>
             <span>🩹</span><span style={{flex:1}}>Procedures</span><span style={{fontSize:9,color:'#9b6dff',opacity:.7}}>→</span>
           </div>
-          </div>{/* /npi-sb-inner */}
+          </div>
         </aside>
 
         {/* MAIN */}

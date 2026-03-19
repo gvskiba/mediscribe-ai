@@ -453,6 +453,7 @@ export default function NewPatientInput() {
   const [aiLoading, setAiLoading] = useState(false);
   const [convoHistory, setConvoHistory] = useState([]);
   const [aiOpen, setAiOpen] = useState(true);
+  const [sbOpen, setSbOpen] = useState(true);
   const chatRef = useRef(null);
 
   useEffect(() => {

@@ -312,7 +312,8 @@ export default function DischargePlanning() {
     setSelectedEdu([]);
     setInstructions(EMPTY_INSTRUCTIONS);
     setSummaryText(selectedNote?.discharge_summary || "");
-    setCompletionChecks({ summary:false, medications:false, followup:false, education:false, instructions:false });
+    setSelectedDisposition(null);
+    setCompletionChecks({ disposition:false, summary:false, medications:false, followup:false, education:false, instructions:false });
   }, [selectedNoteId]);
 
   const showToast = useCallback((msg, color = G.teal) => {

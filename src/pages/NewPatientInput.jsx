@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import MDMPanel from "@/components/mdm/MDMPanel";
 import DischargePlanningWrapper from "@/components/discharge/DischargePlanningWrapper.jsx";
 import ClinicalTabBar from "@/components/shared/ClinicalTabBar";
-import "@/components/npi/npi.css";
+import "../components/npi/npi.css";
 
 import DemoTab from "@/components/npi/DemoTab";
 import CCTab from "@/components/npi/CCTab";

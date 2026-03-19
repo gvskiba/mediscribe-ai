@@ -518,7 +518,7 @@ export default function DischargePlanningWrapper({ patientName='New Patient', pa
           <button className="dc3-btn dc3-btn-ghost" onClick={()=>sendAI('Generate a complete patient-friendly discharge letter.')}>📄 Generate Patient Letter</button>
           <button className="dc3-btn dc3-btn-em" onClick={()=>sendAI('Suggest the optimal E&M level and document the MDM reasoning using 2021 AMA guidelines.')}>🧮 Suggest E&M</button>
           <button className="dc3-btn dc3-btn-primary" onClick={finalizeDischarge} disabled={saving}>
-            {saving?<><span className="dc3-spin"/> Signing…</>:'✍ Finalize & Sign'}
+            {saving?<><span className="dc3-spin"/> Signing…</>:'✓ Finalize & Sign'}
           </button>
         </div>
       </div>

@@ -298,6 +298,9 @@ export default function ERx() {
   const [showCS, setShowCS] = useState(false);
   const [showConflict, setShowConflict] = useState(false);
   const [showPDMP, setShowPDMP] = useState(false);
+  const [pharmSearchType, setPharmSearchType] = useState(''); // 'city', 'state', 'zip', 'near'
+  const [pharmSearchValue, setPharmSearchValue] = useState('');
+  const [userLocation, setUserLocation] = useState(null);
 
   const aiMsgsRef = useRef(null);
   const aiInputRef = useRef(null);
@@ -309,6 +312,20 @@ export default function ERx() {
     if (!document.getElementById('erx-styles')) document.head.appendChild(el);
     return () => document.getElementById('erx-styles')?.remove();
   }, []);
+
+  const handleNearMe = () => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserLocation({lat: pos.coords.latitude, lng: pos.coords.longitude});
+          setPharmSearchType('near');
+          setPharmSearchValue('');
+          appendMsg('sys', '📍 Location detected. Showing nearby pharmacies.');
+        },
+        () => appendMsg('sys', '⚠ Unable to access location. Please enable location services.')
+      );
+    }
+  };
 
   useEffect(() => {
     if (aiMsgsRef.current) aiMsgsRef.current.scrollTop = aiMsgsRef.current.scrollHeight;
@@ -720,6 +737,31 @@ Diagnosis: ${rxDx || '—'}`;
             {/* Pharmacy */}
             <div className="erx-div"/>
             <div style={{fontSize:10,color:'var(--txt3)',textTransform:'uppercase',letterSpacing:'.05em',marginBottom:8}}>🏪 Pharmacy Selection</div>
+
+            {/* Pharmacy Search */}
+            <div style={{display:'flex',gap:8,marginBottom:12,flexWrap:'wrap',alignItems:'center'}}>
+              <input 
+                type="text" 
+                className="erx-inp" 
+                placeholder="City, State, or Zip code" 
+                value={pharmSearchValue}
+                onChange={e => { setPharmSearchValue(e.target.value); setPharmSearchType(e.target.value ? 'search' : ''); }}
+                style={{flex:1,minWidth:'150px'}}
+              />
+              <button 
+                className="erx-btn-ghost" 
+                onClick={handleNearMe}
+                style={{whiteSpace:'nowrap'}}
+              >📍 Near Me</button>
+              {(pharmSearchType || pharmSearchValue) && (
+                <button 
+                  className="erx-btn-ghost" 
+                  onClick={() => { setPharmSearchType(''); setPharmSearchValue(''); setUserLocation(null); }}
+                  style={{whiteSpace:'nowrap'}}
+                >✕ Clear</button>
+              )}
+            </div>
+
             <div className="erx-pharm-grid erx-mb-12">
               {PHARMACIES.map(p => (
                 <div key={p.name} className={`erx-pharm-card${selectedPharm === p.name ? ' sel' : ''}`} onClick={() => setSelectedPharm(p.name)}>

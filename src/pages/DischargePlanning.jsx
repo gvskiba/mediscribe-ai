@@ -776,8 +776,17 @@ export default function DischargePlanning() {
 
         </main>
 
+        {/* AI PANEL TOGGLE */}
+        {!aiOpen && (
+          <div style={{ width:36, flexShrink:0, background:"#060e1c", borderLeft:"1px solid #1a3555", display:"flex", flexDirection:"column", alignItems:"center", paddingTop:14, gap:10, cursor:"pointer" }} onClick={() => setAiOpen(true)}>
+            <div style={{ writingMode:"vertical-rl", transform:"rotate(180deg)", fontSize:11, fontWeight:600, color:"#00e5c0", letterSpacing:".06em", userSelect:"none" }}>Notrya AI</div>
+            <div style={{ width:7, height:7, borderRadius:"50%", background:"#00e5c0", animation:"dc-pulse 2s ease-in-out infinite" }}/>
+            <div style={{ fontSize:16, color:"#4a6a8a" }}>‹</div>
+          </div>
+        )}
+
         {/* AI PANEL */}
-        <aside className="dc-ai">
+        <aside className="dc-ai" style={{ display: aiOpen ? "flex" : "none" }}>
           <div className="dc-ai-hdr">
             <div className="dc-ai-hdr-top">
               <div className="dc-ai-dot"/>

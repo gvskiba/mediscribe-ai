@@ -241,7 +241,7 @@ export default function NewPatientInput() {
           <button className="npi-nav-btn new" onClick={resetForm}>＋ New Patient</button>
           <button className="npi-nav-btn kb" onClick={() => window.open('/KnowledgeBaseV2', '_blank')}>📚 Knowledge Base</button>
           <button className="npi-save-btn" onClick={savePatient}>💾 Save Patient</button>
-          <div className="npi-avatar">DR</div>
+          <div className="npi-avatar">{currentTab.toUpperCase()}</div>
         </div>
       </nav>
 

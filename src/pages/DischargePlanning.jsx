@@ -1071,12 +1071,7 @@ Be concise, clinically accurate, and professional. Use standard medical abbrevia
               <div style={{ fontSize:10, color:G.dim }}>{completionPct === totalSections ? "Ready to finalize" : "In progress"}</div>
             </div>
           </div>
-          <button className="act-btn" style={{ ...btn(`linear-gradient(135deg,${G.purple},#7c5cd6)`), transition:"all .15s" }} onClick={savePlan} disabled={saving}>
-            {saving ? "Saving…" : "💾 Save Plan"}
-          </button>
-          <button className="act-btn" style={{ ...btn(`linear-gradient(135deg,${G.teal},#00a896)`), transition:"all .15s" }} onClick={printPDF}>
-            🖨 Generate PDF
-          </button>
+
         </div>
       </div>
 
@@ -1202,18 +1197,12 @@ Be concise, clinically accurate, and professional. Use standard medical abbrevia
             )}
 
             <div style={panelHead}>🖨 Export</div>
-            <div style={{ padding:10, display:"flex", flexDirection:"column", gap:6 }}>
-              {[
-                { icon:"🖨", label:"Generate PDF Packet",       bg:`linear-gradient(135deg,${G.teal},#00a896)`,   action:printPDF },
-                { icon:"💾", label:"Save to Encounter",         bg:`linear-gradient(135deg,${G.purple},#7c5cd6)`, action:savePlan },
-                { icon:"📋", label:"Copy Summary to Clipboard", bg:"transparent", fg:G.text, br:G.border,         action:() => { navigator.clipboard?.writeText(summaryText || "").then(()=>showToast("Summary copied ✓",G.teal)); } },
-              ].map(a => (
-                <button key={a.label} className="act-btn"
-                  style={{ width:"100%", padding:"9px 12px", borderRadius:8, fontFamily:"inherit", fontSize:12, fontWeight:700, cursor:"pointer", border:`1px solid ${a.br || "transparent"}`, background:a.bg, color:a.fg || "#fff", display:"flex", alignItems:"center", gap:8, transition:"all .15s" }}
-                  onClick={a.action}>
-                  <span style={{ fontSize:15 }}>{a.icon}</span>{a.label}
-                </button>
-              ))}
+            <div style={{ padding:10 }}>
+              <button className="act-btn"
+                style={{ width:"100%", padding:"9px 12px", borderRadius:8, fontFamily:"inherit", fontSize:12, fontWeight:700, cursor:"pointer", border:`1px solid ${G.border}`, background:"transparent", color:G.text, display:"flex", alignItems:"center", gap:8, transition:"all .15s" }}
+                onClick={() => navigator.clipboard?.writeText(summaryText || "").then(()=>showToast("Summary copied ✓",G.teal))}>
+                <span style={{ fontSize:15 }}>📋</span>Copy Summary to Clipboard
+              </button>
             </div>
           </div>
         </div>

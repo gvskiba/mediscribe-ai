@@ -509,7 +509,7 @@ export default function DischargePlanningWrapper({ patientName='New Patient', pa
                   <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:'#e8f0fe'}}>{patientName}</div>
                   <div style={{fontSize:11,color:'#4a6a8a',marginTop:3}}>{patientId?`MRN ${patientId}`:''}</div>
                   <div style={{marginTop:8,display:'flex',gap:6,flexWrap:'wrap'}}>
-                    {selDisp && <span className="dc3-bdg dc3-bdg-teal" style={{fontSize:9.5}}>{selDisp}</span>}
+                    {selDispObj && <span className="dc3-bdg dc3-bdg-teal" style={{fontSize:9.5}}>{selDispObj.label}</span>}
                   </div>
                 </div>
                 <div className="dc3-sb-toggle" onClick={()=>setSbOpen(false)}>‹</div>

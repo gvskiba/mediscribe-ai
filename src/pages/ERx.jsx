@@ -557,6 +557,13 @@ Diagnosis: ${rxDx || '—'}`;
 
         {/* SIDEBAR */}
         <aside className="erx-sb">
+          {/* Category Filter */}
+          <MedicationCategoryFilter 
+            drugs={DRUGS}
+            onFilterChange={setSelectedCategory}
+            selectedCategory={selectedCategory}
+          />
+
           <div className="erx-sb-sec">
             <div className="erx-sb-sec-title">⚠ Allergies <span className="erx-sb-cnt">{PATIENT_ALLERGIES.length}</span></div>
             {PATIENT_ALLERGIES.length > 0 ? PATIENT_ALLERGIES.map(a => (

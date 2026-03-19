@@ -561,7 +561,7 @@ export default function DischargePlanningWrapper({ patientName='New Patient', pa
                 <button style={{marginLeft:'auto',background:'none',border:'none',color:'#4a6a8a',cursor:'pointer',fontSize:16}} onClick={()=>setSelDisp(null)}>✕</button>
               </div>
             )}
-            {selDisp&&['floor','telem','icu','obs'].some(x=>selDisp.includes(x)||selDisp==='Observation') && (
+            {selDisp&&['floor','telem','icu','obs'].includes(selDisp) && (
               <div className="dc3-grid3" style={{marginTop:14}}>
                 <div className="dc3-field"><label className="dc3-flbl">Admitting Service</label><input className="dc3-inp" value={admitService} onChange={e=>setAdmitService(e.target.value)} placeholder="e.g. Cardiology…"/></div>
                 <div className="dc3-field"><label className="dc3-flbl">Admitting Physician</label><input className="dc3-inp" value={admitMD} onChange={e=>setAdmitMD(e.target.value)} placeholder="Dr. Name"/></div>

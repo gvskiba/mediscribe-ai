@@ -525,7 +525,7 @@ export default function DischargePlanningWrapper({ patientName='New Patient', pa
             <div className="dc3-sb-divider"/>
             <div className="dc3-sb-lbl">Visit Summary</div>
             <div className="dc3-sb-card" style={{marginBottom:0}}>
-              {[['Disposition',selDisp||'—','#00e5c0'],['E&M Level',selEM||'—','#3b9eff'],['Diagnoses',String(dxList.length),'#8aaccc'],['Follow-Ups',String(fuList.length),'#f5c842'],['DC Meds',String(dcRxList.length),'#9b6dff'],['Status',dcStatus,'#00e5c0']].map(([l,v,c])=>(
+              {[['Disposition',selDispObj?.label||'—','#00e5c0'],['E&M Level',selEM||'—','#3b9eff'],['Diagnoses',String(dxList.length),'#8aaccc'],['Follow-Ups',String(fuList.length),'#f5c842'],['DC Meds',String(dcRxList.length),'#9b6dff'],['Status',dcStatus,'#00e5c0']].map(([l,v,c])=>(
                 <div key={l} style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
                   <span style={{fontSize:11,color:'#4a6a8a'}}>{l}</span>
                   <span style={{fontSize:11,fontFamily:"'JetBrains Mono',monospace",color:c}}>{v}</span>

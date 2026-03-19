@@ -892,7 +892,11 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
       <div className="npi-layout">
 
         {/* SIDEBAR */}
-        <aside className="npi-sb">
+        <aside className={`npi-sb ${sbOpen ? 'open' : 'collapsed'}`}>
+          <div className="npi-sb-toggle" onClick={() => setSbOpen(p => !p)} title={sbOpen ? 'Collapse sidebar' : 'Expand sidebar'}>
+            {sbOpen ? '◀' : '▶'}
+          </div>
+          <div className="npi-sb-inner">
           <div className="npi-pt-summary">
             <div className="npi-pts-name">{patientName}</div>
             <div className="npi-pts-meta">Age {demo.age || '—'} · {demo.sex || '—'}</div>

@@ -748,8 +748,8 @@ export default function DischargePlanningWrapper({ patientName='New Patient', pa
               {dxList.map(dx=>(
                 <div key={dx.id} className="dc3-row">
                   <span style={{fontSize:11,fontWeight:700,color:dx.primary?'#00e5c0':'#4a6a8a',minWidth:28,fontFamily:'monospace'}}>{dx.order}</span>
-                  <input className="dc3-row-inp" style={{maxWidth:80,fontFamily:'monospace',fontSize:11,color:'#3b9eff'}} defaultValue={dx.code} placeholder="ICD-10"/>
-                  <input className="dc3-row-inp" style={{flex:1}} defaultValue={dx.name} placeholder="Diagnosis name…"/>
+                  <input className="dc3-row-inp" style={{maxWidth:80,fontFamily:'monospace',fontSize:11,color:'#3b9eff'}} value={dx.code} onChange={e=>setDxList(p=>p.map(d=>d.id===dx.id?{...d,code:e.target.value}:d))} placeholder="ICD-10"/>
+                  <input className="dc3-row-inp" style={{flex:1}} value={dx.name} onChange={e=>setDxList(p=>p.map(d=>d.id===dx.id?{...d,name:e.target.value}:d))} placeholder="Diagnosis name…"/>
                   <span className={`dc3-chip ${dx.primary?'dc3-chip-urg':'dc3-chip-rtn'}`}>{dx.primary?'PRIMARY':'SECONDARY'}</span>
                   {!dx.primary && <button className="dc3-row-del" onClick={()=>setDxList(p=>p.filter(d=>d.id!==dx.id))}>×</button>}
                 </div>

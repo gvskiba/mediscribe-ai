@@ -20,6 +20,7 @@ const CSS = `
 .dc3-ai-chip{display:flex;align-items:center;gap:5px;background:rgba(0,229,192,.08);border:1px solid rgba(0,229,192,.3);border-radius:var(--r);padding:5px 11px;font-size:11px;font-weight:600;color:var(--teal)}
 .dc3-ai-chip-dot{width:7px;height:7px;border-radius:50%;background:var(--teal);animation:dc3-pulse 2s ease-in-out infinite}
 .dc3-newpt-btn{background:var(--teal);color:#050f1e;border:none;border-radius:var(--r);padding:6px 13px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px}
+.dc3-topnav-avatar{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#1a5fbf,#2563eb);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;cursor:pointer;letter-spacing:-.5px}
 
 /* SUB-NAVBAR */
 .dc3-subnav{height:42px;background:#0b1e36;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0}

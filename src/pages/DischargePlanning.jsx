@@ -776,12 +776,17 @@ export default function DischargePlanning() {
 
         </main>
 
-        {/* AI PANEL TOGGLE */}
+        {/* AI PANEL TOGGLE — floating bubble when collapsed */}
         {!aiOpen && (
-          <div style={{ width:36, flexShrink:0, background:"#060e1c", borderLeft:"1px solid #1a3555", display:"flex", flexDirection:"column", alignItems:"center", paddingTop:14, gap:10, cursor:"pointer" }} onClick={() => setAiOpen(true)}>
-            <div style={{ writingMode:"vertical-rl", transform:"rotate(180deg)", fontSize:11, fontWeight:600, color:"#00e5c0", letterSpacing:".06em", userSelect:"none" }}>Notrya AI</div>
-            <div style={{ width:7, height:7, borderRadius:"50%", background:"#00e5c0", animation:"dc-pulse 2s ease-in-out infinite" }}/>
-            <div style={{ fontSize:16, color:"#4a6a8a" }}>‹</div>
+          <div style={{ position:"fixed", bottom:28, right:24, zIndex:200 }}>
+            <button
+              onClick={() => setAiOpen(true)}
+              style={{ width:52, height:52, borderRadius:"50%", background:"linear-gradient(135deg,#3b5bdb,#4c6ef5)", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 4px 20px rgba(59,91,219,.5)", fontSize:22 }}
+              title="Open Notrya AI"
+            >
+              💬
+            </button>
+            <div style={{ position:"absolute", top:0, right:0, width:12, height:12, borderRadius:"50%", background:"#00e5c0", border:"2px solid #050f1e", animation:"dc-pulse 2s ease-in-out infinite" }}/>
           </div>
         )}
 

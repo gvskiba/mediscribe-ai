@@ -709,6 +709,8 @@ ${noteText}`;
       </div>
 
       <div className={`copy-toast${toast ? ' show' : ''}`}>Copied to clipboard!</div>
+      
+      <ClinicalTabBar currentPage="AutoCoder" />
     </div>
   );
 }

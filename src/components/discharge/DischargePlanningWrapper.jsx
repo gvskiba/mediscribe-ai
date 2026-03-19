@@ -33,6 +33,8 @@ const CSS = `
 .dc3-btn-ghost:hover{border-color:var(--border-hi)!important;color:var(--txt)}
 .dc3-btn-em{background:rgba(245,200,66,.15);border:1px solid rgba(245,200,66,.45)!important;color:var(--gold)}
 .dc3-btn-em:hover{background:rgba(245,200,66,.25)}
+.dc3-btn-gold{background:rgba(245,200,66,.13);border:1px solid rgba(245,200,66,.35)!important;color:var(--gold)}
+.dc3-btn-gold:hover{background:rgba(245,200,66,.22)}
 .dc3-btn-primary{background:var(--teal);color:var(--bg)}
 .dc3-btn-primary:hover{filter:brightness(1.1)}
 

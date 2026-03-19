@@ -66,6 +66,22 @@ export default function NewPatientInput() {
   const [sbOpen, setSbOpen] = useState(true);
   const chatRef = useRef(null);
 
+  // Save patient data to localStorage for ERx integration
+  useEffect(() => {
+    localStorage.setItem('npiPatientData', JSON.stringify({
+      firstName: demo.firstName,
+      lastName: demo.lastName,
+      age: demo.age,
+      dob: demo.dob,
+      sex: demo.sex,
+      mrn: demo.mrn,
+      weight: demo.weight,
+      crCl: demo.crCl,
+      medications: medications,
+      allergies: allergies
+    }));
+  }, [demo, medications, allergies]);
+
   useEffect(() => {
     if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
   }, [aiMessages, aiLoading]);

@@ -14,6 +14,7 @@ import MedsTab from "@/components/npi/MedsTab";
 import ROSTab from "@/components/npi/ROSTab";
 import PETab from "@/components/npi/PETab";
 import SummaryTab from "@/components/npi/SummaryTab";
+import AutoCoder from "@/pages/AutoCoder";
 
 import { VITAL_DEFS, ROS_SYSTEMS, PE_SYSTEMS, PMH_SYSTEMS, TABS } from "@/components/npi/npiData";
 
@@ -27,6 +28,7 @@ const SIDEBAR_ITEMS = [
   { id: 'pe', icon: '🩺', label: 'Physical Exam' },
   { id: 'mdm', icon: '⚖️', label: 'MDM' },
   { id: 'discharge', icon: '🏥', label: 'Discharge' },
+  { id: 'autocoder', icon: '💻', label: 'AutoCoder' },
 ];
 
 export default function NewPatientInput() {
@@ -352,6 +354,12 @@ export default function NewPatientInput() {
           {currentTab === 'discharge' && (
             <div style={{ display: 'flex', flex: 1, minHeight: 0, margin: '-16px -18px -100px', height: 'calc(100vh - 160px)' }}>
               <DischargePlanningWrapper patientName={patientName} patientDob={demo.dob} patientId={demo.mrn} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} diagnoses={[]} medications={medications} allergies={allergies} />
+            </div>
+          )}
+
+          {currentTab === 'autocoder' && (
+            <div style={{ display: 'flex', flex: 1, minHeight: 0, margin: '-16px -18px -100px', height: 'calc(100vh - 160px)' }}>
+              <AutoCoder />
             </div>
           )}
         </main>

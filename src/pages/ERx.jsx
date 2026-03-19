@@ -222,30 +222,11 @@ function dbToErxDrug(rec) {
   };
 }
 
-const PATIENT_ALLERGIES = ['Penicillin','Penicillins','Sulfonamides','Sulfa','NSAIDs','Ibuprofen','Naproxen'];
-const PATIENT_MEDS = ['Metformin 500mg BID','Lisinopril 10mg daily','Atorvastatin 40mg QHS','Amlodipine 5mg daily','Aspirin 81mg daily'];
 const PHARMACIES = [
   {name:'CVS Pharmacy #3847',addr:'1420 Oak Ave · 0.4 mi · Open 24hr',chain:'CVS',chainClass:'chain-cvs'},
   {name:'Walgreens #0291',addr:'832 Main St · 0.9 mi · Open until 10pm',chain:'WAG',chainClass:'chain-wag'},
   {name:'Regional Medical Center',addr:'On-site pharmacy · Open 24hr',chain:'HOSP',chainClass:'chain-hosp'},
   {name:'Walmart Pharmacy #4421',addr:'2200 Commerce Blvd · 1.8 mi · Open until 9pm',chain:'WM',chainClass:'chain-wm'},
-];
-const FAVS = [
-  {name:'Amoxicillin',sig:'500mg PO TID × 7d',diag:'Infection',rx:{strength:'500mg',form:'Capsule',route:'PO',dose:'1 capsule',freq:'three times daily',dur:'7 days',qty:'21',days:'7',refills:'0'}},
-  {name:'Azithromycin Z-Pak',drugName:'Azithromycin',sig:'250mg PO × 5d',diag:'URTI / CAP',rx:{strength:'250mg',form:'Tablet',route:'PO',dose:'2 tablets day 1, then 1 daily',freq:'as directed',dur:'5 days',qty:'6',days:'5',refills:'0'}},
-  {name:'Prednisone',sig:'20mg PO taper',diag:'Inflammation',rx:{strength:'20mg',form:'Tablet',route:'PO',dose:'1 tablet',freq:'as directed',dur:'7 days',qty:'21',days:'7',refills:'0'}},
-  {name:'Ondansetron ODT',drugName:'Ondansetron',sig:'4mg q6h PRN',diag:'N/V',rx:{strength:'4mg',form:'ODT',route:'PO/SL',dose:'1 ODT',freq:'every 6 hours',dur:'3 days',qual:'for nausea',qty:'12',days:'3',refills:'0'}},
-  {name:'Ciprofloxacin',sig:'500mg PO BID × 7d',diag:'UTI / Infection',rx:{strength:'500mg',form:'Tablet',route:'PO',dose:'1 tablet',freq:'twice daily',dur:'7 days',qty:'14',days:'7',refills:'0'}},
-  {name:'Tramadol',sig:'50mg PO q4-6h PRN',diag:'Pain · CIV',rx:{strength:'50mg',form:'Tablet',route:'PO',dose:'1-2 tablets',freq:'every 4-6 hours',qual:'for pain',qty:'30',days:'5',refills:'0'}},
-  {name:'Metronidazole',sig:'500mg PO TID × 7d',diag:'Anaerobic / BV',rx:{strength:'500mg',form:'Tablet',route:'PO',dose:'1 tablet',freq:'three times daily',dur:'7 days',qual:'with food',qty:'21',days:'7',refills:'0'}},
-  {name:'Oxycodone/APAP',sig:'5/325mg PO q4-6h',diag:'Acute Pain · CII',rx:{strength:'5/325mg',form:'Tablet',route:'PO',dose:'1 tablet',freq:'every 4-6 hours',qual:'for pain',qty:'20',days:'5',refills:'0'}},
-];
-const HIST = [
-  {drug:'Ciprofloxacin 500mg',detail:'PO BID × 7d · #14',date:'Mar 01, 2026',status:'SENT',cls:'hb-sent'},
-  {drug:'Ondansetron 4mg ODT',detail:'q6h PRN · #12 · 0 RF',date:'Feb 22, 2026',status:'SENT',cls:'hb-sent'},
-  {drug:'Tramadol 50mg',detail:'q4-6h PRN · #20 · 0 RF · CIV',date:'Feb 14, 2026',status:'PRINTED',cls:'hb-printed'},
-  {drug:'Metronidazole 500mg',detail:'PO TID × 7d · #21 · 0 RF',date:'Jan 30, 2026',status:'SENT',cls:'hb-sent'},
-  {drug:'Prednisone 20mg taper',detail:'Per taper · #21 · 0 RF',date:'Jan 18, 2026',status:'SENT',cls:'hb-sent'},
 ];
 
 function getInteractions(drug) {
@@ -266,6 +247,12 @@ function getInteractions(drug) {
 export default function ERx() {
   const navigate = useNavigate();
 
+  // Load patient data from NewPatientInput via localStorage
+  const [patientData, setPatientData] = useState(() => {
+    const stored = localStorage.getItem('npiPatientData');
+    return stored ? JSON.parse(stored) : { firstName: '', lastName: '', age: '', dob: '', sex: '', mrn: '', weight: '', crCl: '', medications: [], allergies: [] };
+  });
+
   // Load drugs from Medication entity
   const { data: rawMeds = [], isLoading: drugsLoading } = useQuery({
     queryKey: ['medications-erx'],
@@ -273,6 +260,10 @@ export default function ERx() {
     staleTime: 5 * 60 * 1000,
   });
   const DRUGS = useMemo(() => rawMeds.map(r => dbToErxDrug(r.data ? r.data : r)), [rawMeds]);
+
+  const patientName = [patientData.firstName, patientData.lastName].filter(Boolean).join(', ') || 'Patient';
+  const PATIENT_ALLERGIES = patientData.allergies || [];
+  const PATIENT_MEDS = patientData.medications || [];
 
   const [query, setQuery] = useState('');
   const [showDrop, setShowDrop] = useState(false);
@@ -470,15 +461,12 @@ Diagnosis: ${rxDx || '—'}`;
 
       {/* PATIENT BAR */}
       <div className="erx-vbar">
-        <span className="erx-vb-name">Martinez, Rosa E.</span>
-        <span className="erx-vb-meta">62 yo F · DOB 04/22/1962 · MRN 00847291</span>
+        <span className="erx-vb-name">{patientName}</span>
+        <span className="erx-vb-meta">{patientData.age ? `${patientData.age} yo` : '—'} {patientData.sex ? patientData.sex.charAt(0).toUpperCase() : ''} · DOB {patientData.dob || '—'} · MRN {patientData.mrn || '—'}</span>
         <div className="erx-vb-div"/>
-        <div className="erx-vb-chip"><span className="erx-vb-lbl">Wt</span><span className="erx-vb-val">68 kg</span></div>
-        <div className="erx-vb-chip"><span className="erx-vb-lbl">CrCl</span><span className="erx-vb-val" style={{color:'var(--gold)'}}>44 mL/min</span></div>
-        <div className="erx-vb-div"/>
-        <div className="erx-allergy-btn">⚠ 3 Allergies</div>
-        <div className="erx-vb-div"/>
-        <div className="erx-vb-chip"><span className="erx-vb-lbl">DEA#</span><span className="erx-vb-val">GS3847201</span></div>
+        {patientData.weight && <><div className="erx-vb-chip"><span className="erx-vb-lbl">Wt</span><span className="erx-vb-val">{patientData.weight} kg</span></div></> }
+        {patientData.crCl && <><div className="erx-vb-chip"><span className="erx-vb-lbl">CrCl</span><span className="erx-vb-val" style={{color:'var(--gold)'}}>{patientData.crCl} mL/min</span></div></> }
+        {PATIENT_ALLERGIES.length > 0 && <><div className="erx-vb-div"/><div className="erx-allergy-btn">⚠ {PATIENT_ALLERGIES.length} Allergy{PATIENT_ALLERGIES.length !== 1 ? 'ies' : ''}</div></> }
         <div style={{marginLeft:'auto'}}>
           <span className={`erx-status-badge ${statusBadge === 'sent' ? 'erx-sb-sent' : 'erx-sb-draft'}`}>
             {statusBadge === 'sent' ? 'SENT' : 'RX DRAFT'}
@@ -492,26 +480,21 @@ Diagnosis: ${rxDx || '—'}`;
         {/* SIDEBAR */}
         <aside className="erx-sb">
           <div className="erx-sb-sec">
-            <div className="erx-sb-sec-title">⚠ Allergies <span className="erx-sb-cnt">3</span></div>
-            {[
-              {name:'Penicillin',rx:'Anaphylaxis · Hives',sev:'HIGH',cls:'erx-sev-high'},
-              {name:'Sulfonamides',rx:'Rash · GI upset',sev:'MOD',cls:'erx-sev-mod'},
-              {name:'NSAIDs',rx:'GI bleed history',sev:'MOD',cls:'erx-sev-mod'},
-            ].map(a => (
-              <div key={a.name} className="erx-allergy-pill" onClick={() => aiQ(`Check if the current prescription conflicts with documented allergy to ${a.name}. Suggest safe alternatives.`)}>
-                <div style={{flex:1}}><div className="erx-allergy-name">{a.name}</div><div className="erx-allergy-rx">{a.rx}</div></div>
-                <span className={`erx-sev ${a.cls}`}>{a.sev}</span>
+            <div className="erx-sb-sec-title">⚠ Allergies <span className="erx-sb-cnt">{PATIENT_ALLERGIES.length}</span></div>
+            {PATIENT_ALLERGIES.length > 0 ? PATIENT_ALLERGIES.map(a => (
+              <div key={a} className="erx-allergy-pill" onClick={() => aiQ(`Check if the current prescription conflicts with documented allergy to ${a}. Suggest safe alternatives.`)}>
+                <div style={{flex:1}}><div className="erx-allergy-name">{a}</div></div>
               </div>
-            ))}
-            <button className="erx-btn-ghost" style={{width:'100%',fontSize:11,marginTop:6}} onClick={() => aiQ('Review all three patient allergies (Penicillin-anaphylaxis, Sulfonamides, NSAIDs) against my current prescription. Flag any conflicts or cross-reactivity risks.')}>+ Review All Conflicts</button>
+            )) : <div style={{fontSize:11,color:'var(--txt3)',padding:'4px 0'}}>No allergies documented.</div>}
+            {PATIENT_ALLERGIES.length > 0 && <button className="erx-btn-ghost" style={{width:'100%',fontSize:11,marginTop:6}} onClick={() => aiQ(`Review all patient allergies (${PATIENT_ALLERGIES.join(', ')}) against my current prescription. Flag any conflicts or cross-reactivity risks.`)}>+ Review All Conflicts</button>}
           </div>
 
           <div className="erx-sb-sec">
-            <div className="erx-sb-sec-title">💊 Current Medications <span className="erx-sb-cnt">5</span></div>
-            {[['Metformin','500mg BID'],['Lisinopril','10mg daily'],['Atorvastatin','40mg QHS'],['Amlodipine','5mg daily'],['Aspirin','81mg daily']].map(([n,d]) => (
-              <div key={n} className="erx-med-pill"><div className="erx-med-name">{n}</div><div className="erx-med-dose">{d}</div></div>
-            ))}
-            <button className="erx-btn-ghost" style={{width:'100%',fontSize:11,marginTop:6}} onClick={() => aiQ(`Check all current medications (${PATIENT_MEDS.join(', ')}) for interactions with the new prescription.`)}>🔍 Check All Interactions</button>
+            <div className="erx-sb-sec-title">💊 Current Medications <span className="erx-sb-cnt">{PATIENT_MEDS.length}</span></div>
+            {PATIENT_MEDS.length > 0 ? PATIENT_MEDS.map((m) => (
+              <div key={m} className="erx-med-pill"><div className="erx-med-name">{m}</div></div>
+            )) : <div style={{fontSize:11,color:'var(--txt3)',padding:'4px 0'}}>No medications documented.</div>}
+            {PATIENT_MEDS.length > 0 && <button className="erx-btn-ghost" style={{width:'100%',fontSize:11,marginTop:6}} onClick={() => aiQ(`Check all current medications (${PATIENT_MEDS.join(', ')}) for interactions with the new prescription.`)}>🔍 Check All Interactions</button>}
           </div>
 
           <div className="erx-sb-sec" style={{flex:1,overflow:'auto'}}>
@@ -566,18 +549,7 @@ Diagnosis: ${rxDx || '—'}`;
               )}
             </div>
             {/* Favorites */}
-            <div style={{marginTop:12}}>
-              <div style={{fontSize:10,color:'var(--txt3)',textTransform:'uppercase',letterSpacing:'.05em',marginBottom:8}}>⭐ Quick Prescribe — Favorites</div>
-              <div className="erx-fav-grid">
-                {FAVS.map(f => (
-                  <div key={f.name} className="erx-fav-card" onClick={() => loadFav(f)}>
-                    <div className="erx-fav-drug">{f.name}</div>
-                    <div className="erx-fav-sig">{f.sig}</div>
-                    <div className="erx-fav-diag">{f.diag}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
+
           </div>
 
           {/* Rx Builder */}
@@ -790,23 +762,7 @@ Diagnosis: ${rxDx || '—'}`;
             ))}
           </div>
 
-          {/* Rx History */}
-          <div className="erx-sec">
-            <div className="erx-sec-hdr">
-              <span style={{fontSize:17}}>🕐</span>
-              <div><div className="erx-sec-title">Prescription History</div><div className="erx-sec-sub">Recent prescriptions for this patient</div></div>
-              <span style={{marginLeft:'auto',fontSize:11,fontFamily:'monospace',padding:'2px 9px',borderRadius:20,background:'rgba(59,158,255,.12)',color:'var(--blue)',border:'1px solid rgba(59,158,255,.3)'}}>Last 90 Days</span>
-            </div>
-            {HIST.map((h,i) => (
-              <div key={i} className="erx-hist-row">
-                <div className="erx-hist-drug">{h.drug}</div>
-                <div className="erx-hist-detail">{h.detail}</div>
-                <div style={{flex:1}}/>
-                <div className="erx-hist-date">{h.date}</div>
-                <span className={`erx-hist-badge ${h.cls}`}>{h.status}</span>
-              </div>
-            ))}
-          </div>
+
 
         </main>
 

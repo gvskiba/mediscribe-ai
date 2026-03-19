@@ -997,12 +997,16 @@ Be concise, clinically accurate, and professional. Use standard medical abbrevia
     { id:"education",    icon:"📚", label:"Patient Education",          color:G.blue   },
     { id:"instructions", icon:"📝", label:"Discharge Instructions",     color:G.rose   },
   ];
-  const sectionViews = {
-    disposition: DispositionSection, summary: SummarySection, medications: MedicationsSection,
-    followup: FollowupSection, education: EducationSection,
-    instructions: InstructionsSection,
+  const renderActiveSection = () => {
+    switch (activeSection) {
+      case "summary":      return SummarySection();
+      case "medications":  return MedicationsSection();
+      case "followup":     return FollowupSection();
+      case "education":    return EducationSection();
+      case "instructions": return InstructionsSection();
+      default:             return DispositionSection();
+    }
   };
-  const ActiveView = sectionViews[activeSection] ?? DispositionSection;
 
   return (
     <div style={{ fontFamily:"'DM Sans',system-ui,sans-serif", background:G.navy, minHeight:"100vh", color:G.text, display:"flex", flexDirection:"column", position:"relative" }}>

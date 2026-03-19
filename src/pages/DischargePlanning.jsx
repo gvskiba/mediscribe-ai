@@ -285,7 +285,8 @@ export default function DischargePlanning() {
   })) || [];
 
   // ── UI STATE ─────────────────────────────────────────────────────────────────
-  const [activeSection, setActiveSection]   = useState("summary");
+  const [activeSection, setActiveSection]   = useState("disposition");
+  const [selectedDisposition, setSelectedDisposition] = useState(null);
   const [localMeds, setLocalMeds]           = useState([]);
   const [localFollowups, setLocalFollowups] = useState([]);
   const [selectedEdu, setSelectedEdu]       = useState([]);

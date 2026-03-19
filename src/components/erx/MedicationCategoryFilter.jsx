@@ -17,11 +17,11 @@ export default function MedicationCategoryFilter({ drugs, onFilterChange, select
   }, {});
 
   return (
-    <div style={{ padding: '11px 12px', borderBottom: '1px solid var(--border)' }}>
+    <div style={{ padding: '11px 12px', borderBottom: '1px solid var(--border)', maxHeight: '320px', overflow: 'auto' }}>
       <div style={{ fontSize: 10, color: 'var(--txt3)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 8, fontWeight: 600 }}>
         💊 Filter by Category
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingRight: '4px' }}>
         {/* All button */}
         <button
           onClick={() => onFilterChange(null)}

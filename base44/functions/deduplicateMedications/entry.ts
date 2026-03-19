@@ -3,14 +3,9 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
 
-    if (user?.role !== 'admin') {
-      return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
-    }
-
-    // Fetch all medications
-    const allMeds = await base44.entities.Medication.list();
+    // Fetch all medications using service role
+    const allMeds = await base44.asServiceRole.entities.Medication.list();
     
     if (!allMeds || allMeds.length === 0) {
       return Response.json({ message: 'No medications found', deletedCount: 0, totalRecords: 0 });

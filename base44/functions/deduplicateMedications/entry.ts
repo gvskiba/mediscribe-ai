@@ -14,11 +14,14 @@ Deno.serve(async (req) => {
     // Group medications by med_id
     const medsByMedId = {};
     allMeds.forEach(med => {
-      const medId = med.data?.med_id || med.med_id;
-      if (!medsByMedId[medId]) {
+      const medicationData = med.data || med;
+      const medId = medicationData.med_id;
+      if (medId && !medsByMedId[medId]) {
         medsByMedId[medId] = [];
       }
-      medsByMedId[medId].push(med);
+      if (medId) {
+        medsByMedId[medId].push(med);
+      }
     });
 
     // Identify and delete duplicates, keeping the first record of each med_id

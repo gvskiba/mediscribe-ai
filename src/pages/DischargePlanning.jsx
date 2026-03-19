@@ -294,7 +294,7 @@ export default function DischargePlanning() {
   const [summaryText, setSummaryText]       = useState("");
   const [aiGenerating, setAiGenerating]     = useState(false);
   const [completionChecks, setCompletionChecks] = useState({
-    summary:false, medications:false, followup:false, education:false, instructions:false,
+    disposition:false, summary:false, medications:false, followup:false, education:false, instructions:false,
   });
   const [saving, setSaving]               = useState(false);
   const [toast, setToast]                 = useState(null);

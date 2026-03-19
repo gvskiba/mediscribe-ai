@@ -917,7 +917,83 @@ Be concise, clinically accurate, and professional. Use standard medical abbrevia
     );
   }
 
+  const DISPOSITIONS = [
+    { id:"home",        icon:"🏠", label:"Discharge Home",       sub:"Patient may safely return home",        color:"#00d4bc", selectedBg:"rgba(0,212,188,.12)",  border:"rgba(0,212,188,.5)"  },
+    { id:"floor",       icon:"🏥", label:"Admit — Floor",        sub:"General medical/surgical floor",        color:"#4a90d9", selectedBg:"rgba(74,144,217,.12)", border:"rgba(74,144,217,.5)" },
+    { id:"telemetry",   icon:"📡", label:"Admit — Telemetry",    sub:"Continuous cardiac monitoring",         color:"#9b6dff", selectedBg:"rgba(155,109,255,.12)",border:"rgba(155,109,255,.5)"},
+    { id:"icu",         icon:"🚨", label:"Admit — ICU",          sub:"Critical care — high acuity",           color:"#ff5c6c", selectedBg:"rgba(255,92,108,.12)", border:"rgba(255,92,108,.5)" },
+    { id:"obs",         icon:"🔭", label:"Observation",          sub:"Hospital outpatient status <48h",       color:"#f5a623", selectedBg:"rgba(245,166,35,.12)", border:"rgba(245,166,35,.5)" },
+    { id:"transfer",    icon:"🚑", label:"Transfer",             sub:"Higher level / specialty facility",     color:"#4a90d9", selectedBg:"rgba(74,144,217,.12)", border:"rgba(74,144,217,.5)" },
+    { id:"ama",         icon:"⚠️", label:"AMA",                  sub:"Against Medical Advice",                color:"#f5a623", selectedBg:"rgba(245,166,35,.12)", border:"rgba(245,166,35,.5)" },
+    { id:"expired",     icon:"🕯️", label:"Expired",              sub:"Patient expired in ED",                 color:"#8a9bb0", selectedBg:"rgba(138,155,176,.1)", border:"rgba(138,155,176,.4)"},
+  ];
+
+  function DispositionSection() {
+    return (
+      <div style={{ padding:24, display:"flex", flexDirection:"column", gap:20 }}>
+        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
+          <div>
+            <div style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:19, fontWeight:700, color:G.bright }}>🏥 Select Disposition</div>
+            <div style={{ fontSize:12.5, color:G.dim, marginTop:2 }}>Choose the patient's disposition at time of discharge</div>
+          </div>
+          {selectedDisposition && (
+            <button style={btn("transparent",G.green,"rgba(46,204,113,.3)")} onClick={() => markComplete("disposition")}>✓ Confirm Disposition</button>
+          )}
+        </div>
+
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))", gap:10 }}>
+          {DISPOSITIONS.map(d => {
+            const isSelected = selectedDisposition === d.id;
+            return (
+              <button
+                key={d.id}
+                onClick={() => setSelectedDisposition(d.id)}
+                style={{
+                  background: isSelected ? d.selectedBg : "rgba(13,34,64,.7)",
+                  border: `2px solid ${isSelected ? d.border : "rgba(30,58,95,.6)"}`,
+                  borderRadius: 14,
+                  padding: "18px 14px",
+                  cursor: "pointer",
+                  textAlign: "center",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 10,
+                  transition: "all .2s",
+                  outline: "none",
+                  fontFamily: "inherit",
+                  boxShadow: isSelected ? `0 0 0 1px ${d.border}, 0 4px 18px ${d.selectedBg}` : "none",
+                }}
+              >
+                <div style={{ fontSize: 28, lineHeight:1 }}>{d.icon}</div>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 13, color: isSelected ? d.color : G.bright, lineHeight: 1.25, marginBottom: 4 }}>{d.label}</div>
+                  <div style={{ fontSize: 10.5, color: isSelected ? d.color : G.dim, lineHeight: 1.45, opacity: isSelected ? .9 : .7 }}>{d.sub}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {selectedDisposition && (() => {
+          const d = DISPOSITIONS.find(x => x.id === selectedDisposition);
+          return (
+            <div style={{ background: d.selectedBg, border:`1px solid ${d.border}`, borderRadius:12, padding:"16px 20px", display:"flex", alignItems:"center", gap:16 }}>
+              <div style={{ fontSize:32 }}>{d.icon}</div>
+              <div>
+                <div style={{ fontSize:14, fontWeight:800, color:d.color, marginBottom:3 }}>Selected: {d.label}</div>
+                <div style={{ fontSize:12.5, color:G.text }}>{d.sub}</div>
+              </div>
+              <button onClick={() => setSelectedDisposition(null)} style={{ marginLeft:"auto", background:"none", border:"none", color:G.muted, cursor:"pointer", fontSize:18 }}>✕</button>
+            </div>
+          );
+        })()}
+      </div>
+    );
+  }
+
   const SECTIONS = [
+    { id:"disposition",  icon:"🏥", label:"Disposition",                color:G.teal   },
     { id:"summary",      icon:"📋", label:"Discharge Summary",          color:G.teal   },
     { id:"medications",  icon:"💊", label:"Medication Reconciliation",  color:G.amber  },
     { id:"followup",     icon:"📅", label:"Follow-up Instructions",     color:G.purple },
@@ -925,11 +1001,11 @@ Be concise, clinically accurate, and professional. Use standard medical abbrevia
     { id:"instructions", icon:"📝", label:"Discharge Instructions",     color:G.rose   },
   ];
   const sectionViews = {
-    summary: SummarySection, medications: MedicationsSection,
+    disposition: DispositionSection, summary: SummarySection, medications: MedicationsSection,
     followup: FollowupSection, education: EducationSection,
     instructions: InstructionsSection,
   };
-  const ActiveView = sectionViews[activeSection] ?? SummarySection;
+  const ActiveView = sectionViews[activeSection] ?? DispositionSection;
 
   return (
     <div style={{ fontFamily:"'DM Sans',system-ui,sans-serif", background:G.navy, minHeight:"100vh", color:G.text, display:"flex", flexDirection:"column", position:"relative" }}>

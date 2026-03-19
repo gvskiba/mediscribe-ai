@@ -1262,8 +1262,20 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
 
         </main>
 
+        {/* AI PANEL — floating bubble when collapsed */}
+        {!aiOpen && currentTab !== 'mdm' && (
+          <div style={{ position:'fixed', bottom:70, right:24, zIndex:200 }}>
+            <button
+              onClick={() => setAiOpen(true)}
+              style={{ width:52, height:52, borderRadius:'50%', background:'linear-gradient(135deg,#3b5bdb,#4c6ef5)', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 20px rgba(59,91,219,.5)', fontSize:22 }}
+              title="Open Notrya AI"
+            >💬</button>
+            <div style={{ position:'absolute', top:0, right:0, width:12, height:12, borderRadius:'50%', background:'#00e5c0', border:'2px solid #050f1e', animation:'npi-pulse 2s infinite' }}/>
+          </div>
+        )}
+
         {/* AI PANEL — hidden on MDM tab since MDM has its own layout */}
-        <aside className="npi-ai-panel" style={{display: currentTab === 'mdm' ? 'none' : 'flex'}}>
+        <aside className="npi-ai-panel" style={{display: (currentTab === 'mdm' || !aiOpen) ? 'none' : 'flex'}}>
           <div className="npi-ai-header">
             <div className="npi-ai-hrow">
               <div className="npi-ai-dot"/>

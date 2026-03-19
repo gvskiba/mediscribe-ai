@@ -359,7 +359,18 @@ export default function NewPatientInput() {
 
           {currentTab === 'autocoder' && (
             <div style={{ display: 'flex', flex: 1, minHeight: 0, margin: '-16px -18px -100px', height: 'calc(100vh - 160px)' }}>
-              <AutoCoder />
+              <AutoCoder 
+                patientName={patientName}
+                patientMrn={demo.mrn}
+                patientDob={demo.dob}
+                patientAge={demo.age}
+                patientGender={demo.sex}
+                chiefComplaint={cc.text}
+                vitals={vitals}
+                medications={medications}
+                allergies={allergies}
+                pmhSelected={pmhSelected}
+              />
             </div>
           )}
         </main>

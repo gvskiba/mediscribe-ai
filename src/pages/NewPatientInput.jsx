@@ -1263,7 +1263,7 @@ Format with sections: Patient Details, Chief Complaint, HPI, Vitals, Review of S
         </main>
 
         {/* AI PANEL — floating bubble when collapsed */}
-        {!aiOpen && currentTab !== 'mdm' && (
+        {!aiOpen && currentTab !== 'mdm' && currentTab !== 'discharge' && (
           <div style={{ position:'fixed', bottom:70, right:24, zIndex:200 }}>
             <button
               onClick={() => setAiOpen(true)}

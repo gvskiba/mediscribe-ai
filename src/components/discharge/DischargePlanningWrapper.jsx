@@ -855,8 +855,8 @@ export default function DischargePlanningWrapper({ patientName='New Patient', pa
                 <div key={rx.id} className="dc3-row" style={{borderColor:`${typeTextColor[rx.type]}33`}}>
                   <span style={{fontSize:15}}>{typeIcon[rx.type]||'🔵'}</span>
                   <div style={{display:'flex',flexDirection:'column',flex:1,gap:2}}>
-                    <input className="dc3-row-inp" style={{fontWeight:600,color:'#e8f0fe'}} defaultValue={rx.drug} placeholder="Drug name + dose"/>
-                    <input className="dc3-row-inp" style={{fontSize:11}} defaultValue={rx.sig} placeholder="SIG / instructions…"/>
+                    <input className="dc3-row-inp" style={{fontWeight:600,color:'#e8f0fe'}} value={rx.drug} onChange={e=>setDcRxList(p=>p.map(x=>x.id===rx.id?{...x,drug:e.target.value}:x))} placeholder="Drug name + dose"/>
+                    <input className="dc3-row-inp" style={{fontSize:11}} value={rx.sig} onChange={e=>setDcRxList(p=>p.map(x=>x.id===rx.id?{...x,sig:e.target.value}:x))} placeholder="SIG / instructions…"/>
                   </div>
                   <span style={{fontSize:9,padding:'2px 7px',borderRadius:3,background:typeColor[rx.type],color:typeTextColor[rx.type],fontWeight:700,whiteSpace:'nowrap'}}>{rx.type}</span>
                   <button className="dc3-row-del" onClick={()=>setDcRxList(p=>p.filter(x=>x.id!==rx.id))}>×</button>

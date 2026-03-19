@@ -509,27 +509,8 @@ export default function DischargePlanningWrapper({ patientName='Martinez, Rosa E
     <div className="dc-root">
       <style>{CSS}</style>
 
-      {/* ICON SIDEBAR */}
+      {/* NO ICON SIDEBAR — full-width layout */}
       <div style={{display:'flex',flex:1,overflow:'hidden'}}>
-        <aside className="dc-isb">
-          <div className="dc-isb-logo"><div className="dc-isb-logo-box">D/C</div></div>
-          <div className="dc-isb-scroll">
-            {ISB_ITEMS.map(group=>(
-              <div key={group.group} style={{width:'100%',display:'flex',flexDirection:'column',alignItems:'center'}}>
-                <span className="dc-isb-glbl">{group.group}</span>
-                {group.items.map(item=>(
-                  <div key={item.lbl} className={`dc-isb-btn${item.active?' active':''}`}>
-                    <span className="dc-isb-icon">{item.icon}</span>
-                    <span className="dc-isb-lbl">{item.lbl}</span>
-                  </div>
-                ))}
-                <div className="dc-isb-sep"/>
-              </div>
-            ))}
-          </div>
-        </aside>
-
-        {/* RIGHT COLUMN */}
         <div className="dc-right">
 
           {/* NAVBAR */}

@@ -518,9 +518,18 @@ export default function DischargePlanningWrapper({ patientName='New Patient', pa
       {/* VITALS BAR */}
       <div className="dc3-vbar">
         <span className="dc3-vname">{patientName}</span>
-        {patientDob && <span className="dc3-vmeta">DOB {patientDob}</span>}
-        {patientId && <><div className="dc3-vdiv"/><div className="dc3-vital"><span className="lbl">MRN</span><span className="val">{patientId}</span></div></>}
-        {allergies.length>0 && <><div className="dc3-vdiv"/><div className="dc3-vital"><span className="lbl">Allergies</span><span className="val" style={{color:'#ff6b6b'}}>{allergies.slice(0,2).join(', ')}</span></div></>}
+        <span className="dc3-vmeta" style={{fontSize:10.5}}>
+          62 yo F &nbsp;·&nbsp; DOB {patientDob||'04/22/1962'} &nbsp;·&nbsp; MRN {patientId||'00847291'}
+        </span>
+        <div className="dc3-vdiv"/>
+        <div className="dc3-vital"><span className="lbl">CC</span><span className="val" style={{color:'var(--orange)'}}>Chest Pain</span></div>
+        <div className="dc3-vdiv"/>
+        <div className="dc3-vital"><span className="lbl">BP</span><span className="val">138/86</span></div>
+        <div className="dc3-vital"><span className="lbl">HR</span><span className="val">88</span></div>
+        <div className="dc3-vital"><span className="lbl">SpO₂</span><span className="val">97%</span></div>
+        <div className="dc3-vital"><span className="lbl">TEMP</span><span className="val">98.4°F</span></div>
+        <div className="dc3-vdiv"/>
+        <div className="dc3-vital"><span className="lbl">LOS</span><span className="val">4h 32m</span></div>
         <div style={{marginLeft:'auto'}}>
           <span className={`dc3-bdg ${dcStatus==='SIGNED'?'dc3-bdg-teal':'dc3-bdg-gold'}`}>{dcStatus}</span>
         </div>

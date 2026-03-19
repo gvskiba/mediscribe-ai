@@ -1197,11 +1197,26 @@ Be concise, clinically accurate, and professional. Use standard medical abbrevia
             )}
 
             <div style={panelHead}>🖨 Export</div>
-            <div style={{ padding:10 }}>
+            <div style={{ padding:10, display:"flex", flexDirection:"column", gap:8 }}>
               <button className="act-btn"
                 style={{ width:"100%", padding:"9px 12px", borderRadius:8, fontFamily:"inherit", fontSize:12, fontWeight:700, cursor:"pointer", border:`1px solid ${G.border}`, background:"transparent", color:G.text, display:"flex", alignItems:"center", gap:8, transition:"all .15s" }}
                 onClick={() => navigator.clipboard?.writeText(summaryText || "").then(()=>showToast("Summary copied ✓",G.teal))}>
                 <span style={{ fontSize:15 }}>📋</span>Copy Summary to Clipboard
+              </button>
+              <button className="act-btn"
+                style={{ width:"100%", padding:"9px 12px", borderRadius:8, fontFamily:"inherit", fontSize:12, fontWeight:700, cursor:"pointer", border:`1px solid rgba(155,109,255,.3)`, background:"transparent", color:G.purple, display:"flex", alignItems:"center", gap:8, transition:"all .15s" }}
+                onClick={generateSummary}>
+                <span style={{ fontSize:15 }}>✦</span>AI Generate Summary
+              </button>
+              <button className="act-btn"
+                style={{ width:"100%", padding:"9px 12px", borderRadius:8, fontFamily:"inherit", fontSize:12, fontWeight:700, cursor:"pointer", border:`1px solid ${G.border}`, background:"transparent", color:G.text, display:"flex", alignItems:"center", gap:8, transition:"all .15s" }}
+                onClick={savePlan} disabled={saving}>
+                <span style={{ fontSize:15 }}>💾</span>Save Draft
+              </button>
+              <button className="act-btn"
+                style={{ width:"100%", padding:"9px 12px", borderRadius:8, fontFamily:"inherit", fontSize:12, fontWeight:700, cursor:"pointer", border:"none", background:`linear-gradient(135deg,${G.teal},#00a896)`, color:"#050f1e", display:"flex", alignItems:"center", gap:8, transition:"all .15s" }}
+                onClick={printPDF}>
+                <span style={{ fontSize:15 }}>🖨</span>Generate PDF Discharge Packet
               </button>
             </div>
           </div>

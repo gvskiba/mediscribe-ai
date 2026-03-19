@@ -1,1232 +1,828 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Notrya AI — Discharge Planning Center
+// Notrya — Discharge Summary (React port of the new HTML design)
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { createPageUrl } from "@/utils";
 
-// ── DESIGN TOKENS ─────────────────────────────────────────────────────────────
-const G = {
-  navy:"#050f1e", slate:"#0b1d35", panel:"#0d2240", edge:"#162d4f",
-  border:"#1e3a5f", muted:"#2a4d72", dim:"#4a7299", text:"#c8ddf0",
-  bright:"#e8f4ff", teal:"#00d4bc", amber:"#f5a623", red:"#ff5c6c",
-  green:"#2ecc71", purple:"#9b6dff", blue:"#4a90d9", rose:"#f472b6",
-};
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap');
+.dc-root *{box-sizing:border-box;margin:0;padding:0}
+.dc-root{background:#050f1e;color:#c8ddf0;font-family:'DM Sans',sans-serif;font-size:14px;display:flex;flex-direction:column;height:calc(100vh - 0px);overflow:hidden}
+/* scrollbar */
+.dc-root ::-webkit-scrollbar{width:4px;height:4px}
+.dc-root ::-webkit-scrollbar-track{background:transparent}
+.dc-root ::-webkit-scrollbar-thumb{background:#2a4d72;border-radius:2px}
+/* sub-navbar */
+.dc-subnav{height:44px;background:#081628;border-bottom:1px solid #1a3555;display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0;z-index:10}
+.dc-subnav-logo{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:#00d4ff;letter-spacing:-.5px}
+.dc-subnav-sep{color:#2e4a6a;font-size:14px}
+.dc-subnav-title{font-size:12px;color:#8aaccc;font-weight:500}
+.dc-subnav-badge{background:#0e2544;border:1px solid #1a3555;border-radius:20px;padding:2px 10px;font-size:11px;color:#00e5c0;font-family:'JetBrains Mono',monospace}
+.dc-subnav-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+/* vitals bar */
+.dc-vbar{height:38px;background:#081628;border-bottom:1px solid #1a3555;display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0;overflow:hidden}
+.dc-vbar-name{font-family:'Playfair Display',serif;font-size:13px;color:#e8f0fe;font-weight:600;white-space:nowrap}
+.dc-vbar-meta{font-size:10px;color:#4a6a8a;white-space:nowrap}
+.dc-vbar-div{width:1px;height:18px;background:#1a3555;flex-shrink:0}
+.dc-vital{display:flex;align-items:center;gap:4px;font-size:11px;white-space:nowrap}
+.dc-vital .lbl{color:#2e4a6a;font-size:9px;text-transform:uppercase;letter-spacing:.04em}
+.dc-vital .val{font-family:'JetBrains Mono',monospace;color:#8aaccc;font-weight:600}
+/* main layout */
+.dc-body{display:flex;flex:1;overflow:hidden}
+/* sidebar */
+.dc-sb{width:220px;flex-shrink:0;background:#060e1c;border-right:1px solid #1a3555;overflow-y:auto;padding:10px 8px;display:flex;flex-direction:column;gap:4px}
+.dc-sb-label{font-size:9px;color:#4a6a8a;text-transform:uppercase;letter-spacing:.06em;padding:0 4px;margin-top:6px;margin-bottom:2px}
+.dc-sb-nav{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;cursor:pointer;transition:all .15s;border:1px solid transparent;font-size:12px;color:#8aaccc}
+.dc-sb-nav:hover{background:#0e2544;border-color:#1a3555;color:#e8f0fe}
+.dc-sb-nav.active{background:rgba(0,229,192,.09);border-color:rgba(0,229,192,.3);color:#00e5c0}
+.dc-sb-icon{font-size:13px;width:18px;text-align:center}
+.dc-sb-dot{width:7px;height:7px;border-radius:50%;background:#1a3555;margin-left:auto;flex-shrink:0}
+.dc-sb-dot.done{background:#00e5c0;box-shadow:0 0 5px rgba(0,229,192,.5)}
+.dc-sb-card{background:#0b1e36;border:1px solid #1a3555;border-radius:10px;padding:10px 12px;margin-bottom:4px}
+.dc-sb-divider{height:1px;background:#1a3555;margin:5px 0}
+/* content */
+.dc-content{flex:1;overflow-y:auto;padding:18px 22px 40px;display:flex;flex-direction:column;gap:18px}
+/* ai panel */
+.dc-ai{width:290px;flex-shrink:0;background:#060e1c;border-left:1px solid #1a3555;display:flex;flex-direction:column;overflow:hidden}
+.dc-ai-hdr{padding:10px 12px;border-bottom:1px solid #1a3555;flex-shrink:0}
+.dc-ai-hdr-top{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+.dc-ai-dot{width:7px;height:7px;border-radius:50%;background:#00e5c0;animation:dc-pulse 2s ease-in-out infinite}
+@keyframes dc-pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,229,192,.4)}50%{box-shadow:0 0 0 5px rgba(0,229,192,0)}}
+.dc-ai-model{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;background:#0e2544;border:1px solid #1a3555;border-radius:20px;padding:1px 7px;color:#4a6a8a}
+.dc-ai-qbtns{display:flex;flex-wrap:wrap;gap:4px}
+.dc-ai-qbtn{padding:3px 8px;border-radius:20px;font-size:10.5px;cursor:pointer;background:#0e2544;border:1px solid #1a3555;color:#8aaccc;transition:all .15s;font-family:'DM Sans',sans-serif}
+.dc-ai-qbtn:hover{border-color:#00e5c0;color:#00e5c0;background:rgba(0,229,192,.06)}
+.dc-ai-msgs{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:7px}
+.dc-ai-msg{padding:8px 11px;border-radius:8px;font-size:12px;line-height:1.55}
+.dc-ai-msg.sys{background:#0e2544;color:#4a6a8a;font-style:italic;border:1px solid #1a3555}
+.dc-ai-msg.user{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.25);color:#8aaccc}
+.dc-ai-msg.bot{background:rgba(0,229,192,.07);border:1px solid rgba(0,229,192,.18);color:#e8f0fe}
+.dc-ai-loader{display:flex;gap:5px;padding:10px 12px;align-items:center}
+.dc-ai-loader span{width:6px;height:6px;border-radius:50%;background:#00e5c0;animation:dc-bounce 1.2s ease-in-out infinite}
+.dc-ai-loader span:nth-child(2){animation-delay:.2s}.dc-ai-loader span:nth-child(3){animation-delay:.4s}
+@keyframes dc-bounce{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-5px);opacity:1}}
+.dc-ai-inp-wrap{padding:9px 12px;border-top:1px solid #1a3555;flex-shrink:0;display:flex;gap:6px}
+.dc-ai-inp{flex:1;background:#0e2544;border:1px solid #1a3555;border-radius:8px;padding:7px 10px;color:#e8f0fe;font-size:12px;outline:none;resize:none;font-family:'DM Sans',sans-serif}
+.dc-ai-inp:focus{border-color:#00e5c0}
+.dc-ai-send{background:#00e5c0;color:#050f1e;border:none;border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;flex-shrink:0;font-weight:700}
+/* section box */
+.dc-sec{background:#081628;border:1px solid #1a3555;border-radius:12px;padding:18px 20px}
+.dc-sec-hdr{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.dc-sec-icon{font-size:18px}
+.dc-sec-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:#e8f0fe}
+.dc-sec-sub{font-size:11px;color:#4a6a8a;margin-top:1px}
+/* disposition */
+.dc-disp-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-bottom:10px}
+.dc-disp-card{background:#0b1e36;border:2px solid #1a3555;border-radius:13px;padding:14px 8px 12px;cursor:pointer;transition:all .18s;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;user-select:none}
+.dc-disp-card:hover{border-color:#2a4f7a;background:#0e2544;transform:translateY(-1px)}
+.dc-disp-card.sel-home{border-color:#00e5c0!important;background:rgba(0,229,192,.07)!important;box-shadow:0 0 0 1px rgba(0,229,192,.25),0 4px 20px rgba(0,229,192,.15);transform:translateY(-2px)}
+.dc-disp-card.sel-floor{border-color:#3b9eff!important;background:rgba(59,158,255,.07)!important;box-shadow:0 0 0 1px rgba(59,158,255,.25),0 4px 20px rgba(59,158,255,.12);transform:translateY(-2px)}
+.dc-disp-card.sel-telem{border-color:#f5c842!important;background:rgba(245,200,66,.07)!important;transform:translateY(-2px)}
+.dc-disp-card.sel-icu{border-color:#ff6b6b!important;background:rgba(255,107,107,.07)!important;transform:translateY(-2px)}
+.dc-disp-card.sel-obs{border-color:#9b6dff!important;background:rgba(155,109,255,.07)!important;transform:translateY(-2px)}
+.dc-disp-card.sel-tx{border-color:#ff9f43!important;background:rgba(255,159,67,.07)!important;transform:translateY(-2px)}
+.dc-disp-card.sel-ama{border-color:#f5c842!important;background:rgba(245,200,66,.07)!important;transform:translateY(-2px)}
+.dc-disp-card.sel-expired{border-color:#4a6a8a!important;background:rgba(46,74,106,.15)!important;transform:translateY(-2px)}
+.dc-disp-emoji{font-size:26px;line-height:1}
+.dc-disp-name{font-size:11px;font-weight:700;color:#e8f0fe;line-height:1.2;transition:color .18s}
+.dc-disp-sub{font-size:9.5px;color:#4a6a8a;line-height:1.3}
+/* banner */
+.dc-banner{display:flex;align-items:center;gap:12px;padding:11px 16px;border-radius:8px;margin-top:10px;border:1px solid;font-size:12px;font-weight:600}
+/* em cards */
+.dc-em-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px}
+.dc-em-card{background:#0b1e36;border:1px solid #1a3555;border-radius:8px;padding:13px 14px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden}
+.dc-em-card:hover{border-color:#2a4f7a}
+.dc-em-card.selected{border-color:#3b9eff;background:rgba(59,158,255,.07)}
+.dc-em-card.selected::after{content:'✓';position:absolute;top:7px;right:9px;color:#3b9eff;font-size:13px;font-weight:700}
+/* fu rows */
+.dc-fu-row{display:flex;align-items:center;gap:10px;background:#0b1e36;border:1px solid #1a3555;border-radius:8px;padding:10px 13px;margin-bottom:6px;transition:border-color .15s}
+.dc-fu-row:hover{border-color:#2a4f7a}
+.dc-fu-inp{background:transparent;border:none;outline:none;font-size:12px;color:#8aaccc;font-family:'DM Sans',sans-serif;flex:1;min-width:0}
+.dc-fu-del{color:#2e4a6a;cursor:pointer;font-size:15px;transition:color .15s;padding:0 2px;background:none;border:none}
+.dc-fu-del:hover{color:#ff6b6b}
+.dc-add-row{display:flex;gap:6px;align-items:center;margin-top:8px}
+/* field */
+.dc-field{display:flex;flex-direction:column;gap:4px}
+.dc-field-label{font-size:9.5px;color:#4a6a8a;text-transform:uppercase;letter-spacing:.05em}
+.dc-input{background:#0e2544;border:1px solid #1a3555;border-radius:8px;padding:8px 11px;color:#e8f0fe;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color .15s;width:100%}
+.dc-input:focus{border-color:#3b9eff}
+.dc-textarea{background:#0e2544;border:1px solid #1a3555;border-radius:8px;padding:9px 11px;color:#e8f0fe;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;resize:vertical;min-height:80px;width:100%;line-height:1.6;transition:border-color .15s}
+.dc-textarea:focus{border-color:#3b9eff}
+.dc-select{background:#0e2544;border:1px solid #1a3555;border-radius:8px;padding:8px 11px;color:#e8f0fe;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;cursor:pointer;width:100%}
+.dc-select:focus{border-color:#3b9eff}
+.dc-select option{background:#0d2240}
+/* instr */
+.dc-instr-box{background:#0b1e36;border:1px solid #1a3555;border-radius:8px;padding:13px 15px;margin-bottom:10px}
+.dc-instr-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid #1a3555}
+/* return */
+.dc-return-card{background:rgba(255,107,107,.05);border:1px solid rgba(255,107,107,.22);border-radius:8px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;transition:all .15s}
+.dc-return-card:hover{background:rgba(255,107,107,.09);border-color:rgba(255,107,107,.35)}
+/* sig */
+.dc-sig{background:linear-gradient(135deg,rgba(0,229,192,.06),rgba(59,158,255,.04));border:1px solid rgba(0,229,192,.2);border-radius:12px;padding:18px 20px}
+/* btns */
+.dc-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 13px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.dc-btn-ghost{background:#0e2544;border:1px solid #1a3555;color:#8aaccc}
+.dc-btn-ghost:hover{border-color:#2a4f7a;color:#e8f0fe}
+.dc-btn-primary{background:#00e5c0;color:#050f1e;border:none}
+.dc-btn-primary:hover{filter:brightness(1.1)}
+.dc-btn-gold{background:rgba(245,200,66,.13);border:1px solid rgba(245,200,66,.35);color:#f5c842}
+.dc-btn-gold:hover{background:rgba(245,200,66,.22)}
+.dc-btn-blue{background:#3b9eff;color:white;border:none}
+.dc-btn-blue:hover{filter:brightness(1.1)}
+.dc-btn-purple{background:transparent;border:1px solid rgba(155,109,255,.4);color:#9b6dff}
+.dc-btn-purple:hover{background:rgba(155,109,255,.1)}
+/* badges */
+.dc-badge{font-size:10px;font-family:'JetBrains Mono',monospace;padding:2px 8px;border-radius:20px;font-weight:700;white-space:nowrap;display:inline-block}
+.dc-badge-teal{background:rgba(0,229,192,.12);color:#00e5c0;border:1px solid rgba(0,229,192,.3)}
+.dc-badge-blue{background:rgba(59,158,255,.12);color:#3b9eff;border:1px solid rgba(59,158,255,.3)}
+.dc-badge-gold{background:rgba(245,200,66,.12);color:#f5c842;border:1px solid rgba(245,200,66,.3)}
+.dc-badge-coral{background:rgba(255,107,107,.15);color:#ff6b6b;border:1px solid rgba(255,107,107,.3)}
+.dc-badge-purple{background:rgba(155,109,255,.12);color:#9b6dff;border:1px solid rgba(155,109,255,.3)}
+.dc-badge-green{background:rgba(61,255,160,.12);color:#3dffa0;border:1px solid rgba(61,255,160,.3)}
+/* grid */
+.dc-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dc-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+/* shimmer */
+.dc-shimmer{background:linear-gradient(90deg,#0e2544 25%,rgba(0,229,192,.05) 50%,#0e2544 75%);background-size:200% 100%;animation:dc-shimmer 1.5s infinite;border-radius:6px}
+@keyframes dc-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.dc-spin{display:inline-block;width:11px;height:11px;border:2px solid rgba(0,229,192,.2);border-top-color:#00e5c0;border-radius:50%;animation:dc-spinr .6s linear infinite}
+@keyframes dc-spinr{to{transform:rotate(360deg)}}
+`;
 
-// ── STATIC CLINICAL REFERENCE DATA ────────────────────────────────────────────
-const EDU_LIBRARY = [
-  {
-    id:"chf", title:"Understanding Heart Failure", icon:"❤️", category:"Cardiac",
-    tagline:"What it means and how to manage it at home",
-    bullets:[
-      "Heart failure means your heart isn't pumping as strongly as it should — not that it has stopped.",
-      "Daily weight monitoring is essential: weigh yourself every morning before eating, after using the bathroom.",
-      "Call your doctor immediately if you gain more than 3 lbs in one day or 5 lbs in one week.",
-      "Limit fluid intake to about 1.5–2 liters (6–8 cups) per day unless told otherwise.",
-      "Reduce sodium to less than 2,000 mg per day. Avoid canned soups, processed meats, and fast food.",
-      "Elevate the head of your bed 6–8 inches if you feel short of breath lying flat.",
-      "Take all medications exactly as prescribed — especially your diuretic (water pill) and heart medications.",
-    ],
-    warningSigns:["Sudden weight gain (3+ lbs/day)","Increased swelling in legs or ankles","Shortness of breath at rest or with minimal activity","Waking up at night unable to breathe","Chest pain or pressure"],
-  },
-  {
-    id:"anticoag", title:"Anticoagulation Safety (Blood Thinners)", icon:"🩸", category:"Medications",
-    tagline:"Taking blood thinners safely and reducing bleeding risk",
-    bullets:[
-      "Your blood thinner reduces your risk of stroke and dangerous clots.",
-      "Take it exactly as prescribed — do not skip doses or double-up on missed doses.",
-      "DO NOT take ibuprofen (Advil, Motrin), naproxen, or aspirin unless your doctor specifically says you can.",
-      "Use acetaminophen (Tylenol) for pain relief instead.",
-      "Tell all your doctors, dentists, and pharmacists you are on a blood thinner.",
-      "Do NOT stop taking this medication without speaking to your doctor first.",
-      "Minor bleeding (bruising, small cuts that take longer to stop) is expected. Serious bleeding is not.",
-    ],
-    warningSigns:["Coughing or vomiting blood","Blood in urine (pink, red, or brown)","Black or tarry stools","Severe headache or vision changes","Inability to stop bleeding after 10 minutes of pressure"],
-  },
-  {
-    id:"lowsodium", title:"Low-Sodium Diet Guide", icon:"🧂", category:"Nutrition",
-    tagline:"Eating smart to protect your heart and blood pressure",
-    bullets:[
-      "Goal: Less than 2,000 mg of sodium per day (about 1 teaspoon of table salt total).",
-      "Read all food labels — look for 'sodium' content, not just 'salt.' Hidden sodium is everywhere.",
-      "Avoid: canned soups, deli meats, frozen meals, fast food, soy sauce, and pickles.",
-      "Choose: fresh vegetables, fruits, unseasoned meats, low-sodium canned goods rinsed with water.",
-      "Use herbs, lemon juice, garlic, and pepper to flavor food instead of salt.",
-      "Restaurant tip: Ask for sauces on the side and choose grilled or baked over fried.",
-    ],
-    warningSigns:["Increased swelling after a high-sodium meal","Weight gain overnight after eating salty food"],
-  },
-  {
-    id:"diabetes", title:"Diabetes Management at Home", icon:"🩺", category:"Endocrine",
-    tagline:"Monitoring blood sugar and staying in your target range",
-    bullets:[
-      "Check your blood sugar as directed — typically before meals and at bedtime.",
-      "Target range: 80–130 mg/dL before meals; less than 180 mg/dL two hours after meals.",
-      "Take diabetes medications with food to reduce stomach upset. Never skip meals.",
-      "Signs of low blood sugar (hypoglycemia): shakiness, sweating, confusion, heart racing.",
-      "If your blood sugar is below 70: eat 15g of fast-acting carbs, recheck in 15 minutes.",
-      "Stay well-hydrated. Dehydration worsens blood sugar control and kidney function.",
-    ],
-    warningSigns:["Blood sugar consistently above 300 mg/dL","Inability to eat or drink","Confusion or altered mental status","Persistent vomiting"],
-  },
-  {
-    id:"htn", title:"Blood Pressure Management", icon:"💊", category:"Cardiac",
-    tagline:"Understanding and controlling your blood pressure",
-    bullets:[
-      "Take your blood pressure medications at the same time every day.",
-      "Home monitoring: check BP twice daily (morning and evening) and log results.",
-      "Lifestyle: reduce sodium, exercise as tolerated, limit alcohol, avoid smoking.",
-      "Do not stop blood pressure medications suddenly — this can cause a dangerous spike.",
-      "Position matters: sit quietly for 5 minutes, feet flat, arm at heart level before checking.",
-    ],
-    warningSigns:["Severe headache with BP above 180/120","Chest pain or pressure","Sudden vision changes","Confusion or difficulty speaking"],
-  },
-  {
-    id:"activity", title:"Activity & Exercise After Hospitalization", icon:"🚶", category:"Recovery",
-    tagline:"Getting moving again safely after a hospital stay",
-    bullets:[
-      "Start with light activity: short walks (5–10 min) 2–3 times per day. Gradually increase each week.",
-      "Stop and rest if you experience chest pain, shortness of breath, or lightheadedness.",
-      "Avoid heavy lifting or vigorous exercise unless cleared by your doctor.",
-      "Cardiac rehab may be recommended — ask your doctor for a referral.",
-      "Climbing stairs: take them slowly, one step at a time. Rest as needed.",
-      "Listen to your body: fatigue is normal, but sudden severe fatigue should be reported.",
-    ],
-    warningSigns:["Chest pain or tightness with activity","Shortness of breath that doesn't resolve with rest","Palpitations or irregular heartbeat during exercise","Lightheadedness or near-fainting"],
-  },
-  {
-    id:"ckd", title:"Kidney Health & CKD Management", icon:"🫘", category:"Nephrology",
-    tagline:"Protecting your kidneys at home",
-    bullets:[
-      "Stay well hydrated unless your doctor has placed a fluid restriction.",
-      "Avoid NSAIDs (ibuprofen, naproxen) — they can worsen kidney function.",
-      "Limit potassium if instructed: avoid bananas, oranges, potatoes, tomatoes in excess.",
-      "Limit phosphorus if instructed: avoid dark colas, processed cheese, fast food.",
-      "Take all kidney-related medications as prescribed and attend all lab appointments.",
-      "Report any decrease in urination, swelling, or extreme fatigue to your doctor promptly.",
-    ],
-    warningSigns:["Significant decrease in urination","Sudden worsening swelling","Extreme fatigue or confusion","Nausea and vomiting that won't stop"],
-  },
-  {
-    id:"afib", title:"Atrial Fibrillation: Living with AFib", icon:"💓", category:"Cardiac",
-    tagline:"Understanding your irregular heartbeat and staying safe",
-    bullets:[
-      "AFib means your heart beats in an irregular rhythm — it is manageable with proper treatment.",
-      "Take your rate-control and anticoagulation medications every day without fail.",
-      "Monitor for symptoms: palpitations, dizziness, shortness of breath, chest discomfort.",
-      "Limit alcohol and caffeine, which can trigger episodes.",
-      "Check your pulse daily — a simple wrist pulse check can detect irregularity.",
-      "Carry your medication list and wear a medical ID if possible.",
-    ],
-    warningSigns:["Sudden onset of severe chest pain","Stroke symptoms: face drooping, arm weakness, speech difficulty","Fainting or near-fainting","Rapid heart rate above 150 with symptoms"],
-  },
-  {
-    id:"wound", title:"Wound Care & Surgical Site Instructions", icon:"🩹", category:"Surgical",
-    tagline:"Keeping your wound clean and healing properly",
-    bullets:[
-      "Keep the wound clean and dry for the first 24–48 hours unless instructed otherwise.",
-      "Change dressings as directed by your care team — use clean hands or gloves.",
-      "Do not submerge the wound in water (no baths, pools, or hot tubs) until cleared.",
-      "Take all prescribed antibiotics for the full course even if you feel better.",
-      "Avoid strenuous activity or lifting that puts tension on the wound.",
-      "Staples or sutures will be removed at your follow-up appointment — do not remove them at home.",
-    ],
-    warningSigns:["Increasing redness, warmth, or swelling around the wound","Pus or cloudy discharge","Wound edges separating (dehiscence)","Fever above 101°F (38.3°C)","Severe or worsening pain"],
-  },
-  {
-    id:"pain", title:"Pain Management After Discharge", icon:"💊", category:"Recovery",
-    tagline:"Managing discomfort safely at home",
-    bullets:[
-      "Acetaminophen (Tylenol) is first-line for most pain — take exactly as directed, do not exceed 3,000 mg/day.",
-      "Avoid ibuprofen or other NSAIDs unless your doctor specifically approves them.",
-      "If prescribed opioids: take only as needed, do not drink alcohol, do not drive.",
-      "Pain should gradually improve each day — if it is worsening, contact your doctor.",
-      "Ice packs (wrapped in a cloth) can help with localized swelling and pain.",
-      "Proper positioning and support pillows can reduce discomfort during recovery.",
-    ],
-    warningSigns:["Sudden severe or worsening pain","New pain in a different location","Pain with fever, redness, or swelling","Opioid side effects: extreme drowsiness, difficulty breathing"],
-  },
+const DISPS = [
+  { id:"home",    cls:"sel-home",    icon:"🏠", label:"Discharge Home",     sub:"Patient may safely return home",       bannerCls:"rgba(0,229,192,.07)", bannerBorder:"rgba(0,229,192,.25)", bannerColor:"#00e5c0",   bannerText:"Patient discharged home in stable condition.", bannerSub:"Instructions reviewed and signed." },
+  { id:"floor",   cls:"sel-floor",   icon:"🏥", label:"Admit — Floor",      sub:"General medical/surgical floor",       bannerCls:"rgba(59,158,255,.07)",bannerBorder:"rgba(59,158,255,.25)",bannerColor:"#3b9eff",  bannerText:"Patient admitted to general floor.",             bannerSub:"Admitting orders placed." },
+  { id:"telem",   cls:"sel-telem",   icon:"📡", label:"Admit — Telemetry",  sub:"Continuous cardiac monitoring",        bannerCls:"rgba(245,200,66,.07)",bannerBorder:"rgba(245,200,66,.2)", bannerColor:"#f5c842",   bannerText:"Patient admitted to telemetry.",                 bannerSub:"Cardiac monitoring initiated." },
+  { id:"icu",     cls:"sel-icu",     icon:"🚨", label:"Admit — ICU",        sub:"Critical care — high acuity",          bannerCls:"rgba(255,107,107,.07)",bannerBorder:"rgba(255,107,107,.25)",bannerColor:"#ff6b6b", bannerText:"Patient admitted to the ICU.",                   bannerSub:"ICU team bedside." },
+  { id:"obs",     cls:"sel-obs",     icon:"🔭", label:"Observation",        sub:"Hospital outpatient status <48h",      bannerCls:"rgba(155,109,255,.07)",bannerBorder:"rgba(155,109,255,.2)",bannerColor:"#9b6dff",  bannerText:"Patient in observation status.",                 bannerSub:"Expected stay < 48 hours." },
+  { id:"transfer",cls:"sel-tx",      icon:"🚑", label:"Transfer",           sub:"Higher level / specialty facility",    bannerCls:"rgba(255,159,67,.07)", bannerBorder:"rgba(255,159,67,.2)", bannerColor:"#ff9f43",  bannerText:"Patient transferred to receiving facility.",      bannerSub:"Accepting physician confirmed." },
+  { id:"ama",     cls:"sel-ama",     icon:"⚠️", label:"AMA",                sub:"Against Medical Advice",               bannerCls:"rgba(245,200,66,.07)",bannerBorder:"rgba(245,200,66,.2)", bannerColor:"#f5c842",   bannerText:"Patient leaving Against Medical Advice (AMA).",  bannerSub:"Risks explained. AMA form signed." },
+  { id:"expired", cls:"sel-expired", icon:"🕯️", label:"Expired",            sub:"Patient expired in ED",                bannerCls:"rgba(46,74,106,.15)", bannerBorder:"rgba(74,106,138,.3)",  bannerColor:"#4a6a8a",  bannerText:"Patient expired in the Emergency Department.",   bannerSub:"Time of death documented. Family notified." },
 ];
 
-const RETURN_PRECAUTIONS = [
-  { cat:"Breathing",   icon:"🫁", items:["Sudden or worsening shortness of breath at rest","Unable to lie flat due to breathlessness","Breathing significantly faster than usual"] },
-  { cat:"Chest",       icon:"❤️", items:["New chest pain, pressure, tightness, or heaviness","Chest pain that radiates to arm, jaw, or back"] },
-  { cat:"Weight & Fluid", icon:"⚖️", items:["Weight gain of 3+ lbs in one day or 5+ lbs in one week","Sudden worsening of leg, ankle, or foot swelling"] },
-  { cat:"Heart",       icon:"💓", items:["Rapid, racing, or irregular heartbeat","Feeling faint or actually fainting"] },
-  { cat:"Bleeding",    icon:"🩸", items:["Blood in urine or stool","Coughing or vomiting blood","Bleeding that won't stop after 10 minutes of pressure"] },
-  { cat:"General",     icon:"🌡️", items:["Fever above 101°F / 38.3°C","Confusion or sudden change in mental status","Inability to take medications due to persistent vomiting"] },
+const EM_LEVELS = [
+  { code:"99281", level:"L1", desc:"Self-limited or minor problem. Minimal assessment.", time:"≤ 15 min", cplx:"MINIMAL", cplxCls:"rgba(0,229,192,.12)", cplxColor:"#00e5c0" },
+  { code:"99282", level:"L2", desc:"Low complexity. New/established condition with low risk.", time:"16–25 min", cplx:"LOW", cplxCls:"rgba(0,229,192,.12)", cplxColor:"#00e5c0" },
+  { code:"99283", level:"L3", desc:"Moderate complexity. Multiple presenting problems.", time:"26–35 min", cplx:"MODERATE", cplxCls:"rgba(245,200,66,.12)", cplxColor:"#f5c842" },
+  { code:"99284", level:"L4", desc:"High complexity. High risk. Undiagnosed new problem.", time:"36–45 min", cplx:"HIGH", cplxCls:"rgba(255,107,107,.12)", cplxColor:"#ff6b6b" },
+  { code:"99285", level:"L5", desc:"High complexity. Immediate threat to life or function.", time:"46–60 min", cplx:"HIGHEST", cplxCls:"rgba(155,109,255,.12)", cplxColor:"#9b6dff" },
 ];
 
-const EMPTY_INSTRUCTIONS = {
-  activity: "",
-  diet: "",
-  monitoring: "",
-  medications: "",
-  wounds: "",
-};
+const RETURN_ITEMS = [
+  { icon:"🫀", text:<>Chest pain, pressure, or tightness that is <strong>new, returns, or worsens</strong> — call 911 immediately.</> },
+  { icon:"😵", text:<><strong>Sudden severe headache</strong>, face drooping, arm weakness, or difficulty speaking — call 911 immediately.</> },
+  { icon:"🌬️", text:<><strong>Shortness of breath</strong> at rest, difficulty breathing, or oxygen below 94%.</> },
+  { icon:"💓", text:<><strong>Rapid, irregular, or pounding heartbeat</strong> with dizziness, fainting, or near-fainting.</> },
+  { icon:"😰", text:<><strong>Severe sweating, nausea, or vomiting</strong> with chest discomfort.</> },
+  { icon:"🩸", text:<><strong>Blood sugar &lt; 70 mg/dL</strong> with symptoms not responding to treatment, or &gt; 400 mg/dL.</> },
+  { icon:"😟", text:<><strong>Any other symptom</strong> that feels severe, sudden, or different from usual.</> },
+];
 
-// ── HELPERS ───────────────────────────────────────────────────────────────────
-const fmtDate    = d => d ? new Date(d).toLocaleDateString("en-US",{ month:"short", day:"numeric", year:"numeric" }) : "—";
-const fmtDateLong = d => d ? new Date(d).toLocaleDateString("en-US",{ weekday:"short", month:"short", day:"numeric" }) : "—";
-const daysUntil  = d => d ? Math.ceil((new Date(d) - new Date()) / 86400000) : null;
-const calcAge    = dob => dob ? Math.floor((new Date() - new Date(dob)) / (365.25 * 86400000)) : null;
-const calcLOS    = (admitDate, dischargeDate) => {
-  if (!admitDate) return "—";
-  const end = dischargeDate ? new Date(dischargeDate) : new Date();
-  const days = Math.round((end - new Date(admitDate)) / 86400000);
-  return `${days} day${days !== 1 ? "s" : ""}`;
-};
+const NAV_SECTIONS = [
+  { id:"disp",    icon:"🚪", label:"Disposition" },
+  { id:"em",      icon:"🧮", label:"E&M Coding" },
+  { id:"dx",      icon:"📋", label:"Diagnoses" },
+  { id:"instr",   icon:"📄", label:"DC Instructions" },
+  { id:"return",  icon:"🚨", label:"Return Precautions" },
+  { id:"fu",      icon:"📅", label:"Follow-Up" },
+  { id:"rx",      icon:"💊", label:"Discharge Meds" },
+  { id:"sig",     icon:"✍", label:"Sign & Finalize" },
+];
 
-const statusColors = {
-  new:         { bg:"rgba(46,204,113,.12)",  border:"rgba(46,204,113,.35)",  color:G.green  },
-  continued:   { bg:"rgba(74,144,217,.1)",   border:"rgba(74,144,217,.3)",   color:G.blue   },
-  changed:     { bg:"rgba(245,166,35,.12)",  border:"rgba(245,166,35,.35)",  color:G.amber  },
-  discontinued:{ bg:"rgba(255,92,108,.1)",   border:"rgba(255,92,108,.3)",   color:G.red    },
-};
+const now = new Date();
+const pad = n => String(n).padStart(2, "0");
+const TODAY_DATE = `${pad(now.getMonth()+1)}/${pad(now.getDate())}/${now.getFullYear()}`;
+const TODAY_TIME = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
-const btn = (bg, fg="#fff", br="transparent", p="9px 18px") => ({
-  padding:p, borderRadius:8, fontFamily:"inherit", fontSize:12.5, fontWeight:700,
-  cursor:"pointer", display:"inline-flex", alignItems:"center", gap:6,
-  border:`1px solid ${br}`, background:bg, color:fg, transition:"all .15s", whiteSpace:"nowrap",
-});
-const badge = (bg, fg, br, p="3px 9px") => ({
-  padding:p, borderRadius:20, fontSize:10.5, fontWeight:700,
-  background:bg, border:`1px solid ${br}`, color:fg, display:"inline-block",
-});
-const card = { background:G.panel, border:`1px solid ${G.border}`, borderRadius:13, overflow:"hidden" };
-const panelHead = {
-  padding:"11px 16px 9px", fontFamily:"'Playfair Display',Georgia,serif",
-  fontSize:13, fontWeight:700, color:G.bright,
-  borderBottom:`1px solid rgba(30,58,95,.4)`, background:"rgba(11,29,53,.5)",
-  display:"flex", alignItems:"center", gap:8, flexShrink:0,
-};
-
-function Skeleton({ w="100%", h=13, mb=9 }) {
-  return (
-    <div style={{ height:h, width:w, borderRadius:4, marginBottom:mb,
-      background:`linear-gradient(90deg,${G.edge} 25%,${G.muted} 50%,${G.edge} 75%)`,
-      backgroundSize:"200% 100%", animation:"shimmer 1.4s infinite" }}/>
-  );
-}
-
-function EmptyState({ icon, title, sub, action, actionLabel }) {
-  return (
-    <div style={{ textAlign:"center", padding:"52px 24px" }}>
-      <div style={{ fontSize:48, marginBottom:12, opacity:.4 }}>{icon}</div>
-      <div style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:17, color:G.dim, marginBottom:6 }}>{title}</div>
-      <div style={{ fontSize:13, color:G.muted, marginBottom:action?18:0 }}>{sub}</div>
-      {action && <button style={btn(`linear-gradient(135deg,${G.teal},#00a896)`)} onClick={action}>{actionLabel}</button>}
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// MAIN PAGE COMPONENT
-// ══════════════════════════════════════════════════════════════════════════════
 export default function DischargePlanning() {
   const navigate = useNavigate();
-  // ── Load real data from Base44 ───────────────────────────────────────────────
-  const [currentUser, setCurrentUser] = useState(null);
+
+  // ── Base44 data ──
   const [clinicalNotes, setClinicalNotes] = useState([]);
   const [selectedNoteId, setSelectedNoteId] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const load = async () => {
+    (async () => {
       try {
         const u = await base44.auth.me();
         setCurrentUser(u);
         const notes = await base44.entities.ClinicalNote.list("-updated_date", 20);
         setClinicalNotes(notes || []);
-        if (notes && notes.length > 0) setSelectedNoteId(notes[0].id);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    load();
+        if (notes?.length) setSelectedNoteId(notes[0].id);
+      } catch (e) { console.error(e); }
+      finally { setIsLoading(false); }
+    })();
   }, []);
 
-  const selectedNote = clinicalNotes.find(n => n.id === selectedNoteId) || null;
+  const note = clinicalNotes.find(n => n.id === selectedNoteId) || null;
+  const patientName = note?.patient_name || "New Patient";
+  const patientMRN  = note?.patient_id  || "—";
+  const patientDOB  = note?.date_of_birth || "";
+  const primaryDx   = note?.diagnoses?.[0] || note?.chief_complaint || "—";
+  const medications = (note?.medications || []).map((m, i) => ({ id: `m${i}`, drug: m, sig: "Continue as prescribed", type: "CONTINUE" }));
+  const noteAllergies = note?.allergies || [];
+  const attendingMD = currentUser?.full_name || "—";
 
-  // Derive patient-like fields from ClinicalNote
-  const patient = selectedNote ? {
-    name: selectedNote.patient_name,
-    fullName: selectedNote.patient_name,
-    id: selectedNote.patient_id,
-    mrn: selectedNote.patient_id,
-    dateOfBirth: selectedNote.date_of_birth,
-    gender: selectedNote.patient_gender,
-    allergies: selectedNote.allergies || [],
-    primaryDiagnosis: selectedNote.diagnoses?.[0] || selectedNote.chief_complaint || "—",
-    secondaryDiagnoses: selectedNote.diagnoses?.slice(1) || [],
-  } : null;
-
-  const encounter = selectedNote ? {
-    id: selectedNote.id,
-    admitDate: selectedNote.date_of_visit,
-    primaryDiagnosis: selectedNote.diagnoses?.[0] || selectedNote.chief_complaint || "—",
-    secondaryDiagnoses: selectedNote.diagnoses?.slice(1) || [],
-    attendingPhysician: currentUser?.full_name || "—",
-    dischargeDisposition: selectedNote.disposition_plan || "—",
-    dischargeDate: null,
-  } : null;
-
-  const medications = selectedNote?.medications?.map((m, i) => ({
-    id: `med-${i}`,
-    name: m,
-    dose: "",
-    frequency: "",
-    route: "PO",
-    status: "continued",
-    instructions: "",
-  })) || [];
-
-  // ── UI STATE ─────────────────────────────────────────────────────────────────
-  const [activeSection, setActiveSection]   = useState("disposition");
-  const [selectedDisposition, setSelectedDisposition] = useState(null);
-  const [localMeds, setLocalMeds]           = useState([]);
-  const [localFollowups, setLocalFollowups] = useState([]);
-  const [selectedEdu, setSelectedEdu]       = useState([]);
-  const [instructions, setInstructions]     = useState(EMPTY_INSTRUCTIONS);
-  const [summaryText, setSummaryText]       = useState("");
-  const [aiGenerating, setAiGenerating]     = useState(false);
-  const [completionChecks, setCompletionChecks] = useState({
-    disposition:false, summary:false, medications:false, followup:false, education:false, instructions:false,
-  });
-  const [saving, setSaving]               = useState(false);
-  const [toast, setToast]                 = useState(null);
-  const [editingMed, setEditingMed]       = useState(null);
-  const [addFollowupModal, setAddFollowupModal] = useState(false);
-  const [newFollowup, setNewFollowup]     = useState({
-    type:"", provider:"", date:"", time:"", location:"", phone:"", priority:"routine", notes:"",
-  });
+  // ── UI state ──
+  const [activeSection, setActiveSection] = useState("disp");
+  const [disp, setDisp] = useState(null);
+  const [emCode, setEmCode] = useState(null);
+  const [dxList, setDxList] = useState([
+    { id: 1, code: "R07.9", name: "Chest pain, unspecified", primary: true },
+    { id: 2, code: "I10",   name: "Essential hypertension",  primary: false },
+  ]);
+  const [newDxCode, setNewDxCode] = useState("");
+  const [newDxName, setNewDxName] = useState("");
+  const [instrDiag, setInstrDiag]     = useState("");
+  const [instrTreat, setInstrTreat]   = useState("");
+  const [instrMeds, setInstrMeds]     = useState("");
+  const [instrAct, setInstrAct]       = useState("");
+  const [instrMisc, setInstrMisc]     = useState("");
+  const [instrGenerated, setInstrGenerated] = useState(false);
+  const [generatingInstr, setGeneratingInstr] = useState(false);
+  const [returnCustom, setReturnCustom] = useState("");
+  const [fuList, setFuList] = useState([
+    { id: 1, icon: "🫀", specialty: "Cardiology", note: "Within 1–2 weeks — stress test or outpatient evaluation", urgency: "Urgent" },
+    { id: 2, icon: "🩺", specialty: "Primary Care Physician (PCP)", note: "Within 3–5 days — blood pressure check and medication review", urgency: "Routine" },
+  ]);
+  const [newFu, setNewFu] = useState("");
+  const [newFuUrg, setNewFuUrg] = useState("Routine");
+  const [dcRxList, setDcRxList] = useState(medications);
+  const [newRxDrug, setNewRxDrug] = useState("");
+  const [newRxSig, setNewRxSig] = useState("");
+  const [newRxType, setNewRxType] = useState("NEW");
+  const [sigDate, setSigDate] = useState(TODAY_DATE);
+  const [sigTime, setSigTime] = useState(TODAY_TIME);
+  const [sigPt, setSigPt] = useState("");
+  const [sigRel, setSigRel] = useState("");
+  const [sigRN, setSigRN] = useState("");
+  const [sigNote, setSigNote] = useState("");
+  const [admitService, setAdmitService] = useState("");
+  const [admitMD, setAdmitMD] = useState("");
+  const [admitBed, setAdmitBed] = useState("");
+  const [txFacility, setTxFacility] = useState("");
+  const [txReason, setTxReason] = useState("");
+  const [txMD, setTxMD] = useState("");
+  const [txMode, setTxMode] = useState("ALS Ambulance");
+  const [mdmProblems, setMdmProblems] = useState("");
+  const [mdmData, setMdmData] = useState("");
+  const [mdmRisk, setMdmRisk] = useState("");
+  const [mdmNarrative, setMdmNarrative] = useState("");
+  const [emTime, setEmTime] = useState("");
+  const [emFaceTime, setEmFaceTime] = useState("");
+  const [emProcCpt, setEmProcCpt] = useState("");
+  const [dots, setDots] = useState({});
+  const [dcStatus, setDcStatus] = useState("DRAFT");
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState(null);
   const toastRef = useRef(null);
 
+  // AI
+  const [aiMsgs, setAiMsgs] = useState([{ role: "sys", text: "Notrya AI Discharge Advisor ready. Select disposition to begin, then use quick actions to auto-generate instructions, E&M level, and return precautions." }]);
+  const [aiInput, setAiInput] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [convHistory, setConvHistory] = useState([]);
+  const aiMsgsRef = useRef(null);
+
   useEffect(() => {
-    setLocalMeds(medications?.length ? medications : []);
-    setLocalFollowups([]);
-    setSelectedEdu([]);
-    setInstructions(EMPTY_INSTRUCTIONS);
-    setSummaryText(selectedNote?.discharge_summary || "");
-    setSelectedDisposition(null);
-    setCompletionChecks({ disposition:false, summary:false, medications:false, followup:false, education:false, instructions:false });
+    if (aiMsgsRef.current) aiMsgsRef.current.scrollTop = aiMsgsRef.current.scrollHeight;
+  }, [aiMsgs, aiLoading]);
+
+  // sync meds when note changes
+  useEffect(() => {
+    if (note) {
+      setDcRxList((note.medications || []).map((m, i) => ({ id: `m${i}`, drug: m, sig: "Continue as prescribed", type: "CONTINUE" })));
+    }
   }, [selectedNoteId]);
 
-  const showToast = useCallback((msg, color = G.teal) => {
+  const showToast = (msg, color = "#00e5c0") => {
     clearTimeout(toastRef.current);
     setToast({ msg, color });
-    toastRef.current = setTimeout(() => setToast(null), 3500);
-  }, []);
-
-  const completionPct  = Object.values(completionChecks).filter(Boolean).length;
-  const totalSections  = Object.keys(completionChecks).length;
-
-  const patientAge        = patient?.dateOfBirth ? calcAge(patient.dateOfBirth) : null;
-  const patientName       = patient?.fullName ?? patient?.name ?? "—";
-  const patientMRN        = patient?.mrn ?? patient?.id ?? "—";
-  const patientGender     = patient?.gender ?? "—";
-  const patientDOB        = patient?.dateOfBirth ?? null;
-
-  const primaryDx         = encounter?.primaryDiagnosis ?? "—";
-  const secondaryDx       = encounter?.secondaryDiagnoses ?? [];
-  const allergies         = patient?.allergies ?? [];
-  const codeStatus        = "Full Code";
-  const dischargeDisp     = encounter?.dischargeDisposition ?? "—";
-  const admitDate         = encounter?.admitDate ?? null;
-  const dischargeDate     = encounter?.dischargeDate ?? null;
-  const los               = calcLOS(admitDate, dischargeDate);
-  const attendingMD       = currentUser?.full_name ?? "—";
-
-  const markComplete = (section) => {
-    setCompletionChecks(p => ({ ...p, [section]:true }));
-    showToast(`${section.charAt(0).toUpperCase() + section.slice(1)} marked complete ✓`, G.green);
+    toastRef.current = setTimeout(() => setToast(null), 3000);
   };
 
-  async function savePlan() {
-    if (!selectedNote) { showToast("No patient note selected", G.red); return; }
+  const setDot = (id, done) => setDots(p => ({ ...p, [id]: done }));
+
+  const buildCtx = () => `Patient: ${patientName} | MRN: ${patientMRN} | Primary Dx: ${primaryDx} | Allergies: ${noteAllergies.join(", ") || "NKDA"} | Attending: ${attendingMD} | Disposition: ${disp || "Not set"} | E&M: ${emCode || "Not selected"}`;
+
+  const appendMsg = (role, text) => setAiMsgs(p => [...p, { role, text }]);
+
+  const sendAI = async (q) => {
+    const question = q || aiInput.trim();
+    if (!question || aiLoading) return;
+    setAiInput("");
+    appendMsg("user", question);
+    setAiLoading(true);
+    const history = [...convHistory, { role: "user", content: `${buildCtx()}\n\n${question}` }];
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({ prompt: `You are Notrya AI, an expert emergency medicine physician. Help complete discharge documentation accurately. Context: ${buildCtx()}\n\nQuestion: ${question}` });
+      const reply = typeof res === "string" ? res : JSON.stringify(res);
+      setConvHistory([...history, { role: "assistant", content: reply }]);
+      appendMsg("bot", reply);
+    } catch (e) { appendMsg("sys", "⚠ Connection error. Please try again."); }
+    setAiLoading(false);
+  };
+
+  const generateInstructions = async () => {
+    setGeneratingInstr(true);
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `Generate discharge instructions for: ${patientName}, Dx: ${primaryDx}, Allergies: ${noteAllergies.join(", ") || "NKDA"}, Meds: ${dcRxList.map(r=>r.drug).join(", ") || "see list"}. Return JSON with keys: diagnosis, treatment, medications, activity, additional. Write at 6th grade reading level.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            diagnosis:    { type: "string" },
+            treatment:    { type: "string" },
+            medications:  { type: "string" },
+            activity:     { type: "string" },
+            additional:   { type: "string" },
+          }
+        }
+      });
+      if (res.diagnosis)   setInstrDiag(res.diagnosis);
+      if (res.treatment)   setInstrTreat(res.treatment);
+      if (res.medications) setInstrMeds(res.medications);
+      if (res.activity)    setInstrAct(res.activity);
+      if (res.additional)  setInstrMisc(res.additional);
+      setInstrGenerated(true);
+      setDot("instr", true);
+      appendMsg("bot", "✅ Discharge instructions generated. Review each section and edit as needed.");
+      showToast("Instructions generated ✓");
+    } catch (e) { showToast("Generation failed — please try again", "#ff6b6b"); }
+    setGeneratingInstr(false);
+  };
+
+  const finalizeDischarge = async () => {
+    if (!disp) { showToast("Please select a disposition first", "#ff6b6b"); return; }
     setSaving(true);
     try {
-      await base44.entities.ClinicalNote.update(selectedNote.id, {
-        discharge_summary: summaryText,
-      });
-      showToast("Discharge plan saved ✓", G.teal);
-    } catch (e) {
-      showToast("Save failed — please try again", G.red);
-    }
+      if (note) {
+        await base44.entities.ClinicalNote.update(note.id, { disposition_plan: disp, status: "finalized" });
+      }
+      setDcStatus("SIGNED");
+      NAV_SECTIONS.forEach(s => setDot(s.id, true));
+      appendMsg("bot", `✅ Discharge summary signed and finalized for ${patientName}.\n\nDisposition: ${disp} · E&M: ${emCode || "Not selected"}\n\nDischarge papers are ready to print.`);
+      showToast("Discharge signed & finalized ✓");
+    } catch (e) { showToast("Save failed — please try again", "#ff6b6b"); }
     setSaving(false);
-  }
+  };
 
-  async function generateSummary() {
-    setAiGenerating(true);
-    setSummaryText("");
+  const addDx = () => {
+    if (!newDxName.trim()) return;
+    setDxList(p => [...p, { id: Date.now(), code: newDxCode, name: newDxName, primary: false }]);
+    setNewDxCode(""); setNewDxName("");
+    setDot("dx", true);
+  };
 
-    const medList = localMeds
-      .filter(m => (m.status ?? "continued") !== "discontinued")
-      .map(m => `${m.name ?? m.medicationName} ${m.dose} ${m.frequency ?? m.freq}`)
-      .join(", ") || "see medication list";
+  const addFu = () => {
+    if (!newFu.trim()) return;
+    const iconMap = { cardio:"🫀", cardiac:"🫀", pcp:"🩺", primary:"🩺", neuro:"🧠", ortho:"🦴", pulm:"🫁" };
+    const em = Object.entries(iconMap).find(([k]) => newFu.toLowerCase().includes(k))?.[1] || "📅";
+    setFuList(p => [...p, { id: Date.now(), icon: em, specialty: newFu, note: "", urgency: newFuUrg }]);
+    setNewFu("");
+    setDot("fu", true);
+  };
 
-    const secondaryList = Array.isArray(secondaryDx)
-      ? secondaryDx.map(d => (typeof d === "string" ? d : d.name ?? d.description)).join(", ")
-      : secondaryDx;
+  const addDcRx = () => {
+    if (!newRxDrug.trim()) return;
+    setDcRxList(p => [...p, { id: Date.now(), drug: newRxDrug, sig: newRxSig, type: newRxType }]);
+    setNewRxDrug(""); setNewRxSig("");
+    setDot("rx", true);
+  };
 
-    const allergyList = Array.isArray(allergies)
-      ? allergies.map(a => (typeof a === "string" ? a : `${a.allergen} — ${a.reaction ?? a.type ?? ""}`)).join(", ")
-      : allergies;
+  const scrollTo = (id) => {
+    document.getElementById(`sec-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setActiveSection(id);
+  };
 
-    const prompt = `You are Notrya AI, a clinical documentation expert. Generate a professional, concise hospital discharge summary narrative.
+  const selDispObj = DISPS.find(d => d.id === disp);
 
-Patient: ${patientName}, ${patientAge ? patientAge + "yo" : ""} ${patientGender}
-MRN: ${patientMRN}
-Admission: ${fmtDate(admitDate)} | Discharge: ${fmtDate(dischargeDate)} (${los})
-Attending: ${attendingMD}
-Primary Diagnosis: ${primaryDx}
-Secondary Diagnoses: ${secondaryList || "None documented"}
-Allergies: ${allergyList || "NKDA"}
-Discharge Medications: ${medList}
-Discharge Disposition: ${dischargeDisp}
-Clinical Notes: ${selectedNote?.raw_note?.slice(0, 800) || ""}
-Assessment: ${selectedNote?.assessment || ""}
-Plan: ${selectedNote?.plan || ""}
+  const typeColor = { NEW: "#9b6dff", CONTINUE: "#3b9eff", CHANGED: "#f5c842", STOP: "#ff6b6b" };
+  const typeIcon  = { NEW: "🆕", CONTINUE: "🔵", CHANGED: "🔄", STOP: "❌" };
 
-Write a professional discharge summary narrative (3–4 paragraphs) covering:
-1. Reason for admission and brief hospital course
-2. Key diagnostic findings and interventions performed
-3. Medication changes with brief clinical rationale
-4. Condition at discharge and discharge plan
+  // ── RENDER ──
+  return (
+    <div className="dc-root">
+      <style>{CSS}</style>
 
-Be concise, clinically accurate, and professional. Use standard medical abbreviations.`;
-
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({ prompt });
-      setSummaryText(result || "");
-      setCompletionChecks(p => ({ ...p, summary: true }));
-      showToast("Discharge summary generated ✓", G.teal);
-    } catch {
-      showToast("AI generation unavailable — please type summary manually", G.amber);
-    }
-    setAiGenerating(false);
-  }
-
-  function saveNewFollowup() {
-    if (!newFollowup.type || !newFollowup.date) {
-      showToast("Appointment type and date are required", G.red); return;
-    }
-    const entry = { ...newFollowup, id: Date.now() };
-    setLocalFollowups(p => [...p, entry]);
-    setAddFollowupModal(false);
-    setNewFollowup({ type:"", provider:"", date:"", time:"", location:"", phone:"", priority:"routine", notes:"" });
-    showToast("Follow-up appointment added ✓", G.purple);
-  }
-
-  function deleteFollowup(id) {
-    setLocalFollowups(p => p.filter(f => f.id !== id));
-  }
-
-  function updateMedInstruction(id, instr) {
-    setLocalMeds(prev => prev.map(m => m.id === id ? { ...m, instructions: instr } : m));
-  }
-
-  function printPDF() {
-    const printWindow = window.open("", "_blank", "width=900,height=700");
-    if (!printWindow) { showToast("Popup blocked — allow popups to generate PDF", G.amber); return; }
-
-    const eduData    = EDU_LIBRARY.filter(e => selectedEdu.includes(e.id));
-    const activeMeds = localMeds.filter(m => (m.status ?? "continued") !== "discontinued");
-    const discMeds   = localMeds.filter(m => m.status === "discontinued");
-    const today      = new Date().toLocaleDateString("en-US",{ weekday:"long", year:"numeric", month:"long", day:"numeric" });
-    const docId      = `DS-${patientMRN.replace(/\W/g,"")}-${Date.now().toString(36).toUpperCase()}`;
-
-    const allergyList = Array.isArray(allergies)
-      ? allergies.map(a => typeof a === "string" ? a : `${a.allergen}${a.reaction ? " — "+a.reaction : ""}`).join(" · ")
-      : (allergies || "NKDA");
-
-    const secondaryList = Array.isArray(secondaryDx)
-      ? secondaryDx.map(d => typeof d === "string" ? d : d.name ?? d.description)
-      : [];
-
-    printWindow.document.write(`<!DOCTYPE html><html><head>
-<meta charset="UTF-8">
-<title>Discharge Summary — ${patientName}</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Source+Sans+3:wght@400;600;700&display=swap');
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Source Sans 3',Georgia,sans-serif;font-size:11px;color:#1a1a2e;background:#fff}
-  .page{width:100%;max-width:816px;margin:0 auto;padding:36px 48px}
-  .doc-header{border-bottom:3px solid #050f1e;padding-bottom:18px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-end}
-  .doc-logo{font-family:'Playfair Display',Georgia,serif;font-size:22px;font-weight:700;color:#050f1e;line-height:1}
-  .doc-logo span{color:#00b5a5}
-  .doc-logo small{display:block;font-family:'Source Sans 3',sans-serif;font-size:8.5px;font-weight:400;color:#6b7280;letter-spacing:.08em;text-transform:uppercase;margin-top:3px}
-  .doc-date{font-size:10px;color:#6b7280;text-align:right}
-  .doc-date strong{display:block;font-size:11px;color:#1a1a2e}
-  .pt-banner{background:#f0f7ff;border:1.5px solid #bfdbfe;border-radius:8px;padding:14px 16px;margin-bottom:18px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-  .pt-field label{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#6b7280;display:block;margin-bottom:2px}
-  .pt-field span{font-size:11px;font-weight:600;color:#1a1a2e}
-  h2{font-family:'Playfair Display',Georgia,serif;font-size:13px;font-weight:700;color:#050f1e;padding:8px 0 6px;border-bottom:1.5px solid #e5e7eb;margin-bottom:10px;margin-top:18px;text-transform:uppercase;letter-spacing:.04em}
-  .dx-primary{font-size:12px;font-weight:700;color:#050f1e;margin-bottom:4px}
-  .dx-secondary{font-size:10.5px;color:#374151;margin-bottom:2px;padding-left:12px}
-  .dx-secondary::before{content:"•";margin-right:5px;color:#6b7280}
-  .summary-text{font-size:11.5px;line-height:1.85;color:#1a1a2e;margin-bottom:10px}
-  .summary-text p{margin-bottom:8px}
-  table{width:100%;border-collapse:collapse;margin-bottom:4px;font-size:10.5px}
-  th{background:#050f1e;color:#fff;padding:6px 10px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
-  td{padding:6px 10px;border-bottom:1px solid #f3f4f6;vertical-align:top;color:#1a1a2e}
-  tr:nth-child(even) td{background:#f9fafb}
-  .badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:.04em}
-  .badge-new{background:#dcfce7;color:#166534}
-  .badge-changed{background:#fef3c7;color:#92400e}
-  .badge-continued{background:#eff6ff;color:#1e40af}
-  .badge-discontinued{background:#fee2e2;color:#991b1b}
-  .fu-card{border:1px solid #e5e7eb;border-radius:6px;padding:10px 12px;margin-bottom:8px}
-  .edu-section{border:1px solid #e5e7eb;border-radius:6px;padding:12px 14px;margin-bottom:10px}
-  .edu-title{font-size:12.5px;font-weight:700;color:#050f1e;margin-bottom:2px}
-  .edu-bullet{font-size:10.5px;color:#1a1a2e;margin-bottom:4px;padding-left:14px;position:relative;line-height:1.65}
-  .edu-bullet::before{content:"•";position:absolute;left:4px;color:#00b5a5;font-weight:700}
-  .warning-box{background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:10px 12px;margin-top:8px}
-  .instr-content{font-size:11px;color:#1a1a2e;line-height:1.8;background:#f9fafb;border-left:3px solid #00b5a5;padding:8px 12px;border-radius:0 4px 4px 0;margin-bottom:10px}
-  .precaution-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .precaution-cat{background:#fff7ed;border:1px solid #fde68a;border-radius:6px;padding:8px 10px}
-  .doc-footer{border-top:1.5px solid #e5e7eb;margin-top:24px;padding-top:12px;display:flex;justify-content:space-between;align-items:flex-end}
-  .sig-line{border-top:1px solid #374151;width:200px;margin-top:28px;padding-top:4px;font-size:9.5px;color:#6b7280}
-  .footer-note{font-size:9px;color:#9ca3af;text-align:right;max-width:320px;line-height:1.5}
-  @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.no-print{display:none!important}.page{padding:24px 36px}}
-  .print-bar{background:#050f1e;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10}
-  .print-btn{background:#00d4bc;color:#050f1e;border:none;padding:8px 18px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer}
-  .print-title{font-family:'Playfair Display',serif;color:#e8f4ff;font-size:14px}
-</style></head><body>
-<div class="print-bar no-print">
-  <span class="print-title">🖨 Discharge Summary — ${patientName}</span>
-  <div style="display:flex;gap:8px">
-    <button class="print-btn" onclick="window.print()">🖨 Print / Save PDF</button>
-    <button class="print-btn" style="background:#4a90d9" onclick="window.close()">✕ Close</button>
-  </div>
-</div>
-<div class="page">
-  <div class="doc-header">
-    <div class="doc-logo">Notrya<span> AI</span><small>Discharge Planning Center</small></div>
-    <div class="doc-date"><strong>DISCHARGE SUMMARY</strong>${today}<br>Doc ID: ${docId}</div>
-  </div>
-  <div class="pt-banner">
-    <div class="pt-field"><label>Patient Name</label><span>${patientName}</span></div>
-    <div class="pt-field"><label>Date of Birth</label><span>${patientDOB ? fmtDate(patientDOB) : "—"}</span></div>
-    <div class="pt-field"><label>MRN</label><span>${patientMRN}</span></div>
-    <div class="pt-field"><label>Admission Date</label><span>${fmtDate(admitDate)}</span></div>
-    <div class="pt-field"><label>Discharge Date</label><span>${fmtDate(dischargeDate)} (${los})</span></div>
-    <div class="pt-field"><label>Attending Physician</label><span>${attendingMD}</span></div>
-    <div class="pt-field"><label>Disposition</label><span>${dischargeDisp}</span></div>
-    <div class="pt-field"><label>Code Status</label><span>${codeStatus}</span></div>
-  </div>
-  <h2>Diagnoses</h2>
-  <div class="dx-primary">PRIMARY: ${primaryDx}</div>
-  ${secondaryList.map(d => `<div class="dx-secondary">${d}</div>`).join("")}
-  <div style="margin-top:8px;font-size:10.5px"><strong style="color:#991b1b">Allergies:</strong> ${allergyList || "No known allergies"}</div>
-  <h2>Hospital Course &amp; Discharge Summary</h2>
-  <div class="summary-text">
-    ${summaryText
-      ? summaryText.split("\n\n").map(p => `<p>${p.replace(/\n/g,"<br>")}</p>`).join("")
-      : "<p><em>No discharge summary generated.</em></p>"
-    }
-  </div>
-  <h2>Discharge Instructions</h2>
-  ${[
-    ["🏃 Activity", instructions.activity],
-    ["🧂 Diet", instructions.diet],
-    ["📊 Monitoring", instructions.monitoring],
-    ["💊 Medications", instructions.medications],
-    ["🩹 Wound Care", instructions.wounds],
-  ].map(([label, content]) => content ? `<div style="margin-bottom:10px"><div style="font-size:9.5px;font-weight:700;text-transform:uppercase;color:#6b7280;margin-bottom:4px">${label}</div><div class="instr-content">${content}</div></div>` : "").join("")}
-  ${activeMeds.length ? `
-  <h2>Discharge Medications</h2>
-  <table><thead><tr><th>Medication</th><th>Dose / Frequency</th><th>Route</th><th>Status</th><th>Instructions</th></tr></thead><tbody>
-    ${activeMeds.map(m => `<tr><td><strong>${m.name||"—"}</strong></td><td>${m.dose||"—"} · ${m.frequency||"—"}</td><td>${m.route||"PO"}</td><td><span class="badge badge-${m.status||"continued"}">${(m.status||"continued").toUpperCase()}</span></td><td>${m.instructions||""}</td></tr>`).join("")}
-  </tbody></table>` : ""}
-  ${localFollowups.length ? `
-  <h2>Follow-up Appointments</h2>
-  ${localFollowups.map(f => `<div class="fu-card"><strong>${f.type||"Appointment"}</strong> — ${f.provider||""}<br>📅 ${fmtDateLong(f.date)}${f.time?" at "+f.time:""}${f.location?"<br>📍 "+f.location:""}${f.phone?"<br>📞 "+f.phone:""}</div>`).join("")}` : ""}
-  <h2>⚠️ Return to ED If You Experience:</h2>
-  <div class="precaution-grid">
-    ${RETURN_PRECAUTIONS.map(cat => `<div class="precaution-cat"><strong style="font-size:9.5px;text-transform:uppercase;color:#b45309">${cat.icon} ${cat.cat}</strong><br>${cat.items.map(i=>`<div style="font-size:10.5px;margin-top:3px">• ${i}</div>`).join("")}</div>`).join("")}
-  </div>
-  ${eduData.length ? `
-  <h2>Patient Education</h2>
-  ${eduData.map(edu => `<div class="edu-section"><div class="edu-title">${edu.icon} ${edu.title}</div><div style="font-size:10.5px;color:#6b7280;margin-bottom:6px">${edu.tagline}</div>${edu.bullets.map(b=>`<div class="edu-bullet">${b}</div>`).join("")}</div>`).join("")}` : ""}
-  <div class="doc-footer">
-    <div><div class="sig-line">${attendingMD}<br>Attending Physician</div></div>
-    <div class="footer-note">Generated by Notrya AI · ${today} · ${patientMRN}</div>
-  </div>
-</div></body></html>`);
-    printWindow.document.close();
-    showToast("PDF document opened — use Print to save as PDF", G.teal);
-  }
-
-  // ── SECTION RENDERERS ─────────────────────────────────────────────────────────
-  function SummarySection() {
-    return (
-      <div style={{ padding:24, display:"flex", flexDirection:"column", gap:16 }}>
-        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
-          <div>
-            <div style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:19, fontWeight:700, color:G.bright }}>📋 Discharge Summary</div>
-            <div style={{ fontSize:12.5, color:G.dim, marginTop:2 }}>AI-generated from encounter data · Editable before finalizing</div>
-          </div>
-          <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-            <button style={btn(`linear-gradient(135deg,${G.purple},#7c5cd6)`)} onClick={generateSummary} disabled={aiGenerating}>
-              {aiGenerating ? "✦ Generating…" : "✦ Generate with Notrya AI"}
-            </button>
-            {summaryText && <button style={btn("transparent",G.green,"rgba(46,204,113,.3)")} onClick={() => markComplete("summary")}>✓ Approve</button>}
-          </div>
+      {/* SUB-NAVBAR */}
+      <div className="dc-subnav">
+        <span className="dc-subnav-logo">notrya</span>
+        <span className="dc-subnav-sep">|</span>
+        <span className="dc-subnav-title">Discharge Summary</span>
+        {dcStatus === "SIGNED" && <span className="dc-badge dc-badge-teal">SIGNED</span>}
+        {dcStatus === "DRAFT"  && <span className="dc-badge dc-badge-gold">DRAFT</span>}
+        <div className="dc-subnav-right">
+          {clinicalNotes.length > 0 && (
+            <select className="dc-select" style={{ width: "auto", padding: "4px 10px", fontSize: 11 }} value={selectedNoteId || ""} onChange={e => setSelectedNoteId(e.target.value)}>
+              {clinicalNotes.map(n => <option key={n.id} value={n.id}>{n.patient_name || "Unknown"} — {n.diagnoses?.[0] || n.chief_complaint || "Note"}</option>)}
+            </select>
+          )}
+          <button className="dc-btn dc-btn-ghost" onClick={() => window.print()}>🖨 Print</button>
+          <button className="dc-btn dc-btn-gold" onClick={() => sendAI("Suggest the optimal E&M level for this visit based on the chart information.")}>🧮 Suggest E&M</button>
+          <button className="dc-btn dc-btn-primary" onClick={finalizeDischarge} disabled={saving}>{saving ? "Signing…" : "✍ Finalize & Sign"}</button>
         </div>
-
-        {isLoading ? (
-          <div style={{ ...card, padding:18 }}>{[85,65,90,70].map((w,i) => <Skeleton key={i} w={`${w}%`}/>)}</div>
-        ) : !patient ? (
-          <EmptyState icon="👤" title="No patient notes found" sub="Create clinical notes first, then return here to plan discharge."
-            action={() => navigate(createPageUrl("NewNote"))} actionLabel="➕ Create New Note"/>
-        ) : (
-          <div style={{ ...card, background:"linear-gradient(135deg,rgba(0,212,188,.04),rgba(74,144,217,.04))" }}>
-            <div style={{ padding:"13px 16px", display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12 }}>
-              {[
-                ["Patient", patientName],
-                ["MRN", patientMRN],
-                ["Age / Sex", patientAge ? `${patientAge}yo ${patientGender}` : patientGender],
-                ["Visit Date", fmtDate(admitDate)],
-                ["Attending", attendingMD],
-                ["Disposition", dischargeDisp],
-                ["Primary Dx", primaryDx],
-                ["Note Type", selectedNote?.note_type || "—"],
-                ["Status", selectedNote?.status || "—"],
-              ].map(([l, v]) => (
-                <div key={l}>
-                  <div style={{ fontSize:9, fontWeight:800, textTransform:"uppercase", letterSpacing:".1em", color:G.dim, marginBottom:2 }}>{l}</div>
-                  <div style={{ fontSize:12.5, fontWeight:600, color:G.bright, lineHeight:1.3 }}>{v || "—"}</div>
-                </div>
-              ))}
-            </div>
-            {secondaryDx.length > 0 && (
-              <div style={{ padding:"10px 16px", borderTop:`1px solid rgba(30,58,95,.4)`, display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
-                <span style={{ fontSize:10, fontWeight:800, textTransform:"uppercase", letterSpacing:".07em", color:G.dim }}>Secondary Dx:</span>
-                {secondaryDx.map((d, i) => (
-                  <span key={i} style={{ fontSize:11, padding:"2px 8px", borderRadius:6, background:"rgba(74,144,217,.1)", border:"1px solid rgba(74,144,217,.25)", color:G.blue }}>
-                    {typeof d === "string" ? d : d.name ?? d.description}
-                  </span>
-                ))}
-              </div>
-            )}
-            {allergies.length > 0 && (
-              <div style={{ padding:"8px 16px", borderTop:`1px solid rgba(30,58,95,.3)`, display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
-                <span style={{ fontSize:10, fontWeight:800, textTransform:"uppercase", letterSpacing:".07em", color:G.red }}>Allergies:</span>
-                {allergies.map((a, i) => (
-                  <span key={i} style={{ fontSize:11, padding:"2px 8px", borderRadius:6, background:"rgba(255,92,108,.1)", border:"1px solid rgba(255,92,108,.3)", color:G.red }}>
-                    {typeof a === "string" ? a : `${a.allergen}${a.reaction ? " — "+a.reaction : ""}`}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {aiGenerating && (
-          <div style={{ ...card, padding:20 }}>
-            {[85,100,72,95,60,80].map((w, i) => <Skeleton key={i} w={`${w}%`}/>)}
-          </div>
-        )}
-
-        {!aiGenerating && (
-          <div style={card}>
-            <div style={{ ...panelHead }}>
-              ✦ Hospital Course &amp; Discharge Summary
-              {completionChecks.summary && <span style={{ marginLeft:"auto", ...badge("rgba(46,204,113,.1)",G.green,"rgba(46,204,113,.3)") }}>✓ Complete</span>}
-            </div>
-            <div style={{ padding:"14px 16px" }}>
-              <textarea
-                value={summaryText}
-                onChange={e => setSummaryText(e.target.value)}
-                placeholder="Click '✦ Generate with Notrya AI' to auto-generate a discharge summary, or type directly here."
-                style={{ width:"100%", minHeight:280, background:"rgba(11,29,53,.5)", border:`1px solid rgba(30,58,95,.5)`, borderRadius:9, padding:"13px 15px", fontFamily:"'DM Sans',system-ui,sans-serif", fontSize:13, color:G.bright, lineHeight:1.85, resize:"vertical", outline:"none" }}
-              />
-              <div style={{ display:"flex", gap:8, marginTop:10, justifyContent:"flex-end" }}>
-                <button style={btn("transparent",G.dim,G.border)} onClick={() => setSummaryText("")}>Clear</button>
-                <button style={btn(`linear-gradient(135deg,${G.teal},#00a896)`)} onClick={() => markComplete("summary")}>✓ Approve Summary</button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
-    );
-  }
 
-  function MedicationsSection() {
-    return (
-      <div style={{ padding:24, display:"flex", flexDirection:"column", gap:16 }}>
-        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
-          <div>
-            <div style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:19, fontWeight:700, color:G.bright }}>💊 Medication Reconciliation</div>
-            <div style={{ fontSize:12.5, color:G.dim, marginTop:2 }}>Review medications · Add patient instructions</div>
-          </div>
-          <button style={btn("transparent",G.green,"rgba(46,204,113,.3)")} onClick={() => markComplete("medications")}>✓ Approve &amp; Sign</button>
+      {/* VITALS BAR */}
+      <div className="dc-vbar">
+        <span className="dc-vbar-name">{patientName}</span>
+        <span className="dc-vbar-meta">{patientDOB ? `DOB ${patientDOB} · ` : ""}{patientMRN !== "—" ? `MRN ${patientMRN}` : ""}</span>
+        <div className="dc-vbar-div"/>
+        <div className="dc-vital"><span className="lbl">CC</span><span className="val" style={{ color:"#ff9f43" }}>{note?.chief_complaint || "—"}</span></div>
+        <div className="dc-vbar-div"/>
+        <div className="dc-vital"><span className="lbl">Dx</span><span className="val">{primaryDx}</span></div>
+        {noteAllergies.length > 0 && <><div className="dc-vbar-div"/><div className="dc-vital"><span className="lbl">Allergies</span><span className="val" style={{ color:"#ff6b6b" }}>{noteAllergies.slice(0,2).join(", ")}</span></div></>}
+        <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:8 }}>
+          <span className={`dc-badge ${dcStatus === "SIGNED" ? "dc-badge-teal" : "dc-badge-gold"}`}>{dcStatus}</span>
         </div>
-
-        {isLoading && <div style={{ ...card, padding:18 }}>{[80,60,90,70,75].map((w,i) => <Skeleton key={i} w={`${w}%`}/>)}</div>}
-        {!isLoading && localMeds.length === 0 && (
-          <EmptyState icon="💊" title="No medications found" sub="Medications listed in the clinical note will appear here automatically."/>
-        )}
-
-        {!isLoading && localMeds.length > 0 && localMeds.map(med => {
-          const sc         = statusColors[med.status ?? "continued"];
-          const isEditing  = editingMed === med.id;
-          const medName    = med.name ?? med.medicationName ?? "Medication";
-          const medStatus  = med.status ?? "continued";
-          const medInstr   = med.instructions ?? "";
-          return (
-            <div key={med.id} style={{ ...card, borderLeft:`3px solid ${sc.color}` }}>
-              <div style={{ padding:"13px 16px", display:"flex", alignItems:"flex-start", gap:12 }}>
-                <div style={{ flex:1 }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:5, flexWrap:"wrap" }}>
-                    <span style={{ fontWeight:800, fontSize:14, color:G.bright }}>{medName}</span>
-                    <span style={{ ...badge(sc.bg, sc.color, sc.border), fontSize:10, fontWeight:700 }}>{medStatus.toUpperCase()}</span>
-                  </div>
-                  {!isEditing && (
-                    <div style={{ fontSize:12, color:G.dim, lineHeight:1.65, background:"rgba(11,29,53,.5)", borderRadius:7, padding:"8px 12px", borderLeft:`2px solid ${sc.color}55` }}>
-                      {medInstr || <span style={{ fontStyle:"italic", opacity:.5 }}>No patient instructions yet — click ✏ to add</span>}
-                    </div>
-                  )}
-                  {isEditing && (
-                    <textarea
-                      defaultValue={medInstr}
-                      onBlur={e => { updateMedInstruction(med.id, e.target.value); setEditingMed(null); }}
-                      autoFocus rows={3}
-                      placeholder="Enter patient instructions for this medication…"
-                      style={{ width:"100%", background:"rgba(22,45,79,.8)", border:`1px solid ${G.teal}`, borderRadius:7, padding:"8px 12px", fontFamily:"inherit", fontSize:12, color:G.bright, lineHeight:1.65, resize:"none", outline:"none" }}
-                    />
-                  )}
-                </div>
-                <button style={btn("transparent",G.dim,G.border,"6px 10px")} onClick={() => setEditingMed(isEditing ? null : med.id)}>
-                  {isEditing ? "✓" : "✏"}
-                </button>
-              </div>
-            </div>
-          );
-        })}
       </div>
-    );
-  }
 
-  function FollowupSection() {
-    const priorityColor = p => p === "urgent" ? G.red : p === "routine" ? G.blue : G.green;
-    const sorted = [...localFollowups].sort((a, b) => new Date(a.date) - new Date(b.date));
+      {/* BODY */}
+      <div className="dc-body">
 
-    return (
-      <div style={{ padding:24, display:"flex", flexDirection:"column", gap:16 }}>
-        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
-          <div>
-            <div style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:19, fontWeight:700, color:G.bright }}>📅 Follow-up Instructions</div>
-            <div style={{ fontSize:12.5, color:G.dim, marginTop:2 }}>Appointments · Lab orders · Referrals</div>
-          </div>
-          <div style={{ display:"flex", gap:8 }}>
-            <button style={btn("transparent",G.purple,"rgba(155,109,255,.3)")} onClick={() => setAddFollowupModal(true)}>＋ Add Appointment</button>
-            <button style={btn("transparent",G.green,"rgba(46,204,113,.3)")} onClick={() => markComplete("followup")}>✓ Approve</button>
-          </div>
-        </div>
-
-        {sorted.length === 0 && (
-          <EmptyState icon="📅" title="No follow-up appointments" sub="Add appointments using the button above" action={() => setAddFollowupModal(true)} actionLabel="＋ Add First Appointment"/>
-        )}
-
-        {sorted.map(f => {
-          const col = priorityColor(f.priority);
-          const daysAway = daysUntil(f.date);
-          return (
-            <div key={f.id} style={{ ...card, borderLeft:`3px solid ${col}` }}>
-              <div style={{ padding:"14px 16px", display:"flex", gap:14, alignItems:"flex-start" }}>
-                <div style={{ flex:1 }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4, flexWrap:"wrap" }}>
-                    <span style={{ fontWeight:800, fontSize:13.5, color:G.bright }}>{f.provider ?? f.type ?? "Appointment"}</span>
-                    <span style={{ ...badge(`${col}18`, col, `${col}44`), fontSize:10 }}>{(f.priority ?? "routine").toUpperCase()}</span>
-                    <span style={{ fontSize:11, color:G.dim }}>{f.type}</span>
-                  </div>
-                  <div style={{ display:"flex", gap:14, flexWrap:"wrap", marginBottom:4 }}>
-                    {f.date && <span style={{ fontSize:12, color:G.text }}>📅 {fmtDateLong(f.date)}{f.time ? " at "+f.time : ""}</span>}
-                    {daysAway !== null && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12, fontWeight:700, color:col }}>{daysAway}d away</span>}
-                  </div>
-                  {f.location && <div style={{ fontSize:12, color:G.dim, marginBottom:3 }}>📍 {f.location}</div>}
-                  {f.phone && <div style={{ fontSize:12, color:G.dim, marginBottom:3 }}>📞 {f.phone}</div>}
-                  {f.notes && <div style={{ fontSize:12, color:G.text, lineHeight:1.65, background:"rgba(11,29,53,.5)", borderRadius:7, padding:"7px 11px", borderLeft:`2px solid ${col}55`, marginTop:6 }}>📌 {f.notes}</div>}
-                </div>
-                <button style={{ background:"none", border:"none", color:G.muted, cursor:"pointer", fontSize:16, padding:2 }} onClick={() => deleteFollowup(f.id)}>✕</button>
-              </div>
-            </div>
-          );
-        })}
-
-        {addFollowupModal && (
-          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.75)", backdropFilter:"blur(8px)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center" }} onClick={() => setAddFollowupModal(false)}>
-            <div style={{ background:G.slate, border:`1px solid ${G.border}`, borderRadius:18, width:520, maxHeight:"88vh", overflowY:"auto" }} onClick={e => e.stopPropagation()}>
-              <div style={{ padding:"18px 22px 14px", borderBottom:`1px solid ${G.border}`, display:"flex", alignItems:"center", gap:10 }}>
-                <span style={{ fontSize:20 }}>📅</span>
-                <div style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:18, fontWeight:700, color:G.bright, flex:1 }}>Add Follow-up Appointment</div>
-                <button style={{ background:"none", border:"none", color:G.dim, fontSize:20, cursor:"pointer" }} onClick={() => setAddFollowupModal(false)}>✕</button>
-              </div>
-              <div style={{ padding:"16px 22px", display:"flex", flexDirection:"column", gap:10 }}>
-                {[
-                  ["Appointment Type", "type", "text", "e.g. Primary Care, Cardiology, Lab"],
-                  ["Provider / Organization", "provider", "text", "e.g. Dr. Smith, Quest Diagnostics"],
-                  ["Location", "location", "text", "Address or clinic name"],
-                  ["Phone Number", "phone", "tel", ""],
-                  ["Notes", "notes", "text", "Labs ordered, reason, special instructions…"],
-                ].map(([label, key, type, ph]) => (
-                  <div key={key} style={{ display:"flex", flexDirection:"column", gap:4 }}>
-                    <span style={{ fontSize:10, fontWeight:800, textTransform:"uppercase", letterSpacing:".07em", color:G.dim }}>{label}</span>
-                    <input type={type} placeholder={ph} value={newFollowup[key]} onChange={e => setNewFollowup(p => ({ ...p, [key]:e.target.value }))}
-                      style={{ background:"rgba(22,45,79,.8)", border:`1px solid ${G.border}`, borderRadius:8, padding:"8px 12px", fontFamily:"inherit", fontSize:12.5, color:G.bright, outline:"none" }}/>
-                  </div>
-                ))}
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                  <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-                    <span style={{ fontSize:10, fontWeight:800, textTransform:"uppercase", letterSpacing:".07em", color:G.dim }}>Date</span>
-                    <input type="date" value={newFollowup.date} onChange={e => setNewFollowup(p => ({ ...p, date:e.target.value }))}
-                      style={{ background:"rgba(22,45,79,.8)", border:`1px solid ${G.border}`, borderRadius:8, padding:"8px 12px", fontFamily:"inherit", fontSize:12.5, color:G.bright, outline:"none" }}/>
-                  </div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-                    <span style={{ fontSize:10, fontWeight:800, textTransform:"uppercase", letterSpacing:".07em", color:G.dim }}>Time</span>
-                    <input type="time" value={newFollowup.time} onChange={e => setNewFollowup(p => ({ ...p, time:e.target.value }))}
-                      style={{ background:"rgba(22,45,79,.8)", border:`1px solid ${G.border}`, borderRadius:8, padding:"8px 12px", fontFamily:"inherit", fontSize:12.5, color:G.bright, outline:"none" }}/>
-                  </div>
-                </div>
-                <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-                  <span style={{ fontSize:10, fontWeight:800, textTransform:"uppercase", letterSpacing:".07em", color:G.dim }}>Priority</span>
-                  <select value={newFollowup.priority} onChange={e => setNewFollowup(p => ({ ...p, priority:e.target.value }))}
-                    style={{ background:"rgba(22,45,79,.8)", border:`1px solid ${G.border}`, borderRadius:8, padding:"8px 12px", fontFamily:"inherit", fontSize:12.5, color:G.bright, outline:"none" }}>
-                    <option value="urgent">Urgent (within 7 days)</option>
-                    <option value="routine">Routine (within 2–4 weeks)</option>
-                    <option value="elective">Elective (1–3 months)</option>
-                  </select>
-                </div>
-              </div>
-              <div style={{ padding:"14px 22px", borderTop:`1px solid ${G.border}`, display:"flex", gap:8, justifyContent:"flex-end" }}>
-                <button style={btn("transparent",G.text,G.border)} onClick={() => setAddFollowupModal(false)}>Cancel</button>
-                <button style={btn(`linear-gradient(135deg,${G.purple},#7c5cd6)`)} onClick={saveNewFollowup}>＋ Add Appointment</button>
-              </div>
+        {/* SIDEBAR */}
+        <aside className="dc-sb">
+          <div className="dc-sb-card">
+            <div style={{ fontFamily:"'Playfair Display',serif", fontSize:13, fontWeight:700, color:"#e8f0fe" }}>{patientName}</div>
+            <div style={{ fontSize:10, color:"#4a6a8a", marginTop:3 }}>{patientMRN !== "—" ? `MRN ${patientMRN}` : "No note selected"}</div>
+            <div style={{ marginTop:8, display:"flex", gap:5, flexWrap:"wrap" }}>
+              {primaryDx !== "—" && <span className="dc-badge dc-badge-gold" style={{ fontSize:9.5 }}>{primaryDx.slice(0,24)}</span>}
             </div>
           </div>
-        )}
-      </div>
-    );
-  }
 
-  function EducationSection() {
-    return (
-      <div style={{ padding:24, display:"flex", flexDirection:"column", gap:16 }}>
-        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
-          <div>
-            <div style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:19, fontWeight:700, color:G.bright }}>📚 Patient Education Materials</div>
-            <div style={{ fontSize:12.5, color:G.dim, marginTop:2 }}>Select handouts for this patient's discharge packet</div>
-          </div>
-          <button style={btn("transparent",G.green,"rgba(46,204,113,.3)")} onClick={() => markComplete("education")}>✓ Finalize Selection</button>
-        </div>
-        <div style={{ fontSize:12, color:G.text, background:"rgba(74,144,217,.07)", border:"1px solid rgba(74,144,217,.25)", borderRadius:9, padding:"10px 14px", lineHeight:1.7 }}>
-          ℹ️ <strong style={{ color:G.blue }}>{selectedEdu.length}</strong> material{selectedEdu.length !== 1 ? "s" : ""} selected for this discharge packet.
-        </div>
-        {EDU_LIBRARY.map(edu => {
-        const isSelected = selectedEdu.includes(edu.id);
-        return (
-          <div key={edu.id} style={{ ...card, border:`1px solid ${isSelected ? "rgba(0,212,188,.35)" : G.border}`, transition:"all .15s" }}>
-            <div style={{ padding:"14px 16px" }}>
-                <div style={{ display:"flex", alignItems:"flex-start", gap:12 }}>
-                  <div style={{ width:44, height:44, borderRadius:11, background:isSelected?"rgba(0,212,188,.12)":"rgba(22,45,79,.5)", border:`1px solid ${isSelected?"rgba(0,212,188,.35)":G.border}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, flexShrink:0 }}>
-                    {edu.icon}
-                  </div>
-                  <div style={{ flex:1 }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
-                      <span style={{ fontWeight:800, fontSize:13.5, color:G.bright }}>{edu.title}</span>
-                      <span style={{ fontSize:10, fontWeight:700, padding:"2px 7px", borderRadius:6, background:"rgba(74,144,217,.1)", border:"1px solid rgba(74,144,217,.25)", color:G.blue }}>{edu.category}</span>
-                    </div>
-                    <div style={{ fontSize:12.5, color:G.dim, marginBottom:8 }}>{edu.tagline}</div>
-                    {edu.bullets.slice(0, 2).map((b, i) => (
-                      <div key={i} style={{ fontSize:11.5, color:G.text, lineHeight:1.55, display:"flex", gap:6, marginBottom:3 }}>
-                        <span style={{ color:G.teal, flexShrink:0 }}>·</span>{b}
-                      </div>
-                    ))}
-                    {edu.bullets.length > 2 && <div style={{ fontSize:11, color:G.muted, marginTop:3 }}>+ {edu.bullets.length - 2} more points…</div>}
-                  </div>
-                  <button
-                    onClick={() => setSelectedEdu(prev => isSelected ? prev.filter(x => x !== edu.id) : [...prev, edu.id])}
-                    style={{ padding:"8px 14px", borderRadius:8, fontFamily:"inherit", fontSize:12, fontWeight:700, cursor:"pointer", border:`1px solid ${isSelected?"rgba(0,212,188,.4)":G.border}`, background:isSelected?"rgba(0,212,188,.1)":"transparent", color:isSelected?G.teal:G.dim, flexShrink:0 }}>
-                    {isSelected ? "✓ Included" : "＋ Include"}
-                  </button>
-                </div>
-              </div>
+          <div className="dc-sb-label">Sections</div>
+          {NAV_SECTIONS.map(s => (
+            <div key={s.id} className={`dc-sb-nav${activeSection === s.id ? " active" : ""}`} onClick={() => scrollTo(s.id)}>
+              <span className="dc-sb-icon">{s.icon}</span>{s.label}
+              <span className={`dc-sb-dot${dots[s.id] ? " done" : ""}`}/>
             </div>
-          );
-        })}
-      </div>
-    );
-  }
+          ))}
 
-  function InstructionsSection() {
-    const fields = [
-      { key:"activity",   label:"🏃 Activity & Exercise Restrictions", color:G.blue,   ph:"Describe activity restrictions, mobility guidelines…" },
-      { key:"diet",       label:"🧂 Diet & Nutrition Guidance",         color:G.green,  ph:"Sodium limits, fluid restrictions, dietary modifications…" },
-      { key:"monitoring", label:"📊 Monitoring at Home",                color:G.teal,   ph:"Daily weight, BP checks, blood sugar targets…" },
-      { key:"medications",label:"💊 Medications Overview",              color:G.amber,  ph:"General medication instructions, new medications to highlight…" },
-      { key:"wounds",     label:"🩹 Wound / Incision Care",             color:G.rose,   ph:"Dressing changes, bathing restrictions, signs of infection…" },
-    ];
-    return (
-      <div style={{ padding:24, display:"flex", flexDirection:"column", gap:16 }}>
-        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
-          <div>
-            <div style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:19, fontWeight:700, color:G.bright }}>📝 Discharge Instructions</div>
-            <div style={{ fontSize:12.5, color:G.dim, marginTop:2 }}>Editable · Printed verbatim in the patient's discharge packet</div>
-          </div>
-          <button style={btn("transparent",G.green,"rgba(46,204,113,.3)")} onClick={() => markComplete("instructions")}>✓ Finalize Instructions</button>
-        </div>
-        {fields.map(f => (
-          <div key={f.key} style={{ ...card, borderLeft:`3px solid ${f.color}` }}>
-            <div style={{ padding:"10px 16px", borderBottom:`1px solid rgba(30,58,95,.4)`, background:"rgba(22,45,79,.3)" }}>
-              <span style={{ fontWeight:800, fontSize:12.5, color:G.bright }}>{f.label}</span>
-            </div>
-            <div style={{ padding:"12px 16px" }}>
-              <textarea value={instructions[f.key]} onChange={e => setInstructions(p => ({ ...p, [f.key]:e.target.value }))}
-                placeholder={f.ph} rows={4}
-                style={{ width:"100%", background:"rgba(11,29,53,.5)", border:`1px solid rgba(30,58,95,.4)`, borderRadius:8, padding:"10px 13px", fontFamily:"'DM Sans',system-ui,sans-serif", fontSize:12.5, color:G.bright, lineHeight:1.8, resize:"vertical", outline:"none" }}
-              />
-            </div>
-          </div>
-        ))}
-        <div style={card}>
-          <div style={{ ...panelHead, background:"rgba(255,92,108,.06)", borderBottom:`1px solid rgba(255,92,108,.25)` }}>
-            ⚠️ Return-to-ED Precautions
-          </div>
-          <div style={{ padding:"14px 16px", display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-            {RETURN_PRECAUTIONS.map(cat => (
-              <div key={cat.cat} style={{ background:"rgba(245,166,35,.06)", border:"1px solid rgba(245,166,35,.2)", borderRadius:8, padding:"10px 12px" }}>
-                <div style={{ fontSize:10, fontWeight:800, textTransform:"uppercase", letterSpacing:".08em", color:G.amber, marginBottom:6 }}>{cat.icon} {cat.cat}</div>
-                {cat.items.map((item, i) => (
-                  <div key={i} style={{ fontSize:12, color:G.text, lineHeight:1.55, marginBottom:3, display:"flex", gap:6 }}>
-                    <span style={{ color:G.amber, flexShrink:0 }}>•</span>{item}
-                  </div>
-                ))}
+          <div className="dc-sb-divider"/>
+          <div className="dc-sb-label">Visit Summary</div>
+          <div className="dc-sb-card" style={{ marginBottom:0, display:"flex", flexDirection:"column", gap:6 }}>
+            {[
+              ["Disposition", disp || "—", "#00e5c0"],
+              ["E&M Level",   emCode || "—", "#3b9eff"],
+              ["Dx Count",    String(dxList.length), "#8aaccc"],
+              ["Follow-Ups",  String(fuList.length), "#f5c842"],
+              ["DC Meds",     String(dcRxList.length), "#9b6dff"],
+              ["Status",      dcStatus, "#00e5c0"],
+            ].map(([l, v, c]) => (
+              <div key={l} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <span style={{ fontSize:11, color:"#4a6a8a" }}>{l}</span>
+                <span style={{ fontSize:11, fontFamily:"'JetBrains Mono',monospace", color:c }}>{v}</span>
               </div>
             ))}
           </div>
-        </div>
-      </div>
-    );
-  }
+        </aside>
 
-  const DISPOSITIONS = [
-    { id:"home",        icon:"🏠", label:"Discharge Home",       sub:"Patient may safely return home",        color:"#00d4bc", selectedBg:"rgba(0,212,188,.12)",  border:"rgba(0,212,188,.5)"  },
-    { id:"floor",       icon:"🏥", label:"Admit — Floor",        sub:"General medical/surgical floor",        color:"#4a90d9", selectedBg:"rgba(74,144,217,.12)", border:"rgba(74,144,217,.5)" },
-    { id:"telemetry",   icon:"📡", label:"Admit — Telemetry",    sub:"Continuous cardiac monitoring",         color:"#9b6dff", selectedBg:"rgba(155,109,255,.12)",border:"rgba(155,109,255,.5)"},
-    { id:"icu",         icon:"🚨", label:"Admit — ICU",          sub:"Critical care — high acuity",           color:"#ff5c6c", selectedBg:"rgba(255,92,108,.12)", border:"rgba(255,92,108,.5)" },
-    { id:"obs",         icon:"🔭", label:"Observation",          sub:"Hospital outpatient status <48h",       color:"#f5a623", selectedBg:"rgba(245,166,35,.12)", border:"rgba(245,166,35,.5)" },
-    { id:"transfer",    icon:"🚑", label:"Transfer",             sub:"Higher level / specialty facility",     color:"#4a90d9", selectedBg:"rgba(74,144,217,.12)", border:"rgba(74,144,217,.5)" },
-    { id:"ama",         icon:"⚠️", label:"AMA",                  sub:"Against Medical Advice",                color:"#f5a623", selectedBg:"rgba(245,166,35,.12)", border:"rgba(245,166,35,.5)" },
-    { id:"expired",     icon:"🕯️", label:"Expired",              sub:"Patient expired in ED",                 color:"#8a9bb0", selectedBg:"rgba(138,155,176,.1)", border:"rgba(138,155,176,.4)"},
-  ];
+        {/* CONTENT */}
+        <main className="dc-content">
 
-  function DispositionSection() {
-    return (
-      <div style={{ padding:24, display:"flex", flexDirection:"column", gap:20 }}>
-        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
-          <div>
-            <div style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:19, fontWeight:700, color:G.bright }}>🏥 Select Disposition</div>
-            <div style={{ fontSize:12.5, color:G.dim, marginTop:2 }}>Choose the patient's disposition at time of discharge</div>
-          </div>
-          {selectedDisposition && (
-            <button style={btn("transparent",G.green,"rgba(46,204,113,.3)")} onClick={() => markComplete("disposition")}>✓ Confirm Disposition</button>
-          )}
-        </div>
-
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))", gap:10 }}>
-          {DISPOSITIONS.map(d => {
-            const isSelected = selectedDisposition === d.id;
-            return (
-              <button
-                key={d.id}
-                onClick={() => setSelectedDisposition(d.id)}
-                style={{
-                  background: isSelected ? d.selectedBg : "rgba(13,34,64,.7)",
-                  border: `2px solid ${isSelected ? d.border : "rgba(30,58,95,.6)"}`,
-                  borderRadius: 14,
-                  padding: "18px 14px",
-                  cursor: "pointer",
-                  textAlign: "center",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 10,
-                  transition: "all .2s",
-                  outline: "none",
-                  fontFamily: "inherit",
-                  boxShadow: isSelected ? `0 0 0 1px ${d.border}, 0 4px 18px ${d.selectedBg}` : "none",
-                }}
-              >
-                <div style={{ fontSize: 28, lineHeight:1 }}>{d.icon}</div>
-                <div>
-                  <div style={{ fontWeight: 800, fontSize: 13, color: isSelected ? d.color : G.bright, lineHeight: 1.25, marginBottom: 4 }}>{d.label}</div>
-                  <div style={{ fontSize: 10.5, color: isSelected ? d.color : G.dim, lineHeight: 1.45, opacity: isSelected ? .9 : .7 }}>{d.sub}</div>
+          {/* ════ DISPOSITION ════ */}
+          <div className="dc-sec" id="sec-disp">
+            <div className="dc-sec-hdr">
+              <span className="dc-sec-icon">🚪</span>
+              <div><div className="dc-sec-title">Select Disposition</div><div className="dc-sec-sub">Patient's final disposition from the Emergency Department</div></div>
+            </div>
+            <div style={{ fontSize:10, color:"#4a6a8a", textTransform:"uppercase", letterSpacing:".08em", fontWeight:600, marginBottom:10 }}>SELECT DISPOSITION</div>
+            <div className="dc-disp-grid">
+              {DISPS.map(d => (
+                <div key={d.id} className={`dc-disp-card${disp === d.id ? " " + d.cls : ""}`} onClick={() => { setDisp(d.id); setDot("disp", true); }}>
+                  <span className="dc-disp-emoji">{d.icon}</span>
+                  <div className="dc-disp-name" style={{ color: disp === d.id ? d.bannerColor : "#e8f0fe" }}>{d.label}</div>
+                  <div className="dc-disp-sub">{d.sub}</div>
                 </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {selectedDisposition && (() => {
-          const d = DISPOSITIONS.find(x => x.id === selectedDisposition);
-          return (
-            <div style={{ background: d.selectedBg, border:`1px solid ${d.border}`, borderRadius:12, padding:"16px 20px", display:"flex", alignItems:"center", gap:16 }}>
-              <div style={{ fontSize:32 }}>{d.icon}</div>
-              <div>
-                <div style={{ fontSize:14, fontWeight:800, color:d.color, marginBottom:3 }}>Selected: {d.label}</div>
-                <div style={{ fontSize:12.5, color:G.text }}>{d.sub}</div>
-              </div>
-              <button onClick={() => setSelectedDisposition(null)} style={{ marginLeft:"auto", background:"none", border:"none", color:G.muted, cursor:"pointer", fontSize:18 }}>✕</button>
-            </div>
-          );
-        })()}
-      </div>
-    );
-  }
-
-  const SECTIONS = [
-    { id:"disposition",  icon:"🏥", label:"Disposition",                color:G.teal   },
-    { id:"summary",      icon:"📋", label:"Discharge Summary",          color:G.teal   },
-    { id:"medications",  icon:"💊", label:"Medication Reconciliation",  color:G.amber  },
-    { id:"followup",     icon:"📅", label:"Follow-up Instructions",     color:G.purple },
-    { id:"education",    icon:"📚", label:"Patient Education",          color:G.blue   },
-    { id:"instructions", icon:"📝", label:"Discharge Instructions",     color:G.rose   },
-  ];
-  const renderActiveSection = () => {
-    switch (activeSection) {
-      case "summary":      return SummarySection();
-      case "medications":  return MedicationsSection();
-      case "followup":     return FollowupSection();
-      case "education":    return EducationSection();
-      case "instructions": return InstructionsSection();
-      default:             return DispositionSection();
-    }
-  };
-
-  return (
-    <div style={{ fontFamily:"'DM Sans',system-ui,sans-serif", background:G.navy, minHeight:"100vh", color:G.text, display:"flex", flexDirection:"column", position:"relative" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
-        *{box-sizing:border-box}
-        ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#2a4d72;border-radius:2px}
-        input:focus,select:focus,textarea:focus{border-color:#00d4bc!important}
-        select option{background:#0d2240}
-        @keyframes shimmer{to{background-position:-200% 0}}
-        .section-btn:hover{background:rgba(0,212,188,.05)!important;border-color:rgba(0,212,188,.2)!important;color:#e8f4ff!important}
-        .act-btn:hover{opacity:.85}
-      `}</style>
-
-      <div style={{ position:"fixed", inset:0, background:`radial-gradient(ellipse 70% 50% at 8% 5%,rgba(0,168,150,.07),transparent 55%),radial-gradient(ellipse 55% 45% at 92% 92%,rgba(155,109,255,.05),transparent 50%)`, pointerEvents:"none", zIndex:0 }}/>
-
-      {/* PAGE HEADER */}
-      <div style={{ position:"relative", zIndex:1, padding:"0 28px 12px", borderBottom:`1px solid rgba(30,58,95,.6)`, background:"rgba(11,29,53,.4)", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, flexWrap:"wrap" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-          <div style={{ width:46, height:46, background:"rgba(0,212,188,.1)", border:"1px solid rgba(0,212,188,.25)", borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22 }}>🏥</div>
-          <div>
-            <div style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:22, fontWeight:700, color:G.bright }}>Discharge Planning</div>
-            <div style={{ fontSize:12, color:G.dim, marginTop:2 }}>
-              {patient
-                ? <><span style={{ color:G.bright, fontWeight:600 }}>{patientName}</span> &nbsp;·&nbsp; {patientMRN} &nbsp;·&nbsp; {primaryDx?.split("(")[0]?.trim() || "Diagnosis pending"}</>
-                : <span style={{ color:G.amber }}>Select a patient note below to begin discharge planning</span>
-              }
-            </div>
-          </div>
-        </div>
-        <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
-          {/* Patient selector */}
-          {clinicalNotes.length > 0 && (
-            <select value={selectedNoteId || ""} onChange={e => setSelectedNoteId(e.target.value)}
-              style={{ background:G.edge, border:`1px solid ${G.border}`, borderRadius:8, padding:"6px 12px", fontFamily:"inherit", fontSize:12, color:G.bright, outline:"none", maxWidth:240 }}>
-              {clinicalNotes.map(n => (
-                <option key={n.id} value={n.id}>{n.patient_name || "Unknown"} — {n.diagnoses?.[0] || n.chief_complaint || "Note"}</option>
               ))}
-            </select>
-          )}
-          {selectedNoteId && (
-            <button className="act-btn"
-              style={{ ...btn("transparent", G.dim, G.border, "6px 12px"), transition:"all .15s" }}
-              onClick={() => navigate(createPageUrl("NoteDetail") + `?id=${selectedNoteId}`)}>
-              ↗ Open Note
-            </button>
-          )}
-          {/* Completion ring */}
-          <div style={{ display:"flex", alignItems:"center", gap:8, background:"rgba(22,45,79,.5)", border:`1px solid ${G.border}`, borderRadius:9, padding:"7px 12px" }}>
-            <div style={{ position:"relative", width:36, height:36 }}>
-              <svg width="36" height="36" viewBox="0 0 36 36" style={{ transform:"rotate(-90deg)" }}>
-                <circle cx="18" cy="18" r="14" fill="none" stroke={G.edge} strokeWidth="3.5"/>
-                <circle cx="18" cy="18" r="14" fill="none" stroke={completionPct === totalSections ? G.green : G.teal} strokeWidth="3.5"
-                  strokeDasharray={`${2 * Math.PI * 14}`}
-                  strokeDashoffset={`${2 * Math.PI * 14 * (1 - completionPct / totalSections)}`}
-                  strokeLinecap="round" style={{ transition:"stroke-dashoffset .5s" }}/>
-              </svg>
-              <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:G.bright }}>{completionPct}/{totalSections}</div>
             </div>
-            <div>
-              <div style={{ fontSize:11, fontWeight:700, color:G.bright, lineHeight:1.2 }}>Sections Complete</div>
-              <div style={{ fontSize:10, color:G.dim }}>{completionPct === totalSections ? "Ready to finalize" : "In progress"}</div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      {/* MAIN 3-COL LAYOUT */}
-      <div style={{ position:"relative", zIndex:1, display:"grid", gridTemplateColumns:"260px 1fr 280px", flex:1, minHeight:"calc(100vh - 130px)" }}>
-
-        {/* LEFT — Section navigator */}
-        <div style={{ borderRight:`1px solid ${G.border}`, background:"rgba(11,29,53,.3)", display:"flex", flexDirection:"column", overflow:"hidden" }}>
-          <div style={panelHead}>📋 Discharge Checklist</div>
-          <div style={{ padding:"12px 14px", borderBottom:`1px solid rgba(30,58,95,.4)`, flexShrink:0 }}>
-            {isLoading ? (
-              <><Skeleton h={36}/><Skeleton w="80%"/></>
-            ) : patient ? (
-              <>
-                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
-                  <div style={{ width:36, height:36, borderRadius:9, background:"linear-gradient(135deg,rgba(0,212,188,.15),rgba(74,144,217,.15))", border:`1px solid rgba(0,212,188,.25)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, flexShrink:0 }}>👤</div>
-                  <div>
-                    <div style={{ fontWeight:700, fontSize:12.5, color:G.bright, lineHeight:1.2 }}>{patientName}</div>
-                    <div style={{ fontSize:10.5, color:G.dim }}>{patientMRN}</div>
-                  </div>
+            {selDispObj && (
+              <div className="dc-banner" style={{ background: selDispObj.bannerCls, borderColor: selDispObj.bannerBorder, color: selDispObj.bannerColor }}>
+                <span style={{ fontSize:20 }}>{selDispObj.icon}</span>
+                <div>
+                  <div style={{ fontWeight:700 }}>{selDispObj.bannerText}</div>
+                  <div style={{ opacity:.8, fontSize:11, marginTop:2 }}>{selDispObj.bannerSub}</div>
                 </div>
-                <div style={{ fontSize:11.5, color:G.text, background:"rgba(22,45,79,.5)", borderRadius:7, padding:"7px 10px", borderLeft:`2px solid ${G.teal}`, lineHeight:1.4 }}>{primaryDx || "Diagnosis pending"}</div>
-              </>
-            ) : (
-              <div style={{ fontSize:12, color:G.muted, textAlign:"center", padding:"12px 4px", lineHeight:1.6 }}>
-                👤 No notes found<br/><span style={{ fontSize:10.5, color:G.dim }}>Create clinical notes first</span>
+                <button style={{ marginLeft:"auto", background:"none", border:"none", color:"#4a6a8a", cursor:"pointer", fontSize:16 }} onClick={() => setDisp(null)}>✕</button>
+              </div>
+            )}
+            {disp && ["floor","telem","icu","obs"].includes(disp) && (
+              <div className="dc-grid-3" style={{ marginTop:14 }}>
+                <div className="dc-field"><label className="dc-field-label">Admitting Service</label><input className="dc-input" value={admitService} onChange={e=>setAdmitService(e.target.value)} placeholder="e.g. Cardiology, Hospitalist…"/></div>
+                <div className="dc-field"><label className="dc-field-label">Admitting Physician</label><input className="dc-input" value={admitMD} onChange={e=>setAdmitMD(e.target.value)} placeholder="Dr. Name"/></div>
+                <div className="dc-field"><label className="dc-field-label">Bed / Unit</label><input className="dc-input" value={admitBed} onChange={e=>setAdmitBed(e.target.value)} placeholder="e.g. 4W-412, MICU-6"/></div>
+              </div>
+            )}
+            {disp === "transfer" && (
+              <div className="dc-grid-2" style={{ marginTop:14, gap:12 }}>
+                <div className="dc-field"><label className="dc-field-label">Receiving Facility</label><input className="dc-input" value={txFacility} onChange={e=>setTxFacility(e.target.value)} placeholder="Facility name…"/></div>
+                <div className="dc-field"><label className="dc-field-label">Reason for Transfer</label><input className="dc-input" value={txReason} onChange={e=>setTxReason(e.target.value)} placeholder="Higher level of care…"/></div>
+                <div className="dc-field"><label className="dc-field-label">Accepting Physician</label><input className="dc-input" value={txMD} onChange={e=>setTxMD(e.target.value)} placeholder="Dr. Name"/></div>
+                <div className="dc-field"><label className="dc-field-label">Transport Mode</label>
+                  <select className="dc-select" value={txMode} onChange={e=>setTxMode(e.target.value)}>
+                    {["ALS Ambulance","BLS Ambulance","Air Transport","Private Vehicle"].map(o=><option key={o}>{o}</option>)}
+                  </select>
+                </div>
               </div>
             )}
           </div>
-          <div style={{ padding:"8px", flex:1, overflowY:"auto" }}>
-            {SECTIONS.map(sec => {
-              const done     = completionChecks[sec.id];
-              const isActive = activeSection === sec.id;
-              return (
-                <button key={sec.id} className="section-btn"
-                  style={{ width:"100%", textAlign:"left", padding:"11px 12px", background:isActive?`${sec.color}0d`:"transparent", border:`1px solid ${isActive?`${sec.color}44`:"rgba(30,58,95,.5)"}`, borderRadius:9, cursor:"pointer", fontFamily:"inherit", fontSize:12.5, fontWeight:600, color:isActive?G.bright:G.dim, display:"flex", alignItems:"center", gap:10, marginBottom:4, transition:"all .12s" }}
-                  onClick={() => setActiveSection(sec.id)}>
-                  <span style={{ fontSize:17, width:22 }}>{sec.icon}</span>
-                  <span style={{ flex:1, lineHeight:1.3 }}>{sec.label}</span>
-                  {done
-                    ? <span style={{ width:18, height:18, borderRadius:"50%", background:"rgba(46,204,113,.2)", border:"1px solid rgba(46,204,113,.5)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, fontWeight:700, color:G.green, flexShrink:0 }}>✓</span>
-                    : <span style={{ width:18, height:18, borderRadius:"50%", background:`${sec.color}18`, border:`1px solid ${sec.color}44`, flexShrink:0 }}/>
-                  }
+
+          {/* ════ E&M CODING ════ */}
+          <div className="dc-sec" id="sec-em">
+            <div className="dc-sec-hdr">
+              <span className="dc-sec-icon">🧮</span>
+              <div><div className="dc-sec-title">Evaluation & Management (E&M) Coding</div><div className="dc-sec-sub">Select appropriate level · 2021 AMA guidelines · Medical Decision Making</div></div>
+              <button className="dc-btn dc-btn-ghost" style={{ marginLeft:"auto" }} onClick={() => sendAI("Based on this ED visit, suggest the most appropriate E&M level and document the MDM using 2021 AMA E&M guidelines.")}>✨ AI Suggest</button>
+            </div>
+            <div className="dc-em-grid">
+              {EM_LEVELS.map(e => (
+                <div key={e.code} className={`dc-em-card${emCode === e.code ? " selected" : ""}`} onClick={() => { setEmCode(e.code); setDot("em", true); }}>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:17, fontWeight:700, color:"#e8f0fe", lineHeight:1 }}>{e.level}</div>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"#4a6a8a", marginTop:2 }}>{e.code}</div>
+                  <div style={{ fontSize:10.5, color:"#8aaccc", marginTop:6, lineHeight:1.4 }}>{e.desc}</div>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:"#4a6a8a", marginTop:3 }}>{e.time}</div>
+                  <span style={{ display:"inline-block", marginTop:5, fontSize:9, padding:"2px 7px", borderRadius:3, fontWeight:700, background:e.cplxCls, color:e.cplxColor }}>{e.cplx}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:14 }}>
+              {[
+                { code:"99291", level:"Critical", levelColor:"#ff6b6b", desc:"Critical care, first 30–74 min. Direct care with high complexity MDM.", time:"30–74 min (add +99292 per 30 min)", cplx:"CRITICAL CARE" },
+                { code:"99285-25", level:"L5 + Proc", levelColor:"#9b6dff", desc:"Level 5 with significant, separately identifiable procedure.", time:"Modifier -25 required", cplx:"HIGHEST + PROC" },
+              ].map(e => (
+                <div key={e.code} className={`dc-em-card${emCode === e.code ? " selected" : ""}`} onClick={() => { setEmCode(e.code); setDot("em", true); }}>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:17, fontWeight:700, color:e.levelColor, lineHeight:1 }}>{e.level}</div>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"#4a6a8a", marginTop:2 }}>{e.code}</div>
+                  <div style={{ fontSize:10.5, color:"#8aaccc", marginTop:6, lineHeight:1.4 }}>{e.desc}</div>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:"#4a6a8a", marginTop:3 }}>{e.time}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize:9.5, color:"#4a6a8a", textTransform:"uppercase", letterSpacing:".05em", fontWeight:800, marginBottom:8 }}>Medical Decision Making (MDM) Documentation</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {[
+                { label:"Number & Complexity of Problems", state:mdmProblems, setState:setMdmProblems, opts:["1 self-limited / minor problem","1 stable chronic illness","2+ stable chronic illnesses","1 undiagnosed new problem with uncertain prognosis","1 acute illness with systemic symptoms","1 acute or chronic illness with threat to life or bodily function"] },
+                { label:"Amount & Complexity of Data Reviewed", state:mdmData, setState:setMdmData, opts:["Minimal / none","Limited — order/review test(s), external notes","Moderate — independent interpretation of results","Extensive — independent interpretation + discussion with specialist"] },
+                { label:"Risk of Complications / Morbidity or Mortality", state:mdmRisk, setState:setMdmRisk, opts:["Minimal — OTC medications, minor surgery","Low — Rx drug mgmt, procedure with no identified risk","Moderate — Prescription drug mgmt, minor surgery with identified risk","High — Drug therapy requiring intensive monitoring, elective major surgery"] },
+              ].map(({ label, state, setState, opts }) => (
+                <div key={label} style={{ display:"flex", alignItems:"flex-start", gap:10, padding:"10px 12px", background:"#0e2544", borderRadius:8 }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:11, fontWeight:600, color:"#8aaccc", marginBottom:6 }}>{label}</div>
+                    <select className="dc-select" value={state} onChange={e => setState(e.target.value)}>
+                      <option value="">— Select —</option>
+                      {opts.map(o => <option key={o}>{o}</option>)}
+                    </select>
+                  </div>
+                </div>
+              ))}
+              <div className="dc-field"><label className="dc-field-label">MDM Narrative</label><textarea className="dc-textarea" rows={3} value={mdmNarrative} onChange={e=>setMdmNarrative(e.target.value)} placeholder="Document clinical decision-making rationale…"/></div>
+              <div className="dc-grid-3">
+                <div className="dc-field"><label className="dc-field-label">Total Encounter Time</label><input className="dc-input" value={emTime} onChange={e=>setEmTime(e.target.value)} placeholder="e.g. 45 min"/></div>
+                <div className="dc-field"><label className="dc-field-label">Provider Time (face-to-face)</label><input className="dc-input" value={emFaceTime} onChange={e=>setEmFaceTime(e.target.value)} placeholder="e.g. 30 min"/></div>
+                <div className="dc-field"><label className="dc-field-label">Procedure CPT (if any)</label><input className="dc-input" value={emProcCpt} onChange={e=>setEmProcCpt(e.target.value)} placeholder="e.g. 93010 EKG"/></div>
+              </div>
+            </div>
+          </div>
+
+          {/* ════ DIAGNOSES ════ */}
+          <div className="dc-sec" id="sec-dx">
+            <div className="dc-sec-hdr">
+              <span className="dc-sec-icon">📋</span>
+              <div><div className="dc-sec-title">Discharge Diagnoses</div><div className="dc-sec-sub">Primary and secondary diagnoses with ICD-10 codes</div></div>
+              <button className="dc-btn dc-btn-ghost" style={{ marginLeft:"auto" }} onClick={() => sendAI("Suggest appropriate ICD-10 codes for the discharge diagnoses based on the chart.")}>✨ AI Code</button>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              {dxList.map((dx, i) => (
+                <div key={dx.id} className="dc-fu-row">
+                  <span style={{ fontSize:11, fontWeight:700, color: dx.primary ? "#00e5c0" : "#4a6a8a", minWidth:26, fontFamily:"'JetBrains Mono',monospace" }}>{dx.primary ? "1°" : `${i+1}°`}</span>
+                  <input className="dc-fu-inp" style={{ maxWidth:80, fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:"#3b9eff" }} value={dx.code} onChange={e => setDxList(p => p.map(d => d.id === dx.id ? {...d, code:e.target.value} : d))} placeholder="ICD-10"/>
+                  <input className="dc-fu-inp" style={{ flex:1 }} value={dx.name} onChange={e => setDxList(p => p.map(d => d.id === dx.id ? {...d, name:e.target.value} : d))} placeholder="Diagnosis name…"/>
+                  <span className={`dc-badge ${dx.primary ? "dc-badge-coral" : "dc-badge-teal"}`} style={{ fontSize:9 }}>{dx.primary ? "PRIMARY" : "SECONDARY"}</span>
+                  {!dx.primary && <button className="dc-fu-del" onClick={() => { setDxList(p => p.filter(d => d.id !== dx.id)); }}>×</button>}
+                </div>
+              ))}
+            </div>
+            <div className="dc-add-row">
+              <input className="dc-input" style={{ width:90, fontFamily:"'JetBrains Mono',monospace", fontSize:12 }} value={newDxCode} onChange={e=>setNewDxCode(e.target.value)} placeholder="ICD-10"/>
+              <input className="dc-input" style={{ flex:1 }} value={newDxName} onChange={e=>setNewDxName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addDx()} placeholder="+ Add diagnosis…"/>
+              <button className="dc-btn dc-btn-ghost" onClick={addDx}>Add</button>
+            </div>
+          </div>
+
+          {/* ════ DC INSTRUCTIONS ════ */}
+          <div className="dc-sec" id="sec-instr">
+            <div className="dc-sec-hdr">
+              <span className="dc-sec-icon">📄</span>
+              <div><div className="dc-sec-title">Discharge Instructions</div><div className="dc-sec-sub">Patient-facing care guide · AI generated from chart information</div></div>
+              <div style={{ marginLeft:"auto", display:"flex", gap:8, alignItems:"center" }}>
+                {instrGenerated && <span className="dc-badge dc-badge-teal" style={{ fontSize:9 }}>✨ AI Generated</span>}
+                <button className="dc-btn dc-btn-gold" onClick={generateInstructions} disabled={generatingInstr}>
+                  {generatingInstr ? <><span className="dc-spin"/> Generating…</> : "✨ Generate from Chart"}
                 </button>
-              );
-            })}
-          </div>
-          {allergies.length > 0 && (
-            <div style={{ borderTop:`1px solid rgba(255,92,108,.25)`, flexShrink:0 }}>
-              <div style={{ padding:"10px 14px", background:"rgba(255,92,108,.06)" }}>
-                <div style={{ fontSize:9.5, fontWeight:800, textTransform:"uppercase", letterSpacing:".08em", color:G.red, marginBottom:5 }}>⚠ Documented Allergies</div>
-                {allergies.map((a, i) => (
-                  <div key={i} style={{ fontSize:11.5, color:G.rose, lineHeight:1.5, marginBottom:2, display:"flex", gap:5 }}>
-                    <span style={{ color:G.red }}>•</span>
-                    {typeof a === "string" ? a : `${a.allergen}${a.reaction ? " — "+a.reaction : ""}`}
-                  </div>
-                ))}
               </div>
             </div>
-          )}
-        </div>
-
-        {/* CENTER — Active section */}
-        <div style={{ overflowY:"auto", background:"rgba(5,10,20,.3)" }}>
-          {renderActiveSection()}
-        </div>
-
-        {/* RIGHT — Status + export panel */}
-        <div style={{ borderLeft:`1px solid ${G.border}`, background:"rgba(11,29,53,.3)", display:"flex", flexDirection:"column", overflow:"hidden" }}>
-          <div style={panelHead}>📊 Plan Status</div>
-          <div style={{ overflowY:"auto", flex:1, padding:10 }}>
-            <div style={{ background:G.panel, border:`1px solid ${G.border}`, borderRadius:10, padding:"12px 13px", marginBottom:8 }}>
-              <div style={{ fontSize:9.5, fontWeight:800, textTransform:"uppercase", letterSpacing:".08em", color:G.dim, marginBottom:8 }}>Completion</div>
-              {SECTIONS.map(sec => {
-                const done = completionChecks[sec.id];
-                return (
-                  <div key={sec.id} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
-                    <div style={{ width:7, height:7, borderRadius:"50%", background:done?G.green:G.edge, flexShrink:0, border:`1px solid ${done?"rgba(46,204,113,.5)":G.border}` }}/>
-                    <span style={{ flex:1, fontSize:11.5, color:done?G.bright:G.dim, fontWeight:done?600:400 }}>{sec.label}</span>
-                    {done
-                      ? <span style={{ fontSize:10, color:G.green }}>✓</span>
-                      : <button style={{ fontSize:9.5, fontWeight:700, color:sec.color, background:`${sec.color}10`, border:`1px solid ${sec.color}30`, borderRadius:5, padding:"2px 7px", cursor:"pointer", fontFamily:"inherit" }}
-                          onClick={() => setActiveSection(sec.id)}>Open →</button>
-                    }
-                  </div>
-                );
-              })}
-              {completionPct === totalSections && (
-                <div style={{ marginTop:10, background:"rgba(46,204,113,.08)", border:"1px solid rgba(46,204,113,.25)", borderRadius:8, padding:"9px 11px", fontSize:12, color:G.green, fontWeight:600, textAlign:"center" }}>
-                  🎉 All sections complete!<br/><span style={{ fontSize:11, fontWeight:400, color:G.dim }}>Ready to generate PDF</span>
-                </div>
-              )}
-            </div>
-
-            {localFollowups.length > 0 && (
-              <div style={{ background:G.panel, border:`1px solid ${G.border}`, borderRadius:10, padding:"12px 13px", marginBottom:8 }}>
-                <div style={{ fontSize:9.5, fontWeight:800, textTransform:"uppercase", letterSpacing:".08em", color:G.dim, marginBottom:7 }}>📅 Follow-up ({localFollowups.length})</div>
-                {[...localFollowups].sort((a,b)=>new Date(a.date)-new Date(b.date)).map(f => {
-                  const days = daysUntil(f.date);
-                  const col = f.priority === "urgent" ? G.red : G.blue;
-                  return (
-                    <div key={f.id} style={{ display:"flex", alignItems:"flex-start", gap:7, marginBottom:7, paddingBottom:7, borderBottom:`1px solid rgba(30,58,95,.3)` }}>
-                      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, fontWeight:700, color:col, flexShrink:0, marginTop:1 }}>{days !== null ? days+"d" : "—"}</div>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:11.5, fontWeight:600, color:G.bright, lineHeight:1.25, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.type || "Appointment"}</div>
-                        <div style={{ fontSize:10.5, color:G.dim }}>{fmtDateLong(f.date)}{f.provider ? " · "+f.provider.split(",")[0] : ""}</div>
-                      </div>
+            {!instrGenerated && (
+              <div style={{ background:"rgba(22,45,79,.3)", border:"1px dashed #1a3555", borderRadius:8, textAlign:"center", padding:"28px 20px", color:"#4a6a8a", fontSize:12 }}>
+                Click <strong style={{ color:"#f5c842" }}>✨ Generate from Chart</strong> to have AI create personalized discharge instructions.
+              </div>
+            )}
+            {instrGenerated && (
+              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                {[
+                  { icon:"🩺", title:"Your Diagnosis",             val:instrDiag,  setVal:setInstrDiag },
+                  { icon:"💊", title:"Treatment Received in the ED", val:instrTreat, setVal:setInstrTreat },
+                  { icon:"💊", title:"Medications",                  val:instrMeds,  setVal:setInstrMeds },
+                  { icon:"🏃", title:"Activity & Diet",              val:instrAct,   setVal:setInstrAct },
+                  { icon:"📝", title:"Additional Instructions",       val:instrMisc,  setVal:setInstrMisc },
+                ].map(({ icon, title, val, setVal }) => (
+                  <div key={title} className="dc-instr-box">
+                    <div className="dc-instr-hdr">
+                      <span style={{ fontSize:15 }}>{icon}</span>
+                      <span style={{ fontSize:12, fontWeight:700, color:"#e8f0fe", textTransform:"uppercase", letterSpacing:".04em" }}>{title}</span>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {selectedEdu.length > 0 && (
-              <div style={{ background:G.panel, border:`1px solid ${G.border}`, borderRadius:10, padding:"12px 13px", marginBottom:8 }}>
-                <div style={{ fontSize:9.5, fontWeight:800, textTransform:"uppercase", letterSpacing:".08em", color:G.dim, marginBottom:7 }}>📚 Education ({selectedEdu.length})</div>
-                {EDU_LIBRARY.filter(e => selectedEdu.includes(e.id)).map(e => (
-                  <div key={e.id} style={{ fontSize:11.5, color:G.text, marginBottom:4, display:"flex", gap:6, alignItems:"center" }}>
-                    <span style={{ fontSize:12 }}>{e.icon}</span>{e.title}
+                    <textarea className="dc-textarea" style={{ minHeight:60, fontSize:12.5, lineHeight:1.6 }} value={val} onChange={e => setVal(e.target.value)} placeholder="Enter patient instructions…"/>
                   </div>
                 ))}
               </div>
             )}
+          </div>
 
-            <div style={panelHead}>🖨 Export</div>
-            <div style={{ padding:10, display:"flex", flexDirection:"column", gap:8 }}>
-              <button className="act-btn"
-                style={{ width:"100%", padding:"9px 12px", borderRadius:8, fontFamily:"inherit", fontSize:12, fontWeight:700, cursor:"pointer", border:`1px solid ${G.border}`, background:"transparent", color:G.text, display:"flex", alignItems:"center", gap:8, transition:"all .15s" }}
-                onClick={() => navigator.clipboard?.writeText(summaryText || "").then(()=>showToast("Summary copied ✓",G.teal))}>
-                <span style={{ fontSize:15 }}>📋</span>Copy Summary to Clipboard
-              </button>
-              <button className="act-btn"
-                style={{ width:"100%", padding:"9px 12px", borderRadius:8, fontFamily:"inherit", fontSize:12, fontWeight:700, cursor:"pointer", border:`1px solid rgba(155,109,255,.3)`, background:"transparent", color:G.purple, display:"flex", alignItems:"center", gap:8, transition:"all .15s" }}
-                onClick={generateSummary}>
-                <span style={{ fontSize:15 }}>✦</span>AI Generate Summary
-              </button>
-              <button className="act-btn"
-                style={{ width:"100%", padding:"9px 12px", borderRadius:8, fontFamily:"inherit", fontSize:12, fontWeight:700, cursor:"pointer", border:`1px solid ${G.border}`, background:"transparent", color:G.text, display:"flex", alignItems:"center", gap:8, transition:"all .15s" }}
-                onClick={savePlan} disabled={saving}>
-                <span style={{ fontSize:15 }}>💾</span>Save Draft
-              </button>
-              <button className="act-btn"
-                style={{ width:"100%", padding:"9px 12px", borderRadius:8, fontFamily:"inherit", fontSize:12, fontWeight:700, cursor:"pointer", border:"none", background:`linear-gradient(135deg,${G.teal},#00a896)`, color:"#050f1e", display:"flex", alignItems:"center", gap:8, transition:"all .15s" }}
-                onClick={printPDF}>
-                <span style={{ fontSize:15 }}>🖨</span>Generate PDF Discharge Packet
+          {/* ════ RETURN PRECAUTIONS ════ */}
+          <div className="dc-sec" id="sec-return">
+            <div className="dc-sec-hdr">
+              <span className="dc-sec-icon">🚨</span>
+              <div><div className="dc-sec-title">Return to the Emergency Department</div><div className="dc-sec-sub">Instruct patient to return immediately for any of the following</div></div>
+              <button className="dc-btn dc-btn-ghost" style={{ marginLeft:"auto" }} onClick={() => sendAI("List the most important return-to-ED precautions for this patient. Use patient-friendly language.")}>✨ AI Precautions</button>
+            </div>
+            {RETURN_ITEMS.map((item, i) => (
+              <div key={i} className="dc-return-card">
+                <span style={{ fontSize:17, flexShrink:0, marginTop:2 }}>{item.icon}</span>
+                <div style={{ fontSize:12, color:"#8aaccc", lineHeight:1.5 }}>{item.text}</div>
+              </div>
+            ))}
+            <div className="dc-field" style={{ marginTop:12 }}>
+              <label className="dc-field-label">Additional Return Precautions (custom)</label>
+              <textarea className="dc-textarea" style={{ minHeight:60, borderColor:"rgba(255,107,107,.25)" }} value={returnCustom} onChange={e => setReturnCustom(e.target.value)} placeholder="Add any diagnosis-specific or patient-specific return precautions…"/>
+            </div>
+            <div style={{ marginTop:12, display:"flex", alignItems:"center", gap:10, background:"rgba(255,107,107,.06)", border:"1px solid rgba(255,107,107,.2)", borderRadius:8, padding:"11px 14px" }}>
+              <span style={{ fontSize:20 }}>📞</span>
+              <div>
+                <div style={{ fontSize:12, fontWeight:700, color:"#ff6b6b" }}>Emergency Instructions</div>
+                <div style={{ fontSize:11, color:"#8aaccc", marginTop:2 }}>If experiencing a medical emergency, call <strong style={{ color:"#e8f0fe" }}>911</strong> immediately or go to your nearest emergency room.</div>
+              </div>
+            </div>
+          </div>
+
+          {/* ════ FOLLOW-UP ════ */}
+          <div className="dc-sec" id="sec-fu">
+            <div className="dc-sec-hdr">
+              <span className="dc-sec-icon">📅</span>
+              <div><div className="dc-sec-title">Follow-Up Appointments</div><div className="dc-sec-sub">Specialist referrals · Primary care · Recommended timeframe</div></div>
+              <button className="dc-btn dc-btn-ghost" style={{ marginLeft:"auto" }} onClick={() => sendAI("What follow-up appointments should be scheduled for this patient? Include timeframe and urgency.")}>✨ AI Suggest</button>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              {fuList.map(f => (
+                <div key={f.id} className="dc-fu-row">
+                  <span style={{ fontSize:18 }}>{f.icon}</span>
+                  <div style={{ display:"flex", flexDirection:"column", flex:1, gap:3 }}>
+                    <div style={{ fontSize:12, fontWeight:600, color:"#e8f0fe" }}>{f.specialty}</div>
+                    <input className="dc-fu-inp" style={{ fontSize:11 }} value={f.note} onChange={e => setFuList(p => p.map(x => x.id === f.id ? {...x, note:e.target.value} : x))} placeholder="Timeframe / instructions…"/>
+                  </div>
+                  <span className={`dc-badge ${f.urgency === "Urgent" ? "dc-badge-coral" : "dc-badge-teal"}`} style={{ fontSize:9 }}>{f.urgency.toUpperCase()}</span>
+                  <button className="dc-fu-del" onClick={() => setFuList(p => p.filter(x => x.id !== f.id))}>×</button>
+                </div>
+              ))}
+            </div>
+            <div className="dc-add-row">
+              <input className="dc-input" style={{ flex:1 }} value={newFu} onChange={e=>setNewFu(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addFu()} placeholder="+ Add follow-up specialty or provider…"/>
+              <select className="dc-select" style={{ width:"auto", paddingRight:28 }} value={newFuUrg} onChange={e=>setNewFuUrg(e.target.value)}>
+                <option>Urgent</option><option>Routine</option>
+              </select>
+              <button className="dc-btn dc-btn-ghost" onClick={addFu}>Add</button>
+            </div>
+          </div>
+
+          {/* ════ DISCHARGE MEDS ════ */}
+          <div className="dc-sec" id="sec-rx">
+            <div className="dc-sec-hdr">
+              <span className="dc-sec-icon">💊</span>
+              <div><div className="dc-sec-title">Discharge Medications</div><div className="dc-sec-sub">New prescriptions and changes to home medications</div></div>
+              <span className="dc-badge dc-badge-purple" style={{ marginLeft:"auto" }}>{dcRxList.length} Rx</span>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              {dcRxList.map(rx => (
+                <div key={rx.id} className="dc-fu-row" style={{ borderColor: `${typeColor[rx.type] || "#1a3555"}33` }}>
+                  <span style={{ fontSize:15 }}>{typeIcon[rx.type] || "🔵"}</span>
+                  <div style={{ display:"flex", flexDirection:"column", flex:1, gap:2 }}>
+                    <input className="dc-fu-inp" style={{ fontWeight:600, color:"#e8f0fe" }} value={rx.drug} onChange={e => setDcRxList(p => p.map(x => x.id === rx.id ? {...x, drug:e.target.value} : x))} placeholder="Drug name + dose"/>
+                    <input className="dc-fu-inp" style={{ fontSize:11 }} value={rx.sig} onChange={e => setDcRxList(p => p.map(x => x.id === rx.id ? {...x, sig:e.target.value} : x))} placeholder="SIG / instructions…"/>
+                  </div>
+                  <span style={{ fontSize:9, padding:"2px 7px", borderRadius:3, background:`${typeColor[rx.type]}22`, color:typeColor[rx.type], fontWeight:700, whiteSpace:"nowrap" }}>{rx.type}</span>
+                  <button className="dc-fu-del" onClick={() => setDcRxList(p => p.filter(x => x.id !== rx.id))}>×</button>
+                </div>
+              ))}
+            </div>
+            <div className="dc-add-row">
+              <input className="dc-input" style={{ flex:"1.5" }} value={newRxDrug} onChange={e=>setNewRxDrug(e.target.value)} placeholder="Drug name + dose…"/>
+              <input className="dc-input" style={{ flex:1 }} value={newRxSig} onChange={e=>setNewRxSig(e.target.value)} placeholder="SIG / instructions…"/>
+              <select className="dc-select" style={{ width:"auto", paddingRight:28 }} value={newRxType} onChange={e=>setNewRxType(e.target.value)}>
+                {["NEW","CONTINUE","CHANGED","STOP"].map(o=><option key={o}>{o}</option>)}
+              </select>
+              <button className="dc-btn dc-btn-ghost" onClick={addDcRx}>Add</button>
+            </div>
+          </div>
+
+          {/* ════ SIGN & FINALIZE ════ */}
+          <div className="dc-sig" id="sec-sig">
+            <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:14 }}>
+              <div>
+                <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:700, color:"#e8f0fe" }}>{attendingMD}</div>
+                <div style={{ fontSize:11, color:"#4a6a8a", marginTop:2 }}>Attending Physician</div>
+              </div>
+              <div style={{ marginLeft:"auto", display:"flex", gap:10 }}>
+                <div className="dc-field" style={{ minWidth:160 }}>
+                  <label className="dc-field-label">Date of Service</label>
+                  <input className="dc-input" value={sigDate} onChange={e=>setSigDate(e.target.value)}/>
+                </div>
+                <div className="dc-field" style={{ minWidth:120 }}>
+                  <label className="dc-field-label">Time of Discharge</label>
+                  <input className="dc-input" value={sigTime} onChange={e=>setSigTime(e.target.value)}/>
+                </div>
+              </div>
+            </div>
+            <div style={{ height:1, background:"rgba(0,229,192,.2)", marginBottom:14 }}/>
+            <div className="dc-grid-3" style={{ marginBottom:14 }}>
+              <div className="dc-field"><label className="dc-field-label">Patient / Guardian Signature</label><input className="dc-input" value={sigPt} onChange={e=>setSigPt(e.target.value)} placeholder="Name of signatory"/></div>
+              <div className="dc-field"><label className="dc-field-label">Relationship (if guardian)</label><input className="dc-input" value={sigRel} onChange={e=>setSigRel(e.target.value)} placeholder="Self / Parent / POA…"/></div>
+              <div className="dc-field"><label className="dc-field-label">Nurse Witnessing Discharge</label><input className="dc-input" value={sigRN} onChange={e=>setSigRN(e.target.value)} placeholder="RN Name"/></div>
+            </div>
+            <div className="dc-field" style={{ marginBottom:14 }}>
+              <label className="dc-field-label">Attestation / Provider Notes</label>
+              <textarea className="dc-textarea" style={{ minHeight:60 }} value={sigNote} onChange={e=>setSigNote(e.target.value)} placeholder="I have reviewed the discharge instructions with the patient/guardian and they verbalized understanding. Patient discharged in stable condition…"/>
+            </div>
+            <div style={{ display:"flex", gap:8, justifyContent:"flex-end" }}>
+              <button className="dc-btn dc-btn-ghost" onClick={() => window.print()}>🖨 Print Discharge Papers</button>
+              <button className="dc-btn dc-btn-ghost" onClick={() => sendAI("Write a complete, signed discharge summary note in SOAP format suitable for the medical record.")}>📄 Generate DC Note</button>
+              <button className="dc-btn dc-btn-primary" style={{ padding:"8px 20px", fontSize:13 }} onClick={finalizeDischarge} disabled={saving}>
+                {saving ? <><span className="dc-spin"/> Signing…</> : "✍ Sign & Finalize Discharge"}
               </button>
             </div>
           </div>
-        </div>
+
+        </main>
+
+        {/* AI PANEL */}
+        <aside className="dc-ai">
+          <div className="dc-ai-hdr">
+            <div className="dc-ai-hdr-top">
+              <div className="dc-ai-dot"/>
+              <span style={{ fontSize:12, fontWeight:600, color:"#8aaccc" }}>Notrya AI — Discharge Advisor</span>
+              <span className="dc-ai-model">GPT-4o</span>
+            </div>
+            <div className="dc-ai-qbtns">
+              {[
+                ["📄 DC Instructions", () => generateInstructions()],
+                ["🧮 E&M Level",       () => sendAI("Suggest the optimal E&M level and document the MDM reasoning using 2021 AMA guidelines.")],
+                ["🚨 Return Precautions", () => sendAI("Generate a complete set of return-to-ED precautions tailored to this patient's diagnosis.")],
+                ["📅 Follow-Up Plan",  () => sendAI("What follow-up appointments, labs, or imaging should be arranged? Include timeframe and urgency.")],
+                ["🏷 ICD-10 Codes",    () => sendAI("Suggest ICD-10 codes for the discharge diagnoses based on the chart information.")],
+                ["📝 DC Summary Note", () => sendAI("Write a complete discharge summary note for this visit in SOAP format.")],
+                ["💌 Patient Letter",  () => sendAI("Generate a patient-friendly discharge letter explaining the diagnosis, treatment, medications, follow-up, and when to return.")],
+                ["✅ Review Completeness", () => sendAI("Review the completeness of this discharge summary. What sections are missing or incomplete?")],
+              ].map(([label, fn]) => (
+                <button key={label} className="dc-ai-qbtn" onClick={fn}>{label}</button>
+              ))}
+            </div>
+          </div>
+          <div className="dc-ai-msgs" ref={aiMsgsRef}>
+            {aiMsgs.map((m, i) => (
+              <div key={i} className={`dc-ai-msg ${m.role}`} dangerouslySetInnerHTML={{ __html: m.text.replace(/\n/g,"<br>").replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>") }}/>
+            ))}
+            {aiLoading && <div className="dc-ai-loader"><span/><span/><span/></div>}
+          </div>
+          <div className="dc-ai-inp-wrap">
+            <textarea
+              className="dc-ai-inp"
+              rows={2}
+              value={aiInput}
+              onChange={e => setAiInput(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendAI(); } }}
+              placeholder="Ask about discharge planning…"
+            />
+            <button className="dc-ai-send" onClick={() => sendAI()}>↑</button>
+          </div>
+        </aside>
+
       </div>
 
       {/* TOAST */}
       {toast && (
-        <div style={{ position:"fixed", bottom:76, right:24, zIndex:999 }}>
-          <div style={{ background:G.panel, border:`1px solid ${G.border}`, borderLeft:`3px solid ${toast.color}`, borderRadius:10, padding:"11px 16px", fontSize:12.5, fontWeight:600, color:G.bright, boxShadow:"0 8px 24px rgba(0,0,0,.35)", maxWidth:380 }}>{toast.msg}</div>
+        <div style={{ position:"fixed", bottom:20, right:20, zIndex:999, background:"#0b1e36", border:`1px solid ${toast.color}`, borderLeft:`3px solid ${toast.color}`, borderRadius:10, padding:"10px 16px", fontSize:12.5, fontWeight:600, color:"#e8f0fe", boxShadow:"0 8px 24px rgba(0,0,0,.35)" }}>
+          {toast.msg}
         </div>
       )}
     </div>

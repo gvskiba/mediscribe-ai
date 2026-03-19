@@ -205,6 +205,7 @@ function dbToErxDrug(rec) {
     name: rec.name,
     generic: rec.brand ? `${rec.brand} (${rec.name})` : rec.name,
     class: rec.drugClass,
+    category: rec.category || 'other',
     emoji: rec.emoji || '💊',
     strengths: rec.strengths || [],
     forms: rec.forms || ['Tablet'],

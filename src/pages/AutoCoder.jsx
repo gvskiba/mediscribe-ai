@@ -279,14 +279,14 @@ ${noteText}`;
     .ai-code { font-family:var(--mono); font-size:11px; color:var(--accent); background:var(--bg4); border-radius:4px; padding:1px 5px; }
     .ai-row { display:flex; justify-content:space-between; align-items:baseline; padding:4px 0; border-bottom:1px solid var(--border); font-size:11px; }
     .ai-row:last-child { border-bottom:none; }
-    .ac-bottom { height:76px; background:var(--bg2); border-top:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0; }
-    .btabs { display:flex; align-items:center; padding:0 16px; border-bottom:1px solid var(--border); height:38px; gap:2px; }
-    .btab { padding:0 16px; height:38px; display:flex; align-items:center; gap:6px; cursor:pointer; border-bottom:2px solid transparent; color:var(--text3); font-size:12px; font-weight:500; background:transparent; border-top:none; border-left:none; border-right:none; transition:.15s; white-space:nowrap; font-family:var(--sans); }
+    .ac-bottom { height:50px; background:var(--bg2); border-top:1px solid var(--border); display:flex; align-items:center; flex-shrink:0; padding:0 16px; gap:12px; }
+    .btabs { display:flex; align-items:center; gap:2px; }
+    .btab { padding:0 12px; height:50px; display:flex; align-items:center; gap:6px; cursor:pointer; border-bottom:2px solid transparent; color:var(--text3); font-size:12px; font-weight:500; background:transparent; border-top:none; border-left:none; border-right:none; transition:.15s; white-space:nowrap; font-family:var(--sans); }
     .btab:hover { color:var(--text2); }
     .btab.on { color:var(--accent); border-bottom-color:var(--accent); }
     .tab-cnt { font-family:var(--mono); font-size:10px; padding:1px 5px; border-radius:8px; background:var(--bg4); color:var(--text3); }
     .btab.on .tab-cnt { background:rgba(0,198,255,.15); color:var(--accent); }
-    .bnav2 { display:flex; align-items:center; padding:0 16px; height:38px; gap:8px; }
+    .bnav2 { display:flex; align-items:center; gap:8px; margin-left:auto; }
     .nbtn { padding:4px 14px; border-radius:5px; font-size:12px; font-weight:500; cursor:pointer; transition:.15s; border:1px solid var(--border2); background:transparent; color:var(--text2); font-family:var(--sans); }
     .nbtn:hover { background:var(--bg3); color:var(--text); }
     .nbtn.primary { background:var(--accent2); color:#fff; border-color:var(--accent2); }

@@ -324,6 +324,8 @@ export default function ERx() {
         },
         () => appendMsg('sys', '⚠ Unable to access location. Please enable location services.')
       );
+    } else {
+      appendMsg('sys', '⚠ Geolocation not supported by your browser.');
     }
   };
 
@@ -722,7 +724,7 @@ Diagnosis: ${rxDx || '—'}`;
             <div className="erx-grid-2 erx-mb-12">
               <div className="erx-field">
                 <label className="erx-lbl">Prescriber Notes (internal)</label>
-                <textarea className="erx-textarea" value={rxNotes} onChange={e => setRxNotes(e.target.value)} placeholder="Clinical rationale, monitoring plan…"/>
+                <textarea className="erx-textarea" value={rxNotes} onChange={e => setRxNotes(e.target.value)} placeholder="Clinical rationale, monitoring plan…" style={{resize:'vertical',minHeight:'80px'}}/>
               </div>
               <div style={{display:'flex',flexDirection:'column',gap:9,paddingTop:4}}>
                 {[['togGeneric',togGeneric,setTogGeneric,'Dispense as Generic (DAW-0)'],['togCounsel',togCounsel,setTogCounsel,'Pharmacist counselling required']].map(([id,val,set,lbl]) => (

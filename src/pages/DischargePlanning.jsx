@@ -77,7 +77,7 @@ const CSS = `
 .dcw-sb-divider{height:1px;background:var(--border);margin:6px 0}
 .dcw-sb-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--rl);padding:11px 12px;margin-bottom:4px}
 /* CONTENT */
-.dcw-content{flex:1;overflow-y:auto;padding:32px 20px 50px;display:flex;flex-direction:column;gap:16px}
+.dcw-content{flex:1;overflow-y:auto;padding:16px 20px 50px;display:flex;flex-direction:column;gap:16px}
 /* AI PANEL */
 .dcw-ai-panel{width:var(--ai-w);flex-shrink:0;background:var(--bg-panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:width .28s cubic-bezier(.4,0,.2,1)}
 .dcw-ai-panel.collapsed{width:36px}

@@ -34,7 +34,7 @@ const SIDEBAR_ITEMS = [
 export default function NewPatientInput() {
   const navigate = useNavigate();
 
-  const [demo, setDemo] = useState({ firstName: '', lastName: '', age: '', dob: '', sex: '', mrn: '', insurance: '', address: '', city: '', phone: '', email: '', emerg: '', height: '', weight: '', lang: '', notes: '', pronouns: '' });
+  const [demo, setDemo] = useState({ firstName: '', lastName: '', age: '', dob: '', sex: '', mrn: '', insurance: '', insuranceId: '', address: '', city: '', phone: '', email: '', emerg: '', height: '', weight: '', lang: '', notes: '', pronouns: '' });
   const [cc, setCC] = useState({ text: '', onset: '', duration: '', severity: '', quality: '', radiation: '', aggravate: '', relieve: '', assoc: '', hpi: '' });
   const [vitals, setVitals] = useState({});
   const [medications, setMedications] = useState([]);
@@ -77,6 +77,8 @@ export default function NewPatientInput() {
       mrn: demo.mrn,
       weight: demo.weight,
       crCl: demo.crCl,
+      insurance: demo.insurance,
+      insuranceId: demo.insuranceId,
       medications: medications,
       allergies: allergies
     }));

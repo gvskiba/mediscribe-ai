@@ -250,7 +250,7 @@ export default function ERx() {
   // Load patient data from NewPatientInput via localStorage
   const [patientData, setPatientData] = useState(() => {
     const stored = localStorage.getItem('npiPatientData');
-    return stored ? JSON.parse(stored) : { firstName: '', lastName: '', age: '', dob: '', sex: '', mrn: '', weight: '', crCl: '', medications: [], allergies: [] };
+    return stored ? JSON.parse(stored) : { firstName: '', lastName: '', age: '', dob: '', sex: '', mrn: '', weight: '', crCl: '', insurance: '', insuranceId: '', medications: [], allergies: [] };
   });
 
   // Load drugs from Medication entity
@@ -301,6 +301,8 @@ export default function ERx() {
   const [pharmSearchType, setPharmSearchType] = useState(''); // 'city', 'state', 'zip', 'near'
   const [pharmSearchValue, setPharmSearchValue] = useState('');
   const [userLocation, setUserLocation] = useState(null);
+  const [formularyStatus, setFormularyStatus] = useState(null);
+  const [loadingFormulary, setLoadingFormulary] = useState(false);
 
   const aiMsgsRef = useRef(null);
   const aiInputRef = useRef(null);
@@ -327,6 +329,35 @@ export default function ERx() {
     } else {
       appendMsg('sys', '⚠ Geolocation not supported by your browser.');
     }
+  };
+
+  const checkFormulary = async () => {
+    if (!selectedDrug || !patientData.insurance) {
+      appendMsg('sys', '⚠ Select a drug and ensure insurance info is entered.');
+      return;
+    }
+    setLoadingFormulary(true);
+    setFormularyStatus(null);
+    try {
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt: `Provide formulary coverage information for ${selectedDrug.name} (${selectedDrug.generic}) under ${patientData.insurance} insurance. Return ONLY valid JSON with: tier (string: "Tier 1", "Tier 2", "Tier 3", "Non-formulary", or "Unknown"), priorAuthRequired (boolean), copay (string or null), notes (string with any restrictions).`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            tier: { type: 'string' },
+            priorAuthRequired: { type: 'boolean' },
+            copay: { type: ['string', 'null'] },
+            notes: { type: 'string' }
+          }
+        }
+      });
+      setFormularyStatus(response);
+      const action = response.priorAuthRequired ? '⚠ Prior auth required' : '✓ No prior auth';
+      appendMsg('bot', `📋 **${selectedDrug.name}** on ${patientData.insurance}: **${response.tier}** · ${action}${response.copay ? ` · Copay: ${response.copay}` : ''}${response.notes ? ` · ${response.notes}` : ''}`);
+    } catch (e) {
+      appendMsg('sys', '⚠ Could not retrieve formulary status. Please verify insurance details.');
+    }
+    setLoadingFormulary(false);
   };
 
   useEffect(() => {

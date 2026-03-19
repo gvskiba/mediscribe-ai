@@ -29,7 +29,8 @@ export default function DemoTab({ demo, setDemo, parseText, setParseText, parsin
         </div>
         <div className="npi-field"><div className="npi-label">MRN / Patient ID</div><input className="npi-input" style={{ fontFamily: "'JetBrains Mono',monospace" }} value={demo.mrn} onChange={e => setDemo(p => ({ ...p, mrn: e.target.value }))} placeholder="00-000-000" /></div>
         <div className="npi-field"><div className="npi-label">Insurance / Payer</div><input className="npi-input" value={demo.insurance} onChange={e => setDemo(p => ({ ...p, insurance: e.target.value }))} placeholder="e.g. Medicare" /></div>
-      </div>
+        <div className="npi-field"><div className="npi-label">Insurance ID / Member ID <span className="opt">(optional)</span></div><input className="npi-input" style={{ fontFamily: "'JetBrains Mono',monospace" }} value={demo.insuranceId} onChange={e => setDemo(p => ({ ...p, insuranceId: e.target.value }))} placeholder="Policy number" /></div>
+        </div>
       <div className="npi-hdiv" />
       <div className="npi-grid-3">
         <div className="npi-field"><div className="npi-label">Phone</div><input className="npi-input" style={{ fontFamily: "'JetBrains Mono',monospace" }} value={demo.phone} onChange={e => setDemo(p => ({ ...p, phone: e.target.value }))} placeholder="+1 (000) 000-0000" /></div>

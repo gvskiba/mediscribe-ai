@@ -863,16 +863,26 @@ Diagnosis: ${rxDx || '—'}`;
                 ['⚖ Renal Dosing',`What is the appropriate dosing for this drug given${patientData.crCl ? ` CrCl of ${patientData.crCl} mL/min` : ' the patient renal function'}${patientData.weight ? `, weight ${patientData.weight}kg` : ''}${patientData.age ? `, age ${patientData.age}` : ''}?`],
                 ['🔄 Alternatives','Suggest safe alternatives to the current prescription given the patient allergies and current medications.'],
                 ['📋 Counselling','What patient counselling points should I communicate for this medication?'],
-                ['💳 Formulary','Is prior authorization likely to be required? What is the typical formulary status?'],
+                ['💳 Formulary',() => checkFormulary()],
                 ['✅ Review Rx','Review the prescription for completeness. Are the dose, frequency, quantity, and days supply appropriate?'],
                 ['💡 Suggest Rx','Suggest the top 5 most commonly prescribed medications for the diagnosis entered.'],
                 ['💰 Cost / Generic','Approximate cost of this prescription? Are there lower-cost generic alternatives?'],
               ].map(([lbl, q]) => (
-                <button key={lbl} className="erx-ai-qbtn" onClick={() => aiQ(q)}>{lbl}</button>
+                <button key={lbl} className="erx-ai-qbtn" onClick={() => typeof q === 'function' ? q() : aiQ(q)}>{lbl}</button>
               ))}
             </div>
           </div>
           <div className="erx-ai-msgs" ref={aiMsgsRef}>
+            {formularyStatus && (
+              <div style={{background:'rgba(0,229,192,.08)',border:'1px solid rgba(0,229,192,.25)',borderRadius:8,padding:10,marginBottom:10}}>
+                <div style={{fontSize:10,color:'var(--teal)',fontWeight:700,textTransform:'uppercase',marginBottom:4}}>📋 Formulary Status</div>
+                <div style={{fontSize:12,color:'var(--txt)',marginBottom:6}}><strong>{formularyStatus.tier}</strong></div>
+                {formularyStatus.priorAuthRequired && <div style={{fontSize:11,color:'var(--coral)',marginBottom:4}}>⚠ <strong>Prior Authorization Required</strong></div>}
+                {formularyStatus.copay && <div style={{fontSize:11,color:'var(--txt2)',marginBottom:4}}>💰 Typical Copay: {formularyStatus.copay}</div>}
+                {formularyStatus.notes && <div style={{fontSize:11,color:'var(--txt3)',fontStyle:'italic'}}>{formularyStatus.notes}</div>}
+              </div>
+            )}
+            {loadingFormulary && <div className="erx-ai-loader"><div className="erx-ai-tdot"/><div className="erx-ai-tdot"/><div className="erx-ai-tdot"/><span style={{marginLeft:6,fontSize:11,color:'var(--txt3)'}}>Checking formulary…</span></div>}
             {aiMessages.map((m, i) => (
               <div key={i} className={`erx-ai-msg ${m.role}`} dangerouslySetInnerHTML={{__html: m.text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}}/>
             ))}

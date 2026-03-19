@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
         duplicatesByMedId[medId] = records.length;
         // Delete all but the first record
         for (let i = 1; i < records.length; i++) {
-          await base44.entities.Medication.delete(records[i].id);
+          await base44.asServiceRole.entities.Medication.delete(records[i].id);
           deletedCount++;
         }
       }

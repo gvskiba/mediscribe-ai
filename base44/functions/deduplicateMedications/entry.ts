@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
     }
 
     // Get count of remaining unique medications
-    const remainingMeds = await base44.entities.Medication.list();
+    const remainingMeds = await base44.asServiceRole.entities.Medication.list();
 
     return Response.json({
       success: true,

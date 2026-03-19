@@ -792,6 +792,7 @@ export default function DischargePlanning() {
               <div className="dc-ai-dot"/>
               <span style={{ fontSize:12, fontWeight:600, color:"#8aaccc" }}>Notrya AI — Discharge Advisor</span>
               <span className="dc-ai-model">GPT-4o</span>
+              <button onClick={() => setAiOpen(false)} style={{ marginLeft:8, background:"none", border:"none", color:"#4a6a8a", cursor:"pointer", fontSize:15, lineHeight:1, padding:"0 2px" }} title="Collapse">›</button>
             </div>
             <div className="dc-ai-qbtns">
               {[

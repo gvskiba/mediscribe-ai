@@ -49,9 +49,27 @@ function confClass(n) { return n >= 85 ? 'high' : n >= 65 ? 'med' : 'low'; }
 
 const RVU_MAP = { '99211': 1.3, '99212': 2.6, '99213': 3.9, '99214': 5.2, '99215': 7.2, '93000': 1.0, '71046': 1.5, '80053': 0.8, '85025': 0.7, '84484': 0.5 };
 
-export default function AutoCoder() {
+export default function AutoCoder({ patientName = '', patientMrn = '', patientDob = '', patientAge = '', patientGender = '', chiefComplaint = '', vitals = {}, medications = [], allergies = [], pmhSelected = {} }) {
   const [tab, setTab] = useState('note');
-  const [noteText, setNoteText] = useState('');
+  
+  // Build note from NPI context if available
+  const buildContextNote = () => {
+    if (!patientName && !chiefComplaint) return SAMPLE_NOTE;
+    let note = '';
+    if (patientName || patientAge || patientGender) note += `${patientName || 'Patient'} is a ${patientAge}-year-old ${patientGender || 'unknown'}\n\n`;
+    if (chiefComplaint) note += `CHIEF COMPLAINT: ${chiefComplaint}\n\n`;
+    if (Object.keys(vitals).length) {
+      note += `VITALS:\n`;
+      Object.entries(vitals).forEach(([k, v]) => { if (v) note += `- ${k.toUpperCase()}: ${v}\n`; });
+      note += '\n';
+    }
+    if (medications.length) note += `MEDICATIONS: ${medications.join(', ')}\n\n`;
+    if (allergies.length) note += `ALLERGIES: ${allergies.join(', ')}\n\n`;
+    if (Object.keys(pmhSelected).length) note += `PAST MEDICAL HISTORY: ${Object.keys(pmhSelected).filter(k => pmhSelected[k] > 0).join(', ')}\n\n`;
+    return note || SAMPLE_NOTE;
+  };
+  
+  const [noteText, setNoteText] = useState(() => buildContextNote());
   const [icdCodes, setIcdCodes] = useState([]);
   const [cptCodes, setCptCodes] = useState([]);
   const [aiRationale, setAiRationale] = useState('');

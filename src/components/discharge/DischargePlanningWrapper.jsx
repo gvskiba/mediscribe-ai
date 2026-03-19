@@ -483,16 +483,32 @@ export default function DischargePlanningWrapper({ patientName='New Patient', pa
     <div className="dc3-root">
       <style>{CSS}</style>
 
+      {/* TOP NAVBAR */}
+      <div className="dc3-topnav">
+        <span className="dc3-topnav-welcome">Welcome, <strong>Dr. Gabriel Skiba</strong></span>
+        <div className="dc3-topnav-sep"/>
+        <div className="dc3-stat"><span className="dc3-stat-val">7</span><span className="dc3-stat-lbl">Active Patients</span></div>
+        <div className="dc3-stat"><span className="dc3-stat-val alert">14</span><span className="dc3-stat-lbl">Notes Pending</span></div>
+        <div className="dc3-stat"><span className="dc3-stat-val">3</span><span className="dc3-stat-lbl">Orders Queue</span></div>
+        <div className="dc3-stat"><span className="dc3-stat-val">11.6</span><span className="dc3-stat-lbl">Shift Hours</span></div>
+        <div className="dc3-topnav-right">
+          <div className="dc3-specialty-btn">Emergency Medicine <span style={{color:'var(--txt4)'}}>▾</span></div>
+          <div className="dc3-time-chip">{new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false})}</div>
+          <div className="dc3-ai-chip"><div className="dc3-ai-chip-dot"/> AI ON</div>
+          <button className="dc3-newpt-btn">+ New Patient</button>
+        </div>
+      </div>
+
       {/* SUB-NAVBAR */}
       <div className="dc3-subnav">
         <span className="dc3-logo">notrya</span>
         <span className="dc3-sep">|</span>
         <span className="dc3-title">Discharge Summary</span>
-        <span className="dc3-badge">{dcStatus}</span>
+        <span className="dc3-badge">DC-01</span>
         <div className="dc3-snr">
           <button className="dc3-btn dc3-btn-ghost" onClick={()=>window.print()}>🖨 Print</button>
-          <button className="dc3-btn dc3-btn-ghost" onClick={()=>sendAI('Generate a complete patient-friendly discharge letter.')}>📄 Patient Letter</button>
-          <button className="dc3-btn dc3-btn-gold" onClick={()=>sendAI('Suggest the optimal E&M level and document the MDM reasoning using 2021 AMA guidelines.')}>🧮 Suggest E&M</button>
+          <button className="dc3-btn dc3-btn-ghost" onClick={()=>sendAI('Generate a complete patient-friendly discharge letter.')}>📄 Generate Patient Letter</button>
+          <button className="dc3-btn dc3-btn-em" onClick={()=>sendAI('Suggest the optimal E&M level and document the MDM reasoning using 2021 AMA guidelines.')}>🧮 Suggest E&M</button>
           <button className="dc3-btn dc3-btn-primary" onClick={finalizeDischarge} disabled={saving}>
             {saving?<><span className="dc3-spin"/> Signing…</>:'✍ Finalize & Sign'}
           </button>

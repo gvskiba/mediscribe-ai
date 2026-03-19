@@ -1223,19 +1223,6 @@ Be concise, clinically accurate, and professional. Use standard medical abbrevia
         </div>
       </div>
 
-      {/* BOTTOM ACTION BAR */}
-      <div style={{ position:"sticky", bottom:0, zIndex:10, height:58, background:"rgba(11,29,53,.97)", borderTop:`1px solid ${G.border}`, backdropFilter:"blur(16px)", padding:"0 28px", display:"flex", alignItems:"center", gap:12 }}>
-        <div style={{ flex:1, display:"flex", alignItems:"center", gap:12 }}>
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:G.dim }}>{patientName} · {patientMRN}</span>
-          <span style={{ padding:"4px 10px", borderRadius:20, fontSize:10.5, fontWeight:700, background:completionPct===totalSections?"rgba(46,204,113,.1)":"rgba(245,166,35,.1)", border:`1px solid ${completionPct===totalSections?"rgba(46,204,113,.3)":"rgba(245,166,35,.3)"}`, color:completionPct===totalSections?G.green:G.amber }}>
-            {completionPct}/{totalSections} Complete
-          </span>
-        </div>
-        <button className="act-btn" style={{ ...btn("transparent",G.text,G.border,"7px 14px"), transition:"all .15s" }} onClick={savePlan} disabled={saving}>💾 Save Draft</button>
-        <button className="act-btn" style={{ ...btn("transparent",G.purple,"rgba(155,109,255,.3)","7px 14px"), transition:"all .15s" }} onClick={generateSummary}>✦ AI Generate Summary</button>
-        <button className="act-btn" style={{ ...btn(`linear-gradient(135deg,${G.teal},#00a896)`,undefined,undefined,"7px 16px"), transition:"all .15s" }} onClick={printPDF}>🖨 Generate PDF Discharge Packet</button>
-      </div>
-
       {/* TOAST */}
       {toast && (
         <div style={{ position:"fixed", bottom:76, right:24, zIndex:999 }}>

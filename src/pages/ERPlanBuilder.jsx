@@ -69,7 +69,7 @@ const CSS = `
 .erp-esi-bar{height:3px;border-radius:2px;margin-top:8px}
 
 /* CONTENT */
-.erp-content{flex:1;overflow-y:auto;padding:14px 16px 40px;display:flex;flex-direction:column;gap:14px}
+.erp-content{flex:1;overflow-y:auto;padding:40px 16px 40px;display:flex;flex-direction:column;gap:14px}
 .erp-content::-webkit-scrollbar{width:4px}
 .erp-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 

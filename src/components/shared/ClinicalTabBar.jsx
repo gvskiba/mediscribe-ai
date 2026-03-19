@@ -67,6 +67,9 @@ export default function ClinicalTabBar({ currentPage = 'NewPatientInput', curren
           <button className={`ctb-tab ctb-tab-er${currentPage === 'ERPlanBuilder' ? ' ctb-active' : ''}`} onClick={() => navigate('/ERPlanBuilder')}>
             <span className="ctb-tab-icon">🩺</span>ER Plan
           </button>
+          <button className={`ctb-tab ctb-tab-rx${currentPage === 'AutoCoder' ? ' ctb-active' : ''}`} onClick={() => navigate('/AutoCoder')}>
+            <span className="ctb-tab-icon">💻</span>AutoCoder
+          </button>
           <button className={`ctb-tab ctb-tab-rx${currentPage === 'ERx' ? ' ctb-active' : ''}`} onClick={() => navigate('/ERx')}>
             <span className="ctb-tab-icon">💊</span>eRx
           </button>

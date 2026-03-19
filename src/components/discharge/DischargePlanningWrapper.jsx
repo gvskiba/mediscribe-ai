@@ -487,6 +487,7 @@ export default function DischargePlanningWrapper({ patientName='New Patient', pa
 
       {/* TOP NAVBAR */}
       <div className="dc3-topnav">
+        <div className="dc3-topnav-avatar">N.</div>
         <span className="dc3-topnav-welcome">Welcome, <strong>Dr. Gabriel Skiba</strong></span>
         <div className="dc3-topnav-sep"/>
         <div className="dc3-stat"><span className="dc3-stat-val">7</span><span className="dc3-stat-lbl">Active Patients</span></div>
@@ -495,7 +496,7 @@ export default function DischargePlanningWrapper({ patientName='New Patient', pa
         <div className="dc3-stat"><span className="dc3-stat-val">11.6</span><span className="dc3-stat-lbl">Shift Hours</span></div>
         <div className="dc3-topnav-right">
           <div className="dc3-specialty-btn">Emergency Medicine <span style={{color:'var(--txt4)'}}>▾</span></div>
-          <div className="dc3-time-chip">{new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false})}</div>
+          <div className="dc3-time-chip">{new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false})} ↑</div>
           <div className="dc3-ai-chip"><div className="dc3-ai-chip-dot"/> AI ON</div>
           <button className="dc3-newpt-btn">+ New Patient</button>
         </div>

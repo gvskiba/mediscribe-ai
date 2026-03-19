@@ -698,12 +698,10 @@ ${noteText}`;
               </span>
             </button>
           ))}
-          <div style={{ flex: 1 }} />
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text3)' }}>Step {TABS.indexOf(tab) + 1} of 4</span>
         </div>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text3)' }}>Step {TABS.indexOf(tab) + 1} of 4</span>
         <div className="bnav2">
           <button className="nbtn" onClick={navBack} style={{ opacity: tab === 'note' ? .4 : 1, pointerEvents: tab === 'note' ? 'none' : 'auto' }}>← Back</button>
-          <div style={{ flex: 1 }} />
           <button className="nbtn primary" onClick={navNext} style={{ opacity: tab === 'billing' ? .4 : 1, pointerEvents: tab === 'billing' ? 'none' : 'auto' }}>Next →</button>
         </div>
       </div>

@@ -387,15 +387,15 @@ ${noteText}`;
 
       {/* Vitals Bar */}
       <div className="ac-vitals">
-        <span style={{ fontFamily: 'var(--serif)', fontSize: 13, color: 'var(--text)', marginRight: 8 }}>Hartwell, James A.</span>
+        <span style={{ fontFamily: 'var(--serif)', fontSize: 13, color: 'var(--text)', marginRight: 8 }}>{patientName || 'Patient'}</span>
         <span style={{ color: 'var(--border2)' }}>|</span>
-        <span style={{ color: 'var(--text3)' }}>MRN</span><span>47-291-004</span>
-        <span style={{ color: 'var(--text3)' }}>DOB</span><span>1958-07-14</span>
-        <span style={{ color: 'var(--text3)' }}>Payer</span><span>Medicare Part B</span>
-        <span style={{ color: 'var(--text3)' }}>BP</span><span className="abn">158/96</span>
-        <span style={{ color: 'var(--text3)' }}>HR</span><span>88</span>
-        <span style={{ color: 'var(--text3)' }}>SpO₂</span><span>96%</span>
-        <span style={{ color: 'var(--text3)' }}>Temp</span><span>98.8°F</span>
+        {patientMrn && <><span style={{ color: 'var(--text3)' }}>MRN</span><span>{patientMrn}</span></>}
+        {patientDob && <><span style={{ color: 'var(--text3)' }}>DOB</span><span>{patientDob}</span></>}
+        {patientAge && <><span style={{ color: 'var(--text3)' }}>Age</span><span>{patientAge}</span></>}
+        {vitals.bp && <><span style={{ color: 'var(--text3)' }}>BP</span><span className={vitals.bp.includes('/158') ? 'abn' : ''}>{vitals.bp}</span></>}
+        {vitals.hr && <><span style={{ color: 'var(--text3)' }}>HR</span><span>{vitals.hr}</span></>}
+        {vitals.spo2 && <><span style={{ color: 'var(--text3)' }}>SpO₂</span><span>{vitals.spo2}%</span></>}
+        {vitals.temp && <><span style={{ color: 'var(--text3)' }}>Temp</span><span>{vitals.temp}°C</span></>}
       </div>
 
       {/* Layout */}

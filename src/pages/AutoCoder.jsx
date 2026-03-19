@@ -417,7 +417,7 @@ ${noteText}`;
             </div>
           ))}
           <div className="sb-sec" style={{ marginTop: 12 }}>Patient</div>
-          {[['👤','Demographics'],['💊','Medications','7','n'],['⚠️','Allergies','2','alert'],['📁','Past Encounters','14','n']].map(([icon,label,badge,bc]) => (
+          {[['👤','Demographics'],['💊','Medications',medications.length.toString(),'n'],['⚠️','Allergies',allergies.length.toString(),allergies.length > 0 ? 'alert' : 'n'],['📁','Past Encounters','14','n']].map(([icon,label,badge,bc]) => (
             <div key={label} className="sb-item"><span style={{fontSize:14}}>{icon}</span>{label}{badge && <span className={`sb-badge ${bc||'n'}`}>{badge}</span>}</div>
           ))}
           <div className="sb-sec" style={{ marginTop: 12 }}>Tools</div>

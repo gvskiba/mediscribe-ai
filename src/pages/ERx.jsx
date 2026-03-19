@@ -285,6 +285,7 @@ export default function ERx() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiInput, setAiInput] = useState('');
   const [convHistory, setConvHistory] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
   // rx fields
   const [rxStrength, setRxStrength] = useState('');
   const [rxForm, setRxForm] = useState('Tablet');

@@ -73,4 +73,4 @@ export const VITAL_DEFS = [
   {id:'gcs',icon:'🧠',label:'GCS',unit:'/15',ph:'15',lo:14,hi:null},
 ];
 
-export const TABS = ['demo','cc','vit','meds','ros','pe','sum','mdm','discharge'];
+export const TABS = ['sum','demo','cc','vit','meds','ros','pe','mdm','discharge'];

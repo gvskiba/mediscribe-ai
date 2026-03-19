@@ -18,13 +18,13 @@ import SummaryTab from "@/components/npi/SummaryTab";
 import { VITAL_DEFS, ROS_SYSTEMS, PE_SYSTEMS, PMH_SYSTEMS, TABS } from "@/components/npi/npiData";
 
 const SIDEBAR_ITEMS = [
+  { id: 'sum', icon: '📋', label: 'Summary' },
   { id: 'demo', icon: '👤', label: 'Demographics' },
   { id: 'cc', icon: '🗣️', label: 'Chief Complaint' },
   { id: 'vit', icon: '📊', label: 'Vitals' },
   { id: 'meds', icon: '💊', label: 'Medications & PMH' },
   { id: 'ros', icon: '🔍', label: 'Review of Systems' },
   { id: 'pe', icon: '🩺', label: 'Physical Exam' },
-  { id: 'sum', icon: '📋', label: 'Summary' },
   { id: 'mdm', icon: '⚖️', label: 'MDM' },
   { id: 'discharge', icon: '🏥', label: 'Discharge' },
 ];

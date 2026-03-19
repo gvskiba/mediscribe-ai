@@ -1136,7 +1136,7 @@ Be concise, clinically accurate, and professional. Use standard medical abbrevia
 
         {/* CENTER — Active section */}
         <div style={{ overflowY:"auto", background:"rgba(5,10,20,.3)" }}>
-          <ActiveView/>
+          {renderActiveSection()}
         </div>
 
         {/* RIGHT — Status + export panel */}

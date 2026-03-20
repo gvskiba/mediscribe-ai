@@ -430,10 +430,21 @@ export default function ClinicalCalculators() {
       `}</style>
 
       {/* Icon Sidebar */}
-      <div style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: '65px', background: '#040d19', borderRight: '1px solid #1a3555', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 200 }}>
-        <div style={{ width: '100%', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid #1a3555' }}>
-          <div style={{ width: '34px', height: '34px', background: '#3b9eff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Playfair Display', fontSize: '14px', fontWeight: '700', color: 'white', cursor: 'pointer' }}>Calc</div>
-        </div>
+      <div style={{ position: 'fixed', top: '50px', left: 0, bottom: 0, width: '50px', background: '#0a1419', borderRight: '1px solid #1a3555', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '14px 0', zIndex: 200, overflowY: 'auto' }}>
+        {[
+          { icon: '📊', label: 'Dashboard' },
+          { icon: '📋', label: 'Notes' },
+          { icon: '🧪', label: 'Labs' },
+          { icon: '⚙️', label: 'Settings' },
+          { icon: '👥', label: 'Patients' },
+        ].map((item, i) => (
+          <div key={i} style={{ width: '34px', height: '34px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', background: 'rgba(0,229,192,.08)', border: '1px solid rgba(0,229,192,.2)', cursor: 'pointer', transition: 'all .15s' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,229,192,.15)'; e.currentTarget.style.borderColor = 'rgba(0,229,192,.4)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,229,192,.08)'; e.currentTarget.style.borderColor = 'rgba(0,229,192,.2)'; }}
+          >
+            {item.icon}
+          </div>
+        ))}
       </div>
 
       {/* Navbar */}

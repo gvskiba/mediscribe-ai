@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
 
     // Transform results to pharmacy format
     const pharmacies = results.map(result => {
-      const place = result.Place || result;
+      const place = result.Place;
       const name = place.Title || place.Label || 'Pharmacy';
       const address = place.Address || '';
       const addressNumber = place.AddressNumber || '';

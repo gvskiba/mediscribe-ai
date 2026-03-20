@@ -571,7 +571,7 @@ export default function ClinicalCalculators() {
               {/* Body */}
               <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
                 {/* Inputs */}
-                <div style={{ width: '380px', flexShrink: 0, overflowY: 'auto', padding: '16px', borderRight: '1px solid #1a3555' }}>
+                <div style={{ width: '340px', flexShrink: 0, overflowY: 'auto', padding: '16px', borderRight: '1px solid #1a3555' }}>
                   {activeCalc.fields && (
                     <>
                       <div style={{ fontSize: '10px', fontWeight: '700', color: '#4a6a8a', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '7px' }}>

@@ -63,6 +63,9 @@ import CommandCenter from './pages/CommandCenter';
 import CustomTemplates from './pages/CustomTemplates';
 import Customize from './pages/Customize';
 import Dashboard from './pages/Dashboard';
+import EDProcedureNotes from './pages/EDProcedureNotes';
+import ERPlanBuilder from './pages/ERPlanBuilder';
+import ERx from './pages/ERx';
 import DiagnosticStewardship from './pages/DiagnosticStewardship';
 import DischargePlanning from './pages/DischargePlanning';
 import DrugReference from './pages/DrugReference';
@@ -73,7 +76,9 @@ import LiveTranscription from './pages/LiveTranscription';
 import MedicalKnowledgeBase from './pages/MedicalKnowledgeBase';
 import MedicalNews from './pages/MedicalNews';
 import MedicationReference from './pages/MedicationReference';
+import MedicalDecisionMaking from './pages/MedicalDecisionMaking';
 import NewNote from './pages/NewNote';
+import NewPatientInput from './pages/NewPatientInput';
 import NoteCreationHub from './pages/NoteCreationHub';
 import NoteDetail from './pages/NoteDetail';
 import NoteEditorTabs from './pages/NoteEditorTabs';
@@ -114,6 +119,9 @@ export const PAGES = {
     "Customize": Customize,
     "Dashboard": Dashboard,
     "DiagnosticStewardship": DiagnosticStewardship,
+    "EDProcedureNotes": EDProcedureNotes,
+    "ERPlanBuilder": ERPlanBuilder,
+    "ERx": ERx,
     "DischargePlanning": DischargePlanning,
     "DrugReference": DrugReference,
     "DrugsBugs": DrugsBugs,
@@ -123,7 +131,9 @@ export const PAGES = {
     "MedicalKnowledgeBase": MedicalKnowledgeBase,
     "MedicalNews": MedicalNews,
     "MedicationReference": MedicationReference,
+    "MedicalDecisionMaking": MedicalDecisionMaking,
     "NewNote": NewNote,
+    "NewPatientInput": NewPatientInput,
     "NoteCreationHub": NoteCreationHub,
     "NoteDetail": NoteDetail,
     "NoteEditorTabs": NoteEditorTabs,
@@ -133,6 +143,8 @@ export const PAGES = {
     "OrderSetBuilder": OrderSetBuilder,
     "OrdersQueue": OrdersQueue,
     "PatientDashboard": PatientDashboard,
+    "PatientEducationGenerator": PatientEducationGenerator,
+    "PatientEducationMaterials": PatientEducationMaterials,
     "PatientHistory": PatientHistory,
     "PediatricDosing": PediatricDosing,
     "Procedures": Procedures,

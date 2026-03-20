@@ -58,6 +58,7 @@ const AuthenticatedApp = () => {
           }
         />
       ))}
+      <Route path="/awspharmacysection" element={<AWSPharmacySection />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

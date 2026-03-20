@@ -247,12 +247,7 @@ function dbToErxDrug(rec) {
   };
 }
 
-const PHARMACIES = [
-  {name:'CVS Pharmacy #3847',addr:'1420 Oak Ave · 0.4 mi · Open 24hr',chain:'CVS',chainClass:'chain-cvs'},
-  {name:'Walgreens #0291',addr:'832 Main St · 0.9 mi · Open until 10pm',chain:'WAG',chainClass:'chain-wag'},
-  {name:'Regional Medical Center',addr:'On-site pharmacy · Open 24hr',chain:'HOSP',chainClass:'chain-hosp'},
-  {name:'Walmart Pharmacy #4421',addr:'2200 Commerce Blvd · 1.8 mi · Open until 9pm',chain:'WM',chainClass:'chain-wm'},
-];
+// Pharmacies will be loaded from entity or external API
 
 function getInteractions(drug) {
   // Use interactions from DB if available
@@ -300,7 +295,8 @@ export default function ERx() {
   const [showDrop, setShowDrop] = useState(false);
   const [selectedDrug, setSelectedDrug] = useState(null);
   const [rxQueue, setRxQueue] = useState([]);
-  const [selectedPharm, setSelectedPharm] = useState('CVS Pharmacy #3847');
+  const [pharmacies, setPharmacies] = useState([]);
+  const [selectedPharm, setSelectedPharm] = useState('');
   const [sendMethod, setSendMethod] = useState('e-prescribe');
   const [statusBadge, setStatusBadge] = useState('draft');
   const [interactions, setInteractions] = useState([]);
@@ -348,13 +344,15 @@ export default function ERx() {
     return () => document.getElementById('erx-styles')?.remove();
   }, []);
 
-  const handleNearMe = () => {
+  const handleNearMe = async () => {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setUserLocation({lat: pos.coords.latitude, lng: pos.coords.longitude});
+        async (pos) => {
+          const location = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+          setUserLocation(location);
           setPharmSearchType('near');
           setPharmSearchValue('');
+          await searchPharmacies('near', '', location);
           appendMsg('sys', '📍 Location detected. Showing nearby pharmacies.');
         },
         () => appendMsg('sys', '⚠ Unable to access location. Please enable location services.')
@@ -363,6 +361,57 @@ export default function ERx() {
       appendMsg('sys', '⚠ Geolocation not supported by your browser.');
     }
   };
+
+  const searchPharmacies = async (type, value, location = null) => {
+    try {
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt: `Generate a realistic list of 4-6 pharmacies ${type === 'near' && location ? `near coordinates ${location.lat}, ${location.lng}` : type === 'search' && value ? `in or near ${value}` : 'in the local area'}. Return ONLY valid JSON array with objects containing: name (string, include chain name and store number), address (string, street address), city (string), state (string), zip (string), distance (string like "0.4 mi"), hours (string like "Open 24hr" or "Open until 10pm"), chain (string: CVS, WAG, HOSP, WM, or INDEP), phone (string). Make it realistic for a US location.`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            pharmacies: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  name: { type: 'string' },
+                  address: { type: 'string' },
+                  city: { type: 'string' },
+                  state: { type: 'string' },
+                  zip: { type: 'string' },
+                  distance: { type: 'string' },
+                  hours: { type: 'string' },
+                  chain: { type: 'string' },
+                  phone: { type: 'string' }
+                }
+              }
+            }
+          }
+        }
+      });
+      
+      const pharmsData = response.pharmacies || [];
+      const mapped = pharmsData.map(p => ({
+        name: p.name,
+        addr: `${p.address} · ${p.distance} · ${p.hours}`,
+        chain: p.chain,
+        chainClass: p.chain === 'CVS' ? 'chain-cvs' : p.chain === 'WAG' ? 'chain-wag' : p.chain === 'HOSP' ? 'chain-hosp' : p.chain === 'WM' ? 'chain-wm' : 'chain-wm',
+        fullData: p
+      }));
+      setPharmacies(mapped);
+      if (mapped.length > 0 && !selectedPharm) {
+        setSelectedPharm(mapped[0].name);
+      }
+    } catch (e) {
+      appendMsg('sys', '⚠ Unable to load pharmacies. Please try again.');
+      setPharmacies([]);
+    }
+  };
+
+  useEffect(() => {
+    // Load default pharmacies on mount
+    searchPharmacies('search', '');
+  }, []);
 
   const checkFormulary = async () => {
     if (!selectedDrug || !patientData.insurance) {
@@ -906,8 +955,14 @@ Diagnosis: ${rxDx || '—'}`;
                 placeholder="City, State, or Zip code" 
                 value={pharmSearchValue}
                 onChange={e => { setPharmSearchValue(e.target.value); setPharmSearchType(e.target.value ? 'search' : ''); }}
+                onKeyDown={e => { if (e.key === 'Enter' && pharmSearchValue) searchPharmacies('search', pharmSearchValue); }}
                 style={{flex:1,minWidth:'150px'}}
               />
+              <button 
+                className="erx-btn-ghost" 
+                onClick={() => pharmSearchValue && searchPharmacies('search', pharmSearchValue)}
+                style={{whiteSpace:'nowrap'}}
+              >🔍 Search</button>
               <button 
                 className="erx-btn-ghost" 
                 onClick={handleNearMe}
@@ -916,14 +971,15 @@ Diagnosis: ${rxDx || '—'}`;
               {(pharmSearchType || pharmSearchValue) && (
                 <button 
                   className="erx-btn-ghost" 
-                  onClick={() => { setPharmSearchType(''); setPharmSearchValue(''); setUserLocation(null); }}
+                  onClick={() => { setPharmSearchType(''); setPharmSearchValue(''); setUserLocation(null); searchPharmacies('search', ''); }}
                   style={{whiteSpace:'nowrap'}}
                 >✕ Clear</button>
               )}
             </div>
 
             <div className="erx-pharm-grid erx-mb-12">
-              {PHARMACIES.map(p => (
+              {pharmacies.length === 0 && <div style={{fontSize:12,color:'var(--txt3)',padding:'6px 0',gridColumn:'1/-1'}}>Loading pharmacies...</div>}
+              {pharmacies.map(p => (
                 <div key={p.name} className={`erx-pharm-card${selectedPharm === p.name ? ' sel' : ''}`} onClick={() => setSelectedPharm(p.name)}>
                   <div className="erx-pharm-dot"/>
                   <div><div className="erx-pharm-name">{p.name}</div><div className="erx-pharm-addr">{p.addr}</div></div>

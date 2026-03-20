@@ -430,7 +430,7 @@ export default function ClinicalCalculators() {
       `}</style>
 
       {/* Icon Sidebar */}
-      <div style={{ position: 'fixed', top: '50px', left: 0, bottom: 0, width: '50px', background: '#0a1419', borderRight: '1px solid #1a3555', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '14px 0', zIndex: 200, overflowY: 'auto' }}>
+      <div style={{ position: 'fixed', top: '50px', right: 0, bottom: 0, width: '50px', background: '#0a1419', borderLeft: '1px solid #1a3555', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '14px 0', zIndex: 200, overflowY: 'auto' }}>
         {[
           { icon: '📊', label: 'Dashboard' },
           { icon: '📋', label: 'Notes' },

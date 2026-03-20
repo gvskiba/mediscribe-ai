@@ -408,6 +408,9 @@ export default function ERx() {
   }, [DRUGS, query, selectedCategory]);
 
   const selectDrug = (drug) => {
+    console.log('Selected drug:', drug);
+    console.log('Strengths:', drug.strengths);
+    console.log('Forms:', drug.forms);
     setSelectedDrug(drug);
     setQuery(drug.name);
     setShowDrop(false);

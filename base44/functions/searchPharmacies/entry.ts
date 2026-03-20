@@ -1,6 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
-import { SignatureV4 } from 'npm:@smithy/signature-v4@4';
-import { Sha256 } from 'npm:@aws-crypto/sha256-js@5';
+import { LocationClient, SearchPlaceIndexForTextCommand } from 'npm:@aws-sdk/client-location@3';
 
 Deno.serve(async (req) => {
   try {

@@ -417,7 +417,7 @@ export default function ClinicalCalculators() {
   };
 
   return (
-    <div style={{ background: '#050f1e', color: '#e8f0fe', fontFamily: "'DM Sans', sans-serif", height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ background: '#050f1e', color: '#e8f0fe', fontFamily: "'DM Sans', sans-serif", minHeight: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap');
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; }

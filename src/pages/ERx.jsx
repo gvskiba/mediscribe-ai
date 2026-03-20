@@ -200,6 +200,15 @@ const CSS = `
 
 /* ─── Helper: map DB record to ERx drug shape ────────────────────────── */
 function dbToErxDrug(rec) {
+  // Fallback: extract strengths from dosing array if strengths field is empty
+  let strengths = rec.strengths || [];
+  if (strengths.length === 0 && rec.dosing && rec.dosing.length > 0) {
+    strengths = rec.dosing.map(d => d.dose).filter(Boolean);
+  }
+  if (strengths.length === 0) {
+    strengths = ['Standard dose (see dosing guidelines)'];
+  }
+  
   return {
     id: rec.id,
     name: rec.name,
@@ -207,7 +216,7 @@ function dbToErxDrug(rec) {
     class: rec.drugClass,
     category: rec.category || 'other',
     emoji: rec.emoji || '💊',
-    strengths: rec.strengths || [],
+    strengths: strengths,
     forms: rec.forms || ['Tablet'],
     route: rec.route || 'PO',
     schedule: rec.schedule || null,

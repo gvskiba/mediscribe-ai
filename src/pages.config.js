@@ -88,6 +88,8 @@ import NursingFlowsheet from './pages/NursingFlowsheet';
 import OrderSetBuilder from './pages/OrderSetBuilder';
 import OrdersQueue from './pages/OrdersQueue';
 import PatientDashboard from './pages/PatientDashboard';
+import PatientEducationGenerator from './pages/PatientEducationGenerator';
+import PatientEducationMaterials from './pages/PatientEducationMaterials';
 import PatientHistory from './pages/PatientHistory';
 import PediatricDosing from './pages/PediatricDosing';
 import Procedures from './pages/Procedures';

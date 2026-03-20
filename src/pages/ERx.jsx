@@ -247,7 +247,12 @@ function dbToErxDrug(rec) {
   };
 }
 
-// Pharmacies will be loaded from entity or external API
+const PHARMACIES = [
+  {name:'CVS Pharmacy #3847',addr:'1420 Oak Ave · 0.4 mi · Open 24hr',chain:'CVS',chainClass:'chain-cvs'},
+  {name:'Walgreens #0291',addr:'832 Main St · 0.9 mi · Open until 10pm',chain:'WAG',chainClass:'chain-wag'},
+  {name:'Regional Medical Center',addr:'On-site pharmacy · Open 24hr',chain:'HOSP',chainClass:'chain-hosp'},
+  {name:'Walmart Pharmacy #4421',addr:'2200 Commerce Blvd · 1.8 mi · Open until 9pm',chain:'WM',chainClass:'chain-wm'},
+];
 
 function getInteractions(drug) {
   // Use interactions from DB if available
@@ -295,8 +300,7 @@ export default function ERx() {
   const [showDrop, setShowDrop] = useState(false);
   const [selectedDrug, setSelectedDrug] = useState(null);
   const [rxQueue, setRxQueue] = useState([]);
-  const [pharmacies, setPharmacies] = useState([]);
-  const [selectedPharm, setSelectedPharm] = useState('');
+  const [selectedPharm, setSelectedPharm] = useState('CVS Pharmacy #3847');
   const [sendMethod, setSendMethod] = useState('e-prescribe');
   const [statusBadge, setStatusBadge] = useState('draft');
   const [interactions, setInteractions] = useState([]);
@@ -322,7 +326,6 @@ export default function ERx() {
   const [rxRefills, setRxRefills] = useState('0');
   const [rxDx, setRxDx] = useState('');
   const [rxNotes, setRxNotes] = useState('');
-  const [rxPrescriberNotes, setRxPrescriberNotes] = useState('');
   const [togGeneric, setTogGeneric] = useState(true);
   const [togCounsel, setTogCounsel] = useState(false);
   const [showCS, setShowCS] = useState(false);
@@ -345,15 +348,13 @@ export default function ERx() {
     return () => document.getElementById('erx-styles')?.remove();
   }, []);
 
-  const handleNearMe = async () => {
+  const handleNearMe = () => {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const location = {lat: pos.coords.latitude, lng: pos.coords.longitude};
-          setUserLocation(location);
+        (pos) => {
+          setUserLocation({lat: pos.coords.latitude, lng: pos.coords.longitude});
           setPharmSearchType('near');
           setPharmSearchValue('');
-          await searchPharmacies('near', '', location);
           appendMsg('sys', '📍 Location detected. Showing nearby pharmacies.');
         },
         () => appendMsg('sys', '⚠ Unable to access location. Please enable location services.')
@@ -362,39 +363,6 @@ export default function ERx() {
       appendMsg('sys', '⚠ Geolocation not supported by your browser.');
     }
   };
-
-  const searchPharmacies = async (type, value, location = null) => {
-    try {
-      const payload = {
-        searchType: type,
-        searchValue: value || '',
-      };
-      
-      if (location) {
-        payload.latitude = location.lat;
-        payload.longitude = location.lng;
-      }
-      
-      const response = await base44.functions.invoke('searchPharmacies', payload);
-      
-      if (!response.data.success) {
-        throw new Error(response.data.error || 'Failed to search pharmacies');
-      }
-      
-      setPharmacies(response.data.pharmacies || []);
-      if (response.data.pharmacies?.length > 0 && !selectedPharm) {
-        setSelectedPharm(response.data.pharmacies[0].name);
-      }
-    } catch (e) {
-      appendMsg('sys', `⚠ Unable to load pharmacies: ${e.message}`);
-      setPharmacies([]);
-    }
-  };
-
-  useEffect(() => {
-    // Load default pharmacies on mount
-    searchPharmacies('search', '');
-  }, []);
 
   const checkFormulary = async () => {
     if (!selectedDrug || !patientData.insurance) {
@@ -543,7 +511,7 @@ export default function ERx() {
   const clearRx = () => {
     setSelectedDrug(null); setQuery(''); setRxStrength(''); setSigDose(''); setSigFreq('once daily');
     setSigDur(''); setSigQual(''); setSigExtra(''); setRxQty(''); setRxDays(''); setRxRefills('0');
-    setRxDx(''); setRxNotes(''); setRxPrescriberNotes(''); setShowCS(false); setShowConflict(false); setInteractions([]);
+    setRxDx(''); setRxNotes(''); setShowCS(false); setShowConflict(false); setInteractions([]);
     setStatusBadge('draft');
     appendMsg('sys','🗑 Prescription cleared.');
   };
@@ -914,7 +882,7 @@ Diagnosis: ${rxDx || '—'}`;
             <div className="erx-grid-2 erx-mb-12">
               <div className="erx-field">
                 <label className="erx-lbl">Prescriber Notes (internal)</label>
-                <textarea className="erx-textarea" value={rxPrescriberNotes} onChange={e => setRxPrescriberNotes(e.target.value)} placeholder="Clinical rationale, monitoring plan…" style={{resize:'vertical',minHeight:'80px'}}/>
+                <textarea className="erx-textarea" value={rxNotes} onChange={e => setRxNotes(e.target.value)} placeholder="Clinical rationale, monitoring plan…" style={{resize:'vertical',minHeight:'80px'}}/>
               </div>
               <div style={{display:'flex',flexDirection:'column',gap:9,paddingTop:4}}>
                 {[['togGeneric',togGeneric,setTogGeneric,'Dispense as Generic (DAW-0)'],['togCounsel',togCounsel,setTogCounsel,'Pharmacist counselling required']].map(([id,val,set,lbl]) => (
@@ -938,14 +906,8 @@ Diagnosis: ${rxDx || '—'}`;
                 placeholder="City, State, or Zip code" 
                 value={pharmSearchValue}
                 onChange={e => { setPharmSearchValue(e.target.value); setPharmSearchType(e.target.value ? 'search' : ''); }}
-                onKeyDown={e => { if (e.key === 'Enter' && pharmSearchValue) searchPharmacies('search', pharmSearchValue); }}
                 style={{flex:1,minWidth:'150px'}}
               />
-              <button 
-                className="erx-btn-ghost" 
-                onClick={() => pharmSearchValue && searchPharmacies('search', pharmSearchValue)}
-                style={{whiteSpace:'nowrap'}}
-              >🔍 Search</button>
               <button 
                 className="erx-btn-ghost" 
                 onClick={handleNearMe}
@@ -954,15 +916,14 @@ Diagnosis: ${rxDx || '—'}`;
               {(pharmSearchType || pharmSearchValue) && (
                 <button 
                   className="erx-btn-ghost" 
-                  onClick={() => { setPharmSearchType(''); setPharmSearchValue(''); setUserLocation(null); searchPharmacies('search', ''); }}
+                  onClick={() => { setPharmSearchType(''); setPharmSearchValue(''); setUserLocation(null); }}
                   style={{whiteSpace:'nowrap'}}
                 >✕ Clear</button>
               )}
             </div>
 
             <div className="erx-pharm-grid erx-mb-12">
-              {pharmacies.length === 0 && <div style={{fontSize:12,color:'var(--txt3)',padding:'6px 0',gridColumn:'1/-1'}}>Loading pharmacies...</div>}
-              {pharmacies.map(p => (
+              {PHARMACIES.map(p => (
                 <div key={p.name} className={`erx-pharm-card${selectedPharm === p.name ? ' sel' : ''}`} onClick={() => setSelectedPharm(p.name)}>
                   <div className="erx-pharm-dot"/>
                   <div><div className="erx-pharm-name">{p.name}</div><div className="erx-pharm-addr">{p.addr}</div></div>

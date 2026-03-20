@@ -687,46 +687,20 @@ Diagnosis: ${rxDx || '—'}`;
             <div style={{marginTop:20}}>
               <div className="erx-qp-header">⭐ QUICK PRESCRIBE — FAVORITES</div>
               <div className="erx-fav-grid">
-                <div className="erx-fav-card" onClick={() => loadFav({name:'Amoxicillin',drugName:'Amoxicillin',rx:{strength:'500mg',form:'Tablet',route:'PO',dose:'1 tablet',freq:'three times daily',dur:'7 days',qual:'',qty:'21',days:'7',refills:'0'}})}>
-                  <div className="erx-fav-drug">Amoxicillin</div>
-                  <div className="erx-fav-sig">500mg PO TID × 7d</div>
-                  <div className="erx-fav-diag">Infection</div>
-                </div>
-                <div className="erx-fav-card" onClick={() => loadFav({name:'Azithromycin Z-Pak',drugName:'Azithromycin',rx:{strength:'250mg',form:'Tablet',route:'PO',dose:'2 tablets day 1, then 1 tablet',freq:'once daily',dur:'5 days',qual:'',qty:'6',days:'5',refills:'0'}})}>
-                  <div className="erx-fav-drug">Azithromycin Z-Pak</div>
-                  <div className="erx-fav-sig">250mg PO × 5d</div>
-                  <div className="erx-fav-diag">URTI / CAP</div>
-                </div>
-                <div className="erx-fav-card" onClick={() => loadFav({name:'Prednisone',drugName:'Prednisone',rx:{strength:'20mg',form:'Tablet',route:'PO',dose:'1 tablet',freq:'once daily',dur:'',qual:'',qty:'6',days:'6',refills:'0'}})}>
-                  <div className="erx-fav-drug">Prednisone</div>
-                  <div className="erx-fav-sig">20mg PO taper</div>
-                  <div className="erx-fav-diag">Inflammation</div>
-                </div>
-                <div className="erx-fav-card" onClick={() => loadFav({name:'Ondansetron ODT',drugName:'Ondansetron',rx:{strength:'4mg',form:'ODT',route:'PO',dose:'1 tablet',freq:'every 6 hours',dur:'',qual:'as needed for nausea',qty:'12',days:'3',refills:'0'}})}>
-                  <div className="erx-fav-drug">Ondansetron ODT</div>
-                  <div className="erx-fav-sig">4mg q6h PRN</div>
-                  <div className="erx-fav-diag">N/V</div>
-                </div>
-                <div className="erx-fav-card" onClick={() => loadFav({name:'Ciprofloxacin',drugName:'Ciprofloxacin',rx:{strength:'500mg',form:'Tablet',route:'PO',dose:'1 tablet',freq:'twice daily',dur:'7 days',qual:'',qty:'14',days:'7',refills:'0'}})}>
-                  <div className="erx-fav-drug">Ciprofloxacin</div>
-                  <div className="erx-fav-sig">500mg PO BID × 7d</div>
-                  <div className="erx-fav-diag">UTI / Infection</div>
-                </div>
-                <div className="erx-fav-card" onClick={() => loadFav({name:'Tramadol',drugName:'Tramadol',rx:{strength:'50mg',form:'Tablet',route:'PO',dose:'1 tablet',freq:'every 4-6 hours',dur:'',qual:'as needed for pain',qty:'20',days:'5',refills:'0'}})}>
-                  <div className="erx-fav-drug">Tramadol</div>
-                  <div className="erx-fav-sig">50mg PO q4-6h PRN</div>
-                  <div className="erx-fav-diag">Pain · C/V</div>
-                </div>
-                <div className="erx-fav-card" onClick={() => loadFav({name:'Metronidazole',drugName:'Metronidazole',rx:{strength:'500mg',form:'Tablet',route:'PO',dose:'1 tablet',freq:'twice daily',dur:'7 days',qual:'',qty:'14',days:'7',refills:'0'}})}>
-                  <div className="erx-fav-drug">Metronidazole</div>
-                  <div className="erx-fav-sig">500mg PO TID × 7d</div>
-                  <div className="erx-fav-diag">Anaerobic / BV</div>
-                </div>
-                <div className="erx-fav-card" onClick={() => loadFav({name:'Oxycodone/APAP',drugName:'Oxycodone',rx:{strength:'5/325mg',form:'Tablet',route:'PO',dose:'1 tablet',freq:'every 4-6 hours',dur:'',qual:'as needed for pain',qty:'12',days:'3',refills:'0'}})}>
-                  <div className="erx-fav-drug">Oxycodone/APAP</div>
-                  <div className="erx-fav-sig">5/325mg PO q4-6h</div>
-                  <div className="erx-fav-diag">Acute Pain · CII</div>
-                </div>
+                {DRUGS.slice(0, 8).map(drug => {
+                  const firstDosing = drug.dosing?.[0];
+                  const strength = drug.strengths?.[0] || 'Standard';
+                  const route = drug.route || 'PO';
+                  const indication = firstDosing?.indication || drug.indications?.split('.')[0] || drug.category || '';
+                  
+                  return (
+                    <div key={drug.id} className="erx-fav-card" onClick={() => selectDrug(drug)}>
+                      <div className="erx-fav-drug">{drug.name}</div>
+                      <div className="erx-fav-sig">{strength} {route}{firstDosing?.dose ? ` · ${firstDosing.dose}` : ''}</div>
+                      <div className="erx-fav-diag">{indication}</div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

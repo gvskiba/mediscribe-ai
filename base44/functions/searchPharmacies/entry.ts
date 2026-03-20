@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
 
     // Sign the request using AWS Signature V4
     const signer = new SignatureV4({
-      service: 'geo-places',
+      service: 'geo',
       region: region,
       credentials: {
         accessKeyId: accessKeyId,
@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
       method: 'POST',
       protocol: 'https:',
       hostname: host,
-      path: `/geocode?key=${placeIndexName}`,
+      path: `/geocode?key=${encodeURIComponent(placeIndexName)}`,
       headers: {
         'Content-Type': 'application/json',
         'host': host,

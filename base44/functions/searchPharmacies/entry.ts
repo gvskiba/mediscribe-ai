@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
-import { LocationClient, SearchPlaceIndexForTextCommand } from 'npm:@aws-sdk/client-location@3.621.0';
+import { LocationClient, SearchPlaceIndexForTextCommand } from 'npm:@aws-sdk/client-location@3';
 
 Deno.serve(async (req) => {
   try {

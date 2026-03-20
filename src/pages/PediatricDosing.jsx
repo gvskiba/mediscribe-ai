@@ -794,7 +794,13 @@ export default function PediatricDosing() {
   });
 
   // Use database medications if available, otherwise fallback to DRUG_DATA
-  const ACTIVE_DRUG_DATA = dbMeds.length > 0 ? dbMeds.map(m => {
+  const ACTIVE_DRUG_DATA = (dbMeds.length > 0 && dbMeds.some(m => {
+    const med = m.data || m;
+    return med.ped && med.ped.doses && med.ped.doses.length > 0;
+  })) ? dbMeds.filter(m => {
+    const med = m.data || m;
+    return med.ped && med.ped.doses && med.ped.doses.length > 0;
+  }).map(m => {
     const med = m.data || m;
     return {
       id: med.id || med.med_id,
@@ -805,7 +811,7 @@ export default function PediatricDosing() {
       critical: med.highAlert || false,
       route: med.route || 'PO',
       repeat: med.ped?.repeat || '',
-      doses: med.ped?.doses || [{ dosePerKg: med.ped?.mgkg || 0, unit: med.ped?.unit || 'mg', maxDose: med.ped?.max || null, label: 'Standard' }],
+      doses: med.ped?.doses || [{ dosePerKg: 0, unit: 'mg', maxDose: null, label: 'Standard' }],
       concentration: med.ped?.concentration || 1,
       concLabel: med.ped?.concLabel || `${med.strengths?.[0] || 'Standard'}`,
       note: med.ped?.notes || med.dosing?.[0]?.notes || '',

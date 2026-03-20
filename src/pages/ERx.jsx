@@ -88,13 +88,21 @@ const CSS = `
 .erx-fav-drug{font-size:14px;font-weight:600;color:var(--txt);margin-bottom:6px;}
 .erx-fav-sig{font-size:11px;color:var(--txt3);font-family:'JetBrains Mono',monospace;margin-bottom:3px;}
 .erx-fav-diag{font-size:10px;color:var(--txt4);}
-.erx-filter-btns{display:flex;gap:8px;margin-bottom:16px;}
+.erx-filter-btns{display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;}
 .erx-filter-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-up);color:var(--txt2);font-size:12px;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;font-weight:500;}
 .erx-filter-btn:hover{border-color:var(--border-hi);color:var(--txt);}
 .erx-filter-btn.active{background:var(--blue);border-color:var(--blue);color:#fff;}
 .erx-filter-btn.fav-active{background:var(--gold);border-color:var(--gold);color:var(--bg);}
 .erx-filter-btn.controlled-active{background:var(--coral);border-color:var(--coral);color:#fff;}
 .erx-qp-header{font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;display:flex;align-items:center;gap:6px;font-weight:600;}
+.erx-cat-divider{width:1px;height:24px;background:var(--border);margin:0 4px;}
+.erx-cat-btn{display:flex;align-items:center;gap:0;padding:7px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg-up);color:var(--txt2);font-size:12px;cursor:pointer;transition:all .25s;font-family:'DM Sans',sans-serif;font-weight:500;overflow:hidden;white-space:nowrap;max-width:32px;}
+.erx-cat-btn:hover,.erx-cat-btn.active{max-width:200px;gap:6px;padding:7px 14px;}
+.erx-cat-btn:hover{border-color:var(--border-hi);color:var(--txt);}
+.erx-cat-btn.active{border-color:var(--blue);background:rgba(59,158,255,.1);color:var(--blue);}
+.erx-cat-icon{font-size:14px;flex-shrink:0;}
+.erx-cat-label{opacity:0;transition:opacity .2s;}
+.erx-cat-btn:hover .erx-cat-label,.erx-cat-btn.active .erx-cat-label{opacity:1;}
 /* rx card */
 .erx-rx-card{background:linear-gradient(135deg,rgba(59,158,255,.05),rgba(0,229,192,.04));border:1px solid rgba(59,158,255,.22);border-radius:var(--rl);padding:17px 19px;}
 .erx-rx-drug-hdr{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;margin-bottom:13px;display:flex;align-items:center;gap:12px;}
@@ -653,6 +661,37 @@ Diagnosis: ${rxDx || '—'}`;
               </button>
               <button className={`erx-filter-btn ${drugFilter === 'controlled' ? 'controlled-active' : ''}`} onClick={() => setDrugFilter('controlled')}>
                 🔒 Controlled
+              </button>
+              
+              <div className="erx-cat-divider"/>
+              
+              <button className={`erx-cat-btn ${!selectedCategory ? 'active' : ''}`} onClick={() => setSelectedCategory(null)}>
+                <span className="erx-cat-icon">🏥</span>
+                <span className="erx-cat-label">All Categories</span>
+              </button>
+              <button className={`erx-cat-btn ${selectedCategory === 'cardiac' ? 'active' : ''}`} onClick={() => setSelectedCategory(selectedCategory === 'cardiac' ? null : 'cardiac')}>
+                <span className="erx-cat-icon">❤️</span>
+                <span className="erx-cat-label">Cardiac</span>
+              </button>
+              <button className={`erx-cat-btn ${selectedCategory === 'abx' ? 'active' : ''}`} onClick={() => setSelectedCategory(selectedCategory === 'abx' ? null : 'abx')}>
+                <span className="erx-cat-icon">💊</span>
+                <span className="erx-cat-label">Antibiotics</span>
+              </button>
+              <button className={`erx-cat-btn ${selectedCategory === 'analgesic' ? 'active' : ''}`} onClick={() => setSelectedCategory(selectedCategory === 'analgesic' ? null : 'analgesic')}>
+                <span className="erx-cat-icon">💉</span>
+                <span className="erx-cat-label">Analgesics</span>
+              </button>
+              <button className={`erx-cat-btn ${selectedCategory === 'anticoag' ? 'active' : ''}`} onClick={() => setSelectedCategory(selectedCategory === 'anticoag' ? null : 'anticoag')}>
+                <span className="erx-cat-icon">🩸</span>
+                <span className="erx-cat-label">Anticoagulants</span>
+              </button>
+              <button className={`erx-cat-btn ${selectedCategory === 'gi' ? 'active' : ''}`} onClick={() => setSelectedCategory(selectedCategory === 'gi' ? null : 'gi')}>
+                <span className="erx-cat-icon">🫃</span>
+                <span className="erx-cat-label">GI</span>
+              </button>
+              <button className={`erx-cat-btn ${selectedCategory === 'psych' ? 'active' : ''}`} onClick={() => setSelectedCategory(selectedCategory === 'psych' ? null : 'psych')}>
+                <span className="erx-cat-icon">🧠</span>
+                <span className="erx-cat-label">Psychiatric</span>
               </button>
             </div>
 

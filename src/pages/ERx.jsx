@@ -724,9 +724,9 @@ Diagnosis: ${rxDx || '—'}`;
             
             {/* Quick Prescribe Favorites */}
             <div style={{marginTop:20}}>
-              <div className="erx-qp-header">⭐ QUICK PRESCRIBE — FAVORITES</div>
+              <div className="erx-qp-header">⭐ QUICK PRESCRIBE — {selectedCategory ? selectedCategory.toUpperCase() : 'FAVORITES'}</div>
               <div className="erx-fav-grid">
-                {DRUGS.slice(0, 8).map(drug => {
+                {DRUGS.filter(d => !selectedCategory || (d.category || 'other') === selectedCategory).slice(0, 8).map(drug => {
                   const firstDosing = drug.dosing?.[0];
                   const strength = drug.strengths?.[0] || 'Standard';
                   const route = drug.route || 'PO';

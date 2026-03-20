@@ -115,6 +115,7 @@ export default function ClinicalCalculators() {
   const [currentValues, setCurrentValues] = useState({});
   const [currentChecked, setCurrentChecked] = useState({});
   const [history, setHistory] = useState({});
+  const [time, setTime] = useState(new Date());
 
   const activeCalc = CALCULATORS.find(c => c.id === activeCalcId);
   const filteredCalcs = CALCULATORS.filter(c =>
@@ -164,16 +165,29 @@ export default function ClinicalCalculators() {
   const result = getResult();
   const band = result && activeCalc ? activeCalc.bands.find(b => result.value < b.lt) || activeCalc.bands[activeCalc.bands.length - 1] : null;
 
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 10000);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
-    <div style={{ background: '#050f1e', color: '#e8f0fe', fontFamily: "'DM Sans', sans-serif", minHeight: '100vh', overflow: 'hidden' }}>
+    <div style={{ background: '#050f1e', color: '#e8f0fe', fontFamily: "'DM Sans', sans-serif", minHeight: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <style>{`
         input[type="number"]::-webkit-outer-spin-button,
         input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         input[type="number"] { -moz-appearance: textfield; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
       `}</style>
 
+      {/* Icon Sidebar */}
+      <div style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: '65px', background: '#040d19', borderRight: '1px solid #1a3555', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 200, overflowY: 'auto' }}>
+        <div style={{ width: '100%', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid #1a3555', flexShrink: 0 }}>
+          <div style={{ width: '34px', height: '34px', background: '#3b9eff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Playfair Display'", fontSize: '14px', fontWeight: '700', color: 'white', cursor: 'pointer' }}>Calc</div>
+        </div>
+      </div>
+
       {/* Navbar */}
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: '50px', background: '#081628', borderBottom: '1px solid #1a3555', display: 'flex', alignItems: 'center', padding: '0 16px', gap: '10px', zIndex: 100 }}>
+      <div style={{ position: 'fixed', top: 0, left: '65px', right: 0, height: '50px', background: '#081628', borderBottom: '1px solid #1a3555', display: 'flex', alignItems: 'center', padding: '0 16px', gap: '10px', zIndex: 100 }}>
         <span style={{ fontSize: '13px', color: '#8aaccc' }}>Welcome, <strong style={{ color: '#e8f0fe' }}>Dr. Gabriel Skiba</strong></span>
         <div style={{ width: '1px', height: '22px', background: '#1a3555' }}></div>
         <div style={{ display: 'flex', gap: '10px' }}>
@@ -188,7 +202,7 @@ export default function ClinicalCalculators() {
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ fontSize: '12px', color: '#8aaccc' }}>Emergency Medicine</div>
-          <div style={{ fontSize: '12px', color: '#8aaccc', fontFamily: "'JetBrains Mono'" }}>14:26</div>
+          <div style={{ fontSize: '12px', color: '#8aaccc', fontFamily: "'JetBrains Mono'" }}>{String(time.getHours()).padStart(2, '0')}:{String(time.getMinutes()).padStart(2, '0')}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(0,229,192,.08)', border: '1px solid rgba(0,229,192,.3)', borderRadius: '8px', padding: '5px 12px', fontSize: '12px', fontWeight: '600', color: '#00e5c0' }}>
             <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#00e5c0', animation: 'pulse 2s infinite' }}></span> AI ON
           </div>
@@ -196,7 +210,7 @@ export default function ClinicalCalculators() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', height: 'calc(100vh - 50px)', marginTop: '50px' }}>
+      <div style={{ display: 'flex', height: 'calc(100vh - 50px)', marginTop: '50px', marginLeft: '65px' }}>
         {/* Left Picker */}
         <div style={{ width: '272px', background: '#081628', borderRight: '1px solid #1a3555', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ padding: '14px', borderBottom: '1px solid #1a3555', flexShrink: 0 }}>

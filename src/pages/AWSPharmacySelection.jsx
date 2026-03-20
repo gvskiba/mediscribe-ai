@@ -10,7 +10,7 @@ const CSS = `
   --txt:#e8f0fe; --txt2:#8aaccc; --txt3:#4a6a8a; --txt4:#2e4a6a;
   --r:8px; --rl:12px;
 }
-.aws-root{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;padding:20px;min-height:100vh;position:fixed;top:65px;left:72px;right:0;bottom:0;overflow-y:auto}
+.aws-root{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;padding:20px;min-height:100vh}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 .demo-wrap{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
 .demo-header{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--rl);padding:18px 20px}

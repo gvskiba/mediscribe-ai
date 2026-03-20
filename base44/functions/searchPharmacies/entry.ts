@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
-import { LocationClient, GeocodeCommand } from 'npm:@aws-sdk/client-location@3';
+import { SignatureV4 } from 'npm:@smithy/signature-v4@4';
+import { Sha256 } from 'npm:@aws-crypto/sha256-js@5';
 
 Deno.serve(async (req) => {
   try {
@@ -20,15 +21,6 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'AWS credentials not configured' }, { status: 500 });
     }
 
-    // Initialize AWS Location client
-    const locationClient = new LocationClient({
-      region: region,
-      credentials: {
-        accessKeyId: accessKeyId,
-        secretAccessKey: secretAccessKey,
-      },
-    });
-
     let queryText = '';
     let biasPosition = undefined;
 
@@ -41,19 +33,62 @@ Deno.serve(async (req) => {
       queryText = 'pharmacy';
     }
 
-    // Search using Amazon Location Service Geocode API
-    const command = new GeocodeCommand({
-      PlaceIndexName: placeIndexName,
+    // Build request body for Geocode API
+    const requestBody = {
       QueryText: queryText,
       MaxResults: 8,
-      BiasPosition: biasPosition,
       Filter: {
         IncludePlaceTypes: ['PointOfInterest']
       }
+    };
+
+    if (biasPosition) {
+      requestBody.BiasPosition = biasPosition;
+    }
+
+    const body = JSON.stringify(requestBody);
+    const host = `places.geo.${region}.amazonaws.com`;
+    const url = `https://${host}/geocode?key=${placeIndexName}`;
+
+    // Sign the request using AWS Signature V4
+    const signer = new SignatureV4({
+      service: 'geo-places',
+      region: region,
+      credentials: {
+        accessKeyId: accessKeyId,
+        secretAccessKey: secretAccessKey,
+      },
+      sha256: Sha256,
     });
 
-    const response = await locationClient.send(command);
-    const results = response.ResultItems || [];
+    const request = {
+      method: 'POST',
+      protocol: 'https:',
+      hostname: host,
+      path: `/geocode?key=${placeIndexName}`,
+      headers: {
+        'Content-Type': 'application/json',
+        'host': host,
+      },
+      body: body,
+    };
+
+    const signedRequest = await signer.sign(request);
+
+    // Make the API call
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: signedRequest.headers,
+      body: body,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`AWS API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    const results = data.ResultItems || [];
 
     // Transform results to pharmacy format
     const pharmacies = results.map(result => {

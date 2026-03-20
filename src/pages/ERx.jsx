@@ -972,7 +972,30 @@ Diagnosis: ${rxDx || '—'}`;
             ))}
           </div>
 
-
+          {/* Prescription History */}
+          <div className="erx-sec">
+            <div className="erx-sec-hdr">
+              <span style={{fontSize:17}}>📋</span>
+              <div><div className="erx-sec-title">Prescription History</div><div className="erx-sec-sub">Recent prescriptions for this patient</div></div>
+              <button className="erx-btn-ghost" style={{marginLeft:'auto',fontSize:11}}>Last 90 Days</button>
+            </div>
+            {[
+              {drug:'Ciprofloxacin 500mg',detail:'PO BID × 7d · #14',date:'Mar 01, 2026',status:'sent',badge:'SENT'},
+              {drug:'Ondansetron 4mg ODT',detail:'q6h PRN · #12 · 0 RF',date:'Feb 22, 2026',status:'sent',badge:'SENT'},
+              {drug:'Tramadol 50mg',detail:'q4-6h PRN · #20 · 0 RF · CIV',date:'Feb 14, 2026',status:'printed',badge:'PRINTED'},
+              {drug:'Metronidazole 500mg',detail:'PO TID × 7d · #21 · 0 RF',date:'Jan 30, 2026',status:'sent',badge:'SENT'},
+              {drug:'Prednisone 20mg taper',detail:'Per taper · #21 · 0 RF',date:'Jan 18, 2026',status:'sent',badge:'SENT'},
+            ].map((rx, i) => (
+              <div key={i} className="erx-hist-row">
+                <div style={{flex:1}}>
+                  <div className="erx-hist-drug">{rx.drug}</div>
+                  <div className="erx-hist-detail">{rx.detail}</div>
+                </div>
+                <div className="erx-hist-date">{rx.date}</div>
+                <span className={`erx-hist-badge ${rx.status === 'sent' ? 'hb-sent' : 'hb-printed'}`}>{rx.badge}</span>
+              </div>
+            ))}
+          </div>
 
         </main>
 

@@ -448,24 +448,25 @@ export default function ClinicalCalculators() {
       </div>
 
       {/* Navbar */}
-      <div style={{ position: 'fixed', top: 0, left: '65px', right: 0, height: '50px', background: '#081628', borderBottom: '1px solid #1a3555', display: 'flex', alignItems: 'center', padding: '0 16px', gap: '10px', zIndex: 100 }}>
-        <span style={{ fontSize: '13px', color: '#8aaccc', fontWeight: '500' }}>Welcome, <strong style={{ color: '#e8f0fe', fontWeight: '600' }}>Dr. Gabriel Skiba</strong></span>
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: '50px', background: '#081628', borderBottom: '1px solid #1a3555', display: 'flex', alignItems: 'center', padding: '0 16px', gap: '14px', zIndex: 100 }}>
+        <div style={{ fontSize: '16px', fontWeight: '700', color: '#00e5c0', fontFamily: 'Playfair Display' }}>Calc</div>
         <div style={{ width: '1px', height: '22px', background: '#1a3555' }}></div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          {[['9', 'Active Pts', false], ['3', 'Notes Pending', true], ['2', 'Orders Queue', false], ['6h 14m', 'Shift Hours', false]].map(([val, lbl, alert]) => (
-            <div key={lbl} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#0e2544', border: '1px solid #1a3555', borderRadius: '8px', padding: '4px 12px', minWidth: '70px' }}>
-              <span style={{ fontFamily: 'JetBrains Mono', fontSize: '14px', fontWeight: '600', color: alert ? '#f5c842' : '#e8f0fe' }}>{val}</span>
-              <span style={{ fontSize: '9px', color: '#4a6a8a', textTransform: 'uppercase', letterSpacing: '.04em' }}>{lbl}</span>
-            </div>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          {['ACTIVE PTS', 'NOTES PENDING', 'ORDERS QUEUE', 'SHIFT HOURS'].map((lbl, i) => (
+            <button key={i} style={{ background: 'transparent', border: '1px solid #1a3555', borderRadius: '6px', padding: '4px 10px', fontSize: '10px', color: '#4a6a8a', fontWeight: '600', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '.04em', transition: 'all .15s' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#2a4f7a'; e.currentTarget.style.color = '#8aaccc'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#1a3555'; e.currentTarget.style.color = '#4a6a8a'; }}
+            >
+              {lbl}
+            </button>
           ))}
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#0e2544', border: '1px solid #1a3555', borderRadius: '8px', padding: '5px 12px', fontSize: '12px', color: '#8aaccc' }}>Emergency Medicine <span style={{ color: '#2e4a6a' }}>▾</span></div>
-          <div style={{ background: '#0e2544', border: '1px solid #1a3555', borderRadius: '8px', padding: '5px 12px', fontFamily: 'JetBrains Mono', fontSize: '12px', color: '#8aaccc' }}>{String(time.getHours()).padStart(2, '0')}:{String(time.getMinutes()).padStart(2, '0')}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(0,229,192,.08)', border: '1px solid rgba(0,229,192,.3)', borderRadius: '8px', padding: '5px 12px', fontSize: '12px', fontWeight: '600', color: '#00e5c0' }}>
-            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#00e5c0', display: 'inline-block', animation: 'ai-pulse 2s ease-in-out infinite' }}></span> AI ON
+          <div style={{ fontFamily: 'JetBrains Mono', fontSize: '12px', color: '#8aaccc' }}>{String(time.getHours()).padStart(2, '0')}:{String(time.getMinutes()).padStart(2, '0')}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(0,229,192,.08)', border: '1px solid rgba(0,229,192,.3)', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: '600', color: '#00e5c0' }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00e5c0', display: 'inline-block', animation: 'ai-pulse 2s ease-in-out infinite' }}></span> AI ON
           </div>
-          <button style={{ background: '#00e5c0', color: '#050f1e', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>+ New Patient</button>
+          <button style={{ background: '#00e5c0', color: '#050f1e', border: 'none', borderRadius: '6px', padding: '5px 12px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>+ New Patient</button>
         </div>
       </div>
 

@@ -471,7 +471,7 @@ export default function ClinicalCalculators() {
       </div>
 
       {/* Content */}
-      <div style={{ display: 'flex', height: '100vh', paddingTop: '50px', paddingRight: '50px', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', height: '100vh', paddingTop: '50px', paddingLeft: '12px', paddingRight: '50px', overflow: 'hidden' }}>
         {/* Picker */}
         <div style={{ width: '230px', flexShrink: 0, background: '#081628', borderRight: '1px solid #1a3555', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ padding: '14px', borderBottom: '1px solid #1a3555' }}>

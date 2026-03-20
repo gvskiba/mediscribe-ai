@@ -78,7 +78,7 @@ export default function AppSidebar({ user }) {
     >
       {/* Logo */}
       <Link
-        to={createPageUrl("Home")}
+        to={createPageUrl("DrugsBugs")}
         style={{
           width: 40,
           height: 34,

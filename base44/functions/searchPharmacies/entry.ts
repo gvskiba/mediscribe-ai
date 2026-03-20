@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
-import { LocationClient, SearchPlaceIndexForTextCommand } from 'npm:@aws-sdk/client-location@3';
+import { LocationClient, GeocodeCommand } from 'npm:@aws-sdk/client-location@3';
 
 Deno.serve(async (req) => {
   try {
@@ -29,37 +29,44 @@ Deno.serve(async (req) => {
       },
     });
 
-    let searchQuery = '';
+    let queryText = '';
     let biasPosition = undefined;
 
     if (searchType === 'near' && latitude && longitude) {
-      searchQuery = 'pharmacy';
+      queryText = 'pharmacy';
       biasPosition = [longitude, latitude]; // AWS uses [lng, lat] format
     } else if (searchType === 'search' && searchValue) {
-      searchQuery = `pharmacy ${searchValue}`;
+      queryText = `pharmacy ${searchValue}`;
     } else {
-      searchQuery = 'pharmacy';
+      queryText = 'pharmacy';
     }
 
-    // Search using Amazon Location Service
-    const command = new SearchPlaceIndexForTextCommand({
-      IndexName: placeIndexName,
-      Text: searchQuery,
+    // Search using Amazon Location Service Geocode API
+    const command = new GeocodeCommand({
+      PlaceIndexName: placeIndexName,
+      QueryText: queryText,
       MaxResults: 8,
       BiasPosition: biasPosition,
+      Filter: {
+        IncludePlaceTypes: ['PointOfInterest']
+      }
     });
 
     const response = await locationClient.send(command);
-    const results = response.Results || [];
+    const results = response.ResultItems || [];
 
     // Transform results to pharmacy format
     const pharmacies = results.map(result => {
-      const place = result.Place;
-      const name = place.Label || 'Pharmacy';
-      const address = place.AddressNumber ? `${place.AddressNumber} ${place.Street || ''}`.trim() : (place.Street || '');
-      const city = place.Municipality || '';
+      const place = result.Place || result;
+      const name = place.Title || place.Label || 'Pharmacy';
+      const address = place.Address || '';
+      const addressNumber = place.AddressNumber || '';
+      const street = place.Street || '';
+      const city = place.Municipality || place.Locality || '';
       const state = place.Region || '';
       const zip = place.PostalCode || '';
+      
+      const fullAddress = addressNumber && street ? `${addressNumber} ${street}`.trim() : (street || address);
       
       // Determine chain type from name
       let chain = 'INDEP';
@@ -81,8 +88,9 @@ Deno.serve(async (req) => {
 
       // Calculate distance if we have user location
       let distance = '';
-      if (latitude && longitude && place.Geometry?.Point) {
-        const [placeLng, placeLat] = place.Geometry.Point;
+      const placePosition = place.Position || place.Geometry?.Point;
+      if (latitude && longitude && placePosition) {
+        const [placeLng, placeLat] = placePosition;
         
         // Haversine formula
         const R = 3959; // Earth radius in miles
@@ -98,20 +106,20 @@ Deno.serve(async (req) => {
 
       return {
         name: name,
-        addr: `${address}${city ? ', ' + city : ''}${state ? ', ' + state : ''}${zip ? ' ' + zip : ''}${distance ? ' · ' + distance : ''}`,
+        addr: `${fullAddress}${city ? ', ' + city : ''}${state ? ', ' + state : ''}${zip ? ' ' + zip : ''}${distance ? ' · ' + distance : ''}`,
         chain: chain,
         chainClass: chainClass,
         fullData: {
           name: name,
-          address: address,
+          address: fullAddress,
           city: city,
           state: state,
           zip: zip,
           distance: distance,
           hours: 'Call for hours',
           phone: '',
-          latitude: place.Geometry?.Point?.[1] || null,
-          longitude: place.Geometry?.Point?.[0] || null,
+          latitude: placePosition?.[1] || null,
+          longitude: placePosition?.[0] || null,
         }
       };
     });

@@ -73,7 +73,7 @@ const CALCULATORS = [
       { lt: Infinity, label: 'Moderate-High Risk', color: 'coral', rec: 'Score ≥2 (male) or ≥3 (female): Oral anticoagulation recommended. DOAC preferred over warfarin.' },
     ],
     formula: 'CHF(1) + HTN(1) + Age≥75(2) + DM(1) + Stroke/TIA(2) + Vascular(1) + Age 65–74(1) + Female(1)',
-    reference: 'Lip GY et al. Chest 2010; 137:263–272 | ESC AF Guidelines 2020',
+    reference: 'Lip GY et al. Chest 2010; 137:263–272',
   },
   {
     id: 'gcs', name: 'Glasgow Coma Scale', shortName: 'GCS', icon: '🧠', category: 'neurology',
@@ -98,6 +98,62 @@ const CALCULATORS = [
     formula: 'GCS = Eye (1–4) + Verbal (1–5) + Motor (1–6)  |  Range: 3–15',
     reference: 'Teasdale G, Jennett B. Lancet 1974; 2:81–84',
   },
+  {
+    id: 'anion_gap', name: 'Anion Gap', shortName: 'Anion Gap', icon: '⚗️', category: 'labs',
+    description: 'Unmeasured anions; corrected for hypoalbuminemia',
+    rangeMin: 0, rangeMax: 35,
+    fields: [
+      { id: 'na', label: 'Sodium (Na⁺)', type: 'number', unit: 'mEq/L', min: 100, max: 180, step: 1, autofill: p => p.labs?.na, required: true },
+      { id: 'cl', label: 'Chloride (Cl⁻)', type: 'number', unit: 'mEq/L', min: 60, max: 150, step: 1, autofill: p => p.labs?.cl, required: true },
+      { id: 'hco3', label: 'Bicarbonate (HCO₃⁻)', type: 'number', unit: 'mEq/L', min: 1, max: 50, step: 1, autofill: p => p.labs?.hco3, required: true },
+      { id: 'albumin', label: 'Albumin (optional)', type: 'number', unit: 'g/dL', min: 0.5, max: 6, step: 0.1, autofill: p => p.labs?.albumin, required: false },
+    ],
+    compute: (v) => {
+      const ag = v.na - (v.cl + v.hco3);
+      const corrAG = v.albumin != null ? ag + 2.5 * (4 - v.albumin) : null;
+      return { value: ag, value2: corrAG !== null ? Math.round(corrAG * 10) / 10 : null, unit: 'mEq/L', precision: 0, label2: corrAG !== null ? 'Corrected AG' : null };
+    },
+    bands: [
+      { lt: 8, label: 'Below Normal', color: 'blue', rec: 'Low AG (<8). Consider hypoalbuminemia, hypercalcemia, hypermagnesemia, lithium toxicity. Calculate corrected AG.' },
+      { lt: 12, label: 'Normal', color: 'teal', rec: 'Normal AG (8–12 mEq/L). If acidosis present → non-AG metabolic acidosis.' },
+      { lt: 20, label: 'Elevated', color: 'gold', rec: 'Elevated AG (12–20). Evaluate for MUDPILES. Check lactate, ketones, osmolar gap.' },
+      { lt: Infinity, label: 'High AG Acidosis', color: 'coral', rec: 'High AG acidosis (>20). Urgent evaluation. Lactate, glucose, ketones, osmolality as indicated.' },
+    ],
+    formula: 'AG = Na⁺ − (Cl⁻ + HCO₃⁻) | Corrected AG = AG + 2.5 × (4.0 − Albumin)',
+    reference: 'Emmett M, Narins RG. Medicine 1977; 56:38–54',
+  },
+  {
+    id: 'meld', name: 'MELD Score', shortName: 'MELD', icon: '🫀', category: 'hepatic',
+    description: 'End-stage liver disease — transplant listing priority',
+    rangeMin: 6, rangeMax: 40,
+    fields: [
+      { id: 'bili', label: 'Bilirubin', type: 'number', unit: 'mg/dL', min: 0.1, max: 50, step: 0.1, autofill: p => p.labs?.bilirubin, required: true },
+      { id: 'inr', label: 'INR', type: 'number', unit: '', min: 0.5, max: 15, step: 0.01, autofill: p => p.labs?.inr, required: true },
+      { id: 'cr', label: 'Creatinine', type: 'number', unit: 'mg/dL', min: 0.1, max: 30, step: 0.01, autofill: p => p.labs?.scr, required: true },
+      { id: 'sodium', label: 'Sodium (for MELD-Na)', type: 'number', unit: 'mEq/L', min: 100, max: 160, step: 1, autofill: p => p.labs?.na, required: false },
+    ],
+    compute: (v) => {
+      const bili = Math.max(v.bili, 1);
+      const inr = Math.max(v.inr, 1);
+      const cr = Math.min(Math.max(v.cr, 1), 4);
+      const meld = Math.round(3.78 * Math.log(bili) + 11.2 * Math.log(inr) + 9.57 * Math.log(cr) + 6.43);
+      let meldNa = null;
+      if (v.sodium) {
+        const na = Math.min(Math.max(v.sodium, 125), 137);
+        meldNa = Math.round(meld + 1.32 * (137 - na) - (0.033 * meld * (137 - na)));
+      }
+      return { value: meld, value2: meldNa != null ? meldNa : null, unit: 'pts', precision: 0, label2: meldNa != null ? 'MELD-Na' : null };
+    },
+    bands: [
+      { lt: 10, label: 'Low Priority', color: 'teal', rec: '< 10% 90-day mortality. Optimize medical management. Serial MELD every 3–6 months if on transplant list.' },
+      { lt: 20, label: 'Moderate Priority', color: 'gold', rec: '6–19% 90-day mortality. Active transplant workup if not already underway.' },
+      { lt: 30, label: 'High Priority', color: 'orange', rec: '19–52% 90-day mortality. Accelerate transplant evaluation. Close monitoring for AKI, HE, variceal bleeding.' },
+      { lt: 40, label: 'Very High Priority', color: 'coral', rec: '52–79% 90-day mortality. Urgent transplant listing. SICU management.' },
+      { lt: Infinity, label: 'Critical Priority', color: 'red', rec: '> 71% 90-day mortality. Fulminant hepatic failure. Liver transplant listed Status 1A.' },
+    ],
+    formula: '3.78×ln[Bili] + 11.2×ln[INR] + 9.57×ln[Cr] + 6.43',
+    reference: 'Kamath PS et al. Hepatology 2001; 33:464–470',
+  },
 ];
 
 const COLOR_MAP = { teal: '#00e5c0', gold: '#f5c842', orange: '#ff9f43', coral: '#ff6b6b', blue: '#3b9eff', red: '#ff3366' };
@@ -105,23 +161,49 @@ const CAT_META = {
   nutrition: { label: 'Nutrition', dotColor: '#00e5c0' },
   renal: { label: 'Renal', dotColor: '#00d4ff' },
   cardiology: { label: 'Cardiology', dotColor: '#ff6b6b' },
+  hepatic: { label: 'Hepatic', dotColor: '#ff9f43' },
+  labs: { label: 'Labs', dotColor: '#9b6dff' },
   neurology: { label: 'Neurology', dotColor: '#f5c842' },
 };
 
 export default function ClinicalCalculators() {
   const { activePatient } = usePatient();
+  const [time, setTime] = useState(new Date());
+  const [activeCalcId, setActiveCalcId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeCalcId, setActiveCalcId] = useState('bmi');
   const [currentValues, setCurrentValues] = useState({});
   const [currentChecked, setCurrentChecked] = useState({});
   const [history, setHistory] = useState({});
-  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 10000);
+    return () => clearInterval(timer);
+  }, []);
 
   const activeCalc = CALCULATORS.find(c => c.id === activeCalcId);
   const filteredCalcs = CALCULATORS.filter(c =>
     !searchTerm || c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.shortName.toLowerCase().includes(searchTerm.toLowerCase())
+    c.shortName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.category.includes(searchTerm.toLowerCase())
   );
+
+  const getResult = () => {
+    if (!activeCalc) return null;
+    try {
+      return activeCalc.compute(currentValues, currentChecked);
+    } catch {
+      return null;
+    }
+  };
+
+  const result = getResult();
+  const band = result && activeCalc ? activeCalc.bands.find(b => result.value < b.lt) || activeCalc.bands[activeCalc.bands.length - 1] : null;
+
+  const handleLoadCalc = (id) => {
+    setActiveCalcId(id);
+    setCurrentValues({});
+    setCurrentChecked({});
+  };
 
   const handleFieldChange = (fieldId, value) => {
     setCurrentValues(prev => ({
@@ -137,46 +219,25 @@ export default function ClinicalCalculators() {
     }));
   };
 
-  const compute = () => {
+  const handleCompute = () => {
     if (!activeCalc) return;
-    let result;
-    try {
-      result = activeCalc.compute(currentValues, currentChecked);
-    } catch {
-      return;
-    }
-    if (!result) return;
-
-    setHistory(prev => ({
-      ...prev,
-      [activeCalcId]: [{ value: result.value, unit: result.unit, ts: new Date() }, ...(prev[activeCalcId] || []).slice(0, 4)]
-    }));
-  };
-
-  const getResult = () => {
-    if (!activeCalc) return null;
-    try {
-      return activeCalc.compute(currentValues, currentChecked);
-    } catch {
-      return null;
+    const result = activeCalc.compute(currentValues, currentChecked);
+    if (result) {
+      setHistory(prev => ({
+        ...prev,
+        [activeCalcId]: [{ value: result.value, unit: result.unit, ts: new Date() }, ...(prev[activeCalcId] || []).slice(0, 4)]
+      }));
     }
   };
-
-  const result = getResult();
-  const band = result && activeCalc ? activeCalc.bands.find(b => result.value < b.lt) || activeCalc.bands[activeCalc.bands.length - 1] : null;
-
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 10000);
-    return () => clearInterval(timer);
-  }, []);
 
   return (
     <div style={{ background: '#050f1e', color: '#e8f0fe', fontFamily: "'DM Sans', sans-serif", minHeight: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <style>{`
+        body { margin: 0; padding: 0; }
         input[type="number"]::-webkit-outer-spin-button,
         input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         input[type="number"] { -moz-appearance: textfield; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes ai-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
       `}</style>
 
       {/* Icon Sidebar */}
@@ -204,13 +265,14 @@ export default function ClinicalCalculators() {
           <div style={{ fontSize: '12px', color: '#8aaccc' }}>Emergency Medicine</div>
           <div style={{ fontSize: '12px', color: '#8aaccc', fontFamily: "'JetBrains Mono'" }}>{String(time.getHours()).padStart(2, '0')}:{String(time.getMinutes()).padStart(2, '0')}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(0,229,192,.08)', border: '1px solid rgba(0,229,192,.3)', borderRadius: '8px', padding: '5px 12px', fontSize: '12px', fontWeight: '600', color: '#00e5c0' }}>
-            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#00e5c0', animation: 'pulse 2s infinite' }}></span> AI ON
+            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#00e5c0', animation: 'ai-pulse 2s infinite' }}></span> AI ON
           </div>
           <button style={{ background: '#00e5c0', color: '#050f1e', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>+ New Patient</button>
         </div>
       </div>
 
-      <div style={{ display: 'flex', height: 'calc(100vh - 50px)', marginTop: '50px', marginLeft: '65px' }}>
+      {/* Page Layout */}
+      <div style={{ display: 'flex', height: 'calc(100vh - 50px)', marginTop: '50px', marginLeft: '65px', overflow: 'hidden' }}>
         {/* Left Picker */}
         <div style={{ width: '272px', background: '#081628', borderRight: '1px solid #1a3555', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ padding: '14px', borderBottom: '1px solid #1a3555', flexShrink: 0 }}>
@@ -222,7 +284,7 @@ export default function ClinicalCalculators() {
                 placeholder="Search calculators..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ width: '100%', background: '#0e2544', border: '1px solid #1a3555', borderRadius: '8px', padding: '7px 10px 7px 32px', color: '#e8f0fe', fontSize: '12px', outline: 'none' }}
+                style={{ width: '100%', background: '#0e2544', border: '1px solid #1a3555', borderRadius: '8px', padding: '7px 10px 7px 32px', color: '#e8f0fe', fontSize: '12px', outline: 'none', fontFamily: "'DM Sans'" }}
               />
             </div>
           </div>
@@ -243,11 +305,7 @@ export default function ClinicalCalculators() {
                 {calcs.map(calc => (
                   <button
                     key={calc.id}
-                    onClick={() => {
-                      setActiveCalcId(calc.id);
-                      setCurrentValues({});
-                      setCurrentChecked({});
-                    }}
+                    onClick={() => handleLoadCalc(calc.id)}
                     style={{
                       width: '100%',
                       display: 'flex',
@@ -267,9 +325,6 @@ export default function ClinicalCalculators() {
                       <div style={{ fontSize: '12px', fontWeight: '600', color: '#e8f0fe' }}>{calc.shortName}</div>
                       <div style={{ fontSize: '10px', color: '#4a6a8a', marginTop: '1px' }}>{calc.description}</div>
                     </div>
-                    {history[calc.id]?.[0] && (
-                      <div style={{ fontSize: '10px', fontFamily: "'JetBrains Mono'", fontWeight: '600', color: '#00e5c0' }}>{history[calc.id][0].value.toFixed(1)} {history[calc.id][0].unit}</div>
-                    )}
                   </button>
                 ))}
               </div>
@@ -278,17 +333,50 @@ export default function ClinicalCalculators() {
         </div>
 
         {/* Main Panel */}
-        {activeCalc && (
+        {!activeCalc ? (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', padding: '40px', textAlign: 'center', background: '#050f1e', overflowY: 'auto' }}>
+            <div style={{ fontSize: '40px' }}>🧮</div>
+            <div style={{ fontFamily: "'Playfair Display'", fontSize: '22px', fontWeight: '700', color: '#e8f0fe' }}>Clinical Calculators</div>
+            <div style={{ fontSize: '13px', color: '#4a6a8a', maxWidth: '420px', lineHeight: '1.6' }}>Evidence-based clinical tools with automatic patient data integration. Select a calculator from the sidebar or choose a quick-start below.</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', width: '100%', maxWidth: '600px', marginTop: '8px' }}>
+              {['bmi', 'crcl', 'chadsvasc'].map(id => {
+                const c = CALCULATORS.find(x => x.id === id);
+                return (
+                  <button
+                    key={id}
+                    onClick={() => handleLoadCalc(id)}
+                    style={{
+                      background: '#081628',
+                      border: '1px solid #1a3555',
+                      borderRadius: '12px',
+                      padding: '14px',
+                      cursor: 'pointer',
+                      transition: 'all .18s',
+                      textAlign: 'left',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.borderColor = '#2a4f7a';
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 4px 16px rgba(0,0,0,.3)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.borderColor = '#1a3555';
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  >
+                    <div style={{ fontSize: '22px', marginBottom: '6px' }}>{c.icon}</div>
+                    <div style={{ fontSize: '12px', fontWeight: '700', color: '#e8f0fe', marginBottom: '3px' }}>{c.shortName}</div>
+                    <div style={{ fontSize: '10px', color: '#4a6a8a', lineHeight: '1.4' }}>{c.description}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
           <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
             {/* Inputs */}
             <div style={{ width: '380px', overflowY: 'auto', padding: '16px', borderRight: '1px solid #1a3555', background: '#081628' }}>
-              {activePatient && (
-                <div style={{ background: 'rgba(0,229,192,.05)', border: '1px solid rgba(0,229,192,.18)', borderRadius: '8px', padding: '8px 12px', marginBottom: '16px', fontSize: '11px' }}>
-                  <div style={{ fontWeight: '700', color: '#00e5c0' }}>👤 {activePatient.patient_name}</div>
-                  <div style={{ color: '#4a6a8a', marginTop: '4px' }}>{activePatient.age}y {activePatient.gender}</div>
-                </div>
-              )}
-
               {activeCalc.fields && (
                 <div style={{ marginBottom: '16px' }}>
                   <div style={{ fontSize: '10px', fontWeight: '700', color: '#4a6a8a', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '7px' }}>
@@ -303,7 +391,7 @@ export default function ClinicalCalculators() {
                           <select
                             value={currentValues[f.id] ?? ''}
                             onChange={(e) => handleFieldChange(f.id, e.target.value)}
-                            style={{ width: '100%', background: '#0e2544', border: '1.5px solid #1a3555', borderRadius: '8px', padding: '8px 10px', color: '#e8f0fe', fontSize: '13px', outline: 'none', appearance: 'none', cursor: 'pointer' }}
+                            style={{ width: '100%', background: '#0e2544', border: '1.5px solid #1a3555', borderRadius: '8px', padding: '8px 10px', color: '#e8f0fe', fontSize: '13px', outline: 'none', appearance: 'none', cursor: 'pointer', fontFamily: "'DM Sans'" }}
                           >
                             <option value="">— Select —</option>
                             {f.opts?.map(opt => (
@@ -317,160 +405,4 @@ export default function ClinicalCalculators() {
                               min={f.min}
                               max={f.max}
                               step={f.step}
-                              value={currentValues[f.id] ?? ''}
-                              onChange={(e) => handleFieldChange(f.id, e.target.value)}
-                              style={{ width: '100%', background: '#0e2544', border: '1.5px solid #1a3555', borderRadius: '8px', padding: '8px 40px 8px 10px', color: '#e8f0fe', fontSize: '13px', outline: 'none' }}
-                            />
-                            <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '10px', color: '#4a6a8a', fontFamily: "'JetBrains Mono'", pointerEvents: 'none' }}>{f.unit}</span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {activeCalc.scored && (
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ fontSize: '10px', fontWeight: '700', color: '#4a6a8a', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '7px' }}>
-                    Clinical Criteria
-                    <div style={{ flex: 1, height: '1px', background: '#1a3555' }}></div>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    {activeCalc.scored.map(s => (
-                      <button
-                        key={s.id}
-                        onClick={() => handleToggleScore(s.id, s.pts)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px',
-                          padding: '8px 10px',
-                          borderRadius: '8px',
-                          border: '1.5px solid #1a3555',
-                          cursor: 'pointer',
-                          background: currentChecked[s.id] ? 'rgba(0,229,192,.07)' : '#0e2544',
-                          borderColor: currentChecked[s.id] ? 'rgba(0,229,192,.3)' : '#1a3555',
-                          userSelect: 'none',
-                          transition: 'all .15s'
-                        }}
-                      >
-                        <div style={{ width: '16px', height: '16px', borderRadius: '4px', border: '2px solid', borderColor: currentChecked[s.id] ? '#00e5c0' : '#1a3555', background: currentChecked[s.id] ? '#00e5c0' : '#050f1e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#050f1e', fontWeight: '900' }}>
-                          {currentChecked[s.id] && '✓'}
-                        </div>
-                        <div style={{ flex: 1, fontSize: '12px', color: currentChecked[s.id] ? '#e8f0fe' : '#8aaccc' }}>{s.label}</div>
-                        <div style={{ fontSize: '11px', fontFamily: "'JetBrains Mono'", fontWeight: '700', padding: '2px 7px', borderRadius: '4px', background: 'rgba(59,158,255,.15)', color: '#3b9eff' }}>+{s.pts}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '14px' }}>
-                <button onClick={compute} style={{ background: '#00e5c0', color: '#050f1e', border: 'none', borderRadius: '8px', padding: '8px 20px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', flex: 1 }}>⟳ Calculate</button>
-                <button style={{ background: '#0e2544', border: '1px solid #1a3555', borderRadius: '8px', padding: '7px 12px', fontSize: '11px', color: '#8aaccc', cursor: 'pointer' }}>⚡ Auto-fill</button>
-                <button onClick={() => { setCurrentValues({}); setCurrentChecked({}); }} style={{ background: '#0e2544', border: '1px solid #1a3555', borderRadius: '8px', padding: '7px 12px', fontSize: '12px', color: '#8aaccc', cursor: 'pointer' }}>Clear</button>
-              </div>
-            </div>
-
-            {/* Results */}
-            <div style={{ flex: 1, background: '#050f1e', overflowY: 'auto', padding: '16px' }}>
-              {result && band ? (
-                <div style={{ maxWidth: '800px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {/* Primary Result */}
-                  <div style={{ background: '#0b1e36', border: '1px solid #1a3555', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '8px', marginBottom: '4px' }}>
-                      <div style={{ fontFamily: "'JetBrains Mono'", fontSize: '52px', fontWeight: '600', color: COLOR_MAP[band.color] }}>{result.value.toFixed(result.precision ?? 1)}</div>
-                      <div style={{ fontSize: '14px', color: '#4a6a8a', fontFamily: "'JetBrains Mono'" }}>{result.unit}</div>
-                    </div>
-                    {result.extra && <div style={{ fontSize: '12px', fontFamily: "'JetBrains Mono'", color: '#8aaccc', marginTop: '4px' }}>{result.extra}</div>}
-                  </div>
-
-                  {/* Band Strip */}
-                  <div style={{ background: '#0b1e36', border: '1px solid #1a3555', borderRadius: '8px', padding: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#4a6a8a', fontFamily: "'JetBrains Mono'", marginBottom: '8px' }}>
-                      <span>{activeCalc.rangeMin}</span>
-                      <span style={{ fontSize: '10px', color: '#4a6a8a' }}>{activeCalc.shortName} Range</span>
-                      <span>{activeCalc.rangeMax}{result.value > activeCalc.rangeMax ? '+' : ''}</span>
-                    </div>
-                    <div style={{ height: '10px', borderRadius: '6px', display: 'flex', overflow: 'hidden', gap: '1px', marginBottom: '8px' }}>
-                      {activeCalc.bands.map((b, i) => {
-                        const nextLt = activeCalc.bands[i + 1]?.lt || activeCalc.rangeMax;
-                        const width = ((Math.min(b.lt, nextLt) - (i === 0 ? activeCalc.rangeMin : activeCalc.bands[i - 1]?.lt || activeCalc.rangeMin)) / (activeCalc.rangeMax - activeCalc.rangeMin)) * 100;
-                        return <div key={i} style={{ width: `${width}%`, background: COLOR_MAP[b.color], opacity: 0.7 }} />;
-                      })}
-                    </div>
-                    <div style={{ position: 'relative', height: '22px' }}>
-                      <div
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: `${((Math.min(result.value, activeCalc.rangeMax) - activeCalc.rangeMin) / (activeCalc.rangeMax - activeCalc.rangeMin)) * 100}%`,
-                          width: '2px',
-                          height: '14px',
-                          borderRadius: '2px',
-                          background: COLOR_MAP[band.color],
-                          transform: 'translateX(-50%)',
-                          display: 'flex',
-                          alignItems: 'flex-end',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <span style={{ fontSize: '8px', color: COLOR_MAP[band.color], marginTop: '2px' }}>▲</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Risk Badge */}
-                  <div style={{ display: 'flex', justifyContent: 'center' }}>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '5px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', background: `${COLOR_MAP[band.color]}20`, border: `1px solid ${COLOR_MAP[band.color]}50`, color: COLOR_MAP[band.color] }}>
-                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: COLOR_MAP[band.color] }}></span>
-                      {band.label}
-                    </div>
-                  </div>
-
-                  {/* Recommendation */}
-                  <div style={{ background: '#0e2544', border: '1px solid #1a3555', borderRadius: '8px', padding: '10px 12px' }}>
-                    <div style={{ fontSize: '9px', color: '#2e4a6a', textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: '700', marginBottom: '5px' }}>Clinical Recommendation</div>
-                    <div style={{ fontSize: '12px', color: '#8aaccc', lineHeight: '1.5' }}>{band.rec}</div>
-                  </div>
-
-                  {/* Formula */}
-                  <div style={{ background: 'rgba(59,158,255,.03)', border: '1px solid rgba(59,158,255,.15)', borderRadius: '8px', padding: '10px 12px' }}>
-                    <div style={{ fontSize: '9px', color: '#4a6a8a', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '4px' }}>Formula & Reference</div>
-                    <div style={{ fontFamily: "'JetBrains Mono'", fontSize: '10px', color: '#3b9eff', lineHeight: '1.6', marginBottom: '4px' }}>{activeCalc.formula}</div>
-                    <div style={{ fontSize: '10px', color: '#2e4a6a', fontStyle: 'italic' }}>{activeCalc.reference}</div>
-                  </div>
-
-                  {/* History */}
-                  {history[activeCalcId]?.length > 1 && (
-                    <div style={{ background: '#0b1e36', border: '1px solid #1a3555', borderRadius: '8px', padding: '10px 12px' }}>
-                      <div style={{ fontSize: '9px', color: '#2e4a6a', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '6px', fontWeight: '700' }}>Previous Results</div>
-                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                        {history[activeCalcId].slice(1).map((h, i) => (
-                          <div key={i} style={{ background: '#0e2544', border: '1px solid #1a3555', borderRadius: '8px', padding: '5px 10px', fontSize: '10px', cursor: 'pointer' }}>
-                            <span style={{ fontFamily: "'JetBrains Mono'", fontWeight: '700', color: '#e8f0fe' }}>{h.value.toFixed(1)}</span>
-                            <span style={{ color: '#2e4a6a', marginLeft: '5px' }}>{h.ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '10px', opacity: 0.35 }}>
-                  <div style={{ fontSize: '40px' }}>⟳</div>
-                  <div style={{ fontSize: '12px', color: '#4a6a8a' }}>Fill in the fields to compute the result</div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <style>{`
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-      `}</style>
-    </div>
-  );
-}
+                              value={currentValues

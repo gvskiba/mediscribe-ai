@@ -976,23 +976,22 @@ Diagnosis: ${rxDx || '—'}`;
           <div className="erx-sec">
             <div className="erx-sec-hdr">
               <span style={{fontSize:17}}>📋</span>
-              <div><div className="erx-sec-title">Prescription History</div><div className="erx-sec-sub">Recent prescriptions for this patient</div></div>
-              <button className="erx-btn-ghost" style={{marginLeft:'auto',fontSize:11}}>Last 90 Days</button>
+              <div><div className="erx-sec-title">Prescription History</div><div className="erx-sec-sub">Prescriptions created in this session</div></div>
+              <span className="erx-sb-cnt" style={{marginLeft:'auto'}}>{rxQueue.filter(r => r.status === 'signed').length}</span>
             </div>
-            {[
-              {drug:'Ciprofloxacin 500mg',detail:'PO BID × 7d · #14',date:'Mar 01, 2026',status:'sent',badge:'SENT'},
-              {drug:'Ondansetron 4mg ODT',detail:'q6h PRN · #12 · 0 RF',date:'Feb 22, 2026',status:'sent',badge:'SENT'},
-              {drug:'Tramadol 50mg',detail:'q4-6h PRN · #20 · 0 RF · CIV',date:'Feb 14, 2026',status:'printed',badge:'PRINTED'},
-              {drug:'Metronidazole 500mg',detail:'PO TID × 7d · #21 · 0 RF',date:'Jan 30, 2026',status:'sent',badge:'SENT'},
-              {drug:'Prednisone 20mg taper',detail:'Per taper · #21 · 0 RF',date:'Jan 18, 2026',status:'sent',badge:'SENT'},
-            ].map((rx, i) => (
-              <div key={i} className="erx-hist-row">
+            {rxQueue.filter(r => r.status === 'signed').length === 0 && (
+              <div style={{fontSize:12,color:'var(--txt3)',padding:'6px 0'}}>No prescriptions signed yet in this session.</div>
+            )}
+            {rxQueue.filter(r => r.status === 'signed').map((rx) => (
+              <div key={rx.id} className="erx-hist-row">
                 <div style={{flex:1}}>
-                  <div className="erx-hist-drug">{rx.drug}</div>
-                  <div className="erx-hist-detail">{rx.detail}</div>
+                  <div className="erx-hist-drug">{rx.drug} {rx.strength}</div>
+                  <div className="erx-hist-detail">{rx.sig} · #{rx.qty} · {rx.days}d{rx.controlled ? ' · C-II' : ''}</div>
                 </div>
-                <div className="erx-hist-date">{rx.date}</div>
-                <span className={`erx-hist-badge ${rx.status === 'sent' ? 'hb-sent' : 'hb-printed'}`}>{rx.badge}</span>
+                <div className="erx-hist-date">{new Date().toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'})}</div>
+                <span className={`erx-hist-badge ${rx.method === 'e-prescribe' ? 'hb-sent' : 'hb-printed'}`}>
+                  {rx.method === 'e-prescribe' ? 'SENT' : rx.method === 'print' ? 'PRINTED' : 'FAX'}
+                </span>
               </div>
             ))}
           </div>

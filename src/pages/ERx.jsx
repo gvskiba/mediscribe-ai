@@ -82,12 +82,19 @@ const CSS = `
 .sch-2{background:rgba(255,107,107,.2);color:var(--coral);}
 .sch-3,.sch-4{background:rgba(245,200,66,.15);color:var(--gold);}
 /* favorites */
-.erx-fav-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
-.erx-fav-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);padding:10px 11px;cursor:pointer;transition:all .15s;}
+.erx-fav-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.erx-fav-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:14px 15px;cursor:pointer;transition:all .15s;}
 .erx-fav-card:hover{border-color:var(--border-hi);background:var(--bg-up);}
-.erx-fav-drug{font-size:12px;font-weight:600;color:var(--txt);}
-.erx-fav-sig{font-size:10px;color:var(--txt3);font-family:'JetBrains Mono',monospace;}
+.erx-fav-drug{font-size:14px;font-weight:600;color:var(--txt);margin-bottom:6px;}
+.erx-fav-sig{font-size:11px;color:var(--txt3);font-family:'JetBrains Mono',monospace;margin-bottom:3px;}
 .erx-fav-diag{font-size:10px;color:var(--txt4);}
+.erx-filter-btns{display:flex;gap:8px;margin-bottom:16px;}
+.erx-filter-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-up);color:var(--txt2);font-size:12px;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;font-weight:500;}
+.erx-filter-btn:hover{border-color:var(--border-hi);color:var(--txt);}
+.erx-filter-btn.active{background:var(--blue);border-color:var(--blue);color:#fff;}
+.erx-filter-btn.fav-active{background:var(--gold);border-color:var(--gold);color:var(--bg);}
+.erx-filter-btn.controlled-active{background:var(--coral);border-color:var(--coral);color:#fff;}
+.erx-qp-header{font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;display:flex;align-items:center;gap:6px;font-weight:600;}
 /* rx card */
 .erx-rx-card{background:linear-gradient(135deg,rgba(59,158,255,.05),rgba(0,229,192,.04));border:1px solid rgba(59,158,255,.22);border-radius:var(--rl);padding:17px 19px;}
 .erx-rx-drug-hdr{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;margin-bottom:13px;display:flex;align-items:center;gap:12px;}
@@ -296,6 +303,7 @@ export default function ERx() {
   const [aiInput, setAiInput] = useState('');
   const [convHistory, setConvHistory] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [drugFilter, setDrugFilter] = useState('all'); // all, favorites, recent, controlled
   // rx fields
   const [rxStrength, setRxStrength] = useState('');
   const [rxForm, setRxForm] = useState('Tablet');
@@ -398,6 +406,17 @@ export default function ERx() {
   const filteredDrugs = useMemo(() => {
     let result = DRUGS;
     
+    // Filter by drug filter type
+    if (drugFilter === 'controlled') {
+      result = result.filter(d => d.schedule && d.schedule > 0);
+    } else if (drugFilter === 'favorites') {
+      // For now, show all - favorites system would need to be implemented
+      result = DRUGS;
+    } else if (drugFilter === 'recent') {
+      // For now, show all - recent system would need to be implemented
+      result = DRUGS;
+    }
+    
     // Filter by category if selected
     if (selectedCategory) {
       result = result.filter(d => (d.category || 'other') === selectedCategory);
@@ -414,7 +433,7 @@ export default function ERx() {
     }
     
     return result.slice(0, 12);
-  }, [DRUGS, query, selectedCategory]);
+  }, [DRUGS, query, selectedCategory, drugFilter]);
 
   const selectDrug = (drug) => {
     console.log('Selected drug:', drug);
@@ -618,14 +637,31 @@ Diagnosis: ${rxDx || '—'}`;
           <div className="erx-sec">
             <div className="erx-sec-hdr">
               <span style={{fontSize:17}}>🔍</span>
-              <div><div className="erx-sec-title">Drug Search</div><div className="erx-sec-sub">{drugsLoading ? 'Loading drug database from server…' : `Search by brand name, generic, or drug class · ${DRUGS.length} drugs loaded`}</div></div>
+              <div><div className="erx-sec-title">Drug Search</div><div className="erx-sec-sub">{drugsLoading ? 'Loading drug database from server…' : `Search by brand name, generic, NDC, or drug class`}</div></div>
             </div>
+            
+            {/* Filter Buttons */}
+            <div className="erx-filter-btns">
+              <button className={`erx-filter-btn ${drugFilter === 'all' ? 'active' : ''}`} onClick={() => setDrugFilter('all')}>
+                All
+              </button>
+              <button className={`erx-filter-btn ${drugFilter === 'favorites' ? 'fav-active' : ''}`} onClick={() => setDrugFilter('favorites')}>
+                ⭐ Favorites
+              </button>
+              <button className={`erx-filter-btn ${drugFilter === 'recent' ? 'active' : ''}`} onClick={() => setDrugFilter('recent')}>
+                🕐 Recent
+              </button>
+              <button className={`erx-filter-btn ${drugFilter === 'controlled' ? 'controlled-active' : ''}`} onClick={() => setDrugFilter('controlled')}>
+                🔒 Controlled
+              </button>
+            </div>
+
             <div className="erx-search-wrap">
               <span className="erx-search-icon">💊</span>
               <input className="erx-search-inp" value={query} onChange={e => { setQuery(e.target.value); setShowDrop(true); }}
                 onFocus={() => query.length >= 2 && setShowDrop(true)}
                 onBlur={() => setTimeout(() => setShowDrop(false), 150)}
-                placeholder={drugsLoading ? 'Loading drug database…' : `Search ${DRUGS.length} drugs, generics, drug class…`} />
+                placeholder={drugsLoading ? 'Loading drug database…' : `Search drugs, generics, drug class...`} />
               {query && <span className="erx-search-clear" onClick={() => { setQuery(''); setShowDrop(false); }}>✕</span>}
               {showDrop && filteredDrugs.length > 0 && (
                 <div className="erx-dropdown">
@@ -646,7 +682,53 @@ Diagnosis: ${rxDx || '—'}`;
                 </div>
               )}
             </div>
-            {/* Favorites */}
+            
+            {/* Quick Prescribe Favorites */}
+            <div style={{marginTop:20}}>
+              <div className="erx-qp-header">⭐ QUICK PRESCRIBE — FAVORITES</div>
+              <div className="erx-fav-grid">
+                <div className="erx-fav-card" onClick={() => loadFav({name:'Amoxicillin',drugName:'Amoxicillin',rx:{strength:'500mg',form:'Tablet',route:'PO',dose:'1 tablet',freq:'three times daily',dur:'7 days',qual:'',qty:'21',days:'7',refills:'0'}})}>
+                  <div className="erx-fav-drug">Amoxicillin</div>
+                  <div className="erx-fav-sig">500mg PO TID × 7d</div>
+                  <div className="erx-fav-diag">Infection</div>
+                </div>
+                <div className="erx-fav-card" onClick={() => loadFav({name:'Azithromycin Z-Pak',drugName:'Azithromycin',rx:{strength:'250mg',form:'Tablet',route:'PO',dose:'2 tablets day 1, then 1 tablet',freq:'once daily',dur:'5 days',qual:'',qty:'6',days:'5',refills:'0'}})}>
+                  <div className="erx-fav-drug">Azithromycin Z-Pak</div>
+                  <div className="erx-fav-sig">250mg PO × 5d</div>
+                  <div className="erx-fav-diag">URTI / CAP</div>
+                </div>
+                <div className="erx-fav-card" onClick={() => loadFav({name:'Prednisone',drugName:'Prednisone',rx:{strength:'20mg',form:'Tablet',route:'PO',dose:'1 tablet',freq:'once daily',dur:'',qual:'',qty:'6',days:'6',refills:'0'}})}>
+                  <div className="erx-fav-drug">Prednisone</div>
+                  <div className="erx-fav-sig">20mg PO taper</div>
+                  <div className="erx-fav-diag">Inflammation</div>
+                </div>
+                <div className="erx-fav-card" onClick={() => loadFav({name:'Ondansetron ODT',drugName:'Ondansetron',rx:{strength:'4mg',form:'ODT',route:'PO',dose:'1 tablet',freq:'every 6 hours',dur:'',qual:'as needed for nausea',qty:'12',days:'3',refills:'0'}})}>
+                  <div className="erx-fav-drug">Ondansetron ODT</div>
+                  <div className="erx-fav-sig">4mg q6h PRN</div>
+                  <div className="erx-fav-diag">N/V</div>
+                </div>
+                <div className="erx-fav-card" onClick={() => loadFav({name:'Ciprofloxacin',drugName:'Ciprofloxacin',rx:{strength:'500mg',form:'Tablet',route:'PO',dose:'1 tablet',freq:'twice daily',dur:'7 days',qual:'',qty:'14',days:'7',refills:'0'}})}>
+                  <div className="erx-fav-drug">Ciprofloxacin</div>
+                  <div className="erx-fav-sig">500mg PO BID × 7d</div>
+                  <div className="erx-fav-diag">UTI / Infection</div>
+                </div>
+                <div className="erx-fav-card" onClick={() => loadFav({name:'Tramadol',drugName:'Tramadol',rx:{strength:'50mg',form:'Tablet',route:'PO',dose:'1 tablet',freq:'every 4-6 hours',dur:'',qual:'as needed for pain',qty:'20',days:'5',refills:'0'}})}>
+                  <div className="erx-fav-drug">Tramadol</div>
+                  <div className="erx-fav-sig">50mg PO q4-6h PRN</div>
+                  <div className="erx-fav-diag">Pain · C/V</div>
+                </div>
+                <div className="erx-fav-card" onClick={() => loadFav({name:'Metronidazole',drugName:'Metronidazole',rx:{strength:'500mg',form:'Tablet',route:'PO',dose:'1 tablet',freq:'twice daily',dur:'7 days',qual:'',qty:'14',days:'7',refills:'0'}})}>
+                  <div className="erx-fav-drug">Metronidazole</div>
+                  <div className="erx-fav-sig">500mg PO TID × 7d</div>
+                  <div className="erx-fav-diag">Anaerobic / BV</div>
+                </div>
+                <div className="erx-fav-card" onClick={() => loadFav({name:'Oxycodone/APAP',drugName:'Oxycodone',rx:{strength:'5/325mg',form:'Tablet',route:'PO',dose:'1 tablet',freq:'every 4-6 hours',dur:'',qual:'as needed for pain',qty:'12',days:'3',refills:'0'}})}>
+                  <div className="erx-fav-drug">Oxycodone/APAP</div>
+                  <div className="erx-fav-sig">5/325mg PO q4-6h</div>
+                  <div className="erx-fav-diag">Acute Pain · CII</div>
+                </div>
+              </div>
+            </div>
 
           </div>
 

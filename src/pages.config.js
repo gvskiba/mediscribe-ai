@@ -89,7 +89,6 @@ import OrderSetBuilder from './pages/OrderSetBuilder';
 import OrdersQueue from './pages/OrdersQueue';
 import PatientDashboard from './pages/PatientDashboard';
 import PatientEducationGenerator from './pages/PatientEducationGenerator';
-import PatientEducationMaterials from './pages/PatientEducationMaterials';
 import PatientHistory from './pages/PatientHistory';
 import PediatricDosing from './pages/PediatricDosing';
 import Procedures from './pages/Procedures';
@@ -146,7 +145,6 @@ export const PAGES = {
     "OrdersQueue": OrdersQueue,
     "PatientDashboard": PatientDashboard,
     "PatientEducationGenerator": PatientEducationGenerator,
-    "PatientEducationMaterials": PatientEducationMaterials,
     "PatientHistory": PatientHistory,
     "PediatricDosing": PediatricDosing,
     "Procedures": Procedures,

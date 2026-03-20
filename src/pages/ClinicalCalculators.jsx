@@ -471,9 +471,9 @@ export default function ClinicalCalculators() {
       </div>
 
       {/* Content */}
-      <div style={{ display: 'flex', height: '100vh', paddingTop: '50px', paddingLeft: '65px', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', height: '100vh', paddingTop: '50px', paddingLeft: '50px', overflow: 'hidden' }}>
         {/* Picker */}
-        <div style={{ width: '272px', flexShrink: 0, background: '#081628', borderRight: '1px solid #1a3555', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ width: '230px', flexShrink: 0, background: '#081628', borderRight: '1px solid #1a3555', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ padding: '14px', borderBottom: '1px solid #1a3555' }}>
             <div style={{ fontFamily: 'Playfair Display', fontSize: '15px', fontWeight: '700', color: '#e8f0fe', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               🧮 Calculators <span style={{ fontSize: '11px', color: '#4a6a8a', fontFamily: 'JetBrains Mono', fontWeight: '400' }}>({CALCULATORS.length})</span>

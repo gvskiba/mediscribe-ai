@@ -5,7 +5,9 @@ import { pagesConfig } from './pages.config'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { PatientProvider } from '@/lib/PatientContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import PatientSidebar from '@/components/patient/PatientSidebar';
 import AWSPharmacySection from '@/pages/AWSPharmacySection';
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -41,7 +43,9 @@ const AuthenticatedApp = () => {
 
   // Render the main app
   return (
-    <Routes>
+    <>
+      <PatientSidebar />
+      <Routes>
       <Route path="/" element={
         <LayoutWrapper currentPageName={mainPageKey}>
           <MainPage />
@@ -65,6 +69,7 @@ const AuthenticatedApp = () => {
       } />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
+    </>
   );
 };
 
@@ -74,9 +79,11 @@ function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <AuthenticatedApp />
-        </Router>
+        <PatientProvider>
+          <Router>
+            <AuthenticatedApp />
+          </Router>
+        </PatientProvider>
         <Toaster />
       </QueryClientProvider>
     </AuthProvider>

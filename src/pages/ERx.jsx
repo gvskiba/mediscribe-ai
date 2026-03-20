@@ -322,6 +322,7 @@ export default function ERx() {
   const [rxRefills, setRxRefills] = useState('0');
   const [rxDx, setRxDx] = useState('');
   const [rxNotes, setRxNotes] = useState('');
+  const [rxPrescriberNotes, setRxPrescriberNotes] = useState('');
   const [togGeneric, setTogGeneric] = useState(true);
   const [togCounsel, setTogCounsel] = useState(false);
   const [showCS, setShowCS] = useState(false);
@@ -542,7 +543,7 @@ export default function ERx() {
   const clearRx = () => {
     setSelectedDrug(null); setQuery(''); setRxStrength(''); setSigDose(''); setSigFreq('once daily');
     setSigDur(''); setSigQual(''); setSigExtra(''); setRxQty(''); setRxDays(''); setRxRefills('0');
-    setRxDx(''); setRxNotes(''); setShowCS(false); setShowConflict(false); setInteractions([]);
+    setRxDx(''); setRxNotes(''); setRxPrescriberNotes(''); setShowCS(false); setShowConflict(false); setInteractions([]);
     setStatusBadge('draft');
     appendMsg('sys','🗑 Prescription cleared.');
   };
@@ -913,7 +914,7 @@ Diagnosis: ${rxDx || '—'}`;
             <div className="erx-grid-2 erx-mb-12">
               <div className="erx-field">
                 <label className="erx-lbl">Prescriber Notes (internal)</label>
-                <textarea className="erx-textarea" value={rxNotes} onChange={e => setRxNotes(e.target.value)} placeholder="Clinical rationale, monitoring plan…" style={{resize:'vertical',minHeight:'80px'}}/>
+                <textarea className="erx-textarea" value={rxPrescriberNotes} onChange={e => setRxPrescriberNotes(e.target.value)} placeholder="Clinical rationale, monitoring plan…" style={{resize:'vertical',minHeight:'80px'}}/>
               </div>
               <div style={{display:'flex',flexDirection:'column',gap:9,paddingTop:4}}>
                 {[['togGeneric',togGeneric,setTogGeneric,'Dispense as Generic (DAW-0)'],['togCounsel',togCounsel,setTogCounsel,'Pharmacist counselling required']].map(([id,val,set,lbl]) => (

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
 
 // ── Theme ──────────────────────────────────────────────────────────────────
 const T = {
@@ -728,7 +730,7 @@ function LogModal({ onClose, onSave, prefillDrug, weight }) {
               <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.07em', color: T.dim, marginBottom: 4 }}>Medication</div>
               <input style={inputStyle} value={drugName} onChange={e => setDrugName(e.target.value)} placeholder="e.g. Epinephrine" list="ped-drug-list" />
               <datalist id="ped-drug-list">
-                {DRUG_DATA.map(d => <option key={d.id} value={d.name + ' (' + d.indication + ')'} />)}
+                {ACTIVE_DRUG_DATA.map(d => <option key={d.id} value={d.name + ' (' + d.indication + ')'} />)}
               </datalist>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -780,6 +782,36 @@ export default function PediatricDosing() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [settingMode, setSettingMode] = useState('er'); // 'er' | 'outpatient'
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Load medications from database
+  const { data: dbMeds = [], isLoading: medsLoading } = useQuery({
+    queryKey: ['medications-ped'],
+    queryFn: async () => {
+      const meds = await base44.entities.Medication.list();
+      return meds || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Use database medications if available, otherwise fallback to DRUG_DATA
+  const ACTIVE_DRUG_DATA = dbMeds.length > 0 ? dbMeds.map(m => {
+    const med = m.data || m;
+    return {
+      id: med.id || med.med_id,
+      name: med.name,
+      indication: med.indications?.split('.')[0] || med.category || '',
+      category: med.category || 'other',
+      setting: med.setting || 'er',
+      critical: med.highAlert || false,
+      route: med.route || 'PO',
+      repeat: med.ped?.repeat || '',
+      doses: med.ped?.doses || [{ dosePerKg: med.ped?.mgkg || 0, unit: med.ped?.unit || 'mg', maxDose: med.ped?.max || null, label: 'Standard' }],
+      concentration: med.ped?.concentration || 1,
+      concLabel: med.ped?.concLabel || `${med.strengths?.[0] || 'Standard'}`,
+      note: med.ped?.notes || med.dosing?.[0]?.notes || '',
+      warning: med.warnings?.[0] || null,
+    };
+  }) : DRUG_DATA;
 
   // Clinical alias expansion for plain-language searches
   const SEARCH_ALIASES = {
@@ -847,11 +879,11 @@ export default function PediatricDosing() {
       if (q.includes(key)) expanded += ' ' + val.toLowerCase();
     });
     const terms = expanded.split(/\s+/).filter(t => t.length > 1);
-    return DRUG_DATA.filter(drug => {
+    return ACTIVE_DRUG_DATA.filter(drug => {
       const haystack = [drug.name, drug.indication, drug.note || '', drug.category, drug.warning || ''].join(' ').toLowerCase();
       return terms.some(term => haystack.includes(term));
     });
-  }, []);
+  }, [ACTIVE_DRUG_DATA]);
   const [doseLog, setDoseLog] = useState(() => {
     try { return JSON.parse(localStorage.getItem('notrya-ped-log') || '[]'); } catch { return []; }
   });
@@ -895,7 +927,7 @@ export default function PediatricDosing() {
   const isSearching = searchResults !== null;
 
   const CATEGORIES = settingMode === 'er' ? ER_CATEGORIES : OP_CATEGORIES;
-  const settingDrugs = isSearching ? searchResults : DRUG_DATA.filter(d => (d.setting || 'er') === settingMode);
+  const settingDrugs = isSearching ? searchResults : ACTIVE_DRUG_DATA.filter(d => (d.setting || 'er') === settingMode);
   const cats = settingMode === 'er'
     ? ['resuscitation','rsi','sedation','seizure','respiratory','antibiotics','other']
     : ['antibiotics','respiratory','other'];

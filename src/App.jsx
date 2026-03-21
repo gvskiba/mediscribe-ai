@@ -10,6 +10,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import PatientSidebar from '@/components/patient/PatientSidebar';
 import AWSPharmacySection from '@/pages/AWSPharmacySection';
 import PatientChart from '@/pages/PatientChart';
+import NoteHistory from '@/pages/NoteHistory';
 
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -70,6 +71,7 @@ const AuthenticatedApp = () => {
         </LayoutWrapper>
       } />
       <Route path="/patientchart" element={<PatientChart />} />
+      <Route path="/notehistory" element={<NoteHistory />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

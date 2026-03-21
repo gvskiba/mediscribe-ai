@@ -1,13 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 
 const TABS = [
+  {id:'chart',icon:'📊',label:'Patient Chart', path:'/NewPatientInput', tab:'chart'},
   {id:'demo',icon:'👤',label:'Demographics', path:'/NewPatientInput', tab:'demo'},
   {id:'cc',icon:'🗣️',label:'CC', path:'/NewPatientInput', tab:'cc'},
   {id:'vit',icon:'📊',label:'Vitals', path:'/NewPatientInput', tab:'vit'},
   {id:'meds',icon:'💊',label:'Meds & PMH', path:'/NewPatientInput', tab:'meds'},
   {id:'ros',icon:'🔍',label:'ROS', path:'/NewPatientInput', tab:'ros'},
   {id:'pe',icon:'🩺',label:'Exam', path:'/NewPatientInput', tab:'pe'},
-  {id:'sum',icon:'📋',label:'Summary', path:'/NewPatientInput', tab:'sum'},
   {id:'mdm',icon:'⚖️',label:'MDM', path:'/NewPatientInput', tab:'mdm'},
   {id:'discharge',icon:'🏥',label:'Discharge', path:'/NewPatientInput', tab:'discharge'},
 ];

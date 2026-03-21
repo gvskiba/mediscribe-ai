@@ -582,12 +582,19 @@ function Toast({ message, color, onDone }) {
 
 // ── Drug Card ────────────────────────────────────────────────────────────────
 function DrugCard({ drug, weight, onLog }) {
+  const [selectedConcentration, setSelectedConcentration] = useState(drug.concentration);
   const bandColor = getBand(weight)?.color || T.muted;
   const catColor = CAT_COLORS[drug.category] || T.dim;
-  const calc0 = calcDrug(drug, weight, 0);
-  const calc1 = drug.doses.length > 1 ? calcDrug(drug, weight, 1) : null;
+  
+  // Create modified drug with selected concentration
+  const activeDrug = { ...drug, concentration: selectedConcentration };
+  const calc0 = calcDrug(activeDrug, weight, 0);
+  const calc1 = drug.doses.length > 1 ? calcDrug(activeDrug, weight, 1) : null;
   const noWt = !weight;
   const capped = calc0?.capped;
+  
+  // Parse available concentrations from concLabel or strengths
+  const availableConcentrations = drug.availableConcentrations || [drug.concentration];
 
   let doseVal0 = noWt ? '—' : (calc0 ? calc0.doseStr : '—');
   let volVal0  = noWt ? '—' : (calc0 ? calc0.volStr : '—');
@@ -657,8 +664,22 @@ function DrugCard({ drug, weight, onLog }) {
         )}
 
         {/* Meta chips */}
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 10.5, padding: '3px 9px', borderRadius: 6, background: 'rgba(30,58,95,.6)', border: '1px solid rgba(30,58,95,.8)', color: T.purple, fontFamily: "'JetBrains Mono', monospace" }}>{drug.concLabel}</span>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+          {availableConcentrations.length > 1 ? (
+            <select 
+              value={selectedConcentration}
+              onChange={e => setSelectedConcentration(parseFloat(e.target.value))}
+              style={{ fontSize: 10.5, padding: '4px 8px', borderRadius: 6, background: 'rgba(30,58,95,.6)', border: '1px solid rgba(155,109,255,.4)', color: T.purple, fontFamily: "'JetBrains Mono', monospace", cursor: 'pointer', outline: 'none' }}
+            >
+              {availableConcentrations.map((conc, idx) => (
+                <option key={idx} value={conc.value}>
+                  {conc.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span style={{ fontSize: 10.5, padding: '3px 9px', borderRadius: 6, background: 'rgba(30,58,95,.6)', border: '1px solid rgba(30,58,95,.8)', color: T.purple, fontFamily: "'JetBrains Mono', monospace" }}>{drug.concLabel}</span>
+          )}
           {drug.repeat && <span style={{ fontSize: 10.5, padding: '3px 9px', borderRadius: 6, background: 'rgba(30,58,95,.6)', border: '1px solid rgba(30,58,95,.8)', color: T.amber, fontFamily: "'JetBrains Mono', monospace" }}>{drug.repeat}</span>}
         </div>
 
@@ -802,6 +823,23 @@ export default function PediatricDosing() {
     return med.ped && med.ped.doses && med.ped.doses.length > 0;
   }).map(m => {
     const med = m.data || m;
+    
+    // Parse available concentrations from strengths
+    const availableConcentrations = [];
+    if (med.strengths && med.strengths.length > 0 && med.forms?.includes('Oral suspension')) {
+      med.strengths.forEach(strength => {
+        const match = strength.match(/(\d+\.?\d*)\s*mg\s*\/\s*(\d+\.?\d*)\s*mL/i);
+        if (match) {
+          const mg = parseFloat(match[1]);
+          const ml = parseFloat(match[2]);
+          availableConcentrations.push({
+            value: mg / ml,
+            label: strength
+          });
+        }
+      });
+    }
+    
     return {
       id: med.id || med.med_id,
       name: med.name,
@@ -814,6 +852,7 @@ export default function PediatricDosing() {
       doses: med.ped?.doses || [{ dosePerKg: 0, unit: 'mg', maxDose: null, label: 'Standard' }],
       concentration: med.ped?.concentration || 1,
       concLabel: med.ped?.concLabel || `${med.strengths?.[0] || 'Standard'}`,
+      availableConcentrations: availableConcentrations.length > 0 ? availableConcentrations : null,
       note: med.ped?.notes || med.dosing?.[0]?.notes || '',
       warning: med.warnings?.[0] || null,
     };

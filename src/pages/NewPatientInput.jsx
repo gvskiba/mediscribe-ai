@@ -13,7 +13,7 @@ import VitalsTab from "@/components/npi/VitalsTab";
 import MedsTab from "@/components/npi/MedsTab";
 import ROSTab from "@/components/npi/ROSTab";
 import PETab from "@/components/npi/PETab";
-import PatientChartTab from "@/components/npi/PatientChartTab";
+
 import AutoCoderTab from "@/components/npi/AutoCoderTab";
 
 import { VITAL_DEFS, ROS_SYSTEMS, PE_SYSTEMS, PMH_SYSTEMS, TABS } from "@/components/npi/npiData";

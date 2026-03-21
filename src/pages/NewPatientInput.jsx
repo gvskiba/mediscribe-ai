@@ -13,13 +13,13 @@ import VitalsTab from "@/components/npi/VitalsTab";
 import MedsTab from "@/components/npi/MedsTab";
 import ROSTab from "@/components/npi/ROSTab";
 import PETab from "@/components/npi/PETab";
-import SummaryTab from "@/components/npi/SummaryTab";
+import PatientChartTab from "@/components/npi/PatientChartTab";
 import AutoCoderTab from "@/components/npi/AutoCoderTab";
 
 import { VITAL_DEFS, ROS_SYSTEMS, PE_SYSTEMS, PMH_SYSTEMS, TABS } from "@/components/npi/npiData";
 
 const SIDEBAR_ITEMS = [
-  { id: 'sum', icon: '📋', label: 'Summary' },
+  { id: 'chart', icon: '📊', label: 'Patient Chart' },
   { id: 'demo', icon: '👤', label: 'Demographics' },
   { id: 'cc', icon: '🗣️', label: 'Chief Complaint' },
   { id: 'vit', icon: '📊', label: 'Vitals' },
@@ -359,9 +359,9 @@ export default function NewPatientInput() {
           <div className={`npi-panel${currentTab === 'pe' ? ' active' : ''}`}>
             <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} />
           </div>
-          <div className={`npi-panel${currentTab === 'sum' ? ' active' : ''}`}>
-            <SummaryTab demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} surgHx={surgHx} famHx={famHx} socHx={socHx} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} patientName={patientName} onSave={savePatient} onGenerateNote={aiGenerateNote} />
-          </div>
+          <div className={`npi-panel${currentTab === 'chart' ? ' active' : ''}`}>
+            <PatientChartTab demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} surgHx={surgHx} famHx={famHx} socHx={socHx} rosState={rosState} peState={peState} patientName={patientName} />
+          </div></invoke>
 
           {currentTab === 'mdm' && (
             <div style={{ display: 'flex', flex: 1, minHeight: 0, margin: '-16px -18px', height: 'calc(100vh - 200px)' }}>

@@ -359,9 +359,19 @@ export default function NewPatientInput() {
           <div className={`npi-panel${currentTab === 'pe' ? ' active' : ''}`}>
             <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} />
           </div>
-          <div className={`npi-panel${currentTab === 'chart' ? ' active' : ''}`}>
-            <PatientChartTab demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} surgHx={surgHx} famHx={famHx} socHx={socHx} rosState={rosState} peState={peState} patientName={patientName} />
-          </div>
+          {currentTab === 'chart' && (
+            <iframe 
+              src="/patientchart" 
+              style={{ 
+                border: 'none', 
+                width: '100%', 
+                height: 'calc(100vh - 200px)', 
+                margin: '-16px -18px',
+                background: '#050f1e'
+              }}
+              title="Patient Chart"
+            />
+          )}
 
           {currentTab === 'mdm' && (
             <div style={{ display: 'flex', flex: 1, minHeight: 0, margin: '-16px -18px', height: 'calc(100vh - 200px)' }}>

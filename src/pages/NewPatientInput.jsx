@@ -361,7 +361,7 @@ export default function NewPatientInput() {
           </div>
           <div className={`npi-panel${currentTab === 'chart' ? ' active' : ''}`}>
             <PatientChartTab demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} surgHx={surgHx} famHx={famHx} socHx={socHx} rosState={rosState} peState={peState} patientName={patientName} />
-          </div></invoke>
+          </div>
 
           {currentTab === 'mdm' && (
             <div style={{ display: 'flex', flex: 1, minHeight: 0, margin: '-16px -18px', height: 'calc(100vh - 200px)' }}>

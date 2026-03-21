@@ -655,11 +655,11 @@ DISPOSITION: Admit to Cardiac ICU. Cath lab on standby.`
                   timeline.map((e, i) => {
                     const colors = { arrival: 'var(--txt3)', critical: 'var(--coral)', order: 'var(--blue)', result: 'var(--coral)', consult: 'var(--purple)', med: 'var(--teal)', current: 'var(--teal)' };
                     const color = colors[e.type] || 'var(--txt4)';
-                    const glow = e.type === 'critical' ? 'box-shadow:0 0 8px rgba(255,107,107,.6);' : '';
+                    const glow = e.type === 'critical' ? '0 0 8px rgba(255,107,107,.6)' : '';
                     return (
                       <div key={i} className="tl-item">
                         <div className="tl-spine">
-                          <div className="tl-dot" style={{ background: color, boxShadow: glow }}></div>
+                          <div className="tl-dot" style={{ background: color, ...(glow && { boxShadow: glow }) }}></div>
                           {i < timeline.length - 1 && <div className="tl-line"></div>}
                         </div>
                         <div className="tl-body">

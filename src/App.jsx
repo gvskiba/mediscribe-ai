@@ -9,6 +9,7 @@ import { PatientProvider } from '@/lib/PatientContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import PatientSidebar from '@/components/patient/PatientSidebar';
 import AWSPharmacySection from '@/pages/AWSPharmacySection';
+import PatientChart from '@/pages/PatientChart';
 
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -68,6 +69,7 @@ const AuthenticatedApp = () => {
           <AWSPharmacySection />
         </LayoutWrapper>
       } />
+      <Route path="/patientchart" element={<PatientChart />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

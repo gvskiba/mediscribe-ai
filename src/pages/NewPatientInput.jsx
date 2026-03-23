@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import MDMPanel from "@/components/mdm/MDMPanel";
@@ -74,7 +74,13 @@ export default function NewPatientInput() {
   const [peState, setPeState] = useState({});
   const [peFindings, setPeFindings] = useState({});
   const [selectedCC, setSelectedCC] = useState(-1);
+  const location = useLocation();
   const [currentTab, setCurrentTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'demo');
+
+  useEffect(() => {
+    const tab = new URLSearchParams(location.search).get('tab');
+    if (tab) setCurrentTab(tab);
+  }, [location.search]);
   const [parseText, setParseText] = useState('');
   const [parsing, setParsing] = useState(false);
   const [pmhExpanded, setPmhExpanded] = useState({ cardio: true, endo: true });
@@ -231,101 +237,12 @@ export default function NewPatientInput() {
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, marginLeft: 72, background: S.bg, color: S.txt, fontFamily: "'DM Sans', sans-serif", fontSize: 13, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', height: 'calc(100vh - 138px)', background: S.bg, color: S.txt, fontFamily: "'DM Sans', sans-serif", fontSize: 13, overflow: 'hidden' }}>
 
-      {/* ── TOP BAR ── */}
-      <div style={{ flexShrink: 0, background: S.panel, borderBottom: `1px solid ${S.border}`, display: 'flex', flexDirection: 'column' }}>
-
-        {/* Row 1 */}
-        <div style={{ height: 44, display: 'flex', alignItems: 'center', padding: '0 14px', gap: 8, borderBottom: `1px solid rgba(26,53,85,0.5)` }}>
-          <span style={{ fontSize: 12, color: S.txt2, fontWeight: 500 }}>Welcome, <strong style={{ color: S.txt }}>Dr. Gabriel Skiba</strong></span>
-          <div style={{ width: 1, height: 20, background: S.border }} />
-          {[['8', 'ACTIVE'], ['14', 'PENDING', true], ['3', 'ORDERS'], ['11.6', 'HOURS']].map(([v, l, alert]) => (
-            <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 5, background: S.up, border: `1px solid ${S.border}`, borderRadius: 6, padding: '3px 10px' }}>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 600, color: alert ? S.gold : S.txt }}>{v}</span>
-              <span style={{ fontSize: 9, color: S.txt3, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{l}</span>
-            </div>
-          ))}
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ background: S.up, border: `1px solid ${S.border}`, borderRadius: 6, padding: '3px 10px', fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: S.txt2 }}>{clock}</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(0,229,192,0.08)', border: '1px solid rgba(0,229,192,0.3)', borderRadius: 6, padding: '3px 10px', fontSize: 11, fontWeight: 600, color: S.teal }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: S.teal }} /> AI ON
-            </div>
-            <button onClick={resetForm} style={{ background: S.teal, color: S.bg, border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ New Patient</button>
-          </div>
-        </div>
-
-        {/* Row 2 */}
-        <div style={{ height: 44, display: 'flex', alignItems: 'center', padding: '0 14px', gap: 8, overflow: 'hidden' }}>
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, background: S.up, border: `1px solid ${S.border}`, borderRadius: 20, padding: '1px 8px', color: S.teal, whiteSpace: 'nowrap' }}>PT-4-471-8820</span>
-          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 600, color: S.txt, whiteSpace: 'nowrap' }}>{patientName}</span>
-          <span style={{ fontSize: 11, color: S.txt3, whiteSpace: 'nowrap' }}>{demo.age ? `${demo.age} y/o` : '67 y/o'} · {demo.sex || 'Male'} · {demo.dob || '03/14/1957'}</span>
-          {cc.text && <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: S.orange, whiteSpace: 'nowrap' }}>CC: {cc.text}</span>}
-          <div style={{ width: 1, height: 18, background: S.border, flexShrink: 0 }} />
-          {[
-            ['BP', vitals.bp || '158/94', vbAbn(vitals.hr, null, 140)],
-            ['HR', vitals.hr || '108', vbAbn(vitals.hr, 50, 100)],
-            ['RR', vitals.rr || '18', false],
-            ['SpO₂', (vitals.spo2 || '93') + '%', vbAbn(vitals.spo2, 94, null)],
-            ['T', (vitals.temp || '37.1') + '°C', false],
-            ['GCS', vitals.gcs || '15', false],
-          ].map(([lbl, val, abn]) => (
-            <div key={lbl} style={{ display: 'flex', alignItems: 'center', gap: 3, fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, whiteSpace: 'nowrap' }}>
-              <span style={{ color: S.txt4, fontSize: 9 }}>{lbl}</span>
-              <span style={{ color: abn ? S.coral : S.txt2 }}>{val}</span>
-            </div>
-          ))}
-          <div style={{ width: 1, height: 18, background: S.border, flexShrink: 0 }} />
-          {allergies.length > 0 && <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 4, background: 'rgba(255,107,107,0.15)', color: S.coral, border: `1px solid rgba(255,107,107,0.3)`, whiteSpace: 'nowrap' }}>⚠ ALLERGY</span>}
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 4, background: 'rgba(255,107,107,0.15)', color: S.coral, border: `1px solid rgba(255,107,107,0.3)`, whiteSpace: 'nowrap' }}>MONITORING</span>
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 4, background: 'rgba(0,229,192,0.1)', color: S.teal, border: `1px solid rgba(0,229,192,0.3)`, whiteSpace: 'nowrap' }}>Room 4B</span>
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
-            {[['📋 Orders', false], ['📝 SOAP Note', false]].map(([label]) => (
-              <button key={label} style={{ background: S.up, border: `1px solid ${S.border}`, borderRadius: 6, padding: '4px 10px', fontSize: 11, color: S.txt2, cursor: 'pointer', whiteSpace: 'nowrap' }}>{label}</button>
-            ))}
-            <button style={{ background: 'rgba(255,107,107,0.15)', color: S.coral, border: `1px solid rgba(255,107,107,0.3)`, borderRadius: 6, padding: '4px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>🚪 Discharge</button>
-            <button onClick={savePatient} style={{ background: S.teal, color: S.bg, border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>💾 Save Chart</button>
-          </div>
-        </div>
-      </div>
-
-      {/* ── MAIN LAYOUT ── */}
+      {/* ── MAIN LAYOUT ── */
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-        {/* LEFT SIDEBAR */}
-        <aside style={{ width: 170, flexShrink: 0, background: S.panel, borderRight: `1px solid ${S.border}`, overflowY: 'auto', padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {SIDEBAR_GROUPS.map((group, gi) => (
-            <div key={gi}>
-              {gi > 0 && <div style={{ height: 1, background: S.border, margin: '6px 4px' }} />}
-              <div style={{ fontSize: 9, color: S.txt4, textTransform: 'uppercase', letterSpacing: '0.08em', padding: gi === 0 ? '4px 8px 4px' : '10px 8px 4px', fontWeight: 600 }}>{group.label}</div>
-              {group.items.map(item => {
-                const status = getTabStatus(item.id);
-                const isActive = currentTab === item.id;
-                return (
-                  <div key={item.id}
-                    onClick={() => setCurrentTab(item.id)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 7, padding: '6px 8px', borderRadius: 6,
-                      cursor: 'pointer', border: `1px solid ${isActive ? 'rgba(59,158,255,0.3)' : 'transparent'}`,
-                      background: isActive ? 'rgba(59,158,255,0.1)' : 'transparent',
-                      fontSize: 12, color: isActive ? S.blue : S.txt2, userSelect: 'none',
-                    }}
-                  >
-                    <span style={{ fontSize: 13, width: 18, textAlign: 'center', flexShrink: 0 }}>{item.icon}</span>
-                    <span style={{ flex: 1 }}>{item.label}</span>
-                    <span style={{
-                      width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
-                      background: dotColor(status),
-                      boxShadow: status === 'done' ? `0 0 5px rgba(0,229,192,0.5)` : status === 'partial' ? `0 0 5px rgba(255,159,67,0.5)` : 'none'
-                    }} />
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </aside>
-
-        {/* MAIN CONTENT */}
+        {/* MAIN CONTENT */
         <main style={{ flex: 1, overflowY: 'auto', padding: '18px 22px 30px', display: 'flex', flexDirection: 'column', gap: 18 }}>
           {currentTab === 'demo' && (
             <DemoTab demo={demo} setDemo={setDemo} parseText={parseText} setParseText={setParseText} parsing={parsing} onSmartParse={smartParse} />
@@ -436,30 +353,6 @@ export default function NewPatientInput() {
             <button onClick={() => sendAI()} style={{ background: S.teal, color: S.bg, border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>↑</button>
           </div>
         </aside>
-      </div>
-
-      {/* ── BOTTOM BAR ── */}
-      <div style={{ flexShrink: 0, height: 50, background: S.panel, borderTop: `1px solid ${S.border}`, display: 'flex', alignItems: 'center', padding: '0 16px', gap: 8, zIndex: 100 }}>
-        <button onClick={navBack} style={{ background: S.up, border: `1px solid ${S.border}`, borderRadius: 6, padding: '5px 14px', fontSize: 12, color: S.txt2, cursor: 'pointer' }}>← Back</button>
-        <span style={{ fontSize: 11, color: S.txt3 }}>{prevLabel}</span>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, margin: '0 auto' }}>
-          {ALL_TABS.map((id) => {
-            const status = getTabStatus(id);
-            const isCurrent = id === currentTab;
-            return (
-              <div key={id} onClick={() => setCurrentTab(id)} title={SIDEBAR_GROUPS.flatMap(g => g.items).find(i => i.id === id)?.label} style={{
-                width: isCurrent ? 10 : 8, height: isCurrent ? 10 : 8,
-                borderRadius: '50%', cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s',
-                background: isCurrent ? S.blue : dotColor(status),
-                boxShadow: isCurrent ? `0 0 6px rgba(59,158,255,0.5)` : 'none',
-              }} />
-            );
-          })}
-        </div>
-
-        <span style={{ fontSize: 12, color: S.txt, fontWeight: 500 }}>{currentLabel}</span>
-        <button onClick={navNext} style={{ background: S.teal, color: S.bg, border: 'none', borderRadius: 6, padding: '6px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Next →</button>
       </div>
 
       <style>{`@keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:0.4}40%{transform:translateY(-6px);opacity:1}}`}</style>

@@ -1,353 +1,132 @@
-import React, { useState, useRef, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
-import { Button } from "@/components/ui/button";
-import { MessageCircle, XCircle, Send, Loader2, Bot, User, Sparkles, Stethoscope, Pill, BookOpen, FlaskConical } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import ReactMarkdown from "react-markdown";
+import React, { useState, useRef, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
 
-const MODES = [
-  { id: "general", label: "General", icon: Sparkles, color: "blue" },
-  { id: "differential", label: "Differential Dx", icon: Stethoscope, color: "purple" },
-  { id: "interactions", label: "Drug Interactions", icon: Pill, color: "rose" },
-  { id: "knowledge", label: "My Notes", icon: BookOpen, color: "emerald" },
-];
-
-const SUGGESTED_BY_MODE = {
-  general: [
-    "What are first-line treatments for hypertension?",
-    "Explain Type 2 diabetes management",
-    "Summarize HEART score guidelines",
-  ],
-  differential: [
-    "Patient has chest pain, dyspnea, and diaphoresis",
-    "Fever, neck stiffness, and photophobia in a 25yo",
-    "Sudden onset severe headache, worst of life",
-  ],
-  interactions: [
-    "Warfarin + Aspirin interaction risks",
-    "Check: Metformin, Lisinopril, Atorvastatin",
-    "SSRIs and MAOIs — why dangerous?",
-  ],
-  knowledge: [
-    "Summarize my recent clinical notes",
-    "What diagnoses have I seen most recently?",
-    "Show medications from my recent notes",
-  ],
+const S = {
+  bg: '#050f1e', panel: '#081628', card: '#0b1e36', up: '#0e2544',
+  border: '#1a3555', teal: '#00e5c0', blue: '#3b9eff',
+  purple: '#9b6dff', coral: '#ff6b6b',
+  txt: '#e8f0fe', txt2: '#8aaccc', txt3: '#4a6a8a', txt4: '#2e4a6a',
 };
 
-function buildPrompt(mode, userText, history, knowledgeBase) {
-  const base = `You are a knowledgeable Medical AI Assistant for Notrya AI, a clinical platform used by healthcare professionals. Use markdown formatting (bold, bullets, headers) for readability. Always end with a brief disclaimer that clinical judgment is essential.\n\nConversation history:\n${history}\n\nCurrent question: ${userText}`;
-
-  if (mode === "differential") {
-    return `${base}
-
-TASK: Provide a structured **differential diagnosis** based on the symptoms/presentation described.
-Format your response as:
-1. **Most Likely Diagnosis** — with brief reasoning
-2. **Top Differentials** (list 4-6) — each with key supporting features and distinguishing tests
-3. **Red Flags to Rule Out** — dangerous conditions not to miss
-4. **Suggested Workup** — labs, imaging, or additional history needed`;
-  }
-
-  if (mode === "interactions") {
-    return `${base}
-
-TASK: Provide a thorough **drug interaction analysis**.
-Format your response as:
-- **Severity** (Contraindicated / Major / Moderate / Minor) for each pair
-- **Mechanism** of interaction
-- **Clinical Effects** — what can go wrong
-- **Management** — dose adjustments, monitoring, alternatives
-- **Special Populations** at higher risk (elderly, renal/hepatic impairment, pregnancy)
-Reference FDA, Lexicomp, or Micromedex-style guidance.`;
-  }
-
-  if (mode === "knowledge") {
-    const kb = knowledgeBase?.length > 0
-      ? `\n\nINTERNAL KNOWLEDGE BASE (recent notes & guidelines from this app):\n${knowledgeBase}`
-      : "\n\n(No internal knowledge base data available — answering from general medical knowledge.)";
-    return `${base}${kb}
-
-TASK: Answer using the internal knowledge base above when relevant. Cite which note or guideline you're referencing. If not found internally, answer from general medical knowledge and indicate so.`;
-  }
-
-  // general
-  return `${base}
-
-Your role:
-- Answer questions about medical conditions, treatments, medications, and clinical guidelines
-- Reference evidence-based guidelines (ACC/AHA, WHO, UpToDate-style)
-- Keep responses concise but thorough`;
+const CSS = `
+@keyframes ai-pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,229,192,0.4)} 50%{opacity:.8;box-shadow:0 0 0 5px rgba(0,229,192,0)} }
+@keyframes notrya-bounce { 0%,80%,100%{transform:translateY(0);opacity:.4} 40%{transform:translateY(-5px);opacity:1} }
+.notrya-dot { animation: ai-pulse 2s ease-in-out infinite; }
+.nb1{animation:notrya-bounce 1.2s ease-in-out infinite}
+.nb2{animation:notrya-bounce 1.2s 0.2s ease-in-out infinite}
+.nb3{animation:notrya-bounce 1.2s 0.4s ease-in-out infinite}
+.notrya-toggle-btn {
+  position:fixed; bottom:24px; right:24px; z-index:500;
+  width:48px; height:48px; border-radius:50%;
+  background:#081628; border:1px solid #1a3555;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-size:18px; transition:all .2s;
+  box-shadow:0 4px 20px rgba(0,0,0,0.5);
 }
+.notrya-toggle-btn:hover { border-color:#00e5c0; box-shadow:0 4px 24px rgba(0,229,192,0.15); }
+.notrya-toggle-btn.open { background: rgba(0,229,192,0.1); border-color:rgba(0,229,192,0.4); }
+.notrya-panel {
+  position:fixed; bottom:84px; right:24px; z-index:500;
+  width:320px; height:520px;
+  background:#081628; border:1px solid #1a3555; border-radius:14px;
+  display:flex; flex-direction:column; overflow:hidden;
+  box-shadow:0 8px 40px rgba(0,0,0,0.6);
+  animation:panel-in .2s ease;
+}
+@keyframes panel-in { from{opacity:0;transform:translateY(12px) scale(0.97)} to{opacity:1;transform:none} }
+.notrya-msgs::-webkit-scrollbar { width:4px; }
+.notrya-msgs::-webkit-scrollbar-thumb { background:#1a3555; border-radius:2px; }
+.notrya-input:focus { border-color:#00e5c0 !important; outline:none; }
+`;
+
+const QUICK = [
+  ['🚩 Red Flags', 'What red-flag symptoms should not be missed in an emergency department presentation?'],
+  ['💊 Drug Check', 'What are the most important drug interactions to watch for in the ED?'],
+  ['📋 Differentials', 'Help me think through a differential diagnosis for chest pain in a middle-aged patient.'],
+  ['📝 SOAP Note', 'Help me structure a SOAP note for an acute presentation.'],
+];
 
 export default function MedicalChatbot() {
   const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState("general");
-  const [messagesByMode, setMessagesByMode] = useState({
-    general: [{ role: "assistant", content: "Hi! I'm your **Medical AI Assistant**. Ask me anything about clinical guidelines, conditions, or treatments." }],
-    differential: [{ role: "assistant", content: "Describe a patient presentation (symptoms, age, vitals) and I'll generate a structured **differential diagnosis** with workup suggestions." }],
-    interactions: [{ role: "assistant", content: "List medications (e.g. 'Warfarin + Aspirin + Lisinopril') and I'll provide a comprehensive **drug interaction analysis** including severity, mechanism, and management." }],
-    knowledge: [{ role: "assistant", content: "I'll search your **internal notes and saved guidelines** to answer questions or provide summaries. Loading your knowledge base..." }],
-  });
-  const [input, setInput] = useState("");
+  const [msgs, setMsgs] = useState([{ role: 'sys', text: 'Notrya AI ready. Ask a clinical question or use a quick action above.' }]);
+  const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [knowledgeBase, setKnowledgeBase] = useState(null);
-  const bottomRef = useRef(null);
-  const inputRef = useRef(null);
-
-  const messages = messagesByMode[mode];
-
-  const setMessages = (updater) => {
-    setMessagesByMode((prev) => ({
-      ...prev,
-      [mode]: typeof updater === "function" ? updater(prev[mode]) : updater,
-    }));
-  };
-
-  // Load knowledge base when switching to knowledge mode
-  useEffect(() => {
-    if (mode === "knowledge" && knowledgeBase === null) {
-      loadKnowledgeBase();
-    }
-  }, [mode]);
-
-  const loadKnowledgeBase = async () => {
-    try {
-      const [notes, guidelines] = await Promise.all([
-        base44.entities.ClinicalNote.list("-updated_date", 10),
-        base44.entities.GuidelineQuery.list("-updated_date", 10),
-      ]);
-
-      const noteSummaries = notes
-        .filter((n) => n.patient_name || n.chief_complaint || n.summary)
-        .map((n) => `NOTE [${n.patient_name || "Unknown"}, ${n.date_of_visit || ""}]: CC: ${n.chief_complaint || ""} | Summary: ${n.summary || ""} | Diagnoses: ${(n.diagnoses || []).join(", ")} | Medications: ${(n.medications || []).join(", ")}`)
-        .join("\n");
-
-      const guidelineSummaries = guidelines
-        .filter((g) => g.question && g.answer)
-        .map((g) => `GUIDELINE [${g.category || "general"}]: Q: ${g.question} | A: ${g.answer?.slice(0, 300)}...`)
-        .join("\n");
-
-      const kb = [noteSummaries, guidelineSummaries].filter(Boolean).join("\n\n");
-      setKnowledgeBase(kb || "");
-
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: kb ? `✅ Loaded **${notes.length} recent notes** and **${guidelines.length} saved guidelines** from your knowledge base. Ask me anything!` : "No notes or guidelines found in your knowledge base yet. I'll answer from general medical knowledge." },
-      ]);
-    } catch {
-      setKnowledgeBase("");
-    }
-  };
+  const msgsRef = useRef(null);
 
   useEffect(() => {
-    if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: "smooth" });
-  }, [messagesByMode, mode]);
+    if (msgsRef.current) msgsRef.current.scrollTop = msgsRef.current.scrollHeight;
+  }, [msgs, loading]);
 
-  useEffect(() => {
-    if (open && inputRef.current) inputRef.current.focus();
-  }, [open, mode]);
-
-  const sendMessage = async (text) => {
-    const userText = text || input.trim();
-    if (!userText || loading) return;
-
-    setInput("");
-    const newMessages = [...messages, { role: "user", content: userText }];
-    setMessages(newMessages);
+  const send = async (q) => {
+    const question = q || input.trim();
+    if (!question || loading) return;
+    setInput('');
+    setMsgs(p => [...p, { role: 'user', text: question }]);
     setLoading(true);
-
     try {
-      const history = newMessages
-        .slice(-4)
-        .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content?.slice(0, 400)}`)
-        .join("\n");
-
-      const prompt = buildPrompt(mode, userText, history, knowledgeBase);
-
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        add_context_from_internet: false,
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are Notrya AI, a clinical assistant for emergency medicine providers. Be concise and clinically precise. Use **bold** for key terms.\n\nQuestion: ${question}`,
       });
-
-      setMessages((prev) => [...prev, { role: "assistant", content: result }]);
+      setMsgs(p => [...p, { role: 'bot', text: typeof res === 'string' ? res : JSON.stringify(res) }]);
     } catch {
-      setMessages((prev) => [...prev, { role: "assistant", content: "Sorry, I encountered an error. Please try again." }]);
-    } finally {
-      setLoading(false);
+      setMsgs(p => [...p, { role: 'sys', text: '⚠ Connection error. Please try again.' }]);
     }
+    setLoading(false);
   };
-
-  const modeConfig = MODES.find((m) => m.id === mode);
-  const colorMap = {
-    blue: { bg: "from-blue-600 to-indigo-600", pill: "bg-blue-100 text-blue-700 border-blue-200", active: "bg-blue-600 text-white" },
-    purple: { bg: "from-purple-600 to-indigo-600", pill: "bg-purple-100 text-purple-700 border-purple-200", active: "bg-purple-600 text-white" },
-    rose: { bg: "from-rose-500 to-pink-600", pill: "bg-rose-100 text-rose-700 border-rose-200", active: "bg-rose-500 text-white" },
-    emerald: { bg: "from-emerald-500 to-teal-600", pill: "bg-emerald-100 text-emerald-700 border-emerald-200", active: "bg-emerald-500 text-white" },
-  };
-  const colors = colorMap[modeConfig.color];
 
   return (
     <>
-      <AnimatePresence>
-        {!open && (
-          <motion.button
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            onClick={() => setOpen(true)}
-            className={`fixed bottom-28 right-5 z-50 w-14 h-14 rounded-full bg-gradient-to-br ${colors.bg} shadow-xl flex items-center justify-center hover:scale-105 transition-transform`}
-            title="Medical AI Chat"
-          >
-            <MessageCircle className="w-6 h-6 text-white" />
-          </motion.button>
-        )}
-      </AnimatePresence>
+      <style>{CSS}</style>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: 40, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 40, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 300, damping: 28 }}
-            className="fixed bottom-5 right-5 z-50 w-[390px] max-w-[calc(100vw-16px)] flex flex-col rounded-2xl shadow-2xl border border-slate-200 bg-white overflow-hidden"
-            style={{ height: "580px" }}
-          >
-            {/* Header */}
-            <div className={`flex items-center justify-between px-4 py-3 bg-gradient-to-r ${colors.bg} text-white flex-shrink-0`}>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                  {React.createElement(modeConfig.icon, { className: "w-4 h-4 text-white" })}
-                </div>
-                <div>
-                  <p className="font-semibold text-sm">Medical AI Assistant</p>
-                  <p className="text-xs text-white/70">{modeConfig.label} mode</p>
-                </div>
-              </div>
-              <button onClick={() => setOpen(false)} className="p-1.5 rounded-lg hover:bg-white/20 transition-colors">
-                <XCircle className="w-4 h-4" />
-              </button>
+      {/* Toggle button */}
+      <button className={`notrya-toggle-btn${open ? ' open' : ''}`} onClick={() => setOpen(o => !o)} title="Notrya AI">
+        {open ? <span style={{ fontSize: 16, color: S.teal }}>✕</span> : <span>✦</span>}
+      </button>
+
+      {/* Panel */}
+      {open && (
+        <div className="notrya-panel">
+          {/* Header */}
+          <div style={{ padding: '10px 14px', borderBottom: `1px solid ${S.border}`, flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
+              <div className="notrya-dot" style={{ width: 8, height: 8, borderRadius: '50%', background: S.teal, flexShrink: 0 }} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: S.txt, fontFamily: "'DM Sans', sans-serif" }}>Notrya AI</span>
+              <span style={{ marginLeft: 'auto', fontFamily: "'JetBrains Mono', monospace", fontSize: 9, background: S.up, border: `1px solid ${S.border}`, borderRadius: 20, padding: '2px 7px', color: S.txt3 }}>claude-sonnet-4</span>
             </div>
-
-            {/* Mode Tabs */}
-            <div className="flex gap-1 px-3 py-2 border-b border-slate-100 bg-white flex-shrink-0 overflow-x-auto scrollbar-hide">
-              {MODES.map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => setMode(m.id)}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-all border ${
-                    mode === m.id
-                      ? colorMap[m.color].active + " border-transparent"
-                      : "text-slate-500 border-slate-200 hover:bg-slate-50"
-                  }`}
-                >
-                  {React.createElement(m.icon, { className: "w-3 h-3" })}
-                  {m.label}
-                </button>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+              {QUICK.map(([label, q]) => (
+                <button key={label} onClick={() => send(q)} style={{ padding: '2px 9px', borderRadius: 20, fontSize: 10, cursor: 'pointer', background: S.up, border: `1px solid ${S.border}`, color: S.txt2, fontFamily: "'DM Sans', sans-serif", transition: 'all .15s' }}>{label}</button>
               ))}
             </div>
+          </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-slate-50">
-              {messages.map((msg, i) => (
-                <div key={i} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                  {msg.role === "assistant" && (
-                    <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${colors.bg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
-                      <Bot className="w-3.5 h-3.5 text-white" />
-                    </div>
-                  )}
-                  <div
-                    className={`max-w-[82%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-                      msg.role === "user"
-                        ? "bg-slate-700 text-white rounded-br-sm"
-                        : "bg-white border border-slate-200 text-slate-800 rounded-bl-sm shadow-sm"
-                    }`}
-                  >
-                    {msg.role === "assistant" ? (
-                      <ReactMarkdown
-                        className="prose prose-sm prose-slate max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
-                        components={{
-                          p: ({ children }) => <p className="mb-1 leading-relaxed">{children}</p>,
-                          ul: ({ children }) => <ul className="list-disc ml-4 mb-1 space-y-0.5">{children}</ul>,
-                          ol: ({ children }) => <ol className="list-decimal ml-4 mb-1 space-y-0.5">{children}</ol>,
-                          li: ({ children }) => <li className="text-xs">{children}</li>,
-                          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                          h2: ({ children }) => <p className="font-bold mt-2 mb-0.5 text-slate-900">{children}</p>,
-                          h3: ({ children }) => <p className="font-semibold mt-1.5 mb-0.5">{children}</p>,
-                        }}
-                      >
-                        {msg.content}
-                      </ReactMarkdown>
-                    ) : (
-                      msg.content
-                    )}
-                  </div>
-                  {msg.role === "user" && (
-                    <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <User className="w-3.5 h-3.5 text-white" />
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              {loading && (
-                <div className="flex gap-2 justify-start">
-                  <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${colors.bg} flex items-center justify-center flex-shrink-0`}>
-                    <Bot className="w-3.5 h-3.5 text-white" />
-                  </div>
-                  <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
-                    <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-                  </div>
-                </div>
-              )}
-              <div ref={bottomRef} />
-            </div>
-
-            {/* Suggested prompts */}
-            {messages.length <= 2 && (
-              <div className="px-3 pb-2 flex flex-wrap gap-1.5 bg-slate-50 flex-shrink-0">
-                {SUGGESTED_BY_MODE[mode].map((q, i) => (
-                  <button
-                    key={i}
-                    onClick={() => sendMessage(q)}
-                    className={`text-xs px-2.5 py-1.5 rounded-full border ${colorMap[modeConfig.color].pill} hover:opacity-80 transition-colors text-left`}
-                  >
-                    {q}
-                  </button>
-                ))}
+          {/* Messages */}
+          <div ref={msgsRef} className="notrya-msgs" style={{ flex: 1, overflowY: 'auto', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 7 }}>
+            {msgs.map((m, i) => (
+              <div key={i} style={{ padding: '9px 11px', borderRadius: 8, fontSize: 12, lineHeight: 1.55, background: m.role === 'sys' ? S.up : m.role === 'user' ? 'rgba(59,158,255,0.12)' : 'rgba(0,229,192,0.07)', border: `1px solid ${m.role === 'sys' ? S.border : m.role === 'user' ? 'rgba(59,158,255,0.25)' : 'rgba(0,229,192,0.18)'}`, color: m.role === 'sys' ? S.txt3 : S.txt, fontStyle: m.role === 'sys' ? 'italic' : 'normal', fontFamily: "'DM Sans', sans-serif" }}
+                dangerouslySetInnerHTML={{ __html: m.text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+            ))}
+            {loading && (
+              <div style={{ display: 'flex', gap: 5, padding: '10px 12px', alignItems: 'center' }}>
+                {['nb1','nb2','nb3'].map(c => <div key={c} className={c} style={{ width: 6, height: 6, borderRadius: '50%', background: S.teal }} />)}
               </div>
             )}
+          </div>
 
-            {/* Input */}
-            <div className="flex items-center gap-2 px-3 py-3 border-t border-slate-200 bg-white flex-shrink-0">
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) sendMessage(); }}
-                placeholder={
-                  mode === "differential" ? "Describe symptoms & presentation..." :
-                  mode === "interactions" ? "List medications to check..." :
-                  mode === "knowledge" ? "Ask about your notes or guidelines..." :
-                  "Ask about medications, conditions..."
-                }
-                className="flex-1 text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400 bg-slate-50"
-                disabled={loading}
-              />
-              <Button
-                onClick={() => sendMessage()}
-                disabled={!input.trim() || loading}
-                size="sm"
-                className={`bg-gradient-to-r ${colors.bg} text-white rounded-xl px-3 h-9 flex-shrink-0 border-0`}
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          {/* Input */}
+          <div style={{ padding: '10px 12px', borderTop: `1px solid ${S.border}`, flexShrink: 0, display: 'flex', gap: 6 }}>
+            <input
+              className="notrya-input"
+              style={{ flex: 1, background: S.up, border: `1px solid ${S.border}`, borderRadius: 7, padding: '7px 10px', color: S.txt, fontSize: 12, fontFamily: "'DM Sans', sans-serif" }}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && send()}
+              placeholder="Ask a clinical question…"
+            />
+            <button onClick={() => send()} style={{ background: S.teal, color: S.bg, border: 'none', borderRadius: 7, padding: '7px 12px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>↑</button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

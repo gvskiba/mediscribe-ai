@@ -1,132 +1,295 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 
-const S = {
-  bg: '#050f1e', panel: '#081628', card: '#0b1e36', up: '#0e2544',
-  border: '#1a3555', teal: '#00e5c0', blue: '#3b9eff',
-  purple: '#9b6dff', coral: '#ff6b6b',
-  txt: '#e8f0fe', txt2: '#8aaccc', txt3: '#4a6a8a', txt4: '#2e4a6a',
-};
-
 const CSS = `
-@keyframes ai-pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,229,192,0.4)} 50%{opacity:.8;box-shadow:0 0 0 5px rgba(0,229,192,0)} }
-@keyframes notrya-bounce { 0%,80%,100%{transform:translateY(0);opacity:.4} 40%{transform:translateY(-5px);opacity:1} }
-.notrya-dot { animation: ai-pulse 2s ease-in-out infinite; }
-.nb1{animation:notrya-bounce 1.2s ease-in-out infinite}
-.nb2{animation:notrya-bounce 1.2s 0.2s ease-in-out infinite}
-.nb3{animation:notrya-bounce 1.2s 0.4s ease-in-out infinite}
-.notrya-toggle-btn {
-  position:fixed; bottom:24px; right:24px; z-index:500;
-  width:48px; height:48px; border-radius:50%;
-  background:#081628; border:1px solid #1a3555;
-  display:flex; align-items:center; justify-content:center;
-  cursor:pointer; font-size:18px; transition:all .2s;
-  box-shadow:0 4px 20px rgba(0,0,0,0.5);
+@keyframes fab-ring {
+  0%,100% { box-shadow: 0 4px 20px rgba(0,229,192,0.35), 0 0 0 0 rgba(0,229,192,0.25); }
+  50%      { box-shadow: 0 4px 20px rgba(0,229,192,0.35), 0 0 0 10px rgba(0,229,192,0); }
 }
-.notrya-toggle-btn:hover { border-color:#00e5c0; box-shadow:0 4px 24px rgba(0,229,192,0.15); }
-.notrya-toggle-btn.open { background: rgba(0,229,192,0.1); border-color:rgba(0,229,192,0.4); }
-.notrya-panel {
-  position:fixed; bottom:84px; right:24px; z-index:500;
-  width:320px; height:520px;
-  background:#081628; border:1px solid #1a3555; border-radius:14px;
-  display:flex; flex-direction:column; overflow:hidden;
-  box-shadow:0 8px 40px rgba(0,0,0,0.6);
-  animation:panel-in .2s ease;
+@keyframes ai-pulse {
+  0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,229,192,0.4)}
+  50%{opacity:.8;box-shadow:0 0 0 5px rgba(0,229,192,0)}
 }
-@keyframes panel-in { from{opacity:0;transform:translateY(12px) scale(0.97)} to{opacity:1;transform:none} }
-.notrya-msgs::-webkit-scrollbar { width:4px; }
-.notrya-msgs::-webkit-scrollbar-thumb { background:#1a3555; border-radius:2px; }
-.notrya-input:focus { border-color:#00e5c0 !important; outline:none; }
+@keyframes bounce {
+  0%,80%,100%{transform:translateY(0);opacity:0.4}
+  40%{transform:translateY(-6px);opacity:1}
+}
+@keyframes msg-in {
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+.ai-fab {
+  position: fixed;
+  bottom: 72px; right: 22px;
+  z-index: 500;
+  width: 52px; height: 52px;
+  border-radius: 50%; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #00e5c0, #00b4d8);
+  box-shadow: 0 4px 20px rgba(0,229,192,0.35), 0 0 0 0 rgba(0,229,192,0.3);
+  transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  animation: fab-ring 3s ease-in-out infinite;
+}
+.ai-fab:hover { transform: scale(1.1); box-shadow: 0 6px 28px rgba(0,229,192,0.5); }
+.ai-fab:active { transform: scale(0.95); }
+.ai-fab.open {
+  transform: rotate(45deg) scale(1);
+  background: linear-gradient(135deg, #ff6b6b, #e05555);
+  box-shadow: 0 4px 20px rgba(255,107,107,0.35);
+  animation: none;
+}
+.ai-fab.open:hover { transform: rotate(45deg) scale(1.1); }
+
+.ai-fab-icon {
+  font-size: 22px; line-height: 1;
+  transition: transform 0.3s ease;
+  color: #050f1e; font-weight: 700;
+}
+.ai-fab-badge {
+  position: absolute; top: -2px; right: -2px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #ff6b6b; color: white;
+  font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid #050f1e;
+  opacity: 0; transform: scale(0);
+  transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  font-family: 'JetBrains Mono', monospace;
+  pointer-events: none;
+}
+.ai-fab-badge.show { opacity: 1; transform: scale(1); }
+
+.ai-overlay {
+  position: fixed;
+  bottom: 136px; right: 22px;
+  width: 380px;
+  max-height: calc(100vh - 200px);
+  z-index: 499;
+  background: #081628;
+  border: 1px solid #1a3555;
+  border-radius: 16px;
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 1px rgba(0,229,192,0.2);
+  opacity: 0;
+  transform: translateY(16px) scale(0.96);
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+.ai-overlay.open {
+  opacity: 1; transform: translateY(0) scale(1); pointer-events: auto;
+}
+
+.ai-ov-header {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #1a3555; flex-shrink: 0;
+  background: linear-gradient(180deg, rgba(0,229,192,0.04) 0%, transparent 100%);
+}
+.ai-ov-header-top { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.ai-ov-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: #00e5c0;
+  animation: ai-pulse 2s ease-in-out infinite; flex-shrink: 0;
+}
+.ai-ov-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 15px; font-weight: 600; color: #e8f0fe;
+}
+.ai-ov-model {
+  margin-left: auto;
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  background: #0e2544; border: 1px solid #1a3555; border-radius: 20px;
+  padding: 2px 8px; color: #4a6a8a;
+}
+.ai-ov-minimize {
+  margin-left: 6px; width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px; border: 1px solid #1a3555;
+  background: #0e2544; color: #4a6a8a; font-size: 13px;
+  cursor: pointer; transition: all 0.15s; font-family: inherit;
+}
+.ai-ov-minimize:hover { border-color: #2a4f7a; color: #e8f0fe; }
+
+.ai-ov-quick { display: flex; flex-wrap: wrap; gap: 4px; }
+.ai-ov-qbtn {
+  padding: 4px 10px; border-radius: 20px; font-size: 10px; cursor: pointer;
+  transition: all 0.15s; background: #0e2544; border: 1px solid #1a3555;
+  color: #8aaccc; font-family: 'DM Sans', sans-serif;
+}
+.ai-ov-qbtn:hover { border-color: #00e5c0; color: #00e5c0; background: rgba(0,229,192,0.06); }
+
+.ai-ov-msgs {
+  flex: 1; overflow-y: auto; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 8px;
+  min-height: 220px; max-height: 400px;
+}
+.ai-ov-msgs::-webkit-scrollbar { width: 4px; }
+.ai-ov-msgs::-webkit-scrollbar-thumb { background: #1a3555; border-radius: 2px; }
+
+.ai-ov-msg {
+  padding: 10px 12px; border-radius: 10px; font-size: 12px; line-height: 1.6;
+  max-width: 92%; animation: msg-in 0.3s ease;
+  font-family: 'DM Sans', sans-serif;
+}
+.ai-ov-msg.sys {
+  background: #0e2544; color: #4a6a8a; font-style: italic;
+  border: 1px solid #1a3555; align-self: center;
+  max-width: 100%; text-align: center; font-size: 11px;
+}
+.ai-ov-msg.user {
+  background: rgba(59,158,255,0.12); border: 1px solid rgba(59,158,255,0.25);
+  color: #e8f0fe; align-self: flex-end; border-radius: 10px 10px 2px 10px;
+}
+.ai-ov-msg.bot {
+  background: rgba(0,229,192,0.07); border: 1px solid rgba(0,229,192,0.18);
+  color: #e8f0fe; align-self: flex-start; border-radius: 10px 10px 10px 2px;
+}
+.ai-ov-msg.bot strong { color: #00e5c0; }
+
+.ai-ov-loader { display: flex; gap: 5px; padding: 10px 12px; align-items: center; align-self: flex-start; }
+.ai-ov-loader span { width: 6px; height: 6px; border-radius: 50%; background: #00e5c0; animation: bounce 1.2s ease-in-out infinite; }
+.ai-ov-loader span:nth-child(2) { animation-delay: 0.2s; }
+.ai-ov-loader span:nth-child(3) { animation-delay: 0.4s; }
+
+.ai-ov-input-wrap {
+  padding: 10px 14px 14px; border-top: 1px solid #1a3555; flex-shrink: 0;
+  display: flex; gap: 6px; align-items: flex-end;
+  background: linear-gradient(0deg, rgba(0,229,192,0.02) 0%, transparent 100%);
+}
+.ai-ov-input {
+  flex: 1; background: #0e2544; border: 1px solid #1a3555; border-radius: 10px;
+  padding: 8px 12px; color: #e8f0fe; font-size: 12px; outline: none; resize: none;
+  min-height: 38px; max-height: 100px; font-family: 'DM Sans', sans-serif;
+  line-height: 1.5; transition: border-color 0.15s;
+}
+.ai-ov-input:focus { border-color: #00e5c0; }
+.ai-ov-input::placeholder { color: #2e4a6a; }
+.ai-ov-send {
+  width: 38px; height: 38px;
+  background: #00e5c0; color: #050f1e; border: none; border-radius: 10px;
+  font-size: 16px; font-weight: 700; cursor: pointer; flex-shrink: 0;
+  transition: all 0.15s; display: flex; align-items: center; justify-content: center;
+}
+.ai-ov-send:hover { filter: brightness(1.15); transform: scale(1.05); }
+.ai-ov-send:active { transform: scale(0.95); }
 `;
 
-const QUICK = [
-  ['🚩 Red Flags', 'What red-flag symptoms should not be missed in an emergency department presentation?'],
-  ['💊 Drug Check', 'What are the most important drug interactions to watch for in the ED?'],
-  ['📋 Differentials', 'Help me think through a differential diagnosis for chest pain in a middle-aged patient.'],
-  ['📝 SOAP Note', 'Help me structure a SOAP note for an acute presentation.'],
+const QUICK_ACTIONS = [
+  ['📋 Summarise', 'Summarise what I have entered so far.'],
+  ['🔍 Check', 'What am I missing? Check my entries for completeness.'],
+  ['📝 Draft Note', 'Generate a draft note from the data entered.'],
+  ['🧠 DDx', 'Suggest differential diagnoses based on current data.'],
 ];
 
 export default function MedicalChatbot() {
   const [open, setOpen] = useState(false);
-  const [msgs, setMsgs] = useState([{ role: 'sys', text: 'Notrya AI ready. Ask a clinical question or use a quick action above.' }]);
+  const [msgs, setMsgs] = useState([{ role: 'sys', text: 'Notrya AI ready. Select a quick action or ask a clinical question.' }]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [unread, setUnread] = useState(0);
   const msgsRef = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     if (msgsRef.current) msgsRef.current.scrollTop = msgsRef.current.scrollHeight;
   }, [msgs, loading]);
 
-  const send = async (q) => {
+  useEffect(() => {
+    if (open) {
+      setUnread(0);
+      setTimeout(() => inputRef.current?.focus(), 300);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape' && open) setOpen(false); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [open]);
+
+  const appendMsg = (role, text) => {
+    setMsgs(p => [...p, { role, text }]);
+  };
+
+  const sendAI = async (q) => {
     const question = q || input.trim();
     if (!question || loading) return;
     setInput('');
-    setMsgs(p => [...p, { role: 'user', text: question }]);
+    if (!open) setOpen(true);
+    appendMsg('user', question);
     setLoading(true);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are Notrya AI, a clinical assistant for emergency medicine providers. Be concise and clinically precise. Use **bold** for key terms.\n\nQuestion: ${question}`,
+        prompt: `You are Notrya AI, a clinical assistant in an emergency medicine documentation platform. Be concise and clinically precise. Use **bold** for key terms.\n\nQuestion: ${question}`,
       });
-      setMsgs(p => [...p, { role: 'bot', text: typeof res === 'string' ? res : JSON.stringify(res) }]);
+      const reply = typeof res === 'string' ? res : JSON.stringify(res);
+      appendMsg('bot', reply);
+      if (!open) setUnread(u => u + 1);
     } catch {
-      setMsgs(p => [...p, { role: 'sys', text: '⚠ Connection error. Please try again.' }]);
+      appendMsg('sys', '⚠ Connection error.');
     }
     setLoading(false);
+  };
+
+  const autoGrow = (e) => {
+    e.target.style.height = 'auto';
+    e.target.style.height = Math.min(e.target.scrollHeight, 100) + 'px';
   };
 
   return (
     <>
       <style>{CSS}</style>
 
-      {/* Toggle button */}
-      <button className={`notrya-toggle-btn${open ? ' open' : ''}`} onClick={() => setOpen(o => !o)} title="Notrya AI">
-        {open ? <span style={{ fontSize: 16, color: S.teal }}>✕</span> : <span>✦</span>}
-      </button>
-
-      {/* Panel */}
-      {open && (
-        <div className="notrya-panel">
-          {/* Header */}
-          <div style={{ padding: '10px 14px', borderBottom: `1px solid ${S.border}`, flexShrink: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
-              <div className="notrya-dot" style={{ width: 8, height: 8, borderRadius: '50%', background: S.teal, flexShrink: 0 }} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: S.txt, fontFamily: "'DM Sans', sans-serif" }}>Notrya AI</span>
-              <span style={{ marginLeft: 'auto', fontFamily: "'JetBrains Mono', monospace", fontSize: 9, background: S.up, border: `1px solid ${S.border}`, borderRadius: 20, padding: '2px 7px', color: S.txt3 }}>claude-sonnet-4</span>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-              {QUICK.map(([label, q]) => (
-                <button key={label} onClick={() => send(q)} style={{ padding: '2px 9px', borderRadius: 20, fontSize: 10, cursor: 'pointer', background: S.up, border: `1px solid ${S.border}`, color: S.txt2, fontFamily: "'DM Sans', sans-serif", transition: 'all .15s' }}>{label}</button>
-              ))}
-            </div>
+      {/* Chat Overlay */}
+      <div className={`ai-overlay${open ? ' open' : ''}`}>
+        <div className="ai-ov-header">
+          <div className="ai-ov-header-top">
+            <div className="ai-ov-dot" />
+            <span className="ai-ov-title">Notrya AI</span>
+            <span className="ai-ov-model">claude-sonnet-4</span>
+            <button className="ai-ov-minimize" onClick={() => setOpen(false)} title="Minimize">─</button>
           </div>
-
-          {/* Messages */}
-          <div ref={msgsRef} className="notrya-msgs" style={{ flex: 1, overflowY: 'auto', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 7 }}>
-            {msgs.map((m, i) => (
-              <div key={i} style={{ padding: '9px 11px', borderRadius: 8, fontSize: 12, lineHeight: 1.55, background: m.role === 'sys' ? S.up : m.role === 'user' ? 'rgba(59,158,255,0.12)' : 'rgba(0,229,192,0.07)', border: `1px solid ${m.role === 'sys' ? S.border : m.role === 'user' ? 'rgba(59,158,255,0.25)' : 'rgba(0,229,192,0.18)'}`, color: m.role === 'sys' ? S.txt3 : S.txt, fontStyle: m.role === 'sys' ? 'italic' : 'normal', fontFamily: "'DM Sans', sans-serif" }}
-                dangerouslySetInnerHTML={{ __html: m.text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+          <div className="ai-ov-quick">
+            {QUICK_ACTIONS.map(([label, q]) => (
+              <button key={label} className="ai-ov-qbtn" onClick={() => sendAI(q)}>{label}</button>
             ))}
-            {loading && (
-              <div style={{ display: 'flex', gap: 5, padding: '10px 12px', alignItems: 'center' }}>
-                {['nb1','nb2','nb3'].map(c => <div key={c} className={c} style={{ width: 6, height: 6, borderRadius: '50%', background: S.teal }} />)}
-              </div>
-            )}
-          </div>
-
-          {/* Input */}
-          <div style={{ padding: '10px 12px', borderTop: `1px solid ${S.border}`, flexShrink: 0, display: 'flex', gap: 6 }}>
-            <input
-              className="notrya-input"
-              style={{ flex: 1, background: S.up, border: `1px solid ${S.border}`, borderRadius: 7, padding: '7px 10px', color: S.txt, fontSize: 12, fontFamily: "'DM Sans', sans-serif" }}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && send()}
-              placeholder="Ask a clinical question…"
-            />
-            <button onClick={() => send()} style={{ background: S.teal, color: S.bg, border: 'none', borderRadius: 7, padding: '7px 12px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>↑</button>
           </div>
         </div>
-      )}
+
+        <div className="ai-ov-msgs" ref={msgsRef}>
+          {msgs.map((m, i) => (
+            <div
+              key={i}
+              className={`ai-ov-msg ${m.role}`}
+              dangerouslySetInnerHTML={{ __html: m.text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
+            />
+          ))}
+          {loading && (
+            <div className="ai-ov-loader">
+              <span /><span /><span />
+            </div>
+          )}
+        </div>
+
+        <div className="ai-ov-input-wrap">
+          <textarea
+            ref={inputRef}
+            className="ai-ov-input"
+            rows={1}
+            placeholder="Ask anything…"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onInput={autoGrow}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAI(); } }}
+          />
+          <button className="ai-ov-send" onClick={() => sendAI()}>↑</button>
+        </div>
+      </div>
+
+      {/* Floating Action Button */}
+      <button className={`ai-fab${open ? ' open' : ''}`} onClick={() => setOpen(o => !o)} title="Notrya AI Assistant">
+        <span className="ai-fab-icon">{open ? '✕' : '✦'}</span>
+        <span className={`ai-fab-badge${unread > 0 ? ' show' : ''}`}>{unread > 9 ? '9+' : unread}</span>
+      </button>
     </>
   );
 }

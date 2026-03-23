@@ -254,7 +254,7 @@ export default function NewPatientInput() {
             <MedsTab medications={medications} setMedications={setMedications} allergies={allergies} setAllergies={setAllergies} pmhSelected={pmhSelected} setPmhSelected={setPmhSelected} pmhExtra={pmhExtra} setPmhExtra={setPmhExtra} surgHx={surgHx} setSurgHx={setSurgHx} famHx={famHx} setFamHx={setFamHx} socHx={socHx} setSocHx={setSocHx} pmhExpanded={pmhExpanded} setPmhExpanded={setPmhExpanded} />
           )}
           {currentTab === 'ros' && (
-            <ROSTab rosState={rosState} setRosState={setRosState} rosSymptoms={rosSymptoms} setRosSymptoms={setRosSymptoms} rosNotes={rosNotes} setRosNotes={setRosNotes} />
+            <ROSTab />
           )}
           {currentTab === 'pe' && (
             <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} />

@@ -1,184 +1,88 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { createPageUrl } from "@/utils";
 
-const navGroups = [
-  {
-    label: "Core",
-    items: [
-      { emoji: "🏠", label: "Home", page: "Home" },
-      { emoji: "🧠", label: "Dashboard", page: "Dashboard" },
-      { emoji: "🏥", label: "Shift", page: "Shift" },
-      { emoji: "👤", label: "Patients", page: "PatientDashboard" },
-      { emoji: "🆕", label: "New Pt", page: "NewPatientInput" },
-    ],
-  },
-  {
-    label: "Documentation",
-    items: [
-      { emoji: "✨", label: "Note Hub", page: "NoteCreationHub" },
-      { emoji: "🎙️", label: "Transcription", page: "LiveTranscription" },
-      { emoji: "📋", label: "SOAP", page: "SoapCompiler" },
-      { emoji: "🩺", label: "Note Studio", page: "ClinicalNoteStudio" },
-      { emoji: "📝", label: "Notes", page: "NotesLibrary" },
-      { emoji: "📑", label: "Orders", page: "OrderSetBuilder" },
-      { emoji: "🚪", label: "Discharge", page: "DischargePlanning" },
-    ],
-  },
-  {
-    label: "Reference",
-    items: [
-      { emoji: "💊", label: "Drugs", page: "DrugsBugs" },
-      { emoji: "🦠", label: "Antibiotics", page: "AntibioticStewardship" },
-      { emoji: "🧮", label: "Calculators", page: "Calculators" },
-      { emoji: "🔬", label: "Knowledge", page: "KnowledgeBaseV2" },
-    ],
-  },
-  {
-    label: "Tools",
-    items: [
-      { emoji: "📄", label: "Templates", page: "NoteTemplates" },
-      { emoji: "💬", label: "Snippets", page: "Snippets" },
-      { emoji: "🚨", label: "Can't-Miss", page: "CantMissDiagnoses" },
-      { emoji: "📅", label: "Calendar", page: "Calendar" },
-      { emoji: "📰", label: "News", page: "MedicalNews" },
-      { emoji: "📚", label: "Pt. Edu", page: "PatientEducationGenerator" },
-    ],
-  },
+/**
+ * v2 Icon Sidebar — 7 app-level icons only.
+ * NO chart-section icons (SOAP, Orders, Discharge, MDM, etc.)
+ */
+const APP_ICONS = [
+  { icon: '🏠', label: 'Home',      path: '/' },
+  { icon: '📊', label: 'Dashboard', path: '/Dashboard' },
+  { icon: '👥', label: 'Patients',  path: '/PatientDashboard' },
+  { icon: '🔄', label: 'Shift',     path: '/Shift' },
+  { icon: '💊', label: 'Drugs',     path: '/DrugsBugs' },
+  { icon: '🧮', label: 'Calc',      path: '/Calculators' },
 ];
 
 export default function AppSidebar({ user }) {
   const location = useLocation();
-  const initials = user?.full_name
-    ? user.full_name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
-    : "?";
 
-  const isActive = (page) => location.pathname.includes(page.toLowerCase());
+  const pageAbbr = (() => {
+    const seg = location.pathname.replace('/', '').replace(/([A-Z])/g, ' $1').trim();
+    return (seg.slice(0, 1) + (seg.split(' ')[1]?.[0] || seg[1] || '')).toUpperCase() || 'Nx';
+  })();
 
   return (
-    <div
-      style={{
-        width: 72,
-        minHeight: "100vh",
-        background: "#0a1628",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        paddingTop: 12,
-        paddingBottom: 16,
-        position: "fixed",
-        left: 0,
-        top: 0,
-        bottom: 0,
-        zIndex: 50,
-        borderRight: "1px solid rgba(255,255,255,0.07)",
-        overflowY: "auto",
-        overflowX: "hidden",
-      }}
-    >
-      {/* Logo */}
-      <Link
-        to={createPageUrl("Home")}
-        style={{
-          width: 40,
-          height: 34,
-          borderRadius: 8,
-          background: "#f5f5f5",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          marginBottom: 14,
-          flexShrink: 0,
-          textDecoration: "none",
-        }}
-      >
-        <span style={{ fontSize: 12, fontWeight: 800, color: "#1e1b4b", letterSpacing: "-0.5px" }}>
-          N<span style={{ color: "#6d28d9" }}>.</span>
-        </span>
-      </Link>
-
-      {/* Nav Groups */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0, flex: 1, width: "100%" }}>
-        {navGroups.map((group, gi) => (
-          <div key={group.label} style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
-            {/* Group label */}
-            {gi > 0 && (
-              <div style={{ width: 48, height: 1, background: "rgba(255,255,255,0.08)", margin: "5px 0" }} />
-            )}
-            <span style={{
-              fontSize: 8,
-              fontWeight: 700,
-              letterSpacing: "0.08em",
-              color: "rgba(255,255,255,0.25)",
-              textTransform: "uppercase",
-              marginBottom: 3,
-              marginTop: gi === 0 ? 0 : 2,
-            }}>
-              {group.label}
-            </span>
-            {group.items.map((item) => {
-              const active = isActive(item.page);
-              return (
-                <Link
-                  key={item.page}
-                  to={createPageUrl(item.page)}
-                  style={{
-                    width: 58,
-                    borderRadius: 9,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 1,
-                    padding: "5px 2px",
-                    cursor: "pointer",
-                    textDecoration: "none",
-                    background: active ? "rgba(99,179,237,0.15)" : "transparent",
-                    boxShadow: active ? "inset 0 0 0 1px rgba(99,179,237,0.25)" : "none",
-                    margin: "1px auto",
-                    transition: "all 0.12s",
-                  }}
-                  onMouseEnter={e => { if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.07)"; }}
-                  onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
-                >
-                  <span style={{ fontSize: 17, lineHeight: 1 }}>{item.emoji}</span>
-                  <span style={{
-                    fontSize: 9,
-                    fontWeight: 500,
-                    color: active ? "#93c5fd" : "rgba(255,255,255,0.45)",
-                    letterSpacing: "0.01em",
-                    lineHeight: 1.2,
-                    textAlign: "center",
-                  }}>
-                    {item.label}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        ))}
+    <div style={{
+      position: 'fixed', top: 0, left: 0, bottom: 0, width: 56,
+      background: '#040d19', borderRight: '1px solid #1a3555',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 300,
+    }}>
+      {/* Logo box */}
+      <div style={{
+        width: '100%', height: 48, flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        borderBottom: '1px solid #1a3555',
+      }}>
+        <Link to="/" style={{
+          width: 30, height: 30, background: '#3b9eff', borderRadius: 7,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: "'Playfair Display', serif", fontSize: 12, fontWeight: 700,
+          color: 'white', textDecoration: 'none',
+        }}>{pageAbbr}</Link>
       </div>
 
-      {/* User Avatar */}
-      <div style={{ marginTop: 8 }}>
+      {/* App icons */}
+      <div style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 0', gap: 2, overflowY: 'auto' }}>
+        {APP_ICONS.map(item => {
+          const active = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              title={item.label}
+              style={{
+                width: 42, height: 42,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                gap: 2, borderRadius: 6, textDecoration: 'none', transition: 'all 0.15s',
+                fontSize: 16, color: active ? '#3b9eff' : '#4a6a8a',
+                background: active ? 'rgba(59,158,255,0.1)' : 'transparent',
+                border: `1px solid ${active ? 'rgba(59,158,255,0.3)' : 'transparent'}`,
+              }}
+            >
+              <span>{item.icon}</span>
+              <span style={{ fontSize: 8, lineHeight: 1, whiteSpace: 'nowrap', color: 'inherit' }}>{item.label}</span>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Settings pinned bottom */}
+      <div style={{ padding: '8px 0', borderTop: '1px solid #1a3555', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <Link
-          to={createPageUrl("UserSettings")}
-          title={user?.full_name || "Settings"}
+          to="/AppSettings"
+          title="Settings"
           style={{
-            width: 32,
-            height: 32,
-            borderRadius: "50%",
-            background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 11,
-            fontWeight: 700,
-            color: "#fff",
-            textDecoration: "none",
+            width: 42, height: 42,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            gap: 2, borderRadius: 6, textDecoration: 'none', transition: 'all 0.15s',
+            fontSize: 16, color: location.pathname === '/AppSettings' ? '#3b9eff' : '#4a6a8a',
+            background: location.pathname === '/AppSettings' ? 'rgba(59,158,255,0.1)' : 'transparent',
+            border: `1px solid ${location.pathname === '/AppSettings' ? 'rgba(59,158,255,0.3)' : 'transparent'}`,
           }}
         >
-          {initials}
+          <span>⚙️</span>
+          <span style={{ fontSize: 8, lineHeight: 1, color: 'inherit' }}>Settings</span>
         </Link>
       </div>
     </div>

@@ -11,6 +11,7 @@ import PatientSidebar from '@/components/patient/PatientSidebar';
 import AWSPharmacySection from '@/pages/AWSPharmacySection';
 import PatientChart from '@/pages/PatientChart';
 import NoteHistory from '@/pages/NoteHistory';
+import NPIDemo from '@/pages/NPIDemo';
 
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -72,6 +73,7 @@ const AuthenticatedApp = () => {
       } />
       <Route path="/patientchart" element={<PatientChart />} />
       <Route path="/notehistory" element={<NoteHistory />} />
+      <Route path="/npidemo" element={<NPIDemo />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

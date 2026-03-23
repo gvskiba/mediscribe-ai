@@ -152,7 +152,7 @@ export default function DemoTab({ demo, setDemo, parseText, setParseText, parsin
         <div className="npi-grid-3">
           <div className="npi-field">
             <label className="npi-label">Height</label>
-            <input className="npi-input" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }} placeholder='e.g. 170 cm or 5\'8"' value={demo.height} onChange={e => handleChange('height', e.target.value)} />
+            <input className="npi-input" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }} placeholder="e.g. 170 cm or 5'8 in" value={demo.height} onChange={e => handleChange('height', e.target.value)} />
           </div>
           <div className="npi-field">
             <label className="npi-label">Weight</label>

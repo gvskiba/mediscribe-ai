@@ -505,35 +505,6 @@ export default function ROSTab() {
         </div>
       </div>
 
-      {/* ── AI PANEL ── */}
-      <aside style={{ width: 280, flexShrink: 0, background: S.panel, borderLeft: `1px solid ${S.border}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <div style={{ padding: '10px 12px', borderBottom: `1px solid ${S.border}`, flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-            <div style={{ width: 7, height: 7, borderRadius: '50%', background: S.teal }} />
-            <span style={{ fontSize: 11, fontWeight: 600, color: S.txt2 }}>Notrya AI</span>
-            <span style={{ marginLeft: 'auto', fontFamily: "'JetBrains Mono', monospace", fontSize: 9, background: S.up, border: `1px solid ${S.border}`, borderRadius: 20, padding: '1px 6px', color: S.txt3 }}>claude-sonnet-4</span>
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-            {[['🚩 Red Flags','Based on the HPI, what ROS findings should I be particularly attentive to? Are there red-flag symptoms I should ask about?'],['➖ Pertinent Neg','Review my current ROS. What pertinent negatives am I missing for this presentation?'],['📝 Billing Note','Generate a polished ROS note from my current entries, optimized for billing.'],['🔬 Differentials','What differential diagnoses does this ROS support or argue against?']].map(([label, q]) => (
-              <button key={label} onClick={() => sendAI(q)} style={{ padding: '2px 8px', borderRadius: 20, fontSize: 10, cursor: 'pointer', background: S.up, border: `1px solid ${S.border}`, color: S.txt2, fontFamily: "'DM Sans', sans-serif" }}>{label}</button>
-            ))}
-          </div>
-        </div>
-        <div ref={aiRef} style={{ flex: 1, overflowY: 'auto', padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {msgs.map((m, i) => (
-            <div key={i} style={{ padding: '8px 10px', borderRadius: 8, fontSize: 11, lineHeight: 1.5, background: m.role === 'sys' ? S.up : m.role === 'user' ? 'rgba(59,158,255,0.12)' : 'rgba(0,229,192,0.07)', border: `1px solid ${m.role === 'sys' ? S.border : m.role === 'user' ? 'rgba(59,158,255,0.25)' : 'rgba(0,229,192,0.18)'}`, color: m.role === 'sys' ? S.txt3 : S.txt, fontStyle: m.role === 'sys' ? 'italic' : 'normal' }}>{m.text}</div>
-          ))}
-          {aiLoading && (
-            <div style={{ display: 'flex', gap: 5, padding: '10px 12px', alignItems: 'center' }}>
-              {['bd1','bd2','bd3'].map(c => <div key={c} className={c} style={{ width: 6, height: 6, borderRadius: '50%', background: S.teal }} />)}
-            </div>
-          )}
-        </div>
-        <div style={{ padding: '8px 10px', borderTop: `1px solid ${S.border}`, flexShrink: 0, display: 'flex', gap: 5 }}>
-          <input style={{ flex: 1, background: S.up, border: `1px solid ${S.border}`, borderRadius: 6, padding: '6px 8px', color: S.txt, fontSize: 11, outline: 'none', fontFamily: "'DM Sans', sans-serif" }} value={aiInput} onChange={e => setAiInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendAI()} placeholder="Ask about ROS…" />
-          <button onClick={() => sendAI()} style={{ background: S.teal, color: S.bg, border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>↑</button>
-        </div>
-      </aside>
     </div>
   );
 }

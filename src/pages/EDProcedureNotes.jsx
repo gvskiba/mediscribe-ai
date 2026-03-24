@@ -89,7 +89,7 @@ function StarButton({ active, onClick }) {
   );
 }
 
-export default function EDProcedureNotes() {
+export default function EDProcedureNotes({ embedded = false }) {
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ['procedureTemplates'],
     queryFn: () => base44.entities.ProcedureTemplate.list(),
@@ -207,7 +207,7 @@ Write a formal, professional procedure note. Use ALL CAPS section headers. Write
   );
 
   return (
-    <div style={{ background: T.bg, minHeight: '100vh', color: T.txt, fontFamily: "'DM Sans', sans-serif", position: 'relative' }}>
+    <div style={{ background: embedded ? 'transparent' : T.bg, minHeight: embedded ? 'unset' : '100vh', color: T.txt, fontFamily: "'DM Sans', sans-serif", position: 'relative' }}>
       {/* Toast */}
       {toastMsg && <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: T.teal, color: T.bg, padding: '8px 18px', borderRadius: 8, fontSize: 12, fontWeight: 700, zIndex: 700, pointerEvents: 'none' }}>{toastMsg}</div>}
 

@@ -291,7 +291,12 @@ export default function NewPatientInput() {
             </div>
           )}
           {currentTab === 'procedures' && (
-            <EDProcedureNotes embedded />
+            <EDProcedureNotes
+              embedded
+              patientName={patientName}
+              patientAllergies={allergies.join(', ')}
+              physicianName={''}
+            />
           )}
           {currentTab === 'orders' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', justifyContent: 'center', height: 300 }}>

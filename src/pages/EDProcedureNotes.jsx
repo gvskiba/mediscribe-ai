@@ -89,7 +89,7 @@ function StarButton({ active, onClick }) {
   );
 }
 
-export default function EDProcedureNotes({ embedded = false }) {
+export default function EDProcedureNotes({ embedded = false, patientName = '', patientAllergies = '', physicianName = '' }) {
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ['procedureTemplates'],
     queryFn: () => base44.entities.ProcedureTemplate.list(),
@@ -107,7 +107,11 @@ export default function EDProcedureNotes({ embedded = false }) {
   const [favorites, setFavorites] = useState(() => {
     try { return JSON.parse(localStorage.getItem('notrya_proc_favs') || '[]'); } catch { return []; }
   });
-  const [ctx, setCtx] = useState({ physician: '', date: new Date().toISOString().slice(0, 10), allergies: '' });
+  const [ctx, setCtx] = useState({
+    physician: physicianName || '',
+    date: new Date().toISOString().slice(0, 10),
+    allergies: patientAllergies || '',
+  });
 
   const selectedTemplate = useMemo(() => templates.find(t => t.key === selectedKey), [templates, selectedKey]);
   const catTemplates = useMemo(() => activeCat ? templates.filter(t => t.category === activeCat) : [], [templates, activeCat]);
@@ -208,19 +212,18 @@ Write a formal, professional procedure note. Use ALL CAPS section headers. Write
 
   return (
     <div style={{ background: embedded ? 'transparent' : T.bg, minHeight: embedded ? 'unset' : '100vh', color: T.txt, fontFamily: "'DM Sans', sans-serif", position: 'relative' }}>
-      {/* Toast */}
-      {toastMsg && <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: T.teal, color: T.bg, padding: '8px 18px', borderRadius: 8, fontSize: 12, fontWeight: 700, zIndex: 700, pointerEvents: 'none' }}>{toastMsg}</div>}
+      <div style={{ maxWidth: embedded ? 'none' : 1100, margin: embedded ? 0 : '0 auto', padding: embedded ? 0 : '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 22 }}>✂️</span>
-          <div>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: T.txt }}>ED Procedure Notes</div>
-            <div style={{ fontSize: 12, color: T.txt3, marginTop: 1 }}>Select a category, then document your procedure</div>
+        {/* Header — hidden when embedded */}
+        {!embedded && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 22 }}>✂️</span>
+            <div>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: T.txt }}>ED Procedure Notes</div>
+              <div style={{ fontSize: 12, color: T.txt3, marginTop: 1 }}>Select a category, then document your procedure</div>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Search */}
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, background: T.up, border: `1px solid ${T.border}`, borderRadius: 10, padding: '8px 14px' }}>

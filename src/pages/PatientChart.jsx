@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 
-export default function PatientChart() {
+export default function PatientChart({ embedded = false }) {
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [loaderMsg, setLoaderMsg] = useState('Loading patient chart…');
@@ -269,6 +269,7 @@ DISPOSITION: Admit to Cardiac ICU. Cath lab on standby.`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap');
         :root{--bg:#050f1e;--bg-panel:#081628;--bg-card:#0b1e36;--bg-up:#0e2544;--border:#1a3555;--border-hi:#2a4f7a;--blue:#3b9eff;--cyan:#00d4ff;--teal:#00e5c0;--gold:#f5c842;--purple:#9b6dff;--coral:#ff6b6b;--green:#3dffa0;--orange:#ff9f43;--txt:#e8f0fe;--txt2:#8aaccc;--txt3:#4a6a8a;--txt4:#2e4a6a;--nav-h:50px;--sub-nav-h:42px;--vit-h:38px;--icon-sb:65px;--sb-w:220px;--ai-w:295px;--r:8px;--rl:12px;--main-top:calc(var(--nav-h) + var(--sub-nav-h) + var(--vit-h))}
         .pc-body{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;margin:0;padding:0;height:100vh;overflow:hidden;position:fixed;inset:0}
+        .pc-body.embedded{position:relative;height:100%;inset:auto;overflow:hidden}
         .icon-sidebar{position:fixed;top:0;left:0;bottom:0;width:var(--icon-sb);background:#040d19;border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;z-index:200}
         .isb-logo{width:100%;height:var(--nav-h);flex-shrink:0;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--border)}
         .isb-logo-box{width:34px;height:34px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:white;cursor:pointer}
@@ -319,6 +320,7 @@ DISPOSITION: Admit to Cardiac ICU. Cath lab on standby.`
         @keyframes glow-blue{0%,100%{text-shadow:0 0 4px rgba(59,158,255,.4)}50%{text-shadow:0 0 10px rgba(59,158,255,.9)}}
         @keyframes glow-gold{0%,100%{text-shadow:0 0 4px rgba(245,200,66,.4)}50%{text-shadow:0 0 10px rgba(245,200,66,.9)}}
         .main-wrap{position:fixed;top:var(--main-top);left:var(--icon-sb);right:0;bottom:0;display:flex}
+        .pc-body.embedded .main-wrap{position:relative;top:auto;left:auto;right:auto;bottom:auto;height:calc(100vh - 138px)}
         .sidebar{width:var(--sb-w);flex-shrink:0;background:var(--bg-panel);border-right:1px solid var(--border);overflow-y:auto;padding:14px 10px;display:flex;flex-direction:column;gap:6px}
         .sb-label{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;padding:0 4px;margin-top:4px}
         .sb-nav-btn{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r);cursor:pointer;transition:all .15s;border:1px solid transparent;font-size:12px;color:var(--txt2)}
@@ -449,7 +451,7 @@ DISPOSITION: Admit to Cardiac ICU. Cath lab on standby.`
         .empty-state .icon{font-size:28px;opacity:.4} .empty-state .msg{font-size:12px}
       `}</style>
 
-      <div className="pc-body">
+      <div className={embedded ? 'pc-body embedded' : 'pc-body'}>
         {/* PAGE LOADER */}
         {loading && (
           <div className="page-loader">
@@ -494,8 +496,8 @@ DISPOSITION: Admit to Cardiac ICU. Cath lab on standby.`
           </div>
         </aside>
 
-        {/* NAVBAR */}
-        <nav className="navbar">
+        {/* NAVBAR — hidden when embedded */}
+        {!embedded && <nav className="navbar">
           <span className="nav-welcome">Welcome, <strong>{currentUser?.full_name || '—'}</strong></span>
           <div className="nav-sep"></div>
           <div className="nav-stat"><span className="nav-stat-val">{shift?.activePatients || '—'}</span><span className="nav-stat-lbl">Active Patients</span></div>
@@ -508,10 +510,10 @@ DISPOSITION: Admit to Cardiac ICU. Cath lab on standby.`
             <div className="nav-ai-on"><div className="nav-ai-dot"></div> AI ON</div>
             <button className="nav-new-pt">+ New Patient</button>
           </div>
-        </nav>
+        </nav>}
 
-        {/* SUB-NAVBAR */}
-        <div className="sub-navbar">
+        {/* SUB-NAVBAR — hidden when embedded */}
+        {!embedded && <div className="sub-navbar">
           <span className="sub-nav-logo">notrya</span>
           <span className="sub-nav-sep">|</span>
           <span className="sub-nav-title">Patient Chart</span>
@@ -523,10 +525,10 @@ DISPOSITION: Admit to Cardiac ICU. Cath lab on standby.`
             <button className="btn-coral">🚪 Discharge</button>
             <button className="btn-primary">💾 Save Chart</button>
           </div>
-        </div>
+        </div>}
 
-        {/* VITALS BAR */}
-        <div className="vitals-bar">
+        {/* VITALS BAR — hidden when embedded (layout's top bar already shows vitals) */}
+        {!embedded && <div className="vitals-bar">
           <span className="vb-name">{patient ? `${patient.lastName}, ${patient.firstName}` : '—'}</span>
           <span className="vb-meta text-muted">{patient ? `${calcAge(patient.dateOfBirth) || '—'} y/o · ${patient.sex || '—'} · DOB ${formatDate(patient.dateOfBirth)}` : '—'}</span>
           <div className="vb-div"></div>
@@ -547,7 +549,7 @@ DISPOSITION: Admit to Cardiac ICU. Cath lab on standby.`
             {patient?.room && <span className="badge badge-blue">Room {patient.room}</span>}
             {patient?.arrivedAt && <span className="badge badge-muted" style={{ fontSize: '9px' }}>Arrived {formatTime(patient.arrivedAt)}</span>}
           </div>
-        </div>
+        </div>}
 
         {/* MAIN LAYOUT */}
         <div className="main-wrap">

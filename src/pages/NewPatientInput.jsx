@@ -260,8 +260,8 @@ export default function NewPatientInput() {
             <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} />
           )}
           {currentTab === 'chart' && (
-            <div style={{ margin: '-18px -22px -30px', minHeight: 'calc(100vh - 200px)' }}>
-              <PatientChart />
+            <div style={{ margin: '-18px -22px -30px', height: 'calc(100vh - 138px)', overflow: 'hidden' }}>
+              <PatientChart embedded />
             </div>
           )}
           {currentTab === 'mdm' && (

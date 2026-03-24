@@ -115,7 +115,7 @@ const NO_CHART_SIDEBAR = new Set([
    PAGES THAT RENDER FULL-SCREEN (no shell)
 ───────────────────────────────────────────── */
 const FULLSCREEN_PAGES = new Set([
-  'Home', 'ClinicalNoteStudio', 'NoteDetail', 'PatientDashboard',
+  'ClinicalNoteStudio', 'NoteDetail', 'PatientDashboard',
   'ERPlanBuilder', 'ERx', 'MedicalDecisionMaking',
   'MedicationReference', 'KnowledgeBaseV2', 'PatientEducationGenerator',
   'EDProcedureNotes', 'DiagnosticStewardship', 'NoteCreationHub',

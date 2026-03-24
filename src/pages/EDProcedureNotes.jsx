@@ -481,7 +481,7 @@ function ProcedureForm({ proc, formData, setFormData }) {
 }
 
 // ─── Main Component ────────────────────────────────────────────────────────
-export default function EDProcedureNotes() {
+export default function EDProcedureNotes({ embedded = false }) {
   const [tab, setTab] = useState('select');
   const [selProc, setSelProc] = useState(null);
   const [formData, setFormData] = useState({});
@@ -656,9 +656,13 @@ Write a formal procedure note using ALL CAPS section headers. Third-person past 
   const proc = selProc ? P[selProc] : null;
   const pctColor = aiPct >= 80 ? '#00e5a0' : aiPct >= 50 ? '#f5a623' : '#ff4757';
 
+  const epnRootPos = embedded
+    ? 'position:relative; width:100%; height:100%;'
+    : 'position:fixed; top:48px; left:72px; right:0; bottom:0; z-index:10;';
+
   const CSS = `
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;500;600&family=Lora:wght@400;600&display=swap');
-    .epn-root { position:fixed; top:48px; left:72px; right:0; bottom:0; background:#050f1e; color:#e4eef8; font-family:'Outfit',sans-serif; font-size:14px; display:flex; flex-direction:column; overflow:hidden; z-index:10; }
+    .epn-root { ${epnRootPos} background:#050f1e; color:#e4eef8; font-family:'Outfit',sans-serif; font-size:14px; display:flex; flex-direction:column; overflow:hidden; }
     .epn-root input, .epn-root select, .epn-root textarea { transition: border-color .15s; }
     .epn-root input:focus, .epn-root select:focus, .epn-root textarea:focus { border-color:#0096d6 !important; box-shadow:0 0 0 2px rgba(0,150,214,.12); outline:none; }
     .epn-root input::placeholder, .epn-root textarea::placeholder { color:#2a4d72; }
@@ -696,7 +700,7 @@ Write a formal procedure note using ALL CAPS section headers. Third-person past 
       <div className="epn-root">
 
         {/* Navbar */}
-        <nav style={{ flexShrink:0, height:50, background:'#0a1929', borderBottom:'1px solid #1a3550', display:'flex', alignItems:'center', padding:'0 16px', gap:12, zIndex:200 }}>
+        {!embedded && <nav style={{ flexShrink:0, height:50, background:'#0a1929', borderBottom:'1px solid #1a3550', display:'flex', alignItems:'center', padding:'0 16px', gap:12, zIndex:200 }}>
           <span style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:700, background:'linear-gradient(135deg,#00c6ff,#00e5a0)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>Notrya</span>
           <div style={{ width:1, height:24, background:'#1e4060' }} />
           <span style={{ fontFamily:"'Playfair Display',serif", fontSize:15, color:'#8aacc6' }}>ED Procedure Notes</span>
@@ -710,10 +714,10 @@ Write a formal procedure note using ALL CAPS section headers. Third-person past 
           <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, padding:'3px 10px', borderRadius:20, border:'1px solid #00b880', color:'#00e5a0' }}>● AI Ready</span>
           <Link to="/Home" style={{ padding:'5px 12px', border:'1px solid #1e4060', borderRadius:6, background:'transparent', color:'#8aacc6', cursor:'pointer', fontSize:12, textDecoration:'none', display:'flex', alignItems:'center', gap:5 }}>← Home</Link>
           <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:'#4a7a9b' }}>{clock}</span>
-        </nav>
+        </nav>}
 
         {/* Vitals bar */}
-        <div style={{ flexShrink:0, height:38, background:'#0d2035', borderBottom:'1px solid #1a3550', display:'flex', alignItems:'center', padding:'0 16px 0 calc(220px + 16px)', gap:20, fontFamily:"'JetBrains Mono',monospace", fontSize:11, overflow:'hidden' }}>
+        {!embedded && <div style={{ flexShrink:0, height:38, background:'#0d2035', borderBottom:'1px solid #1a3550', display:'flex', alignItems:'center', padding:'0 16px 0 calc(220px + 16px)', gap:20, fontFamily:"'JetBrains Mono',monospace", fontSize:11, overflow:'hidden' }}>
           {ptCtx.patientName ? (
             <>
               <span style={{ fontFamily:"'Playfair Display',serif", fontSize:13, color:'#e4eef8' }}>{ptCtx.patientName}</span>
@@ -727,7 +731,7 @@ Write a formal procedure note using ALL CAPS section headers. Third-person past 
           ) : (
             <span style={{ color:'#4a7a9b' }}>No patient loaded — select a clinical note above or choose a procedure to begin</span>
           )}
-        </div>
+        </div>}
 
         {/* Body */}
         <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
@@ -985,7 +989,7 @@ Write a formal procedure note using ALL CAPS section headers. Third-person past 
         </div>
 
         {/* Bottom nav */}
-        <div style={{ flexShrink:0, background:'#0a1929', borderTop:'1px solid #1a3550', height:76, display:'flex', flexDirection:'column', zIndex:200 }}>
+        {!embedded && <div style={{ flexShrink:0, background:'#0a1929', borderTop:'1px solid #1a3550', height:76, display:'flex', flexDirection:'column', zIndex:200 }}>
           <div style={{ display:'flex', alignItems:'center', padding:'0 16px', borderBottom:'1px solid #1a3550', height:38, gap:2 }}>
             {[['select','📁 Select'],['document','📝 Document'],['note','📄 Note']].map(([t,lbl]) => (
               <button key={t} className={`epn-bt${tab===t?' active':''}`} onClick={()=>setTab(t)}>
@@ -1004,14 +1008,14 @@ Write a formal procedure note using ALL CAPS section headers. Third-person past 
             )}
             <button className="epn-btn p" onClick={()=>{const i=TABS.indexOf(tab);if(i<2)setTab(TABS[i+1]);}} disabled={tab==='note'}>Next →</button>
           </div>
-        </div>
+        </div>}
 
         {/* Toast */}
         {toast && (
           <div style={{ position:'fixed', bottom:90, right:20, background:'#00b880', color:'#fff', padding:'8px 16px', borderRadius:6, fontSize:12, fontWeight:600, zIndex:300 }}>{toast}</div>
         )}
 
-        <ClinicalTabBar currentPage="EDProcedureNotes" />
+        {!embedded && <ClinicalTabBar currentPage="EDProcedureNotes" />}
       </div>
     </>
   );

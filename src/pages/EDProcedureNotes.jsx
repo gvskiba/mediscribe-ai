@@ -397,7 +397,7 @@ const CSS = `
 .epn-starbtn.on{color:#f5c842;text-shadow:0 0 8px rgba(245,200,66,.5)}
 @keyframes epnStarPop{0%{transform:scale(1)}50%{transform:scale(1.4)}100%{transform:scale(1)}}
 .epn-starbtn.pop{animation:epnStarPop .3s ease}
-.epn-fsec{background:#081628;border:1px solid #1a3555;border-radius:10px;overflow:hidden;animation:epnfu .3s ease both}
+.epn-fsec{background:#081628;border:1px solid #1a3555;border-radius:10px;animation:epnfu .3s ease both}
 .epn-fsec-hdr{padding:10px 16px;background:#0e2544;border-bottom:1px solid #1a3555;display:flex;align-items:center;gap:8px}
 .epn-fsec-body{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
 @keyframes epnfu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}

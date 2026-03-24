@@ -13,6 +13,7 @@ import PatientChart from '@/pages/PatientChart';
 import NoteHistory from '@/pages/NoteHistory';
 import NPIDemo from '@/pages/NPIDemo';
 import BaseTemplate from '@/pages/BaseTemplate';
+import EDProcedureNotesNew from '@/pages/EDProcedureNotes';
 
 
 const { Pages, Layout, mainPage } = pagesConfig;

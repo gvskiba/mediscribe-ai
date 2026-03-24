@@ -119,6 +119,7 @@ const FULLSCREEN_PAGES = new Set([
   'ERPlanBuilder', 'ERx',
   'MedicationReference', 'KnowledgeBaseV2', 'PatientEducationGenerator',
   'EDProcedureNotes', 'DiagnosticStewardship', 'NoteCreationHub',
+  'EDProcedureNotesNew',
   'AutoCoder', 'NursingFlowsheet', 'ClinicalDecisionSupport',
   'DischargePlanning', 'UserPreferences', 'NoteTemplates', 'CustomTemplates',
 ]);

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
-import MedicalDecisionMaking from "@/pages/MedicalDecisionMaking";
+import MDMTab from "@/components/npi/MDMTab";
 import DischargePlanningWrapper from "@/components/discharge/DischargePlanningWrapper.jsx";
 
 import DemoTab from "@/components/npi/DemoTab";
@@ -265,9 +265,7 @@ export default function NewPatientInput() {
             </div>
           )}
           {currentTab === 'mdm' && (
-            <div style={{ margin: '-18px -22px -30px', height: 'calc(100vh - 138px)' }}>
-              <MedicalDecisionMaking embedded patientName={patientName} chiefComplaint={cc.text} vitals={vitals} />
-            </div>
+            <MDMTab patientName={patientName} chiefComplaint={cc.text} />
           )}
           {currentTab === 'discharge' && (
             <div style={{ margin: '-18px -22px -30px', height: 'calc(100vh - 160px)' }}>

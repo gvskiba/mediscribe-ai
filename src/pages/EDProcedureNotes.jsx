@@ -1,1021 +1,1104 @@
-import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
-import ClinicalTabBar from '@/components/shared/ClinicalTabBar';
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { base44 } from "@/api/base44Client";
 
-// ─── Anesthetic + Shared Options ────────────────────────────────────────────
-const LIDO = ['Lidocaine 1% plain','Lidocaine 1% with epinephrine','Lidocaine 2% plain','Lidocaine 2% with epinephrine','Bupivacaine 0.25%','Bupivacaine 0.5%'];
-const ABXO = ['None indicated','Cephalexin 500mg QID x 5d','Amoxicillin-clavulanate 875mg BID x 5d','Clindamycin 300mg QID x 5d','TMP-SMX DS BID x 5d'];
-const TET  = ['Up to date — none given','Tdap administered','TIG administered','Tdap + TIG given','Unknown — Tdap given','Declined'];
+/* ─── SVG LOGOS ─────────────────────────────────────────────────── */
+const LP = {
+  wound: '<path d="M14 6c-2 4-6 8-6 14s4 8 8 8 8-2 8-8-4-10-6-14z" fill="currentColor" opacity=".2"/><path d="M16 10v12M12 14h8M12 18h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+  airway: '<circle cx="16" cy="10" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M16 14v10M12 20h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M10 8c-2-3 0-6 3-6M22 8c2-3 0-6-3-6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>',
+  vascular: '<path d="M16 4v24" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="10" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="22" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 16h16" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 2"/>',
+  thoracic: '<path d="M8 12c0-5 3-8 8-8s8 3 8 8v8c0 3-2 6-8 6s-8-3-8-6z" fill="currentColor" opacity=".15" stroke="currentColor" stroke-width="1.5"/><path d="M12 12h8M12 16h8M12 20h8" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity=".5"/>',
+  ortho: '<path d="M10 4l2 10-2 10M22 4l-2 10 2 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="14" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/>',
+  procedure: '<rect x="8" y="6" width="16" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 12h8M12 16h6M12 20h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>',
+  cardiac: '<path d="M16 28c-8-6-12-10-12-16a6 6 0 0112 0 6 6 0 0112 0c0 6-4 10-12 16z" fill="currentColor" opacity=".15" stroke="currentColor" stroke-width="1.3"/>',
+  neuro: '<circle cx="16" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 10c1-2 3-3 4-3s3 1 4 3M10 14c2 2 5 3 6 3s4-1 6-3M16 19v6M12 25h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>',
+  ent: '<ellipse cx="16" cy="14" rx="5" ry="7" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="13" cy="12" r="1.5" fill="currentColor" opacity=".4"/><circle cx="19" cy="12" r="1.5" fill="currentColor" opacity=".4"/><path d="M13 17c1 1.5 2 2 3 2s2-.5 3-2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M16 21v5M13 26h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>',
+  eye: '<ellipse cx="16" cy="16" rx="10" ry="6" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="16" r="3.5" fill="currentColor" opacity=".2" stroke="currentColor" stroke-width="1.2"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/>',
+  gu: '<circle cx="16" cy="13" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M16 19v7M12 22h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+  nerve: '<path d="M16 4v8M16 12c-4 0-8 4-8 8M16 12c4 0 8 4 8 8M12 16c-2 2-4 6-4 8M20 16c2 2 4 6 4 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="16" cy="4" r="2" fill="currentColor" opacity=".3"/>',
+  trauma: '<polygon points="16,4 20,12 28,14 22,20 24,28 16,24 8,28 10,20 4,14 12,12" fill="currentColor" opacity=".15" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>',
+  custom: '<rect x="8" y="8" width="16" height="16" rx="4" fill="currentColor" opacity=".15" stroke="currentColor" stroke-width="1.5"/><path d="M13 16h6M16 13v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+};
+
+function SvgLogo({ k, color, size = 32 }) {
+  return (
+    <svg viewBox="0 0 32 32" width={size} height={size} fill="none" style={{ color }} dangerouslySetInnerHTML={{ __html: LP[k] || LP.custom }} />
+  );
+}
+
+/* ─── PROCEDURE DATA ─────────────────────────────────────────────── */
+const LIDO = ['Lidocaine 1% plain','Lidocaine 1% w/ epi','Lidocaine 2% plain','Lidocaine 2% w/ epi','Bupivacaine 0.25%','Bupivacaine 0.5%'];
+const NVpre = ['*Sensation intact','*Motor intact','*Cap refill <2s','*Pulses present'];
 const NVpost = ['*Sensation intact','*Motor function intact','*Pulses intact','*Cap refill <2 sec'];
-const NVpre  = ['*Sensation intact','*Motor intact','*Cap refill <2s','*Pulses present'];
 
-// ─── Procedure Definitions ───────────────────────────────────────────────────
 const P = {
-  lac: { name:'Laceration Repair', ico:'🩹', sub:'Complete wound closure documentation', tips:'Missing fields, epi contraindications near digits/ears/nose, allergy conflicts with antibiotics, billing complexity (simple <2.5cm vs complex)',
+  lac: { name:'Laceration Repair', ico:'🩹', sub:'Wound closure', risk:'low', tips:'Epi contraindications digits/ears/nose; billing: simple <2.5cm vs complex',
     secs:[
-      {ic:'📍',t:'Wound Details',rows:[
-        [{t:'i',id:'location',lbl:'Location',req:1,ph:'e.g., Right forehead, 2 cm above eyebrow'},{t:'i',id:'length',lbl:'Length',req:1,ph:'e.g., 3.5 cm'}],
-        [{t:'s',id:'depth',lbl:'Depth',o:['Superficial (epidermis/dermis)','Deep dermis','Subcutaneous tissue','Fascia involvement','Muscle involvement']},{t:'s',id:'wtype',lbl:'Wound Type',o:['Linear','Stellate','Avulsion','Degloving','Puncture']},{t:'s',id:'contam',lbl:'Contamination',o:['Clean','Mildly contaminated','Heavily contaminated','Bite wound','Soil/debris']}],
-        {t:'c',id:'wchar',lbl:'Characteristics',o:['Well-approximated edges','Jagged/irregular edges','Active bleeding','Minimal bleeding','Foreign body noted','Tendon visible','Bone visible']}
+      { ic:'📍', t:'Wound Details', rows:[
+        [{t:'i',id:'location',lbl:'Location',req:1,ph:'Right forehead'},{t:'i',id:'length',lbl:'Length',req:1,ph:'3.5 cm'}],
+        [{t:'s',id:'depth',lbl:'Depth',o:['Superficial','Deep dermis','Subcutaneous','Fascia','Muscle']},{t:'s',id:'wtype',lbl:'Type',o:['Linear','Stellate','Avulsion','Degloving','Puncture']},{t:'s',id:'contam',lbl:'Contamination',o:['Clean','Mild','Heavy','Bite','Soil/debris']}],
+        {t:'c',id:'wchar',lbl:'Characteristics',o:['Well-approximated','Jagged/irregular','Active bleeding','Minimal bleeding','FB noted','Tendon visible','Bone visible']},
       ]},
-      {ic:'💉',t:'Anesthesia & Preparation',rows:[
-        [{t:'s',id:'anes',lbl:'Anesthetic',req:1,o:[...LIDO,'LET gel','Diphenhydramine intradermal']},{t:'i',id:'anes_amt',lbl:'Amount (mL)',ph:'e.g., 5 mL'},{t:'s',id:'anes_tech',lbl:'Technique',o:['Local infiltration','Field block','Digital nerve block','Regional nerve block','Topical only']}],
-        {t:'c',id:'prep',lbl:'Preparation',o:['*NS irrigation','Betadine prep','Chlorhexidine prep','FB removed','Explored — no deep injury','Hair removal']}
+      { ic:'💉', t:'Anesthesia & Prep', rows:[
+        [{t:'s',id:'anes',lbl:'Anesthetic',req:1,o:[...LIDO,'LET gel','Diphenhydramine']},{t:'i',id:'anes_amt',lbl:'Amount (mL)',ph:'5'},{t:'s',id:'anes_tech',lbl:'Technique',o:['Local infiltration','Field block','Digital block','Regional','Topical']}],
+        {t:'c',id:'prep',lbl:'Preparation',o:['*NS irrigation','Betadine','Chlorhexidine','FB removed','Explored','Hair removal']},
       ]},
-      {ic:'🧵',t:'Closure',rows:[
-        [{t:'s',id:'closure',lbl:'Closure Method',req:1,o:['Simple interrupted sutures','Simple running sutures','Horizontal mattress sutures','Vertical mattress sutures','Deep absorbable + simple interrupted','Staples','Dermabond','Steri-strips','Combination']},{t:'s',id:'sut_mat',lbl:'Suture Material',o:['N/A','3-0 Nylon','4-0 Nylon','5-0 Nylon','6-0 Nylon','3-0 Prolene','4-0 Prolene','3-0 Vicryl (deep)','4-0 Vicryl (deep)','3-0 Chromic gut']}],
-        [{t:'i',id:'sut_n',lbl:'# Sutures/Staples',ph:'e.g., 6'},{t:'s',id:'hemo',lbl:'Hemostasis',o:['Yes — direct pressure','Yes — electrocautery','Yes — silver nitrate','Yes — suture ligation']},{t:'s',id:'dressing',lbl:'Dressing',o:['Dry sterile dressing','Bacitracin + non-stick + gauze','Petrolatum gauze','Tegaderm','No dressing (face)']}]
+      { ic:'🧵', t:'Closure', rows:[
+        [{t:'s',id:'closure',lbl:'Method',req:1,o:['Simple interrupted','Running','Horizontal mattress','Vertical mattress','Deep + interrupted','Staples','Dermabond','Steri-strips']},{t:'s',id:'sut_mat',lbl:'Material',o:['N/A','3-0 Nylon','4-0 Nylon','5-0 Nylon','6-0 Nylon','3-0 Vicryl','3-0 Chromic']}],
+        [{t:'i',id:'sut_n',lbl:'# Sutures',ph:'6'},{t:'s',id:'dressing',lbl:'Dressing',o:['Dry sterile','Bacitracin + gauze','Petrolatum','Tegaderm','None (face)']}],
       ]},
-      {ic:'✅',t:'Aftercare & Disposition',rows:[
-        [{t:'s',id:'tet',lbl:'Tetanus Status',req:1,o:TET},{t:'s',id:'abx',lbl:'Antibiotics',o:ABXO}],
-        {t:'s',id:'fu',lbl:'Follow-Up',o:['Face: 5 days','Scalp: 7–10 days','Trunk: 7–10 days','Extremities: 10–14 days','Over joint: 14 days','Wound clinic 3–5 days']},
-        {t:'c',id:'nvpost',lbl:'Post-Procedure NV Status',o:NVpost},
-        {t:'a',id:'addl',lbl:'Additional Notes',ph:'Patient tolerated procedure well. Return precautions discussed…'}
-      ]}
-    ]
+      { ic:'✅', t:'Aftercare', rows:[
+        [{t:'s',id:'tet',lbl:'Tetanus',req:1,o:['Up to date','Tdap given','TIG given','Tdap + TIG','Declined']},{t:'s',id:'abx',lbl:'Antibiotics',o:['None','Cephalexin 500mg QID x 5d','Amox-clav 875mg BID x 5d','Clindamycin 300mg QID x 5d']}],
+        {t:'c',id:'nvpost',lbl:'Post NV',o:NVpost},
+        {t:'a',id:'addl',lbl:'Notes',ph:'Tolerated well…'},
+      ]},
+    ],
   },
-  iand: { name:'I&D / Abscess Drainage', ico:'💉', sub:'Incision and drainage procedure note', tips:'Missing fields, MRSA coverage and allergy conflicts, packing type/length, admission criteria (facial/febrile/immunocompromised), culture recommendation',
+  iand: { name:'I&D / Abscess', ico:'💉', sub:'Incision & drainage', risk:'low', tips:'MRSA coverage; packing type; admission criteria',
     secs:[
-      {ic:'📍',t:'Abscess Details',rows:[
-        [{t:'i',id:'location',lbl:'Location',req:1,ph:'e.g., Left buttock, right axilla'},{t:'i',id:'size',lbl:'Size',req:1,ph:'e.g., 4 cm x 3 cm x 2 cm'}],
-        [{t:'s',id:'skin',lbl:'Skin Overlying',o:['Erythematous, warm, fluctuant','Erythematous, indurated','Pointing/ready to drain','Cellulitis surrounding']},{t:'s',id:'lymph',lbl:'Lymphangitis',o:['Not present','Present — streaking noted']}]
+      { ic:'📍', t:'Abscess', rows:[
+        [{t:'i',id:'location',lbl:'Location',req:1,ph:'Left buttock'},{t:'i',id:'size',lbl:'Size',req:1,ph:'4x3x2 cm'}],
+        [{t:'s',id:'skin',lbl:'Overlying Skin',o:['Erythematous fluctuant','Indurated','Pointing','Cellulitis']},{t:'s',id:'lymph',lbl:'Lymphangitis',o:['No','Yes']}],
       ]},
-      {ic:'💉',t:'Procedure',rows:[
-        [{t:'s',id:'anes',lbl:'Anesthetic',req:1,o:['Lidocaine 1% plain','Lidocaine 1% w/ epi','Lidocaine 2% plain','Procedural sedation','None — too superficial']},{t:'i',id:'anes_amt',lbl:'Amount (mL)',ph:'e.g., 10 mL'},{t:'s',id:'incision',lbl:'Incision Type',o:['Linear stab — #11 blade','Linear — #15 blade','Cruciate incision','Loop drainage']}],
-        {t:'c',id:'drain',lbl:'Drainage Characteristics',req:1,o:['Purulent drainage expressed','Serosanguineous','Malodorous','Loculations broken','Cavity irrigated']},
-        [{t:'s',id:'packing',lbl:'Wound Packing',o:['Iodoform gauze 1/4-inch','Iodoform gauze 1/2-inch','Plain gauze','Not packed — too small','Loop drainage placed']},{t:'s',id:'cx',lbl:'Cultures',o:['Wound culture sent','Not sent — routine abscess','Blood cultures sent','MRSA swab sent']}]
+      { ic:'💉', t:'Procedure', rows:[
+        [{t:'s',id:'anes',lbl:'Anesthetic',req:1,o:['Lido 1%','Lido 1% w/epi','Lido 2%','Proc sedation','None']},{t:'s',id:'incision',lbl:'Incision',o:['Linear #11','Linear #15','Cruciate','Loop drain']}],
+        {t:'c',id:'drain',lbl:'Drainage',req:1,o:['Purulent','Serosanguineous','Malodorous','Loculations broken','Irrigated']},
+        [{t:'s',id:'packing',lbl:'Packing',o:["Iodoform 1/4\"","Iodoform 1/2\"","Plain gauze","Not packed","Loop"]},{t:'s',id:'cx',lbl:'Cultures',o:['Wound culture','Not sent','Blood cultures','MRSA swab']}],
       ]},
-      {ic:'✅',t:'Antibiotics & Disposition',rows:[
-        [{t:'s',id:'abx',lbl:'Antibiotics',req:1,o:['None — uncomplicated, drained','TMP-SMX DS BID x 7d','Doxycycline 100mg BID x 7d','Clindamycin 300mg TID x 7d','Cephalexin 500mg QID x 7d','IV antibiotics — admitted']},{t:'s',id:'fu',lbl:'Follow-Up',o:['Return 48h — wound check/packing removal','Return 48–72h for repack','Primary care 3–5 days','Wound clinic','Admission']}],
-        {t:'a',id:'addl',lbl:'Notes',ph:'Patient tolerated procedure well. No complications…'}
-      ]}
-    ]
+      { ic:'✅', t:'Disposition', rows:[
+        [{t:'s',id:'abx',lbl:'Antibiotics',req:1,o:['None','TMP-SMX DS BID x 7d','Doxy 100mg BID x 7d','Clinda 300mg TID x 7d','Cephalexin 500mg QID x 7d']},{t:'s',id:'fu',lbl:'Follow-Up',o:['48h wound check','48-72h repack','PCP 3-5d','Wound clinic','Admit']}],
+        {t:'a',id:'addl',lbl:'Notes'},
+      ]},
+    ],
   },
-  fb: { name:'Foreign Body Removal', ico:'🔍', sub:'Soft tissue foreign body removal note', tips:'Missing fields, allergy conflicts, wood/glass/plant radiolucent on X-ray (US preferred), post-removal imaging, NV exam post-removal for hand/finger',
-    secs:[{ic:'🔍',t:'Foreign Body Details',rows:[
-      [{t:'i',id:'location',lbl:'Location',req:1,ph:'e.g., Right index finger pad, 1 cm distal to DIP'},{t:'s',id:'fbtype',lbl:'FB Type',req:1,o:['Wood splinter','Glass shard','Metal fragment','Fishhook','Thorn / plant material','Gravel / road debris','Needle fragment','Plastic','Bullet fragment']}],
-      [{t:'s',id:'imaging',lbl:'Pre-Removal Imaging',o:['X-ray — radiopaque FB visualized','X-ray — negative (radiolucent FB suspected)','Bedside ultrasound — FB identified','No imaging — visible/palpable FB']},{t:'s',id:'anes',lbl:'Anesthetic',req:1,o:['Lidocaine 1% plain','Lidocaine 1% w/ epi','Digital nerve block','Regional nerve block']}],
-      {t:'s',id:'result',lbl:'FB Successfully Removed',o:['Yes — intact and in entirety','Yes — fragmented, appears complete','Partially removed — residual suspected','Unable — surgery/IR referral']},
-      {t:'c',id:'post',lbl:'Post-Removal',o:['*Wound irrigated','*Post-imaging — no residual','*Sensation intact distal to site']},
-      {t:'a',id:'addl',lbl:'Notes'}
-    ]}]
-  },
-  wc: { name:'Wound Irrigation & Care', ico:'🧴', sub:'Wound irrigation and management note', tips:'Missing fields, allergy conflicts, high-pressure irrigation volume, open vs delayed primary closure for contaminated wounds',
-    secs:[{ic:'🧴',t:'Wound Details',rows:[
-      [{t:'i',id:'location',lbl:'Location',req:1,ph:'e.g., Right lower extremity, anterior tibial surface'},{t:'i',id:'size',lbl:'Size',ph:'e.g., 6 cm x 4 cm'}],
-      [{t:'s',id:'wtype',lbl:'Wound Type',req:1,o:['Abrasion','Avulsion / degloving','Crush injury','Infected wound','Burn (partial thickness)','Ulceration','Wound dehiscence']},{t:'s',id:'contam',lbl:'Contamination',o:['Minimal — clean','Moderate','Heavy — soil/organic','Fecal contamination']}],
-      {t:'c',id:'irrig',lbl:'Irrigation',o:['*High-pressure NS irrigation','Wound scrub','Devitalized tissue debrided','FB removed']},
-      [{t:'s',id:'dressing',lbl:'Dressing',o:['Bacitracin + non-adherent + gauze','Silver sulfadiazine + non-adherent','Moist saline gauze','Hydrocolloid (DuoDerm)','Negative pressure wound therapy (VAC)']},{t:'s',id:'abx',lbl:'Antibiotics',o:['None','Cephalexin 500mg QID x 5d','Clindamycin 300mg TID x 5d','TMP-SMX DS BID x 5d']}],
-      {t:'a',id:'addl',lbl:'Notes'}
-    ]}]
-  },
-  sp: { name:'Splint Application', ico:'🦴', sub:'Orthopedic immobilization documentation', tips:'Missing fields, appropriate immobilization position for injury, both pre AND post NV exams required, splint type matching injury/location, return precautions',
+  intub: { name:'Intubation / RSI', ico:'🌬️', sub:'Rapid sequence intubation', risk:'high', tips:'Succ contraindications; capnography mandatory; backup airway; 6mL/kg IBW',
     secs:[
-      {ic:'🦴',t:'Injury & Indication',rows:[
-        [{t:'i',id:'dx',lbl:'Diagnosis / Indication',req:1,ph:'e.g., Distal radius fracture, non-displaced'},{t:'s',id:'ext',lbl:'Extremity',req:1,o:['Right upper extremity','Left upper extremity','Right lower extremity','Left lower extremity']}],
-        {t:'c',id:'nvpre',lbl:'Pre-Procedure NV Exam',req:1,o:NVpre}
+      { ic:'🌬️', t:'Indication', rows:[
+        {t:'tip',cls:'rd',txt:'⚠️ High-risk. Document all attempts and backup plans.'},
+        {t:'c',id:'ind',lbl:'Indication',req:1,o:['Hypoxic resp failure','Hypercapnic','Airway protect — AMS','GCS ≤8','Impending failure','Obstruction']},
+        [{t:'s',id:'preox',lbl:'Pre-O₂',o:['15L NRB x 3min','BVM + PEEP','HFNC 60L','BiPAP','Crash']},{t:'i',id:'prespo2',lbl:'SpO₂',ph:'94%'}],
       ]},
-      {ic:'🩹',t:'Splint Details',rows:[
-        [{t:'s',id:'spltype',lbl:'Splint Type',req:1,o:[{g:'Upper Extremity',o:['Posterior long arm splint','Short arm (volar) splint','Ulnar gutter splint','Radial gutter splint','Thumb spica splint','Sugar-tong (forearm)','Coaptation (humerus)','Aluminum finger splint']},{g:'Lower Extremity',o:['Posterior ankle/short leg splint','Stirrup (U-slab) ankle splint','Posterior long leg splint','Knee immobilizer','Buddy taping','Hard-soled shoe']}]},{t:'i',id:'pos',lbl:'Position of Immobilization',req:1,ph:'e.g., Wrist in 20° extension, MCP at 70° flexion'}],
-        [{t:'s',id:'pad',lbl:'Padding',o:['Webril cotton','Soft foam','Stockinette + Webril']},{t:'s',id:'mat',lbl:'Material',o:['Plaster (10-layer)','Plaster (8-layer)','Fiberglass','Pre-formed fiberglass']},{t:'s',id:'wrap',lbl:'Overwrap',o:['ACE wrap','CoFlex','Elastic + tape']}]
+      { ic:'💊', t:'RSI Meds', rows:[
+        [{t:'s',id:'ind_agent',lbl:'Induction',req:1,o:['Ketamine 1.5-2','Propofol 1.5-2','Etomidate 0.3']},{t:'i',id:'ind_dose',lbl:'Dose',ph:'Ketamine 200mg'}],
+        [{t:'s',id:'par',lbl:'Paralytic',req:1,o:['Succ 1.5 mg/kg','Roc 1.2 mg/kg','Vec 0.1 mg/kg']},{t:'i',id:'par_dose',lbl:'Dose',ph:'Succ 150mg'}],
       ]},
-      {ic:'✅',t:'Post-Application & Disposition',rows:[
-        {t:'c',id:'nvpost2',lbl:'Post-Application NV Exam',req:1,o:['*Sensation intact post-splint','*Motor intact post-splint','*Cap refill <2s post-splint','*Pulses intact post-splint','*No increased pain/numbness']},
-        [{t:'s',id:'wb',lbl:'Weight-Bearing',o:['N/A (upper extremity)','Non-weight bearing','Touch-down weight bearing','Weight bearing as tolerated','Full weight bearing']},{t:'s',id:'fu',lbl:'Follow-Up',o:['Orthopedics 3–5 days','Orthopedics 7–10 days','Primary care 5–7 days','Hand surgery referral']}],
-        {t:'c',id:'rp',lbl:'Return Precautions',o:['*Increasing pain/swelling','*Numbness/tingling','*Splint too tight/loose','*Skin breakdown','*Color changes']},
-        {t:'a',id:'addl',lbl:'Notes',ph:'X-rays reviewed. Orthopedics notified…'}
-      ]}
-    ]
+      { ic:'🔭', t:'Laryngoscopy', rows:[
+        [{t:'s',id:'dev',lbl:'Device',req:1,o:['DL Mac 3','DL Mac 4','DL Miller 2','VL GlideScope','VL C-MAC','FOB','LMA']},{t:'s',id:'att',lbl:'Attempts',req:1,o:['1st success','2 success','3 success','Failed']},{t:'s',id:'ett',lbl:'ETT',req:1,o:['6.0','6.5','7.0','7.5','8.0']}],
+        {t:'c',id:'conf',lbl:'Confirmation',req:1,o:['*Waveform capnography ✓','*Bilateral breath sounds ✓','*Bilateral chest rise ✓','*SpO₂ maintained','CXR ordered']},
+      ]},
+      { ic:'⚙️', t:'Post-Intubation', rows:[
+        [{t:'s',id:'vm',lbl:'Vent',o:['AC/VC','AC/PC','SIMV']},{t:'i',id:'tv',lbl:'TV',ph:'500 mL'},{t:'i',id:'vset',lbl:'Rate/PEEP/FiO₂',ph:'RR14 PEEP5 100%'}],
+        {t:'c',id:'comp',lbl:'Complications',o:['*None','Transient hypoxia','Esophageal (corrected)','R mainstem (fixed)']},
+        {t:'a',id:'addl',lbl:'Notes'},
+      ]},
+    ],
   },
-  red: { name:'Fracture / Dislocation Reduction', ico:'🔧', sub:'Orthopedic reduction procedure note', tips:'Missing fields, both pre AND post-reduction NV exams mandatory, pre and post X-rays, technique appropriate for injury, orthopedics notification for fracture-dislocation or failed reduction',
-    secs:[{ic:'🔧',t:'Injury & Procedure',rows:[
-      [{t:'i',id:'dx',lbl:'Diagnosis',req:1,ph:'e.g., Right anterior shoulder dislocation'},{t:'i',id:'mech',lbl:'Mechanism',ph:'e.g., Fall on outstretched hand'}],
-      {t:'c',id:'nvpre',lbl:'Pre-Reduction NV Exam',req:1,o:['*Sensation intact','*Motor intact','*Pulses present','Axillary nerve checked (shoulder)']},
-      [{t:'s',id:'prexr',lbl:'Pre-Reduction X-ray',req:1,o:['Confirmed dislocation, no fracture','Confirmed dislocation + fracture','Fracture — angulated, needs reduction','Emergency — X-ray deferred']},{t:'s',id:'analg',lbl:'Analgesia/Sedation',req:1,o:['Intra-articular lidocaine block','IV morphine + midazolam','IV fentanyl + midazolam','IV ketamine (proc sedation)','IV propofol (proc sedation)','Nitrous oxide','No sedation required']}],
-      [{t:'s',id:'tech',lbl:'Reduction Technique',req:1,o:[{g:'Shoulder',o:['Cunningham','FARES','Stimson','External rotation (Kocher)','Traction-countertraction','Milch']},{g:'Hip',o:['Allis technique','Stimson gravity']},{g:'Ankle/Wrist/Elbow',o:['Longitudinal traction with manipulation']},{g:'Digits',o:['Longitudinal traction — digit']}]},{t:'s',id:'att',lbl:'Attempts',o:['1 attempt — successful','2 attempts — successful','3 attempts — failed, ortho called']}],
-      {t:'c',id:'post',lbl:'Post-Reduction',o:['*Post-reduction X-ray — reduced','*Sensation intact post','*Motor intact post','*Pulses intact post','*Splint/sling applied']},
-      {t:'a',id:'addl',lbl:'Notes'}
-    ]}]
+  cryo: { name:'Cricothyrotomy', ico:'🔪', sub:'Emergency surgical airway', risk:'high', tips:'Last resort — failed intubation; 6.0-6.5 ETT; CXR + bronchoscopy post',
+    secs:[{ ic:'🔪', t:'Procedure', rows:[
+      {t:'tip',cls:'rd',txt:'⚠️ Emergency surgical airway — document failed intubation.'},
+      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Cannot intubate/ventilate','Failed intubation ≥2','Facial trauma','Severe angioedema']},{t:'s',id:'method',lbl:'Technique',req:1,o:['Landmark palpation','US guided','Scalpel classic','Needle/cannula']}],
+      [{t:'s',id:'tube',lbl:'Tube',o:['6.0 ETT','6.5 ETT','Trach tube']},{t:'s',id:'conf',lbl:'Confirmation',o:['Bilateral BS','Capnography +','Chest rise','Secured']}],
+      {t:'c',id:'post',lbl:'Post',o:['*CXR ordered','*Bronch scheduled','*ICU notified','*Trach planned 24h']},
+      {t:'a',id:'addl',lbl:'Notes'},
+    ]}],
   },
-  intub: { name:'Intubation / RSI', ico:'🌬️', sub:'Rapid sequence intubation and airway management', tips:'Missing fields, succinylcholine contraindications (hyperkalemia/burns/crush/denervation), waveform capnography is medicolegal standard for confirmation, backup airway plan if multiple attempts, vent settings (6 mL/kg IBW lung-protective)',
+  cl: { name:'Central Line', ico:'🩺', sub:'CVC insertion', risk:'high', tips:'US guidance standard; CXR required; full barrier',
     secs:[
-      {ic:'🌬️',t:'Indication & Pre-Procedure',rows:[
-        {t:'tip',cls:'rd',txt:'⚠️ High-risk procedure. Document all attempts, backup airway plans, and post-intubation management.'},
-        {t:'c',id:'ind',lbl:'Indication',req:1,o:['Hypoxic respiratory failure','Hypercapnic respiratory failure','Airway protection — AMS','Airway protection — GCS ≤8','Impending failure','Airway obstruction','Hemodynamic instability']},
-        [{t:'s',id:'preox',lbl:'Pre-Oxygenation',o:['15L NRB x 3 min','BVM with PEEP valve','HFNC 60 L/min','BiPAP pre-oxygenation','No pre-oxygenation (crash)']},{t:'i',id:'prespo2',lbl:'SpO₂ Prior to Attempt',ph:'e.g., 94%'}],
-        {t:'c',id:'daa',lbl:'Difficult Airway Assessment',o:['*No predicted difficulty','Limited mouth opening','Mallampati III-IV','C-spine immobility','Facial trauma/burns','Obesity/short neck']}
+      { ic:'🩺', t:'Indication', rows:[
+        {t:'c',id:'ind',lbl:'Indication',req:1,o:['No PIV','Hemodynamic monitoring','Vasopressors','Rapid volume','TV pacing','Caustic meds']},
+        [{t:'s',id:'site',lbl:'Site',req:1,o:['R IJ','L IJ','R subclavian','L subclavian','R femoral','L femoral']},{t:'s',id:'cath',lbl:'Catheter',o:['Triple lumen','Double lumen','Single lumen','Cordis','Shiley']}],
       ]},
-      {ic:'💊',t:'RSI Medications',rows:[
-        [{t:'s',id:'ind_agent',lbl:'Induction Agent',req:1,o:['Ketamine 1.5–2 mg/kg IV','Propofol 1.5–2 mg/kg IV','Etomidate 0.3 mg/kg IV','Midazolam 0.3 mg/kg IV']},{t:'i',id:'ind_dose',lbl:'Induction Dose Given',ph:'e.g., Ketamine 200mg IV'}],
-        [{t:'s',id:'par',lbl:'Paralytic Agent',req:1,o:['Succinylcholine 1.5 mg/kg IV','Rocuronium 1.2 mg/kg IV (RSI)','Rocuronium 0.6 mg/kg IV','Vecuronium 0.1 mg/kg IV']},{t:'i',id:'par_dose',lbl:'Paralytic Dose Given',ph:'e.g., Succinylcholine 150mg IV'}]
+      { ic:'🔊', t:'Technique', rows:[
+        {t:'tip',cls:'rd',txt:'⚠️ Document US, attempts, CXR.'},
+        [{t:'s',id:'us',lbl:'US',req:1,o:['Real-time','US localization','Landmark']},{t:'s',id:'att',lbl:'Attempts',req:1,o:['1 success','2 success','3 success','Failed']},{t:'i',id:'depth',lbl:'Depth cm',ph:'15'}],
+        {t:'c',id:'lum',lbl:'Lumens',o:['*All flush','*Sutured','*Sterile dressing']},
       ]},
-      {ic:'🔭',t:'Laryngoscopy & Intubation',rows:[
-        [{t:'s',id:'dev',lbl:'Device',req:1,o:['Direct laryngoscopy — Mac 3','Direct laryngoscopy — Mac 4','Direct laryngoscopy — Miller 2','Video laryngoscopy — GlideScope','Video laryngoscopy — C-MAC','Fiberoptic bronchoscope','LMA (bridging)']},{t:'s',id:'cl',lbl:'Cormack-Lehane',o:['Grade I — full cords','Grade II — partial cords','Grade III — epiglottis only','Grade IV — no glottic structures']},{t:'s',id:'att',lbl:'Attempts',req:1,o:['1st attempt successful','2 attempts — successful','3 attempts — successful','Failed — surgical airway']}],
-        [{t:'s',id:'ett',lbl:'ETT Size',req:1,o:['6.0 cuffed','6.5 cuffed','7.0 cuffed','7.5 cuffed','8.0 cuffed']},{t:'i',id:'ettd',lbl:'ETT Depth (cm at teeth)',ph:'e.g., 23 cm'},{t:'s',id:'stylet',lbl:'Stylet',o:['Yes','No','Bougie used']}],
-        {t:'c',id:'conf',lbl:'Confirmation',req:1,o:['*Waveform capnography ✓','*Bilateral breath sounds ✓','*Bilateral chest rise ✓','*SpO₂ maintained','CXR ordered']}
+      { ic:'✅', t:'Confirmation', rows:[
+        {t:'c',id:'conf',lbl:'Position',req:1,o:['*CXR SVC/RA','*No PTX','*Venous blood']},
+        {t:'c',id:'comp',lbl:'Complications',o:['*None','Arterial puncture','PTX','Hematoma']},
+        {t:'a',id:'addl',lbl:'Notes'},
       ]},
-      {ic:'⚙️',t:'Post-Intubation Management',rows:[
-        [{t:'s',id:'vm',lbl:'Vent Mode',o:['Volume control (AC/VC)','Pressure control (AC/PC)','SIMV']},{t:'i',id:'tv',lbl:'Tidal Volume',ph:'e.g., 500 mL (6 mL/kg IBW)'},{t:'i',id:'vset',lbl:'Rate / PEEP / FiO₂',ph:'e.g., RR 14, PEEP 5, FiO₂ 100%'}],
-        {t:'c',id:'comp',lbl:'Complications',o:['*No complications','Transient hypoxia','Esophageal intubation (corrected)','Dental trauma','Right mainstem (repositioned)']},
-        {t:'a',id:'addl',lbl:'Notes',ph:'Attending present during procedure…'}
-      ]}
-    ]
+    ],
   },
-  sed: { name:'Procedural Sedation', ico:'💤', sub:'Conscious sedation / procedural sedation documentation', tips:'Missing fields, appropriate agent (ketamine preferred in ED), capnography and two-physician model for deep sedation, patient met recovery/discharge criteria',
+  piv: { name:'Peripheral IV', ico:'💉', sub:'PIV insertion', risk:'low', tips:'Two large-bore for resuscitation',
+    secs:[{ ic:'💉', t:'IV', rows:[
+      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['IV access','Resuscitation','Blood draw']},{t:'s',id:'gauge',lbl:'Gauge',req:1,o:['18G','20G','22G']},{t:'s',id:'site',lbl:'Site',req:1,o:['Antecubital','Forearm','Hand','Lower ext']}],
+      {t:'c',id:'conf',lbl:'Confirmation',o:['*Blood return','*Fluid flows','*No swelling','*Secured']},
+    ]}],
+  },
+  io: { name:'Intraosseous Access', ico:'🦴', sub:'IO vascular access', risk:'high', tips:'Last resort; marrow aspirate before fluids; compartment syndrome risk',
+    secs:[{ ic:'💉', t:'IO', rows:[
+      {t:'tip',cls:'rd',txt:'⚠️ High-risk — document failed PIV.'},
+      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Cardiac arrest — no IV','Severe shock','Pediatric','Burns']},{t:'s',id:'site',lbl:'Site',req:1,o:['Proximal humerus','Proximal tibia','Distal tibia','Distal femur']},{t:'s',id:'att',lbl:'Attempts',o:['1 success','2 success','Failed']}],
+      {t:'c',id:'conf',lbl:'Confirmation',o:['*Needle firm','*Marrow aspirate','*Free flow','*No extravasation']},
+      {t:'a',id:'addl',lbl:'Notes'},
+    ]}],
+  },
+  ct: { name:'Chest Tube', ico:'🫁', sub:'Tube thoracostomy', risk:'high', tips:'Safe triangle 4th/5th ICS AAL; CXR mandatory',
+    secs:[{ ic:'🫁', t:'Details', rows:[
+      {t:'tip',cls:'rd',txt:'⚠️ High complication risk.'},
+      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['PTX simple','PTX tension','Hemothorax','Hemopneumothorax','Empyema','Effusion']},{t:'s',id:'side',lbl:'Side',req:1,o:['Right','Left']}],
+      [{t:'s',id:'fr',lbl:'Size',o:['28 Fr','32 Fr','36 Fr','40 Fr','14 pigtail']},{t:'s',id:'site',lbl:'Site',o:["4th/5th ICS AAL","2nd ICS MCL","Posterior"]}],
+      [{t:'i',id:'drain',lbl:'Output',ph:'400 mL'},{t:'s',id:'suct',lbl:'Suction',o:['-20 cmH₂O','Water seal','Heimlich']}],
+      {t:'c',id:'conf',lbl:'Confirmation',o:['*CXR confirmed','*Lung expanded','*Sutured','*Occlusive dressing']},
+      {t:'a',id:'addl',lbl:'Notes'},
+    ]}],
+  },
+  lp: { name:'Lumbar Puncture', ico:'🔬', sub:'Spinal tap', risk:'mod', tips:'CT before LP; CSF interpretation; 4 tubes; HSV PCR if encephalitis',
     secs:[
-      {ic:'💤',t:'Pre-Sedation Assessment',rows:[
-        [{t:'i',id:'ind',lbl:'Indication / Procedure',req:1,ph:'e.g., Shoulder dislocation reduction'},{t:'s',id:'asa',lbl:'ASA Classification',o:['ASA I — healthy','ASA II — mild systemic disease','ASA III — severe systemic disease','ASA IV — severe, life-threatening']}],
-        [{t:'s',id:'npo',lbl:'NPO Status',o:['Emergency — not applicable','NPO >8h — solids','NPO >6h — light meal','Not NPO — discussed risk/benefit']},{t:'s',id:'aw',lbl:'Airway Assessment',o:['No predicted difficulty','Potentially difficult — precautions taken','Video laryngoscopy at bedside']}],
-        {t:'c',id:'cons',lbl:'Consent',o:['*Risks/benefits discussed','*Consent obtained','Emergency — consent waived']}
+      { ic:'🔬', t:'Indication', rows:[
+        [{t:'c',id:'ind',lbl:'Indication',req:1,o:['R/O SAH','R/O meningitis','CNS infection','Therapeutic','Demyelinating']},{t:'s',id:'ct',lbl:'Pre-LP CT',req:1,o:['CT safe','CT normal','Not required','Contraindicated']}],
       ]},
-      {ic:'🔵',t:'Monitoring',rows:[
-        {t:'c',id:'mon',lbl:'Monitoring Throughout',req:1,o:['*Cardiac monitor','*Pulse oximetry','*Capnography (EtCO₂)','*BP q5min','*IV access','*Supplemental O₂']},
-        {t:'c',id:'pers',lbl:'Personnel Present',o:['*Procedure physician','*Sedation physician','*RN monitoring']}
+      { ic:'🩺', t:'Procedure', rows:[
+        [{t:'s',id:'pos',lbl:'Position',o:['Lateral decubitus','Seated']},{t:'s',id:'lvl',lbl:'Level',req:1,o:['L3-L4','L4-L5','L2-L3']},{t:'s',id:'att',lbl:'Attempts',req:1,o:['1 success','2 success','3 success','Failed']}],
+        [{t:'i',id:'op',lbl:'Opening Pressure',req:1,ph:'18 cmH₂O'},{t:'s',id:'csf',lbl:'CSF',req:1,o:['Clear','Xanthochromic','Bloody clearing','Uniformly bloody','Turbid']}],
       ]},
-      {ic:'💊',t:'Medications Administered',rows:[
-        [{t:'s',id:'agent',lbl:'Agent',req:1,o:['Ketamine 1–1.5 mg/kg IV','Ketamine 4 mg/kg IM','Propofol 1 mg/kg IV','Midazolam + Fentanyl','Fentanyl 1–2 mcg/kg IV','Etomidate 0.1–0.15 mg/kg IV']},{t:'i',id:'dose',lbl:'Dose / Route Given',ph:'e.g., Ketamine 100mg IV'}],
-        [{t:'s',id:'slvl',lbl:'Sedation Level',o:['Minimal (anxiolysis)','Moderate (conscious sedation)','Deep sedation','Dissociative (ketamine)']},{t:'i',id:'dur',lbl:'Duration',ph:'e.g., 15 minutes'}]
+      { ic:'🧪', t:'CSF Studies', rows:[
+        {t:'c',id:'tubes',lbl:'Tubes',o:['*Tube 1 Cell count','*Tube 2 Protein/glucose','*Tube 3 Culture/gram','*Tube 4 Repeat cell','HSV PCR','Crypto','VDRL']},
+        {t:'a',id:'addl',lbl:'Notes'},
       ]},
-      {ic:'✅',t:'Recovery & Disposition',rows:[
-        {t:'c',id:'rec',lbl:'Recovery',o:['*Returned to baseline','*SpO₂ on room air','*No adverse events']},
-        {t:'a',id:'addl',lbl:'Procedure / Outcome',ph:'Reduction successful. Post-procedure X-ray confirms reduction…'}
-      ]}
-    ]
+    ],
   },
-  lp: { name:'Lumbar Puncture', ico:'🔬', sub:'Lumbar puncture / spinal tap procedure note', tips:'Missing fields, CT head criteria before LP, CSF interpretation (xanthochromia=SAH, turbid=meningitis, opening pressure), minimum 4 tubes with HSV PCR if encephalitis',
+  fast: { name:'FAST Exam', ico:'🔊', sub:'Trauma sonography', risk:'low', tips:"All views documented; action for positive; sensitivity ~80%",
+    secs:[{ ic:'🔊', t:'FAST', rows:[
+      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Blunt trauma','Penetrating','Hypotension','Rib fx','eFAST']},{t:'i',id:'ctx',lbl:'Context',ph:'MVC restrained'}],
+      [{t:'s',id:'ruq',lbl:'RUQ',req:1,o:['Neg','Pos','Indet']},{t:'s',id:'luq',lbl:'LUQ',req:1,o:['Neg','Pos','Indet']},{t:'s',id:'pelv',lbl:'Pelvic',req:1,o:['Neg','Pos','Indet']},{t:'s',id:'card',lbl:'Cardiac',req:1,o:['Neg','Pos effusion','Indet']}],
+      {t:'s',id:'result',lbl:'Overall',req:1,o:['NEGATIVE','POSITIVE','INDETERMINATE']},
+      {t:'a',id:'addl',lbl:'Notes'},
+    ]}],
+  },
+  cv: { name:'Cardioversion', ico:'⚡', sub:'Synchronized electrical cardioversion', risk:'high', tips:'Confirm SYNC mode before every shock. AFib 120-200J, flutter 50-100J',
+    secs:[{ ic:'⚡', t:'Cardioversion', rows:[
+      {t:'tip',cls:'rd',txt:'⚠️ Confirm SYNC mode before every shock.'},
+      [{t:'s',id:'ind',lbl:'Rhythm',req:1,o:['AFib — unstable','AFib — elective','A-flutter','SVT refractory','VT with pulse','VT unstable']},{t:'s',id:'dur',lbl:'Duration',o:['<48h','≥48h — anticoag discussed','Emergent']}],
+      [{t:'s',id:'sed',lbl:'Sedation',o:['Midaz + Fent','Etomidate','Propofol','Ketamine','None — life threat']},{t:'i',id:'sed_dose',lbl:'Dose',ph:'Midaz 2mg IV'}],
+      [{t:'i',id:'j1',lbl:'Shock 1 (J)',req:1,ph:'120J biphasic'},{t:'s',id:'r1',lbl:'Result',o:['Sinus restored','No change','Partial']},{t:'i',id:'j2',lbl:'Shock 2',ph:'200J'}],
+      [{t:'s',id:'postrhythm',lbl:'Post Rhythm',req:1,o:['NSR','Sinus brady','Junctional','Persistent AFib','VF — defib']},{t:'i',id:'postvit',lbl:'Post Vitals',ph:'BP 118/72 HR 78'}],
+      {t:'a',id:'addl',lbl:'Notes'},
+    ]}],
+  },
+  par: { name:'Paracentesis', ico:'💧', sub:'Abdominal paracentesis', risk:'mod', tips:'SBP if PMN >250; albumin 6-8g/L if >5L removed; US reduces complications',
+    secs:[{ ic:'💧', t:'Paracentesis', rows:[
+      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Diagnostic — R/O SBP','Therapeutic','Both']},{t:'s',id:'site',lbl:'Site',o:['LLQ US-guided','RLQ','Midline infraumbilical']}],
+      [{t:'s',id:'us',lbl:'US Used',req:1,o:['Real-time','US pocket ID','Landmark']},{t:'i',id:'vol',lbl:'Volume',ph:'4.5 L'},{t:'s',id:'app',lbl:'Appearance',req:1,o:['Clear yellow','Turbid/cloudy','Bloody','Milky']}],
+      {t:'c',id:'labs',lbl:'Studies',o:['*Cell count + diff','*Protein/albumin/LDH','*Gram stain + culture','Glucose/amylase','Cytology']},
+      {t:'s',id:'alb',lbl:'Albumin',o:['Not indicated','Albumin 25% given','NS used']},
+      {t:'a',id:'addl',lbl:'Notes'},
+    ]}],
+  },
+  foley: { name:'Foley Catheter', ico:'🚽', sub:'Urinary catheter', risk:'low', tips:'Aseptic; check hematuria; daily removal assessment',
+    secs:[{ ic:'🚽', t:'Placement', rows:[
+      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Retention','Sepsis I/Os','Hemodynamic','Burns']},{t:'s',id:'size',lbl:'Size',req:1,o:['16 Fr','18 Fr','20 Fr','22 Fr']}],
+      {t:'c',id:'tech',lbl:'Technique',o:['*Sterile field','*Betadine/CHG','*No resistance','*Urine return']},
+      {t:'s',id:'color',lbl:'Color',req:1,o:['Clear','Cloudy','Tea-colored','Hematuria']},
+      {t:'a',id:'addl',lbl:'Notes'},
+    ]}],
+  },
+  ngt: { name:'Nasogastric Tube', ico:'🧴', sub:'NGT insertion', risk:'low', tips:'16-18 Fr; pH <6 confirms; CXR if doubt; contraindicated basilar skull fx',
+    secs:[{ ic:'🧴', t:'NGT', rows:[
+      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Gastric decompression','Aspiration risk','Medication admin','Enteral feeding']},{t:'s',id:'size',lbl:'Size',o:['14 Fr','16 Fr','18 Fr']}],
+      [{t:'i',id:'depth',lbl:'Depth (cm)',ph:'50'},{t:'s',id:'conf',lbl:'Confirmation',req:1,o:['*Gastric aspirate','*pH <6','*CXR confirmed','*Auscultation — air']}],
+      {t:'a',id:'addl',lbl:'Notes'},
+    ]}],
+  },
+  epi: { name:'Epistaxis / Nasal Packing', ico:'👃', sub:'Anterior/posterior nasal packing', risk:'low', tips:'Anterior Rhino Rocket first; posterior = Foley balloon if anterior fails',
+    secs:[{ ic:'👃', t:'Epistaxis', rows:[
+      [{t:'s',id:'side',lbl:'Side',req:1,o:['Right','Left','Bilateral']},{t:'s',id:'type',lbl:'Type',o:['Anterior','Posterior','Unable to determine']}],
+      [{t:'s',id:'initial',lbl:'Initial Management',o:['Direct pressure 15 min','Afrin spray','Silver nitrate cautery','Surgicel/gelfoam']},{t:'s',id:'packing',lbl:'Packing',req:1,o:['Rhino Rocket — anterior','Merocel sponge','Rapid Rhino','Posterior Foley balloon','Posterior pack — ENT','None — cautery sufficient']}],
+      {t:'s',id:'abx',lbl:'Antibiotics',o:['None','Amox-clav (if packed)','Cephalexin']},
+      {t:'s',id:'fu',lbl:'Follow-Up',o:['ENT 24-48h','ENT emergent','PCP 3-5d','Return if rebleed']},
+      {t:'a',id:'addl',lbl:'Notes'},
+    ]}],
+  },
+  cantho: { name:'Lateral Canthotomy', ico:'👁️', sub:'Orbital compartment decompression', risk:'high', tips:'IOP >40 or clinical signs; time-critical — do not wait for ophth',
+    secs:[{ ic:'👁️', t:'Canthotomy', rows:[
+      {t:'tip',cls:'rd',txt:'⚠️ Time-critical procedure — do not delay for imaging or consult.'},
+      [{t:'s',id:'side',lbl:'Eye',req:1,o:['Right','Left']},{t:'s',id:'ind',lbl:'Indication',req:1,o:['Retrobulbar hemorrhage — trauma','IOP >40 — orbital compartment','Proptosis + vision loss','Afferent pupillary defect']}],
+      [{t:'i',id:'iop_pre',lbl:'IOP Pre',ph:'52 mmHg'},{t:'s',id:'anes',lbl:'Anesthetic',o:['Lido 1% w/ epi','None — emergent']},{t:'i',id:'iop_post',lbl:'IOP Post',ph:'18 mmHg'}],
+      {t:'c',id:'exam',lbl:'Post Exam',o:['*Vision assessed','*IOP remeasured','*Pupil reactivity checked','*Ophthalmology called']},
+      {t:'a',id:'addl',lbl:'Notes'},
+    ]}],
+  },
+  sed: { name:'Procedural Sedation', ico:'💤', sub:'Conscious sedation', risk:'mod', tips:'Ketamine preferred in ED; capnography for deep; discharge criteria met',
     secs:[
-      {ic:'🔬',t:'Indication & Consent',rows:[
-        [{t:'c',id:'ind',lbl:'Indication',req:1,o:['Rule out subarachnoid hemorrhage','Rule out meningitis/encephalitis','CNS infection evaluation','Therapeutic (IIH)','Demyelinating disease workup']},{t:'s',id:'ct',lbl:'Pre-LP CT Head',req:1,o:['CT obtained — no contraindications','CT obtained — normal, LP safe','CT not required (GCS 15, no focal deficits)','CT contraindicated — LP proceeded']}],
-        {t:'c',id:'cons',lbl:'Consent',o:['*Risks/benefits discussed','*Consent obtained','Emergency — waived']}
+      { ic:'💤', t:'Pre-Sedation', rows:[
+        [{t:'i',id:'ind',lbl:'Indication',req:1,ph:'Shoulder reduction'},{t:'s',id:'asa',lbl:'ASA',o:['I — healthy','II — mild systemic','III — severe','IV — life-threatening']}],
+        [{t:'s',id:'npo',lbl:'NPO',o:['Emergency — N/A','NPO >8h','NPO >6h','Not NPO — risk discussed']},{t:'s',id:'aw',lbl:'Airway',o:['No difficulty','Potentially difficult','VL at bedside']}],
       ]},
-      {ic:'🩺',t:'Procedure Details',rows:[
-        [{t:'s',id:'pos',lbl:'Position',o:['Lateral decubitus — fetal','Seated — leaning forward']},{t:'s',id:'lvl',lbl:'Level',req:1,o:['L3-L4 interspace','L4-L5 interspace','L2-L3 interspace']},{t:'s',id:'ndl',lbl:'Needle',o:['20G Quincke (cutting)','22G Quincke','22G Sprotte (atraumatic)','24G Sprotte (atraumatic)']}],
-        [{t:'s',id:'att',lbl:'Attempts',req:1,o:['1 attempt — successful','2 attempts — successful','3 attempts — successful','Failed — US guidance used','Failed — IR referral']},{t:'s',id:'guid',lbl:'Guidance',o:['Landmark technique','Ultrasound guidance','Fluoroscopy guidance']}],
-        [{t:'i',id:'op',lbl:'Opening Pressure',req:1,ph:'e.g., 18 cmH₂O'},{t:'s',id:'csf',lbl:'CSF Appearance',req:1,o:['Clear and colorless','Xanthochromic (yellow-tinged)','Bloody — clearing with successive tubes','Uniformly bloody — all four tubes','Turbid / cloudy']}]
+      { ic:'💊', t:'Medications', rows:[
+        [{t:'s',id:'agent',lbl:'Agent',req:1,o:['Ketamine 1-1.5 mg/kg IV','Ketamine 4 mg/kg IM','Propofol 1 mg/kg IV','Midazolam + Fentanyl','Etomidate 0.1-0.15 mg/kg']},{t:'i',id:'dose',lbl:'Dose Given',ph:'Ketamine 100mg IV'}],
+        [{t:'s',id:'slvl',lbl:'Level',o:['Minimal','Moderate','Deep','Dissociative']},{t:'i',id:'dur',lbl:'Duration',ph:'15 min'}],
       ]},
-      {ic:'🧪',t:'CSF Studies & Post-Procedure',rows:[
-        {t:'c',id:'tubes',lbl:'Tubes Collected',o:['*Tube 1 — Cell count + diff','*Tube 2 — Protein/glucose','*Tube 3 — Culture/gram stain','*Tube 4 — Repeat cell count','HSV PCR','Crypto antigen','VDRL']},
-        {t:'c',id:'comp',lbl:'Complications',o:['*No complications','Traumatic tap — RBCs noted','Post-LP headache anticipated']},
-        {t:'a',id:'addl',lbl:'Notes',ph:'Procedure performed under sterile technique. Patient tolerated well…'}
-      ]}
-    ]
+      { ic:'✅', t:'Recovery', rows:[
+        {t:'c',id:'rec',lbl:'Recovery',o:['*Returned to baseline','*SpO₂ on RA','*No adverse events']},
+        {t:'a',id:'addl',lbl:'Outcome',ph:'Reduction successful…'},
+      ]},
+    ],
   },
-  cl: { name:'Central Line Placement', ico:'🩺', sub:'Central venous catheter insertion note', tips:'Missing fields, US guidance standard of care for IJ/subclavian, CXR required for tip position and no pneumothorax, full barrier sterile precautions',
+  arth: { name:'Arthrocentesis', ico:'🦵', sub:'Joint aspiration', risk:'mod', tips:'WBC >50k = septic (no steroid); urate = gout; CPPD = pseudogout',
+    secs:[{ ic:'🦵', t:'Arthrocentesis', rows:[
+      [{t:'s',id:'joint',lbl:'Joint',req:1,o:['R knee','L knee','R ankle','L ankle','R wrist','L wrist','R elbow','L elbow','R shoulder','L shoulder']},{t:'s',id:'ind',lbl:'Indication',req:1,o:['R/O septic','Gout/pseudogout','Diagnostic','Therapeutic','Hemarthrosis']}],
+      [{t:'i',id:'vol',lbl:'Volume',ph:'35 mL'},{t:'s',id:'app',lbl:'Appearance',req:1,o:['Clear/straw','Yellow turbid','Purulent','Bloody','Chalky white']}],
+      {t:'c',id:'labs',lbl:'Studies',o:['*Cell count + diff','*Crystal analysis','*Gram stain + culture','Glucose/protein']},
+      {t:'s',id:'ster',lbl:'Steroid',o:['None — septic not excluded','Methylpred 40mg','Triamcinolone 40mg','Betamethasone 6mg']},
+      {t:'a',id:'addl',lbl:'Notes'},
+    ]}],
+  },
+  digblk: { name:'Digital Nerve Block', ico:'💉', sub:'Finger/toe digital block', risk:'low', tips:'Ring block at base; do NOT use epi; onset 3-5 min',
+    secs:[{ ic:'💉', t:'Block', rows:[
+      [{t:'i',id:'digit',lbl:'Digit',req:1,ph:'R ring finger'},{t:'s',id:'anes',lbl:'Anesthetic',req:1,o:['Lido 1% plain','Lido 2% plain','Bupivacaine 0.25%']},{t:'i',id:'vol',lbl:'Volume',ph:'2 mL each side'}],
+      {t:'s',id:'tech',lbl:'Technique',o:['Ring block — web space','Transthecal','Metacarpal block']},
+      {t:'c',id:'conf',lbl:'Confirmation',o:['*Sensation diminished','*No blanching','*Adequate anesthesia']},
+      {t:'a',id:'addl',lbl:'Notes'},
+    ]}],
+  },
+  burn: { name:'Burn Assessment & Care', ico:'🔥', sub:'Burn evaluation and wound care', risk:'mod', tips:"Rule of 9s for BSA; Parkland formula 4mL/kg/%BSA; escharotomy for circumferential",
+    secs:[{ ic:'🔥', t:'Burn', rows:[
+      [{t:'i',id:'mech',lbl:'Mechanism',req:1,ph:'Grease splash, house fire'},{t:'s',id:'degree',lbl:'Degree',req:1,o:['Superficial (1st)','Partial thickness — superficial (2nd)','Partial thickness — deep (2nd)','Full thickness (3rd)','4th degree']}],
+      [{t:'i',id:'bsa',lbl:'TBSA %',req:1,ph:'12%'},{t:'i',id:'locations',lbl:'Locations',ph:'R forearm, R hand, anterior chest'}],
+      {t:'c',id:'mgmt',lbl:'Management',o:['*IV access — fluid resuscitation','*Parkland formula calculated','*Wound cleaned/debrided','*Silvadene applied','*Non-adherent dressing','*Tetanus updated','*Pain management']},
+      {t:'s',id:'dispo',lbl:'Disposition',o:['Outpatient — wound care','Burn center transfer','Admit — IV fluids','Admit — OR debridement']},
+      {t:'a',id:'addl',lbl:'Notes'},
+    ]}],
+  },
+  dth: { name:'Death Pronouncement', ico:'📋', sub:'Clinical death note', risk:'low', tips:'Time; exam; all notifications; ME for unwitnessed/trauma',
     secs:[
-      {ic:'🩺',t:'Indication & Site',rows:[
-        {t:'c',id:'ind',lbl:'Indication',req:1,o:['No peripheral access','Hemodynamic monitoring','Vasopressor administration','Rapid volume resuscitation','Transvenous pacing','Caustic medications']},
-        [{t:'s',id:'site',lbl:'Site',req:1,o:['Right internal jugular (R IJ)','Left internal jugular (L IJ)','Right subclavian','Left subclavian','Right femoral','Left femoral']},{t:'s',id:'cath',lbl:'Catheter Type',o:['Triple lumen CVC','Double lumen CVC','Single lumen CVC','Introducer sheath (Cordis)','Dialysis catheter (Shiley)']}]
+      { ic:'🕐', t:'Circumstances', rows:[
+        [{t:'dt',id:'time',lbl:'Date & Time',req:1},{t:'s',id:'circ',lbl:'Circumstances',req:1,o:['Arrest — resuscitated','Arrest — DNR','Expected — comfort','Traumatic','Natural death']}],
+        {t:'c',id:'res',lbl:'Resuscitation',o:['Full','Terminated ACLS','DNR — not initiated','Comfort measures']},
       ]},
-      {ic:'🔊',t:'Technique & Insertion',rows:[
-        {t:'tip',cls:'rd',txt:'⚠️ High-risk. Document US guidance, attempts, confirmation, and post-placement CXR.'},
-        [{t:'s',id:'us',lbl:'Ultrasound Guidance',req:1,o:['Real-time US guidance throughout','US for localization, landmark insertion','Landmark technique only']},{t:'s',id:'pat',lbl:'Venous Patency by US',o:['Yes — compressible, no thrombus','Not assessed']}],
-        [{t:'s',id:'att',lbl:'Attempts',req:1,o:['1 attempt — successful','2 attempts — successful','3 attempts — successful','Failed — alternate site']},{t:'s',id:'wire',lbl:'Wire Pass',o:['Guidewire passed without resistance','Resistance — repositioned, passed']},{t:'i',id:'depth',lbl:'Catheter Depth (cm)',ph:'e.g., 15 cm at skin'}],
-        {t:'c',id:'lum',lbl:'All Lumens Patent',o:['*All ports flush/aspirate','*Secured with suture','*Sterile dressing applied']}
+      { ic:'🔬', t:'Exam', rows:[{t:'c',id:'exam',lbl:'Findings',req:1,o:["*Pupils fixed/dilated","*No resp effort","*Asystole","*No pulse","*No pain response","*Corneal reflex absent","Rigor mortis","Lividity"]}]},
+      { ic:'👥', t:'Notifications', rows:[
+        {t:'c',id:'fam',lbl:'Family',req:1,o:['Present','Notified phone','Social work','Chaplain','Unable to reach']},
+        {t:'c',id:'notif',lbl:'Required',o:['Attending notified','ME/Coroner','ME declined','OPO','Death cert']},
+        {t:'a',id:'addl',lbl:'Notes'},
       ]},
-      {ic:'✅',t:'Confirmation & Complications',rows:[
-        {t:'c',id:'conf',lbl:'Position Confirmation',req:1,o:['*CXR — tip at SVC/RA junction','*No pneumothorax on CXR','*Venous blood confirmed']},
-        {t:'c',id:'comp',lbl:'Complications',o:['*No complications','Arterial puncture — recognized/managed','Pneumothorax — chest tube placed','Hematoma at insertion site']},
-        {t:'a',id:'addl',lbl:'Notes',ph:'Sterile technique maintained. Patient tolerated well…'}
-      ]}
-    ]
-  },
-  ct: { name:'Chest Tube', ico:'🫁', sub:'Tube thoracostomy procedure note', tips:'Missing fields, safe triangle (4th/5th ICS anterior axillary line), needle decompression before chest tube for tension PTX, CXR with lung re-expansion mandatory',
-    secs:[{ic:'🫁',t:'Indication & Details',rows:[
-      {t:'tip',cls:'rd',txt:'⚠️ High complication risk. Document all landmarks, confirmation, and drainage clearly.'},
-      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Pneumothorax — simple','Pneumothorax — tension (needle decompressed first)','Hemothorax','Hemopneumothorax','Empyema','Pleural effusion — symptomatic']},{t:'s',id:'side',lbl:'Side',req:1,o:['Right','Left']}],
-      [{t:'s',id:'fr',lbl:'Tube Size (Fr)',o:['28 Fr','32 Fr','36 Fr','40 Fr','14 Fr pigtail']},{t:'s',id:'site',lbl:'Insertion Site',o:['4th/5th ICS anterior axillary line (triangle of safety)','2nd ICS midclavicular (emergent PTX)','Posterior approach']},{t:'s',id:'anes',lbl:'Anesthetic',o:['Lidocaine 1% w/ epi — local','Lidocaine 2% — liberal infiltration','Procedural sedation (see separate note)']}],
-      [{t:'i',id:'drain',lbl:'Drainage Output',ph:'e.g., 400 mL serosanguineous; air rush immediately'},{t:'s',id:'suct',lbl:'Suction',o:['-20 cmH₂O water-seal suction','Water seal only','Heimlich valve']}],
-      {t:'c',id:'conf',lbl:'Confirmation',o:['*CXR — position confirmed','*Lung re-expanded on CXR','*Secured with suture','*Occlusive dressing']},
-      {t:'a',id:'addl',lbl:'Notes',ph:'Tube in pleural space, draining well. Respiratory status improved…'}
-    ]}]
-  },
-  cv: { name:'Cardioversion', ico:'⚡', sub:'Synchronized electrical cardioversion note', tips:'Missing fields, synchronized cardioversion mode documented, anticoagulation management if AFib >48h or unknown onset, energy (AFib 120-200J biphasic, VT 100J, flutter 50-100J)',
-    secs:[
-      {ic:'⚡',t:'Indication & Pre-Procedure',rows:[
-        [{t:'s',id:'ind',lbl:'Indication / Rhythm',req:1,o:['AFib — unstable (hemodynamic compromise)','AFib — stable, rate uncontrolled, elective','Atrial flutter','SVT — refractory to Adenosine','VT — with pulse','VT — unstable']},{t:'s',id:'dur',lbl:'Duration of Dysrhythmia',o:['<48 hours — no anticoagulation required','>48h or unknown — anticoagulation discussed','Hemodynamic instability — emergent']}],
-        {t:'i',id:'previt',lbl:'Pre-Procedure Vitals',ph:'e.g., BP 82/54, HR 148, SpO₂ 91%'}
-      ]},
-      {ic:'💊',t:'Sedation & Procedure',rows:[
-        [{t:'s',id:'sed',lbl:'Sedation',o:['Midazolam 2mg IV + Fentanyl 50mcg IV','Etomidate 0.2 mg/kg IV','Propofol 1 mg/kg IV','Ketamine 0.5–1 mg/kg IV','None — immediate life threat']},{t:'i',id:'sed_dose',lbl:'Sedation Dose Given',ph:'e.g., Midazolam 2mg IV'}],
-        [{t:'i',id:'j1',lbl:'Shock 1 — Joules',req:1,ph:'e.g., 100J biphasic'},{t:'s',id:'r1',lbl:'Result',o:['Sinus rhythm restored','No change','Partially effective']},{t:'i',id:'j2',lbl:'Shock 2 (if needed)',ph:'e.g., 200J'}],
-        [{t:'s',id:'postrhythm',lbl:'Post-Cardioversion Rhythm',req:1,o:['Normal sinus rhythm','Sinus bradycardia','Junctional rhythm — transient','Persistent AFib','VF — defibrillated immediately']},{t:'i',id:'postvit',lbl:'Post-Cardioversion Vitals',ph:'e.g., BP 118/72, HR 78, SpO₂ 98%'}],
-        {t:'a',id:'addl',lbl:'Notes',ph:'Patient tolerated well. Skin burns not noted at pad sites…'}
-      ]}
-    ]
-  },
-  par: { name:'Paracentesis', ico:'💧', sub:'Abdominal paracentesis procedure note', tips:'Missing fields, SBP if PMN >250 cells/mm³ (empiric antibiotics), albumin 6-8g/L for >5L removal, US guidance reduces complications',
-    secs:[{ic:'💧',t:'Indication & Details',rows:[
-      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Diagnostic — rule out SBP','Therapeutic — symptomatic relief','Both diagnostic and therapeutic']},{t:'s',id:'site',lbl:'Site',o:['LLQ (lateral to rectus, US-guided)','RLQ','Midline infraumbilical (landmark)']}],
-      {t:'s',id:'us',lbl:'Ultrasound Used',req:1,o:['Real-time US guidance throughout','US for pocket ID, landmark insertion','Landmark technique only']},
-      [{t:'i',id:'vol',lbl:'Volume Removed',ph:'e.g., 4.5 L'},{t:'s',id:'app',lbl:'Fluid Appearance',req:1,o:['Clear yellow (transudative)','Turbid / cloudy (exudative/SBP)','Bloody (hemoperitoneum)','Milky (chylous ascites)']}],
-      {t:'c',id:'labs',lbl:'Studies Sent',o:['*Cell count + diff','*Protein, albumin, LDH','*Gram stain + culture','Glucose, amylase','Cytology']},
-      {t:'s',id:'alb',lbl:'Albumin Replacement',o:['Not indicated — diagnostic / <5L','Albumin 25% given — 6–8g/L removed','Normal saline used']},
-      {t:'c',id:'comp',lbl:'Complications',o:['*No complications','Bloody tap','Persistent leak']},
-      {t:'a',id:'addl',lbl:'Notes',ph:'Patient tolerated well…'}
-    ]}]
-  },
-  arth: { name:'Arthrocentesis', ico:'🦵', sub:'Joint aspiration procedure note', tips:'Missing fields, WBC >50k = septic (no steroid until cultures), urate crystals negatively birefringent (gout) vs rhomboid positively birefringent (pseudogout)',
-    secs:[{ic:'🦵',t:'Joint & Indication',rows:[
-      [{t:'s',id:'joint',lbl:'Joint',req:1,o:['Right knee','Left knee','Right ankle','Left ankle','Right wrist','Left wrist','Right elbow','Left elbow','Right shoulder','Left shoulder']},{t:'s',id:'ind',lbl:'Indication',req:1,o:['Rule out septic arthritis','Gout / pseudogout evaluation','Diagnostic — undiagnosed effusion','Therapeutic — pain relief','Hemarthrosis evaluation']}],
-      [{t:'i',id:'vol',lbl:'Volume Aspirated',ph:'e.g., 35 mL'},{t:'s',id:'app',lbl:'Fluid Appearance',req:1,o:['Clear / straw-colored (normal)','Yellow, slightly turbid (inflammatory)','Opaque / purulent (septic vs crystals)','Bloody (hemarthrosis)','Chalky white (tophaceous gout)']}],
-      {t:'c',id:'labs',lbl:'Studies Sent',o:['*Cell count + diff','*Crystal analysis (polarized microscopy)','*Gram stain + culture','Glucose, protein']},
-      {t:'s',id:'ster',lbl:'Steroid Injection',o:['None — septic arthritis not yet excluded','Methylprednisolone acetate 40mg injected','Triamcinolone 40mg injected','Betamethasone 6mg injected']},
-      {t:'a',id:'addl',lbl:'Notes',ph:'Needle entered joint with ease…'}
-    ]}]
-  },
-  fast: { name:'FAST Exam', ico:'🔊', sub:'Focused assessment with sonography in trauma', tips:'All 4 (or 6 eFAST) views documented, action for positive FAST (surgery/CT/OR), FAST sensitivity ~80% (negative FAST does not exclude solid organ injury)',
-    secs:[{ic:'🔊',t:'FAST Exam Documentation',rows:[
-      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Blunt abdominal trauma','Penetrating abdominal trauma','Hypotension — unknown cause','Rib fractures / chest trauma','Extended FAST (eFAST)']},{t:'i',id:'ctx',lbl:'Clinical Context',ph:'e.g., MVC, restrained driver, hypotensive on arrival'}],
-      [{t:'s',id:'ruq',lbl:"RUQ (Morison's Pouch)",req:1,o:['Negative — no free fluid','Positive — free fluid present','Indeterminate — limited view']},{t:'s',id:'luq',lbl:'LUQ (Splenorenal)',req:1,o:['Negative — no free fluid','Positive — free fluid present','Indeterminate — limited view']}],
-      [{t:'s',id:'pelv',lbl:'Pelvic (Pouch of Douglas)',req:1,o:['Negative — no free fluid','Positive — free fluid present','Indeterminate']},{t:'s',id:'card',lbl:'Subxiphoid (Cardiac)',req:1,o:['Negative — no pericardial effusion','Positive — pericardial effusion','Indeterminate']}],
-      [{t:'s',id:'rlung',lbl:'Right Pleural (eFAST)',o:['Not assessed','Negative — lung sliding present','Positive — absent lung sliding (PTX)','Right pleural effusion']},{t:'s',id:'llung',lbl:'Left Pleural (eFAST)',o:['Not assessed','Negative — lung sliding present','Positive — absent lung sliding (PTX)','Left pleural effusion']}],
-      {t:'s',id:'result',lbl:'Overall FAST Result',req:1,o:['NEGATIVE FAST — no free fluid or pericardial effusion','POSITIVE FAST — free fluid identified','INDETERMINATE — cannot exclude injury']},
-      {t:'s',id:'disp',lbl:'Clinical Disposition',o:['CT abdomen/pelvis with contrast ordered','Emergent surgery — positive FAST + hemodynamic instability','Serial abdominal exams — negative FAST, stable','Repeat FAST in 30 minutes','Pericardiocentesis — cardiac tamponade']},
-      {t:'a',id:'addl',lbl:'Notes'}
-    ]}]
-  },
-  dth: { name:'Death Pronouncement', ico:'📋', sub:'Pronouncement of death — clinical note', tips:'Time, exam findings, all notifications; ME/coroner required for unwitnessed/trauma/unclear cause/<24h admission; OPO must be notified in most deaths',
-    secs:[
-      {ic:'🕐',t:'Time & Circumstances',rows:[
-        {t:'tip',cls:'am',txt:'📋 This note documents pronouncement of death. Include time, clinical findings, family notification, and required administrative notifications.'},
-        [{t:'dt',id:'time',lbl:'Date & Time of Pronouncement',req:1},{t:'s',id:'circ',lbl:'Circumstances',req:1,o:['Cardiac arrest — resuscitation attempted','Cardiac arrest — DNR/DNI, not attempted','Cardiac arrest — prehospital ROSC, subsequent death','Expected death — terminal illness / comfort care','Traumatic arrest','Apparent natural death']}],
-        {t:'c',id:'res',lbl:'Resuscitative Efforts',o:['Full resuscitation attempted','Terminated per ACLS protocol','DNR on file — not initiated','Comfort measures only']},
-        {t:'i',id:'rdur',lbl:'Resuscitation Duration (if attempted)',ph:'e.g., 35 minutes ACLS, 10 cycles CPR'}
-      ]},
-      {ic:'🔬',t:'Clinical Examination Findings',rows:[
-        {t:'c',id:'exam',lbl:'Examination at Pronouncement',req:1,o:['*Pupils fixed and dilated bilaterally','*No spontaneous respiratory effort','*Asystole confirmed on monitor','*No pulse (carotid + femoral)','*No response to painful stimulus','*Corneal reflex absent','Rigor mortis present','Dependent lividity present']},
-        {t:'s',id:'rhythm',lbl:'Rhythm at Time of Death',o:['Asystole','PEA — flat line','Ventricular fibrillation — refractory','Pulseless VT — refractory']}
-      ]},
-      {ic:'👥',t:'Notifications & Administrative',rows:[
-        {t:'c',id:'fam',lbl:'Family Notification',req:1,o:['Family present at time of death','Family notified by phone','Social work notified','Chaplain notified','Family unable to be reached']},
-        {t:'c',id:'notif',lbl:'Required Notifications',o:['Attending physician notified','ME/Coroner notified','ME declined jurisdiction','OPO notified','Death certificate initiated']},
-        [{t:'i',id:'cod',lbl:'Primary Cause of Death',ph:'e.g., Cardiac arrest due to acute MI'},{t:'i',id:'contrib',lbl:'Contributing Conditions',ph:'e.g., CAD, HTN, DM2'}],
-        {t:'a',id:'addl',lbl:'Notes',ph:'All resuscitative efforts exhausted. Family expressed understanding…'}
-      ]}
-    ]
-  },
-  cryo: { name:'Cricothyrotomy', ico:'🌬️', sub:'Emergency surgical airway procedure', tips:'Last resort — failed intubation/obstruction, not routine; landmark vs palpation technique, TT tube size (6.0-6.5), CXR + bronchoscopy post-placement mandatory',
-    secs:[
-      {ic:'🌬️',t:'Indication & Pre-Procedure',rows:[
-        {t:'tip',cls:'rd',txt:'⚠️ Emergency surgical airway. Document failed intubation attempts, obstruction type, and backup plans exhausted.'},
-        [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Airway obstruction — cannot intubate','Failed intubation ≥2 attempts','Facial trauma / massive edema','Epiglottitis refractory to medical management','Severe angioedema','Post-operative airway loss']},{t:'s',id:'method',lbl:'Technique',req:1,o:['Landmark palpation — cricothyroid membrane identified','Ultrasound guidance','Scalpel incision — classic','Needle/cannula approach']}],
-        {t:'i',id:'prespo2',lbl:'SpO₂ Prior to Attempt',ph:'e.g., 78%'},
-        {t:'c',id:'prep',lbl:'Preparation',o:['*Surgeon present / on call','*Operating room alerted','*Tracheostomy kit available','*Blood products ordered']}
-      ]},
-      {ic:'🔪',t:'Procedure Details',rows:[
-        [{t:'i',id:'location',lbl:'Incision Location',ph:'Cricothyroid membrane'},{t:'i',id:'size',lbl:'Incision Size',ph:'e.g., 10-15mm'}],
-        [{t:'s',id:'blade',lbl:'Blade/Scalpel',o:['#11 blade — needle approach','#15 blade — surgical approach','Scalpel for open technique']},{t:'s',id:'tube',lbl:'Airway Tube Size',o:['6.0 endotracheal tube','6.5 endotracheal tube','Tracheostomy tube (later conversion)']},{t:'s',id:'conf',lbl:'Confirmation',o:['Bilateral breath sounds ✓','Capnography positive ✓','Chest rise bilaterally','Tube secured + taped']}]
-      ]},
-      {ic:'✅',t:'Post-Procedure',rows:[
-        {t:'c',id:'post',lbl:'Post-Cricothyrotomy',o:['*CXR ordered — tip position','*Bronchoscopy scheduled','*Anesthesia / ICU notified','*Tracheostomy planned within 24h']},
-        {t:'c',id:'comp',lbl:'Complications',o:['*No complications','Subglottic stenosis risk','Laryngeal injury','Tracheal stenosis']},
-        {t:'a',id:'addl',lbl:'Notes',ph:'Airway secured in extremis. Tracheostomy consultation ongoing…'}
-      ]}
-    ]
-  },
-  npa: { name:'Nasopharyngeal Airway', ico:'👃', sub:'Nasopharyngeal airway (NPA) insertion', tips:'Size appropriate for patient (typically 6-8 French), tube obstruction post-insertion, avoid if basilar skull fracture/massive epistaxis, lubricated insertion technique',
-    secs:[{ic:'👃',t:'Airway Details & Insertion',rows:[
-      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Nasopharyngeal airway — awake patient','Anterior airway obstruction relief','Failed oral airway tolerance']},{t:'s',id:'size',lbl:'Tube Size (Fr)',req:1,o:['6 Fr — small/child','7 Fr — medium','8 Fr — large adult']}],
-      [{t:'s',id:'side',lbl:'Naris Selected',o:['Right naris','Left naris','Alternated']}],
-      [{t:'i',id:'depth',lbl:'Insertion Depth (cm)',ph:'Length from naris to angle of jaw'}],
-      {t:'c',id:'tech',lbl:'Technique',o:['*Lubricated with viscous lidocaine','*Gentle advancement — no force','*Bevel oriented posteriorly','*Patent after insertion']}
-    ]}]
-  },
-  opa: { name:'Oropharyngeal Airway', ico:'👄', sub:'Oropharyngeal airway (OPA) insertion', tips:'Correct sizing (tooth to angle of jaw), head-tilt/chin-lift position, avoid tongue trauma, patient must be unconscious/deeply sedated',
-    secs:[{ic:'👄',t:'Airway Details & Sizing',rows:[
-      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Unconscious patient — airway support','Apnea management','Post-sedation airway patent']},{t:'s',id:'size',lbl:'Size',req:1,o:['Small — child','Medium — average adult','Large — tall/large adult']}],
-      [{t:'i',id:'depth',lbl:'Insertion Depth (measured)',ph:'Angle of jaw to corner of mouth'},{t:'s',id:'tech',lbl:'Insertion Technique',req:1,o:['Tongue depressor down — direct insertion','Upside-down 180° rotation — classic method']}],
-      {t:'c',id:'check',lbl:'Confirmation',o:['*No gag reflex triggered','*Airway patent — air flows','*Tongue not occluded','*Bilateral breath sounds']}
-    ]}]
-  },
-  io: { name:'Intraosseous (IO) Access', ico:'💉', sub:'Intraosseous vascular access for resuscitation', tips:'Last resort for access — proximal humerus or proximal tibia standard, marrow aspiration before fluids, compartment syndrome risk if extravasation, labs/blood culture not reliable',
-    secs:[
-      {ic:'💉',t:'Indication & Site Selection',rows:[
-        {t:'tip',cls:'rd',txt:'⚠️ High-risk. Document failed peripheral access, patient age/anatomy, and post-placement confirmation.'},
-        [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Cardiac arrest — no IV access','Severe shock — failed peripheral access','Pediatric resuscitation','Burns — extensive access difficulty']},{t:'s',id:'site',lbl:'Site',req:1,o:['Proximal humerus — anterolateral','Proximal tibia — medial (preferred peds)','Distal tibia — alternative','Distal femur — alternative']}],
-        {t:'i',id:'att',lbl:'Attempts',ph:'e.g., 1 attempt successful'}
-      ]},
-      {ic:'🔧',t:'Procedure Details',rows:[
-        [{t:'s',id:'needle',lbl:'Needle Gauge',o:['15G — adult','18G — adult','20G — pediatric','25G — neonate']},{t:'s',id:'ang',lbl:'Angle of Insertion',ph:'90° perpendicular to bone surface'},{t:'s',id:'asp',lbl:'Marrow Aspiration',o:['Aspirate before fluids — confirm placement','Blood return achieved','No aspirate — still patent']}],
-        {t:'c',id:'conf',lbl:'Confirmation',o:['*Needle firm in bone','*Marrow aspirate obtained','*Free flow of fluid','*No extravasation']}
-      ]},
-      {ic:'✅',t:'Post-Placement',rows:[
-        {t:'s',id:'secure',lbl:'Securing',o:['Gauze + tape around needle','Keyed connector secured']},
-        {t:'c',id:'comp',lbl:'Complications & Follow-Up',o:['*No compartment syndrome','Osteomyelitis risk','Fracture risk in osteoporosis']},
-        {t:'a',id:'addl',lbl:'Notes',ph:'IO access secured for medication/fluid administration…'}
-      ]}
-    ]
-  },
-  art: { name:'Arterial Line Placement', ico:'🩸', sub:'Radial or femoral arterial line for hemodynamics', tips:'Radial preferred (collateral circulation via ulnar), Allen test before radial, femoral for resuscitation, waveform analysis mandatory, infection risk if >48h',
-    secs:[{ic:'🩸',t:'Indication & Site Selection',rows:[
-      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Continuous BP monitoring','Frequent lab draws / ABGs','Vasopressor infusion','Hemodynamic instability — need trending']},{t:'s',id:'site',lbl:'Site',req:1,o:['Radial artery','Femoral artery','Axillary artery (alternative)']}],
-      [{t:'s',id:'allen',lbl:'Allen Test (if radial)',o:['Positive — ulnar collateral patent','Negative — do not use radial','Not performed']},{t:'i',id:'size',lbl:'Catheter Size',ph:'e.g., 20G or 18G'}],
-      {t:'c',id:'us',lbl:'Technique',o:['*Ultrasound guidance','*Landmark palpation','*Waveform-assisted (Doppler)']}
-    ]}]
-  },
-  piv: { name:'Peripheral IV Access', ico:'💉', sub:'Peripheral intravenous line insertion', tips:'Two large-bore IVs standard for resuscitation, arm veins preferred (antecubital > wrist > hand), avoid lower extremities in abdominal trauma, assess for infiltration',
-    secs:[{ic:'💉',t:'IV Details & Placement',rows:[
-      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['IV access — medications/fluids','Resuscitation access','Blood draw access']},{t:'s',id:'gauge',lbl:'Gauge',req:1,o:['18G — large bore / resuscitation','20G — standard','22G — peds / difficult access']}],
-      [{t:'s',id:'site',lbl:'Site',req:1,o:['Antecubital fossa — preferred','Wrist / forearm vein','Hand — last resort','Lower extremity — avoid if abdominal trauma']},{t:'i',id:'att',lbl:'Attempts',ph:'e.g., 1 attempt successful'}],
-      {t:'c',id:'conf',lbl:'Confirmation',o:['*Blood return on needle pull-back','*Fluid infuses without resistance','*No swelling around site','*Secured with securement device']}
-    ]}]
-  },
-  ngt: { name:'Nasogastric Tube', ico:'🧴', sub:'Nasogastric tube (NGT) insertion for decompression/feeds', tips:'Size 16-18 Fr standard, pH <6 confirms gastric placement, CXR if any doubt, tube obstruction/ileus common, contraindicated in basilar skull fracture',
-    secs:[{ic:'🧴',t:'Indication & Tube Selection',rows:[
-      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Gastric decompression — ileus','Aspiration risk — NPO patient','Medication administration','Enteral feeding — long-term']},{t:'s',id:'size',lbl:'Tube Size (Fr)',o:['14 Fr — small / pediatric','16 Fr — standard adult','18 Fr — large adult / suction']}],
-      [{t:'s',id:'side',lbl:'Naris Selected',o:['Right naris','Left naris','Route: oral (if nasal contraindicated)']}]
-    ]},
-    {ic:'✅',t:'Placement & Confirmation',rows:[
-      [{t:'i',id:'depth',lbl:'Insertion Depth (cm)',ph:'e.g., 50cm at naris'},{t:'s',id:'conf',lbl:'Confirmation',req:1,o:['*Gastric aspirate obtained','*pH <6 on aspirate','*CXR — tube position confirmed','*Auscultation — air in stomach']}],
-      {t:'c',id:'comp',lbl:'Complications',o:['*No complications','Right mainstem (rare)','Sinusitis risk']},
-      {t:'a',id:'addl',lbl:'Notes',ph:'Tube secured at naris. Gastrointestinal function being assessed…'}
-    ]}]
-  },
-  foley: { name:'Foley Catheter', ico:'🚽', sub:'Indwelling urinary catheter placement', tips:'18-22 Fr standard, aseptic technique mandatory, check for hematuria post-placement, monitor for UTI/urosepsis, daily assessment for removal',
-    secs:[{ic:'🚽',t:'Indication & Catheter Selection',rows:[
-      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Acute urinary retention','Sepsis — accurate I/Os','Hemodynamically unstable — UOP monitor','Burn / severe injury — fluid balance']},{t:'s',id:'size',lbl:'Catheter Size (Fr)',req:1,o:['16 Fr','18 Fr — standard','20 Fr','22 Fr — latex allergy patients']}],
-      {t:'s',id:'allergy',lbl:'Latex Allergy Status',o:['No allergy — standard catheter','Latex allergy — silicone catheter','Unknown — latex-free precautions']}
-    ]},
-    {ic:'✅',t:'Placement & Confirmation',rows:[
-      [{t:'c',id:'tech',lbl:'Technique',o:['*Sterile field maintained','*Betadine / chlorhexidine prep','*Straight shot — no resistance','*Urine return in bag']},{t:'i',id:'urine',lbl:'Urine Output at Insertion',ph:'e.g., 400 mL clear yellow'}],
-      {t:'s',id:'color',lbl:'Urine Color/Character',req:1,o:['Clear / pale yellow','Cloudy','Tea-colored (hemoglobinuria)','Bloody / gross hematuria']},
-      {t:'c',id:'comp',lbl:'Complications',o:['*No urethral trauma','*No hematuria','Inability to pass (retention/obstruction)','Bladder perforation']},
-      {t:'a',id:'addl',lbl:'Notes',ph:'Foley secured. Hourly UOP monitoring begun…'}
-    ]}]
-  },
-  resh: { name:'Resuscitative Hysterotomy', ico:'👶', sub:'Perimortem cesarean delivery for maternal resuscitation', tips:'Performed at ~4-5 min maternal cardiac arrest; left uterine displacement inadequate; increase CO if no return of spontaneous circulation; consider fetal prognosis post-delivery',
-    secs:[{ic:'👶',t:'Indication & Procedure',rows:[
-      {t:'tip',cls:'rd',txt:'⚠️ Emergency obstetric procedure. Document arrest time, hysterotomy indication, and fetal viability assessment.'},
-      [{t:'i',id:'gest',lbl:'Gestational Age',ph:'e.g., 32 weeks'},{t:'s',id:'ind',lbl:'Indication for Hysterotomy',req:1,o:['Maternal cardiac arrest >4 minutes unresponsive to ACLS','Severe uterine compression impeding CPR','Suspected placental abruption / obstetric emergency']}],
-      [{t:'i',id:'arrest_t',lbl:'Time of Maternal Arrest',ph:'HH:MM'},{t:'i',id:'hyst_t',lbl:'Time of Hysterotomy',ph:'HH:MM (interval)'},{t:'s',id:'outcome',lbl:'Maternal Response',o:['ROSC — return of spontaneous circulation','No ROSC — ongoing resuscitation','Died during hysterotomy']}]
-    ]},
-    {ic:'🍼',t:'Fetal Outcome',rows:[
-      [{t:'s',id:'fetal_out',lbl:'Fetal Status Post-Delivery',o:['Live birth — resuscitation initiated','Meconium staining — suctioning','Stillbirth','Unable to assess']}],
-      {t:'c',id:'comp',lbl:'Maternal Complications',o:['*No massive hemorrhage','Uterine atony — oxytocin','Placental abruption noted','Amniotic fluid embolism suspected']}
-    ]}]
-  },
-  fin: { name:'Finger Thoracostomy', ico:'⚡', sub:'Finger-directed thoracostomy for hemothorax/pneumothorax', tips:'Emergency procedure for unstable patients; finger thoracostomy bridges to chest tube; confirm placement — blood/air return; post-placement CXR required',
-    secs:[{ic:'⚡',t:'Indication & Procedure',rows:[
-      {t:'tip',cls:'rd',txt:'⚠️ Emergency trauma procedure. Document shock state, bilateral breath sounds, and clinical response.'},
-      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Massive hemothorax — hypotension','Tension pneumothorax unresponsive to needle decompression','Simultaneous hemopneumothorax']},{t:'s',id:'side',lbl:'Side',req:1,o:['Right','Left','Bilateral']}],
-      [{t:'s',id:'site',lbl:'Insertion Site',o:['4th/5th ICS anterior axillary line','5th ICS midaxillary line']},{t:'i',id:'outcome',lbl:'Fluid/Air Return',ph:'e.g., 500 mL blood; immediate air leak'},{t:'s',id:'resp',lbl:'Hemodynamic Response',o:['BP improved immediately','HR normalized','Breath sounds returned (pneumothorax)','No improvement — ongoing resuscitation']}]
-    ]},
-    {ic:'✅',t:'Post-Procedure',rows:[
-      {t:'c',id:'post',lbl:'Management',o:['*Chest tube placement scheduled','*Cross-matched blood ordered','*CXR ordered','*ICU admission']}
-    ]}]
-  },
-  esch: { name:'Escharotomy', ico:'🔥', sub:'Surgical incision through eschar for burn management', tips:'Circumferential burns — threat to limb perfusion; escharotomy within first 24h of burn; bloodless field (consider exsanguination); assess limb perfusion before/after',
-    secs:[{ic:'🔥',t:'Indication & Assessment',rows:[
-      [{t:'s',id:'ind',lbl:'Indication',req:1,o:['Circumferential deep burn — limb perfusion at risk','Circumferential thoracic burn — respiratory compromise','High-voltage electrical burn — compartment syndrome risk']},{t:'s',id:'side',lbl:'Extremity Affected',o:['Right upper extremity','Left upper extremity','Right lower extremity','Left lower extremity','Chest / abdomen']}],
-      {t:'c',id:'pre',lbl:'Pre-Escharotomy Assessment',o:['*Pulse present distal to eschar','*Capillary refill delayed / absent','*Pain / paresthesias documented','*Temperature gradient loss']}
-    ]},
-    {ic:'🔪',t:'Procedure & Outcome',rows:[
-      [{t:'s',id:'method',lbl:'Method',o:['Electrocautery / scalpel incision','Laser (if available)']},{t:'i',id:'length',lbl:'Incision Length',ph:'Full length of circumferential burn'},{t:'s',id:'depth',lbl:'Depth',o:['Through eschar only — fat layer visible','Full thickness burn — limited bleeding']}],
-      {t:'c',id:'post',lbl:'Post-Escharotomy Assessment',o:['*Distal pulses restored / improved','*Capillary refill normalized','*Pain / paresthesia improved','*Limb perfusion adequate']}
-    ]}]
+    ],
   },
 };
 
-const PROCEDURE_GROUPS = [
-  { label:'Wound & Soft Tissue', icon:'🩹', keys:['lac','iand','fb','wc'] },
-  { label:'Orthopedic', icon:'🦴', keys:['sp','red'] },
-  { label:'Airway Management', icon:'🌬️', keys:['intub','sed','cryo','npa','opa'] },
-  { label:'Vascular Access', icon:'💉', keys:['piv','art','io'] },
-  { label:'Thoracic', icon:'🫁', keys:['cl','ct','fin'] },
-  { label:'Procedures', icon:'🩺', keys:['lp','cv','par','arth','ngt','foley'] },
-  { label:'Trauma & Critical', icon:'⚡', keys:['fast','resh','esch'] },
-  { label:'Special Notes', icon:'📋', keys:['dth'] },
+/* ─── CATEGORIES ─────────────────────────────────────────────────── */
+const DEFAULT_CATS = [
+  { id:'wound',    name:'Wound & Soft Tissue', logo:'wound',    color:'#3b9eff', icon:'🩹', procs:['lac','iand'] },
+  { id:'airway',   name:'Airway',              logo:'airway',   color:'#ff6b6b', icon:'🌬️', procs:['intub','cryo','sed'] },
+  { id:'vascular', name:'Vascular Access',     logo:'vascular', color:'#9b6dff', icon:'💉', procs:['cl','piv','io'] },
+  { id:'thoracic', name:'Thoracic',            logo:'thoracic', color:'#ff9f43', icon:'🫁', procs:['ct'] },
+  { id:'cardiac',  name:'Cardiac',             logo:'cardiac',  color:'#e05555', icon:'❤️', procs:['cv'] },
+  { id:'procedure',name:'Procedures',          logo:'procedure',color:'#00d4ff', icon:'🩺', procs:['lp','fast','par','arth','foley','ngt'] },
+  { id:'ent',      name:'ENT & Eye',           logo:'ent',      color:'#f5c842', icon:'👃', procs:['epi','cantho'] },
+  { id:'nerve',    name:'Nerve Blocks',        logo:'nerve',    color:'#3dffa0', icon:'🦵', procs:['digblk'] },
+  { id:'trauma',   name:'Trauma & Critical',   logo:'trauma',   color:'#ff6b6b', icon:'⚡', procs:['burn','dth'] },
 ];
 
-const TABS = ['select','document','note'];
+const CAT_COLORS = ['#3b9eff','#00e5c0','#ff6b6b','#ff9f43','#f5c842','#9b6dff','#00d4ff','#3dffa0','#e05555','#00b4d8'];
+const CAT_ICONS  = ['🩹','🌬️','💉','🫁','🦴','🩺','⚡','📋','👁️','🦷','🦵','❤️','🧠','🔥','🔵','💧','👃','🔪'];
 
-// ─── Form Builder ─────────────────────────────────────────────────────────
-function FormField({ f, formData, setFormData }) {
-  const update = (val) => setFormData(p => ({ ...p, [f.id]: val }));
+const RC  = { high:'#ff6b6b', mod:'#ff9f43', low:'#00e5c0' };
+const RBG = { high:'rgba(255,107,107,.12)', mod:'rgba(255,159,67,.12)', low:'rgba(0,229,192,.08)' };
+const RBD = { high:'rgba(255,107,107,.3)',  mod:'rgba(255,159,67,.3)',  low:'rgba(0,229,192,.2)' };
+const RL  = { high:'HIGH RISK', mod:'MOD RISK', low:'' };
 
-  if (f.t === 'tip') return (
-    <div style={{ padding:'10px 14px', borderRadius:8, marginBottom:4, background: f.cls==='rd'?'rgba(255,71,87,.07)':'rgba(245,166,35,.07)', border:`1px solid ${f.cls==='rd'?'rgba(255,71,87,.3)':'rgba(245,166,35,.3)'}`, fontSize:12, color: f.cls==='rd'?'#ff8c96':'#f5c87a', lineHeight:1.6 }}>
-      {f.txt}
-    </div>
-  );
+/* ─── CSS ─────────────────────────────────────────────────────────── */
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap');
+.epn *,.epn *::before,.epn *::after{box-sizing:border-box;margin:0;padding:0}
+.epn{font-family:'DM Sans',sans-serif;font-size:14px;background:#050f1e;color:#e8f0fe;height:100%;width:100%;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.epn-top{flex-shrink:0;background:#081628;border-bottom:1px solid #1a3555;z-index:100}
+.epn-r1{height:44px;display:flex;align-items:center;padding:0 14px;gap:8px;border-bottom:1px solid rgba(26,53,85,.5)}
+.epn-r2{height:44px;display:flex;align-items:center;padding:0 14px;gap:8px;overflow:hidden}
+.epn-welcome{font-size:12px;color:#8aaccc;font-weight:500;white-space:nowrap}.epn-welcome strong{color:#e8f0fe}
+.epn-vsep{width:1px;height:20px;background:#1a3555;flex-shrink:0}
+.epn-stat{display:flex;align-items:center;gap:5px;background:#0e2544;border:1px solid #1a3555;border-radius:6px;padding:3px 10px}
+.epn-stat-v{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:#e8f0fe}.epn-stat-v.alert{color:#f5c842}
+.epn-stat-l{font-size:9px;color:#4a6a8a;text-transform:uppercase;letter-spacing:.04em}
+.epn-r1-right{margin-left:auto;display:flex;align-items:center;gap:6px}
+.epn-clock{background:#0e2544;border:1px solid #1a3555;border-radius:6px;padding:3px 10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#8aaccc}
+.epn-aion{display:flex;align-items:center;gap:4px;background:rgba(0,229,192,.08);border:1px solid rgba(0,229,192,.3);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;color:#00e5c0}
+.epn-aion-dot{width:6px;height:6px;border-radius:50%;background:#00e5c0;animation:epnaip 2s ease-in-out infinite}
+@keyframes epnaip{0%,100%{box-shadow:0 0 0 0 rgba(0,229,192,.4)}50%{box-shadow:0 0 0 5px rgba(0,229,192,0)}}
+.epn-newpt{background:#00e5c0;color:#050f1e;border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.epn-ptname{font-family:'Playfair Display',serif;font-size:14px;font-weight:600;color:#e8f0fe;white-space:nowrap}
+.epn-ptmeta{font-size:11px;color:#4a6a8a;white-space:nowrap}
+.epn-ptcc{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:#ff9f43;white-space:nowrap}
+.epn-vital{display:flex;align-items:center;gap:3px;font-family:'JetBrains Mono',monospace;font-size:10.5px;white-space:nowrap}
+.epn-vital .vl{color:#2e4a6a;font-size:9px}.epn-vital .vv{color:#8aaccc}
+.epn-vital .vv.abn{color:#ff6b6b;animation:epngr 2s ease-in-out infinite}
+@keyframes epngr{0%,100%{text-shadow:0 0 4px rgba(255,107,107,.4)}50%{text-shadow:0 0 10px rgba(255,107,107,.9)}}
+.epn-chtbadge{font-family:'JetBrains Mono',monospace;font-size:10px;background:#0e2544;border:1px solid #1a3555;border-radius:20px;padding:1px 8px;color:#00e5c0;white-space:nowrap}
+.epn-sbadge{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;white-space:nowrap}
+.epn-sbadge-m{background:rgba(255,107,107,.15);color:#ff6b6b;border:1px solid rgba(255,107,107,.3)}
+.epn-sbadge-r{background:rgba(0,229,192,.1);color:#00e5c0;border:1px solid rgba(0,229,192,.3)}
+.epn-acts{margin-left:auto;display:flex;align-items:center;gap:5px}
+.epn-body{display:flex;flex:1;overflow:hidden}
+.epn-sb{width:210px;flex-shrink:0;background:#081628;border-right:1px solid #1a3555;overflow-y:auto;padding:10px 8px;display:flex;flex-direction:column;gap:1px}
+.epn-sb::-webkit-scrollbar{width:4px}.epn-sb::-webkit-scrollbar-thumb{background:#1a3555;border-radius:2px}
+.epn-sblbl{font-size:9px;color:#2e4a6a;text-transform:uppercase;letter-spacing:.08em;padding:10px 8px 4px;font-weight:600}
+.epn-sblbl:first-child{padding-top:4px}
+.epn-sbitem{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:6px;cursor:pointer;transition:all .15s;border:1px solid transparent;font-size:12px;color:#8aaccc;user-select:none;text-decoration:none}
+.epn-sbitem:hover{background:#0e2544;border-color:#1a3555;color:#e8f0fe}
+.epn-sbitem.active{background:rgba(59,158,255,.1);border-color:rgba(59,158,255,.3);color:#3b9eff}
+.epn-sbdot{width:6px;height:6px;border-radius:50%;margin-left:auto;flex-shrink:0}
+.epn-sbdot.done{background:#00e5c0;box-shadow:0 0 5px rgba(0,229,192,.5)}
+.epn-sbdot.partial{background:#ff9f43;box-shadow:0 0 5px rgba(255,159,67,.5)}
+.epn-sbdot.empty{background:#1a3555}
+.epn-sbdiv{height:1px;background:#1a3555;margin:6px 4px}
+.epn-main{flex:1;overflow-y:auto;padding:18px 22px 30px;display:flex;flex-direction:column;gap:14px}
+.epn-main::-webkit-scrollbar{width:5px}.epn-main::-webkit-scrollbar-thumb{background:#1a3555;border-radius:3px}
+.epn-bot{flex-shrink:0;background:#081628;border-top:1px solid #1a3555;height:50px;display:flex;align-items:center;padding:0 16px;gap:8px}
+.epn-step-dots{display:flex;align-items:center;gap:4px;margin:0 auto}
+.epn-sdot{width:8px;height:8px;border-radius:50%;transition:all .2s;cursor:pointer;flex-shrink:0}
+.epn-sdot.done{background:#00e5c0}.epn-sdot.current{background:#3b9eff;width:10px;height:10px}
+.epn-sdot.partial{background:#ff9f43}.epn-sdot.empty{background:#4a6a8a}
+.epn-btn{padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;border:1px solid #1a3555;background:#0e2544;color:#8aaccc;font-family:'DM Sans',sans-serif;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.epn-btn:hover{border-color:#2a4f7a;color:#e8f0fe}.epn-btn:disabled{opacity:.35;pointer-events:none}
+.epn-btn-p{background:#00e5c0;color:#050f1e;border:none;font-weight:700;padding:5px 14px;border-radius:6px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.epn-btn-p:hover{filter:brightness(1.15)}
+.epn-btn-b{background:#3b9eff;color:white;border:none;font-weight:700;padding:5px 14px;border-radius:6px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.epn-btn-b:hover{filter:brightness(1.1)}
+.epn-btn-coral{background:rgba(255,107,107,.15);color:#ff6b6b;border:1px solid rgba(255,107,107,.3);border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.epn-page-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:#e8f0fe}
+.epn-page-sub{font-size:12px;color:#4a6a8a;margin-top:1px}
+.epn-cmdbar{position:relative;display:flex;align-items:center;gap:8px;background:#0e2544;border:1px solid #1a3555;border-radius:10px;padding:8px 14px;transition:border-color .2s}
+.epn-cmdbar:focus-within{border-color:#3b9eff;box-shadow:0 0 0 3px rgba(59,158,255,.08)}
+.epn-cmdinput{flex:1;background:none;border:none;color:#e8f0fe;font-size:13px;font-family:'DM Sans',sans-serif;outline:none}
+.epn-cmdinput::placeholder{color:#2e4a6a}
+.epn-cmdhint{font-family:'JetBrains Mono',monospace;font-size:10px;color:#2e4a6a;background:#081628;border:1px solid #1a3555;border-radius:4px;padding:1px 6px}
+.epn-cmdresults{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#081628;border:1px solid #1a3555;border-radius:10px;max-height:300px;overflow-y:auto;z-index:50;box-shadow:0 12px 40px rgba(0,0,0,.4)}
+.epn-cmdresults::-webkit-scrollbar{width:4px}.epn-cmdresults::-webkit-scrollbar-thumb{background:#1a3555;border-radius:2px}
+.epn-cmdresult{display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;border-bottom:1px solid rgba(26,53,85,.3)}
+.epn-cmdresult:last-child{border-bottom:none}.epn-cmdresult:hover{background:#0e2544}
+.epn-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#4a6a8a}
+.epn-bclink{cursor:pointer;color:#8aaccc;transition:color .15s}.epn-bclink:hover{color:#3b9eff}
+.epn-bcsep{color:#2e4a6a}.epn-bccur{color:#e8f0fe;font-weight:500}
+.epn-favbar{background:#0b1e36;border:1px solid #1a3555;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;overflow-x:auto}
+.epn-favbar::-webkit-scrollbar{height:3px}.epn-favbar::-webkit-scrollbar-thumb{background:#1a3555;border-radius:2px}
+.epn-favchip{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;cursor:pointer;background:#0e2544;border:1px solid #1a3555;transition:all .2s;white-space:nowrap;flex-shrink:0}
+.epn-favchip:hover{border-color:#2a4f7a}
+.epn-catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px}
+.epn-cattile{position:relative;border-radius:14px;cursor:pointer;border:1.5px solid #1a3555;overflow:hidden;transition:all .25s;display:flex;flex-direction:column;align-items:center;padding:20px 10px 14px;gap:8px;background:#0b1e36}
+.epn-cattile:hover{border-color:#2a4f7a;transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,0,0,.3)}
+.epn-cattile.active{border-color:#3b9eff;box-shadow:0 0 0 1px #3b9eff,0 8px 28px rgba(59,158,255,.15)}
+.epn-cattile.add{border-style:dashed;border-color:#2e4a6a;background:transparent}
+.epn-cattile.add:hover{border-color:#3b9eff;background:rgba(59,158,255,.04)}
+.epn-ctglow{position:absolute;top:-30px;left:50%;transform:translateX(-50%);width:100px;height:60px;border-radius:50%;filter:blur(30px);opacity:.25;pointer-events:none;transition:opacity .3s}
+.epn-cattile:hover .epn-ctglow{opacity:.45}
+.epn-ctlogo{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;transition:transform .2s}
+.epn-cattile:hover .epn-ctlogo{transform:scale(1.08)}
+.epn-ctname{font-size:12px;font-weight:600;color:#e8f0fe;text-align:center;line-height:1.3;z-index:1}
+.epn-ctcount{font-family:'JetBrains Mono',monospace;font-size:9px;color:#4a6a8a;background:#0e2544;border:1px solid #1a3555;border-radius:10px;padding:1px 7px;z-index:1}
+.epn-ctedit{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:6px;display:none;align-items:center;justify-content:center;font-size:11px;background:#0e2544;border:1px solid #1a3555;color:#4a6a8a;cursor:pointer;z-index:2}
+.epn-cattile:hover .epn-ctedit{display:flex}
+.epn-proclist{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-top:10px}
+.epn-procitem{background:#0b1e36;border:1px solid #1a3555;border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:10px}
+.epn-procitem:hover{border-color:#2a4f7a;background:#0e2544}
+.epn-procitem.sel{border-color:#3b9eff;box-shadow:0 0 0 1px #3b9eff}
+.epn-starbtn{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid transparent;background:transparent;font-size:15px;transition:all .2s;flex-shrink:0;color:#2e4a6a}
+.epn-starbtn:hover{background:rgba(245,200,66,.08);border-color:rgba(245,200,66,.2);color:#f5c842;transform:scale(1.15)}
+.epn-starbtn.on{color:#f5c842;text-shadow:0 0 8px rgba(245,200,66,.5)}
+@keyframes epnStarPop{0%{transform:scale(1)}50%{transform:scale(1.4)}100%{transform:scale(1)}}
+.epn-starbtn.pop{animation:epnStarPop .3s ease}
+.epn-fsec{background:#081628;border:1px solid #1a3555;border-radius:10px;overflow:hidden;animation:epnfu .3s ease both}
+.epn-fsec-hdr{padding:10px 16px;background:#0e2544;border-bottom:1px solid #1a3555;display:flex;align-items:center;gap:8px}
+.epn-fsec-body{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+@keyframes epnfu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.epn-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.epn-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.epn-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.epn-field{display:flex;flex-direction:column;gap:3px}
+.epn-flbl{font-size:9px;color:#4a6a8a;text-transform:uppercase;letter-spacing:.06em;font-weight:500;font-family:'JetBrains Mono',monospace}
+.epn-flbl .req{color:#ff6b6b;font-size:8px}
+.epn-finput{background:#0e2544;border:1px solid #1a3555;border-radius:6px;padding:7px 10px;color:#e8f0fe;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%;transition:border-color .15s}
+.epn-finput:focus{border-color:#3b9eff}.epn-finput::placeholder{color:#2e4a6a}
+.epn-fta{background:#0e2544;border:1px solid #1a3555;border-radius:6px;padding:8px 10px;color:#e8f0fe;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;resize:vertical;min-height:70px;width:100%;line-height:1.5}
+.epn-fta:focus{border-color:#3b9eff}.epn-fta::placeholder{color:#2e4a6a}
+.epn-fsel{background:#0e2544;border:1px solid #1a3555;border-radius:6px;padding:7px 10px;color:#e8f0fe;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;cursor:pointer;width:100%}
+.epn-fsel option{background:#0b1e36}.epn-fsel:focus{border-color:#3b9eff}
+.epn-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid #1a3555;background:#0e2544;color:#8aaccc;transition:all .15s;user-select:none}
+.epn-chip:hover{border-color:#2a4f7a;color:#e8f0fe}
+.epn-chip.sel{background:rgba(59,158,255,.15);border-color:#3b9eff;color:#3b9eff}
+.epn-tipbox{padding:10px 14px;border-radius:8px;font-size:12px;line-height:1.6;display:flex;align-items:flex-start;gap:8px}
+.epn-tipbox.warn{background:rgba(255,107,107,.07);border:1px solid rgba(255,107,107,.25);color:#ff8c96}
+.epn-tipbox.info{background:rgba(59,158,255,.06);border:1px solid rgba(59,158,255,.2);color:#8aaccc}
+.epn-tipbox.gold{background:rgba(245,200,66,.06);border:1px solid rgba(245,200,66,.2);color:#f5c842}
+.epn-noteout{background:#0b1e36;border:1px solid #1a3555;border-radius:10px;overflow:hidden}
+.epn-noteout-hdr{padding:9px 16px;background:#0e2544;border-bottom:1px solid #1a3555;display:flex;align-items:center;gap:8px}
+.epn-noteout-body{padding:22px 26px;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.8;color:#e8f0fe;white-space:pre-wrap;min-height:300px;outline:none}
+.epn-divider{height:1px;background:#1a3555;margin:4px 0}
+.epn-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(5,15,30,.85);z-index:600;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.epn-modal-box{background:#081628;border:1px solid #1a3555;border-radius:16px;width:520px;max-height:80vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.5);animation:epnfu .3s ease}
+.epn-modal-hdr{padding:18px 22px 14px;border-bottom:1px solid #1a3555;display:flex;align-items:center;gap:10px}
+.epn-modal-body{padding:18px 22px;display:flex;flex-direction:column;gap:14px}
+.epn-color-row{display:flex;gap:8px;flex-wrap:wrap}
+.epn-cswatch{width:32px;height:32px;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:all .15s}
+.epn-cswatch:hover{transform:scale(1.1)}.epn-cswatch.sel{border-color:#e8f0fe;box-shadow:0 0 0 2px #050f1e,0 0 0 4px #e8f0fe}
+.epn-icon-row{display:flex;gap:6px;flex-wrap:wrap}
+.epn-iopt{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;border:1px solid #1a3555;background:#0e2544;transition:all .15s}
+.epn-iopt:hover{border-color:#2a4f7a}.epn-iopt.sel{border-color:#3b9eff;background:rgba(59,158,255,.12)}
+.epn-ai-fab{position:fixed;bottom:72px;right:22px;z-index:500;width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#00e5c0,#00b4d8);box-shadow:0 4px 20px rgba(0,229,192,.35);transition:all .3s;animation:epnfabr 3s ease-in-out infinite;font-size:22px;font-weight:700;color:#050f1e}
+.epn-ai-fab:hover{transform:scale(1.1)}.epn-ai-fab.open{transform:rotate(45deg);background:linear-gradient(135deg,#ff6b6b,#e05555);animation:none}
+@keyframes epnfabr{0%,100%{box-shadow:0 4px 20px rgba(0,229,192,.35),0 0 0 0 rgba(0,229,192,.25)}50%{box-shadow:0 4px 20px rgba(0,229,192,.35),0 0 0 10px rgba(0,229,192,0)}}
+.epn-ai-overlay{position:fixed;bottom:136px;right:22px;width:360px;max-height:500px;z-index:499;background:#081628;border:1px solid #1a3555;border-radius:16px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);transition:all .3s}
+.epn-ai-msgs{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-height:200px;max-height:350px}
+.epn-ai-msgs::-webkit-scrollbar{width:3px}.epn-ai-msgs::-webkit-scrollbar-thumb{background:#1a3555;border-radius:2px}
+.epn-ai-msg{padding:10px 12px;border-radius:10px;font-size:12px;line-height:1.6;max-width:92%}
+.epn-ai-msg.sys{background:#0e2544;color:#4a6a8a;border:1px solid #1a3555;align-self:center;text-align:center;font-size:11px}
+.epn-ai-msg.user{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.25);color:#e8f0fe;align-self:flex-end;border-radius:10px 10px 2px 10px}
+.epn-ai-msg.bot{background:rgba(0,229,192,.07);border:1px solid rgba(0,229,192,.18);color:#e8f0fe;align-self:flex-start;border-radius:10px 10px 10px 2px}
+.epn-ai-input-wrap{padding:10px 14px;border-top:1px solid #1a3555;display:flex;gap:6px;align-items:flex-end;flex-shrink:0}
+.epn-ai-input{flex:1;background:#0e2544;border:1px solid #1a3555;border-radius:10px;padding:8px 12px;color:#e8f0fe;font-size:12px;outline:none;resize:none;min-height:38px;max-height:100px;font-family:'DM Sans',sans-serif;line-height:1.5}
+.epn-ai-input:focus{border-color:#00e5c0}.epn-ai-input::placeholder{color:#2e4a6a}
+.epn-ai-send{width:38px;height:38px;background:#00e5c0;color:#050f1e;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.epn-loader{display:flex;gap:5px;padding:10px;align-self:flex-start}
+.epn-loader span{width:6px;height:6px;border-radius:50%;background:#00e5c0;animation:epnbnc 1.2s ease-in-out infinite}
+.epn-loader span:nth-child(2){animation-delay:.2s}.epn-loader span:nth-child(3){animation-delay:.4s}
+@keyframes epnbnc{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-6px);opacity:1}}
+.epn-toast{position:fixed;bottom:64px;left:50%;transform:translateX(-50%);background:#00e5c0;color:#050f1e;padding:8px 18px;border-radius:8px;font-size:12px;font-weight:700;z-index:700;font-family:'DM Sans',sans-serif;transition:opacity .3s;pointer-events:none}
+`;
 
-  const fieldStyle = { width:'100%', background:'#0d2035', border:'1px solid #1e4060', borderRadius:7, color:'#e4eef8', fontFamily:"'Outfit',sans-serif", fontSize:13, padding:'10px 13px', outline:'none', transition:'.2s' };
-
-  const label = (
-    <div style={{ fontSize:11, fontWeight:600, color:'#4a7a9b', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:6, display:'flex', alignItems:'center', gap:4 }}>
-      {f.lbl}{f.req && <span style={{ color:'#ff4757', fontSize:10 }}>*</span>}
-    </div>
-  );
-
-  if (f.t === 'i') return <div style={{ display:'flex', flexDirection:'column' }}>{label}<input style={fieldStyle} value={formData[f.id]||''} onChange={e=>update(e.target.value)} placeholder={f.ph||''} /></div>;
-  if (f.t === 'dt') return <div style={{ display:'flex', flexDirection:'column' }}>{label}<input type="datetime-local" style={fieldStyle} value={formData[f.id]||''} onChange={e=>update(e.target.value)} /></div>;
-  if (f.t === 'a') return <div style={{ display:'flex', flexDirection:'column' }}>{label}<textarea style={{ ...fieldStyle, resize:'vertical', minHeight:80, lineHeight:1.6 }} value={formData[f.id]||''} onChange={e=>update(e.target.value)} placeholder={f.ph||''} /></div>;
-
-  if (f.t === 's') {
-    const opts = f.o.flatMap(o => typeof o === 'object' ? o.o.map(x => ({ g: o.g, v: x })) : [{ g: null, v: o }]);
-    return (
-      <div style={{ display:'flex', flexDirection:'column' }}>
-        {label}
-        <select style={{ ...fieldStyle, cursor:'pointer' }} value={formData[f.id]||''} onChange={e=>update(e.target.value)}>
-          <option value="">Select…</option>
-          {opts.map((o, i) => <option key={i} value={o.v}>{o.g ? `[${o.g}] ` : ''}{o.v}</option>)}
-        </select>
-      </div>
-    );
+/* ─── FIELD COMPONENT ─────────────────────────────────────────────── */
+function FieldInput({ f, value, onChange }) {
+  if (f.t === 'tip') {
+    return <div className={`epn-tipbox ${f.cls === 'rd' ? 'warn' : 'info'}`}><span>{f.cls === 'rd' ? '⚠️' : '💡'}</span><span>{f.txt}</span></div>;
   }
-
-  if (f.t === 'c') {
-    const options = f.o.map(o => ({ checked: o[0]==='*', lbl: o[0]==='*'?o.slice(1):o }));
-    const selected = formData[f.id] || options.filter(o=>o.checked).map(o=>o.lbl);
-    const toggle = (lbl) => {
-      const arr = Array.isArray(selected) ? selected : [];
-      const next = arr.includes(lbl) ? arr.filter(x=>x!==lbl) : [...arr, lbl];
-      update(next);
-    };
-    return (
-      <div>
-        {label}
-        <div style={{ display:'flex', flexWrap:'wrap', gap:7 }}>
-          {options.map(o => {
-            const on = Array.isArray(selected) ? selected.includes(o.lbl) : false;
+  return (
+    <div className="epn-field">
+      <label className="epn-flbl" dangerouslySetInnerHTML={{ __html: f.lbl + (f.req ? ' <span class="req">*</span>' : '') }} />
+      {f.t === 'i' && <input className="epn-finput" placeholder={f.ph || ''} value={value || ''} onChange={e => onChange(e.target.value)} />}
+      {f.t === 'dt' && <input type="datetime-local" className="epn-finput" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, colorScheme: 'dark' }} value={value || ''} onChange={e => onChange(e.target.value)} />}
+      {f.t === 'a' && <textarea className="epn-fta" placeholder={f.ph || ''} value={value || ''} onChange={e => onChange(e.target.value)} />}
+      {f.t === 's' && (
+        <select className="epn-fsel" value={value || ''} onChange={e => onChange(e.target.value)}>
+          <option value="">Select…</option>
+          {f.o.map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      )}
+      {f.t === 'c' && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {f.o.map(o => {
+            const lbl = o[0] === '*' ? o.slice(1) : o;
+            const sel = Array.isArray(value) ? value.includes(lbl) : false;
             return (
-              <div key={o.lbl} onClick={()=>toggle(o.lbl)} style={{ padding:'5px 11px', borderRadius:20, cursor:'pointer', fontSize:12, border:`1px solid ${on?'#0096d6':'#1e4060'}`, background:on?'rgba(0,150,214,.12)':'transparent', color:on?'#00c6ff':'#8aacc6', transition:'.15s', userSelect:'none' }}>
-                {o.lbl}
-              </div>
+              <div key={lbl} className={`epn-chip${sel ? ' sel' : ''}`} onClick={() => {
+                const arr = Array.isArray(value) ? value : [];
+                onChange(sel ? arr.filter(x => x !== lbl) : [...arr, lbl]);
+              }}>{lbl}</div>
             );
           })}
         </div>
-      </div>
-    );
-  }
-  return null;
+      )}
+    </div>
+  );
 }
 
 function FormRow({ row, formData, setFormData }) {
-  if (!Array.isArray(row)) return <FormField f={row} formData={formData} setFormData={setFormData} />;
+  if (!Array.isArray(row)) {
+    return <FieldInput f={row} value={formData[row.id]} onChange={v => setFormData(p => ({ ...p, [row.id]: v }))} />;
+  }
+  const gridClass = `epn-grid-${Math.min(row.length, 4)}`;
   return (
-    <div style={{ display:'grid', gridTemplateColumns:`repeat(${row.length},1fr)`, gap:14 }}>
-      {row.map((f,i) => <FormField key={i} f={f} formData={formData} setFormData={setFormData} />)}
+    <div className={gridClass}>
+      {row.map(f => <FieldInput key={f.id || f.txt} f={f} value={formData[f.id]} onChange={v => setFormData(p => ({ ...p, [f.id]: v }))} />)}
     </div>
   );
 }
 
-function ProcedureForm({ proc, formData, setFormData }) {
-  return (
-    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-      {proc.secs.map((sec, si) => (
-        <div key={si} style={{ background:'#0a1929', border:'1px solid #1a3550', borderRadius:10, overflow:'hidden' }}>
-          <div style={{ padding:'11px 18px', background:'#0d2035', borderBottom:'1px solid #1a3550', display:'flex', alignItems:'center', gap:8 }}>
-            <span>{sec.ic}</span>
-            <span style={{ fontSize:11, fontWeight:600, color:'#e4eef8', letterSpacing:'.06em', textTransform:'uppercase' }}>{sec.t}</span>
+/* ─── MODAL ─────────────────────────────────────────────────────────── */
+function Modal({ modal, onClose, categories, setCategories, activeCat, setActiveCat }) {
+  const [mcColor, setMcColor] = useState(CAT_COLORS[0]);
+  const [mcIcon, setMcIcon] = useState(CAT_ICONS[0]);
+  const [mcLogo, setMcLogo] = useState('custom');
+  const [mcName, setMcName] = useState('');
+
+  useEffect(() => {
+    if (modal?.type === 'editCat') {
+      const cat = categories.find(c => c.id === modal.id);
+      if (cat) { setMcColor(cat.color); setMcIcon(cat.icon); setMcLogo(cat.logo || 'custom'); setMcName(cat.name); }
+    } else {
+      setMcColor(CAT_COLORS[0]); setMcIcon(CAT_ICONS[0]); setMcLogo('custom'); setMcName('');
+    }
+  }, [modal]);
+
+  if (!modal) return null;
+
+  const saveCats = (cats) => {
+    setCategories(cats);
+    try { localStorage.setItem('notrya_cats3', JSON.stringify(cats)); } catch (e) {}
+  };
+
+  if (modal.type === 'newCat' || modal.type === 'editCat') {
+    const isEdit = modal.type === 'editCat';
+    return (
+      <div className="epn-modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+        <div className="epn-modal-box">
+          <div className="epn-modal-hdr">
+            <span style={{ fontSize: 18 }}>{isEdit ? '✏️' : '📁'}</span>
+            <span style={{ fontFamily: "'Playfair Display',serif", fontSize: 17, fontWeight: 600 }}>{isEdit ? `Edit: ${mcName}` : 'New Category'}</span>
+            <button className="epn-btn" style={{ marginLeft: 'auto' }} onClick={onClose}>✕</button>
           </div>
-          <div style={{ padding:'18px', display:'flex', flexDirection:'column', gap:14 }}>
-            {sec.rows.map((row, ri) => <FormRow key={ri} row={row} formData={formData} setFormData={setFormData} />)}
+          <div className="epn-modal-body">
+            <div className="epn-field"><label className="epn-flbl">Name</label><input className="epn-finput" value={mcName} onChange={e => setMcName(e.target.value)} placeholder="e.g., Cardiac" /></div>
+            <div className="epn-field"><label className="epn-flbl">Color</label><div className="epn-color-row">{CAT_COLORS.map(c => <div key={c} className={`epn-cswatch${c === mcColor ? ' sel' : ''}`} style={{ background: c }} onClick={() => setMcColor(c)} />)}</div></div>
+            <div className="epn-field"><label className="epn-flbl">Icon</label><div className="epn-icon-row">{CAT_ICONS.map(ic => <div key={ic} className={`epn-iopt${ic === mcIcon ? ' sel' : ''}`} onClick={() => setMcIcon(ic)}>{ic}</div>)}</div></div>
+            <div className="epn-field"><label className="epn-flbl">Logo</label><div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{Object.keys(LP).map(k => <div key={k} className={`epn-iopt${k === mcLogo ? ' sel' : ''}`} style={{ width: 48, height: 48 }} onClick={() => setMcLogo(k)}><SvgLogo k={k} color="#8aaccc" size={28} /></div>)}</div></div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
+              {isEdit && <button className="epn-btn-coral" onClick={() => { saveCats(categories.filter(c => c.id !== modal.id)); if (activeCat === modal.id) setActiveCat(null); onClose(); }}>🗑️ Delete</button>}
+              <button className="epn-btn" onClick={onClose}>Cancel</button>
+              <button className="epn-btn-p" onClick={() => {
+                if (!mcName.trim()) return;
+                if (isEdit) {
+                  saveCats(categories.map(c => c.id === modal.id ? { ...c, name: mcName, color: mcColor, icon: mcIcon, logo: mcLogo } : c));
+                } else {
+                  saveCats([...categories, { id: 'c_' + Date.now(), name: mcName, color: mcColor, icon: mcIcon, logo: mcLogo, procs: [] }]);
+                }
+                onClose();
+              }}>💾 {isEdit ? 'Save' : 'Create'}</button>
+            </div>
           </div>
         </div>
-      ))}
-    </div>
-  );
+      </div>
+    );
+  }
+
+  if (modal.type === 'addProc') {
+    const cat = categories.find(c => c.id === modal.catId);
+    const avail = Object.keys(P).filter(k => !cat?.procs.includes(k));
+    return (
+      <div className="epn-modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+        <div className="epn-modal-box">
+          <div className="epn-modal-hdr">
+            <span style={{ fontSize: 18 }}>➕</span>
+            <span style={{ fontFamily: "'Playfair Display',serif", fontSize: 17, fontWeight: 600 }}>Add to {cat?.name}</span>
+            <button className="epn-btn" style={{ marginLeft: 'auto' }} onClick={onClose}>✕</button>
+          </div>
+          <div className="epn-modal-body">
+            {avail.length ? avail.map(k => {
+              const p = P[k];
+              return (
+                <div key={k} className="epn-procitem" onClick={() => {
+                  saveCats(categories.map(c => c.id === modal.catId ? { ...c, procs: [...c.procs, k] } : c));
+                  onClose();
+                }}><span style={{ fontSize: 20 }}>{p.ico}</span><div><div style={{ fontSize: 13, fontWeight: 500, color: '#e8f0fe' }}>{p.name}</div><div style={{ fontSize: 10, color: '#4a6a8a' }}>{p.sub}</div></div><span style={{ marginLeft: 'auto', color: '#00e5c0' }}>+</span></div>
+              );
+            }) : <div style={{ textAlign: 'center', padding: 24, color: '#4a6a8a' }}>All procedures assigned.</div>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────
+/* ─── MAIN COMPONENT ─────────────────────────────────────────────── */
 export default function EDProcedureNotes({ embedded = false }) {
-  const [tab, setTab] = useState('select');
-  const [selProc, setSelProc] = useState(null);
-  const [formData, setFormData] = useState({});
-  const [generatedNote, setGeneratedNote] = useState('');
-  const [generating, setGenerating] = useState(false);
-  const [aiMsg, setAiMsg] = useState(null);
-  const [aiPct, setAiPct] = useState(0);
-  const [aiReviewing, setAiReviewing] = useState(false);
-  const [toast, setToast] = useState('');
-  const [clock, setClock] = useState('');
-  const [saving, setSaving] = useState(false);
-  const aiTimer = useRef(null);
-  const aiReqId = useRef(0);
-  const autoSaveTimer = useRef(null);
+  const navigate = useNavigate();
 
-  // Load clinical notes for patient context
-  const { data: notes = [] } = useQuery({
-    queryKey: ['clinicalNotes'],
-    queryFn: () => base44.entities.ClinicalNote.list('-updated_date', 20),
+  // Persist categories + favorites
+  const [categories, setCategories] = useState(() => {
+    try { const s = localStorage.getItem('notrya_cats3'); return s ? JSON.parse(s) : DEFAULT_CATS; } catch (e) { return DEFAULT_CATS; }
+  });
+  const [favorites, setFavorites] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('notrya_favs3') || '[]'); } catch (e) { return []; }
   });
 
-  const [selectedNoteId, setSelectedNoteId] = useState('');
-  const [ptCtx, setPtCtx] = useState({ patientName:'', mrn:'', dob:'', age:'', allergies:'', encounterDate: new Date().toISOString().slice(0,10), physicianName:'' });
+  const [view, setView] = useState('select'); // 'select' | 'document' | 'note'
+  const [activeCat, setActiveCat] = useState(null);
+  const [selectedProc, setSelectedProc] = useState(null);
+  const [formData, setFormData] = useState({});
+  const [physician, setPhysician] = useState('');
+  const [encounterDate, setEncounterDate] = useState(new Date().toISOString().slice(0, 10));
+  const [allergies, setAllergies] = useState('');
+  const [generatedNote, setGeneratedNote] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiMessages, setAiMessages] = useState([{ role: 'sys', text: 'Notrya AI ready. Ask about procedures, billing, or clinical guidance.' }]);
+  const [aiInput, setAiInput] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [cmdQuery, setCmdQuery] = useState('');
+  const [showCmd, setShowCmd] = useState(false);
+  const [modal, setModal] = useState(null);
+  const [clock, setClock] = useState('');
+  const [toast, setToast] = useState('');
+  const [toastVisible, setToastVisible] = useState(false);
+  const aiMsgsRef = useRef(null);
 
   useEffect(() => {
-    const iv = setInterval(() => setClock(new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false})), 1000);
-    return () => clearInterval(iv);
+    const tick = () => {
+      const d = new Date();
+      setClock(`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`);
+    };
+    tick();
+    const t = setInterval(tick, 10000);
+    return () => clearInterval(t);
   }, []);
 
-  const loadFromNote = (noteId) => {
-    const note = notes.find(n => n.id === noteId);
-    if (!note) return;
-    setSelectedNoteId(noteId);
-    setPtCtx({
-      patientName: note.patient_name || '',
-      mrn: note.patient_id || '',
-      dob: note.date_of_birth || '',
-      age: note.patient_age || '',
-      allergies: (note.allergies || []).join(', '),
-      encounterDate: note.date_of_visit || new Date().toISOString().slice(0,10),
-      physicianName: '',
-    });
+  useEffect(() => {
+    if (aiMsgsRef.current) aiMsgsRef.current.scrollTop = aiMsgsRef.current.scrollHeight;
+  }, [aiMessages, aiLoading]);
+
+  const showToast = useCallback((msg) => {
+    setToast(msg); setToastVisible(true);
+    setTimeout(() => setToastVisible(false), 2500);
+  }, []);
+
+  const saveCats = (cats) => {
+    setCategories(cats);
+    try { localStorage.setItem('notrya_cats3', JSON.stringify(cats)); } catch (e) {}
   };
 
-  const selectProc = (key) => {
-    setSelProc(key);
+  const toggleFav = (k, e) => {
+    if (e) { e.stopPropagation(); }
+    const newFavs = favorites.includes(k) ? favorites.filter(x => x !== k) : [...favorites, k];
+    setFavorites(newFavs);
+    try { localStorage.setItem('notrya_favs3', JSON.stringify(newFavs)); } catch (e) {}
+  };
+
+  const selectProc = (k) => {
+    setSelectedProc(k);
     setFormData({});
     setGeneratedNote('');
-    triggerAI(key, {});
+    setView('document');
   };
 
-  const triggerAI = async (procKey, fd) => {
-    const proc = P[procKey];
-    if (!proc) return;
-    const reqId = ++aiReqId.current;
-    setAiReviewing(true);
-    setAiMsg(null);
-    setAiPct(0);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are an expert ED physician AI. Review this ${proc.name} procedure note form data and provide concise clinical guidance.
-
-Patient: ${ptCtx.patientName || 'Unknown'} | Allergies: ${ptCtx.allergies || 'None documented'}
-Key things to check: ${proc.tips}
-Form data: ${JSON.stringify(fd)}
-
-Return JSON: {"guidance": "HTML string with <b>SECTION:</b> headers. Use <span class=\\"ok\\">✓</span> for complete items, <span class=\\"warn\\">⚠</span> for warnings, <span class=\\"miss\\">✗</span> for missing required items. Under 180 words.", "completeness": 0 to 100}`,
-        response_json_schema: { type:'object', properties:{ guidance:{type:'string'}, completeness:{type:'number'} } }
+  const genNote = () => {
+    if (!selectedProc) return;
+    const proc = P[selectedProc];
+    const ln = [
+      'PROCEDURE NOTE',
+      '═══════════════════════════════════════',
+      'Patient: New Patient',
+      'MRN: PT-4-471-8820 | 67 y/o M',
+      `Date: ${encounterDate}`,
+      `Attending: ${physician || '[Physician]'}`,
+      `Allergies: ${allergies || 'NKDA'}`,
+      '',
+      `PROCEDURE: ${proc.name.toUpperCase()}`,
+      '───────────────────────────────────────',
+      '',
+    ];
+    proc.secs.forEach(s => {
+      ln.push(s.t.toUpperCase());
+      s.rows.forEach(row => {
+        const fields = Array.isArray(row) ? row : [row];
+        fields.forEach(f => {
+          if (f.t === 'tip') return;
+          const v = formData[f.id];
+          if (v && f.lbl) ln.push(`${f.lbl}: ${Array.isArray(v) ? v.join(', ') : v}`);
+        });
       });
-      if (reqId !== aiReqId.current) return;
-      setAiMsg(result.guidance || 'Review complete.');
-      setAiPct(result.completeness || 0);
-    } catch (e) {
-      if (reqId !== aiReqId.current) return;
-      setAiMsg('<span class="miss">⚠ AI connection error — check form manually.</span>');
-    } finally {
-      if (reqId === aiReqId.current) setAiReviewing(false);
-    }
+      ln.push('');
+    });
+    ln.push('COMPLICATIONS: None noted.', '', 'Patient tolerated procedure well.', '', '───────────────────────────────────────', `Signed: ${physician || '[Physician]'}`, `Date/Time: ${new Date().toLocaleString()}`);
+    setGeneratedNote(ln.join('\n'));
+    setView('note');
   };
 
-  const debounceAI = () => {
-    clearTimeout(aiTimer.current);
-    aiTimer.current = setTimeout(() => { if (selProc) triggerAI(selProc, formData); }, 1800);
+  const copyNote = () => {
+    navigator.clipboard.writeText(generatedNote).then(() => showToast('Copied!')).catch(() => showToast('Failed'));
   };
 
-  useEffect(() => { return () => clearTimeout(aiTimer.current); }, []);
-
-  const generateNote = async () => {
-    if (!selProc) return;
-    const proc = P[selProc];
-    setGenerating(true);
-    setTab('note');
-    setGeneratedNote('Generating procedure note…');
+  const sendAI = async () => {
+    const q = aiInput.trim();
+    if (!q || aiLoading) return;
+    setAiInput('');
+    setAiMessages(prev => [...prev, { role: 'user', text: q }]);
+    setAiLoading(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        model: 'claude_sonnet_4_6',
-        prompt: `You are an expert ED physician generating a formal, ready-to-sign procedure note.
-
-PATIENT: ${ptCtx.patientName || '[Patient Name]'}
-DOB: ${ptCtx.dob || '[DOB]'} | MRN: ${ptCtx.mrn || '[MRN]'} | AGE: ${ptCtx.age || '[Age]'}
-ALLERGIES: ${ptCtx.allergies || 'None documented'}
-DATE: ${ptCtx.encounterDate || new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}
-ATTENDING: ${ptCtx.physicianName || '[Physician Name, MD]'}
-PROCEDURE: ${proc.name}
-
-FORM DATA:
-${JSON.stringify(formData, null, 2)}
-
-Write a formal procedure note using ALL CAPS section headers. Third-person past tense. Professional prose paragraphs — no bullets. Include all documented details. Do not invent information not in the form data. End with a signature line.`
-      });
-      setGeneratedNote(typeof result === 'string' ? result : JSON.stringify(result));
+      const ctx = selectedProc ? `Procedure: ${P[selectedProc]?.name}. ` : '';
+      const res = await base44.integrations.Core.InvokeLLM({ prompt: `You are Notrya AI, a clinical procedure assistant. Be concise and actionable. ${ctx}Question: ${q}` });
+      setAiMessages(prev => [...prev, { role: 'bot', text: typeof res === 'string' ? res : JSON.stringify(res) }]);
     } catch (e) {
-      setGeneratedNote('Error generating note. Please try again.');
-    } finally {
-      setGenerating(false);
+      setAiMessages(prev => [...prev, { role: 'sys', text: '⚠ Unable to connect to AI.' }]);
     }
+    setAiLoading(false);
   };
 
-  const copyNote = async () => {
-    try {
-      await navigator.clipboard.writeText(generatedNote);
-      showToast('Note copied to clipboard!');
-    } catch { showToast('Copy failed — select text manually'); }
-  };
+  const cmdResults = cmdQuery.trim()
+    ? Object.keys(P).filter(k => P[k].name.toLowerCase().includes(cmdQuery.toLowerCase()) || P[k].sub.toLowerCase().includes(cmdQuery.toLowerCase())).slice(0, 8)
+    : [];
 
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(''), 2500);
-  };
-
-  const saveProcedureNote = async (autoSave = false) => {
-    if (!selProc || !generatedNote) return;
-    setSaving(true);
-    try {
-      const logData = {
-        patient_name: ptCtx.patientName || '',
-        patient_id: ptCtx.mrn || '',
-        procedure_name: proc.name,
-        indication: formData.ind || '',
-        date_performed: new Date().toISOString(),
-        operator: ptCtx.physicianName || '',
-        technique: formData.tech || generatedNote.slice(0, 500),
-        findings: formData.find || '',
-        complications: formData.comp || '',
-        outcome: formData.outcome || 'successful',
-        post_procedure_plan: formData.plan || '',
-        status: 'completed',
-        documentation_files: []
-      };
-      await base44.entities.ProcedureLog.create(logData);
-      showToast(autoSave ? 'Auto-saved' : 'Procedure logged successfully');
-    } catch (e) {
-      showToast('Save failed — please try again');
-      console.error('Save error:', e);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const debouncedAutoSave = () => {
-    clearTimeout(autoSaveTimer.current);
-    autoSaveTimer.current = setTimeout(() => {
-      if (generatedNote && selProc) saveProcedureNote(true);
-    }, 30000);
-  };
-
-  useEffect(() => {
-    if (generatedNote) debouncedAutoSave();
-    return () => clearTimeout(autoSaveTimer.current);
-  }, [generatedNote]);
-
-  const proc = selProc ? P[selProc] : null;
-  const pctColor = aiPct >= 80 ? '#00e5a0' : aiPct >= 50 ? '#f5a623' : '#ff4757';
-
-  const epnRootPos = embedded
-    ? 'position:relative; width:100%; height:100%;'
-    : 'position:fixed; top:48px; left:72px; right:0; bottom:0; z-index:10;';
-
-  const CSS = `
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;500;600&family=Lora:wght@400;600&display=swap');
-    .epn-root { ${epnRootPos} background:#050f1e; color:#e4eef8; font-family:'Outfit',sans-serif; font-size:14px; display:flex; flex-direction:column; overflow:hidden; }
-    .epn-root input, .epn-root select, .epn-root textarea { transition: border-color .15s; }
-    .epn-root input:focus, .epn-root select:focus, .epn-root textarea:focus { border-color:#0096d6 !important; box-shadow:0 0 0 2px rgba(0,150,214,.12); outline:none; }
-    .epn-root input::placeholder, .epn-root textarea::placeholder { color:#2a4d72; }
-    .epn-root select option { background:#0a1929; }
-    .epn-root ::-webkit-scrollbar { width:4px; }
-    .epn-root ::-webkit-scrollbar-thumb { background:#1e4060; border-radius:2px; }
-    .epn-pc { background:#0a1929; border:1px solid #1e4060; border-radius:12px; padding:15px 13px; cursor:pointer; transition:.2s; display:flex; flex-direction:column; gap:7px; position:relative; overflow:hidden; }
-    .epn-pc:hover { border-color:#0096d6; transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,150,214,.15); }
-    .epn-pc.sel { border-color:#00c6ff; background:rgba(0,198,255,.07); box-shadow:0 0 0 1px #00c6ff; }
-    .epn-sb-item { display:flex; align-items:center; gap:9px; padding:8px 14px; cursor:pointer; border-left:2px solid transparent; transition:.15s; color:#8aacc6; font-size:13px; }
-    .epn-sb-item:hover { background:#0d2035; color:#e4eef8; }
-    .epn-sb-item.active { background:#0d2035; color:#00c6ff; border-left-color:#00c6ff; }
-    .epn-bt { padding:0 14px; height:38px; display:flex; align-items:center; gap:6px; cursor:pointer; border-bottom:2px solid transparent; color:#4a7a9b; font-size:12px; font-weight:500; transition:.15s; background:transparent; border-top:none; border-left:none; border-right:none; white-space:nowrap; }
-    .epn-bt:hover { color:#8aacc6; }
-    .epn-bt.active { color:#00c6ff; border-bottom-color:#00c6ff; }
-    .epn-btn { padding:6px 14px; border-radius:6px; font-size:12px; font-weight:500; cursor:pointer; transition:.15s; border:1px solid #1e4060; background:transparent; color:#8aacc6; font-family:'Outfit',sans-serif; }
-    .epn-btn:hover { background:#0d2035; color:#e4eef8; }
-    .epn-btn.p { background:#0096d6; color:#fff; border-color:#0096d6; }
-    .epn-btn.p:hover { background:#00c6ff; border-color:#00c6ff; }
-    .epn-btn.s { background:rgba(0,229,160,.12); color:#00e5a0; border-color:#00b880; }
-    .epn-btn:disabled { opacity:.35; pointer-events:none; }
-    .aim b { color:#00c6ff; }
-    .aim .ok { color:#00e5a0; }
-    .aim .warn { color:#f5a623; }
-    .aim .miss { color:#ff4757; }
-    @keyframes epn-blink { 0%,80%,100%{opacity:.2} 40%{opacity:1} }
-    .epn-dots span { display:inline-block; width:5px; height:5px; border-radius:50%; background:#00c6ff; margin:0 2px; animation:epn-blink 1.2s infinite; }
-    .epn-dots span:nth-child(2) { animation-delay:.2s; }
-    .epn-dots span:nth-child(3) { animation-delay:.4s; }
-  `;
+  const SB_GROUPS = [
+    { label: 'Intake', items: [
+      { id: 'chart', icon: '📊', label: 'Patient Chart', dot: 'done', link: '/PatientChart' },
+      { id: 'demo',  icon: '👤', label: 'Demographics',  dot: 'partial', link: '/NewPatientInput?tab=demo' },
+      { id: 'cc',    icon: '💬', label: 'Chief Complaint',dot: 'done',   link: '/NewPatientInput?tab=cc' },
+      { id: 'vit',   icon: '📈', label: 'Vitals',         dot: 'empty',  link: '/NewPatientInput?tab=vit' },
+    ]},
+    { label: 'Documentation', items: [
+      { id: 'meds',  icon: '💊', label: 'Meds & PMH',         dot: 'partial', link: '/NewPatientInput?tab=meds' },
+      { id: 'ros',   icon: '🔍', label: 'Review of Systems',  dot: 'empty',   link: '/NewPatientInput?tab=ros' },
+      { id: 'pe',    icon: '🩺', label: 'Physical Exam',      dot: 'empty',   link: '/NewPatientInput?tab=pe' },
+      { id: 'mdm',   icon: '⚖️', label: 'MDM',               dot: 'empty',   link: '/MedicalDecisionMaking' },
+    ]},
+    { label: 'Disposition', items: [
+      { id: 'orders',   icon: '📋', label: 'Orders',      dot: 'empty', link: '/OrderSetBuilder' },
+      { id: 'discharge',icon: '🚪', label: 'Discharge',   dot: 'empty', link: '/DischargePlanning' },
+      { id: 'erplan',   icon: '🗺️', label: 'ER Plan',    dot: 'empty', link: '/ERPlanBuilder' },
+    ]},
+    { label: 'Tools', items: [
+      { id: 'autocoder',  icon: '🤖', label: 'AutoCoder',  dot: 'empty', link: '/AutoCoder' },
+      { id: 'erx',        icon: '💉', label: 'eRx',         dot: 'empty', link: '/ERx' },
+      { id: 'procedures', icon: '✂️', label: 'Procedures',  dot: 'partial', link: '/EDProcedureNotes', active: true },
+    ]},
+  ];
+  const allSteps = SB_GROUPS.flatMap(g => g.items);
 
   return (
     <>
       <style>{CSS}</style>
-      <div className="epn-root">
 
-        {/* Navbar */}
-        {!embedded && <nav style={{ flexShrink:0, height:50, background:'#0a1929', borderBottom:'1px solid #1a3550', display:'flex', alignItems:'center', padding:'0 16px', gap:12, zIndex:200 }}>
-          <span style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:700, background:'linear-gradient(135deg,#00c6ff,#00e5a0)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>Notrya</span>
-          <div style={{ width:1, height:24, background:'#1e4060' }} />
-          <span style={{ fontFamily:"'Playfair Display',serif", fontSize:15, color:'#8aacc6' }}>ED Procedure Notes</span>
-          <div style={{ flex:1 }} />
-          {/* Note picker */}
-          <select style={{ background:'#0d2035', border:'1px solid #1e4060', borderRadius:7, color:'#8aacc6', fontSize:11, padding:'4px 10px', outline:'none', cursor:'pointer', fontFamily:"'Outfit',sans-serif", maxWidth:240 }} value={selectedNoteId} onChange={e=>loadFromNote(e.target.value)}>
-            <option value="">Load patient from note…</option>
-            {notes.map(n => <option key={n.id} value={n.id}>{n.patient_name||'Unknown'} — {n.date_of_visit||n.created_date?.slice(0,10)||''}</option>)}
-          </select>
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, padding:'3px 10px', borderRadius:20, border:'1px solid #1e4060', color:'#4a7a9b', background:'#0d2035' }}>{ptCtx.encounterDate}</span>
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, padding:'3px 10px', borderRadius:20, border:'1px solid #00b880', color:'#00e5a0' }}>● AI Ready</span>
-          <Link to="/Home" style={{ padding:'5px 12px', border:'1px solid #1e4060', borderRadius:6, background:'transparent', color:'#8aacc6', cursor:'pointer', fontSize:12, textDecoration:'none', display:'flex', alignItems:'center', gap:5 }}>← Home</Link>
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:'#4a7a9b' }}>{clock}</span>
-        </nav>}
-
-        {/* Vitals bar */}
-        {!embedded && <div style={{ flexShrink:0, height:38, background:'#0d2035', borderBottom:'1px solid #1a3550', display:'flex', alignItems:'center', padding:'0 16px 0 calc(220px + 16px)', gap:20, fontFamily:"'JetBrains Mono',monospace", fontSize:11, overflow:'hidden' }}>
-          {ptCtx.patientName ? (
-            <>
-              <span style={{ fontFamily:"'Playfair Display',serif", fontSize:13, color:'#e4eef8' }}>{ptCtx.patientName}</span>
-              <span style={{ color:'#1e4060' }}>|</span>
-              <span style={{ color:'#4a7a9b' }}>MRN</span><span style={{ color:'#e4eef8' }}>{ptCtx.mrn||'—'}</span>
-              <span style={{ color:'#1e4060' }}>|</span>
-              <span style={{ color:'#4a7a9b' }}>AGE</span><span style={{ color:'#e4eef8' }}>{ptCtx.age||'—'}</span>
-              {ptCtx.allergies && <><span style={{ color:'#1e4060' }}>|</span><span style={{ color:'#4a7a9b' }}>Allergies</span><span style={{ color:'#ff8c96' }}>{ptCtx.allergies}</span></>}
-              {proc && <><span style={{ color:'#1e4060' }}>|</span><span style={{ color:'#4a7a9b' }}>Procedure</span><span style={{ color:'#00c6ff' }}>{proc.ico} {proc.name}</span></>}
-            </>
-          ) : (
-            <span style={{ color:'#4a7a9b' }}>No patient loaded — select a clinical note above or choose a procedure to begin</span>
-          )}
-        </div>}
-
-        {/* Body */}
-        <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
-
-          {/* Sidebar */}
-          <aside style={{ width:220, flexShrink:0, background:'#0a1929', borderRight:'1px solid #1a3550', overflowY:'auto', padding:'10px 0', display:'flex', flexDirection:'column', gap:1 }}>
-            <div style={{ padding:'5px 14px 3px', fontSize:10, fontWeight:600, color:'#4a7a9b', letterSpacing:'.1em', textTransform:'uppercase' }}>Workflow</div>
-            {[['select','📁','Select'],['document','📝','Document'],['note','📄','Note']].map(([t,ic,lbl]) => (
-              <div key={t} className={`epn-sb-item${tab===t?' active':''}`} onClick={()=>setTab(t)}>
-                <span style={{ fontSize:14, width:18, textAlign:'center' }}>{ic}</span>{lbl}
-              </div>
+      {/* FAB + AI Overlay */}
+      {aiOpen && (
+        <div className="epn-ai-overlay">
+          <div style={{ padding:'14px 16px 10px', borderBottom:'1px solid #1a3555', display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+            <div style={{ width:8, height:8, borderRadius:'50%', background:'#00e5c0' }} />
+            <span style={{ fontFamily:"'Playfair Display',serif", fontSize:15, fontWeight:600 }}>Notrya AI</span>
+            <span style={{ marginLeft:'auto', fontFamily:"'JetBrains Mono',monospace", fontSize:9, background:'#0e2544', border:'1px solid #1a3555', borderRadius:20, padding:'2px 8px', color:'#4a6a8a' }}>claude</span>
+            <button onClick={() => setAiOpen(false)} style={{ width:26, height:26, display:'flex', alignItems:'center', justifyContent:'center', borderRadius:6, border:'1px solid #1a3555', background:'#0e2544', color:'#4a6a8a', cursor:'pointer', fontSize:14 }}>─</button>
+          </div>
+          <div className="epn-ai-msgs" ref={aiMsgsRef}>
+            {aiMessages.map((m, i) => (
+              <div key={i} className={`epn-ai-msg ${m.role}`} dangerouslySetInnerHTML={{ __html: m.text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
             ))}
-            <div style={{ padding:'10px 14px 3px', fontSize:10, fontWeight:600, color:'#4a7a9b', letterSpacing:'.1em', textTransform:'uppercase', marginTop:8 }}>Quick Select</div>
-            {['lac','iand','intub','cryo','piv','io','cl','ct','lp','ngt','foley','fast'].map(k => (
-              <div key={k} className={`epn-sb-item${selProc===k?' active':''}`} onClick={()=>{selectProc(k);setTab('document');}}>
-                <span style={{ fontSize:14, width:18, textAlign:'center' }}>{P[k].ico}</span>{P[k].name}
-              </div>
-            ))}
-            <div style={{ padding:'10px 14px 3px', fontSize:10, fontWeight:600, color:'#4a7a9b', letterSpacing:'.1em', textTransform:'uppercase', marginTop:8 }}>Patient</div>
-            <div className="epn-sb-item">
-              <span style={{ fontSize:14, width:18, textAlign:'center' }}>💊</span>
-              Allergies
-              {ptCtx.allergies && <span style={{ marginLeft:'auto', fontFamily:"'JetBrains Mono',monospace", fontSize:10, padding:'1px 6px', borderRadius:10, background:'rgba(255,71,87,.15)', color:'#ff4757', border:'1px solid rgba(255,71,87,.35)' }}>!</span>}
-            </div>
-            <div className="epn-sb-item"><span style={{ fontSize:14, width:18, textAlign:'center' }}>🏥</span><Link to="/AutoCoder" style={{ color:'inherit', textDecoration:'none' }}>ICD-10 Coder</Link></div>
-            <div className="epn-sb-item"><span style={{ fontSize:14, width:18, textAlign:'center' }}>🩺</span><Link to="/ClinicalNoteStudio" style={{ color:'inherit', textDecoration:'none' }}>Note Studio</Link></div>
-          </aside>
-
-          {/* Main */}
-          <main style={{ flex:1, overflow:'hidden', display:'flex', flexDirection:'column' }}>
-
-            {/* SELECT TAB */}
-            {tab === 'select' && (
-              <div style={{ flex:1, overflowY:'auto', padding:'28px 32px', display:'flex', flexDirection:'column', gap:24 }}>
-                {/* Header */}
-                <div>
-                  <div style={{ fontFamily:"'Playfair Display',serif", fontSize:28, fontWeight:700, color:'#e4eef8', marginBottom:4 }}>Select Procedure</div>
-                  <div style={{ fontSize:13, color:'#4a7a9b' }}>Choose procedure — form fields populate automatically</div>
-                </div>
-
-                {/* AI Info Box */}
-                <div style={{ background:'rgba(0,198,255,.06)', border:'1px solid rgba(0,198,255,.25)', borderRadius:10, padding:'12px 15px', fontSize:12, color:'#8aacc6', display:'flex', alignItems:'flex-start', gap:10 }}>
-                  <span style={{ fontSize:14, flexShrink:0 }}>💡</span>
-                  <span>AI guidance activates on selection. Templates aligned with billing and medicolegal standards.</span>
-                </div>
-
-                {/* Procedure Groups */}
-                {PROCEDURE_GROUPS.map(grp => (
-                  <div key={grp.label}>
-                    {/* Group Header */}
-                    <div style={{ display:'flex', alignItems:'center', gap:10, padding:'0 0 16px 0', borderBottom:'1px solid #1a3550', marginBottom:14 }}>
-                      <span style={{ fontSize:20 }}>{grp.icon}</span>
-                      <span style={{ fontSize:13, fontWeight:700, color:'#e4eef8', letterSpacing:'.05em', textTransform:'uppercase' }}>{grp.label}</span>
-                    </div>
-                    
-                    {/* Procedure Cards */}
-                    <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:14 }}>
-                      {grp.keys.map(k => {
-                        const p = P[k];
-                        const isHigh = ['intub','cl','ct','cv'].includes(k);
-                        const isMod = ['red','sed','lp','par'].includes(k);
-                        return (
-                          <div
-                            key={k}
-                            onClick={()=>{selectProc(k);setTab('document');}}
-                            style={{
-                              background:'#0a1929',
-                              border: selProc===k ? '1.5px solid #00c6ff' : '1px solid #1a3550',
-                              borderRadius:12,
-                              padding:'18px 16px',
-                              cursor:'pointer',
-                              transition:'.2s',
-                              position:'relative',
-                              overflow:'hidden',
-                              boxShadow: selProc===k ? '0 0 0 1px #00c6ff, 0 8px 24px rgba(0,150,214,.15)' : 'none',
-                              transform: selProc===k ? 'translateY(-2px)' : 'none',
-                            }}
-                            onMouseEnter={e => {
-                              if (selProc!==k) {
-                                e.currentTarget.style.borderColor = '#1e4060';
-                                e.currentTarget.style.background = '#0d2035';
-                              }
-                            }}
-                            onMouseLeave={e => {
-                              if (selProc!==k) {
-                                e.currentTarget.style.borderColor = '#1a3550';
-                                e.currentTarget.style.background = '#0a1929';
-                              }
-                            }}
-                          >
-                            <div style={{ fontSize:32, marginBottom:10 }}>{p.ico}</div>
-                            <div style={{ fontSize:14, fontWeight:700, color:'#e4eef8', lineHeight:1.3, marginBottom:6 }}>{p.name}</div>
-                            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#4a7a9b', letterSpacing:'.05em' }}>{p.sub.split(' ').slice(0,3).join(' ').toUpperCase()}</div>
-                            {isHigh && <div style={{ position:'absolute', top:12, right:12, fontSize:8, fontFamily:"'JetBrains Mono',monospace", padding:'3px 8px', borderRadius:5, background:'rgba(255,71,87,.2)', color:'#ff8c96', border:'1px solid rgba(255,71,87,.4)', fontWeight:700, letterSpacing:'.08em' }}>HIGH RISK</div>}
-                            {isMod && <div style={{ position:'absolute', top:12, right:12, fontSize:8, fontFamily:"'JetBrains Mono',monospace", padding:'3px 8px', borderRadius:5, background:'rgba(245,166,35,.2)', color:'#f5b755', border:'1px solid rgba(245,166,35,.4)', fontWeight:700, letterSpacing:'.08em' }}>MOD RISK</div>}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* DOCUMENT TAB */}
-            {tab === 'document' && (
-              <div style={{ flex:1, overflowY:'auto', padding:'24px', display:'flex', flexDirection:'column', gap:20 }}>
-                <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
-                  <div>
-                    <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:600, color:'#e4eef8' }}>{proc ? `${proc.ico} ${proc.name}` : 'Procedure Documentation'}</div>
-                    <div style={{ fontSize:12, color:'#4a7a9b', marginTop:4 }}>{proc?.sub || 'Select a procedure first'}</div>
-                  </div>
-                  <div style={{ flex:1 }} />
-                  <button className="epn-btn" onClick={()=>setTab('select')}>← Change</button>
-                </div>
-
-                {!proc ? (
-                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:12, padding:48, textAlign:'center', color:'#4a7a9b', border:'1px dashed #1a3550', borderRadius:10 }}>
-                    <div style={{ fontSize:40, opacity:.3 }}>📝</div>
-                    <div style={{ fontSize:14, fontWeight:500, color:'#8aacc6' }}>No procedure selected</div>
-                    <div style={{ fontSize:12 }}>Go back and select a procedure first.</div>
-                    <button className="epn-btn p" onClick={()=>setTab('select')}>← Select Procedure</button>
-                  </div>
-                ) : (
-                  <>
-                    {/* Patient context row */}
-                    <div style={{ background:'#0a1929', border:'1px solid #1a3550', borderRadius:10, overflow:'hidden' }}>
-                      <div style={{ padding:'10px 18px', background:'#0d2035', borderBottom:'1px solid #1a3550', fontSize:11, fontWeight:600, color:'#e4eef8', letterSpacing:'.06em', textTransform:'uppercase' }}>👤 Physician & Encounter</div>
-                      <div style={{ padding:'14px 18px', display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
-                        {[['Physician / Attending', 'physicianName', 'e.g., Dr. Jane Smith, MD'],['Encounter Date','encounterDate',''],['Additional Allergies','allergies','e.g., Penicillin — rash']].map(([lbl,key,ph]) => (
-                          <div key={key} style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                            <div style={{ fontSize:11, fontWeight:600, color:'#4a7a9b', textTransform:'uppercase', letterSpacing:'.06em' }}>{lbl}</div>
-                            <input style={{ background:'#0d2035', border:'1px solid #1e4060', borderRadius:7, color:'#e4eef8', fontFamily:"'Outfit',sans-serif", fontSize:13, padding:'9px 12px', outline:'none' }} value={ptCtx[key]||''} onChange={e=>setPtCtx(p=>({...p,[key]:e.target.value}))} placeholder={ph} />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <ProcedureForm proc={proc} formData={formData} setFormData={(fn) => { setFormData(fn); debounceAI(); }} />
-                    <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-                      <button className="epn-btn p" onClick={generateNote} disabled={generating} style={{ padding:'10px 24px', fontSize:14, fontWeight:600, display:'flex', alignItems:'center', gap:8 }}>
-                        {generating ? '⏳ Generating…' : '✦ Generate Procedure Note'}
-                      </button>
-                      {generating && <span style={{ fontSize:12, color:'#4a7a9b' }}>AI is crafting your note…</span>}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* NOTE TAB */}
-            {tab === 'note' && (
-              <div style={{ flex:1, overflowY:'auto', padding:'24px', display:'flex', flexDirection:'column', gap:20 }}>
-                <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
-                  <div>
-                    <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:600, color:'#e4eef8' }}>Generated Note</div>
-                    <div style={{ fontSize:12, color:'#4a7a9b', marginTop:4 }}>Review, edit, and copy to EHR</div>
-                  </div>
-                  <div style={{ flex:1 }} />
-                  <div style={{ display:'flex', gap:8 }}>
-                    <button className="epn-btn" onClick={generateNote} disabled={generating}>↺ Regenerate</button>
-                    <button className="epn-btn s" onClick={copyNote} disabled={!generatedNote || generating}>Copy to Clipboard</button>
-                    <button className="epn-btn s" onClick={() => saveProcedureNote(false)} disabled={!generatedNote || saving} style={{ display:'flex', alignItems:'center', gap:6 }}>
-                      {saving ? '⏳ Saving…' : '💾 Save'}
-                    </button>
-                  </div>
-                </div>
-
-                {!generatedNote || generatedNote === 'Generating procedure note…' ? (
-                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:12, padding:48, textAlign:'center', color:'#4a7a9b', border:'1px dashed #1a3550', borderRadius:10, flex:1 }}>
-                    {generating ? (
-                      <>
-                        <div className="epn-dots"><span /><span /><span /></div>
-                        <div style={{ fontSize:13, color:'#8aacc6' }}>AI is generating your procedure note…</div>
-                      </>
-                    ) : (
-                      <>
-                        <div style={{ fontSize:40, opacity:.3 }}>📄</div>
-                        <div style={{ fontSize:14, fontWeight:500, color:'#8aacc6' }}>No note yet</div>
-                        <div style={{ fontSize:12 }}>Complete the form and click Generate Note.</div>
-                        <button className="epn-btn p" onClick={()=>setTab('document')}>← Fill Form</button>
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    <div style={{ background:'#0a1929', border:'1px solid #1a3550', borderRadius:10, overflow:'hidden' }}>
-                      <div style={{ padding:'9px 16px', background:'#0d2035', borderBottom:'1px solid #1a3550', display:'flex', alignItems:'center', gap:8 }}>
-                        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:'#4a7a9b' }}>{proc?.ico} {proc?.name} — {ptCtx.patientName||'Patient'} — {ptCtx.encounterDate}</span>
-                        <div style={{ flex:1 }} />
-                        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#4a7a9b' }}>~{generatedNote.split(' ').length} words</span>
-                      </div>
-                      <div contentEditable suppressContentEditableWarning style={{ padding:'28px 32px', fontFamily:"'Lora',Georgia,serif", fontSize:14, lineHeight:1.85, color:'#e4eef8', whiteSpace:'pre-wrap', minHeight:300, outline:'none', background:'#0a1929' }}>
-                        {generatedNote}
-                      </div>
-                    </div>
-                    <div style={{ background:'rgba(0,198,255,.05)', border:'1px solid rgba(0,198,255,.2)', borderRadius:8, padding:'10px 14px', fontSize:12, color:'#8aacc6', display:'flex', alignItems:'flex-start', gap:8 }}>
-                      <span>✏️</span><span>Fully editable. Auto-saves every 30 seconds. Verify all details against clinical findings before signing.</span>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </main>
-
-          {/* AI Panel */}
-          <aside style={{ width:295, flexShrink:0, background:'#0a1929', borderLeft:'1px solid #1a3550', display:'flex', flexDirection:'column', overflow:'hidden' }}>
-            <div style={{ padding:'12px 14px', borderBottom:'1px solid #1a3550', display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
-              <div style={{ width:7, height:7, borderRadius:'50%', background:'#00e5a0', boxShadow:'0 0 8px #00e5a0', animation:'none' }} />
-              <span style={{ fontSize:12, fontWeight:600, color:'#e4eef8', letterSpacing:'.04em', flex:1 }}>AI DOCUMENTATION ASSISTANT</span>
-              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#4a7a9b' }}>claude</span>
-            </div>
-            <div style={{ flex:1, overflowY:'auto', padding:'14px', display:'flex', flexDirection:'column', gap:10 }}>
-              {!selProc ? (
-                <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:10, color:'#4a7a9b', textAlign:'center', padding:20 }}>
-                  <div style={{ fontSize:36, opacity:.3 }}>🏥</div>
-                  <div style={{ fontSize:12, lineHeight:1.7 }}>Select a procedure to activate AI guidance.<br/><br/>I'll flag missing elements, check allergy conflicts, and help produce a billing-ready note.</div>
-                </div>
-              ) : (
-                <>
-                  {/* Completeness bar */}
-                  <div style={{ background:'#102840', borderRadius:8, padding:'10px 12px', border:'1px solid #1e4060' }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
-                      <span style={{ fontSize:10, fontWeight:700, color:'#4a7a9b', textTransform:'uppercase', letterSpacing:'.07em' }}>Note Completeness</span>
-                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:13, fontWeight:700, color:pctColor }}>{aiPct}%</span>
-                    </div>
-                    <div style={{ height:4, background:'#050f1e', borderRadius:3, overflow:'hidden' }}>
-                      <div style={{ height:'100%', background:`linear-gradient(90deg,#0096d6,#00e5a0)`, borderRadius:3, width:`${aiPct}%`, transition:'width .5s ease' }} />
-                    </div>
-                  </div>
-
-                  {aiReviewing && (
-                    <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', background:'#0d2035', border:'1px solid #1a3550', borderRadius:10, fontSize:12, color:'#4a7a9b' }}>
-                      <div className="epn-dots"><span /><span /><span /></div>
-                      <span>Reviewing form…</span>
-                    </div>
-                  )}
-
-                  {aiMsg && (
-                    <div className="aim" style={{ background:'#0d2035', border:'1px solid #1a3550', borderRadius:10, padding:'12px', fontSize:12, color:'#8aacc6', lineHeight:1.7 }}>
-                      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:'#4a7a9b', letterSpacing:'.1em', marginBottom:6 }}>AI REVIEW</div>
-                      <div dangerouslySetInnerHTML={{ __html: aiMsg }} />
-                    </div>
-                  )}
-
-                  {proc && (
-                    <div style={{ background:'rgba(245,166,35,.06)', border:'1px solid rgba(245,166,35,.22)', borderRadius:10, padding:12 }}>
-                      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:'#f5a623', letterSpacing:'.1em', marginBottom:6 }}>⚠ KEY REMINDERS</div>
-                      <div style={{ fontSize:11, color:'#8aacc6', lineHeight:1.7 }}>{proc.tips}</div>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </aside>
+            {aiLoading && <div className="epn-loader"><span /><span /><span /></div>}
+          </div>
+          <div className="epn-ai-input-wrap">
+            <textarea className="epn-ai-input" value={aiInput} onChange={e => setAiInput(e.target.value)} placeholder="Ask anything…" rows={1} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAI(); } }} />
+            <button className="epn-ai-send" onClick={sendAI}>↑</button>
+          </div>
         </div>
+      )}
+      <button className={`epn-ai-fab${aiOpen ? ' open' : ''}`} onClick={() => setAiOpen(!aiOpen)}>{aiOpen ? '✕' : '✦'}</button>
 
-        {/* Bottom nav */}
-        {!embedded && <div style={{ flexShrink:0, background:'#0a1929', borderTop:'1px solid #1a3550', height:76, display:'flex', flexDirection:'column', zIndex:200 }}>
-          <div style={{ display:'flex', alignItems:'center', padding:'0 16px', borderBottom:'1px solid #1a3550', height:38, gap:2 }}>
-            {[['select','📁 Select'],['document','📝 Document'],['note','📄 Note']].map(([t,lbl]) => (
-              <button key={t} className={`epn-bt${tab===t?' active':''}`} onClick={()=>setTab(t)}>
-                {lbl}
-                {t==='note' && generatedNote && !generating && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, padding:'1px 5px', borderRadius:8, background:'rgba(0,229,160,.15)', color:'#00e5a0', marginLeft:4 }}>✓</span>}
-              </button>
-            ))}
-            <div style={{ flex:1 }} />
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:'#4a7a9b' }}>Step {TABS.indexOf(tab)+1} of 3</span>
-          </div>
-          <div style={{ display:'flex', alignItems:'center', padding:'0 16px', height:38, gap:8 }}>
-            <button className="epn-btn" onClick={()=>{const i=TABS.indexOf(tab);if(i>0)setTab(TABS[i-1]);}} disabled={tab==='select'}>← Back</button>
-            <div style={{ flex:1 }} />
-            {tab==='document' && selProc && (
-              <button className="epn-btn p" onClick={generateNote} disabled={generating}>✦ Generate Note</button>
-            )}
-            <button className="epn-btn p" onClick={()=>{const i=TABS.indexOf(tab);if(i<2)setTab(TABS[i+1]);}} disabled={tab==='note'}>Next →</button>
-          </div>
-        </div>}
+      {/* Toast */}
+      {toastVisible && <div className="epn-toast">{toast}</div>}
 
-        {/* Toast */}
-        {toast && (
-          <div style={{ position:'fixed', bottom:90, right:20, background:'#00b880', color:'#fff', padding:'8px 16px', borderRadius:6, fontSize:12, fontWeight:600, zIndex:300 }}>{toast}</div>
+      {/* Modal */}
+      {modal && <Modal modal={modal} onClose={() => setModal(null)} categories={categories} setCategories={saveCats} activeCat={activeCat} setActiveCat={setActiveCat} />}
+
+      <div className="epn" style={embedded ? { position:'relative', width:'100%', height:'100%' } : { position:'fixed', top:88, left:56, right:0, bottom:0 }}>
+
+        {/* TOP BAR — only standalone */}
+        {!embedded && (
+          <div className="epn-top">
+            <div className="epn-r1">
+              <span className="epn-welcome">Welcome, <strong>Dr. Skiba</strong></span>
+              <div className="epn-vsep" />
+              <div className="epn-stat"><span className="epn-stat-v">8</span><span className="epn-stat-l">Active</span></div>
+              <div className="epn-stat"><span className="epn-stat-v alert">14</span><span className="epn-stat-l">Pending</span></div>
+              <div className="epn-stat"><span className="epn-stat-v">3</span><span className="epn-stat-l">Orders</span></div>
+              <div className="epn-r1-right">
+                <div className="epn-clock">{clock}</div>
+                <div className="epn-aion"><div className="epn-aion-dot" /> AI ON</div>
+                <button className="epn-newpt" onClick={() => navigate('/NewPatientInput')}>+ New Patient</button>
+              </div>
+            </div>
+            <div className="epn-r2">
+              <span className="epn-chtbadge">PT-4-471-8820</span>
+              <span className="epn-ptname">New Patient</span>
+              <span className="epn-ptmeta">67 y/o · Male</span>
+              <span className="epn-ptcc">CC: Chest Pain</span>
+              <div className="epn-vsep" />
+              {[['BP','158/94',true],['HR','108',true],['RR','18',false],['SpO₂','93%',false],['T','37.1°C',false],['GCS','15',false]].map(([l,v,abn]) => (
+                <div key={l} className="epn-vital"><span className="vl">{l}</span><span className={`vv${abn ? ' abn' : ''}`}>{v}</span></div>
+              ))}
+              <div className="epn-vsep" />
+              <span className="epn-sbadge epn-sbadge-m">MONITORING</span>
+              <span className="epn-sbadge epn-sbadge-r">Room 4B</span>
+              <div className="epn-acts">
+                <button className="epn-btn">📋 Orders</button>
+                <button className="epn-btn">📝 SOAP</button>
+                <button className="epn-btn-coral">🚪 Dispo</button>
+                <button className="epn-btn-p">💾 Save</button>
+              </div>
+            </div>
+          </div>
         )}
 
-        {!embedded && <ClinicalTabBar currentPage="EDProcedureNotes" />}
+        <div className="epn-body">
+          {/* SIDEBAR */}
+          {!embedded && (
+            <aside className="epn-sb">
+              {SB_GROUPS.map((grp, gi) => (
+                <div key={gi}>
+                  {gi > 0 && <div className="epn-sbdiv" />}
+                  <div className="epn-sblbl">{grp.label}</div>
+                  {grp.items.map(item => (
+                    <Link key={item.id} to={item.link} className={`epn-sbitem${item.active ? ' active' : ''}`}>
+                      <span style={{ fontSize: 13, width: 18, textAlign: 'center', flexShrink: 0 }}>{item.icon}</span>
+                      <span style={{ flex: 1 }}>{item.label}</span>
+                      <span className={`epn-sbdot ${item.dot}`} />
+                    </Link>
+                  ))}
+                </div>
+              ))}
+            </aside>
+          )}
+
+          {/* MAIN CONTENT */}
+          <main className="epn-main">
+            {/* Header */}
+            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+              <span style={{ fontSize:20 }}>✂️</span>
+              <div>
+                <div className="epn-page-title">ED Procedure Notes</div>
+                <div className="epn-page-sub">Select a category, then document your procedure</div>
+              </div>
+              <div style={{ marginLeft:'auto', display:'flex', gap:6 }}>
+                <button className="epn-btn" onClick={() => setAiOpen(true)}>🤖 AI Help</button>
+              </div>
+            </div>
+
+            {/* Search */}
+            <div className="epn-cmdbar" onClick={e => e.stopPropagation()}>
+              <span style={{ fontSize:14, color:'#4a6a8a' }}>🔍</span>
+              <input className="epn-cmdinput" value={cmdQuery} onChange={e => { setCmdQuery(e.target.value); setShowCmd(true); }} onFocus={() => setShowCmd(true)} placeholder="Search procedures… ⌘K" />
+              <span className="epn-cmdhint">⌘K</span>
+              {showCmd && cmdResults.length > 0 && (
+                <div className="epn-cmdresults">
+                  {cmdResults.map(k => {
+                    const p = P[k];
+                    return (
+                      <div key={k} className="epn-cmdresult" onClick={() => { selectProc(k); setCmdQuery(''); setShowCmd(false); }}>
+                        <span style={{ fontSize:18, width:28, textAlign:'center' }}>{p.ico}</span>
+                        <div><div style={{ fontSize:13, color:'#e8f0fe' }}>{p.name}</div><div style={{ fontSize:11, color:'#4a6a8a' }}>{p.sub}</div></div>
+                        <div className={`epn-starbtn${favorites.includes(k) ? ' on' : ''}`} onClick={e => toggleFav(k, e)}>{favorites.includes(k) ? '★' : '☆'}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Breadcrumb */}
+            <div className="epn-bc">
+              <span className="epn-bclink" onClick={() => { setActiveCat(null); setView('select'); }}>Categories</span>
+              {activeCat && <>
+                <span className="epn-bcsep">›</span>
+                <span className="epn-bccur">{categories.find(c => c.id === activeCat)?.name}</span>
+              </>}
+              {selectedProc && activeCat && <>
+                <span className="epn-bcsep">›</span>
+                <span className="epn-bccur">{P[selectedProc]?.name}</span>
+              </>}
+            </div>
+
+            {/* Favorites */}
+            {favorites.length > 0 && (
+              <div className="epn-favbar">
+                <span style={{ fontSize:16, flexShrink:0 }}>⭐</span>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:'#f5c842', textTransform:'uppercase', letterSpacing:'.08em', flexShrink:0, fontWeight:600 }}>Favorites</span>
+                <div style={{ width:1, height:20, background:'#1a3555', flexShrink:0, margin:'0 4px' }} />
+                {favorites.map(k => {
+                  const p = P[k]; if (!p) return null;
+                  return (
+                    <div key={k} className="epn-favchip" onClick={() => selectProc(k)}>
+                      <span style={{ fontSize:16 }}>{p.ico}</span>
+                      <span style={{ fontSize:12, color:'#e8f0fe', fontWeight:500 }}>{p.name}</span>
+                      <span style={{ fontSize:12, color:'#f5c842', cursor:'pointer' }} onClick={e => toggleFav(k, e)}>★</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* SELECT VIEW */}
+            {view === 'select' && (
+              <>
+                <div className="epn-catgrid">
+                  {categories.map(cat => (
+                    <div key={cat.id} className={`epn-cattile${activeCat === cat.id ? ' active' : ''}`} onClick={() => setActiveCat(activeCat === cat.id ? null : cat.id)}>
+                      <div className="epn-ctglow" style={{ background: cat.color }} />
+                      <div className="epn-ctlogo" style={{ background: cat.color + '18', border: `1px solid ${cat.color}40` }}>
+                        <SvgLogo k={cat.logo || 'custom'} color={cat.color} />
+                      </div>
+                      <div className="epn-ctname">{cat.name}</div>
+                      <div className="epn-ctcount">{cat.procs.length}</div>
+                      <div className="epn-ctedit" onClick={e => { e.stopPropagation(); setModal({ type:'editCat', id: cat.id }); }}>✏️</div>
+                    </div>
+                  ))}
+                  <div className="epn-cattile add" onClick={() => setModal({ type:'newCat' })}>
+                    <div className="epn-ctlogo" style={{ borderRadius:14, background:'rgba(59,158,255,.08)', border:'1px dashed #2e4a6a' }}>
+                      <SvgLogo k="custom" color="#4a6a8a" />
+                    </div>
+                    <div className="epn-ctname" style={{ color:'#4a6a8a' }}>+ New Category</div>
+                  </div>
+                </div>
+
+                {activeCat && (() => {
+                  const cat = categories.find(c => c.id === activeCat);
+                  if (!cat) return null;
+                  return (
+                    <div>
+                      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
+                        <span style={{ fontSize:28 }}>{cat.icon}</span>
+                        <div>
+                          <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:600 }}>{cat.name}</div>
+                          <div style={{ fontSize:11, color:'#4a6a8a' }}>{cat.procs.length} procedure{cat.procs.length !== 1 ? 's' : ''}</div>
+                        </div>
+                        <button className="epn-btn" style={{ marginLeft:'auto' }} onClick={() => setModal({ type:'addProc', catId: activeCat })}>+ Add Procedure</button>
+                        <button className="epn-btn" onClick={() => setModal({ type:'editCat', id: activeCat })}>✏️ Edit</button>
+                      </div>
+                      {!cat.procs.length ? (
+                        <div style={{ textAlign:'center', padding:32, color:'#4a6a8a', border:'1px dashed #1a3555', borderRadius:10 }}>
+                          <div style={{ fontSize:28, opacity:.3, marginBottom:8 }}>📂</div>
+                          <div>No procedures yet</div>
+                          <button className="epn-btn-b" style={{ marginTop:10 }} onClick={() => setModal({ type:'addProc', catId: activeCat })}>+ Add Procedure</button>
+                        </div>
+                      ) : (
+                        <div className="epn-proclist">
+                          {cat.procs.map(k => {
+                            const p = P[k]; if (!p) return null;
+                            const rl = RL[p.risk];
+                            const fv = favorites.includes(k);
+                            return (
+                              <div key={k} className={`epn-procitem${selectedProc === k ? ' sel' : ''}`} onClick={() => selectProc(k)}>
+                                <span style={{ fontSize:20 }}>{p.ico}</span>
+                                <div>
+                                  <div style={{ fontSize:12, fontWeight:500, color:'#e8f0fe', lineHeight:1.3 }}>{p.name}</div>
+                                  <div style={{ fontSize:10, color:'#4a6a8a', marginTop:1 }}>{p.sub}</div>
+                                </div>
+                                {rl && <span style={{ marginLeft:'auto', fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, padding:'2px 6px', borderRadius:4, background:RBG[p.risk], color:RC[p.risk], border:`1px solid ${RBD[p.risk]}`, flexShrink:0 }}>{rl}</span>}
+                                <div className={`epn-starbtn${fv ? ' on' : ''}`} onClick={e => toggleFav(k, e)}>{fv ? '★' : '☆'}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </>
+            )}
+
+            {/* DOCUMENT VIEW */}
+            {view === 'document' && (() => {
+              const proc = selectedProc ? P[selectedProc] : null;
+              return (
+                <>
+                  <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
+                    <div>
+                      <div style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:600 }}>{proc ? `${proc.ico} ${proc.name}` : 'Procedure Documentation'}</div>
+                      <div style={{ fontSize:12, color:'#4a6a8a', marginTop:4 }}>{proc?.sub || 'Select a procedure first'}</div>
+                    </div>
+                    <div style={{ marginLeft:'auto', display:'flex', gap:8 }}>
+                      <button className="epn-btn" onClick={() => setView('select')}>← Change</button>
+                    </div>
+                  </div>
+
+                  {!proc ? (
+                    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:12, padding:48, textAlign:'center', color:'#4a6a8a', border:'1px dashed #1a3555', borderRadius:10 }}>
+                      <div style={{ fontSize:40, opacity:.3 }}>📝</div>
+                      <div style={{ fontSize:14, color:'#8aaccc' }}>No procedure selected</div>
+                      <button className="epn-btn-b" onClick={() => setView('select')}>← Select Procedure</button>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Physician / Encounter */}
+                      <div className="epn-fsec">
+                        <div className="epn-fsec-hdr">
+                          <span>👤</span>
+                          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, fontWeight:600, color:'#e8f0fe', letterSpacing:'.05em', textTransform:'uppercase' }}>Physician & Encounter</span>
+                          <span style={{ marginLeft:'auto', fontFamily:"'JetBrains Mono',monospace", fontSize:11, padding:'2px 9px', borderRadius:20, background:'rgba(0,229,192,.12)', color:'#00e5c0', border:'1px solid rgba(0,229,192,.3)', fontWeight:600 }}>{proc.ico} {proc.name}</span>
+                        </div>
+                        <div className="epn-fsec-body">
+                          <div className="epn-grid-3">
+                            <div className="epn-field"><label className="epn-flbl">Physician</label><input className="epn-finput" value={physician} onChange={e => setPhysician(e.target.value)} placeholder="Dr. Smith, MD" /></div>
+                            <div className="epn-field"><label className="epn-flbl">Date</label><input type="date" className="epn-finput" style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12, colorScheme:'dark' }} value={encounterDate} onChange={e => setEncounterDate(e.target.value)} /></div>
+                            <div className="epn-field"><label className="epn-flbl">Allergies</label><input className="epn-finput" value={allergies} onChange={e => setAllergies(e.target.value)} placeholder="Penicillin" /></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Procedure sections */}
+                      {proc.secs.map((sec, si) => (
+                        <div key={si} className="epn-fsec" style={{ animationDelay: `${si * 0.05}s` }}>
+                          <div className="epn-fsec-hdr">
+                            <span>{sec.ic}</span>
+                            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, fontWeight:600, color:'#e8f0fe', letterSpacing:'.05em', textTransform:'uppercase' }}>{sec.t}</span>
+                          </div>
+                          <div className="epn-fsec-body">
+                            {sec.rows.map((row, ri) => <FormRow key={ri} row={row} formData={formData} setFormData={setFormData} />)}
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Tips */}
+                      <div className="epn-tipbox gold">
+                        <span>⚠</span>
+                        <div>
+                          <strong style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, letterSpacing:'.1em', display:'block', marginBottom:4 }}>KEY REMINDERS</strong>
+                          <span>{proc.tips}</span>
+                        </div>
+                      </div>
+
+                      <button className="epn-btn-p" onClick={genNote} style={{ padding:'10px 24px', fontSize:13, fontWeight:700, alignSelf:'flex-start' }} disabled={generating}>
+                        {generating ? '⏳ Generating…' : '✦ Generate Procedure Note'}
+                      </button>
+                    </>
+                  )}
+                </>
+              );
+            })()}
+
+            {/* NOTE VIEW */}
+            {view === 'note' && (
+              <>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <span style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:600 }}>Generated Note</span>
+                  <span style={{ marginLeft:'auto', fontFamily:"'JetBrains Mono',monospace", fontSize:11, padding:'2px 9px', borderRadius:20, background:'rgba(0,229,192,.12)', color:'#00e5c0', border:'1px solid rgba(0,229,192,.3)', fontWeight:600 }}>Ready</span>
+                  <button className="epn-btn" onClick={genNote}>↺ Regen</button>
+                  <button className="epn-btn-p" onClick={copyNote} disabled={!generatedNote}>📋 Copy</button>
+                </div>
+
+                {!generatedNote ? (
+                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:12, padding:48, textAlign:'center', color:'#4a6a8a', border:'1px dashed #1a3555', borderRadius:10 }}>
+                    <div style={{ fontSize:40, opacity:.3 }}>📄</div>
+                    <div style={{ fontSize:14, color:'#8aaccc' }}>No note generated yet</div>
+                    <button className="epn-btn-b" onClick={() => setView('document')}>← Fill Form</button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="epn-noteout">
+                      <div className="epn-noteout-hdr">
+                        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:'#4a6a8a' }}>
+                          {selectedProc && P[selectedProc] ? `${P[selectedProc].ico} ${P[selectedProc].name}` : ''} — {encounterDate}
+                        </span>
+                        <span style={{ marginLeft:'auto', fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#2e4a6a' }}>~{generatedNote.split(/\s+/).length} words</span>
+                      </div>
+                      <div className="epn-noteout-body" contentEditable suppressContentEditableWarning>{generatedNote}</div>
+                    </div>
+                    <div className="epn-tipbox info"><span>✏️</span><span>Fully editable. Verify all details before signing.</span></div>
+                  </>
+                )}
+              </>
+            )}
+          </main>
+        </div>
+
+        {/* BOTTOM BAR */}
+        {!embedded && (
+          <div className="epn-bot">
+            <button className="epn-btn" onClick={() => {
+              const views = ['select','document','note'];
+              const i = views.indexOf(view);
+              if (i > 0) setView(views[i - 1]);
+            }}>← Back</button>
+            <div className="epn-step-dots">
+              {allSteps.map((s, i) => (
+                <div key={i} className={`epn-sdot ${s.active ? 'current' : s.dot}`} title={s.label} />
+              ))}
+            </div>
+            <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:6 }}>
+              <span style={{ fontSize:12, color:'#e8f0fe', fontWeight:500 }}>Procedures</span>
+              <button className="epn-btn-p" style={{ padding:'6px 16px', fontSize:12, fontWeight:700 }} onClick={() => {
+                const views = ['select','document','note'];
+                const i = views.indexOf(view);
+                if (i < views.length - 1) setView(views[i + 1]);
+              }}>Next →</button>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

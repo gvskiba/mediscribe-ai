@@ -312,6 +312,8 @@ export default function EDProcedureNotes({ embedded = false, patientName = '', p
   const [ctx, setCtx] = useState({ physician: physicianName || '', date: new Date().toISOString().slice(0,10), allergies: patientAllergies || '' });
   const [noteText, setNoteText] = useState('');
   const [generating, setGenerating] = useState(false);
+  const [billing, setBilling] = useState(null); // { cpt, icd10, modifiers, complexity, notes }
+  const [billingLoading, setBillingLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
@@ -367,6 +369,7 @@ export default function EDProcedureNotes({ embedded = false, patientName = '', p
   const generateNote = async () => {
     if (!proc) return;
     setGenerating(true);
+    setBilling(null);
     const lines = [
       'PROCEDURE NOTE',
       '═══════════════════════════════════════',
@@ -389,9 +392,67 @@ export default function EDProcedureNotes({ embedded = false, patientName = '', p
       lines.push('');
     });
     lines.push('COMPLICATIONS: None noted.', '', 'Patient tolerated procedure well.', '', '───────────────────────────────────────', `Signed: ${ctx.physician || '[Physician]'}`, `Date/Time: ${new Date().toLocaleString()}`);
-    setNoteText(lines.join('\n'));
+    const generatedNote = lines.join('\n');
+    setNoteText(generatedNote);
     setView('note');
     setGenerating(false);
+    // Auto-generate billing codes
+    setBillingLoading(true);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a medical billing expert. Analyze this ED procedure note and return accurate billing codes.
+
+PROCEDURE: ${proc.name}
+FORMDATA: ${JSON.stringify(formData)}
+NOTE EXCERPT: ${generatedNote.slice(0, 800)}
+
+Return the most relevant billing codes for this procedure.`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            cpt_codes: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  code: { type: 'string' },
+                  description: { type: 'string' },
+                  rvu: { type: 'number' },
+                  primary: { type: 'boolean' }
+                }
+              }
+            },
+            icd10_codes: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  code: { type: 'string' },
+                  description: { type: 'string' },
+                  type: { type: 'string' }
+                }
+              }
+            },
+            modifiers: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  modifier: { type: 'string' },
+                  description: { type: 'string' }
+                }
+              }
+            },
+            complexity: { type: 'string' },
+            billing_notes: { type: 'string' }
+          }
+        }
+      });
+      setBilling(result);
+    } catch {
+      setBilling({ error: true });
+    }
+    setBillingLoading(false);
   };
 
   const sendAI = async () => {
@@ -762,6 +823,84 @@ export default function EDProcedureNotes({ embedded = false, patientName = '', p
                   <div className="edpn-note-body" contentEditable suppressContentEditableWarning onInput={e => setNoteText(e.currentTarget.innerText)}>{noteText}</div>
                 </div>
                 <div className="edpn-tip-info"><span>✏️</span><span>Editable. Verify all details before signing.</span></div>
+
+                {/* Billing Codes Panel */}
+                <div style={{background:T.panel,border:`1px solid ${T.border}`,borderRadius:12,overflow:'hidden'}}>
+                  <div style={{padding:'10px 16px',background:T.up,borderBottom:`1px solid ${T.border}`,display:'flex',alignItems:'center',gap:8}}>
+                    <span>💰</span>
+                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:600,color:T.txt,letterSpacing:'.05em',textTransform:'uppercase'}}>Billing Code Suggestions</span>
+                    {billingLoading && <span style={{marginLeft:6,fontSize:10,color:T.teal,fontFamily:"'JetBrains Mono',monospace"}}>⏳ Analyzing…</span>}
+                    {billing && !billingLoading && billing.complexity && (
+                      <span style={{marginLeft:'auto',padding:'2px 10px',borderRadius:18,fontSize:10,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",background:billing.complexity.toLowerCase().includes('high')?'rgba(255,107,107,.15)':billing.complexity.toLowerCase().includes('mod')?'rgba(255,159,67,.15)':'rgba(0,229,192,.1)',color:billing.complexity.toLowerCase().includes('high')?T.coral:billing.complexity.toLowerCase().includes('mod')?T.orange:T.teal,border:`1px solid ${billing.complexity.toLowerCase().includes('high')?'rgba(255,107,107,.3)':billing.complexity.toLowerCase().includes('mod')?'rgba(255,159,67,.3)':'rgba(0,229,192,.2)'}`}}>{billing.complexity}</span>
+                    )}
+                  </div>
+                  {billingLoading && (
+                    <div style={{padding:'20px 16px',display:'flex',alignItems:'center',gap:8,color:T.txt3,fontSize:12}}>
+                      <div className="edpn-ai-loader" style={{padding:0}}><span/><span/><span/></div>
+                      Extracting CPT &amp; ICD-10 codes…
+                    </div>
+                  )}
+                  {billing && !billingLoading && !billing.error && (
+                    <div style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:14}}>
+                      {/* CPT Codes */}
+                      {billing.cpt_codes?.length > 0 && (
+                        <div>
+                          <div style={{fontSize:9,color:T.txt3,fontFamily:"'JetBrains Mono',monospace",textTransform:'uppercase',letterSpacing:'.07em',fontWeight:600,marginBottom:6}}>CPT Codes</div>
+                          <div style={{display:'flex',flexDirection:'column',gap:5}}>
+                            {billing.cpt_codes.map((c, i) => (
+                              <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'7px 10px',background:T.card,border:`1px solid ${c.primary?'rgba(59,158,255,.3)':T.border}`,borderRadius:8}}>
+                                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:700,color:c.primary?T.blue:T.txt,minWidth:56}}>{c.code}</span>
+                                <span style={{flex:1,fontSize:12,color:T.txt2}}>{c.description}</span>
+                                {c.rvu > 0 && <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.gold,flexShrink:0}}>{c.rvu} RVU</span>}
+                                {c.primary && <span style={{fontSize:9,padding:'1px 6px',borderRadius:10,background:'rgba(59,158,255,.15)',color:T.blue,border:'1px solid rgba(59,158,255,.3)',fontFamily:"'JetBrains Mono',monospace",fontWeight:700,flexShrink:0}}>PRIMARY</span>}
+                                <button onClick={() => navigator.clipboard.writeText(c.code).then(() => showToast(`Copied ${c.code}`))} style={{background:'none',border:'none',color:T.txt3,cursor:'pointer',fontSize:12,padding:'2px 4px'}}>📋</button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {/* ICD-10 Codes */}
+                      {billing.icd10_codes?.length > 0 && (
+                        <div>
+                          <div style={{fontSize:9,color:T.txt3,fontFamily:"'JetBrains Mono',monospace",textTransform:'uppercase',letterSpacing:'.07em',fontWeight:600,marginBottom:6}}>ICD-10 Codes</div>
+                          <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                            {billing.icd10_codes.map((c, i) => (
+                              <div key={i} style={{display:'flex',alignItems:'center',gap:6,padding:'5px 10px',background:T.card,border:`1px solid ${T.border}`,borderRadius:8,cursor:'pointer'}} onClick={() => navigator.clipboard.writeText(c.code).then(() => showToast(`Copied ${c.code}`))}>
+                                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,color:T.teal}}>{c.code}</span>
+                                <span style={{fontSize:11,color:T.txt2}}>{c.description}</span>
+                                {c.type && <span style={{fontSize:9,padding:'1px 5px',borderRadius:8,background:'rgba(0,229,192,.1)',color:T.teal,border:'1px solid rgba(0,229,192,.2)',fontFamily:"'JetBrains Mono',monospace"}}>{c.type}</span>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {/* Modifiers */}
+                      {billing.modifiers?.length > 0 && (
+                        <div>
+                          <div style={{fontSize:9,color:T.txt3,fontFamily:"'JetBrains Mono',monospace",textTransform:'uppercase',letterSpacing:'.07em',fontWeight:600,marginBottom:6}}>Modifiers</div>
+                          <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                            {billing.modifiers.map((m, i) => (
+                              <div key={i} style={{display:'flex',alignItems:'center',gap:5,padding:'4px 10px',background:'rgba(155,109,255,.08)',border:'1px solid rgba(155,109,255,.25)',borderRadius:8}}>
+                                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,color:T.purple}}>-{m.modifier}</span>
+                                <span style={{fontSize:11,color:T.txt2}}>{m.description}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {/* Billing Notes */}
+                      {billing.billing_notes && (
+                        <div style={{padding:'8px 12px',background:'rgba(245,200,66,.05)',border:'1px solid rgba(245,200,66,.18)',borderRadius:8,fontSize:11,color:T.gold,lineHeight:1.55}}>
+                          <strong style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:'.08em',display:'block',marginBottom:3}}>BILLING NOTES</strong>
+                          {billing.billing_notes}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {billing?.error && (
+                    <div style={{padding:'12px 16px',fontSize:12,color:T.txt3}}>⚠ Could not generate billing codes. Please review manually.</div>
+                  )}
+                </div>
               </>
             )}
           </div>

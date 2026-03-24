@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import ProcedureSettings, { loadPrefs } from '@/components/procedures/ProcedureSettings';
+import AnatomicMap from '@/components/procedures/AnatomicMap';
 
 /* ══════════════════════════════════════
    DESIGN TOKENS
@@ -322,6 +323,7 @@ export default function EDProcedureNotes({ embedded = false, patientName = '', p
   const [aiInput, setAiInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [mapMode, setMapMode] = useState(false);
   const [toast, setToast] = useState('');
   const [modal, setModal] = useState(null); // null | {type, data}
   const [modalCatColor, setModalCatColor] = useState(CAT_COLORS[0]);
@@ -634,6 +636,9 @@ Return the most relevant billing codes for this procedure.`,
             <div style={{fontSize:11,color:T.txt3}}>Select a category, then document your procedure</div>
           </div>
           <div style={{marginLeft:'auto',display:'flex',gap:6}}>
+            <button className={`edpn-btn${mapMode?' edpn-btn-blue':''}`} onClick={() => setMapMode(m => !m)} style={mapMode?{background:T.blue,color:'white',border:'none'}:{}}>
+              🫀 {mapMode ? 'Hide Map' : 'Anatomy Map'}
+            </button>
             <button className="edpn-btn" onClick={() => setShowSettings(true)}>⚙️ Preferences</button>
             <button className="edpn-btn" onClick={() => setModal({type:'newcat'})}>+ Category</button>
           </div>
@@ -684,7 +689,14 @@ Return the most relevant billing codes for this procedure.`,
         <Breadcrumb />
 
         {/* ── SELECT VIEW ── */}
-        {view === 'select' && !activeCat && (
+        {/* Anatomic Map Panel */}
+        {view === 'select' && mapMode && (
+          <div style={{background:T.panel,border:`1px solid ${T.border}`,borderRadius:12,padding:'14px 16px'}}>
+            <AnatomicMap onSelectProc={(key) => { selectProc(key); setMapMode(false); }} />
+          </div>
+        )}
+
+        {view === 'select' && !activeCat && !mapMode && (
           <div style={{fontSize:11,color:T.txt3,fontFamily:"'JetBrains Mono',monospace",textTransform:'uppercase',letterSpacing:'.06em',fontWeight:600,marginBottom:-6}}>Categories</div>
         )}
         {view === 'select' && !activeCat && (

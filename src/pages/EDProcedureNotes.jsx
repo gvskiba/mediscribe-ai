@@ -157,16 +157,16 @@ const CSS = `
 .edpn-cmd-results{position:absolute;top:calc(100% + 4px);left:0;right:0;background:${T.panel};border:1px solid ${T.border};border-radius:8px;max-height:280px;overflow-y:auto;z-index:50;box-shadow:0 12px 40px rgba(0,0,0,.4)}
 .edpn-cmd-result{display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;border-bottom:1px solid rgba(26,53,85,.3);font-size:12px}
 .edpn-cmd-result:last-child{border-bottom:none}.edpn-cmd-result:hover{background:${T.up}}
-.edpn-cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
-.edpn-cat-tile{position:relative;border-radius:14px;cursor:pointer;border:1.5px solid ${T.border};overflow:hidden;transition:all .25s;display:flex;flex-direction:column;align-items:center;padding:18px 8px 12px;gap:6px;background:${T.card}}
-.edpn-cat-tile:hover{border-color:${T.borderHi};transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,0,0,.3)}
+.edpn-cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
+.edpn-cat-tile{position:relative;border-radius:16px;cursor:pointer;border:1.5px solid ${T.border};overflow:hidden;transition:all .25s;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 12px 18px;gap:10px;background:${T.card};aspect-ratio:1/1;min-height:160px}
+.edpn-cat-tile:hover{border-color:${T.borderHi};transform:translateY(-3px);box-shadow:0 10px 32px rgba(0,0,0,.4)}
 .edpn-cat-tile.edpn-active-cat{border-color:${T.blue};box-shadow:0 0 0 1px ${T.blue}}
-.edpn-glow{position:absolute;top:-25px;left:50%;transform:translateX(-50%);width:80px;height:50px;border-radius:50%;filter:blur(25px);opacity:.25;pointer-events:none;transition:opacity .3s}
-.edpn-cat-tile:hover .edpn-glow{opacity:.45}
-.edpn-ct-logo{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;z-index:1;font-size:24px;transition:transform .2s}
-.edpn-cat-tile:hover .edpn-ct-logo{transform:scale(1.08)}
-.edpn-ct-name{font-size:11px;font-weight:600;color:${T.txt};text-align:center;line-height:1.3;z-index:1}
-.edpn-ct-count{font-family:'JetBrains Mono',monospace;font-size:9px;color:${T.txt3};background:${T.up};border:1px solid ${T.border};border-radius:10px;padding:1px 6px;z-index:1}
+.edpn-glow{position:absolute;top:0;left:0;right:0;bottom:0;opacity:.13;pointer-events:none;transition:opacity .3s}
+.edpn-cat-tile:hover .edpn-glow{opacity:.22}
+.edpn-ct-logo{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;z-index:1;font-size:30px;transition:transform .2s;position:absolute;top:50%;left:50%;transform:translate(-50%,-68%);flex-shrink:0}
+.edpn-cat-tile:hover .edpn-ct-logo{transform:translate(-50%,-68%) scale(1.08)}
+.edpn-ct-name{font-size:12px;font-weight:600;color:${T.txt};text-align:center;line-height:1.3;z-index:1;margin-top:auto}
+.edpn-ct-count{font-family:'JetBrains Mono',monospace;font-size:10px;color:${T.txt3};z-index:1}
 .edpn-proc-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin-top:10px}
 .edpn-proc-item{background:${T.card};border:1px solid ${T.border};border-radius:8px;padding:8px 10px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px}
 .edpn-proc-item:hover{border-color:${T.borderHi};background:${T.up}}
@@ -604,18 +604,22 @@ export default function EDProcedureNotes({ embedded = false, patientName = '', p
 
         {/* ── SELECT VIEW ── */}
         {view === 'select' && !activeCat && (
+          <div style={{fontSize:11,color:T.txt3,fontFamily:"'JetBrains Mono',monospace",textTransform:'uppercase',letterSpacing:'.06em',fontWeight:600,marginBottom:-6}}>Categories</div>
+        )}
+        {view === 'select' && !activeCat && (
           <div className="edpn-cat-grid">
             {categories.map(cat => (
               <div key={cat.id} className="edpn-cat-tile" onClick={() => openCat(cat.id)}>
-                <div className="edpn-glow" style={{background:cat.color}} />
-                <div className="edpn-ct-logo" style={{background:`${cat.color}18`,border:`1px solid ${cat.color}40`}}>{cat.icon}</div>
+                <div className="edpn-glow" style={{background:`radial-gradient(circle at 50% 40%, ${cat.color} 0%, transparent 70%)`}} />
+                <div className="edpn-ct-logo" style={{background:`${cat.color}22`,border:`1.5px solid ${cat.color}55`,boxShadow:`0 0 20px ${cat.color}44`}}>{cat.icon}</div>
                 <div className="edpn-ct-name">{cat.name}</div>
                 <div className="edpn-ct-count">{cat.procs.length}</div>
               </div>
             ))}
             <div className="edpn-cat-tile" style={{borderStyle:'dashed',borderColor:T.txt4,background:'transparent'}} onClick={() => setModal({type:'newcat'})}>
-              <div className="edpn-ct-logo" style={{background:'rgba(59,158,255,.08)',border:`1px dashed ${T.txt4}`,fontSize:20,color:T.txt4}}>+</div>
+              <div className="edpn-ct-logo" style={{background:'transparent',border:`1px dashed ${T.txt4}`,fontSize:20,color:T.txt4,position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-68%)'}}>+</div>
               <div className="edpn-ct-name" style={{color:T.txt3}}>New Category</div>
+              <div className="edpn-ct-count" style={{opacity:0}}>0</div>
             </div>
           </div>
         )}

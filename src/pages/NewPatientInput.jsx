@@ -13,6 +13,7 @@ import ROSTab from "@/components/npi/ROSTab";
 import PETab from "@/components/npi/PETab";
 import AutoCoderTab from "@/components/npi/AutoCoderTab";
 import PatientChart from "@/pages/PatientChart";
+import EDProcedureNotes from "@/pages/EDProcedureNotes";
 
 import { ROS_SYSTEMS, PE_SYSTEMS, PMH_SYSTEMS, TABS } from "@/components/npi/npiData";
 
@@ -290,10 +291,8 @@ export default function NewPatientInput() {
             </div>
           )}
           {currentTab === 'procedures' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', justifyContent: 'center', height: 300 }}>
-              <div style={{ fontSize: 32 }}>✂️</div>
-              <div style={{ color: S.txt2, fontSize: 14 }}>ED Procedure Notes</div>
-              <button onClick={() => navigate('/EDProcedureNotes')} style={{ background: S.teal, color: S.bg, border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Open Procedures →</button>
+            <div style={{ margin: '-18px -22px -30px', height: 'calc(100vh - 138px)', overflow: 'hidden' }}>
+              <EDProcedureNotes />
             </div>
           )}
           {currentTab === 'orders' && (

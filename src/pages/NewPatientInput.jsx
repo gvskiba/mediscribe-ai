@@ -268,8 +268,8 @@ export default function NewPatientInput() {
             <MedicalDecisionMaking embedded patientName={patientName} chiefComplaint={cc.text} />
           )}
           {currentTab === 'discharge' && (
-            <div style={{ margin: '-18px -22px -30px', height: 'calc(100vh - 160px)' }}>
-              <DischargePlanningWrapper patientName={patientName} patientDob={demo.dob} patientId={demo.mrn} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} diagnoses={[]} medications={medications} allergies={allergies} />
+            <div style={{ margin: '-18px -22px -30px', height: 'calc(100vh - 138px)', overflow: 'hidden' }}>
+              <DischargePlanningWrapper embedded patientName={patientName} patientDob={demo.dob} patientId={demo.mrn} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} diagnoses={[]} medications={medications} allergies={allergies} />
             </div>
           )}
           {currentTab === 'autocoder' && (

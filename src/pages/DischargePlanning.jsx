@@ -332,7 +332,7 @@ const pad = n => String(n).padStart(2, "0");
 const TODAY_DATE = `${pad(now.getMonth()+1)}/${pad(now.getDate())}/${now.getFullYear()}`;
 const TODAY_TIME = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
-export default function DischargePlanning() {
+export default function DischargePlanning({ embedded = false }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [clinicalNotes, setClinicalNotes] = useState([]);
   const [selectedNoteId, setSelectedNoteId] = useState(null);
@@ -595,8 +595,8 @@ export default function DischargePlanning() {
     <div className="dcw">
       <style>{CSS}</style>
 
-      {/* ICON SIDEBAR */}
-      <aside className="dcw-isb">
+      {/* ICON SIDEBAR — hidden when embedded */}
+      {!embedded && <aside className="dcw-isb">
         <div className="dcw-isb-logo">
           <div className="dcw-isb-logo-box">D/C</div>
         </div>
@@ -612,13 +612,13 @@ export default function DischargePlanning() {
             );
           })}
         </div>
-      </aside>
+      </aside>}
 
       {/* RIGHT COLUMN */}
       <div className="dcw-right">
 
-        {/* NAVBAR */}
-        <div className="dcw-navbar">
+        {/* NAVBAR — hidden when embedded */}
+        {!embedded && <div className="dcw-navbar">
           <span className="dcw-nav-welcome">Welcome, <strong>{attendingName}</strong></span>
           <div className="dcw-nav-sep"/>
           <div className="dcw-nav-stat"><span className="dcw-nav-stat-val">7</span><span className="dcw-nav-stat-lbl">Active Patients</span></div>
@@ -631,10 +631,10 @@ export default function DischargePlanning() {
             <div className="dcw-nav-ai-on"><div className="dcw-nav-ai-dot"/> AI ON</div>
             <button className="dcw-nav-new-pt">+ New Patient</button>
           </div>
-        </div>
+        </div>}
 
-        {/* SUB-NAVBAR */}
-        <div className="dcw-subnav">
+        {/* SUB-NAVBAR — hidden when embedded */}
+        {!embedded && <div className="dcw-subnav">
           <span className="dcw-subnav-logo">notrya</span>
           <span className="dcw-subnav-sep">|</span>
           <span className="dcw-subnav-title">Discharge Summary</span>
@@ -647,10 +647,10 @@ export default function DischargePlanning() {
               {saving ? <><span className="dcw-spin"/> Signing…</> : "✍ Finalize & Sign"}
             </button>
           </div>
-        </div>
+        </div>}
 
-        {/* VITALS BAR */}
-        <div className="dcw-vbar">
+        {/* VITALS BAR — hidden when embedded */}
+        {!embedded && <div className="dcw-vbar">
           <span className="dcw-vbar-name">{patientName}</span>
           <span className="dcw-vbar-meta">62 yo F · DOB {patientDOB} · MRN {patientMRN}</span>
           <div className="dcw-vbar-div"/>
@@ -665,7 +665,7 @@ export default function DischargePlanning() {
           <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
             <span className={`dcw-badge ${dcStatus==="SIGNED"?"dcw-badge-teal":"dcw-badge-gold"}`}>{dcStatus}</span>
           </div>
-        </div>
+        </div>}
 
         {/* MAIN WRAP */}
         <div className="dcw-main-wrap">

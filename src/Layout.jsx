@@ -116,7 +116,7 @@ const NO_CHART_SIDEBAR = new Set([
 ───────────────────────────────────────────── */
 const FULLSCREEN_PAGES = new Set([
   'ClinicalNoteStudio', 'NoteDetail', 'PatientDashboard',
-  'ERPlanBuilder', 'ERx', 'MedicalDecisionMaking',
+  'ERPlanBuilder', 'ERx',
   'MedicationReference', 'KnowledgeBaseV2', 'PatientEducationGenerator',
   'EDProcedureNotes', 'DiagnosticStewardship', 'NoteCreationHub',
   'AutoCoder', 'NursingFlowsheet', 'ClinicalDecisionSupport',

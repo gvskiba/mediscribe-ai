@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
+import ProcedureSettings, { loadPrefs } from '@/components/procedures/ProcedureSettings';
 
 /* ══════════════════════════════════════
    DESIGN TOKENS
@@ -320,6 +321,7 @@ export default function EDProcedureNotes({ embedded = false, patientName = '', p
   const [aiMessages, setAiMessages] = useState([{ role: 'sys', text: 'Notrya AI ready.' }]);
   const [aiInput, setAiInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [toast, setToast] = useState('');
   const [modal, setModal] = useState(null); // null | {type, data}
   const [modalCatColor, setModalCatColor] = useState(CAT_COLORS[0]);
@@ -481,13 +483,30 @@ Return the most relevant billing codes for this procedure.`,
 
   const selectProc = (key) => {
     setSelectedProc(key);
-    setFormData({});
     setNoteText('');
-    // initialize chip defaults
+    // initialize chip defaults + physician prefs
     const pData = P[key];
+    const prefs = loadPrefs();
     const defaults = {};
-    pData.sections.forEach(s => s.fields.forEach(f => { if (f.type === 'chips' && f.defaults?.length) defaults[f.id] = f.defaults; }));
+    pData.sections.forEach(s => s.fields.forEach(f => {
+      if (f.type === 'chips' && f.defaults?.length) defaults[f.id] = f.defaults;
+      // Apply pref defaults by matching field id patterns
+      if (f.type === 'select') {
+        if ((f.id === 'anes' || f.id === 'anes_tech') && prefs.anesthetic && f.options?.includes(prefs.anesthetic)) defaults[f.id] = prefs.anesthetic;
+        if (f.id === 'sut_mat' && prefs.suture_material && f.options?.includes(prefs.suture_material)) defaults[f.id] = prefs.suture_material;
+        if (f.id === 'closure' && prefs.closure_method && f.options?.includes(prefs.closure_method)) defaults[f.id] = prefs.closure_method;
+        if (f.id === 'dressing' && prefs.dressing && f.options?.includes(prefs.dressing)) defaults[f.id] = prefs.dressing;
+        if (f.id === 'tet' && prefs.tetanus && f.options?.includes(prefs.tetanus)) defaults[f.id] = prefs.tetanus;
+        if (f.id === 'location' && prefs.location && f.options?.some(o => o.toLowerCase() === prefs.location.toLowerCase())) defaults[f.id] = f.options.find(o => o.toLowerCase() === prefs.location.toLowerCase());
+      }
+    }));
     setFormData(defaults);
+    // Pre-fill ctx with prefs
+    setCtx(prev => ({
+      ...prev,
+      physician: prefs.physician || prev.physician,
+      allergies: prefs.allergies || prev.allergies,
+    }));
     setView('document');
   };
 
@@ -615,6 +634,7 @@ Return the most relevant billing codes for this procedure.`,
             <div style={{fontSize:11,color:T.txt3}}>Select a category, then document your procedure</div>
           </div>
           <div style={{marginLeft:'auto',display:'flex',gap:6}}>
+            <button className="edpn-btn" onClick={() => setShowSettings(true)}>⚙️ Preferences</button>
             <button className="edpn-btn" onClick={() => setModal({type:'newcat'})}>+ Category</button>
           </div>
         </div>
@@ -938,6 +958,7 @@ Return the most relevant billing codes for this procedure.`,
       {modal?.type === 'newcat' && <NewCatModal />}
       {modal?.type === 'editcat' && <EditCatModal cat={modal.cat} />}
       {modal?.type === 'addproc' && <AddProcModal cat={modal.cat} />}
+      {showSettings && <ProcedureSettings onClose={() => setShowSettings(false)} />}
     </>
   );
 }

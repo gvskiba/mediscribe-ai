@@ -291,9 +291,7 @@ export default function NewPatientInput() {
             </div>
           )}
           {currentTab === 'procedures' && (
-            <div style={{ margin: '-18px -22px -30px', height: 'calc(100vh - 138px)', overflow: 'hidden' }}>
-              <EDProcedureNotes />
-            </div>
+            <EDProcedureNotes />
           )}
           {currentTab === 'orders' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', justifyContent: 'center', height: 300 }}>

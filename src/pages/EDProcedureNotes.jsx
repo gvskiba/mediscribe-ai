@@ -776,7 +776,7 @@ export default function EDProcedureNotes({ embedded = false }) {
       {/* Modal */}
       {modal && <Modal modal={modal} onClose={() => setModal(null)} categories={categories} setCategories={saveCats} activeCat={activeCat} setActiveCat={setActiveCat} />}
 
-      <div className="epn" style={embedded ? { position:'relative', width:'100%', height:'100%' } : { position:'fixed', top:88, left:56, right:0, bottom:0 }}>
+      <div className="epn" style={embedded ? { position:'relative', width:'100%', height:'100%' } : { position:'fixed', top:0, left:0, right:0, bottom:0 }}>
 
         {/* TOP BAR — only standalone */}
         {!embedded && (

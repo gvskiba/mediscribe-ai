@@ -12,6 +12,7 @@ const nowHHMM = () => {
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap');
 .mdm-root{--bg:#050f1e;--bg-panel:#081628;--bg-card:#0b1e36;--bg-up:#0e2544;--border:#1a3555;--border-hi:#2a4f7a;--blue:#3b9eff;--cyan:#00d4ff;--teal:#00e5c0;--gold:#f5c842;--purple:#9b6dff;--coral:#ff6b6b;--green:#3dffa0;--orange:#ff9f43;--txt:#e8f0fe;--txt2:#8aaccc;--txt3:#4a6a8a;--txt4:#2e4a6a;--r:8px;--rl:12px;position:fixed;top:65px;left:72px;right:0;bottom:0;background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;display:flex;flex-direction:column;overflow:hidden;z-index:10;}
+.mdm-root.embedded{position:relative;top:auto;left:auto;right:auto;bottom:auto;width:100%;height:100%;z-index:auto;}
 .mdm-root *{box-sizing:border-box;}
 /* sub navbar */
 .mdm-subnav{background:var(--bg-card);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:10px;height:42px;flex-shrink:0;}
@@ -530,7 +531,7 @@ function ImpressionCard({ variant, evidence, onAddEvidence, onRemoveEvidence }) 
 }
 
 /* ─── Main Page ─────────────────────────────────────── */
-export default function MedicalDecisionMaking() {
+export default function MedicalDecisionMaking({ embedded = false, patientName, chiefComplaint, vitals } = {}) {
   const [labs, setLabs] = useState([]);
   const [imaging, setImaging] = useState([]);
   const [ekgs, setEkgs] = useState([]);
@@ -671,9 +672,9 @@ export default function MedicalDecisionMaking() {
   const saveMDM = () => appendMsg('sys', '💾 MDM data saved to session.');
 
   return (
-    <div className="mdm-root">
-      {/* SUB NAVBAR */}
-      <div className="mdm-subnav">
+    <div className={`mdm-root${embedded ? ' embedded' : ''}`}>
+      {/* SUB NAVBAR — hidden when embedded */}
+      {!embedded && <div className="mdm-subnav">
         <span className="mdm-subnav-logo">notrya</span>
         <span className="mdm-subnav-sep">|</span>
         <span className="mdm-subnav-title">Medical Decision Making</span>
@@ -682,7 +683,7 @@ export default function MedicalDecisionMaking() {
           <Link to="/Home" className="nav-back-link">← Back to Chart</Link>
           <button className="nav-save-btn" onClick={saveMDM}>💾 Save MDM</button>
         </div>
-      </div>
+      </div>}
 
       {/* VITALS BAR */}
       <div className="mdm-vitals">
@@ -1006,13 +1007,13 @@ export default function MedicalDecisionMaking() {
         </aside>
       </div>
 
-      {/* BOTTOM NAV */}
-      <div className="mdm-bottom">
+      {/* BOTTOM NAV — hidden when embedded */}
+      {!embedded && <div className="mdm-bottom">
         <Link to="/Home" className="bnav-back" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>← Summary</Link>
         <div style={{ flex: 1 }} />
         <button className="bnav-gen" onClick={aiGenerateMDMNote}>✨ Generate Full MDM Note</button>
         <button className="bnav-next" onClick={saveMDM}>💾 Save &amp; Finish</button>
-      </div>
+      </div>}
     </div>
   );
 }

@@ -118,7 +118,7 @@ const FULLSCREEN_PAGES = new Set([
   'ClinicalNoteStudio', 'NoteDetail', 'PatientDashboard',
   'ERPlanBuilder', 'ERx',
   'MedicationReference', 'KnowledgeBaseV2', 'PatientEducationGenerator',
-  'EDProcedureNotes', 'DiagnosticStewardship', 'NoteCreationHub',
+  'DiagnosticStewardship', 'NoteCreationHub',
   'EDProcedureNotesNew',
   'AutoCoder', 'NursingFlowsheet', 'ClinicalDecisionSupport',
   'DischargePlanning', 'UserPreferences', 'NoteTemplates', 'CustomTemplates',

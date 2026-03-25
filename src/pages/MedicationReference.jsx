@@ -438,7 +438,7 @@ export default function MedicationReference() {
         <div className="mrp-body">
 
           {tab === 'drugs' && (
-            <>
+            <div style={{display:'flex',flexDirection:'column',flex:1,overflow:'hidden',minHeight:0}}>
               {!search && (
                 <div className="cat-rail">
                   {categories.map(cat=>{
@@ -473,7 +473,7 @@ export default function MedicationReference() {
                   </>
                 )}
               </div>
-            </>
+            </div>
           )}
 
           {tab === 'peds' && (

@@ -6,6 +6,15 @@ const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap');
 :root{--bg:#050f1e;--bg-panel:#081628;--bg-card:#0b1e36;--bg-up:#0e2544;--border:#1a3555;--border-hi:#2a4f7a;--blue:#3b9eff;--cyan:#00d4ff;--teal:#00e5c0;--gold:#f5c842;--purple:#9b6dff;--coral:#ff6b6b;--green:#3dffa0;--orange:#ff9f43;--txt:#e8f0fe;--txt2:#8aaccc;--txt3:#4a6a8a;--txt4:#2e4a6a;--r:8px;--rl:12px;--icon-sb:56px;--top-h:88px;--bot-h:50px;--sb-w:170px;--ai-w:280px}
 .pc *,.pc *::before,.pc *::after{box-sizing:border-box;margin:0;padding:0}
+.pc-isb{position:fixed;top:0;left:0;bottom:0;width:56px;background:#040d19;border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;z-index:300}
+.pc-isb-logo{width:100%;height:48px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--border)}
+.pc-isb-box{width:30px;height:30px;background:var(--blue);border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:12px;font-weight:700;color:white;cursor:pointer}
+.pc-isb-scroll{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:2px;overflow-y:auto}
+.pc-isb-btn{width:42px;height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:6px;cursor:pointer;transition:all .15s;color:var(--txt3);border:1px solid transparent;font-size:16px;text-decoration:none}
+.pc-isb-btn:hover{background:var(--bg-up);border-color:var(--border);color:var(--txt2)}
+.pc-isb-btn.isb-active{background:rgba(59,158,255,.1);border-color:rgba(59,158,255,.3);color:var(--blue)}
+.pc-isb-lbl{font-size:8px;line-height:1;white-space:nowrap;color:inherit}
+.pc-isb-bottom{padding:8px 0;border-top:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:2px}
 .pc{position:fixed;inset:0;margin-left:var(--icon-sb);background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;overflow:hidden;display:flex;flex-direction:column}
 .pc.embedded{position:relative;inset:auto;margin-left:0;height:100%}
 
@@ -381,6 +390,16 @@ export default function PatientChart({ embedded = false }) {
     }
   };
 
+  const ISB_ITEMS = [
+    { icon: '🏠', label: 'Home',      page: '/' },
+    { icon: '📊', label: 'Dashboard', page: '/Dashboard' },
+    { icon: '🆕', label: 'New PT',    page: '/NewPatientInput' },
+    { icon: '👥', label: 'Patients',  page: '/PatientDashboard' },
+    { icon: '🔄', label: 'Shift',     page: '/Shift' },
+    { icon: '💊', label: 'Drugs',     page: '/DrugsBugs' },
+    { icon: '🧮', label: 'Calc',      page: '/Calculators' },
+  ];
+
   if (loading) return (
     <div className="page-loader">
       <style>{CSS}</style>
@@ -393,6 +412,25 @@ export default function PatientChart({ embedded = false }) {
   return (
     <>
       <style>{CSS}</style>
+
+      {/* ICON SIDEBAR */}
+      {!embedded && (
+        <aside className="pc-isb">
+          <div className="pc-isb-logo"><div className="pc-isb-box">Pc</div></div>
+          <div className="pc-isb-scroll">
+            {ISB_ITEMS.map(item => (
+              <a key={item.page} href={item.page} className="pc-isb-btn" title={item.label}>
+                <span>{item.icon}</span>
+                <span className="pc-isb-lbl">{item.label}</span>
+              </a>
+            ))}
+          </div>
+          <div className="pc-isb-bottom">
+            <a href="/AppSettings" className="pc-isb-btn" title="Settings"><span>⚙️</span><span className="pc-isb-lbl">Settings</span></a>
+          </div>
+        </aside>
+      )}
+
       <div className={`pc${embedded ? ' embedded' : ''}`}>
 
         {/* DEMO BANNER */}

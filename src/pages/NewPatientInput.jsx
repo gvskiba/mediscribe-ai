@@ -301,9 +301,7 @@ export default function NewPatientInput() {
             />
           )}
           {currentTab === 'medref' && (
-            <div style={{ margin: '-20px -24px' }}>
-              <MedicationReferencePage embedded />
-            </div>
+            <MedicationReferencePage embedded />
           )}
           {currentTab === 'orders' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', justifyContent: 'center', height: 300 }}>

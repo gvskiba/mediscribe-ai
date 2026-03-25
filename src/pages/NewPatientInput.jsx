@@ -51,7 +51,7 @@ const SIDEBAR_GROUPS = [
       { id: 'autocoder', icon: '🤖', label: 'AutoCoder' },
       { id: 'erx',       icon: '💉', label: 'eRx' },
       { id: 'procedures',icon: '✂️', label: 'Procedures' },
-      { id: 'medref',    icon: '💊', label: 'Medication Ref' },
+      { id: 'medref',    icon: '🧬', label: 'ED Med Ref' },
     ]
   },
 ];
@@ -301,7 +301,7 @@ export default function NewPatientInput() {
             />
           )}
           {currentTab === 'medref' && (
-            <div style={{ margin: '-20px -24px', minHeight: 'calc(100vh - 138px)' }}>
+            <div style={{ margin: '-20px -24px' }}>
               <MedicationReferencePage embedded />
             </div>
           )}

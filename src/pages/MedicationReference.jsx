@@ -14,7 +14,8 @@ const T = {
 /* ─── CSS ─── */
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
-.mrp{position:fixed;inset:0;background:${T.bg};color:${T.txt};font-family:'DM Sans',sans-serif;font-size:14px;display:flex;flex-direction:column;overflow:hidden;z-index:50}
+.mrp{background:${T.bg};color:${T.txt};font-family:'DM Sans',sans-serif;font-size:14px;display:flex;flex-direction:column;overflow:hidden;height:calc(100vh - 138px)}
+.mrp-fullscreen{position:fixed;inset:0;z-index:50;height:100vh}
 .mrp *,.mrp *::before,.mrp *::after{box-sizing:border-box}
 
 /* HEADER */
@@ -412,7 +413,7 @@ export default function MedicationReference({ embedded = false }) {
   return (
     <>
       <style>{CSS}</style>
-      <div className="mrp">
+      <div className={embedded ? 'mrp' : 'mrp mrp-fullscreen'}>
 
         {/* HEADER */}
         <div className="mrp-hdr">

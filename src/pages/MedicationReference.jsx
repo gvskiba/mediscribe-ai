@@ -774,9 +774,31 @@ function DrugRow({ d, isX, onToggle, extra }) {
       </div>
       {isX && (
         <div className="dr-det">
-          <span className="b b-b">{d.cls}</span>
+          <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:4}}>
+            <span className="b b-b">{d.cls}</span>
+            <span className="b b-t">{d.route}</span>
+            <span className="b b-g">Onset: {d.onset}</span>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+            <div>
+              <div className="dr-sect-lbl">Dose</div>
+              <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:13,fontWeight:700,color:'#00e5c0'}}>{d.dose}</div>
+            </div>
+            <div>
+              <div className="dr-sect-lbl">Route</div>
+              <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:13,color:'#e8f0fe'}}>{d.route}</div>
+            </div>
+            <div>
+              <div className="dr-sect-lbl">Drug Class</div>
+              <div style={{fontSize:12,color:'#8aaccc'}}>{d.cls}</div>
+            </div>
+            <div>
+              <div className="dr-sect-lbl">Onset</div>
+              <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:12,color:'#f5c842'}}>{d.onset}</div>
+            </div>
+          </div>
           <div>
-            <div className="dr-sect-lbl">Clinical Notes</div>
+            <div className="dr-sect-lbl" style={{marginTop:8}}>Clinical Notes</div>
             <div className="dr-notes">{d.notes}</div>
           </div>
         </div>

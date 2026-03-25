@@ -41,17 +41,16 @@ const CSS = `
 .mrp-tab{padding:6px 14px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:${T.txt3};letter-spacing:.8px;text-transform:uppercase;cursor:pointer;border:1px solid transparent;transition:all .15s;white-space:nowrap}
 .mrp-tab:hover{color:${T.txt2};background:${T.up}}
 .mrp-tab.on{background:rgba(0,229,192,.08);border-color:rgba(0,229,192,.25);color:${T.teal}}
-.mrp-body{flex:1;display:flex;overflow:auto;min-height:0}
-.cat-rail{width:152px;flex-shrink:0;border-right:1px solid ${T.border};overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:3px;background:${T.panel}}
-.cat-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px 6px;border-radius:10px;cursor:pointer;border:1px solid transparent;transition:all .18s;text-align:center;position:relative;min-height:60px}
-.cat-btn:hover{background:${T.up};border-color:${T.border}}
-.cat-btn.on{background:rgba(0,229,192,.05);border-color:rgba(0,229,192,.3)}
-.cat-btn.on::after{content:'';position:absolute;right:-1px;top:14px;bottom:14px;width:3px;background:${T.teal};border-radius:3px 0 0 3px}
-.cat-ico{font-size:20px;line-height:1}
-.cat-nm{font-size:10px;font-weight:600;color:${T.txt2};line-height:1.2}
-.cat-btn.on .cat-nm{color:${T.teal}}
-.cat-ct{font-family:'JetBrains Mono',monospace;font-size:9px;color:${T.txt4}}
-.drug-list{flex:1;overflow-y:auto;padding:12px 16px}
+.mrp-body{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.cat-rail{flex-shrink:0;border-bottom:1px solid ${T.border};overflow-x:auto;overflow-y:hidden;padding:8px 12px;display:flex;flex-direction:row;gap:6px;background:${T.panel}}
+.cat-btn{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;padding:6px 14px;border-radius:20px;cursor:pointer;border:1px solid ${T.border};transition:all .18s;text-align:center;white-space:nowrap;flex-shrink:0}
+.cat-btn:hover{background:${T.up};border-color:${T.borderHi}}
+.cat-btn.on{background:rgba(0,229,192,.1);border-color:rgba(0,229,192,.5)}
+.cat-ico{font-size:14px;line-height:1}
+.cat-nm{font-size:11px;font-weight:600;color:${T.txt2};line-height:1.2}
+.cat-btn.on .cat-nm{color:${T.teal};font-weight:700}
+.cat-ct{font-family:'JetBrains Mono',monospace;font-size:9px;color:${T.txt4};background:${T.up};border-radius:10px;padding:1px 6px}
+.drug-list{flex:1;overflow-y:auto;padding:12px 16px;min-height:0}
 .dlh{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(26,53,85,.4)}
 .dlh-ico{font-size:18px}
 .dlh-nm{font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:${T.txt}}
@@ -121,7 +120,7 @@ const CSS = `
 .high-alert-badge{background:rgba(255,107,107,.15);border:1px solid rgba(255,107,107,.3);color:${T.coral};padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace}
 .mrp ::-webkit-scrollbar{width:4px}
 .mrp ::-webkit-scrollbar-thumb{background:${T.border};border-radius:2px}
-@media(max-width:900px){.cat-rail{width:56px}.cat-nm,.cat-ct{display:none}.cat-btn{min-height:48px;padding:8px 4px}}
+@media(max-width:900px){.cat-nm{display:none}}
 `;
 
 const PEDS_STATIC = [

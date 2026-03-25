@@ -14,7 +14,6 @@ import NoteHistory from '@/pages/NoteHistory';
 import NPIDemo from '@/pages/NPIDemo';
 import BaseTemplate from '@/pages/BaseTemplate';
 import EDProcedureNotesNew from '@/pages/EDProcedureNotes';
-import MedicationReference from '@/pages/MedicationReference';
 
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -78,7 +77,6 @@ const AuthenticatedApp = () => {
       <Route path="/notehistory" element={<NoteHistory />} />
       <Route path="/npidemo" element={<NPIDemo />} />
       <Route path="/basetemplate" element={<BaseTemplate />} />
-      <Route path="/MedicationReference" element={<MedicationReference />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

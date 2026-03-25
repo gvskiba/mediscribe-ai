@@ -14,6 +14,7 @@ import PETab from "@/components/npi/PETab";
 import AutoCoderTab from "@/components/npi/AutoCoderTab";
 import PatientChart from "@/pages/PatientChart";
 import EDProcedureNotes from "@/pages/EDProcedureNotes";
+import MedicationReferencePage from "@/pages/MedicationReference";
 
 import { ROS_SYSTEMS, PE_SYSTEMS, PMH_SYSTEMS, TABS } from "@/components/npi/npiData";
 
@@ -50,6 +51,7 @@ const SIDEBAR_GROUPS = [
       { id: 'autocoder', icon: '🤖', label: 'AutoCoder' },
       { id: 'erx',       icon: '💉', label: 'eRx' },
       { id: 'procedures',icon: '✂️', label: 'Procedures' },
+      { id: 'medref',    icon: '💊', label: 'Medication Ref' },
     ]
   },
 ];
@@ -297,6 +299,11 @@ export default function NewPatientInput() {
               patientAllergies={allergies.join(', ')}
               physicianName={''}
             />
+          )}
+          {currentTab === 'medref' && (
+            <div style={{ margin: '-18px -22px -30px', minHeight: 'calc(100vh - 138px)' }}>
+              <MedicationReferencePage embedded />
+            </div>
           )}
           {currentTab === 'orders' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', justifyContent: 'center', height: 300 }}>

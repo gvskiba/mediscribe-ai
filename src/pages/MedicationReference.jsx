@@ -193,6 +193,7 @@ const CSS = `
   --r:10px;--r2:14px;--f:'Inter',sans-serif;
 }
 .medref-root{background:var(--bg);color:var(--tx);min-height:100vh;padding:16px 20px;font-family:var(--f);margin-left:72px;}
+.medref-root.embedded{margin-left:0;}
 .sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .sh-l{display:flex;align-items:center;gap:10px;}
 .sh-ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;background:var(--tdim);}
@@ -318,7 +319,7 @@ const CSS = `
 /* ═══════════════════════════════════════════════════════════════
    COMPONENT
 ═══════════════════════════════════════════════════════════════ */
-export default function MedicationReferencePage() {
+export default function MedicationReferencePage({ embedded = false }) {
   const [medications, setMedications]     = useState([]);
   const [loadingMeds, setLoadingMeds]     = useState(true);
   const [tab, setTab]                     = useState("medications");
@@ -486,7 +487,7 @@ export default function MedicationReferencePage() {
         </div>
       )}
 
-      <div className="medref-root" style={showSavedCases ? { marginLeft: 280 } : {}}>
+      <div className={`medref-root${embedded ? ' embedded' : ''}`} style={showSavedCases ? { marginLeft: 280 } : {}}>
 
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>

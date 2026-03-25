@@ -774,32 +774,52 @@ function DrugRow({ d, isX, onToggle, extra }) {
       </div>
       {isX && (
         <div className="dr-det">
-          <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:4}}>
+          {/* Drug header badges */}
+          <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:10}}>
             <span className="b b-b">{d.cls}</span>
             <span className="b b-t">{d.route}</span>
             <span className="b b-g">Onset: {d.onset}</span>
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-            <div>
-              <div className="dr-sect-lbl">Dose</div>
-              <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:13,fontWeight:700,color:'#00e5c0'}}>{d.dose}</div>
-            </div>
-            <div>
-              <div className="dr-sect-lbl">Route</div>
-              <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:13,color:'#e8f0fe'}}>{d.route}</div>
-            </div>
-            <div>
-              <div className="dr-sect-lbl">Drug Class</div>
-              <div style={{fontSize:12,color:'#8aaccc'}}>{d.cls}</div>
-            </div>
-            <div>
-              <div className="dr-sect-lbl">Onset</div>
-              <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:12,color:'#f5c842'}}>{d.onset}</div>
+
+          {/* Dosing grid */}
+          <div style={{background:'rgba(0,229,192,0.04)',border:'1px solid rgba(0,229,192,0.15)',borderRadius:10,padding:'12px 14px',marginBottom:10}}>
+            <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:8,color:'#2e4a6a',letterSpacing:'2.5px',textTransform:'uppercase',marginBottom:8}}>DOSING INFORMATION</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10}}>
+              <div>
+                <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:8,color:'#4a6a8a',letterSpacing:'2px',textTransform:'uppercase',marginBottom:3}}>DOSE</div>
+                <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:14,fontWeight:800,color:'#00e5c0'}}>{d.dose}</div>
+              </div>
+              <div>
+                <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:8,color:'#4a6a8a',letterSpacing:'2px',textTransform:'uppercase',marginBottom:3}}>ROUTE</div>
+                <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:14,fontWeight:700,color:'#e8f0fe'}}>{d.route}</div>
+              </div>
+              <div>
+                <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:8,color:'#4a6a8a',letterSpacing:'2px',textTransform:'uppercase',marginBottom:3}}>ONSET</div>
+                <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:14,fontWeight:700,color:'#f5c842'}}>{d.onset}</div>
+              </div>
             </div>
           </div>
+
+          {/* Drug class */}
+          <div style={{background:'rgba(59,158,255,0.05)',border:'1px solid rgba(59,158,255,0.15)',borderRadius:8,padding:'8px 12px',marginBottom:10}}>
+            <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:8,color:'#4a6a8a',letterSpacing:'2px',textTransform:'uppercase',marginBottom:3}}>DRUG CLASS</div>
+            <div style={{fontSize:13,fontWeight:600,color:'#3b9eff'}}>{d.cls}</div>
+          </div>
+
+          {/* Clinical notes */}
           <div>
-            <div className="dr-sect-lbl" style={{marginTop:8}}>Clinical Notes</div>
-            <div className="dr-notes">{d.notes}</div>
+            <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:8,color:'#4a6a8a',letterSpacing:'2.5px',textTransform:'uppercase',marginBottom:6}}>⚕ CLINICAL NOTES & PEARLS</div>
+            <div style={{fontSize:13,color:'#8aaccc',lineHeight:1.75,background:'#050f1e',padding:'10px 14px',borderRadius:8,borderLeft:'3px solid #2a4f7a'}}>{d.notes}</div>
+          </div>
+
+          {/* Action buttons */}
+          <div style={{display:'flex',gap:6,marginTop:10}}>
+            <button className="btn-ghost" style={{fontSize:10}} onClick={e=>{e.stopPropagation();navigator.clipboard?.writeText(`${d.name} ${d.dose} ${d.route}`);}}>
+              📋 Copy Dose
+            </button>
+            <button className="btn-ghost" style={{fontSize:10}} onClick={e=>{e.stopPropagation();navigator.clipboard?.writeText(d.notes);}}>
+              📝 Copy Notes
+            </button>
           </div>
         </div>
       )}

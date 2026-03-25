@@ -3,10 +3,9 @@ import { base44 } from "@/api/base44Client";
 
 /* ─── CSS ─── */
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap');
 :root{--bg:#050f1e;--bg-panel:#081628;--bg-card:#0b1e36;--bg-up:#0e2544;--border:#1a3555;--border-hi:#2a4f7a;--blue:#3b9eff;--teal:#00e5c0;--gold:#f5c842;--purple:#9b6dff;--coral:#ff6b6b;--orange:#ff9f43;--txt:#e8f0fe;--txt2:#8aaccc;--txt3:#4a6a8a;--txt4:#2e4a6a;--r:8px;--rl:12px}
-.mr*,.mr*::before,.mr*::after{box-sizing:border-box;margin:0;padding:0}
-.mr{display:flex;flex-direction:column;height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px}
+.mr*,.mr*::before,.mr*::after{box-sizing:border-box}
+.mr{display:flex;flex-direction:column;gap:0;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;margin:-20px -24px;height:calc(100vh - 138px)}
 .mr-topbar{display:flex;align-items:center;gap:10px;padding:10px 18px;background:var(--bg-panel);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
 .mr-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--txt);white-space:nowrap}
 .mr-search{flex:1;display:flex;align-items:center;gap:8px;background:var(--bg-up);border:1px solid var(--border);border-radius:var(--r);padding:0 12px;max-width:340px}
@@ -17,7 +16,7 @@ const CSS = `
 .mr-tab{padding:6px 14px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--txt3);letter-spacing:.8px;text-transform:uppercase;cursor:pointer;border:1px solid transparent;transition:all .15s;white-space:nowrap}
 .mr-tab:hover{color:var(--txt2);background:var(--bg-up)}
 .mr-tab.on{background:rgba(0,229,192,.08);border-color:rgba(0,229,192,.25);color:var(--teal)}
-.mr-body{flex:1;display:flex;overflow:hidden}
+.mr-body{flex:1;display:flex;overflow:hidden;min-height:0}
 .cat-rail{width:150px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:3px;background:var(--bg-panel)}
 .cat-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:12px 6px;border-radius:10px;cursor:pointer;border:1px solid transparent;transition:all .18s;text-align:center;position:relative;min-height:64px}
 .cat-btn:hover{background:var(--bg-up);border-color:var(--border)}
@@ -80,8 +79,8 @@ const CSS = `
 .btn-coral{background:rgba(255,107,107,.15);color:var(--coral);border:1px solid rgba(255,107,107,.3);border-radius:6px;padding:6px 16px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif}
 .btn-coral:hover{background:rgba(255,107,107,.25)}
 .btn-coral:disabled{opacity:.4;cursor:default}
-.mr ::-webkit-scrollbar{width:4px}
-.mr ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.mr .cat-rail::-webkit-scrollbar,.mr .drug-list::-webkit-scrollbar,.mr .full-pane::-webkit-scrollbar{width:4px}
+.mr .cat-rail::-webkit-scrollbar-thumb,.mr .drug-list::-webkit-scrollbar-thumb,.mr .full-pane::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 @media(max-width:900px){.cat-rail{width:56px}.cat-nm,.cat-ct{display:none}.cat-btn{min-height:48px;padding:8px 4px}}
 `;
 

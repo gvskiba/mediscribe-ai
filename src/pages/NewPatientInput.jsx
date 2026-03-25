@@ -240,10 +240,10 @@ export default function NewPatientInput() {
   };
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 138px)', background: S.bg, color: S.txt, fontFamily: "'DM Sans', sans-serif", fontSize: 13, overflow: 'hidden' }}>
+    <div style={{ color: S.txt, fontFamily: "'DM Sans', sans-serif", fontSize: 13 }}>
 
       {/* MAIN CONTENT */}
-      <main style={{ flex: 1, overflowY: 'auto', padding: '18px 22px 30px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <main style={{ padding: '0', display: 'flex', flexDirection: 'column', gap: 18 }}>
           {currentTab === 'demo' && (
             <DemoTab demo={demo} setDemo={setDemo} parseText={parseText} setParseText={setParseText} parsing={parsing} onSmartParse={smartParse} />
           )}
@@ -263,7 +263,7 @@ export default function NewPatientInput() {
             <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} />
           )}
           {currentTab === 'chart' && (
-            <div style={{ margin: '-18px -22px -30px', height: 'calc(100vh - 138px)', overflow: 'hidden' }}>
+            <div style={{ margin: '-20px -24px', minHeight: 'calc(100vh - 138px)', overflow: 'hidden' }}>
               <PatientChart embedded />
             </div>
           )}
@@ -271,7 +271,7 @@ export default function NewPatientInput() {
             <MedicalDecisionMaking embedded patientName={patientName} chiefComplaint={cc.text} />
           )}
           {currentTab === 'discharge' && (
-            <div style={{ margin: '-18px -22px -30px', height: 'calc(100vh - 138px)', overflow: 'hidden' }}>
+            <div style={{ margin: '-20px -24px', minHeight: 'calc(100vh - 138px)', overflow: 'hidden' }}>
               <DischargePlanningWrapper embedded patientName={patientName} patientDob={demo.dob} patientId={demo.mrn} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} diagnoses={[]} medications={medications} allergies={allergies} />
             </div>
           )}
@@ -301,7 +301,7 @@ export default function NewPatientInput() {
             />
           )}
           {currentTab === 'medref' && (
-            <div style={{ margin: '-18px -22px -30px', minHeight: 'calc(100vh - 138px)' }}>
+            <div style={{ margin: '-20px -24px', minHeight: 'calc(100vh - 138px)' }}>
               <MedicationReferencePage embedded />
             </div>
           )}

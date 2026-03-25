@@ -301,7 +301,7 @@ export default function NewPatientInput() {
             />
           )}
           {currentTab === 'medref' && (
-            <div style={{ margin: '-20px -24px', height: 'calc(100vh - 138px)', overflow: 'hidden' }}>
+            <div style={{ margin: '-20px -24px', height: 'calc(100vh - 138px)', overflow: 'auto' }}>
               <MedicationReferencePage embedded />
             </div>
           )}

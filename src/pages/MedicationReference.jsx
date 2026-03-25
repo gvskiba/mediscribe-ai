@@ -36,7 +36,7 @@ const CSS = `
 .mrp-tab.on{background:rgba(0,229,192,.08);border-color:rgba(0,229,192,.25);color:${T.teal}}
 
 /* BODY */
-.mrp-body{flex:1;display:flex;overflow:hidden}
+.mrp-body{flex:1;display:flex;overflow:auto;min-height:0}
 
 /* CATEGORY RAIL */
 .cat-rail{width:152px;flex-shrink:0;border-right:1px solid ${T.border};overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:3px;background:${T.panel}}

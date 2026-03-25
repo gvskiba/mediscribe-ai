@@ -14,8 +14,7 @@ const T = {
 /* ─── CSS ─── */
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
-.mrp{background:${T.bg};color:${T.txt};font-family:'DM Sans',sans-serif;font-size:14px;display:flex;flex-direction:column;overflow:hidden}
-.mrp.embedded{height:calc(100vh - 138px);width:calc(100% + 48px);margin-left:-24px;margin-top:-20px}
+.mrp{background:${T.bg};color:${T.txt};font-family:'DM Sans',sans-serif;font-size:14px;display:flex;flex-direction:column;overflow:hidden;height:100%}
 .mrp.fullscreen{position:fixed;inset:0;z-index:50;height:100vh}
 .mrp *,.mrp *::before,.mrp *::after{box-sizing:border-box}
 

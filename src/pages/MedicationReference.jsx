@@ -1,483 +1,698 @@
-import { useState, useMemo, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
-import SaveCaseModal from "../components/medicationreference/SaveCaseModal";
-import SavedCasesPanel from "../components/medicationreference/SavedCasesPanel";
-import WeightWidget from "../components/medicationreference/WeightWidget";
-import DrugInteractionChecker from "../components/medicationreference/DrugInteractionChecker";
-import ERConditions from "../components/medicationreference/ERConditions";
-import SepsisProtocol from "../components/medicationreference/SepsisProtocol";
-import MedRow from "../components/medicationreference/MedRow";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { base44 } from '@/api/base44Client';
 
-const CATEGORIES = [
-  { id: "all",      label: "All",            icon: "💊", color: "#00c4a0" },
-  { id: "anticoag", label: "Anticoagulants", icon: "🩸", color: "#ef4444" },
-  { id: "cardiac",  label: "Cardiac",        icon: "🫀", color: "#f97316" },
-  { id: "psych",    label: "Psychiatric",    icon: "🧠", color: "#8b5cf6" },
-  { id: "analgesic",label: "Analgesics",     icon: "🩹", color: "#fb7185" },
-  { id: "abx",      label: "Antibiotics",    icon: "🦠", color: "#22c55e" },
-  { id: "gi",       label: "GI",             icon: "💊", color: "#f59e0b" },
-  { id: "other",    label: "Other",          icon: "⚗️", color: "#06b6d4" },
+const T = {
+  bg:'#050f1e',panel:'#081628',card:'#0b1e36',up:'#0e2544',
+  border:'#1a3555',borderHi:'#2a4f7a',
+  blue:'#3b9eff',teal:'#00e5c0',gold:'#f5c842',coral:'#ff6b6b',
+  orange:'#ff9f43',txt:'#e8f0fe',txt2:'#8aaccc',txt3:'#4a6a8a',txt4:'#2e4a6a',
+};
+
+/* ═══════════════════ DRUGS DB ═══════════════════ */
+const DRUGS_DB = {
+  chestPain: {
+    label:'🫀 Chest Pain / ACS', drugs:[
+      {name:'Aspirin 325 mg PO',dose:'325 mg PO',class:'Antiplatelet',onset:'15-30 min',notes:'Give immediately. Chew, do not swallow whole. Avoid if true ASA allergy or active GI bleed.'},
+      {name:'Nitroglycerin 0.4 mg SL',dose:'0.4 mg SL q5min x3',class:'Vasodilator',onset:'1-3 min',notes:'Hold if SBP <90, RV infarction suspected, or recent PDE5 inhibitor use (sildenafil, tadalafil).'},
+      {name:'Heparin UFH',dose:'60 U/kg bolus (max 4000U), 12 U/kg/hr drip IV',class:'Anticoagulant',onset:'Immediate',notes:'Adjust for weight. Monitor aPTT. Avoid with recent surgery or bleeding risk. Used in STEMI/NSTEMI.'},
+      {name:'Morphine 2-4 mg IV',dose:'2-4 mg IV q5-15min PRN',class:'Opioid Analgesic',onset:'5-10 min',notes:'Use cautiously — associated with worse outcomes in NSTEMI in some studies. Consider fentanyl alternative.'},
+      {name:'Ticagrelor 180 mg loading PO',dose:'180 mg loading, then 90 mg BID',class:'P2Y12 Inhibitor',onset:'30 min',notes:'Preferred over clopidogrel. Avoid with prior intracranial hemorrhage. Note: Do NOT use if fibrinolytic given.'},
+      {name:'Clopidogrel 600 mg loading PO',dose:'600 mg loading, then 75 mg daily',class:'P2Y12 Inhibitor',onset:'2-6 hrs',notes:'Use if ticagrelor unavailable or contraindicated. CYP2C19 poor metabolizers have reduced efficacy.'},
+      {name:'Metoprolol IV',dose:'5 mg IV q5min x3, then 25-50 mg PO q6h',class:'Beta-Blocker',onset:'5 min IV',notes:'Avoid in decompensated HF, cardiogenic shock, PR >0.24s, 2nd/3rd degree block, severe reactive airway.'},
+    ]
+  },
+  anaphylaxis: {
+    label:'⚠️ Anaphylaxis', drugs:[
+      {name:'Epinephrine 1:1000 IM',dose:'0.3-0.5 mg IM (anterolateral thigh)',class:'Sympathomimetic',onset:'3-5 min',notes:'FIRST-LINE. Repeat q5-15min. Do NOT delay for antihistamines. Autoinjectors preferred in pre-hospital.'},
+      {name:'Diphenhydramine 25-50 mg IV/IM',dose:'25-50 mg IV/IM q4-6h',class:'Antihistamine',onset:'15-30 min',notes:'Adjunct only. Does NOT reverse anaphylaxis. Treats urticaria/pruritus. Causes sedation.'},
+      {name:'Famotidine 20 mg IV',dose:'20 mg IV over 2 min',class:'H2 Blocker',onset:'15-30 min',notes:'H2 antagonist adjunct to diphenhydramine. Mild additional benefit for skin/GI symptoms.'},
+      {name:'Methylprednisolone 125 mg IV',dose:'125 mg IV once',class:'Corticosteroid',onset:'4-6 hrs',notes:'Prevents biphasic reaction (onset 4-12h delayed). Not effective acutely. Give early regardless.'},
+      {name:'Albuterol 2.5 mg nebulized',dose:'2.5 mg neb PRN for bronchospasm',class:'Beta-2 Agonist',onset:'5-15 min',notes:'For bronchospasm component of anaphylaxis. Adjunct to epinephrine, not a replacement.'},
+      {name:'Normal Saline 1-2 L bolus IV',dose:'1-2 L IV bolus',class:'Crystalloid',onset:'Immediate',notes:'Aggressive fluid resuscitation for distributive shock. Consider laying patient supine. May need vasopressors.'},
+    ]
+  },
+  respiratory: {
+    label:'🫁 Respiratory / Asthma / COPD', drugs:[
+      {name:'Albuterol 2.5 mg neb',dose:'2.5 mg neb q20min x3, then q1-4h',class:'Beta-2 Agonist',onset:'5-15 min',notes:'First-line bronchodilator. Continuous nebulization for severe asthma. Monitor K+ — can cause hypokalemia.'},
+      {name:'Ipratropium 0.5 mg neb',dose:'0.5 mg neb q20min x3',class:'Anticholinergic',onset:'15-30 min',notes:'Additive effect with albuterol. Most benefit in first 24h of COPD exacerbation. Less effective in asthma alone.'},
+      {name:'Prednisone 40-60 mg PO',dose:'40-60 mg PO daily x5-7 days',class:'Corticosteroid',onset:'4-6 hrs',notes:'Oral equivalent to IV methylprednisolone. Use for moderate exacerbations. Start ASAP.'},
+      {name:'Methylprednisolone 125 mg IV',dose:'125 mg IV, then 40-80 mg q6-8h',class:'Corticosteroid',onset:'4-6 hrs',notes:'Use for severe/intubated patients. Taper for courses >5 days. No superiority over oral if gut works.'},
+      {name:'Magnesium Sulfate 2 g IV',dose:'2 g IV over 20 min',class:'Bronchodilator',onset:'15-20 min',notes:'For severe/life-threatening asthma not responding to standard therapy. Inhibits calcium-mediated bronchoconstriction.'},
+      {name:'BiPAP',dose:'IPAP 10-15 cmH₂O, EPAP 4-5 cmH₂O',class:'Ventilatory Support',onset:'Immediate',notes:'First-line non-invasive ventilation for COPD exacerbation. Reduces intubation rate. Contraindicated if unable to protect airway.'},
+      {name:'Epinephrine 1:1000 IM/SQ',dose:'0.3-0.5 mg IM/SQ q20min x3',class:'Sympathomimetic',onset:'3-5 min',notes:'For anaphylaxis-related bronchospasm or severe refractory asthma. Use with caution in elderly/cardiac history.'},
+    ]
+  },
+  seizure: {
+    label:'🧠 Seizures / Status Epilepticus', drugs:[
+      {name:'Lorazepam 4 mg IV',dose:'4 mg IV over 2 min',class:'Benzodiazepine',onset:'1-3 min',notes:'First-line IV benzo. Repeat in 5-10 min if seizure continues. Watch for respiratory depression. Have bag-valve mask ready.'},
+      {name:'Midazolam 10 mg IM',dose:'10 mg IM (>40 kg), 5 mg IM (13-40 kg)',class:'Benzodiazepine',onset:'3-5 min IM',notes:'Preferred when no IV access. RAMPART trial: non-inferior to IV lorazepam. Fastest buccal/nasal onset.'},
+      {name:'Diazepam 10 mg PR',dose:'0.2-0.5 mg/kg PR (max 20 mg)',class:'Benzodiazepine',onset:'5-10 min',notes:'Rectal route for home use or when no IV/IM access. Use Diastat gel. Absorption variable.'},
+      {name:'Levetiracetam IV',dose:'60 mg/kg IV over 10 min (max 4500 mg)',class:'Anticonvulsant',onset:'15-30 min',notes:'Second-line after benzodiazepines. Fewer drug interactions. No hepatic enzyme induction. Safe in pregnancy.'},
+      {name:'Fosphenytoin IV',dose:'20 mg PE/kg IV at max 150 mg PE/min',class:'Anticonvulsant',onset:'10-20 min',notes:'Use fosphenytoin (not phenytoin) IV. Monitor for hypotension and cardiac arrhythmias. Check levels.'},
+      {name:'Phenobarbital 20 mg/kg IV',dose:'20 mg/kg IV at 60 mg/min',class:'Barbiturate',onset:'15-30 min',notes:'Third-line agent. High risk of respiratory depression — intubation likely needed. Excellent seizure suppression.'},
+    ]
+  },
+  pain: {
+    label:'💊 Pain Management', drugs:[
+      {name:'Acetaminophen 1000 mg IV/PO',dose:'1000 mg IV/PO q6h (max 4 g/day)',class:'Analgesic',onset:'15-30 min',notes:'Safest first-line non-opioid. Reduce to 500-650 mg in hepatic impairment. IV offers no benefit over PO if functional gut.'},
+      {name:'Ibuprofen 400-800 mg PO',dose:'400-800 mg PO q6-8h with food',class:'NSAID',onset:'30-60 min',notes:'Avoid in renal insufficiency, GI bleed, >65 yo, or cardiovascular disease. Max 3.2 g/day.'},
+      {name:'Ketorolac 15-30 mg IV',dose:'15-30 mg IV/IM, max 5 days total',class:'NSAID',onset:'10-15 min',notes:'Most evidence for renal colic and musculoskeletal pain. Do not exceed 5 days total NSAID therapy. Avoid if CrCl <30.'},
+      {name:'Morphine 4-6 mg IV',dose:'0.1 mg/kg IV (typical 4-6 mg) q3-4h',class:'Opioid',onset:'5-10 min',notes:'Weight-based dosing preferred. Titrate to effect. Caution in renal failure (active metabolite). Histamine release.'},
+      {name:'Fentanyl 50-100 mcg IV',dose:'1-1.5 mcg/kg IV (typical 50-100 mcg)',class:'Opioid',onset:'2-3 min',notes:'Preferred in hemodynamic instability or renal failure. Rapid onset/offset. Intranasal 2 mcg/kg for no-IV access.'},
+      {name:'Ketamine subdissociative',dose:'0.3 mg/kg IV (typical 20-30 mg) over 10 min',class:'NMDA Antagonist',onset:'1-2 min',notes:'Emerging role in ED pain. Preserves airway and hemodynamics. May cause dysphoria — infuse slowly. Good for procedural pain.'},
+      {name:'Lidocaine 1% local',dose:'Max 4.5 mg/kg (7 mg/kg with epi)',class:'Local Anesthetic',onset:'2-5 min',notes:'For local infiltration. Do not exceed max dose. Epinephrine contraindicated in digits, nose, ears, and penis.'},
+    ]
+  },
+  acls: {
+    label:'⚡ Cardiac Arrest / ACLS', drugs:[
+      {name:'Epinephrine 1 mg IV',dose:'1 mg IV/IO q3-5min (1:10,000)',class:'Sympathomimetic',onset:'Immediate',notes:'Standard dose. Increases coronary and cerebral perfusion pressure. No survival benefit beyond ROSC when given late.'},
+      {name:'Amiodarone IV',dose:'300 mg IV bolus, then 150 mg; or 5 mg/kg',class:'Antiarrhythmic',onset:'Immediate',notes:'For shock-refractory VF/pVT. Can cause hypotension. Use peripheral IV or IO. Preferred over lidocaine in cardiac arrest.'},
+      {name:'Lidocaine IV',dose:'1-1.5 mg/kg IV, repeat 0.5-0.75 mg/kg q5-10min',class:'Antiarrhythmic',onset:'1-2 min',notes:'Alternative to amiodarone for VF/pVT. Max 3 mg/kg total. May be preferred if amiodarone unavailable.'},
+      {name:'Atropine 1 mg IV',dose:'1 mg IV q3-5min (max 3 mg)',class:'Anticholinergic',onset:'1-2 min',notes:'For symptomatic bradycardia. NOT recommended in asystole or PEA (removed from AHA 2010 ACLS for arrest). Use for symptomatic sinus bradycardia.'},
+      {name:'Calcium Chloride 10% 1g IV',dose:'1 g (10 mL of 10%) IV slow push',class:'Electrolyte',onset:'1-3 min',notes:'For hyperkalemia, hypocalcemia, CCB overdose, hypermagnesemia. NOT in sodium bicarb line (precipitates). 3x the calcium of calcium gluconate.'},
+      {name:'Sodium Bicarbonate 1 mEq/kg IV',dose:'1 mEq/kg IV',class:'Buffer',onset:'Immediate',notes:'For hyperkalemia, TCA overdose, severe metabolic acidosis. Use AFTER adequate ventilation established. Flush line before/after.'},
+    ]
+  },
+  stroke: {
+    label:'🧠 Stroke / CVA', drugs:[
+      {name:'Alteplase (tPA)',dose:'0.9 mg/kg IV (max 90 mg); 10% bolus, 90% over 60 min',class:'Thrombolytic',onset:'Immediate',notes:'Within 3-4.5h of ischemic stroke onset. Absolute contraindications: hemorrhage on CT, BP >185/110 after treatment, prior ICH, recent major surgery.'},
+      {name:'Tenecteplase',dose:'0.25 mg/kg IV single bolus (max 25 mg)',class:'Thrombolytic',onset:'Immediate',notes:'Emerging alternative to tPA — single bolus, fibrin-specific. Non-inferior in multiple trials. Simpler administration. Same contraindications as alteplase.'},
+      {name:'Labetalol IV',dose:'10-20 mg IV q10-20min (max 300 mg)',class:'Beta-Blocker',onset:'5-10 min',notes:'For BP management in stroke. Target BP <185/110 before tPA. Avoid in heart block, decompensated HF, reactive airway.'},
+      {name:'Nicardipine drip',dose:'5 mg/hr IV, titrate by 2.5 mg/hr q5-15min (max 15 mg/hr)',class:'CCB',onset:'5-15 min',notes:'Preferred continuous antihypertensive for stroke. Precise titration. Requires ICU monitoring. Avoid in heart failure.'},
+      {name:'Aspirin 325 mg PO/PR',dose:'325 mg PO/PR after tPA exclusion',class:'Antiplatelet',onset:'15-30 min',notes:'Give within 24-48h of ischemic stroke if tPA not given. DELAY 24h if tPA administered. Do NOT give for hemorrhagic stroke.'},
+    ]
+  },
+  sepsis: {
+    label:'🦠 Sepsis / Septic Shock', drugs:[
+      {name:'Normal Saline 30 mL/kg',dose:'30 mL/kg IV bolus over 1-3h',class:'Crystalloid',onset:'Immediate',notes:'Hour-1 bundle requirement. May give in 500 mL increments with reassessment. Reassess after each bolus for fluid overload.'},
+      {name:"Lactated Ringer's",dose:'30 mL/kg IV bolus',class:'Balanced Crystalloid',onset:'Immediate',notes:'Preferred over NS for large volume resuscitation (lower hyperchloremic acidosis risk). SMART trial: superior outcomes vs NS in critically ill.'},
+      {name:'Norepinephrine',dose:'0.1-0.5 mcg/kg/min IV drip (titrate to MAP ≥65)',class:'Vasopressor',onset:'Immediate',notes:'First-line vasopressor for septic shock. Requires central line for prolonged use. Start peripherally while CVC placed.'},
+      {name:'Vasopressin',dose:'0.03-0.04 units/min IV (fixed dose)',class:'Vasopressor',onset:'Immediate',notes:'Second vasopressor — add to norepinephrine when doses escalating. Fixed dose, not weight-based. Can spare norepinephrine dose.'},
+      {name:'Vancomycin',dose:'25-30 mg/kg IV (AUC-guided dosing)',class:'Antibiotic',onset:'1-2 hrs',notes:'For MRSA coverage. Infuse over 1-2h to reduce Red Man syndrome. Monitor levels. AUC/MIC goal 400-600 mg·h/L.'},
+      {name:'Piperacillin-Tazobactam 4.5g',dose:'4.5 g IV q6h (extended infusion 4h preferred)',class:'Antibiotic',onset:'30-60 min',notes:'Broad gram-negative + anaerobic coverage. Extended infusion preferred for PK/PD optimization. Adjust for renal function.'},
+      {name:'Meropenem 1 g IV',dose:'1 g IV q8h',class:'Antibiotic',onset:'30-60 min',notes:'For high-risk infections, ESBL/MDR organisms, or Pseudomonas aeruginosa. De-escalate when cultures finalized.'},
+      {name:'Hydrocortisone 100 mg IV',dose:'100 mg IV q8h (or 50 mg q6h)',class:'Corticosteroid',onset:'1-2 hrs',notes:'For refractory septic shock — when MAP requires high vasopressor doses. SSC 2021: add fludrocortisone 50 mcg daily (optional).'},
+    ]
+  },
+  overdose: {
+    label:'☠️ Overdose / Toxicology', drugs:[
+      {name:'Naloxone IV/IN',dose:'0.4-2 mg IV/IM/IN; titrate to respirations',class:'Opioid Antagonist',onset:'1-2 min IV',notes:'Titrate carefully — precipitates acute withdrawal. IN dose 2 mg. Repeated dosing for long-acting opioids. Duration 30-90 min (shorter than most opioids — redose!).'},
+      {name:'Activated Charcoal',dose:'1 g/kg PO (max 50 g)',class:'Adsorbent',onset:'15-30 min',notes:'Give within 1-2h of ingestion. Avoid if aspiration risk, ileus, or bowel obstruction. Most effective for salicylates, carbamazepine, phenobarbital.'},
+      {name:'N-Acetylcysteine (NAC)',dose:'150 mg/kg IV over 1h → 50 mg/kg over 4h → 100 mg/kg over 16h',class:'Antidote',onset:'30-60 min',notes:'APAP antidote. Best within 8h of ingestion, but give up to 24h (or longer if ALT elevated). Monitor LFTs, INR. Oral protocol alternative.'},
+      {name:'Flumazenil',dose:'0.2 mg IV q1min (max 3 mg)',class:'Benzo Antagonist',onset:'1-2 min',notes:'CAUTION: Use only in pure benzodiazepine OD — seizures if TCA or mixed OD. Duration <1h — re-sedation likely. Avoid if benzo-dependent.'},
+      {name:'Sodium Bicarbonate (TCA OD)',dose:'1-2 mEq/kg IV bolus',class:'Buffer',onset:'1-5 min',notes:'For TCA-induced wide-complex dysrhythmia or hypotension. Target serum pH 7.45-7.55. Continuous infusion 150 mEq/L in D5W.'},
+      {name:'Intralipid 20%',dose:'1.5 mL/kg IV bolus, then 0.25 mL/kg/min x60 min',class:'Lipid Emulsion',onset:'Immediate',notes:'For lipophilic drug toxicity: bupivacaine, verapamil, propranolol, amitriptyline. "Lipid sink" mechanism. May repeat bolus x2.'},
+    ]
+  },
+  psychiatric: {
+    label:'🧘 Psychiatric / Agitation', drugs:[
+      {name:'Haloperidol 5-10 mg IM',dose:'5-10 mg IM',class:'Antipsychotic',onset:'15-30 min',notes:'Classic agent for ED agitation. Risk of QTc prolongation and EPS (akathisia, dystonia). Check ECG for QTc. Give Benadryl if EPS risk.'},
+      {name:'Olanzapine 10 mg IM',dose:'10 mg IM',class:'Atypical Antipsychotic',onset:'15-30 min',notes:'Do NOT give IV olanzapine with benzodiazepine (respiratory depression risk). Oral form available. Good for meth-associated agitation.'},
+      {name:'Midazolam 5 mg IM',dose:'5 mg IM',class:'Benzodiazepine',onset:'5-10 min IM',notes:'Fastest IM onset for agitation. Monitor for respiratory depression. DMAA trial: non-inferior to Haldol+Versed combination.'},
+      {name:'Lorazepam 2 mg IV/IM',dose:'2 mg IV/IM q30min PRN',class:'Benzodiazepine',onset:'5-15 min',notes:'Good for alcohol withdrawal agitation. Avoid in opiate intoxication without airway monitoring. Monitor respiratory rate.'},
+      {name:'Droperidol 2.5-5 mg IM',dose:'2.5-5 mg IM',class:'Butyrophenone',onset:'5-10 min',notes:'Rapid onset, highly effective. FDA black-box QTc warning — obtain baseline ECG if possible. Often preferred in ETOH-related agitation.'},
+      {name:'Ketamine 4-5 mg/kg IM',dose:'4-5 mg/kg IM for extreme agitation',class:'NMDA Antagonist',onset:'3-5 min IM',notes:'For severely agitated patients where safety is immediate concern. Dissociative dose. Airway usually maintained. Monitor closely — have airway equipment.'},
+    ]
+  },
+};
+
+const PEDS_DRUGS = [
+  {name:'Acetaminophen',mgPerKg:15,maxMg:1000,route:'PO/PR',freq:'q4-6h',solutions:[{label:'Infant Drops 80mg/0.8mL',concMgPerMl:100,unit:'mL'},{label:"Children's Liquid 160mg/5mL",concMgPerMl:32,unit:'mL'},{label:'Jr Strength Tab 160mg',concMgPerMl:160,unit:'tab',isTab:true}],notes:'Safe first-line analgesic/antipyretic. Max 75 mg/kg/day, not to exceed 4 g/day.'},
+  {name:'Ibuprofen',mgPerKg:10,maxMg:400,route:'PO',freq:'q6-8h',solutions:[{label:'Infant Drops 50mg/1.25mL',concMgPerMl:40,unit:'mL'},{label:"Children's Liquid 100mg/5mL",concMgPerMl:20,unit:'mL'},{label:'Jr Strength Tab 100mg',concMgPerMl:100,unit:'tab',isTab:true}],notes:'Anti-inflammatory, analgesic, antipyretic. Avoid <6 months, renal impairment.'},
+  {name:'Amoxicillin',mgPerKg:45,maxMg:1000,route:'PO',freq:'q12h',solutions:[{label:'125mg/5mL',concMgPerMl:25,unit:'mL'},{label:'250mg/5mL',concMgPerMl:50,unit:'mL'},{label:'400mg/5mL',concMgPerMl:80,unit:'mL'}],notes:'For otitis media, strep pharyngitis, mild pneumonia. High-dose regimen for AOM.'},
+  {name:'Ondansetron (Zofran)',mgPerKg:0.15,maxMg:4,route:'IV/PO/ODT',freq:'q6-8h',solutions:[{label:'ODT 4mg',concMgPerMl:4,unit:'tab',isTab:true},{label:'Oral Solution 4mg/5mL',concMgPerMl:0.8,unit:'mL'},{label:'IV 2mg/mL',concMgPerMl:2,unit:'mL'}],notes:'Excellent antiemetic. Safe in children. ODT for outpatient use. Do not use if prolonged QT.'},
+  {name:'Dexamethasone',mgPerKg:0.6,maxMg:16,route:'PO/IV/IM',freq:'Once daily x1-2d',solutions:[{label:'Oral Solution 1mg/mL',concMgPerMl:1,unit:'mL'},{label:'Elixir 0.5mg/5mL',concMgPerMl:0.1,unit:'mL'},{label:'IV 4mg/mL',concMgPerMl:4,unit:'mL'}],notes:'For croup (single dose PO), asthma exacerbation. Superior to prednisolone compliance.'},
+  {name:'Prednisolone',mgPerKg:1,maxMg:60,route:'PO',freq:'Once daily x3-5d',solutions:[{label:'Prelone 15mg/5mL',concMgPerMl:3,unit:'mL'},{label:'Orapred 15mg/5mL',concMgPerMl:3,unit:'mL'},{label:'Pediapred 5mg/5mL',concMgPerMl:1,unit:'mL'}],notes:'Asthma, croup, allergic reactions. Liquid form well-tolerated in younger children.'},
+  {name:'Epinephrine (Anaphylaxis IM)',mgPerKg:0.01,maxMg:0.3,route:'IM',freq:'q5-15min PRN',solutions:[{label:'1:1000 1mg/mL',concMgPerMl:1,unit:'mL'},{label:'EpiPen Jr 0.15mg (15-30kg)',concMgPerMl:0.15,unit:'dose',isDose:true},{label:'EpiPen 0.3mg (>30kg)',concMgPerMl:0.3,unit:'dose',isDose:true}],notes:'FIRST-LINE anaphylaxis. Anterolateral thigh. Do not delay. Repeat every 5-15 minutes.'},
+  {name:'Albuterol (Neb)',mgPerKg:0.15,maxMg:5,route:'Neb',freq:'q20min x3 then q1-4h',solutions:[{label:'0.5% 5mg/mL',concMgPerMl:5,unit:'mL'},{label:'Unit dose 2.5mg/3mL',concMgPerMl:0.83,unit:'mL'},{label:'Unit dose 1.25mg/3mL',concMgPerMl:0.42,unit:'mL'}],notes:'Bronchodilator for asthma/wheeze. Continuous for severe. Min dose 1.25 mg for any weight.'},
+  {name:'Ceftriaxone',mgPerKg:50,maxMg:2000,route:'IV/IM',freq:'q24h',solutions:[{label:'IV reconstituted 100mg/mL',concMgPerMl:100,unit:'mL'},{label:'IM reconstituted 250mg/mL',concMgPerMl:250,unit:'mL'}],notes:'Broad-spectrum cephalosporin. PNA, UTI, meningitis, Lyme disease. Caution: neonatal jaundice.'},
+  {name:'Midazolam (Seizure)',mgPerKg:0.2,maxMg:10,route:'IN/IM/IV',freq:'May repeat x1 in 5 min',solutions:[{label:'5mg/mL IM/IN',concMgPerMl:5,unit:'mL'},{label:'1mg/mL IV',concMgPerMl:1,unit:'mL'},{label:'Nasal spray 50mg/mL',concMgPerMl:50,unit:'mL'}],notes:'Preferred IM/IN route for acute seizures without IV. Nasal mucosal atomization device preferred for IN.'},
+  {name:'Lorazepam (Seizure)',mgPerKg:0.1,maxMg:4,route:'IV',freq:'May repeat x1 in 5-10 min',solutions:[{label:'2mg/mL IV',concMgPerMl:2,unit:'mL'},{label:'4mg/mL IV',concMgPerMl:4,unit:'mL'}],notes:'First-line IV benzodiazepine for status epilepticus. Monitor airway closely. Prepare for intubation.'},
+  {name:'Diphenhydramine',mgPerKg:1.25,maxMg:50,route:'PO/IV/IM',freq:'q6h',solutions:[{label:'Elixir 12.5mg/5mL',concMgPerMl:2.5,unit:'mL'},{label:'Chewable Tab 12.5mg',concMgPerMl:12.5,unit:'tab',isTab:true},{label:'IV/IM 50mg/mL',concMgPerMl:50,unit:'mL'}],notes:'Antihistamine for allergic reactions. Sedating — caution when driving. Avoid <2 years old.'},
 ];
-const CAT_COLOR = Object.fromEntries(CATEGORIES.map(c => [c.id, c.color]));
 
-function estimateWeight(mo) {
-  if (mo < 3) return 3.5 + mo * 0.9;
-  if (mo < 12) return 6 + (mo - 3) * 0.5;
-  const y = mo / 12;
-  if (y <= 2) return 10 + (y - 1) * 2.5;
-  return y * 3 + 7;
-}
-function getBroselow(w) {
-  if (w < 5)  return { zone: "Grey",   hex: "#9ca3af" };
-  if (w < 7)  return { zone: "Pink",   hex: "#ec4899" };
-  if (w < 9)  return { zone: "Red",    hex: "#ef4444" };
-  if (w < 11) return { zone: "Purple", hex: "#8b5cf6" };
-  if (w < 14) return { zone: "Yellow", hex: "#eab308" };
-  if (w < 18) return { zone: "White",  hex: "#e2e8f0" };
-  if (w < 23) return { zone: "Blue",   hex: "#3b82f6" };
-  if (w < 29) return { zone: "Orange", hex: "#f97316" };
-  if (w < 36) return { zone: "Green",  hex: "#22c55e" };
-  return { zone: "Adult", hex: "#6b7280" };
-}
+const SEPSIS_BUNDLE = [
+  {id:'lactate',label:'Measure lactate level',critical:true},
+  {id:'cultures',label:'Obtain blood cultures before antibiotics',critical:true},
+  {id:'antibiotics',label:'Administer broad-spectrum antibiotics',critical:true},
+  {id:'fluids',label:'Administer 30 mL/kg crystalloid for hypotension or lactate ≥4',critical:true},
+  {id:'vasopressors',label:'Apply vasopressors if hypotensive during/after fluids to maintain MAP ≥65',critical:false},
+];
+const REASSESS_BUNDLE = [
+  {id:'volume',label:'Reassess volume status and tissue perfusion',critical:true},
+  {id:'lactate2',label:'Re-measure lactate if initial lactate elevated',critical:false},
+  {id:'sofa',label:'Assess for organ dysfunction (SOFA score)',critical:false},
+];
 
+const QUICK_QUERIES = ['SVT','Migraine','DKA','Hyperkalemia','PE / Pulmonary Embolism','Croup','RSI Intubation'];
+
+/* ═══════════════════ CSS ═══════════════════ */
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-:root{
-  --bg:#080e1a;--c1:#0d1628;--c2:#111e33;--c3:#162240;
-  --br:rgba(0,196,160,0.12);--br2:rgba(0,196,160,0.22);
-  --teal:#00c4a0;--teal2:#00e5bb;--tdim:rgba(0,196,160,0.08);
-  --tx:#e2e8f0;--tx2:#94a3b8;--tx3:#4a6080;
-  --red:#ef4444;--yel:#f59e0b;--grn:#22c55e;--pur:#8b5cf6;--blu:#3b82f6;
-  --r:10px;--r2:14px;--f:'Inter',sans-serif;
-}
-.medref-root{background:var(--bg);color:var(--tx);min-height:100vh;padding:16px 20px;font-family:var(--f);margin-left:72px;}
-.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-.sh-l{display:flex;align-items:center;gap:10px;}
-.sh-ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;background:var(--tdim);}
-.sh-ttl{font-size:11px;font-weight:600;letter-spacing:.1em;color:var(--tx2);text-transform:uppercase;}
-.sh-m{font-size:11px;color:var(--tx3);}
-.ntabs{display:flex;gap:2px;margin-bottom:16px;flex-wrap:wrap;}
-.ntab{padding:7px 16px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid transparent;color:var(--tx2);background:transparent;font-family:var(--f);transition:all .15s;}
-.ntab:hover{background:var(--tdim);color:var(--tx);}
-.ntab.on{background:var(--tdim);border-color:var(--br2);color:var(--teal);}
-.sw{flex:1;display:flex;align-items:center;gap:8px;background:var(--c1);border:1px solid var(--br);border-radius:var(--r);padding:0 12px;transition:border-color .15s;}
-.sw:focus-within{border-color:var(--br2);}
-.sw input{flex:1;background:transparent;border:none;outline:none;color:var(--tx);font-size:13px;padding:9px 0;font-family:var(--f);}
-.sw input::placeholder{color:var(--tx3);}
-.fps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
-.fp{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--br);background:var(--c1);color:var(--tx2);transition:all .15s;}
-.fp:hover{border-color:var(--br2);color:var(--tx);}
-.fp.on{color:#080e1a;border-color:transparent;font-weight:600;}
-.card{background:var(--c1);border:1px solid var(--br);border-radius:var(--r2);overflow:hidden;}
-.chdr{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--br);background:var(--c2);}
-.cbdy{padding:14px 16px;}
-.mlist{display:flex;flex-direction:column;gap:3px;}
-.mrow{display:flex;align-items:flex-start;gap:12px;padding:10px 14px;background:var(--c1);border:1px solid var(--br);border-radius:var(--r);cursor:pointer;transition:all .15s;}
-.mrow:hover{background:var(--c2);border-color:var(--br2);}
-.mrow.ex{background:var(--c2);border-color:var(--br2);border-radius:var(--r) var(--r) 0 0;border-bottom-color:transparent;}
-.mdot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px;}
-.mrm{flex:1;min-width:0;}
-.mrn{font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
-.mrs{font-size:11px;color:var(--tx2);margin-top:2px;}
-.mcod{font-size:10px;font-family:monospace;padding:2px 6px;border-radius:4px;background:var(--c3);border:1px solid var(--br2);color:var(--tx2);font-weight:600;letter-spacing:.05em;}
-.mlb{font-size:9px;padding:2px 6px;border-radius:3px;font-weight:700;letter-spacing:.06em;}
-.mrr{display:flex;align-items:center;gap:8px;flex-shrink:0;}
-.obtn{font-size:11px;color:var(--teal);background:transparent;border:none;cursor:pointer;font-family:var(--f);font-weight:500;white-space:nowrap;padding:4px 0;}
-.obtn:hover{text-decoration:underline;}
-.dpill{font-size:10px;background:var(--c3);border:1px solid var(--br);border-radius:4px;padding:2px 8px;color:var(--tx2);font-family:monospace;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.mdet{background:var(--c2);border:1px solid var(--br2);border-top:none;border-radius:0 0 var(--r) var(--r);padding:13px 13px 13px 36px;margin-bottom:3px;}
-.dgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px;margin-bottom:11px;}
-.dlbl{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:4px;}
-.dval{font-size:12px;color:var(--tx);line-height:1.5;}
-.dval.tl{color:var(--teal);font-weight:600;font-family:monospace;font-size:13px;}
-.cir{display:flex;gap:6px;align-items:flex-start;font-size:11px;color:var(--red);padding:2px 0;}
-.wr{display:flex;gap:6px;align-items:flex-start;font-size:11px;color:var(--tx2);padding:2px 0;}
-.rtags{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px;padding-top:9px;border-top:1px solid var(--br);}
-.rtag{font-size:10px;padding:2px 8px;border-radius:4px;letter-spacing:.04em;background:rgba(0,196,160,.06);border:1px solid rgba(0,196,160,.2);color:var(--teal);}
-.rvtag{font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.25);color:var(--pur);}
-.aip{background:var(--c2);border:1px solid rgba(0,196,160,.2);border-radius:var(--r2);padding:13px 15px;margin-bottom:16px;}
-.aih{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
-.aitag{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--teal);background:rgba(0,196,160,.1);border:1px solid rgba(0,196,160,.25);padding:3px 8px;border-radius:4px;}
-.aim{font-size:11px;color:var(--tx3);margin-left:auto;}
-.air{display:flex;gap:8px;}
-.aii{flex:1;background:var(--c3);border:1px solid rgba(0,196,160,.15);border-radius:var(--r);padding:8px 12px;color:var(--tx);font-size:13px;font-family:var(--f);outline:none;transition:border-color .15s;}
-.aii:focus{border-color:var(--br2);}
-.aib{padding:8px 15px;background:var(--teal);border:none;border-radius:var(--r);color:#080e1a;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--f);transition:opacity .15s;white-space:nowrap;}
-.aib:hover{opacity:.85;}
-.aib:disabled{opacity:.4;cursor:not-allowed;}
-.airesp{margin-top:11px;padding:11px 13px;background:var(--c3);border-radius:var(--r);border:1px solid var(--br);font-size:12px;line-height:1.7;color:var(--tx2);white-space:pre-wrap;}
-.cinps{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;}
-.ilbl{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);margin-bottom:5px;}
-.inp,.sel{width:100%;background:var(--c3);border:1px solid var(--br);border-radius:var(--r);padding:8px 11px;color:var(--tx);font-size:13px;font-family:var(--f);outline:none;transition:border-color .15s;}
-.inp:focus,.sel:focus{border-color:var(--br2);}
-.sel option{background:var(--c3);}
-.wbar{display:flex;align-items:center;gap:18px;padding:11px 15px;background:rgba(0,196,160,.05);border:1px solid rgba(0,196,160,.15);border-radius:var(--r);margin-bottom:13px;}
-.wv{font-size:30px;font-weight:700;color:var(--teal);font-family:monospace;}
-.wu{font-size:13px;color:var(--tx2);}
-.west{font-size:10px;color:var(--tx3);letter-spacing:.05em;}
-.bzb{padding:4px 11px;border-radius:5px;font-size:11px;font-weight:700;font-family:monospace;margin-left:auto;}
-.cstat{background:var(--c3);border-radius:var(--r);padding:7px 12px;text-align:center;}
-.csv{font-size:15px;font-weight:700;font-family:monospace;}
-.csl{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);margin-top:2px;}
-.rtbl{width:100%;border-collapse:collapse;}
-.rtbl th{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);text-align:left;padding:0 10px 7px;}
-.rtbl td{padding:7px 10px;border-top:1px solid var(--br);font-size:12px;vertical-align:top;}
-.rtbl tr:hover td{background:rgba(255,255,255,.015);}
-.rdose{font-family:monospace;color:var(--teal);font-weight:700;font-size:13px;}
-.rmax{font-size:9px;padding:2px 6px;border-radius:3px;background:rgba(245,158,11,.1);color:var(--yel);font-weight:700;}
-.rcap{color:var(--yel)!important;}
-.cgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:18px;}
-.cc{background:var(--c1);border-radius:var(--r2);overflow:hidden;border:1px solid var(--br);}
-.cct{padding:10px 13px;}
-.ccb{font-size:9px;font-weight:700;letter-spacing:.08em;padding:2px 7px;border-radius:3px;display:inline-block;margin-bottom:5px;}
-.ccl{font-size:12px;font-weight:700;}
-.ccd{font-size:11px;color:var(--tx2);margin-top:3px;line-height:1.4;}
-.ccp{border-top:1px solid var(--br);}
-.cprow{display:flex;justify-content:space-between;gap:8px;padding:5px 13px;border-bottom:1px solid var(--br);font-size:11px;}
-.cprow:last-child{border-bottom:none;}
-.cpn{color:var(--tx2);flex-shrink:0;}
-.cpv{color:var(--tx);text-align:right;font-family:monospace;font-size:10px;}
-.blist{display:flex;flex-direction:column;gap:6px;}
-.bstep{display:flex;gap:11px;align-items:flex-start;padding:9px 13px;background:var(--c1);border:1px solid var(--br);border-radius:var(--r);border-left:3px solid transparent;}
-.bstep.critical{border-left-color:var(--red);}
-.bstep.high{border-left-color:var(--yel);}
-.snum{width:23px;height:23px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;font-family:monospace;}
-.critical .snum{background:rgba(239,68,68,.12);color:var(--red);}
-.high .snum{background:rgba(245,158,11,.12);color:var(--yel);}
-.sact{font-size:13px;font-weight:600;}
-.sdet{font-size:11px;color:var(--tx2);margin-top:2px;line-height:1.4;}
-.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:18px;}
-.fn{font-size:12px;font-weight:600;color:var(--teal);font-family:monospace;}
-.fd{font-size:11px;color:var(--tx2);margin-top:2px;}
-.ft{width:100%;border-collapse:collapse;}
-.ft th{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);text-align:left;padding:0 8px 6px;}
-.ft td{padding:6px 8px;border-top:1px solid var(--br);font-size:11px;vertical-align:top;}
-.mtbl{width:100%;border-collapse:collapse;}
-.mtbl th{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);text-align:left;padding:0 10px 5px;}
-.mtbl td{padding:5px 10px;border-top:1px solid var(--br);font-size:11px;}
-.arow{background:var(--c1);border:1px solid var(--br);border-radius:var(--r);overflow:hidden;margin-bottom:6px;}
-.asev{font-size:11px;font-weight:700;padding:8px 13px;background:var(--c2);border-bottom:1px solid var(--br);display:flex;align-items:center;gap:8px;}
-.abdy{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px;padding:11px 13px;}
-.al{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:4px;}
-.ad{font-size:12px;font-family:monospace;color:var(--grn);font-weight:600;line-height:1.4;}
-.aa{font-size:11px;color:var(--tx2);line-height:1.4;}
-.an{font-size:11px;color:var(--tx3);line-height:1.4;}
-.stabs{display:flex;gap:6px;margin-bottom:13px;}
-.stab{padding:5px 13px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--br);background:var(--c1);color:var(--tx2);transition:all .15s;font-family:var(--f);}
-.stab:hover{border-color:var(--br2);color:var(--tx);}
-.stab.on{background:var(--tdim);border-color:var(--br2);color:var(--teal);}
-.ibox{background:rgba(0,196,160,.05);border:1px solid rgba(0,196,160,.15);border-radius:var(--r);padding:9px 12px;font-size:11px;color:var(--tx2);line-height:1.6;margin-bottom:12px;}
-.ibox strong{color:var(--teal);}
-.empty{text-align:center;padding:44px;color:var(--tx3);}
-.empty-i{font-size:34px;margin-bottom:9px;}
-.empty-t{font-size:13px;}
-.saved-panel{position:fixed;top:72px;left:72px;width:280px;bottom:0;z-index:150;background:#060b15;border-right:1px solid rgba(0,196,160,0.18);display:flex;flex-direction:column;}
-@media(max-width:1100px){.cgrid{grid-template-columns:1fr 1fr;}.dgrid{grid-template-columns:1fr 1fr;}.abdy{grid-template-columns:1fr;}.cinps{grid-template-columns:1fr 1fr;}}
-@media(max-width:768px){.medref-root{padding:10px;}.cgrid,.fgrid,.cinps{grid-template-columns:1fr;}.dgrid{grid-template-columns:1fr;}}
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+.mr-wrap *,.mr-wrap *::before,.mr-wrap *::after{box-sizing:border-box}
+.mr-wrap{font-family:'DM Sans',sans-serif;font-size:14px;color:${T.txt};min-height:100vh;background:${T.bg};position:relative}
+.mr-scanline{position:fixed;inset:0;background:repeating-linear-gradient(to bottom,transparent 0px,transparent 3px,rgba(0,229,192,0.012) 3px,rgba(0,229,192,0.012) 4px);pointer-events:none;z-index:0}
+.mr-toolbar{position:sticky;top:0;z-index:100;background:${T.panel};border-bottom:1px solid ${T.border};padding:10px 24px;display:flex;align-items:center;gap:12px;backdrop-filter:blur(10px)}
+.mr-toolbar-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:${T.txt}}
+.mr-toolbar-sub{font-size:11px;color:${T.txt3};font-family:'JetBrains Mono',monospace;letter-spacing:.05em}
+.mr-v3badge{display:flex;align-items:center;gap:5px;background:rgba(0,229,192,.08);border:1px solid rgba(0,229,192,.25);border-radius:20px;padding:3px 10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:${T.teal};margin-left:auto}
+.mr-aipulse{width:7px;height:7px;border-radius:50%;background:${T.teal};animation:mrpulse 2s ease-in-out infinite;flex-shrink:0}
+.mr-aipulse.coral{background:${T.coral};animation:mrpulsecoral 2s ease-in-out infinite}
+@keyframes mrpulse{0%,100%{box-shadow:0 0 0 0 rgba(0,229,192,.4)}50%{box-shadow:0 0 0 6px rgba(0,229,192,0)}}
+@keyframes mrpulsecoral{0%,100%{box-shadow:0 0 0 0 rgba(255,107,107,.4)}50%{box-shadow:0 0 0 6px rgba(255,107,107,0)}}
+.mr-tabs{position:sticky;top:53px;z-index:99;background:${T.panel};border-bottom:1px solid ${T.border};padding:0 24px;display:flex;gap:0;backdrop-filter:blur(10px)}
+.mr-tab{padding:12px 20px;font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:${T.txt3};transition:all .2s;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.mr-tab:hover{color:${T.txt2}}
+.mr-tab.active{color:${T.teal};border-bottom-color:${T.teal}}
+.mr-body{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:24px 24px 60px}
+.mr-search{background:${T.up};border:1px solid ${T.border};border-radius:10px;padding:10px 14px;color:${T.txt};font-family:'DM Sans',sans-serif;font-size:14px;outline:none;width:100%;transition:border-color .15s}
+.mr-search:focus{border-color:${T.borderHi}}
+.mr-search::placeholder{color:${T.txt4}}
+.mr-cat-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.mr-cat-btn{padding:5px 12px;border-radius:20px;font-size:11px;cursor:pointer;border:1px solid ${T.border};background:${T.up};color:${T.txt2};transition:all .15s;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.mr-cat-btn:hover{border-color:${T.borderHi};color:${T.txt}}
+.mr-cat-btn.active{background:rgba(59,158,255,.12);border-color:${T.blue};color:${T.blue}}
+.mr-drug-list{display:flex;flex-direction:column;gap:6px;margin-top:14px}
+.mr-drug-row{background:${T.card};border:1px solid ${T.border};border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .15s}
+.mr-drug-row:hover{border-color:${T.borderHi}}
+.mr-drug-row.expanded{border-color:rgba(0,229,192,.35)}
+.mr-drug-hdr{padding:10px 14px;display:flex;align-items:center;gap:10px}
+.mr-drug-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;transition:all .2s}
+.mr-drug-dot.dim{background:${T.txt4}}
+.mr-drug-dot.lit{background:${T.teal};box-shadow:0 0 6px rgba(0,229,192,.5)}
+.mr-drug-name{font-weight:600;font-size:13px;color:${T.txt};flex:1}
+.mr-drug-dose{font-family:'JetBrains Mono',monospace;font-size:11px;color:${T.teal};margin-top:1px}
+.mr-badge{padding:2px 8px;border-radius:20px;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;white-space:nowrap}
+.mr-badge.teal{background:rgba(0,229,192,.1);color:${T.teal};border:1px solid rgba(0,229,192,.25)}
+.mr-badge.gold{background:rgba(245,200,66,.1);color:${T.gold};border:1px solid rgba(245,200,66,.25)}
+.mr-badge.blue{background:rgba(59,158,255,.1);color:${T.blue};border:1px solid rgba(59,158,255,.25)}
+.mr-badge.coral{background:rgba(255,107,107,.12);color:${T.coral};border:1px solid rgba(255,107,107,.3)}
+.mr-badge.orange{background:rgba(255,159,67,.1);color:${T.orange};border:1px solid rgba(255,159,67,.25)}
+.mr-drug-expand{padding:10px 14px 14px 32px;border-top:1px solid ${T.border}}
+.mr-drug-notes{background:${T.up};border-left:3px solid rgba(0,229,192,.4);border-radius:0 6px 6px 0;padding:10px 12px;font-size:12px;color:${T.txt2};line-height:1.65;margin-top:8px}
+.mr-input{background:${T.up};border:1px solid ${T.border};border-radius:8px;padding:9px 12px;color:${T.txt};font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .15s}
+.mr-input:focus{border-color:${T.borderHi}}
+.mr-input::placeholder{color:${T.txt4}}
+.mr-card{background:${T.card};border:1px solid ${T.border};border-radius:12px;padding:18px}
+.mr-card.teal-glow{box-shadow:0 0 20px rgba(0,229,192,.06)}
+.mr-card.coral-border{border-color:rgba(255,107,107,.3);background:rgba(255,107,107,.04)}
+.mr-peds-drug{background:${T.card};border:1px solid ${T.border};border-radius:10px;padding:14px;margin-bottom:8px}
+.mr-dose-result{background:rgba(0,229,192,.06);border:1px solid rgba(0,229,192,.2);border-radius:8px;padding:10px 14px;margin-top:8px}
+.mr-dose-result.capped{background:rgba(245,200,66,.06);border-color:rgba(245,200,66,.3)}
+.mr-dose-val{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:800;color:${T.teal}}
+.mr-dose-val.capped{color:${T.gold}}
+.mr-select{background:${T.up};border:1px solid ${T.border};border-radius:6px;padding:7px 10px;color:${T.txt};font-size:12px;outline:none;width:100%;margin-top:8px;font-family:'DM Sans',sans-serif}
+.mr-select option{background:${T.card}}
+.mr-vol-result{background:rgba(59,158,255,.08);border:1px solid rgba(59,158,255,.25);border-radius:6px;padding:8px 12px;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:${T.blue}}
+.mr-ai-input-wrap{display:flex;gap:8px;margin-top:10px}
+.mr-ai-btn{background:rgba(0,229,192,.1);border:1px solid rgba(0,229,192,.3);border-radius:8px;padding:9px 18px;color:${T.teal};font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s;letter-spacing:.04em}
+.mr-ai-btn:hover{background:rgba(0,229,192,.18);border-color:${T.teal}}
+.mr-ai-btn:disabled{opacity:.4;pointer-events:none}
+.mr-ai-btn.coral{background:rgba(255,107,107,.1);border-color:rgba(255,107,107,.3);color:${T.coral}}
+.mr-ai-btn.coral:hover{background:rgba(255,107,107,.18);border-color:${T.coral}}
+.mr-quick-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.mr-quick-btn{padding:4px 12px;border-radius:16px;font-size:11px;cursor:pointer;border:1px solid ${T.border};background:${T.up};color:${T.txt2};transition:all .15s;font-family:'DM Sans',sans-serif}
+.mr-quick-btn:hover{border-color:${T.borderHi};color:${T.txt}}
+.mr-loader{display:flex;gap:6px;align-items:center;padding:16px 0}
+.mr-loader-dot{width:8px;height:8px;border-radius:50%;background:${T.teal};animation:mrdotpulse 1.4s ease-in-out infinite}
+.mr-loader-dot.coral{background:${T.coral}}
+@keyframes mrdotpulse{0%,80%,100%{transform:scale(0.6);opacity:.3}40%{transform:scale(1);opacity:1}}
+.mr-ai-response{margin-top:16px;display:flex;flex-direction:column;gap:6px}
+.mr-ai-line{font-size:13px;color:${T.txt2};line-height:1.7}
+.mr-ai-line.h1,.mr-ai-line.h2,.mr-ai-line.h3{font-family:'Playfair Display',serif;color:${T.teal};font-weight:600}
+.mr-ai-line.h1{font-size:17px;margin-top:8px}.mr-ai-line.h2{font-size:15px;margin-top:6px}.mr-ai-line.h3{font-size:13px;margin-top:4px}
+.mr-ai-line.bullet{padding-left:16px}
+.mr-ai-line.warn{background:rgba(255,107,107,.07);border-left:3px solid rgba(255,107,107,.5);border-radius:0 6px 6px 0;padding:6px 10px;color:${T.coral};margin:4px 0}
+.mr-disclaimer{background:rgba(255,107,107,.06);border:1px solid rgba(255,107,107,.2);border-radius:8px;padding:10px 14px;font-size:11px;color:${T.coral};margin-top:14px;line-height:1.6}
+.mr-checklist-item{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:8px;cursor:pointer;transition:all .15s;margin-bottom:5px}
+.mr-checklist-item.critical{background:rgba(255,107,107,.07);border:1px solid rgba(255,107,107,.2)}
+.mr-checklist-item.normal{background:${T.card};border:1px solid ${T.border}}
+.mr-checklist-item.checked{opacity:.6}
+.mr-check-icon{width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:1px}
+.mr-check-icon.crit{background:rgba(255,107,107,.15);color:${T.coral}}
+.mr-check-icon.norm{background:${T.up};color:${T.txt3}}
+.mr-check-icon.done{background:rgba(0,229,192,.15);color:${T.teal}}
+.mr-footer{border-top:1px solid ${T.border};padding:20px 0 0;text-align:center;display:flex;flex-direction:column;gap:4px;margin-top:40px}
+.mr-back-btn{background:${T.up};border:1px solid ${T.border};border-radius:6px;padding:5px 12px;color:${T.txt2};cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:4px;transition:all .15s}
+.mr-back-btn:hover{border-color:${T.borderHi};color:${T.txt}}
+.mr-sepsis-fluid{background:rgba(255,107,107,.06);border:1px solid rgba(255,107,107,.3);border-radius:10px;padding:16px;margin-top:10px}
+.mr-sepsis-fluid-val{font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:800;color:${T.coral}}
 `;
 
-export default function MedicationReferencePage() {
-  const [medications, setMedications]     = useState([]);
-  const [loadingMeds, setLoadingMeds]     = useState(true);
-  const [tab, setTab]                     = useState("medications");
-  const [cat, setCat]                     = useState("all");
-  const [search, setSearch]               = useState("");
-  const [expanded, setExpanded]           = useState(null); // kept for compat
-  const [pedAge, setPedAge]               = useState("");
-  const [pedUnit, setPedUnit]             = useState("months");
-  const [pedWt, setPedWt]                 = useState("");
-  const [pedCat, setPedCat]               = useState("all");
-  const [complaint, setComplaint]         = useState("");
-  const [aiText, setAiText]               = useState("");
-  const [aiLoading, setAiLoading]         = useState(false);
-  const [showSaveModal, setShowSaveModal] = useState(false);
-  const [showSavedCases, setShowSavedCases] = useState(false);
-  const [savedCasesKey, setSavedCasesKey] = useState(0);
-  const [globalWeight, setGlobalWeight]   = useState(null);
-  const [globalWeightUnit, setGlobalWeightUnit] = useState("kg");
-  const [selectedMeds, setSelectedMeds]   = useState([]);
+/* ═══════════════════ MARKDOWN RENDERER ═══════════════════ */
+function renderAIResponse(text) {
+  return text.split('\n').map((line, i) => {
+    const trimmed = line.trim();
+    if (!trimmed) return <div key={i} style={{height:4}} />;
+    if (trimmed.startsWith('### ')) return <div key={i} className="mr-ai-line h3">{trimmed.slice(4)}</div>;
+    if (trimmed.startsWith('## ')) return <div key={i} className="mr-ai-line h2">{trimmed.slice(3)}</div>;
+    if (trimmed.startsWith('# ')) return <div key={i} className="mr-ai-line h1">{trimmed.slice(2)}</div>;
+    const isBullet = trimmed.startsWith('- ') || trimmed.startsWith('* ') || trimmed.startsWith('• ');
+    const isWarn = /critical|warning|⚠/i.test(trimmed);
+    const content = isBullet ? '› ' + trimmed.slice(2) : trimmed;
+    const bold = content.replace(/\*\*(.*?)\*\*/g, '$1');
+    const parts = content.split(/\*\*(.*?)\*\*/g);
+    const rendered = parts.map((p, j) => j % 2 === 1 ? <strong key={j} style={{color:T.txt,fontWeight:700}}>{p}</strong> : p);
+    return (
+      <div key={i} className={`mr-ai-line${isBullet?' bullet':''}${isWarn?' warn':''}`}>
+        {rendered}
+      </div>
+    );
+  });
+}
 
-  useEffect(() => {
-    base44.entities.Medication.list('-name', 200).then(data => {
-      setMedications(data);
-      setLoadingMeds(false);
-    });
-  }, []);
+function LoadingDots({ coral }) {
+  return (
+    <div>
+      <div className="mr-loader">
+        {[0,1,2,3,4].map(i => (
+          <div key={i} className={`mr-loader-dot${coral?' coral':''}`} style={{animationDelay:`${i*0.14}s`}} />
+        ))}
+        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:coral?T.coral:T.teal,letterSpacing:'.08em',marginLeft:8}}>
+          {coral ? 'SEPSIS ENGINE · SSC 2021 × DRUGS_DB' : 'PROCESSING · DRUGS_DB × GUIDELINES ENGINE'}
+        </span>
+      </div>
+    </div>
+  );
+}
 
-  const weight = useMemo(() => {
-    if (pedWt) return parseFloat(pedWt) || null;
-    if (!pedAge) return null;
-    const mo = pedUnit === "years" ? parseFloat(pedAge) * 12 : parseFloat(pedAge);
-    if (isNaN(mo) || mo < 0) return null;
-    return Math.round(estimateWeight(mo) * 10) / 10;
-  }, [pedAge, pedUnit, pedWt]);
+/* ═══════════════════ MAIN PAGE ═══════════════════ */
+export default function MedicationReference() {
+  const navigate = useNavigate();
+  const [tab, setTab] = useState('drugs');
+  const [selectedCat, setSelectedCat] = useState('chestPain');
+  const [drugSearch, setDrugSearch] = useState('');
+  const [expandedDrug, setExpandedDrug] = useState(null);
+  const [pedsWeight, setPedsWeight] = useState('');
+  const [pedsSearch, setPedsSearch] = useState('');
+  const [selectedSolutions, setSelectedSolutions] = useState({});
+  const [aiQuery, setAiQuery] = useState('');
+  const [aiResponse, setAiResponse] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [sepsisWeight, setSepsisWeight] = useState('');
+  const [sepsisQuery, setSepsisQuery] = useState('');
+  const [sepsisAiResponse, setSepsisAiResponse] = useState(null);
+  const [sepsisLoading, setSepsisLoading] = useState(false);
+  const [sepsisChecked, setSepsisChecked] = useState({});
+  const [reassessChecked, setReassessChecked] = useState({});
 
-  const bz = weight ? getBroselow(weight) : null;
+  /* ─── Drug Search ─── */
+  const allDrugs = Object.entries(DRUGS_DB).flatMap(([catKey, cat]) =>
+    cat.drugs.map(d => ({ ...d, catKey, catLabel: cat.label }))
+  );
+  const searchActive = drugSearch.trim().length > 0;
+  const filteredDrugs = searchActive
+    ? allDrugs.filter(d =>
+        d.name.toLowerCase().includes(drugSearch.toLowerCase()) ||
+        d.class.toLowerCase().includes(drugSearch.toLowerCase()) ||
+        (d.notes || '').toLowerCase().includes(drugSearch.toLowerCase()) ||
+        d.catLabel.toLowerCase().includes(drugSearch.toLowerCase())
+      )
+    : DRUGS_DB[selectedCat]?.drugs || [];
 
-  const filtered = useMemo(() => medications.filter(m => {
-    if (cat !== "all" && m.category !== cat) return false;
-    const q = search.toLowerCase();
-    if (!q) return true;
-    const indicStr = typeof m.indications === "string" ? m.indications : "";
-    return m.name.toLowerCase().includes(q) || indicStr.toLowerCase().includes(q) || m.drugClass.toLowerCase().includes(q) || (m.brand && m.brand.toLowerCase().includes(q));
-  }), [cat, search]);
-
-  const pedResults = useMemo(() => {
-    if (!weight) return [];
-    return medications.filter(m => (pedCat === "all" || m.category === pedCat) && m.ped?.mgkg).map(m => {
-      const raw = weight * m.ped.mgkg;
-      const capped = m.ped.max !== null && raw > m.ped.max;
-      const dose = capped ? m.ped.max : Math.round(raw * 10) / 10;
-      return { ...m, calcDose: `${dose} ${m.ped.unit}`, capped };
-    });
-  }, [weight, pedCat]);
-
-  const handleAI = async () => {
-    if (!complaint.trim()) return;
-    setAiLoading(true); setAiText("");
+  /* ─── AI Search ─── */
+  const runAI = async () => {
+    if (!aiQuery.trim() || aiLoading) return;
+    setAiLoading(true);
+    setAiResponse(null);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are an ER physician AI following ACEP guidelines. Given this presenting complaint, provide concise clinical medication recommendations.\n\nPresenting Complaint: ${complaint}\n\nProvide:\n1. Immediate medications (with ER doses)\n2. Key monitoring parameters\n3. Critical contraindications to assess\n4. Disposition considerations\n\nBe concise and clinical.`
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are an emergency medicine clinical decision support AI. Provide evidence-based medication recommendations for this ED presentation.
+
+ED Complaint: ${aiQuery}
+
+Provide first-line and second-line options with doses, routes, contraindications, and guideline references (ACEP, AHA, SSC 2021). Use ## headers, bullet points with -, and **bold** for drug names. Include a CRITICAL SAFETY note if relevant. End with: "Clinical judgment should always prevail."`,
       });
-      setAiText(typeof result === "string" ? result : JSON.stringify(result));
-    } catch (e) {
-      setAiText("⚠ Unable to reach AI service.");
-    } finally {
-      setAiLoading(false);
+      setAiResponse(typeof res === 'string' ? res : JSON.stringify(res));
+    } catch {
+      setAiResponse('⚠ AI Engine offline. Using local Drugs_DB fallback. Refer to the ED Drug Reference tab for medication guidance.');
     }
+    setAiLoading(false);
   };
 
-  const weightKg = globalWeight ? (globalWeightUnit === "lbs" ? Math.round(globalWeight / 2.205 * 10) / 10 : globalWeight) : null;
+  /* ─── Sepsis AI ─── */
+  const wt = parseFloat(sepsisWeight) || 0;
+  const bolus = Math.round(wt * 30);
+  const runSepsisAI = async () => {
+    if (!sepsisQuery.trim() || sepsisLoading || !wt) return;
+    setSepsisLoading(true);
+    setSepsisAiResponse(null);
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a Sepsis Protocol AI engine following Surviving Sepsis Campaign 2021 guidelines.
 
+Patient Weight: ${wt} kg
+Calculated Fluid Bolus: ${bolus} mL
+Suspected Source: ${sepsisQuery}
+
+Provide a complete sepsis protocol recommendation including Hour-1 Bundle, antibiotic selection based on suspected source, vasopressor guidance, and lactate monitoring. Use ## headers, bullet points with -, and **bold** for drug names. Include CRITICAL SAFETY warnings. End with: "Clinical judgment should always prevail."`,
+      });
+      setSepsisAiResponse(typeof res === 'string' ? res : JSON.stringify(res));
+    } catch {
+      setSepsisAiResponse(`⚠ AI Engine offline.\n## Manual Protocol\n- **Fluid Bolus:** ${bolus} mL (30 mL/kg × ${wt} kg)\n- **Vancomycin:** ${Math.round(wt*25)}-${Math.round(wt*30)} mg IV\n- **Pip-Tazo:** 4.5 g IV q6h\n- **Vasopressor:** Norepinephrine if MAP <65\n- Remeasure lactate in 2-4 hours`);
+    }
+    setSepsisLoading(false);
+  };
+
+  /* ─── Peds helpers ─── */
+  const pedsWt = parseFloat(pedsWeight) || 0;
+  const ageCategory = pedsWt < 4 ? 'Neonate (<4 kg)' : pedsWt < 10 ? 'Infant (4-10 kg)' : pedsWt < 20 ? 'Toddler (10-20 kg)' : pedsWt < 30 ? 'Child (20-30 kg)' : pedsWt < 50 ? 'School Age (30-50 kg)' : 'Adolescent (>50 kg)';
+  const bsa = pedsWt > 0 ? (Math.sqrt(pedsWt * 170) / 60).toFixed(2) : null;
+  const filteredPedsDrugs = pedsSearch.trim()
+    ? PEDS_DRUGS.filter(d => d.name.toLowerCase().includes(pedsSearch.toLowerCase()) || d.route.toLowerCase().includes(pedsSearch.toLowerCase()) || d.notes.toLowerCase().includes(pedsSearch.toLowerCase()))
+    : PEDS_DRUGS;
+
+  function calcPedsDose(drug) {
+    if (!pedsWt) return null;
+    const raw = pedsWt * drug.mgPerKg;
+    const final = Math.min(raw, drug.maxMg);
+    return { raw, final, capped: raw > drug.maxMg };
+  }
+  function calcVolume(drug, solIdx) {
+    const dose = calcPedsDose(drug);
+    if (!dose) return null;
+    const sol = drug.solutions[solIdx];
+    if (!sol) return null;
+    if (sol.isDose) return { val: (dose.final / sol.concMgPerMl).toFixed(1), unit: 'dose(s)' };
+    if (sol.isTab) return { val: (dose.final / sol.concMgPerMl).toFixed(1), unit: 'tab(s)' };
+    return { val: (dose.final / sol.concMgPerMl).toFixed(2), unit: 'mL' };
+  }
+
+  const toggleCheck = (id, setState) => setState(prev => ({ ...prev, [id]: !prev[id] }));
+
+  /* ─── Render ─── */
   return (
     <>
       <style>{CSS}</style>
+      <div className="mr-wrap">
+        <div className="mr-scanline" />
 
-      {showSaveModal && weight && (
-        <SaveCaseModal
-          weight={weight} pedAge={pedAge} pedUnit={pedUnit} pedWt={pedWt} pedCat={pedCat} bz={bz}
-          onClose={() => setShowSaveModal(false)}
-          onSaved={() => setSavedCasesKey(k => k + 1)}
-        />
-      )}
-
-      {/* Saved Cases Slide-over Panel */}
-      {showSavedCases && (
-        <div className="saved-panel">
-          <div style={{ padding: "14px 16px", borderBottom: "1px solid rgba(0,196,160,0.12)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "#94a3b8" }}>SAVED CASES</div>
-              <div style={{ fontSize: 10, color: "#4a6080", marginTop: 2 }}>Ped calculator scenarios</div>
-            </div>
-            <button onClick={() => setShowSavedCases(false)} style={{ background: "transparent", border: "none", color: "#4a6080", fontSize: 16, cursor: "pointer", lineHeight: 1 }}>✕</button>
-          </div>
-          <SavedCasesPanel
-            key={savedCasesKey}
-            onLoadCase={(c) => {
-              setTab("calculator");
-              if (c.patient_age) {
-                const parts = c.patient_age.split(" ");
-                if (parts[0]) setPedAge(parts[0]);
-                if (parts[1]) setPedUnit(parts[1]);
-              }
-              if (c.weight_source === "measured") setPedWt(String(c.weight_kg));
-              if (c.category_filter) setPedCat(c.category_filter);
-              setShowSavedCases(false);
-            }}
-          />
-        </div>
-      )}
-
-      <div className="medref-root" style={showSavedCases ? { marginLeft: 280 } : {}}>
-
-        {/* Page Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        {/* Toolbar */}
+        <div className="mr-toolbar">
+          <button className="mr-back-btn" onClick={() => navigate(-1)}>← Back</button>
           <div>
-            <h1 style={{ fontSize: 20, fontWeight: 700, color: "var(--tx)", margin: 0 }}>Medication Reference</h1>
-            <div style={{ fontSize: 12, color: "var(--tx3)", marginTop: 3 }}>Emergency Department · ACEP Guidelines · {medications.length} medications</div>
+            <div className="mr-toolbar-title">Notrya AI</div>
+            <div className="mr-toolbar-sub">ED MEDICATION REFERENCE</div>
           </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600, letterSpacing: ".04em", background: "rgba(0,196,160,.12)", border: "1px solid rgba(0,196,160,.3)", color: "var(--teal)" }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--teal)", display: "inline-block" }} />
-              AI ACTIVE
-            </div>
-            <button
-              onClick={() => setShowSavedCases(!showSavedCases)}
-              style={{ padding: "6px 12px", borderRadius: 7, fontSize: 12, cursor: "pointer", border: "1px solid rgba(0,196,160,0.3)", background: showSavedCases ? "rgba(0,196,160,0.12)" : "transparent", color: "var(--teal)", fontFamily: "inherit" }}
-            >
-              📋 Saved Cases
-            </button>
+          <div className="mr-v3badge">
+            <div className="mr-aipulse" />
+            V3 · DRUGS_DB ENGINE
           </div>
         </div>
 
-        {/* AI Panel */}
-        <div className="aip">
-          <div className="aih">
-            <span style={{ fontSize: 15 }}>⚡</span>
-            <span className="aitag">AI CLINICAL INSIGHT</span>
-            <span className="aim">Evidence-based · Real-time</span>
-          </div>
-          <div className="air">
-            <input className="aii" placeholder="Enter presenting complaint for AI medication recommendations (e.g. 'septic shock, HR 125, temp 39.2°C, BP 82/54, lactate 4.8')..." value={complaint} onChange={e => setComplaint(e.target.value)} onKeyDown={e => e.key === "Enter" && handleAI()} />
-            <button className="aib" onClick={handleAI} disabled={aiLoading}>{aiLoading ? "Consulting..." : "Analyze →"}</button>
-          </div>
-          {aiText && <div className="airesp">{aiText}</div>}
-        </div>
-
-        {/* Main Tabs */}
-        <div className="ntabs">
-          {[["medications", "💊 MEDICATIONS"], ["calculator", "⚖️ PED CALCULATOR"], ["sepsis", "🔴 SEPSIS PROTOCOL"], ["conditions", "🏥 ER CONDITIONS"]].map(([id, label]) => (
-            <button key={id} className={`ntab ${tab === id ? "on" : ""}`} onClick={() => setTab(id)}>{label}</button>
+        {/* Tabs */}
+        <div className="mr-tabs">
+          {[['drugs','💊 ED Drug Ref'],['peds','👶 Peds Dosing'],['ai','🤖 AI Search'],['sepsis','🦠 Sepsis Protocol']].map(([id,label]) => (
+            <div key={id} className={`mr-tab${tab===id?' active':''}`} onClick={() => setTab(id)}>{label}</div>
           ))}
         </div>
 
-        {/* ── MEDICATIONS TAB ── */}
-        {tab === "medications" && (
-          <>
-            <div className="sh">
-              <div className="sh-l"><div className="sh-ico">💊</div><span className="sh-ttl">ER MEDICATION REFERENCE</span></div>
-              <span className="sh-m">ACEP Guidelines · {filtered.length} medications{selectedMeds.length > 0 ? ` · ${selectedMeds.length} selected` : ""}</span>
-            </div>
-            <div style={{ display: "flex", gap: 10, marginBottom: 13, alignItems: "center", flexWrap: "wrap" }}>
-              <div className="sw" style={{ flex: 1, minWidth: 200 }}>
-                <span style={{ color: "var(--tx3)", fontSize: 14 }}>🔍</span>
-                <input placeholder="Search medications, indications, drug codes..." value={search} onChange={e => setSearch(e.target.value)} />
-                {search && <span onClick={() => setSearch("")} style={{ cursor: "pointer", color: "var(--tx3)", fontSize: 14 }}>✕</span>}
-              </div>
-              <WeightWidget weight={globalWeight} weightUnit={globalWeightUnit} onWeightChange={setGlobalWeight} onUnitChange={setGlobalWeightUnit} onClear={() => setGlobalWeight(null)} />
-            </div>
-            <div className="fps">
-              {CATEGORIES.map(c => (
-                <div key={c.id} className={`fp ${cat === c.id ? "on" : ""}`} style={cat === c.id ? { background: c.color, color: "#080e1a" } : {}} onClick={() => setCat(c.id)}>
-                  {c.icon} {c.label}
+        <div className="mr-body">
+
+          {/* ═══ TAB 1: ED DRUG REF ═══ */}
+          {tab === 'drugs' && (
+            <div>
+              <input className="mr-search" placeholder="Search drugs, classes, or complaints..." value={drugSearch} onChange={e => setDrugSearch(e.target.value)} />
+
+              {!searchActive && (
+                <div className="mr-cat-btns">
+                  {Object.entries(DRUGS_DB).map(([key, cat]) => (
+                    <button key={key} className={`mr-cat-btn${selectedCat===key?' active':''}`} onClick={() => setSelectedCat(key)}>
+                      {cat.label}
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <DrugInteractionChecker selectedMeds={selectedMeds} medications={medications} />
-            {selectedMeds.length > 0 && (
-              <div style={{ marginBottom: 14 }}>
-                <button onClick={() => setSelectedMeds([])} style={{ fontSize: 11, fontWeight: 700, padding: "6px 14px", borderRadius: 7, background: "transparent", border: "1px solid rgba(0,196,160,0.3)", color: "var(--teal)", cursor: "pointer", fontFamily: "inherit" }}>
-                  Clear Selection ({selectedMeds.length})
-                </button>
-              </div>
-            )}
-            <div className="card">
-              <div className="chdr">
-                <div className="sh-l"><span className="sh-ttl">CLINICAL RECOMMENDATIONS</span></div>
-                <span className="sh-m">Evidence-based · Tap row for full details</span>
-              </div>
-              <div style={{ padding: "10px 13px" }}>
-                {loadingMeds ? (
-                  <div className="empty"><div className="empty-i" style={{fontSize:24}}>⏳</div><div className="empty-t">Loading medications...</div></div>
-                ) : filtered.length === 0 ? (
-                  <div className="empty"><div className="empty-i">🔍</div><div className="empty-t">No medications match your search</div></div>
-                ) : (
-                  <div className="mlist">
-                    {filtered.map(med => (
-                      <MedRow
-                        key={med.id}
-                        med={med}
-                        weightKg={weightKg}
-                        isSelected={selectedMeds.some(m => m.id === med.id)}
-                        onSelect={(checked) => {
-                          if (checked) setSelectedMeds([...selectedMeds, med]);
-                          else setSelectedMeds(selectedMeds.filter(m => m.id !== med.id));
-                        }}
-                      />
-                    ))}
-                  </div>
+              )}
+
+              {searchActive && (
+                <div style={{marginTop:8,fontSize:11,color:T.txt3,fontFamily:"'JetBrains Mono',monospace"}}>
+                  {filteredDrugs.length} results across all categories
+                </div>
+              )}
+
+              <div className="mr-drug-list">
+                {filteredDrugs.map((drug, i) => {
+                  const key = (searchActive ? drug.catKey : selectedCat) + '_' + i;
+                  const isExp = expandedDrug === key;
+                  return (
+                    <div key={key} className={`mr-drug-row${isExp?' expanded':''}`} onClick={() => setExpandedDrug(isExp ? null : key)}>
+                      <div className="mr-drug-hdr">
+                        <div className={`mr-drug-dot${isExp?' lit':' dim'}`} />
+                        <div style={{flex:1}}>
+                          <div className="mr-drug-name">{drug.name}</div>
+                          <div className="mr-drug-dose">{drug.dose}</div>
+                          {searchActive && <div style={{fontSize:10,color:T.txt4,marginTop:2}}>{drug.catLabel}</div>}
+                        </div>
+                        <span className="mr-badge teal">{drug.route || 'IV/PO'}</span>
+                        <span className="mr-badge gold" style={{marginLeft:4}}>{drug.onset}</span>
+                      </div>
+                      {isExp && (
+                        <div className="mr-drug-expand">
+                          <span className="mr-badge blue">{drug.class}</span>
+                          <div className="mr-drug-notes">{drug.notes}</div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {filteredDrugs.length === 0 && (
+                  <div style={{textAlign:'center',padding:32,color:T.txt3}}>No drugs found for "{drugSearch}"</div>
                 )}
               </div>
             </div>
-          </>
-        )}
+          )}
 
-        {/* ── PEDIATRIC CALCULATOR TAB ── */}
-        {tab === "calculator" && (
-          <>
-            <div className="sh">
-              <div className="sh-l"><div className="sh-ico">⚖️</div><span className="sh-ttl">PEDIATRIC MEDICATION CALCULATOR</span></div>
-              <span className="sh-m">Weight-based dosing · Broselow · Max dose capping</span>
-            </div>
-            <div className="card" style={{ marginBottom: 14 }}>
-              <div className="chdr"><span className="sh-ttl">PATIENT PARAMETERS</span><span className="sh-m">Enter age or override with actual weight</span></div>
-              <div className="cbdy">
-                <div className="cinps">
+          {/* ═══ TAB 2: PEDS DOSING ═══ */}
+          {tab === 'peds' && (
+            <div style={{display:'flex',flexDirection:'column',gap:16}}>
+              <div className="mr-card teal-glow">
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:600,marginBottom:12}}>👶 Pediatric Dose Calculator</div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
                   <div>
-                    <label className="ilbl">Age</label>
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <input className="inp" type="number" min="0" placeholder="0" value={pedAge} onChange={e => setPedAge(e.target.value)} style={{ flex: 1 }} />
-                      <select className="sel" value={pedUnit} onChange={e => setPedUnit(e.target.value)} style={{ width: 90 }}>
-                        <option value="months">months</option>
-                        <option value="years">years</option>
-                      </select>
+                    <div style={{fontSize:10,color:T.txt3,fontFamily:"'JetBrains Mono',monospace",textTransform:'uppercase',letterSpacing:'.06em',marginBottom:5}}>Patient Weight (kg)</div>
+                    <input className="mr-input" style={{width:'100%'}} type="number" placeholder="Enter weight in kg" value={pedsWeight} onChange={e => setPedsWeight(e.target.value)} />
+                  </div>
+                  {pedsWt > 0 && (
+                    <div style={{display:'flex',flexDirection:'column',gap:5}}>
+                      <div style={{padding:'7px 12px',background:T.up,border:`1px solid ${T.border}`,borderRadius:7}}>
+                        <div style={{fontSize:9,color:T.txt3,fontFamily:"'JetBrains Mono',monospace",letterSpacing:'.06em'}}>AGE CATEGORY</div>
+                        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,color:T.blue,marginTop:2}}>{ageCategory}</div>
+                      </div>
+                      <div style={{padding:'7px 12px',background:T.up,border:`1px solid ${T.border}`,borderRadius:7}}>
+                        <div style={{fontSize:9,color:T.txt3,fontFamily:"'JetBrains Mono',monospace",letterSpacing:'.06em'}}>BSA (m²)</div>
+                        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,color:T.teal,marginTop:2}}>{bsa} m²</div>
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <label className="ilbl">Weight (kg) — optional override</label>
-                    <input className="inp" type="number" min="0" step="0.1" placeholder="Auto-estimated from age" value={pedWt} onChange={e => setPedWt(e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="ilbl">Filter Drug Category</label>
-                    <select className="sel" value={pedCat} onChange={e => setPedCat(e.target.value)}>
-                      <option value="all">All Categories</option>
-                      {CATEGORIES.filter(c => c.id !== "all").map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
-                    </select>
-                  </div>
+                  )}
                 </div>
-                {weight && bz && (
-                  <>
-                    <div className="wbar">
+              </div>
+
+              <input className="mr-search" placeholder="Search pediatric drugs..." value={pedsSearch} onChange={e => setPedsSearch(e.target.value)} />
+
+              {filteredPedsDrugs.map((drug, di) => {
+                const dose = calcPedsDose(drug);
+                const solIdx = selectedSolutions[di] !== undefined ? selectedSolutions[di] : 0;
+                const vol = calcVolume(drug, solIdx);
+                return (
+                  <div key={di} className="mr-peds-drug">
+                    <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}>
                       <div>
-                        <div style={{ fontSize: 10, color: "var(--tx3)", letterSpacing: ".08em", marginBottom: 2 }}>ESTIMATED WEIGHT</div>
-                        <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-                          <span className="wv">{weight}</span><span className="wu">kg</span>
-                          {!pedWt && <span className="west">(age-estimated)</span>}
+                        <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:600}}>{drug.name}</div>
+                        <div style={{fontSize:11,color:T.txt3,marginTop:2}}>{drug.notes}</div>
+                      </div>
+                      <div style={{display:'flex',gap:5,flexShrink:0}}>
+                        <span className="mr-badge teal">{drug.route}</span>
+                        <span className="mr-badge gold">{drug.freq}</span>
+                      </div>
+                    </div>
+                    <div style={{marginTop:8,fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:T.txt3}}>
+                      {drug.mgPerKg} mg/kg — max {drug.maxMg} mg
+                    </div>
+                    {dose ? (
+                      <div className={`mr-dose-result${dose.capped?' capped':''}`}>
+                        <div style={{display:'flex',alignItems:'center',gap:8}}>
+                          <div className={`mr-dose-val${dose.capped?' capped':''}`}>{dose.final.toFixed(1)} mg</div>
+                          {dose.capped && <span className="mr-badge orange">MAX CAPPED</span>}
+                        </div>
+                        <div style={{fontSize:10,color:T.txt3,fontFamily:"'JetBrains Mono',monospace",marginTop:3}}>
+                          {drug.mgPerKg} mg/kg × {pedsWt} kg = {dose.raw.toFixed(1)} mg{dose.capped ? ` → capped at ${drug.maxMg} mg` : ''}
                         </div>
                       </div>
-                      <div style={{ display: "flex", gap: 8, marginLeft: 16 }}>
-                        <div className="cstat"><div className="csv" style={{ color: "var(--teal)" }}>{weight < 3 ? "2.5" : weight < 5 ? "3.0" : (Math.round((weight / 4 + 4) * 2) / 2).toFixed(1)} mm</div><div className="csl">ET TUBE</div></div>
-                        <div className="cstat"><div className="csv" style={{ color: "var(--yel)" }}>{Math.min(weight * 2, 120)} J</div><div className="csl">DEFIB 2 J/kg</div></div>
-                        <div className="cstat"><div className="csv" style={{ color: "var(--pur)" }}>{(weight * 0.01).toFixed(2)} mg</div><div className="csl">EPI ARREST</div></div>
+                    ) : (
+                      <div style={{fontSize:11,color:T.txt4,marginTop:6,fontFamily:"'JetBrains Mono',monospace"}}>Enter weight to calculate dose</div>
+                    )}
+                    <select className="mr-select" value={solIdx} onChange={e => setSelectedSolutions(prev => ({ ...prev, [di]: parseInt(e.target.value) }))}>
+                      {drug.solutions.map((sol, si) => <option key={si} value={si}>{sol.label}</option>)}
+                    </select>
+                    {vol && dose && (
+                      <div className="mr-vol-result">
+                        Volume: {vol.val} {vol.unit}
                       </div>
-                      <div className="bzb" style={{ background: bz.hex + "20", color: bz.hex, border: `1px solid ${bz.hex}40` }}>● {bz.zone}</div>
-                      <button onClick={() => setShowSaveModal(true)} style={{ padding: "5px 12px", borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: "pointer", background: "rgba(0,196,160,0.12)", border: "1px solid rgba(0,196,160,0.3)", color: "#00c4a0", fontFamily: "inherit", whiteSpace: "nowrap" }}>
-                        💾 Save Case
-                      </button>
-                    </div>
-                    <div className="card" style={{ background: "var(--c2)" }}>
-                      <div className="chdr"><span className="sh-ttl">CALCULATED DOSES — {weight} kg PATIENT</span><span className="sh-m">{pedResults.length} medications</span></div>
-                      <div style={{ padding: "0 0 8px" }}>
-                        <table className="rtbl">
-                          <thead><tr><th>MEDICATION</th><th>CATEGORY</th><th>CALCULATED DOSE</th><th>ROUTE</th><th>NOTES</th></tr></thead>
-                          <tbody>
-                            {pedResults.map(m => (
-                              <tr key={m.id}>
-                                <td><div style={{ fontWeight: 600, fontSize: 12 }}>{m.name}</div><div style={{ fontSize: 10, color: "var(--tx3)" }}>{m.code}</div></td>
-                                <td><span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: `${CAT_COLOR[m.category]}15`, color: CAT_COLOR[m.category], border: `1px solid ${CAT_COLOR[m.category]}30` }}>{m.category}</span></td>
-                                <td><span className={`rdose ${m.capped ? "rcap" : ""}`}>{m.calcDose}</span>{m.capped && <span className="rmax"> MAX</span>}</td>
-                                <td><span style={{ fontFamily: "monospace", fontSize: 11, color: "var(--tx2)" }}>{m.ped.route}</span></td>
-                                <td style={{ fontSize: 11, color: "var(--tx2)" }}>{m.ped.notes}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ═══ TAB 3: AI SEARCH ═══ */}
+          {tab === 'ai' && (
+            <div style={{display:'flex',flexDirection:'column',gap:16}}>
+              <div className="mr-card teal-glow">
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+                  <div className="mr-aipulse" />
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:600}}>AI Clinical Decision Support</div>
+                </div>
+                <div style={{fontSize:12,color:T.txt3,marginBottom:12}}>Enter an ED complaint or clinical scenario to receive evidence-based medication recommendations sourced from ACEP, AHA, and SSC 2021 guidelines.</div>
+                <div className="mr-ai-input-wrap">
+                  <input
+                    className="mr-input"
+                    style={{flex:1}}
+                    placeholder="e.g., Acute STEMI, Status epilepticus, Anaphylaxis..."
+                    value={aiQuery}
+                    onChange={e => setAiQuery(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && runAI()}
+                  />
+                  <button className="mr-ai-btn" onClick={runAI} disabled={!aiQuery.trim() || aiLoading}>⌘ Analyze</button>
+                </div>
+                <div className="mr-quick-btns">
+                  {QUICK_QUERIES.map(q => (
+                    <button key={q} className="mr-quick-btn" onClick={() => { setAiQuery(q); }}>{q}</button>
+                  ))}
+                </div>
+              </div>
+
+              {aiLoading && <LoadingDots />}
+
+              {aiResponse && !aiLoading && (
+                <div className="mr-card">
+                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,letterSpacing:'.1em',marginBottom:10}}>AI RESPONSE · {aiQuery.toUpperCase()}</div>
+                  <div className="mr-ai-response">{renderAIResponse(aiResponse)}</div>
+                  <div className="mr-disclaimer">⚠ AI-generated recommendations. Clinical judgment should always prevail. Verify all doses and contraindications. Not a substitute for clinical decision-making.</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ═══ TAB 4: SEPSIS PROTOCOL ═══ */}
+          {tab === 'sepsis' && (
+            <div style={{display:'flex',flexDirection:'column',gap:16}}>
+              {/* Banner */}
+              <div className="mr-card coral-border">
+                <div style={{display:'flex',alignItems:'center',gap:10}}>
+                  <span style={{fontSize:26}}>🦠</span>
+                  <div>
+                    <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:T.coral}}>Sepsis Protocol Engine</div>
+                    <div style={{fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:T.txt3,letterSpacing:'.07em'}}>SURVIVING SEPSIS CAMPAIGN 2021 · HOUR-1 BUNDLE</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Weight */}
+              <div className="mr-card">
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:600,marginBottom:10}}>Patient Weight & Fluid Calculation</div>
+                <input className="mr-input" style={{width:200}} type="number" placeholder="Weight (kg)" value={sepsisWeight} onChange={e => setSepsisWeight(e.target.value)} />
+                {wt > 0 && (
+                  <div className="mr-sepsis-fluid">
+                    <div style={{fontSize:9,color:T.coral,fontFamily:"'JetBrains Mono',monospace",letterSpacing:'.08em',marginBottom:4}}>IV FLUID BOLUS</div>
+                    <div className="mr-sepsis-fluid-val">{bolus} mL</div>
+                    <div style={{fontSize:11,color:T.txt3,marginTop:4}}>30 mL/kg × {wt} kg · Within first 3 hours · Reassess after each bolus</div>
+                  </div>
                 )}
-                {!weight && <div className="empty"><div className="empty-i">⚖️</div><div className="empty-t">Enter patient age or weight to calculate doses</div></div>}
+              </div>
+
+              {/* Hour-1 Bundle */}
+              <div className="mr-card">
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:600,marginBottom:12}}>Hour-1 Bundle Checklist</div>
+                {SEPSIS_BUNDLE.map(item => (
+                  <div key={item.id} className={`mr-checklist-item${item.critical?' critical':' normal'}${sepsisChecked[item.id]?' checked':''}`}
+                    onClick={() => toggleCheck(item.id, setSepsisChecked)}>
+                    <div className={`mr-check-icon${sepsisChecked[item.id]?' done':item.critical?' crit':' norm'}`}>
+                      {sepsisChecked[item.id] ? '✓' : item.critical ? '!' : '○'}
+                    </div>
+                    <div style={{fontSize:13,color:sepsisChecked[item.id]?T.txt3:T.txt,textDecoration:sepsisChecked[item.id]?'line-through':'none',flex:1}}>{item.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Sepsis Meds */}
+              {wt > 0 && (
+                <div className="mr-card">
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:600,marginBottom:12}}>Weight-Based Sepsis Medications</div>
+                  {[
+                    {name:'Vancomycin',dose:`${Math.round(wt*25)}-${Math.round(wt*30)} mg`,route:'IV',note:'Infuse over 1-2h · AUC-guided dosing'},
+                    {name:'Norepinephrine',dose:'0.1-0.5 mcg/kg/min',route:'IV drip',note:'First-line vasopressor · Central line preferred'},
+                    {name:'Hydrocortisone',dose:'100 mg (fixed)',route:'IV q8h',note:'If refractory shock'},
+                    {name:'Piperacillin-Tazobactam',dose:'4.5 g (fixed)',route:'IV q6h',note:'Extended infusion 4h preferred'},
+                  ].map((med, i) => (
+                    <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'9px 12px',background:T.up,border:`1px solid ${T.border}`,borderRadius:8,marginBottom:6}}>
+                      <div style={{flex:1}}>
+                        <div style={{fontWeight:600,fontSize:13}}>{med.name}</div>
+                        <div style={{fontSize:10,color:T.txt3,marginTop:2}}>{med.note}</div>
+                      </div>
+                      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,color:T.coral}}>{med.dose}</span>
+                      <span className="mr-badge teal">{med.route}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Sepsis AI */}
+              <div className="mr-card">
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+                  <div className="mr-aipulse coral" />
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:600,color:T.coral}}>AI Sepsis Protocol Advisor</div>
+                </div>
+                <div style={{fontSize:12,color:T.txt3,marginBottom:10}}>Enter suspected source for tailored antibiotic selection and SSC 2021 protocol guidance.</div>
+                <div className="mr-ai-input-wrap">
+                  <input
+                    className="mr-input"
+                    style={{flex:1}}
+                    placeholder="e.g., Urinary source, elderly male..."
+                    value={sepsisQuery}
+                    onChange={e => setSepsisQuery(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && runSepsisAI()}
+                  />
+                  <button className="mr-ai-btn coral" onClick={runSepsisAI} disabled={!sepsisQuery.trim() || sepsisLoading || !wt}>
+                    ⌘ Generate Protocol
+                  </button>
+                </div>
+                {!wt && <div style={{fontSize:11,color:T.txt4,marginTop:6}}>Enter patient weight above to enable AI protocol generation.</div>}
+              </div>
+
+              {sepsisLoading && <LoadingDots coral />}
+
+              {sepsisAiResponse && !sepsisLoading && (
+                <div className="mr-card">
+                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,letterSpacing:'.1em',marginBottom:10}}>SEPSIS PROTOCOL · SSC 2021</div>
+                  <div className="mr-ai-response">{renderAIResponse(sepsisAiResponse)}</div>
+                  <div className="mr-disclaimer">⚠ AI-generated protocol. Clinical judgment should always prevail. Follow institutional sepsis protocols. Verify all calculations.</div>
+                </div>
+              )}
+
+              {/* Reassessment */}
+              <div className="mr-card">
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:600,marginBottom:12}}>Reassessment Checklist</div>
+                {REASSESS_BUNDLE.map(item => (
+                  <div key={item.id} className={`mr-checklist-item${item.critical?' critical':' normal'}${reassessChecked[item.id]?' checked':''}`}
+                    onClick={() => toggleCheck(item.id, setReassessChecked)}>
+                    <div className={`mr-check-icon${reassessChecked[item.id]?' done':item.critical?' crit':' norm'}`}>
+                      {reassessChecked[item.id] ? '✓' : item.critical ? '!' : '○'}
+                    </div>
+                    <div style={{fontSize:13,color:reassessChecked[item.id]?T.txt3:T.txt,textDecoration:reassessChecked[item.id]?'line-through':'none',flex:1}}>{item.label}</div>
+                  </div>
+                ))}
               </div>
             </div>
-          </>
-        )}
+          )}
 
-        {/* ── SEPSIS PROTOCOL TAB ── */}
-        {tab === "sepsis" && <SepsisProtocol />}
-
-        {/* ── ER CONDITIONS TAB ── */}
-        {tab === "conditions" && <ERConditions />}
-
+          {/* Footer */}
+          <div className="mr-footer">
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,letterSpacing:'3px'}}>NOTRYA AI V3 · BASE 44 · DRUGS_DB ENGINE</div>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:'2px',opacity:.6}}>FOR CLINICAL DECISION SUPPORT ONLY · NOT A SUBSTITUTE FOR CLINICAL JUDGMENT</div>
+          </div>
+        </div>
       </div>
     </>
   );

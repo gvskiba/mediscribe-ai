@@ -35,6 +35,7 @@ const APP_ICONS = [
   { icon: '🔄', label: 'Shift',     page: '/Shift' },
   { icon: '💊', label: 'Drugs',     page: '/DrugsBugs' },
   { icon: '🧮', label: 'Calc',      page: '/Calculators' },
+  { icon: '💉', label: 'Med Ref',  page: '/MedicationReference' },
 ];
 
 /* ─────────────────────────────────────────────
@@ -73,6 +74,7 @@ const CHART_GROUPS = [
       { icon: '🤖', label: 'AutoCoder',         page: '/AutoCoder' },
       { icon: '💉', label: 'eRx',               page: '/ERx' },
       { icon: '✂️', label: 'Procedures',        page: '/EDProcedureNotes' },
+      { icon: '🧬', label: 'ED Med Ref',         page: '/MedicationReference' },
     ]
   },
 ];
@@ -91,6 +93,7 @@ const PAGE_ABBR = {
   DiagnosticStewardship: 'Ds', DrugsBugs: 'Db', AntibioticStewardship: 'Ab',
   MedicationReference: 'Mr', CMELearningCenter: 'Ce', PediatricDosing: 'Pd',
   MedicalKnowledgeBase: 'Kb', KnowledgeBaseV2: 'K2', PatientEducationGenerator: 'Pe',
+  MedicationReference: 'Mr',
   EDProcedureNotes: 'Ed', Calculators: 'Ca', NoteTemplates: 'Nt',
   CustomTemplates: 'Ct', SmartTemplates: 'St', Snippets: 'Sn',
   AddendumManager: 'Am', AppSettings: 'As', UserSettings: 'Us', UserPreferences: 'Up',

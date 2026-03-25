@@ -6,7 +6,7 @@ const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap');
 :root{--bg:#050f1e;--bg-panel:#081628;--bg-card:#0b1e36;--bg-up:#0e2544;--border:#1a3555;--border-hi:#2a4f7a;--blue:#3b9eff;--teal:#00e5c0;--gold:#f5c842;--purple:#9b6dff;--coral:#ff6b6b;--orange:#ff9f43;--txt:#e8f0fe;--txt2:#8aaccc;--txt3:#4a6a8a;--txt4:#2e4a6a;--r:8px;--rl:12px}
 .mr*,.mr*::before,.mr*::after{box-sizing:border-box;margin:0;padding:0}
-.mr{display:flex;flex-direction:column;height:calc(100vh - 138px);background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px}
+.mr{display:flex;flex-direction:column;height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px}
 .mr-topbar{display:flex;align-items:center;gap:10px;padding:10px 18px;background:var(--bg-panel);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
 .mr-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--txt);white-space:nowrap}
 .mr-search{flex:1;display:flex;align-items:center;gap:8px;background:var(--bg-up);border:1px solid var(--border);border-radius:var(--r);padding:0 12px;max-width:340px}

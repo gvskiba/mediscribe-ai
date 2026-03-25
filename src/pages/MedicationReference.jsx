@@ -42,7 +42,7 @@ const CSS = `
 .mrp-tab:hover{color:${T.txt2};background:${T.up}}
 .mrp-tab.on{background:rgba(0,229,192,.08);border-color:rgba(0,229,192,.25);color:${T.teal}}
 .mrp-body{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
-.cat-rail{flex-shrink:0;border-bottom:1px solid ${T.border};overflow-x:auto;overflow-y:hidden;padding:8px 12px;display:flex;flex-direction:row;gap:6px;background:${T.panel}}
+.cat-rail{flex-shrink:0;border-bottom:1px solid ${T.border};padding:8px 12px;display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;background:${T.panel}}
 .cat-btn{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;padding:6px 14px;border-radius:20px;cursor:pointer;border:1px solid ${T.border};transition:all .18s;text-align:center;white-space:nowrap;flex-shrink:0}
 .cat-btn:hover{background:${T.up};border-color:${T.borderHi}}
 .cat-btn.on{background:rgba(0,229,192,.1);border-color:rgba(0,229,192,.5)}

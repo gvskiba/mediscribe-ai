@@ -14,12 +14,11 @@ const T = {
 /* ─── CSS ─── */
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
-.mrp{background:${T.bg};color:${T.txt};font-family:'DM Sans',sans-serif;font-size:14px;display:flex;flex-direction:column;overflow:hidden;height:100%}
-.mrp.fullscreen{position:fixed;inset:0;z-index:50;height:100vh}
+.mrp{color:${T.txt};font-family:'DM Sans',sans-serif;font-size:14px;display:flex;flex-direction:column;overflow:hidden;height:100%}
 .mrp *,.mrp *::before,.mrp *::after{box-sizing:border-box}
 
 /* HEADER */
-.mrp-hdr{height:52px;background:${T.panel};border-bottom:1px solid ${T.border};display:flex;align-items:center;gap:10px;padding:0 16px;flex-shrink:0}
+.mrp-hdr{height:52px;background:${T.panel};border-bottom:1px solid ${T.border};display:flex;align-items:center;gap:10px;padding:0 16px;flex-shrink:0;flex-wrap:wrap}
 .mrp-back{display:flex;align-items:center;gap:6px;background:${T.up};border:1px solid ${T.border};border-radius:6px;padding:5px 12px;font-size:11px;color:${T.txt2};cursor:pointer;transition:all .15s;text-decoration:none;white-space:nowrap}
 .mrp-back:hover{border-color:${T.borderHi};color:${T.txt}}
 .mrp-title-wrap{display:flex;align-items:center;gap:8px}
@@ -133,6 +132,7 @@ const CSS = `
 .no-data{text-align:center;padding:40px;color:${T.txt3}}
 .no-data-i{font-size:32px;margin-bottom:8px}
 .no-data-t{font-size:13px}
+
 .mrp ::-webkit-scrollbar{width:4px}
 .mrp ::-webkit-scrollbar-thumb{background:${T.border};border-radius:2px}
 @media(max-width:900px){.cat-rail{width:56px}.cat-nm,.cat-ct{display:none}.cat-btn{min-height:48px;padding:8px 4px}.mrp-sub{display:none}}
@@ -413,12 +413,12 @@ export default function MedicationReference({ embedded = false }) {
   return (
     <>
       <style>{CSS}</style>
-      <div className={embedded ? 'mrp embedded' : 'mrp fullscreen'}>
+      <div className="mrp">
 
         {/* HEADER */}
         <div className="mrp-hdr">
           {!embedded && (
-            <Link to="/" className="mrp-back">← Back</Link>
+            <Link to="/MedicationReference" className="mrp-back" style={{display:'none'}} />
           )}
           <div className="mrp-title-wrap">
             <div className="mrp-logo">Mr</div>

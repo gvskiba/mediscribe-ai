@@ -108,7 +108,7 @@ const NO_CHART_SIDEBAR = new Set([
   'Home', 'Dashboard', 'AppSettings', 'UserSettings', 'UserPreferences',
   'CMELearningCenter', 'MedicalKnowledgeBase', 'KnowledgeBaseV2',
   'MedicalNews', 'Calendar', 'Calculators', 'DrugsBugs', 'AntibioticStewardship',
-  'MedicationReference', 'DrugReference', 'PediatricDosing', 'Snippets',
+  'DrugReference', 'PediatricDosing', 'Snippets',
   'NoteTemplates', 'CustomTemplates', 'SmartTemplates', 'AddendumManager',
   'CantMissDiagnoses', 'CommandCenter', 'Shift', 'NursingFlowsheet',
 ]);
@@ -119,7 +119,7 @@ const NO_CHART_SIDEBAR = new Set([
 const FULLSCREEN_PAGES = new Set([
   'ClinicalNoteStudio', 'NoteDetail', 'PatientDashboard',
   'ERPlanBuilder', 'ERx',
-  'MedicationReference', 'KnowledgeBaseV2', 'PatientEducationGenerator',
+  'KnowledgeBaseV2', 'PatientEducationGenerator',
   'DiagnosticStewardship', 'NoteCreationHub',
   'EDProcedureNotesNew',
   'AutoCoder', 'NursingFlowsheet', 'ClinicalDecisionSupport',

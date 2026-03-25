@@ -32,6 +32,7 @@ const APP_ICONS = [
   { icon: '🏠', label: 'Home',      page: '/' },
   { icon: '📊', label: 'Dashboard', page: '/Dashboard' },
   { icon: '🆕', label: 'New PT',    page: '/NewPatientInput' },
+  { icon: '📝', label: 'New Note',  page: '/NewNote' },
   { icon: '👥', label: 'Patients',  page: '/PatientDashboard' },
   { icon: '🔄', label: 'Shift',     page: '/Shift' },
   { icon: '💊', label: 'Drugs',     page: '/DrugsBugs' },

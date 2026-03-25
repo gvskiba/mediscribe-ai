@@ -75,7 +75,7 @@ import KnowledgeBaseV2 from './pages/KnowledgeBaseV2';
 import LiveTranscription from './pages/LiveTranscription';
 import MedicalKnowledgeBase from './pages/MedicalKnowledgeBase';
 import MedicalNews from './pages/MedicalNews';
-import MedicationReference from './pages/MedicationReference';
+import MedicationReference from './pages/MedicationReference.jsx';
 import MedicalDecisionMaking from './pages/MedicalDecisionMaking';
 import NewNote from './pages/NewNote';
 import NewPatientInput from './pages/NewPatientInput';

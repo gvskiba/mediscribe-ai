@@ -27,7 +27,7 @@ const CATEGORY_META = {
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
-.mrp{color:${T.txt};font-family:'DM Sans',sans-serif;font-size:14px;display:flex;flex-direction:column;overflow:hidden;height:100%}
+.mrp{color:${T.txt};font-family:'DM Sans',sans-serif;font-size:14px;display:flex;flex-direction:column;min-height:0;}
 .mrp *,.mrp *::before,.mrp *::after{box-sizing:border-box}
 .mrp-hdr{height:52px;background:${T.panel};border-bottom:1px solid ${T.border};display:flex;align-items:center;gap:10px;padding:0 16px;flex-shrink:0;flex-wrap:wrap}
 .mrp-title-wrap{display:flex;align-items:center;gap:8px}
@@ -41,8 +41,8 @@ const CSS = `
 .mrp-tab{padding:6px 14px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:${T.txt3};letter-spacing:.8px;text-transform:uppercase;cursor:pointer;border:1px solid transparent;transition:all .15s;white-space:nowrap}
 .mrp-tab:hover{color:${T.txt2};background:${T.up}}
 .mrp-tab.on{background:rgba(0,229,192,.08);border-color:rgba(0,229,192,.25);color:${T.teal}}
-.mrp-body{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
-.cat-rail{flex-shrink:0;border-bottom:1px solid ${T.border};padding:8px 12px;display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;background:${T.panel}}
+.mrp-body{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;margin-top:0}
+.cat-rail{flex-shrink:0;border-top:1px solid ${T.border};border-bottom:1px solid ${T.border};padding:8px 12px;display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;background:${T.panel}}
 .cat-btn{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;padding:6px 14px;border-radius:20px;cursor:pointer;border:1px solid ${T.border};transition:all .18s;text-align:center;white-space:nowrap;flex-shrink:0}
 .cat-btn:hover{background:${T.up};border-color:${T.borderHi}}
 .cat-btn.on{background:rgba(0,229,192,.1);border-color:rgba(0,229,192,.5)}

@@ -276,24 +276,37 @@ export default function PediatricDosingCalculator() {
   const [history, setHistory]           = useState([]);
   const [drugDB, setDrugDB]             = useState([]);
   const [loading, setLoading]           = useState(true);
-  const [activeCategory, setActiveCategory] = useState('all');
+  const [activeBroad, setActiveBroad]       = useState('all');
+  const [activeSubcat, setActiveSubcat]     = useState(null);
   const searchRef = useRef(null);
 
-  const CATEGORY_META = {
-    all:           { label: 'All',             icon: '💊' },
-    analgesic:     { label: 'Pain / Analgesic', icon: '🔵' },
-    sedation:      { label: 'Sedation',         icon: '💤' },
-    seizure:       { label: 'Seizure',          icon: '⚡' },
-    respiratory:   { label: 'Respiratory',      icon: '🫁' },
-    antibiotics:   { label: 'Antibiotics',      icon: '🧪' },
-    abx:           { label: 'Antibiotics',      icon: '🧪' },
-    gi:            { label: 'GI / Nausea',      icon: '💚' },
-    resuscitation: { label: 'Resuscitation',    icon: '🚨' },
-    cardiac:       { label: 'Cardiac',          icon: '❤️' },
-    psych:         { label: 'Psych',            icon: '🧠' },
-    rsi:           { label: 'RSI',              icon: '💉' },
-    other:         { label: 'Other',            icon: '📌' },
-  };
+  const BROAD_CATEGORIES = [
+    { id: 'all',           label: 'All',              icon: '💊', subcats: [] },
+    { id: 'antibiotics',   label: 'Antibiotics',      icon: '🧪', subcats: [
+      { id: 'antibiotics', label: 'General Antibiotics' },
+      { id: 'abx',         label: 'ER Antibiotics' },
+    ]},
+    { id: 'respiratory',   label: 'Respiratory',      icon: '🫁', subcats: [
+      { id: 'respiratory', label: 'Bronchodilators / Resp' },
+      { id: 'rsi',         label: 'RSI / Intubation' },
+    ]},
+    { id: 'pain',          label: 'Pain / Sedation',  icon: '🔵', subcats: [
+      { id: 'analgesic',   label: 'Analgesics / Opioids' },
+      { id: 'sedation',    label: 'Sedation' },
+      { id: 'seizure',     label: 'Seizure / Status' },
+    ]},
+    { id: 'resuscitation', label: 'Resuscitation',    icon: '🚨', subcats: [
+      { id: 'resuscitation', label: 'Cardiac Arrest / ACLS' },
+      { id: 'cardiac',     label: 'Cardiac / HTN' },
+    ]},
+    { id: 'gi',            label: 'GI',               icon: '💚', subcats: [
+      { id: 'gi',          label: 'GI / Antiemetics' },
+    ]},
+    { id: 'other',         label: 'Other',            icon: '📌', subcats: [
+      { id: 'other',       label: 'Other / Misc' },
+      { id: 'psych',       label: 'Psych / Agitation' },
+    ]},
+  ];
 
   useEffect(() => {
     base44.entities.Medication.filter({ setting: 'er' })
@@ -336,11 +349,19 @@ export default function PediatricDosingCalculator() {
 
   const broselow = weightKg && weightKg > 0 ? getBroselow(weightKg) : null;
 
-  const categories = ['all', ...Array.from(new Set(drugDB.map(d => d.category).filter(Boolean)))];
+  const activeBroadObj = BROAD_CATEGORIES.find(b => b.id === activeBroad);
+  const broadSubcatIds  = activeBroadObj?.subcats.map(s => s.id) ?? [];
 
   const filtered = drugDB.filter(d => {
     const matchesSearch = !query || d.name.toLowerCase().includes(query.toLowerCase()) || d.category.toLowerCase().includes(query.toLowerCase());
-    const matchesCat = activeCategory === 'all' || d.category === activeCategory;
+    let matchesCat = true;
+    if (activeBroad !== 'all') {
+      if (activeSubcat) {
+        matchesCat = d.category === activeSubcat;
+      } else {
+        matchesCat = broadSubcatIds.includes(d.category);
+      }
+    }
     return matchesSearch && matchesCat;
   });
 
@@ -428,32 +449,77 @@ export default function PediatricDosingCalculator() {
             </div>
 
             {!loading && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-                {categories.map(cat => {
-                  const meta = CATEGORY_META[cat] || { label: cat, icon: '💊' };
-                  const isActive = activeCategory === cat;
-                  const count = cat === 'all' ? drugDB.length : drugDB.filter(d => d.category === cat).length;
-                  return (
+              <div style={{ marginBottom: 14 }}>
+                {/* BROAD CATEGORY ROW */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                  {BROAD_CATEGORIES.map(broad => {
+                    const isActive = activeBroad === broad.id;
+                    const count = broad.id === 'all'
+                      ? drugDB.length
+                      : drugDB.filter(d => broad.subcats.some(s => s.id === d.category)).length;
+                    return (
+                      <button
+                        key={broad.id}
+                        onClick={() => { setActiveBroad(broad.id); setActiveSubcat(null); setSelectedDrug(null); setSelectedInd(null); }}
+                        style={{
+                          background: isActive ? 'rgba(0,229,192,0.12)' : '#0b1e36',
+                          border: `1px solid ${isActive ? 'rgba(0,229,192,0.5)' : '#1a3555'}`,
+                          borderRadius: 8, padding: '7px 14px',
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                          fontSize: 12, fontWeight: isActive ? 700 : 500,
+                          color: isActive ? '#00e5c0' : '#8aaccc',
+                          transition: 'all 0.15s', whiteSpace: 'nowrap',
+                          fontFamily: "'DM Sans', sans-serif",
+                          boxShadow: isActive ? '0 0 0 1px rgba(0,229,192,0.2)' : 'none',
+                        }}
+                      >
+                        <span style={{ fontSize: 14 }}>{broad.icon}</span>
+                        <span>{broad.label}</span>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: isActive ? 'rgba(0,229,192,0.6)' : '#4a6a8a' }}>{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* SUBCATEGORY ROW */}
+                {activeBroad !== 'all' && activeBroadObj?.subcats.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, paddingLeft: 10, borderLeft: '2px solid rgba(0,229,192,0.2)' }}>
                     <button
-                      key={cat}
-                      onClick={() => { setActiveCategory(cat); setSelectedDrug(null); setSelectedInd(null); }}
+                      onClick={() => { setActiveSubcat(null); setSelectedDrug(null); setSelectedInd(null); }}
                       style={{
-                        background: isActive ? 'rgba(0,229,192,0.1)' : '#0b1e36',
-                        border: `1px solid ${isActive ? 'rgba(0,229,192,0.4)' : '#1a3555'}`,
-                        borderRadius: 20, padding: '5px 12px',
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-                        fontSize: 11, fontWeight: isActive ? 700 : 500,
-                        color: isActive ? '#00e5c0' : '#8aaccc',
-                        transition: 'all 0.15s', whiteSpace: 'nowrap',
+                        background: !activeSubcat ? 'rgba(59,158,255,0.1)' : 'transparent',
+                        border: `1px solid ${!activeSubcat ? 'rgba(59,158,255,0.4)' : '#1a3555'}`,
+                        borderRadius: 20, padding: '3px 10px', cursor: 'pointer',
+                        fontSize: 10, fontWeight: !activeSubcat ? 700 : 400,
+                        color: !activeSubcat ? '#3b9eff' : '#4a6a8a',
                         fontFamily: "'DM Sans', sans-serif",
                       }}
                     >
-                      <span>{meta.icon}</span>
-                      <span>{meta.label}</span>
-                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: isActive ? 'rgba(0,229,192,0.6)' : '#4a6a8a', marginLeft: 2 }}>{count}</span>
+                      All {activeBroadObj.label}
                     </button>
-                  );
-                })}
+                    {activeBroadObj.subcats.map(sc => {
+                      const isActiveSc = activeSubcat === sc.id;
+                      const scCount = drugDB.filter(d => d.category === sc.id).length;
+                      if (scCount === 0) return null;
+                      return (
+                        <button
+                          key={sc.id}
+                          onClick={() => { setActiveSubcat(sc.id); setSelectedDrug(null); setSelectedInd(null); }}
+                          style={{
+                            background: isActiveSc ? 'rgba(59,158,255,0.1)' : 'transparent',
+                            border: `1px solid ${isActiveSc ? 'rgba(59,158,255,0.4)' : '#1a3555'}`,
+                            borderRadius: 20, padding: '3px 10px', cursor: 'pointer',
+                            fontSize: 10, fontWeight: isActiveSc ? 700 : 400,
+                            color: isActiveSc ? '#3b9eff' : '#4a6a8a',
+                            fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {sc.label} ({scCount})
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 

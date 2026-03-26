@@ -15,6 +15,7 @@ import NPIDemo from '@/pages/NPIDemo';
 import BaseTemplate from '@/pages/BaseTemplate';
 import EDProcedureNotesNew from '@/pages/EDProcedureNotes';
 import PediatricDosingCalculator from '@/pages/PediatricDosingCalculator';
+import StrokeAssessment from '@/pages/StrokeAssessment';
 
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -79,6 +80,7 @@ const AuthenticatedApp = () => {
       <Route path="/npidemo" element={<NPIDemo />} />
       <Route path="/basetemplate" element={<BaseTemplate />} />
       <Route path="/PediatricDosingCalculator" element={<LayoutWrapper currentPageName="PediatricDosing"><PediatricDosingCalculator /></LayoutWrapper>} />
+      <Route path="/StrokeAssessment" element={<LayoutWrapper currentPageName="StrokeAssessment"><StrokeAssessment /></LayoutWrapper>} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

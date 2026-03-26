@@ -17,6 +17,7 @@ import BaseTemplate from '@/pages/BaseTemplate';
 import EDProcedureNotesNew from '@/pages/EDProcedureNotes';
 import PediatricDosingCalculator from '@/pages/PediatricDosingCalculator';
 import StrokeAssessment from '@/pages/StrokeAssessment';
+import EDOrders from '@/pages/EDOrders';
 import NotryaApp from '@/pages/NotryaApp';
 
 
@@ -84,6 +85,7 @@ const AuthenticatedApp = () => {
       <Route path="/basetemplate" element={<BaseTemplate />} />
       <Route path="/PediatricDosingCalculator" element={<LayoutWrapper currentPageName="PediatricDosing"><PediatricDosingCalculator /></LayoutWrapper>} />
       <Route path="/StrokeAssessment" element={<LayoutWrapper currentPageName="StrokeAssessment"><StrokeAssessment /></LayoutWrapper>} />
+      <Route path="/EDOrders" element={<LayoutWrapper currentPageName="EDOrders"><EDOrders /></LayoutWrapper>} />
       <Route path="/NotryaApp" element={<NotryaApp />} />
 
       <Route path="*" element={<PageNotFound />} />

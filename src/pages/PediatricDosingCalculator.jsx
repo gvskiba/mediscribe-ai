@@ -317,7 +317,7 @@ export default function PediatricDosingCalculator() {
           .map(m => ({
             id: m.med_id || m.id,
             name: m.name,
-            category: m.drugClass || m.category || 'Other',
+            category: m.category || 'other',
             color: m.color || '#3b9eff',
             icon: m.emoji || '💊',
             ped: {

@@ -556,7 +556,7 @@ export default function NotryaApp({ embedded = false }) {
     tick(); const t = setInterval(tick, 10000); return () => clearInterval(t);
   }, []);
 
-  useEffect(() => { if (msgsRef.current) msgsRef.current.scrollTop = msgsRef.current.scrollHeight; }, [aiMsgs]);
+
 
 
 

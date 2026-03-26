@@ -283,59 +283,12 @@ const CSS = `
 @media(max-width:900px){.sa-2col{grid-template-columns:1fr!important}}
 `;
 
-// Cookie Theft SVG
 const CookieTheftSVG = () => (
-  <svg viewBox="0 0 320 220" style={{width:'100%',maxWidth:320,borderRadius:8,background:'#f5f0e8'}} xmlns="http://www.w3.org/2000/svg">
-    <rect width="320" height="220" fill="#f5f0e8"/>
-    {/* Floor */}
-    <rect y="160" width="320" height="60" fill="#d4c9a8"/>
-    {/* Window */}
-    <rect x="220" y="20" width="80" height="70" fill="#aed6e8" stroke="#8b6914" strokeWidth="3"/>
-    <line x1="260" y1="20" x2="260" y2="90" stroke="#8b6914" strokeWidth="2"/>
-    <line x1="220" y1="55" x2="300" y2="55" stroke="#8b6914" strokeWidth="2"/>
-    {/* Curtains */}
-    <path d="M215,20 Q200,50 215,90" fill="#e8a0a0" stroke="none"/>
-    <path d="M305,20 Q320,50 305,90" fill="#e8a0a0" stroke="none"/>
-    {/* Counter */}
-    <rect x="130" y="120" width="190" height="40" fill="#c8b89a" stroke="#8b6914" strokeWidth="2"/>
-    {/* Sink */}
-    <rect x="170" y="95" width="60" height="30" rx="4" fill="#b0c8d4" stroke="#7a9aaa" strokeWidth="2"/>
-    {/* Water overflow */}
-    <path d="M170,125 Q200,135 230,125" fill="none" stroke="#5aaed4" strokeWidth="2" strokeDasharray="3,2"/>
-    <ellipse cx="200" cy="150" rx="25" ry="6" fill="rgba(90,174,212,0.3)"/>
-    {/* Woman */}
-    <ellipse cx="200" cy="72" rx="12" ry="14" fill="#f4c07a"/>
-    <rect x="190" y="84" width="20" height="35" rx="4" fill="#d47ab0"/>
-    <line x1="188" y1="88" x2="165" y2="108" stroke="#f4c07a" strokeWidth="5" strokeLinecap="round"/>
-    <line x1="212" y1="88" x2="225" y2="115" stroke="#f4c07a" strokeWidth="5" strokeLinecap="round"/>
-    <line x1="193" y1="118" x2="190" y2="155" stroke="#d47ab0" strokeWidth="5"/>
-    <line x1="207" y1="118" x2="210" y2="155" stroke="#d47ab0" strokeWidth="5"/>
-    {/* Stool */}
-    <rect x="50" y="130" width="50" height="6" rx="2" fill="#8b6914"/>
-    <line x1="60" y1="136" x2="55" y2="160" stroke="#8b6914" strokeWidth="3"/>
-    <line x1="90" y1="136" x2="95" y2="160" stroke="#8b6914" strokeWidth="3"/>
-    <line x1="55" y1="148" x2="95" y2="148" stroke="#8b6914" strokeWidth="2"/>
-    {/* Boy on stool */}
-    <ellipse cx="75" cy="102" rx="10" ry="11" fill="#f4c07a"/>
-    <rect x="66" y="112" width="18" height="28" rx="4" fill="#7ab0d4"/>
-    <line x1="65" y1="116" x2="40" y2="108" stroke="#f4c07a" strokeWidth="5" strokeLinecap="round"/>
-    <line x1="83" y1="116" x2="108" y2="108" stroke="#f4c07a" strokeWidth="5" strokeLinecap="round"/>
-    <line x1="70" y1="140" x2="68" y2="160" stroke="#7ab0d4" strokeWidth="5"/>
-    <line x1="80" y1="140" x2="82" y2="160" stroke="#7ab0d4" strokeWidth="5"/>
-    {/* Cookie jar */}
-    <ellipse cx="110" cy="90" rx="15" ry="20" fill="#d4a070" stroke="#8b6914" strokeWidth="2"/>
-    <ellipse cx="110" cy="71" rx="10" ry="5" fill="#c47a50" stroke="#8b6914" strokeWidth="2"/>
-    <circle cx="115" cy="88" r="3" fill="#8b4010"/>
-    <circle cx="107" cy="95" r="3" fill="#8b4010"/>
-    <circle cx="112" cy="100" r="2.5" fill="#8b4010"/>
-    {/* Girl reaching */}
-    <ellipse cx="35" cy="118" rx="9" ry="10" fill="#f4c07a"/>
-    <rect x="27" y="127" width="16" height="26" rx="3" fill="#a0d490"/>
-    <line x1="26" y1="130" x2="15" y2="118" stroke="#f4c07a" strokeWidth="4" strokeLinecap="round"/>
-    <line x1="42" y1="130" x2="70" y2="100" stroke="#f4c07a" strokeWidth="4" strokeLinecap="round"/>
-    <line x1="30" y1="153" x2="28" y2="170" stroke="#a0d490" strokeWidth="4"/>
-    <line x1="38" y1="153" x2="40" y2="170" stroke="#a0d490" strokeWidth="4"/>
-  </svg>
+  <img
+    src="https://media.base44.com/images/public/69876015478a19e360c5e3ea/7b4c45838_image.png"
+    alt="Cookie Theft Picture"
+    style={{width:'100%',borderRadius:8,border:`1px solid ${T.border}`}}
+  />
 );
 
 // NIHSS Item Card

@@ -109,9 +109,7 @@ export default function NewPatientInput() {
     localStorage.setItem('npiPatientData', JSON.stringify({ firstName: demo.firstName, lastName: demo.lastName, age: demo.age, dob: demo.dob, sex: demo.sex, mrn: demo.mrn, weight: demo.weight, insurance: demo.insurance, insuranceId: demo.insuranceId, medications, allergies }));
   }, [demo, medications, allergies]);
 
-  useEffect(() => {
-    if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
-  }, [aiMessages, aiLoading]);
+
 
   const patientName = [demo.firstName, demo.lastName].filter(Boolean).join(' ') || 'New Patient';
 

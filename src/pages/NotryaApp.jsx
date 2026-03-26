@@ -539,7 +539,7 @@ const CSS = `
 /* ═══════════════════════════════════════════════
    MAIN COMPONENT
 ═══════════════════════════════════════════════ */
-export default function NotryaApp() {
+export default function NotryaApp({ embedded = false }) {
   const navigate = useNavigate();
   const { patient: P, vitals: V, timeline: TL, problems: PR,
           allergies: AL, meds: ME, labs: LA, imaging: IM, note: NOTE } = DEMO;

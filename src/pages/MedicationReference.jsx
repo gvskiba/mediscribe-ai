@@ -768,7 +768,7 @@ export default function MedicationReference() {
       });
       setSepResult(typeof res === 'string' ? res : JSON.stringify(res));
     } catch {
-      setSepResult(`AI offline.\n\n## Manual Protocol\n- Fluid Bolus: ${bolus} mL\n- Vancomycin: 25-30 mg/kg IV\n- Pip-Tazo: 4.5 g IV q6h\n- Norepinephrine: 0.1-0.5 mcg/kg/min if MAP <65`);
+      setSepResult(`AI offline. Manual fallback:\n\n## Fluid Resuscitation\n- Bolus: ${bolus} mL NS/LR IV over 30 min\n\n## Next Steps\n- Draw blood cultures x2 before antibiotics\n- Start broad-spectrum antibiotics per local protocol\n- Add vasopressor if MAP <65 despite fluids`);
     }
     setSepLoading(false);
   };

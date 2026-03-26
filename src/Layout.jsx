@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 
 import OfflineSync from "./components/offline/OfflineSync";
+import NotryaFloatingAI from "@/components/ai/NotryaFloatingAI";
 
 /* ─────────────────────────────────────────────
    DESIGN TOKENS (inlined so layout is self-contained)
@@ -499,6 +500,9 @@ export default function Layout({ children, currentPageName }) {
           {children}
         </div>
       </div>
+
+      {/* ── FLOATING AI ── */}
+      <NotryaFloatingAI />
 
       {/* ── BOTTOM BAR ── */}
       <footer className="v2-bot">

@@ -53,7 +53,7 @@ input, textarea { font-family: 'DM Sans', sans-serif; }
 .btn-teal:hover { filter: brightness(1.12); }
 .btn-teal:disabled { background: ${T.bgU}; border: 1px solid ${T.bd}; color: ${T.txt4}; cursor: not-allowed; filter: none; }
 
-.app-layout { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+.app-layout { flex: 1; display: flex; overflow: hidden; min-height: 0; height: 100%; }
 .ai-panel { width: 270px; flex-shrink: 0; background: ${T.bgP}; border-right: 1px solid ${T.bd}; display: flex; flex-direction: column; overflow: hidden; }
 .panel-hdr { flex-shrink: 0; padding: 10px 13px 9px; border-bottom: 1px solid ${T.bd}; display: flex; align-items: center; gap: 8px; }
 .panel-title { font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 600; color: ${T.txt}; }

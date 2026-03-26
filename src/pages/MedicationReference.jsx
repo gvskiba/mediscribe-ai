@@ -997,25 +997,30 @@ export default function MedicationReference() {
                   </div>
                 );})}
               </div>
-              {parseFloat(sepWt)>0&&(()=>{const w=parseFloat(sepWt);return(
-                <div className="section-box">
-                  <div className="section-lbl">Weight-Based Medications</div>
-                  {[
-                    {n:'Vancomycin',v:`${(w*25).toFixed(0)}-${(w*30).toFixed(0)} mg`,r:'IV',t:'Infuse over 1-2h'},
-                    {n:'Norepinephrine',v:'0.1-0.5 mcg/kg/min',r:'IV drip',t:'First-line vasopressor'},
-                    {n:'Hydrocortisone',v:'100 mg',r:'IV q8h',t:'Refractory shock only'},
-                    {n:'Piperacillin-Tazobactam',v:'4.5 g',r:'IV q6h',t:'Extended infusion 4h'},
-                  ].map((m,i)=>(
-                    <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 12px',background:T.up,border:`1px solid ${T.border}`,borderRadius:6,marginBottom:4,flexWrap:'wrap',gap:6}}>
-                      <div>
-                        <div style={{fontSize:13,fontWeight:700,color:T.txt}}>{m.n}</div>
-                        <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:9,color:T.txt3}}>{m.r} - {m.t}</div>
+              {parseFloat(sepWt)>0&&(()=>{
+                const w=parseFloat(sepWt);
+                const SEPSIS_NAMES=['vancomycin','norepinephrine','piperacillin','hydrocortisone'];
+                const sepsisMeds=meds.filter(m=>SEPSIS_NAMES.some(n=>m.name?.toLowerCase().includes(n)));
+                const getDose=(m)=>{
+                  if(m.name?.toLowerCase().includes('vancomycin')) return `${(w*25).toFixed(0)}-${(w*30).toFixed(0)} mg`;
+                  return m.dosing?.[0]?.dose||'—';
+                };
+                if(sepsisMeds.length===0) return null;
+                return(
+                  <div className="section-box">
+                    <div className="section-lbl">Weight-Based Medications</div>
+                    {sepsisMeds.map((m,i)=>(
+                      <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 12px',background:T.up,border:`1px solid ${T.border}`,borderRadius:6,marginBottom:4,flexWrap:'wrap',gap:6}}>
+                        <div>
+                          <div style={{fontSize:13,fontWeight:700,color:T.txt}}>{m.name}</div>
+                          <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:9,color:T.txt3}}>{m.dosing?.[0]?.route||m.route||''}{m.dosing?.[0]?.notes?` - ${m.dosing[0].notes}`:''}</div>
+                        </div>
+                        <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:16,fontWeight:800,color:T.teal}}>{getDose(m)}</div>
                       </div>
-                      <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:16,fontWeight:800,color:T.teal}}>{m.v}</div>
-                    </div>
-                  ))}
-                </div>
-              );})()}
+                    ))}
+                  </div>
+                );
+              })()}
               <div className="section-box">
                 <div className="section-lbl" style={{marginBottom:8}}>AI Sepsis Advisor</div>
                 <input className="field-input" placeholder="Suspected infection source..." value={sepQuery} onChange={e=>setSepQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSepsis()} style={{marginBottom:8}} />

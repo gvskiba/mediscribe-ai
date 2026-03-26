@@ -46,7 +46,7 @@ const CHART_GROUPS = [
   {
     label: 'Intake',
     items: [
-      { icon: '📊', label: 'Patient Chart',      page: '/PatientChart' },
+      { icon: '📊', label: 'Patient Chart',      page: '/NewPatientInput?tab=chart' },
       { icon: '👤', label: 'Demographics',       page: '/NewPatientInput?tab=demo' },
       { icon: '💬', label: 'Chief Complaint',    page: '/NewPatientInput?tab=cc' },
       { icon: '📈', label: 'Vitals',             page: '/NewPatientInput?tab=vit' },
@@ -58,23 +58,23 @@ const CHART_GROUPS = [
       { icon: '💊', label: 'Meds & PMH',         page: '/NewPatientInput?tab=meds' },
       { icon: '🔍', label: 'Review of Systems',  page: '/NewPatientInput?tab=ros' },
       { icon: '🩺', label: 'Physical Exam',      page: '/NewPatientInput?tab=pe' },
-      { icon: '⚖️', label: 'MDM',               page: '/MedicalDecisionMaking' },
+      { icon: '⚖️', label: 'MDM',               page: '/NewPatientInput?tab=mdm' },
     ]
   },
   {
     label: 'Disposition',
     items: [
-      { icon: '📋', label: 'Orders',            page: '/OrderSetBuilder' },
-      { icon: '🚪', label: 'Discharge',         page: '/DischargePlanning' },
-      { icon: '🗺️', label: 'ER Plan Builder',   page: '/ERPlanBuilder' },
+      { icon: '📋', label: 'Orders',            page: '/NewPatientInput?tab=orders' },
+      { icon: '🚪', label: 'Discharge',         page: '/NewPatientInput?tab=discharge' },
+      { icon: '🗺️', label: 'ER Plan Builder',   page: '/NewPatientInput?tab=erplan' },
     ]
   },
   {
     label: 'Tools',
     items: [
-      { icon: '🤖', label: 'AutoCoder',         page: '/AutoCoder' },
-      { icon: '💉', label: 'eRx',               page: '/ERx' },
-      { icon: '✂️', label: 'Procedures',        page: '/EDProcedureNotes' },
+      { icon: '🤖', label: 'AutoCoder',         page: '/NewPatientInput?tab=autocoder' },
+      { icon: '💉', label: 'eRx',               page: '/NewPatientInput?tab=erx' },
+      { icon: '✂️', label: 'Procedures',        page: '/NewPatientInput?tab=procedures' },
     ]
   },
 ];

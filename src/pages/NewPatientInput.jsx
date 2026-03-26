@@ -92,21 +92,22 @@ export default function NewPatientInput() {
   const [o2del, setO2del] = useState('');
   const [pain, setPain] = useState('');
   const [triage, setTriage] = useState('');
-  const [aiOpen, setAiOpen] = useState(false);
-  const [aiMessages, setAiMessages] = useState([{ role: 'sys', text: '🤖 Notrya AI ready to assist.' }]);
-  const [aiInput, setAiInput] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
-  const aiMsgsRef = useRef(null);
+  const [clock, setClock] = useState('');
+  const chatRef = useRef(null);
 
-
+  useEffect(() => {
+    const tick = () => {
+      const d = new Date();
+      setClock(`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`);
+    };
+    tick();
+    const t = setInterval(tick, 10000);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('npiPatientData', JSON.stringify({ firstName: demo.firstName, lastName: demo.lastName, age: demo.age, dob: demo.dob, sex: demo.sex, mrn: demo.mrn, weight: demo.weight, insurance: demo.insurance, insuranceId: demo.insuranceId, medications, allergies }));
   }, [demo, medications, allergies]);
-
-  useEffect(() => {
-    if (aiMsgsRef.current) aiMsgsRef.current.scrollTop = aiMsgsRef.current.scrollHeight;
-  }, [aiMessages, aiLoading]);
 
 
 
@@ -210,24 +211,6 @@ export default function NewPatientInput() {
     return (hi && n > hi) || (lo && n < lo);
   };
 
-  const sendAI = async () => {
-    const q = aiInput.trim();
-    if (!q || aiLoading) return;
-    setAiInput('');
-    setAiMessages(prev => [...prev, { role: 'user', text: q }]);
-    setAiLoading(true);
-    try {
-      const ptInfo = [demo.firstName, demo.lastName].filter(Boolean).join(' ');
-      const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are Notrya AI, a clinical assistant. Patient: ${ptInfo || 'unknown'}, CC: ${cc.text || 'unspecified'}. Be concise and practical. Question: ${q}`,
-      });
-      setAiMessages(prev => [...prev, { role: 'bot', text: typeof res === 'string' ? res : JSON.stringify(res) }]);
-    } catch {
-      setAiMessages(prev => [...prev, { role: 'sys', text: '⚠ Error connecting to AI.' }]);
-    }
-    setAiLoading(false);
-  };
-
 
   return (
     <div style={{ color: S.txt, fontFamily: "'DM Sans', sans-serif", fontSize: 13 }}>
@@ -316,144 +299,9 @@ export default function NewPatientInput() {
               <button onClick={() => navigate('/OrderSetBuilder')} style={{ background: S.teal, color: S.bg, border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Open Order Set Builder →</button>
             </div>
           )}
-          </main>
+      </main>
 
-          {/* Notrya AI Floating Button */}
-          <button
-          onClick={() => setAiOpen(o => !o)}
-          style={{
-          position: 'fixed',
-          bottom: '28px',
-          right: '28px',
-          width: '64px',
-          height: '64px',
-          borderRadius: '50%',
-          background: aiOpen ? `linear-gradient(135deg, ${S.coral} 0%, #e05555 100%)` : `linear-gradient(135deg, ${S.teal} 0%, #00b4d8 100%)`,
-          border: 'none',
-          cursor: 'pointer',
-          fontSize: '24px',
-          fontWeight: 700,
-          color: S.bg,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: `0 6px 28px rgba(0, 229, 192, 0.4)`,
-          transition: 'all 0.3s ease',
-          zIndex: 500,
-          }}
-          title="Notrya AI"
-          >
-          {aiOpen ? '✕' : '🤖'}
-          </button>
 
-          {/* AI Chat Panel */}
-          {aiOpen && (
-          <div
-          style={{
-            position: 'fixed',
-            bottom: '110px',
-            right: '28px',
-            width: '340px',
-            maxHeight: '480px',
-            background: S.panel,
-            border: `1px solid ${S.border}`,
-            borderRadius: '16px',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
-            zIndex: 499,
-            fontFamily: "'DM Sans', sans-serif",
-          }}
-          >
-          <div style={{ padding: '10px 14px', background: S.up, borderBottom: `1px solid ${S.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 7, height: 7, borderRadius: '50%', background: S.teal }} />
-            <span style={{ fontWeight: 600, fontSize: 13 }}>Notrya AI</span>
-          </div>
-          <div
-            ref={aiMsgsRef}
-            style={{
-              flex: 1,
-              overflowY: 'auto',
-              padding: '10px 12px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 6,
-              minHeight: '180px',
-              maxHeight: '320px',
-              fontSize: 12,
-              lineHeight: 1.55,
-            }}
-          >
-            {aiMessages.map((m, i) => (
-              <div
-                key={i}
-                style={{
-                  padding: '8px 10px',
-                  borderRadius: 8,
-                  background: m.role === 'sys' ? S.up : m.role === 'user' ? `rgba(59, 158, 255, 0.12)` : `rgba(0, 229, 192, 0.07)`,
-                  border: m.role === 'sys' ? `1px solid ${S.border}` : m.role === 'user' ? 'rgba(59, 158, 255, 0.25)' : 'rgba(0, 229, 192, 0.18)',
-                  color: m.role === 'sys' ? S.txt3 : S.txt,
-                  alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
-                  maxWidth: '90%',
-                  borderRadius: m.role === 'user' ? '8px 8px 2px 8px' : m.role === 'bot' ? '8px 8px 8px 2px' : 8,
-               }}
-              >
-                {m.text}
-              </div>
-            ))}
-            {aiLoading && (
-              <div style={{ display: 'flex', gap: 4, alignSelf: 'flex-start' }}>
-                {[0, 1, 2].map(i => <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: S.teal, animation: 'bounce 1.2s ease-in-out infinite', animationDelay: `${i * 0.2}s` }} />)}
-              </div>
-            )}
-          </div>
-          <div style={{ padding: '8px 10px', borderTop: `1px solid ${S.border}`, display: 'flex', gap: 5 }}>
-            <textarea
-              value={aiInput}
-              onChange={e => setAiInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAI(); } }}
-              placeholder="Ask anything…"
-              style={{
-                flex: 1,
-                background: S.up,
-                border: `1px solid ${S.border}`,
-                borderRadius: 8,
-                padding: '7px 10px',
-                color: S.txt,
-                fontSize: 12,
-                outline: 'none',
-                resize: 'none',
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-              rows={1}
-            />
-            <button
-              onClick={sendAI}
-              disabled={aiLoading || !aiInput.trim()}
-              style={{
-                width: '34px',
-                height: '34px',
-                background: S.teal,
-                color: S.bg,
-                border: 'none',
-                borderRadius: 8,
-                fontSize: 16,
-                fontWeight: 700,
-                cursor: aiLoading || !aiInput.trim() ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                opacity: aiLoading || !aiInput.trim() ? 0.5 : 1,
-              }}
-            >
-              ↑
-            </button>
-          </div>
-          </div>
-          )}
-          <style>{`@keyframes bounce { 0%, 80%, 100% { transform: translateY(0); opacity: 0.4; } 40% { transform: translateY(-6px); opacity: 1; } }`}</style>
-          </div>
+    </div>
   );
 }

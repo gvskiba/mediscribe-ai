@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import MedicalDecisionMaking from "@/pages/MedicalDecisionMaking";
-import DischargePlanningWrapper from "@/components/discharge/DischargePlanningWrapper.jsx";
+import DischargeSummaryTab from "@/components/notes/DischargeSummaryTab/index";
 
 import DemoTab from "@/components/npi/DemoTab";
 import CCTab from "@/components/npi/CCTab";
@@ -271,8 +271,22 @@ export default function NewPatientInput() {
             <MedicalDecisionMaking embedded patientName={patientName} chiefComplaint={cc.text} />
           )}
           {currentTab === 'discharge' && (
-            <div style={{ margin: '-20px -24px', minHeight: 'calc(100vh - 138px)', overflow: 'hidden' }}>
-              <DischargePlanningWrapper embedded patientName={patientName} patientDob={demo.dob} patientId={demo.mrn} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} diagnoses={[]} medications={medications} allergies={allergies} />
+            <div style={{ margin: '-20px -24px', height: 'calc(100vh - 138px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <DischargeSummaryTab
+                note={{
+                  assessment: cc.text || '',
+                  summary: cc.hpi || '',
+                  diagnoses: [],
+                  medications,
+                  allergies,
+                }}
+                noteId={null}
+                queryClient={null}
+                isFirstTab={() => false}
+                isLastTab={() => true}
+                handleBack={() => setCurrentTab('medref')}
+                handleNext={() => {}}
+              />
             </div>
           )}
           {currentTab === 'autocoder' && (

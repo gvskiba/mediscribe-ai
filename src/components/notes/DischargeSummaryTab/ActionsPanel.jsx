@@ -33,177 +33,121 @@ export default function ActionsPanel({
     toast.success(`${action} delivered to patient`);
   };
 
+  const S = { panel: '#0b1e36', up: '#0e2544', border: '#1a3555', teal: '#00e5c0', txt: '#e8f0fe', txt2: '#8aaccc', txt3: '#4a6a8a', txt4: '#2e4a6a', bg: '#050f1e', gold: '#f5c842' };
+  const boxStyle = { borderRadius: 10, border: `1px solid ${S.border}`, background: S.panel, overflow: 'hidden', marginBottom: 12 };
+  const boxHdr = { padding: '10px 16px', borderBottom: `1px solid ${S.border}`, background: S.up, fontSize: 12, fontWeight: 700, color: S.txt };
+  const boxBody = { padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 };
+  const selStyle = { width: '100%', padding: '7px 10px', fontSize: 12, background: S.up, border: `1px solid ${S.border}`, borderRadius: 6, color: S.txt, outline: 'none', cursor: 'pointer' };
+  const lblStyle = { display: 'block', fontSize: 10, fontWeight: 600, color: S.txt3, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' };
+  const actionBtnStyle = { width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '7px 12px', fontSize: 11, background: S.up, border: `1px solid ${S.border}`, borderRadius: 6, color: S.teal, cursor: 'pointer' };
+
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-bold text-[#e8f4ff]">📋 Patient Instructions</h2>
+    <div>
+      <h2 style={{ fontSize: 15, fontWeight: 700, color: S.txt, marginBottom: 16 }}>📋 Patient Instructions</h2>
 
       {/* AI Generation Settings */}
-      <div className="rounded-lg border border-[#1e3a5f] bg-[#0e2340] p-3 space-y-3">
-        <h3 className="text-xs font-semibold text-[#e8f4ff]">✦ AI Settings</h3>
-        <div>
-          <label className="text-xs text-[#4a7299] mb-1 block">Reading Level</label>
-          <select
-            value={readingLevel}
-            onChange={(e) => setReadingLevel(e.target.value)}
-            className="w-full px-2 py-1.5 text-xs bg-[#162d4f] border border-[#1e3a5f] rounded text-[#c8ddf0]"
-          >
-            <option value="6th grade">6th Grade</option>
-            <option value="8th grade">8th Grade</option>
-            <option value="10th grade">10th Grade</option>
-          </select>
+      <div style={boxStyle}>
+        <div style={boxHdr}>✦ AI Settings</div>
+        <div style={boxBody}>
+          <div>
+            <label style={lblStyle}>Reading Level</label>
+            <select value={readingLevel} onChange={(e) => setReadingLevel(e.target.value)} style={selStyle}>
+              <option value="6th grade">6th Grade</option>
+              <option value="8th grade">8th Grade</option>
+              <option value="10th grade">10th Grade</option>
+            </select>
+          </div>
+          <div>
+            <label style={lblStyle}>Language</label>
+            <select value={language} onChange={(e) => setLanguage(e.target.value)} style={selStyle}>
+              <option value="English">English</option>
+              <option value="Spanish">Español</option>
+              <option value="French">Français</option>
+              <option value="Portuguese">Português</option>
+              <option value="Arabic">العربية</option>
+            </select>
+          </div>
+          <button onClick={onGenerateInstructions} disabled={generating}
+            style={{ padding: '8px 16px', fontSize: 12, fontWeight: 700, background: S.teal, color: '#050f1e', border: 'none', borderRadius: 6, cursor: generating ? 'default' : 'pointer', opacity: generating ? 0.5 : 1 }}>
+            {generating ? 'Generating...' : '✦ Generate Instructions'}
+          </button>
         </div>
-        <div>
-          <label className="text-xs text-[#4a7299] mb-1 block">Language</label>
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            className="w-full px-2 py-1.5 text-xs bg-[#162d4f] border border-[#1e3a5f] rounded text-[#c8ddf0]"
-          >
-            <option value="English">English</option>
-            <option value="Spanish">Español</option>
-            <option value="French">Français</option>
-            <option value="Portuguese">Português</option>
-            <option value="Arabic">العربية</option>
-          </select>
-        </div>
-        <button
-          onClick={onGenerateInstructions}
-          disabled={generating}
-          className="w-full px-3 py-2 text-xs font-medium bg-gradient-to-r from-[#00d4bc] to-[#00a896] text-[#050f1e] rounded hover:from-[#00a896] hover:to-[#007f7a] disabled:opacity-50"
-        >
-          {generating ? "Generating..." : "✦ Generate Instructions"}
-        </button>
       </div>
 
-      {/* Patient Instruction Preview */}
-      <div className="rounded-lg border border-[#1e3a5f] bg-[#0e2340] p-3 max-h-96 overflow-y-auto space-y-3">
-        <h3 className="text-xs font-semibold text-[#e8f4ff] sticky top-0 bg-[#0e2340]">Preview</h3>
-        {patientInstructions ? (
-          <div className="text-xs space-y-3 text-[#c8ddf0]">
-            {patientInstructions.diagnosis && (
-              <div className="border-b border-[#1e3a5f] pb-2">
-                <p className="font-bold text-[#00d4bc]">{patientInstructions.diagnosis.patientFriendlyName}</p>
-                <p className="text-[#4a7299] text-xs">{patientInstructions.diagnosis.patientExplanation}</p>
-              </div>
-            )}
-            {patientInstructions.medicationInstructions?.takeAtHome?.length > 0 && (
-              <div className="border-b border-[#1e3a5f] pb-2">
-                <p className="font-bold text-[#00d4bc]">💊 Medications:</p>
-                {patientInstructions.medicationInstructions.takeAtHome.map((med, i) => (
-                  <div key={i} className="text-[#4a7299] ml-2">
-                    <p className="font-semibold text-[#c8ddf0]">{med.medicationName}</p>
-                    <p className="text-xs">Take: {med.dosing}</p>
-                    <p className="text-xs">Why: {med.whyTaking}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-            {patientInstructions.activityGuidelines && (
-              <div className="border-b border-[#1e3a5f] pb-2">
-                <p className="font-bold text-[#00d4bc]">🚶 Activity:</p>
-                <p className="text-[#4a7299] text-xs">{patientInstructions.activityGuidelines.generalActivity}</p>
-              </div>
-            )}
-            {patientInstructions.dietInstructions && (
-              <div className="border-b border-[#1e3a5f] pb-2">
-                <p className="font-bold text-[#00d4bc]">🥗 Diet:</p>
-                <p className="text-[#4a7299] text-xs">{patientInstructions.dietInstructions.generalDiet}</p>
-              </div>
-            )}
-            {patientInstructions.returnPrecautions && (
-              <div>
-                <p className="font-bold text-[#ff5c6c]">🚨 Return If:</p>
-                {patientInstructions.returnPrecautions.call911For?.length > 0 && (
-                  <div className="text-[#ff5c6c] text-xs ml-2">
-                    <p className="font-semibold">Call 911:</p>
-                    <ul className="list-disc list-inside">
-                      {patientInstructions.returnPrecautions.call911For.slice(0, 2).map((item, i) => (
-                        <li key={i}>{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-            {patientInstructions.followUpPlans?.appointments?.length > 0 && (
-              <div className="border-t border-[#1e3a5f] pt-2">
-                <p className="font-bold text-[#00d4bc]">📅 Follow-up:</p>
-                {patientInstructions.followUpPlans.appointments.slice(0, 2).map((apt, i) => (
-                  <p key={i} className="text-[#4a7299] text-xs">{apt}</p>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          <p className="text-xs text-[#2a4d72] text-center py-6">Fill in Final Impression and generate instructions</p>
-        )}
+      {/* Preview */}
+      <div style={boxStyle}>
+        <div style={boxHdr}>Preview</div>
+        <div style={{ ...boxBody, maxHeight: 320, overflowY: 'auto', fontSize: 12, color: S.txt2 }}>
+          {patientInstructions ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {patientInstructions.diagnosis && (
+                <div style={{ paddingBottom: 8, borderBottom: `1px solid ${S.border}` }}>
+                  <p style={{ fontWeight: 700, color: S.teal, margin: '0 0 2px' }}>{patientInstructions.diagnosis.patientFriendlyName}</p>
+                  <p style={{ fontSize: 11, color: S.txt3, margin: 0 }}>{patientInstructions.diagnosis.patientExplanation}</p>
+                </div>
+              )}
+              {patientInstructions.medicationInstructions?.takeAtHome?.length > 0 && (
+                <div style={{ paddingBottom: 8, borderBottom: `1px solid ${S.border}` }}>
+                  <p style={{ fontWeight: 700, color: S.teal, margin: '0 0 4px' }}>💊 Medications:</p>
+                  {patientInstructions.medicationInstructions.takeAtHome.map((med, i) => (
+                    <div key={i} style={{ marginLeft: 8 }}>
+                      <p style={{ fontWeight: 600, color: S.txt, margin: '2px 0' }}>{med.medicationName}</p>
+                      <p style={{ fontSize: 11, color: S.txt3, margin: 0 }}>Take: {med.dosing} · Why: {med.whyTaking}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {patientInstructions.activityGuidelines && (
+                <div style={{ paddingBottom: 8, borderBottom: `1px solid ${S.border}` }}>
+                  <p style={{ fontWeight: 700, color: S.teal, margin: '0 0 2px' }}>🚶 Activity:</p>
+                  <p style={{ fontSize: 11, color: S.txt3, margin: 0 }}>{patientInstructions.activityGuidelines.generalActivity}</p>
+                </div>
+              )}
+              {patientInstructions.returnPrecautions?.call911For?.length > 0 && (
+                <div>
+                  <p style={{ fontWeight: 700, color: '#ff6b6b', margin: '0 0 4px' }}>🚨 Return If:</p>
+                  <ul style={{ margin: 0, paddingLeft: 16 }}>
+                    {patientInstructions.returnPrecautions.call911For.slice(0, 2).map((item, i) => (
+                      <li key={i} style={{ fontSize: 11, color: '#ff6b6b' }}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p style={{ textAlign: 'center', padding: '24px 0', color: S.txt4, fontSize: 12 }}>Fill in Final Impression and generate instructions</p>
+          )}
+        </div>
       </div>
 
       {/* Delivery Actions */}
-      <div className="rounded-lg border border-[#1e3a5f] bg-[#0e2340] p-3 space-y-2">
-        <h3 className="text-xs font-semibold text-[#e8f4ff] mb-3">📤 Deliver to Patient</h3>
-        <button
-          onClick={handlePrint}
-          disabled={!patientInstructions}
-          className="w-full flex items-center justify-center gap-2 px-2 py-1.5 text-xs bg-[#162d4f] border border-[#1e3a5f] rounded text-[#00d4bc] hover:bg-[#1e3a5f] disabled:opacity-50"
-        >
-          <Printer className="w-3 h-3" />
-          Print
-        </button>
-        <button
-          onClick={() => handleAction("Portal")}
-          disabled={!patientInstructions}
-          className="w-full flex items-center justify-center gap-2 px-2 py-1.5 text-xs bg-[#162d4f] border border-[#1e3a5f] rounded text-[#00d4bc] hover:bg-[#1e3a5f] disabled:opacity-50"
-        >
-          <Send className="w-3 h-3" />
-          Portal
-        </button>
-        <button
-          onClick={() => handleAction("SMS")}
-          disabled={!patientInstructions}
-          className="w-full flex items-center justify-center gap-2 px-2 py-1.5 text-xs bg-[#162d4f] border border-[#1e3a5f] rounded text-[#00d4bc] hover:bg-[#1e3a5f] disabled:opacity-50"
-        >
-          <MessageSquare className="w-3 h-3" />
-          SMS
-        </button>
-        <button
-          onClick={() => handleAction("Email")}
-          disabled={!patientInstructions}
-          className="w-full flex items-center justify-center gap-2 px-2 py-1.5 text-xs bg-[#162d4f] border border-[#1e3a5f] rounded text-[#00d4bc] hover:bg-[#1e3a5f] disabled:opacity-50"
-        >
-          <Mail className="w-3 h-3" />
-          Email
-        </button>
-        <button
-          onClick={handleDownloadPDF}
-          disabled={!patientInstructions}
-          className="w-full flex items-center justify-center gap-2 px-2 py-1.5 text-xs bg-[#162d4f] border border-[#1e3a5f] rounded text-[#00d4bc] hover:bg-[#1e3a5f] disabled:opacity-50"
-        >
-          <Download className="w-3 h-3" />
-          PDF
-        </button>
+      <div style={boxStyle}>
+        <div style={boxHdr}>📤 Deliver to Patient</div>
+        <div style={boxBody}>
+          {[['Print', <Printer style={{width:12,height:12}} />, handlePrint], ['Portal', <Send style={{width:12,height:12}} />, () => handleAction('Portal')], ['SMS', <MessageSquare style={{width:12,height:12}} />, () => handleAction('SMS')], ['Email', <Mail style={{width:12,height:12}} />, () => handleAction('Email')], ['PDF', <Download style={{width:12,height:12}} />, handleDownloadPDF]].map(([label, icon, handler]) => (
+            <button key={label} onClick={handler} disabled={!patientInstructions} style={{ ...actionBtnStyle, opacity: !patientInstructions ? 0.4 : 1 }}>
+              {icon} {label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Patient Acknowledgment */}
-      <div className="rounded-lg border border-[#1e3a5f] bg-[#0e2340] p-3 space-y-2">
-        <h3 className="text-xs font-semibold text-[#e8f4ff] mb-2">✅ Acknowledgment</h3>
-        <label className="flex items-start gap-2 text-xs text-[#c8ddf0] cursor-pointer">
-          <input type="checkbox" className="mt-1" defaultChecked />
-          <span>Instructions reviewed with patient</span>
-        </label>
-        <label className="flex items-start gap-2 text-xs text-[#c8ddf0] cursor-pointer">
-          <input type="checkbox" className="mt-1" defaultChecked />
-          <span>Patient understands</span>
-        </label>
-        <label className="flex items-start gap-2 text-xs text-[#c8ddf0] cursor-pointer">
-          <input type="checkbox" className="mt-1" />
-          <span>Interpreter used</span>
-        </label>
+      {/* Acknowledgment */}
+      <div style={boxStyle}>
+        <div style={boxHdr}>✅ Acknowledgment</div>
+        <div style={boxBody}>
+          {[['Instructions reviewed with patient', true], ['Patient understands', true], ['Interpreter used', false]].map(([label, def]) => (
+            <label key={label} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12, color: S.txt, cursor: 'pointer' }}>
+              <input type="checkbox" defaultChecked={def} style={{ marginTop: 2 }} />
+              <span>{label}</span>
+            </label>
+          ))}
+        </div>
       </div>
 
-      {/* Sign Button */}
-      <button className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold bg-gradient-to-r from-[#fbbf24] to-[#f5a623] text-[#050f1e] rounded-lg hover:from-[#f5a623] hover:to-[#dc2626]">
-        <CheckCircle2 className="w-4 h-4" />
+      {/* Sign */}
+      <button style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 16px', fontSize: 12, fontWeight: 700, background: S.gold, color: '#050f1e', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
+        <CheckCircle2 style={{ width: 14, height: 14 }} />
         Sign & Finalize
       </button>
     </div>

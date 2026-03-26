@@ -341,62 +341,28 @@ Generate comprehensive discharge instructions in this JSON structure:
   };
 
   return (
-    <div className="flex h-full bg-[#050f1e]" style={{ color: "#c8ddf0" }}>
-      {/* Left Panel - Summary */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <SummaryPanel
-          data={dischargeData}
-          onUpdateField={handleUpdateField}
-          onArrayUpdate={handleArrayUpdate}
-          onAddRow={handleAddRow}
-          onRemoveRow={handleRemoveRow}
-          onGenerateInstructions={generateInstructions}
-          generating={generatingInstructions}
-          saving={saving}
-        />
-      </div>
-
-      {/* Right Panel - Actions */}
-      <div className="w-80 border-l border-[#1e3a5f] overflow-y-auto p-4">
-        <ActionsPanel
-          patientInstructions={patientInstructions}
-          readingLevel={readingLevel}
-          setReadingLevel={setReadingLevel}
-          language={language}
-          setLanguage={setLanguage}
-          onGenerateInstructions={generateInstructions}
-          generating={generatingInstructions}
-          note={note}
-          dischargeData={dischargeData}
-        />
-      </div>
-
-      {/* Bottom Navigation - uses relative positioning to avoid conflicting with page nav */}
-      <div className="flex justify-between items-center px-6 py-3 border-t border-[#1e3a5f] bg-[#0b1d35]">
-        <div className="flex items-center gap-2">
-          {!isFirstTab() && (
-            <button
-              onClick={handleBack}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Back
-            </button>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {saving && <span className="text-xs text-[#4a7299]">Saving...</span>}
-          {!isLastTab() && (
-            <button
-              onClick={handleNext}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-            >
-              Next
-              <ArrowLeft className="w-3.5 h-3.5 rotate-180" />
-            </button>
-          )}
-        </div>
-      </div>
+    <div style={{ color: '#e8f0fe', fontFamily: "'DM Sans', sans-serif", fontSize: 13, display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <SummaryPanel
+        data={dischargeData}
+        onUpdateField={handleUpdateField}
+        onArrayUpdate={handleArrayUpdate}
+        onAddRow={handleAddRow}
+        onRemoveRow={handleRemoveRow}
+        onGenerateInstructions={generateInstructions}
+        generating={generatingInstructions}
+        saving={saving}
+      />
+      <ActionsPanel
+        patientInstructions={patientInstructions}
+        readingLevel={readingLevel}
+        setReadingLevel={setReadingLevel}
+        language={language}
+        setLanguage={setLanguage}
+        onGenerateInstructions={generateInstructions}
+        generating={generatingInstructions}
+        note={note}
+        dischargeData={dischargeData}
+      />
     </div>
   );
 }

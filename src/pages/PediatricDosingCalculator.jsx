@@ -222,6 +222,23 @@ const CSS = `
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 `;
 
+const BROSELOW_ZONES = [
+  { max: 5,   zone: 'Grey',   color: '#9ca3af', range: '3–5 kg' },
+  { max: 7,   zone: 'Pink',   color: '#ec4899', range: '5–7 kg' },
+  { max: 9,   zone: 'Red',    color: '#ef4444', range: '7–9 kg' },
+  { max: 11,  zone: 'Purple', color: '#8b5cf6', range: '9–11 kg' },
+  { max: 14,  zone: 'Yellow', color: '#eab308', range: '11–14 kg' },
+  { max: 18,  zone: 'White',  color: '#cbd5e1', range: '14–18 kg' },
+  { max: 23,  zone: 'Blue',   color: '#3b82f6', range: '18–23 kg' },
+  { max: 29,  zone: 'Orange', color: '#f97316', range: '23–29 kg' },
+  { max: 36,  zone: 'Green',  color: '#22c55e', range: '29–36 kg' },
+  { max: 999, zone: 'Adult',  color: '#6b7280', range: '>36 kg' },
+];
+
+function getBroselow(wKg) {
+  return BROSELOW_ZONES.find(z => wKg < z.max) || BROSELOW_ZONES[BROSELOW_ZONES.length - 1];
+}
+
 function roundToDecimal(n, d = 1) {
   return Math.round(n * Math.pow(10, d)) / Math.pow(10, d);
 }
@@ -299,6 +316,8 @@ export default function PediatricDosingCalculator() {
   const weightKg = weightVal
     ? parseFloat(weightVal) * (WEIGHT_UNITS.find(u => u.id === weightUnit)?.factor ?? 1)
     : null;
+
+  const broselow = weightKg && weightKg > 0 ? getBroselow(weightKg) : null;
 
   const filtered = drugDB.filter(d =>
     !query || d.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -481,8 +500,27 @@ export default function PediatricDosingCalculator() {
                     </div>
                   </div>
                   {weightKg && weightUnit === 'lbs' && (
-                    <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, fontFamily: "'JetBrains Mono'" }}>= {weightKg.toFixed(2)} kg</div>
-                  )}
+                            <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, fontFamily: "'JetBrains Mono'" }}>= {weightKg.toFixed(2)} kg</div>
+                          )}
+                          {broselow && (
+                            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <div style={{
+                                background: broselow.color + '22',
+                                border: `1px solid ${broselow.color}66`,
+                                borderLeft: `4px solid ${broselow.color}`,
+                                borderRadius: 6, padding: '6px 12px',
+                                display: 'flex', alignItems: 'center', gap: 10,
+                              }}>
+                                <div style={{ width: 14, height: 14, borderRadius: 3, background: broselow.color, flexShrink: 0 }} />
+                                <div>
+                                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 700, color: broselow.color }}>
+                                    Broselow {broselow.zone}
+                                  </div>
+                                  <div style={{ fontSize: 10, color: T.txt3 }}>{broselow.range}</div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                 </div>
                 <div className="dc-field">
                   <label className="dc-label">Age (years)</label>

@@ -25,69 +25,355 @@ const CATEGORY_META = {
   other:         { label: 'Other',                 icon: '💉' },
 };
 
-// subcategory keywords matched against drugClass + indications (case-insensitive)
+// subcategory keywords matched against drugClass + indications + name + mechanism (case-insensitive)
 const SUBCATEGORY_MAP = {
   cardiac: [
-    { id: 'htn',    label: 'Hypertension',   keywords: ['antihypertensive','hypertension','ace inhibitor','arb','calcium channel','beta-blocker','beta blocker','hydralazine','labetalol','nicardipine','nitroglycerin','nitroprusside'] },
-    { id: 'arr',    label: 'Arrhythmia',     keywords: ['antiarrhythmic','arrhythmia','atrial fibrillation','afib','svt','vt ','ventricular tachycardia','amiodarone','adenosine','procainamide','digoxin'] },
-    { id: 'hf',     label: 'Heart Failure',  keywords: ['heart failure','chf','diuretic','furosemide','bumetanide','spironolactone','nesiritide','milrinone','dobutamine'] },
-    { id: 'acs',    label: 'ACS / Chest Pain', keywords: ['acs','acute coronary','angina','chest pain','nitrate','aspirin','heparin','ticagrelor','clopidogrel','eptifibatide','thrombolytic','tpa','alteplase'] },
-    { id: 'rate',   label: 'Rate Control',   keywords: ['rate control','rate-control','diltiazem','metoprolol','verapamil','digoxin','esmolol'] },
+    {
+      id: 'htn', label: 'Hypertension',
+      keywords: [
+        'antihypertensive','hypertension','hypertensive','blood pressure','labetalol','hydralazine',
+        'nicardipine','clevidipine','nitroprusside','nitroglycerin','nitrate',
+        'ace inhibitor','arb ','angiotensin','calcium channel blocker','ccb',
+        'amlodipine','nifedipine','felodipine','diltiazem','verapamil',
+        'lisinopril','enalapril','captopril','ramipril','benazepril',
+        'losartan','valsartan','irbesartan','olmesartan','telmisartan',
+        'metoprolol','carvedilol','atenolol','bisoprolol','propranolol','nadolol',
+        'clonidine','methyldopa','minoxidil','terazosin','doxazosin','prazosin',
+        'furosemide','hydrochlorothiazide','chlorthalidone','indapamide','spironolactone'
+      ]
+    },
+    {
+      id: 'arr', label: 'Arrhythmia',
+      keywords: [
+        'antiarrhythmic','arrhythmia','atrial fibrillation','afib','atrial flutter',
+        'svt','supraventricular','ventricular tachycardia','vtach','vfib','ventricular fibrillation',
+        'amiodarone','dronedarone','flecainide','propafenone','sotalol','dofetilide',
+        'ibutilide','adenosine','procainamide','quinidine','disopyramide','lidocaine',
+        'mexiletine','digoxin','ivabradine','atropine','magnesium sulfate'
+      ]
+    },
+    {
+      id: 'hf', label: 'Heart Failure',
+      keywords: [
+        'heart failure','chf','cardiomyopathy','systolic dysfunction','ejection fraction',
+        'diuretic','furosemide','torsemide','bumetanide','metolazone','spironolactone','eplerenone',
+        'sacubitril','entresto','hydralazine','isosorbide','dobutamine','milrinone',
+        'nesiritide','levosimendan','digoxin','cardiac glycoside','ivabradin',
+        'carvedilol','metoprolol succinate','bisoprolol','empagliflozin','dapagliflozin'
+      ]
+    },
+    {
+      id: 'acs', label: 'ACS / Chest Pain',
+      keywords: [
+        'acs','acute coronary','stemi','nstemi','unstable angina','chest pain','myocardial infarction',
+        'antiplatelet','aspirin','clopidogrel','ticagrelor','prasugrel','cangrelor','eptifibatide',
+        'tirofiban','abciximab','heparin','enoxaparin','bivalirudin',
+        'thrombolytic','alteplase','tenecteplase','reteplase','tpa',
+        'nitroglycerin','nitrate','beta-blocker for acs','atorvastatin','rosuvastatin'
+      ]
+    },
+    {
+      id: 'rate', label: 'Rate Control',
+      keywords: [
+        'rate control','rate-control','rate limiting','negative chronotrope',
+        'diltiazem','verapamil','metoprolol','esmolol','atenolol','propranolol',
+        'digoxin','amiodarone for rate','ivabradine'
+      ]
+    },
   ],
+
   analgesic: [
-    { id: 'opioid', label: 'Opioids',        keywords: ['opioid','morphine','fentanyl','hydromorphone','oxycodone','naloxone','tramadol','buprenorphine'] },
-    { id: 'nsaid',  label: 'NSAIDs',         keywords: ['nsaid','ibuprofen','ketorolac','naproxen','indomethacin','aspirin','anti-inflammatory'] },
-    { id: 'nonopioid', label: 'Non-Opioid', keywords: ['acetaminophen','ketamine','lidocaine','gabapentin','pregabalin','nerve block','non-opioid'] },
+    {
+      id: 'opioid', label: 'Opioids',
+      keywords: [
+        'opioid','opiate','narcotic','mu receptor','kappa receptor',
+        'morphine','fentanyl','hydromorphone','dilaudid','oxycodone','oxymorphone',
+        'hydrocodone','codeine','tramadol','methadone','buprenorphine','suboxone',
+        'meperidine','naloxone','naltrexone','tapentadol','remifentanil','sufentanil'
+      ]
+    },
+    {
+      id: 'nsaid', label: 'NSAIDs',
+      keywords: [
+        'nsaid','non-steroidal','nonsteroidal','cox inhibitor','cox-1','cox-2',
+        'ibuprofen','ketorolac','toradol','naproxen','indomethacin','diclofenac',
+        'celecoxib','meloxicam','piroxicam','etodolac','sulindac','aspirin'
+      ]
+    },
+    {
+      id: 'nonopioid', label: 'Non-Opioid / Adjunct',
+      keywords: [
+        'acetaminophen','tylenol','paracetamol','ketamine','subanesthetic','lidocaine infusion',
+        'gabapentin','pregabalin','nerve block','local anesthetic','regional anesthesia',
+        'muscle relaxant','cyclobenzaprine','baclofen','methocarbamol','carisoprodol',
+        'tizanidine','dexamethasone for pain','magnesium for pain','iv acetaminophen',
+        'multimodal analgesia','non-opioid'
+      ]
+    },
   ],
+
   abx: [
-    { id: 'gramp',  label: 'Gram-Positive',  keywords: ['gram-positive','vancomycin','linezolid','daptomycin','oxacillin','nafcillin','mrsa','staph','strep'] },
-    { id: 'gramn',  label: 'Gram-Negative',  keywords: ['gram-negative','ceftriaxone','cefepime','piperacillin','aztreonam','meropenem','imipenem','ciprofloxacin','levofloxacin','gentamicin','tobramycin'] },
-    { id: 'resp',   label: 'Respiratory',    keywords: ['pneumonia','respiratory','azithromycin','doxycycline','amoxicillin','atypical','community-acquired','cap ','hap '] },
-    { id: 'uti',    label: 'UTI / Renal',    keywords: ['uti','urinary','bladder','nitrofurantoin','fosfomycin','trimethoprim','sulfamethoxazole'] },
-    { id: 'skin',   label: 'Skin / SSTI',    keywords: ['skin','soft tissue','ssti','cellulitis','wound','clindamycin','cephalexin','dicloxacillin'] },
+    {
+      id: 'gramp', label: 'Gram-Positive',
+      keywords: [
+        'gram-positive','gram positive','mrsa','mssa','staph','streptococ',
+        'vancomycin','linezolid','daptomycin','cubicin','oxacillin','nafcillin','dicloxacillin',
+        'cephalexin','cefazolin','amoxicillin-clavulanate','augmentin','clindamycin',
+        'trimethoprim-sulfamethoxazole','bactrim','doxycycline for skin','tedizolid',
+        'televancin','oritavancin','dalbavancin'
+      ]
+    },
+    {
+      id: 'gramn', label: 'Gram-Negative',
+      keywords: [
+        'gram-negative','gram negative','pseudomonas','klebsiella','e. coli','escherichia',
+        'enterobacter','acinetobacter','proteus','haemophilus',
+        'ceftriaxone','cefepime','ceftazidime','cefdinir','aztreonam',
+        'piperacillin-tazobactam','pip-tazo','meropenem','imipenem','ertapenem','doripenem',
+        'ciprofloxacin','levofloxacin for gram','gentamicin','tobramycin','amikacin',
+        'colistin','polymyxin','ceftolozane','ceftazidime-avibactam','meropenem-vaborbactam'
+      ]
+    },
+    {
+      id: 'resp', label: 'Respiratory',
+      keywords: [
+        'pneumonia','cap ','community-acquired pneumonia','hap ','hospital-acquired pneumonia',
+        'bronchitis','copd exacerbation','respiratory infection','sinusitis','pharyngitis',
+        'azithromycin','clarithromycin','erythromycin','doxycycline for resp','amoxicillin',
+        'amoxicillin-clavulanate','levofloxacin','moxifloxacin','atypical pneumonia','legionella'
+      ]
+    },
+    {
+      id: 'uti', label: 'UTI / Renal',
+      keywords: [
+        'uti','urinary tract infection','cystitis','pyelonephritis','bladder infection','urosepsis',
+        'nitrofurantoin','macrobid','fosfomycin','monurol','trimethoprim-sulfamethoxazole',
+        'ciprofloxacin for uti','levofloxacin for uti','cephalexin for uti','ceftriaxone for uti'
+      ]
+    },
+    {
+      id: 'skin', label: 'Skin / SSTI',
+      keywords: [
+        'skin','soft tissue','ssti','cellulitis','abscess','wound infection','erysipelas',
+        'necrotizing fasciitis','diabetic foot','clindamycin','cephalexin','dicloxacillin',
+        'amoxicillin-clavulanate for skin','bactrim for skin','doxycycline for skin',
+        'vancomycin for ssti','linezolid for ssti','daptomycin for skin'
+      ]
+    },
   ],
+
   antibiotics: [
-    { id: 'gramp',  label: 'Gram-Positive',  keywords: ['gram-positive','vancomycin','linezolid','daptomycin','mrsa','staph','strep'] },
-    { id: 'gramn',  label: 'Gram-Negative',  keywords: ['gram-negative','ceftriaxone','cefepime','piperacillin','meropenem','ciprofloxacin','levofloxacin'] },
-    { id: 'resp',   label: 'Respiratory',    keywords: ['pneumonia','respiratory','azithromycin','doxycycline','amoxicillin'] },
-    { id: 'uti',    label: 'UTI / Renal',    keywords: ['uti','urinary','nitrofurantoin','fosfomycin','trimethoprim'] },
-    { id: 'skin',   label: 'Skin / SSTI',    keywords: ['skin','soft tissue','cellulitis','clindamycin','cephalexin'] },
+    { id: 'gramp',  label: 'Gram-Positive',  keywords: ['gram-positive','gram positive','mrsa','staph','strep','vancomycin','linezolid','daptomycin','oxacillin','nafcillin','clindamycin','cephalexin','cefazolin'] },
+    { id: 'gramn',  label: 'Gram-Negative',  keywords: ['gram-negative','gram negative','pseudomonas','klebsiella','e. coli','ceftriaxone','cefepime','piperacillin','meropenem','imipenem','ciprofloxacin','levofloxacin','gentamicin','tobramycin','amikacin','aztreonam'] },
+    { id: 'resp',   label: 'Respiratory',    keywords: ['pneumonia','cap ','community-acquired','respiratory infection','azithromycin','doxycycline for resp','amoxicillin','moxifloxacin','levofloxacin for resp'] },
+    { id: 'uti',    label: 'UTI / Renal',    keywords: ['uti','urinary tract','cystitis','pyelonephritis','nitrofurantoin','fosfomycin','trimethoprim'] },
+    { id: 'skin',   label: 'Skin / SSTI',    keywords: ['skin','soft tissue','cellulitis','abscess','wound','clindamycin','cephalexin','dicloxacillin'] },
   ],
+
   psych: [
-    { id: 'antipsych', label: 'Antipsychotics', keywords: ['antipsychotic','haloperidol','olanzapine','ziprasidone','quetiapine','risperidone','droperidol'] },
-    { id: 'anxio',     label: 'Anxiolytics',    keywords: ['anxiolytic','benzodiazepine','lorazepam','diazepam','midazolam','alprazolam'] },
-    { id: 'agit',      label: 'Agitation',      keywords: ['agitation','sedation','chemical restraint','ketamine','dexmedetomidine'] },
+    {
+      id: 'antipsych', label: 'Antipsychotics',
+      keywords: [
+        'antipsychotic','first generation','second generation','typical antipsychotic','atypical antipsychotic',
+        'haloperidol','haldol','droperidol','chlorpromazine','fluphenazine','thiothixene',
+        'olanzapine','zyprexa','quetiapine','seroquel','risperidone','ziprasidone','geodon',
+        'aripiprazole','abilify','asenapine','lurasidone','clozapine','paliperidone'
+      ]
+    },
+    {
+      id: 'anxio', label: 'Anxiolytics / Sedatives',
+      keywords: [
+        'anxiolytic','benzodiazepine','benzo','gaba','lorazepam','ativan','diazepam','valium',
+        'midazolam','versed','alprazolam','xanax','clonazepam','chlordiazepoxide',
+        'buspirone','hydroxyzine','vistaril','propranolol for anxiety','ssri for anxiety'
+      ]
+    },
+    {
+      id: 'agit', label: 'Agitation / Chemical Sedation',
+      keywords: [
+        'agitation','excited delirium','chemical restraint','acute agitation','behavioral emergency',
+        'ketamine for agitation','dexmedetomidine','droperidol','haloperidol for agitation',
+        'olanzapine for agitation','ziprasidone for agitation','diphenhydramine','benadryl'
+      ]
+    },
   ],
+
   resuscitation: [
-    { id: 'arrest',  label: 'Cardiac Arrest', keywords: ['cardiac arrest','epinephrine','vasopressin','amiodarone','lidocaine','defibrillation','cpr'] },
-    { id: 'vaso',    label: 'Vasopressors',   keywords: ['vasopressor','norepinephrine','dopamine','phenylephrine','vasopressin','dobutamine','milrinone'] },
-    { id: 'reversal',label: 'Reversal Agents',keywords: ['reversal','naloxone','flumazenil','protamine','andexanet','idarucizumab','sugammadex'] },
+    {
+      id: 'arrest', label: 'Cardiac Arrest',
+      keywords: [
+        'cardiac arrest','acls','pulseless','ventricular fibrillation','vfib','pulseless vt',
+        'epinephrine 1mg','vasopressin','amiodarone for arrest','lidocaine for arrest',
+        'bicarbonate','calcium chloride for arrest','magnesium for torsades',
+        'defibrillation','cardioversion','cpr'
+      ]
+    },
+    {
+      id: 'vaso', label: 'Vasopressors / Inotropes',
+      keywords: [
+        'vasopressor','vasoplegic','pressor','inotrope','shock',
+        'norepinephrine','levophed','epinephrine drip','dopamine','phenylephrine','neosynephrine',
+        'vasopressin','argipressin','dobutamine','milrinone','levosimendan',
+        'angiotensin ii','giapreza','methylene blue'
+      ]
+    },
+    {
+      id: 'reversal', label: 'Reversal Agents',
+      keywords: [
+        'reversal','antidote','reversal agent',
+        'naloxone','narcan','flumazenil','romazicon','sugammadex','bridion',
+        'protamine','andexanet','andexxa','idarucizumab','praxbind',
+        'vitamin k','phytonadione','acetylcysteine','n-acetylcysteine','fomepizole','atipamezole'
+      ]
+    },
   ],
+
   gi: [
-    { id: 'antiemetic', label: 'Antiemetics',  keywords: ['antiemetic','nausea','vomiting','ondansetron','promethazine','metoclopramide','prochlorperazine','scopolamine'] },
-    { id: 'antacid',    label: 'Antacids / PPI', keywords: ['antacid','ppi','proton pump','omeprazole','pantoprazole','famotidine','ranitidine','sucralfate','h2 blocker'] },
-    { id: 'motility',   label: 'GI Motility',  keywords: ['motility','constipation','diarrhea','lactulose','polyethylene glycol','loperamide','bisacodyl','senna'] },
+    {
+      id: 'antiemetic', label: 'Antiemetics',
+      keywords: [
+        'antiemetic','nausea','vomiting','emesis','chemotherapy-induced nausea',
+        'ondansetron','zofran','granisetron','palonosetron','dolasetron',
+        'promethazine','phenergan','prochlorperazine','compazine','metoclopramide','reglan',
+        'droperidol','haloperidol for nausea','scopolamine','meclizine','dimenhydrinate',
+        'dexamethasone for nausea','aprepitant','fosaprepitant'
+      ]
+    },
+    {
+      id: 'antacid', label: 'Antacids / GI Acid',
+      keywords: [
+        'antacid','acid suppression','gerd','peptic ulcer','gastric ulcer','h pylori',
+        'proton pump inhibitor','ppi','omeprazole','pantoprazole','esomeprazole',
+        'lansoprazole','rabeprazole','h2 blocker','h2 receptor','famotidine','ranitidine',
+        'cimetidine','sucralfate','carafate','calcium carbonate','aluminum hydroxide','magnesium hydroxide'
+      ]
+    },
+    {
+      id: 'motility', label: 'GI Motility / Bowel',
+      keywords: [
+        'motility','constipation','diarrhea','bowel obstruction','ileus','gi bleed',
+        'lactulose','polyethylene glycol','miralax','loperamide','imodium','bisacodyl','senna',
+        'docusate','mineral oil','magnesium citrate','metoclopramide for motility',
+        'erythromycin for motility','neostigmine','alvimopan','methylnaltrexone','lubiprostone'
+      ]
+    },
   ],
+
   respiratory: [
-    { id: 'broncho', label: 'Bronchodilators', keywords: ['bronchodilator','albuterol','ipratropium','levalbuterol','salmeterol','beta-2','beta 2'] },
-    { id: 'steroid', label: 'Corticosteroids', keywords: ['corticosteroid','methylprednisolone','dexamethasone','prednisone','hydrocortisone','steroid'] },
-    { id: 'pulm',    label: 'Pulmonary HTN',   keywords: ['pulmonary hypertension','sildenafil','epoprostenol','nitric oxide','bosentan'] },
+    {
+      id: 'broncho', label: 'Bronchodilators',
+      keywords: [
+        'bronchodilator','bronchospasm','asthma','copd','wheezing','reactive airway',
+        'albuterol','salbutamol','levalbuterol','xopenex','ipratropium','atrovent',
+        'salmeterol','formoterol','indacaterol','tiotropium','umeclidinium',
+        'terbutaline','aminophylline','theophylline','beta-2 agonist','beta 2 agonist'
+      ]
+    },
+    {
+      id: 'steroid', label: 'Corticosteroids',
+      keywords: [
+        'corticosteroid','steroid','glucocorticoid','anti-inflammatory',
+        'methylprednisolone','solumedrol','dexamethasone','prednisone','prednisolone',
+        'hydrocortisone','budesonide','fluticasone','beclomethasone','triamcinolone',
+        'cortisol','adrenal','croup','asthma exacerbation','anaphylaxis steroid'
+      ]
+    },
+    {
+      id: 'pulm', label: 'Pulmonary HTN / Other',
+      keywords: [
+        'pulmonary hypertension','pulmonary arterial hypertension','pah',
+        'sildenafil','tadalafil','bosentan','ambrisentan','macitentan',
+        'epoprostenol','iloprost','treprostinil','nitric oxide','riociguat',
+        'magnesium sulfate for asthma','heliox','surfactant'
+      ]
+    },
   ],
+
   rsi: [
-    { id: 'induct',  label: 'Induction',      keywords: ['induction','ketamine','etomidate','propofol','thiopental'] },
-    { id: 'paralytic',label: 'Paralytics',    keywords: ['paralytic','neuromuscular','succinylcholine','rocuronium','vecuronium','pancuronium','cisatracurium'] },
-    { id: 'pretreat',label: 'Pre-treatment',  keywords: ['pre-treatment','pretreatment','premedication','fentanyl','lidocaine','atropine'] },
+    {
+      id: 'induct', label: 'Induction Agents',
+      keywords: [
+        'induction','induction agent','rsi induction','anesthesia induction',
+        'ketamine','ketalar','etomidate','amidate','propofol','diprivan',
+        'thiopental','sodium thiopental','methohexital','barbiturate induction'
+      ]
+    },
+    {
+      id: 'paralytic', label: 'Neuromuscular Blockers',
+      keywords: [
+        'paralytic','neuromuscular blockade','nmb','nmba','depolarizing','non-depolarizing',
+        'succinylcholine','anectine','rocuronium','zemuron','vecuronium','norcuron',
+        'pancuronium','pavulon','cisatracurium','nimbex','atracurium','mivacurium'
+      ]
+    },
+    {
+      id: 'pretreat', label: 'Pre-treatment / Adjuncts',
+      keywords: [
+        'pre-treatment','pretreatment','premedication rsi','defasciculation','preoxygenation',
+        'fentanyl for intubation','lidocaine for intubation','atropine for intubation',
+        'midazolam for intubation','vecuronium defasciculation','opioid pretreatment'
+      ]
+    },
   ],
+
   anticoag: [
-    { id: 'direct',  label: 'Direct Anticoagulants', keywords: ['direct oral','doac','factor xa','apixaban','rivaroxaban','edoxaban','dabigatran'] },
-    { id: 'heparin', label: 'Heparins',       keywords: ['heparin','lmwh','enoxaparin','fondaparinux','bivalirudin','argatroban','unfractionated'] },
-    { id: 'thrombo', label: 'Thrombolytics',  keywords: ['thrombolytic','tpa','alteplase','tenecteplase','reteplase','streptokinase'] },
-    { id: 'reversal',label: 'Reversal',       keywords: ['reversal','protamine','andexanet','idarucizumab','vitamin k','phytonadione'] },
+    {
+      id: 'direct', label: 'Direct Oral Anticoagulants',
+      keywords: [
+        'doac','direct oral anticoagulant','factor xa inhibitor','direct thrombin inhibitor',
+        'apixaban','eliquis','rivaroxaban','xarelto','edoxaban','savaysa','betrixaban',
+        'dabigatran','pradaxa','argatroban','bivalirudin','angiomax'
+      ]
+    },
+    {
+      id: 'heparin', label: 'Heparins / Injectable',
+      keywords: [
+        'heparin','unfractionated heparin','ufh','lmwh','low molecular weight heparin',
+        'enoxaparin','lovenox','fondaparinux','arixtra','dalteparin','tinzaparin',
+        'heparin drip','heparin infusion','anticoagulation bridge'
+      ]
+    },
+    {
+      id: 'thrombo', label: 'Thrombolytics',
+      keywords: [
+        'thrombolytic','fibrinolytic','thrombolysis','clot lysis','stroke thrombolysis',
+        'alteplase','tpa','activase','tenecteplase','tnkase','reteplase','retavase',
+        'streptokinase','urokinase','catheter-directed thrombolysis'
+      ]
+    },
+    {
+      id: 'reversal', label: 'Reversal Agents',
+      keywords: [
+        'anticoagulant reversal','reversal of anticoagulation',
+        'protamine','andexanet alfa','andexxa','idarucizumab','praxbind',
+        'vitamin k','phytonadione','fresh frozen plasma','ffp','prothrombin complex','kcentra'
+      ]
+    },
   ],
+
   sedation: [
-    { id: 'benzo',   label: 'Benzodiazepines', keywords: ['benzodiazepine','midazolam','lorazepam','diazepam'] },
-    { id: 'dex',     label: 'Alpha-2 Agonists', keywords: ['dexmedetomidine','alpha-2','clonidine'] },
-    { id: 'gen',     label: 'General / Other',  keywords: ['propofol','ketamine','etomidate','barbiturate','phenobarbital'] },
+    {
+      id: 'benzo', label: 'Benzodiazepines',
+      keywords: [
+        'benzodiazepine','benzo','gaba-a','midazolam','versed','lorazepam','ativan',
+        'diazepam','valium','clonazepam','temazepam','triazolam','flurazepam'
+      ]
+    },
+    {
+      id: 'dex', label: 'Alpha-2 Agonists',
+      keywords: [
+        'alpha-2 agonist','alpha 2 agonist','dexmedetomidine','precedex','clonidine for sedation',
+        'alpha2 receptor','sympatholytic sedation'
+      ]
+    },
+    {
+      id: 'gen', label: 'General / Dissociative',
+      keywords: [
+        'propofol','diprivan','ketamine for sedation','procedural sedation','dissociative',
+        'etomidate','barbiturate','pentobarbital','phenobarbital','chloral hydrate',
+        'fentanyl for sedation','alfentanil'
+      ]
+    },
   ],
 };
 

@@ -10,6 +10,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import PatientSidebar from '@/components/patient/PatientSidebar';
 import AWSPharmacySection from '@/pages/AWSPharmacySection';
 import PatientChart from '@/pages/PatientChart';
+import NewPatientInput from '@/pages/NewPatientInput';
 import NoteHistory from '@/pages/NoteHistory';
 import NPIDemo from '@/pages/NPIDemo';
 import BaseTemplate from '@/pages/BaseTemplate';

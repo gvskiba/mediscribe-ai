@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { pagesConfig } from './pages.config'
-import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { PatientProvider } from '@/lib/PatientContext';
@@ -29,7 +29,6 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
-  const location = useLocation();
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -54,7 +53,7 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <>
-      {location.pathname !== '/NotryaApp' && <PatientSidebar />}
+      <PatientSidebar />
       <Routes>
       <Route path="/" element={
         <LayoutWrapper currentPageName={mainPageKey}>
@@ -83,7 +82,7 @@ const AuthenticatedApp = () => {
       <Route path="/basetemplate" element={<BaseTemplate />} />
       <Route path="/PediatricDosingCalculator" element={<LayoutWrapper currentPageName="PediatricDosing"><PediatricDosingCalculator /></LayoutWrapper>} />
       <Route path="/StrokeAssessment" element={<LayoutWrapper currentPageName="StrokeAssessment"><StrokeAssessment /></LayoutWrapper>} />
-      <Route path="/NotryaApp" element={<LayoutWrapper currentPageName="NotryaApp"><NotryaApp embedded={true} /></LayoutWrapper>} />
+      <Route path="/NotryaApp" element={<NotryaApp />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

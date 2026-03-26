@@ -802,7 +802,7 @@ export default function NotryaApp({ embedded = false }) {
 
       {/* MAIN CONTENT */}
       <div className="main-wrap" style={embedded ? { marginLeft: 0, marginTop: 0, marginBottom: 0, position: 'static', overflow: 'visible', minHeight: 'unset' } : {}}>
-        <div className="main-inner" style={embedded ? { padding: 0 } : {}}>
+        <div className="main-inner">
 
           <div id="s-overview" className="grid-4">
             {[

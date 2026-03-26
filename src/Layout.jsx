@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-
+import MedicalChatbot from "./components/ai/MedicalChatbot";
 import OfflineSync from "./components/offline/OfflineSync";
 
 /* ─────────────────────────────────────────────
@@ -124,7 +124,6 @@ const FULLSCREEN_PAGES = new Set([
   'EDProcedureNotesNew',
   'AutoCoder', 'NursingFlowsheet', 'ClinicalDecisionSupport',
   'DischargePlanning', 'UserPreferences', 'NoteTemplates', 'CustomTemplates',
-  'NotryaApp',
 ]);
 
 /* ═══════════════════════════════════════════════════
@@ -380,6 +379,7 @@ export default function Layout({ children, currentPageName }) {
         <style>{GLOBAL_CSS}</style>
         <OfflineSync />
         {children}
+        <MedicalChatbot />
       </div>
     );
   }
@@ -526,6 +526,7 @@ export default function Layout({ children, currentPageName }) {
         <button className="v2-btn-teal" onClick={navNext} style={{ padding: '6px 16px', fontSize: 12, fontWeight: 700 }}>Next →</button>
       </footer>
 
+      <MedicalChatbot />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 
 import OfflineSync from "./components/offline/OfflineSync";
+import NotryaAIChat from "./components/ai/NotryaAIChat";
 
 /* ─────────────────────────────────────────────
    DESIGN TOKENS (inlined so layout is self-contained)
@@ -379,7 +380,8 @@ export default function Layout({ children, currentPageName }) {
         <style>{GLOBAL_CSS}</style>
         <OfflineSync />
         {children}
-      </div>
+        <NotryaAIChat />
+        </div>
     );
   }
 

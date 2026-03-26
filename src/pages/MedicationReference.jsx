@@ -379,6 +379,11 @@ export default function MedicationReference() {
   const [expanded, setExpanded] = useState(null);
   const [activeSubcat, setActiveSubcat] = useState(null);
 
+  const [pedAge, setPedAge] = useState('');
+  const [pedUnit, setPedUnit] = useState('months');
+  const [pedWt, setPedWt] = useState('');
+  const [pedSols, setPedSols] = useState({});
+
   const [aiQuery, setAiQuery] = useState('');
   const [aiResult, setAiResult] = useState('');
   const [aiLoading, setAiLoading] = useState(false);

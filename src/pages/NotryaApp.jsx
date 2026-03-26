@@ -607,7 +607,7 @@ export default function NotryaApp() {
   const openAI = () => { setAiOpen(true); setUnread(0); };
 
   return (
-    <div className="notrya" style={{ minHeight: "100vh", position: "relative" }}>
+    <div className="notrya" style={{ minHeight: "100vh", position: "relative", '--w-icon': embedded ? '0px' : '56px' }}>
       <style>{CSS}</style>
 
       {banner && (
@@ -616,7 +616,8 @@ export default function NotryaApp() {
         </div>
       )}
 
-      {/* ICON SIDEBAR */}
+      {/* ICON SIDEBAR — hidden when embedded in Layout */}
+      {!embedded && (
       <aside className="isb">
         <div className="isb-logo"><div className="isb-box">Pc</div></div>
         <div className="isb-scroll">
@@ -631,8 +632,10 @@ export default function NotryaApp() {
           <div className="isb-btn" title="Settings"><span>⚙️</span><span className="isb-lbl">Settings</span></div>
         </div>
       </aside>
+      )}
 
-      {/* TOP BAR */}
+      {/* TOP BAR — hidden when embedded */}
+      {!embedded && (
       <header className="topbar">
         <div className="row1">
           <span className="welcome">Welcome, <strong>{DEMO.user.name}</strong></span>
@@ -684,8 +687,10 @@ export default function NotryaApp() {
           </div>
         </div>
       </header>
+      )}
 
-      {/* CHART SECTION SIDEBAR */}
+      {/* CHART SECTION SIDEBAR — hidden when embedded */}
+      {!embedded && (
       <aside className="csb">
         <div className="csb-pt-card">
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -701,7 +706,6 @@ export default function NotryaApp() {
             <span className={`badge ${triageCls(P.triage)}`} style={{ fontSize: 9, padding: "1px 5px" }}>{P.triage}</span>
           </div>
         </div>
-
         {CHART_GROUPS.map((group, gi) => (
           <div key={gi}>
             {gi > 0 && <div className="csb-div" />}
@@ -718,7 +722,6 @@ export default function NotryaApp() {
             })}
           </div>
         ))}
-
         <div className="csb-div" />
         <div className="csb-group">Flags</div>
         {critLabs.length > 0 && (
@@ -736,6 +739,7 @@ export default function NotryaApp() {
           </div>
         )}
       </aside>
+      )}
 
       {/* FLOATING AI CHATBOT */}
       {!aiOpen && <div className="ai-fab-ring" />}
@@ -797,7 +801,7 @@ export default function NotryaApp() {
       )}
 
       {/* MAIN CONTENT */}
-      <div className="main-wrap">
+      <div className="main-wrap" style={embedded ? { marginLeft: 0, marginTop: 0, marginBottom: 0, position: 'static', overflow: 'visible', minHeight: 'unset' } : {}}>
         <div className="main-inner">
 
           <div id="s-overview" className="grid-4">
@@ -985,7 +989,8 @@ export default function NotryaApp() {
         </div>
       </div>
 
-      {/* BOTTOM BAR */}
+      {/* BOTTOM BAR — hidden when embedded */}
+      {!embedded && (
       <footer className="botbar">
         <button className="btn-ghost" onClick={() => setActiveNav(n => Math.max(0, n - 1))}>← Back</button>
         {prevNavLabel && <span className="bot-lbl">{prevNavLabel}</span>}
@@ -1001,6 +1006,7 @@ export default function NotryaApp() {
         <span className="cur-lbl">{curNavLabel}</span>
         <button className="btn-teal" style={{ padding: "6px 16px", fontSize: 12, fontWeight: 700 }} onClick={() => setActiveNav(n => Math.min(ALL_ITEMS.length - 1, n + 1))}>Next →</button>
       </footer>
+      )}
 
     </div>
   );

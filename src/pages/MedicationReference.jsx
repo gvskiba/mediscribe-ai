@@ -86,10 +86,10 @@ const SUBCATEGORY_MAP = {
     {
       id: 'opioid', label: 'Opioids',
       keywords: [
-        'opioid','opiate','narcotic','mu receptor','kappa receptor',
+        'opiate','narcotic','mu receptor','kappa receptor','mu agonist','opioid agonist','opioid analgesic',
         'morphine','fentanyl','hydromorphone','dilaudid','oxycodone','oxymorphone',
         'hydrocodone','codeine','tramadol','methadone','buprenorphine','suboxone',
-        'meperidine','naloxone','naltrexone','tapentadol','remifentanil','sufentanil'
+        'meperidine','tapentadol','remifentanil','sufentanil','alfentanil'
       ]
     },
     {

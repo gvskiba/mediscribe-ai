@@ -98,15 +98,7 @@ export default function NewPatientInput() {
   const [aiLoading, setAiLoading] = useState(false);
   const aiMsgsRef = useRef(null);
 
-  useEffect(() => {
-    const tick = () => {
-      const d = new Date();
-      setClock(`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`);
-    };
-    tick();
-    const t = setInterval(tick, 10000);
-    return () => clearInterval(t);
-  }, []);
+
 
   useEffect(() => {
     localStorage.setItem('npiPatientData', JSON.stringify({ firstName: demo.firstName, lastName: demo.lastName, age: demo.age, dob: demo.dob, sex: demo.sex, mrn: demo.mrn, weight: demo.weight, insurance: demo.insurance, insuranceId: demo.insuranceId, medications, allergies }));

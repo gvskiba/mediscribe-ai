@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 
 /* ═══════════════════════════════════════════════
    DESIGN TOKENS
@@ -27,35 +28,35 @@ const CHART_GROUPS = [
   {
     label: "Intake",
     items: [
-      { icon: "📊", label: "Patient Chart",     dot: "done" },
-      { icon: "👤", label: "Demographics",      dot: "done" },
-      { icon: "💬", label: "Chief Complaint",   dot: "done" },
-      { icon: "📈", label: "Vitals",            dot: "done" },
+      { icon: "📊", label: "Patient Chart",     dot: "done",    page: "/NewPatientInput?tab=chart" },
+      { icon: "👤", label: "Demographics",      dot: "done",    page: "/NewPatientInput?tab=demo" },
+      { icon: "💬", label: "Chief Complaint",   dot: "done",    page: "/NewPatientInput?tab=cc" },
+      { icon: "📈", label: "Vitals",            dot: "done",    page: "/NewPatientInput?tab=vit" },
     ],
   },
   {
     label: "Documentation",
     items: [
-      { icon: "💊", label: "Meds & PMH",        dot: "done" },
-      { icon: "🔍", label: "Review of Systems", dot: "partial" },
-      { icon: "🩺", label: "Physical Exam",     dot: "partial" },
-      { icon: "⚖️", label: "MDM",              dot: "empty" },
+      { icon: "💊", label: "Meds & PMH",        dot: "done",    page: "/NewPatientInput?tab=meds" },
+      { icon: "🔍", label: "Review of Systems", dot: "partial", page: "/NewPatientInput?tab=ros" },
+      { icon: "🩺", label: "Physical Exam",     dot: "partial", page: "/NewPatientInput?tab=pe" },
+      { icon: "⚖️", label: "MDM",              dot: "empty",   page: "/NewPatientInput?tab=mdm" },
     ],
   },
   {
     label: "Disposition",
     items: [
-      { icon: "📋", label: "Orders",            dot: "empty" },
-      { icon: "🚪", label: "Discharge",         dot: "empty" },
-      { icon: "🗺️", label: "ER Plan Builder",  dot: "empty" },
+      { icon: "📋", label: "Orders",            dot: "empty",   page: "/NewPatientInput?tab=orders" },
+      { icon: "🚪", label: "Discharge",         dot: "empty",   page: "/NewPatientInput?tab=discharge" },
+      { icon: "🗺️", label: "ER Plan Builder",  dot: "empty",   page: "/NewPatientInput?tab=erplan" },
     ],
   },
   {
     label: "Tools",
     items: [
-      { icon: "🤖", label: "AutoCoder",         dot: "empty" },
-      { icon: "💉", label: "eRx",               dot: "empty" },
-      { icon: "✂️", label: "Procedures",        dot: "empty" },
+      { icon: "🤖", label: "AutoCoder",         dot: "empty",   page: "/NewPatientInput?tab=autocoder" },
+      { icon: "💉", label: "eRx",               dot: "empty",   page: "/NewPatientInput?tab=erx" },
+      { icon: "✂️", label: "Procedures",        dot: "empty",   page: "/NewPatientInput?tab=procedures" },
     ],
   },
 ];
@@ -539,6 +540,7 @@ const CSS = `
    MAIN COMPONENT
 ═══════════════════════════════════════════════ */
 export default function NotryaApp() {
+  const navigate = useNavigate();
   const { patient: P, vitals: V, timeline: TL, problems: PR,
           allergies: AL, meds: ME, labs: LA, imaging: IM, note: NOTE } = DEMO;
 
@@ -707,7 +709,7 @@ export default function NotryaApp() {
             {group.items.map((item, ii) => {
               const globalIdx = CHART_GROUPS.slice(0, gi).reduce((a, g) => a + g.items.length, 0) + ii;
               return (
-                <div key={ii} className={`csb-item${isNavActive(gi, ii) ? " active" : ""}`} onClick={() => setActiveNav(globalIdx)}>
+                <div key={ii} className={`csb-item${isNavActive(gi, ii) ? " active" : ""}`} onClick={() => { setActiveNav(globalIdx); if (item.page) navigate(item.page); }}>
                   <span className="csb-icon">{item.icon}</span>
                   <span style={{ flex: 1 }}>{item.label}</span>
                   <span className={`csb-dot ${item.dot}`} />

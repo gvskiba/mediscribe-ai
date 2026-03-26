@@ -1,35 +1,42 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { useState, useEffect, useRef } from "react";
 
-export default function NotryaFloatingAI() {
-  const [aiOpen, setAiOpen] = useState(false);
-  const [aiInput, setAiInput] = useState('');
-  const [aiMsgs, setAiMsgs] = useState([{ role: 'sys', text: 'Notrya AI ready.' }]);
+export default function FloatingAI({ patientContext }) {
+  const [aiOpen,    setAiOpen]    = useState(false);
+  const [aiMsgs,    setAiMsgs]    = useState([{ role: "sys", text: "👋 Ask me anything about this patient." }]);
+  const [aiInput,   setAiInput]   = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [unread,    setUnread]    = useState(1);
   const msgsRef = useRef(null);
 
   useEffect(() => {
-    if (msgsRef.current) {
-      msgsRef.current.scrollTop = msgsRef.current.scrollHeight;
-    }
-  }, [aiMsgs, aiLoading]);
+    if (msgsRef.current) msgsRef.current.scrollTop = msgsRef.current.scrollHeight;
+  }, [aiMsgs]);
 
-  const sendAI = async (question = null) => {
-    const q = question || aiInput.trim();
-    if (!q || aiLoading) return;
+  const openAI = () => { setAiOpen(true); setUnread(0); };
 
-    setAiInput('');
-    setAiMsgs(prev => [...prev, { role: 'user', text: q }]);
+  const sendAI = async q => {
+    const question = (q || aiInput).trim();
+    if (!question || aiLoading) return;
+    setAiInput(""); setUnread(0);
+    setAiMsgs(prev => [...prev, { role: "user", text: question }]);
     setAiLoading(true);
-
     try {
-      const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are Notrya AI, an ED clinical assistant. Be concise and practical. ${q}`,
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          system: patientContext || "You are Notrya AI, an ED clinical assistant. Be concise and direct.",
+          messages: [{ role: "user", content: question }],
+        }),
       });
-      const text = typeof res === 'string' ? res : JSON.stringify(res);
-      setAiMsgs(prev => [...prev, { role: 'bot', text }]);
+      const data = await res.json();
+      const text = data.content?.find(b => b.type === "text")?.text || "No response.";
+      setAiMsgs(prev => [...prev, { role: "bot", text }]);
+      if (!aiOpen) setUnread(n => n + 1);
     } catch {
-      setAiMsgs(prev => [...prev, { role: 'sys', text: '⚠ Error connecting to AI.' }]);
+      setAiMsgs(prev => [...prev, { role: "sys", text: "⚠ AI error." }]);
     }
     setAiLoading(false);
   };
@@ -37,14 +44,10 @@ export default function NotryaFloatingAI() {
   return (
     <>
       {!aiOpen && <div className="ai-fab-ring" />}
-      <button
-        className={`ai-fab${aiOpen ? ' open' : ''}`}
-        onClick={() => setAiOpen(!aiOpen)}
-        title="Notrya AI"
-      >
-        {aiOpen ? '✕' : '🤖'}
+      <button className={`ai-fab${aiOpen ? " open" : ""}`} onClick={() => aiOpen ? setAiOpen(false) : openAI()}>
+        {aiOpen ? "✕" : "🤖"}
+        {!aiOpen && unread > 0 && <span className="ai-fab-badge">{unread}</span>}
       </button>
-
       {aiOpen && (
         <div className="ai-float">
           <div className="ai-float-hdr">
@@ -53,7 +56,7 @@ export default function NotryaFloatingAI() {
               <div>
                 <div className="ai-float-name">Notrya AI</div>
                 <div className="ai-float-status">
-                  <div className="ai-dot" /> Live · Powered by AI
+                  <div className="ai-dot" /> Live · Powered by Claude
                 </div>
               </div>
               <div className="ai-float-close" onClick={() => setAiOpen(false)}>
@@ -62,11 +65,10 @@ export default function NotryaFloatingAI() {
             </div>
             <div className="ai-float-chips">
               {[
-                ['📋 Summarize', 'Summarize this patient chart in 3 bullet points.'],
-                ['💊 Drug Check', 'Check for drug interactions in the current med list.'],
-                ['🔍 Workup', 'What additional workup should be considered?'],
-                ['🚪 Dispo', 'Suggest disposition and next steps.'],
-                ['📚 Guidelines', 'What guidelines apply to this presentation?'],
+                ['📋 Summarize', 'Summarize this patient case in 3 key points.'],
+                ['💊 Drug Check', 'Check for drug interactions.'],
+                ['🔍 Workup', 'What additional workup is needed?'],
+                ['🚪 Dispo', 'Disposition recommendation?'],
               ].map(([lbl, q]) => (
                 <button
                   key={lbl}
@@ -96,7 +98,7 @@ export default function NotryaFloatingAI() {
             <textarea
               className="ai-float-input"
               rows={1}
-              placeholder="Ask anything…"
+              placeholder="Ask about this patient…"
               value={aiInput}
               onChange={e => setAiInput(e.target.value)}
               onKeyDown={e => {
@@ -115,7 +117,7 @@ export default function NotryaFloatingAI() {
             </button>
           </div>
           <div className="ai-float-footer">
-            <span className="ai-model-badge">Powered by Notrya AI</span>
+            <span className="ai-model-badge">Claude Sonnet 4</span>
           </div>
         </div>
       )}

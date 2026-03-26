@@ -25,6 +25,72 @@ const CATEGORY_META = {
   other:         { label: 'Other',                 icon: '💉' },
 };
 
+// subcategory keywords matched against drugClass + indications (case-insensitive)
+const SUBCATEGORY_MAP = {
+  cardiac: [
+    { id: 'htn',    label: 'Hypertension',   keywords: ['antihypertensive','hypertension','ace inhibitor','arb','calcium channel','beta-blocker','beta blocker','hydralazine','labetalol','nicardipine','nitroglycerin','nitroprusside'] },
+    { id: 'arr',    label: 'Arrhythmia',     keywords: ['antiarrhythmic','arrhythmia','atrial fibrillation','afib','svt','vt ','ventricular tachycardia','amiodarone','adenosine','procainamide','digoxin'] },
+    { id: 'hf',     label: 'Heart Failure',  keywords: ['heart failure','chf','diuretic','furosemide','bumetanide','spironolactone','nesiritide','milrinone','dobutamine'] },
+    { id: 'acs',    label: 'ACS / Chest Pain', keywords: ['acs','acute coronary','angina','chest pain','nitrate','aspirin','heparin','ticagrelor','clopidogrel','eptifibatide','thrombolytic','tpa','alteplase'] },
+    { id: 'rate',   label: 'Rate Control',   keywords: ['rate control','rate-control','diltiazem','metoprolol','verapamil','digoxin','esmolol'] },
+  ],
+  analgesic: [
+    { id: 'opioid', label: 'Opioids',        keywords: ['opioid','morphine','fentanyl','hydromorphone','oxycodone','naloxone','tramadol','buprenorphine'] },
+    { id: 'nsaid',  label: 'NSAIDs',         keywords: ['nsaid','ibuprofen','ketorolac','naproxen','indomethacin','aspirin','anti-inflammatory'] },
+    { id: 'nonopioid', label: 'Non-Opioid', keywords: ['acetaminophen','ketamine','lidocaine','gabapentin','pregabalin','nerve block','non-opioid'] },
+  ],
+  abx: [
+    { id: 'gramp',  label: 'Gram-Positive',  keywords: ['gram-positive','vancomycin','linezolid','daptomycin','oxacillin','nafcillin','mrsa','staph','strep'] },
+    { id: 'gramn',  label: 'Gram-Negative',  keywords: ['gram-negative','ceftriaxone','cefepime','piperacillin','aztreonam','meropenem','imipenem','ciprofloxacin','levofloxacin','gentamicin','tobramycin'] },
+    { id: 'resp',   label: 'Respiratory',    keywords: ['pneumonia','respiratory','azithromycin','doxycycline','amoxicillin','atypical','community-acquired','cap ','hap '] },
+    { id: 'uti',    label: 'UTI / Renal',    keywords: ['uti','urinary','bladder','nitrofurantoin','fosfomycin','trimethoprim','sulfamethoxazole'] },
+    { id: 'skin',   label: 'Skin / SSTI',    keywords: ['skin','soft tissue','ssti','cellulitis','wound','clindamycin','cephalexin','dicloxacillin'] },
+  ],
+  antibiotics: [
+    { id: 'gramp',  label: 'Gram-Positive',  keywords: ['gram-positive','vancomycin','linezolid','daptomycin','mrsa','staph','strep'] },
+    { id: 'gramn',  label: 'Gram-Negative',  keywords: ['gram-negative','ceftriaxone','cefepime','piperacillin','meropenem','ciprofloxacin','levofloxacin'] },
+    { id: 'resp',   label: 'Respiratory',    keywords: ['pneumonia','respiratory','azithromycin','doxycycline','amoxicillin'] },
+    { id: 'uti',    label: 'UTI / Renal',    keywords: ['uti','urinary','nitrofurantoin','fosfomycin','trimethoprim'] },
+    { id: 'skin',   label: 'Skin / SSTI',    keywords: ['skin','soft tissue','cellulitis','clindamycin','cephalexin'] },
+  ],
+  psych: [
+    { id: 'antipsych', label: 'Antipsychotics', keywords: ['antipsychotic','haloperidol','olanzapine','ziprasidone','quetiapine','risperidone','droperidol'] },
+    { id: 'anxio',     label: 'Anxiolytics',    keywords: ['anxiolytic','benzodiazepine','lorazepam','diazepam','midazolam','alprazolam'] },
+    { id: 'agit',      label: 'Agitation',      keywords: ['agitation','sedation','chemical restraint','ketamine','dexmedetomidine'] },
+  ],
+  resuscitation: [
+    { id: 'arrest',  label: 'Cardiac Arrest', keywords: ['cardiac arrest','epinephrine','vasopressin','amiodarone','lidocaine','defibrillation','cpr'] },
+    { id: 'vaso',    label: 'Vasopressors',   keywords: ['vasopressor','norepinephrine','dopamine','phenylephrine','vasopressin','dobutamine','milrinone'] },
+    { id: 'reversal',label: 'Reversal Agents',keywords: ['reversal','naloxone','flumazenil','protamine','andexanet','idarucizumab','sugammadex'] },
+  ],
+  gi: [
+    { id: 'antiemetic', label: 'Antiemetics',  keywords: ['antiemetic','nausea','vomiting','ondansetron','promethazine','metoclopramide','prochlorperazine','scopolamine'] },
+    { id: 'antacid',    label: 'Antacids / PPI', keywords: ['antacid','ppi','proton pump','omeprazole','pantoprazole','famotidine','ranitidine','sucralfate','h2 blocker'] },
+    { id: 'motility',   label: 'GI Motility',  keywords: ['motility','constipation','diarrhea','lactulose','polyethylene glycol','loperamide','bisacodyl','senna'] },
+  ],
+  respiratory: [
+    { id: 'broncho', label: 'Bronchodilators', keywords: ['bronchodilator','albuterol','ipratropium','levalbuterol','salmeterol','beta-2','beta 2'] },
+    { id: 'steroid', label: 'Corticosteroids', keywords: ['corticosteroid','methylprednisolone','dexamethasone','prednisone','hydrocortisone','steroid'] },
+    { id: 'pulm',    label: 'Pulmonary HTN',   keywords: ['pulmonary hypertension','sildenafil','epoprostenol','nitric oxide','bosentan'] },
+  ],
+  rsi: [
+    { id: 'induct',  label: 'Induction',      keywords: ['induction','ketamine','etomidate','propofol','thiopental'] },
+    { id: 'paralytic',label: 'Paralytics',    keywords: ['paralytic','neuromuscular','succinylcholine','rocuronium','vecuronium','pancuronium','cisatracurium'] },
+    { id: 'pretreat',label: 'Pre-treatment',  keywords: ['pre-treatment','pretreatment','premedication','fentanyl','lidocaine','atropine'] },
+  ],
+  anticoag: [
+    { id: 'direct',  label: 'Direct Anticoagulants', keywords: ['direct oral','doac','factor xa','apixaban','rivaroxaban','edoxaban','dabigatran'] },
+    { id: 'heparin', label: 'Heparins',       keywords: ['heparin','lmwh','enoxaparin','fondaparinux','bivalirudin','argatroban','unfractionated'] },
+    { id: 'thrombo', label: 'Thrombolytics',  keywords: ['thrombolytic','tpa','alteplase','tenecteplase','reteplase','streptokinase'] },
+    { id: 'reversal',label: 'Reversal',       keywords: ['reversal','protamine','andexanet','idarucizumab','vitamin k','phytonadione'] },
+  ],
+  sedation: [
+    { id: 'benzo',   label: 'Benzodiazepines', keywords: ['benzodiazepine','midazolam','lorazepam','diazepam'] },
+    { id: 'dex',     label: 'Alpha-2 Agonists', keywords: ['dexmedetomidine','alpha-2','clonidine'] },
+    { id: 'gen',     label: 'General / Other',  keywords: ['propofol','ketamine','etomidate','barbiturate','phenobarbital'] },
+  ],
+};
+
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 .mrp{color:${T.txt};font-family:'DM Sans',sans-serif;font-size:14px;display:flex;flex-direction:column;min-height:0;}
@@ -311,11 +377,7 @@ export default function MedicationReference() {
   const [search, setSearch] = useState('');
   const [activeCat, setActiveCat] = useState(null);
   const [expanded, setExpanded] = useState(null);
-
-  const [pedAge, setPedAge] = useState('');
-  const [pedUnit, setPedUnit] = useState('months');
-  const [pedWt, setPedWt] = useState('');
-  const [pedSols, setPedSols] = useState({});
+  const [activeSubcat, setActiveSubcat] = useState(null);
 
   const [aiQuery, setAiQuery] = useState('');
   const [aiResult, setAiResult] = useState('');
@@ -337,6 +399,9 @@ export default function MedicationReference() {
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
+  // reset subcat when category changes
+  useEffect(() => { setActiveSubcat(null); }, [activeCat]);
+
   const byCategory = useMemo(() => {
     const map = {};
     meds.forEach(m => {
@@ -346,6 +411,21 @@ export default function MedicationReference() {
     });
     return map;
   }, [meds]);
+
+  const subcats = activeCat ? (SUBCATEGORY_MAP[activeCat] || []) : [];
+
+  const matchesSubcat = (drug, subcat) => {
+    const haystack = ((drug.drugClass || '') + ' ' + (drug.indications || '') + ' ' + (drug.name || '') + ' ' + (drug.mechanism || '')).toLowerCase();
+    return subcat.keywords.some(kw => haystack.includes(kw));
+  };
+
+  const subcatCounts = useMemo(() => {
+    if (!activeCat || subcats.length === 0) return {};
+    const catDrugs = byCategory[activeCat] || [];
+    const counts = {};
+    subcats.forEach(sc => { counts[sc.id] = catDrugs.filter(d => matchesSubcat(d, sc)).length; });
+    return counts;
+  }, [activeCat, byCategory, subcats]);
 
   const catOrder = ['resuscitation','cardiac','seizure','respiratory','analgesic','rsi','sedation','psych','anticoag','abx','antibiotics','gi','other'];
   const categories = useMemo(() => {
@@ -365,9 +445,13 @@ export default function MedicationReference() {
         m.indications?.toLowerCase().includes(q)
       );
     }
-    if (activeCat) return byCategory[activeCat] || [];
-    return meds;
-  }, [meds, byCategory, activeCat, search]);
+    let base = activeCat ? (byCategory[activeCat] || []) : meds;
+    if (activeSubcat && subcats.length > 0) {
+      const sc = subcats.find(s => s.id === activeSubcat);
+      if (sc) base = base.filter(d => matchesSubcat(d, sc));
+    }
+    return base;
+  }, [meds, byCategory, activeCat, activeSubcat, subcats, search]);
 
   const weight = useMemo(() => {
     if (pedWt) return parseFloat(pedWt) || null;
@@ -451,6 +535,27 @@ export default function MedicationReference() {
                       </div>
                     );
                   })}
+                </div>
+              )}
+              {!search && activeCat && subcats.length > 0 && (
+                <div style={{padding:'6px 12px',borderBottom:`1px solid ${T.border}`,background:T.bg,display:'flex',flexWrap:'wrap',gap:5,alignItems:'center'}}>
+                  <span style={{fontSize:9,color:T.txt4,letterSpacing:'1.5px',textTransform:'uppercase',fontFamily:'JetBrains Mono,monospace',marginRight:2}}>Subcat:</span>
+                  <div
+                    onClick={()=>setActiveSubcat(null)}
+                    style={{padding:'3px 12px',borderRadius:20,fontSize:10,fontWeight:600,cursor:'pointer',border:`1px solid ${activeSubcat===null?T.teal:T.border}`,background:activeSubcat===null?'rgba(0,229,192,0.1)':T.up,color:activeSubcat===null?T.teal:T.txt3,transition:'all .15s'}}
+                  >
+                    All ({byCategory[activeCat]?.length||0})
+                  </div>
+                  {subcats.map(sc=>(
+                    <div
+                      key={sc.id}
+                      onClick={()=>setActiveSubcat(activeSubcat===sc.id?null:sc.id)}
+                      style={{padding:'3px 12px',borderRadius:20,fontSize:10,fontWeight:600,cursor:'pointer',border:`1px solid ${activeSubcat===sc.id?T.teal:T.border}`,background:activeSubcat===sc.id?'rgba(0,229,192,0.1)':T.up,color:activeSubcat===sc.id?T.teal:T.txt3,transition:'all .15s',whiteSpace:'nowrap'}}
+                    >
+                      {sc.label} {subcatCounts[sc.id]!==undefined?`(${subcatCounts[sc.id]})`:''
+                      }
+                    </div>
+                  ))}
                 </div>
               )}
               <div className="drug-list">

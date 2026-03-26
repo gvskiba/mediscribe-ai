@@ -276,7 +276,24 @@ export default function PediatricDosingCalculator() {
   const [history, setHistory]           = useState([]);
   const [drugDB, setDrugDB]             = useState([]);
   const [loading, setLoading]           = useState(true);
+  const [activeCategory, setActiveCategory] = useState('all');
   const searchRef = useRef(null);
+
+  const CATEGORY_META = {
+    all:           { label: 'All',             icon: '💊' },
+    analgesic:     { label: 'Pain / Analgesic', icon: '🔵' },
+    sedation:      { label: 'Sedation',         icon: '💤' },
+    seizure:       { label: 'Seizure',          icon: '⚡' },
+    respiratory:   { label: 'Respiratory',      icon: '🫁' },
+    antibiotics:   { label: 'Antibiotics',      icon: '🧪' },
+    abx:           { label: 'Antibiotics',      icon: '🧪' },
+    gi:            { label: 'GI / Nausea',      icon: '💚' },
+    resuscitation: { label: 'Resuscitation',    icon: '🚨' },
+    cardiac:       { label: 'Cardiac',          icon: '❤️' },
+    psych:         { label: 'Psych',            icon: '🧠' },
+    rsi:           { label: 'RSI',              icon: '💉' },
+    other:         { label: 'Other',            icon: '📌' },
+  };
 
   useEffect(() => {
     base44.entities.Medication.filter({ setting: 'er' })
@@ -319,10 +336,13 @@ export default function PediatricDosingCalculator() {
 
   const broselow = weightKg && weightKg > 0 ? getBroselow(weightKg) : null;
 
-  const filtered = drugDB.filter(d =>
-    !query || d.name.toLowerCase().includes(query.toLowerCase()) ||
-    d.category.toLowerCase().includes(query.toLowerCase())
-  );
+  const categories = ['all', ...Array.from(new Set(drugDB.map(d => d.category).filter(Boolean)))];
+
+  const filtered = drugDB.filter(d => {
+    const matchesSearch = !query || d.name.toLowerCase().includes(query.toLowerCase()) || d.category.toLowerCase().includes(query.toLowerCase());
+    const matchesCat = activeCategory === 'all' || d.category === activeCategory;
+    return matchesSearch && matchesCat;
+  });
 
   const selectDrug = (drug) => {
     setSelectedDrug(drug);
@@ -406,6 +426,37 @@ export default function PediatricDosingCalculator() {
               <span className="dc-sec-badge">{loading ? '...' : `${filtered.length} available`}</span>
               <div className="dc-sec-line" />
             </div>
+
+            {!loading && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+                {categories.map(cat => {
+                  const meta = CATEGORY_META[cat] || { label: cat, icon: '💊' };
+                  const isActive = activeCategory === cat;
+                  const count = cat === 'all' ? drugDB.length : drugDB.filter(d => d.category === cat).length;
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => { setActiveCategory(cat); setSelectedDrug(null); setSelectedInd(null); }}
+                      style={{
+                        background: isActive ? 'rgba(0,229,192,0.1)' : '#0b1e36',
+                        border: `1px solid ${isActive ? 'rgba(0,229,192,0.4)' : '#1a3555'}`,
+                        borderRadius: 20, padding: '5px 12px',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                        fontSize: 11, fontWeight: isActive ? 700 : 500,
+                        color: isActive ? '#00e5c0' : '#8aaccc',
+                        transition: 'all 0.15s', whiteSpace: 'nowrap',
+                        fontFamily: "'DM Sans', sans-serif",
+                      }}
+                    >
+                      <span>{meta.icon}</span>
+                      <span>{meta.label}</span>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: isActive ? 'rgba(0,229,192,0.6)' : '#4a6a8a', marginLeft: 2 }}>{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             <div className="dc-search-wrap" style={{ marginBottom: 14 }}>
               <span className="dc-search-icon">🔍</span>
               <input

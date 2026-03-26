@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import FloatingAI from "@/components/ai/NotryaFloatingAI";
 
 /* ═══════════════════════════════════════════════
    DESIGN TOKENS
@@ -550,15 +549,24 @@ export default function NotryaApp({ embedded = false }) {
   const [activeNav, setActiveNav]     = useState(0);
   const [activeSection, setActiveSection] = useState("s-overview");
   const [tabs, setTabs]               = useState({ problems: "active", meds: "ed" });
+  const [aiOpen, setAiOpen]           = useState(false);
+  const [aiMsgs, setAiMsgs]           = useState([{ role: "sys", text: "👋 Hi Dr. Skiba — I have full context on this patient. Ask me anything." }]);
+  const [aiInput, setAiInput]         = useState("");
+  const [aiLoading, setAiLoading]     = useState(false);
+  const [unread, setUnread]           = useState(1);
+  const msgsRef = useRef(null);
 
   useEffect(() => {
     const tick = () => { const d = new Date(); setClock(`${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`); };
     tick(); const t = setInterval(tick, 10000); return () => clearInterval(t);
   }, []);
 
+  useEffect(() => { if (msgsRef.current) msgsRef.current.scrollTop = msgsRef.current.scrollHeight; }, [aiMsgs]);
 
-
-
+  const scrollTo = id => {
+    setActiveSection(id);
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const isNavActive = (gi, ii) => {
     const idx = CHART_GROUPS.slice(0, gi).reduce((a, g) => a + g.items.length, 0) + ii;
@@ -575,6 +583,28 @@ export default function NotryaApp({ embedded = false }) {
   const labPanels    = LA.reduce((acc, l) => { if (!acc[l.panel]) acc[l.panel] = []; acc[l.panel].push(l); return acc; }, {});
   const curNavLabel  = ALL_ITEMS[activeNav]?.label || "Patient Chart";
   const prevNavLabel = activeNav > 0 ? ALL_ITEMS[activeNav - 1]?.label : "";
+
+  const sendAI = async q => {
+    const question = (q || aiInput).trim();
+    if (!question || aiLoading) return;
+    setAiInput("");
+    setUnread(0);
+    setAiMsgs(prev => [...prev, { role: "user", text: question }]);
+    setAiLoading(true);
+    try {
+      const { base44 } = await import("@/api/base44Client");
+      const text = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are Notrya AI, a concise ED clinical assistant. Patient: ${P.firstName} ${P.lastName}, ${calcAge(P.dob)}y/o ${P.sex}, CC: ${P.cc}. Diagnoses: NSTEMI, HTN, T2DM, CAD. Critical labs: Troponin-I 0.84 (ref <0.04), BNP 812, K+ 5.4, Glucose 218. Meds given: Aspirin 325mg, Heparin drip, Ticagrelor 180mg. Allergies: Penicillin (anaphylaxis), Iodinated Contrast (urticaria), Codeine (nausea). Vitals: BP ${V.bp}, HR ${V.hr}, SpO2 ${V.spo2}%. Respond in 2-4 concise clinical sentences.\n\nQuestion: ${question}`,
+      });
+      setAiMsgs(prev => [...prev, { role: "bot", text: typeof text === "string" ? text : JSON.stringify(text) }]);
+      if (!aiOpen) setUnread(n => n + 1);
+    } catch {
+      setAiMsgs(prev => [...prev, { role: "sys", text: "⚠ AI error — check connection." }]);
+    }
+    setAiLoading(false);
+  };
+
+  const openAI = () => { setAiOpen(true); setUnread(0); };
 
   return (
     <div className="notrya" style={{ minHeight: "100vh", position: "relative", '--w-icon': embedded ? '0px' : '56px' }}>
@@ -711,7 +741,64 @@ export default function NotryaApp({ embedded = false }) {
       </aside>
       )}
 
-      <FloatingAI patientContext={`Patient: ${P.firstName} ${P.lastName}, ${calcAge(P.dob)}y/o ${P.sex}. CC: ${P.cc}. Troponin: 0.84 ng/mL (↑)`} />
+      {/* FLOATING AI CHATBOT */}
+      {!aiOpen && <div className="ai-fab-ring" />}
+      <button className={`ai-fab${aiOpen ? " open" : ""}`} onClick={() => aiOpen ? setAiOpen(false) : openAI()} title="Notrya AI">
+        {aiOpen ? "✕" : "🤖"}
+        {!aiOpen && unread > 0 && <span className="ai-fab-badge">{unread}</span>}
+      </button>
+
+      {aiOpen && (
+        <div className="ai-float">
+          <div className="ai-float-hdr">
+            <div className="ai-float-hdr-top">
+              <div className="ai-float-avatar">🤖</div>
+              <div>
+                <div className="ai-float-name">Notrya AI</div>
+                <div className="ai-float-status"><div className="ai-dot" /> Live · Powered by AI</div>
+              </div>
+              <div className="ai-float-close" onClick={() => setAiOpen(false)}>✕</div>
+            </div>
+            <div className="ai-float-chips">
+              {[
+                ["📋 Summarize",  "Summarize this patient chart in 3 bullet points."],
+                ["💊 Drug Check", "Check for drug interactions in the current med list."],
+                ["🔍 Workup",     "What additional workup should be considered?"],
+                ["🚪 Dispo",      "Suggest disposition and next steps."],
+                ["📚 Guidelines", "What guidelines apply to this NSTEMI presentation?"],
+              ].map(([lbl, q]) => (
+                <button key={lbl} className="ai-chip" onClick={() => sendAI(q)}>{lbl}</button>
+              ))}
+            </div>
+          </div>
+          <div className="ai-ctx-pill">
+            <div className="ai-ctx-dot" />
+            <span>{P.lastName}, {P.firstName} · {calcAge(P.dob)}y · {P.cc} · Troponin 0.84 ▲</span>
+          </div>
+          <div className="ai-float-msgs" ref={msgsRef}>
+            {aiMsgs.map((m, i) => (
+              <div key={i} className={`ai-bubble ${m.role}`}>{m.text}</div>
+            ))}
+            {aiLoading && (
+              <div className="ai-typing"><span /><span /><span /></div>
+            )}
+          </div>
+          <div className="ai-float-input-row">
+            <textarea
+              className="ai-float-input"
+              rows={1}
+              placeholder="Ask about this patient…"
+              value={aiInput}
+              onChange={e => setAiInput(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendAI(); } }}
+            />
+            <button className="ai-float-send" onClick={() => sendAI()} disabled={aiLoading || !aiInput.trim()}>↑</button>
+          </div>
+          <div className="ai-float-footer">
+            <span className="ai-model-badge">Powered by Notrya AI</span>
+          </div>
+        </div>
+      )}
 
       {/* MAIN CONTENT */}
       <div className="main-wrap" style={embedded ? { marginLeft: 0, marginTop: 0, marginBottom: 0, position: 'static', overflow: 'visible', minHeight: 'unset' } : {}}>

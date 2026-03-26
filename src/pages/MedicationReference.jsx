@@ -475,15 +475,6 @@ const CSS = `
 @media(max-width:900px){.cat-nm{display:none}}
 `;
 
-const PEDS_STATIC = [
-  {name:"Acetaminophen",mpk:15,mx:1000,route:"PO/PR",freq:"q4-6h",notes:"Avoid hepatic impairment.",sols:[{l:"Infant 100mg/mL",c:100,u:"mg/mL"},{l:"Children's 32mg/mL",c:32,u:"mg/mL"}]},
-  {name:"Ibuprofen",mpk:10,mx:400,route:"PO",freq:"q6-8h",notes:"Avoid <6 months.",sols:[{l:"Infant 40mg/mL",c:40,u:"mg/mL"},{l:"Children's 20mg/mL",c:20,u:"mg/mL"}]},
-  {name:"Epinephrine (IM)",mpk:0.01,mx:0.3,route:"IM",freq:"q5-15min PRN",notes:"Always anterolateral thigh.",sols:[{l:"1:1000 1mg/mL",c:1,u:"mg/mL"}]},
-  {name:"Albuterol Neb",mpk:0.15,mx:5,route:"Neb",freq:"q20min x3",notes:"Continuous 0.5 mg/kg/hr severe.",sols:[{l:"5mg/mL",c:5,u:"mg/mL"}]},
-  {name:"Midazolam (Seizure)",mpk:0.2,mx:10,route:"IN/IM/IV",freq:"x1, may repeat",notes:"IN: split between nares.",sols:[{l:"5mg/mL",c:5,u:"mg/mL"},{l:"1mg/mL IV",c:1,u:"mg/mL"}]},
-  {name:"Ondansetron",mpk:0.15,mx:4,route:"IV/PO",freq:"q6-8h",notes:"Safe >6 months.",sols:[{l:"ODT 4mg",c:4,u:"mg/tab"},{l:"IV 2mg/mL",c:2,u:"mg/mL"}]},
-];
-
 const H1 = [
   {a:"Measure lactate level",crit:true},
   {a:"Obtain blood cultures before antibiotics",crit:true},
@@ -668,7 +659,6 @@ export default function MedicationReference() {
   const [pedAge, setPedAge] = useState('');
   const [pedUnit, setPedUnit] = useState('months');
   const [pedWt, setPedWt] = useState('');
-  const [pedSols, setPedSols] = useState({});
 
   const [aiQuery, setAiQuery] = useState('');
   const [aiResult, setAiResult] = useState('');
@@ -904,36 +894,40 @@ export default function MedicationReference() {
                     </div>
                     <div className="bzb" style={{background:bz.h+'22',color:bz.h,border:`1px solid ${bz.h}44`}}>{bz.z}</div>
                   </div>
-                  {PEDS_STATIC.map((d,idx)=>{
-                    const raw=weight*d.mpk, fin=Math.min(raw,d.mx), cap=raw>d.mx;
-                    const si=pedSols[d.name];
-                    let vol=null;
-                    if(si!==undefined&&d.sols[si]){const s=d.sols[si];const isTab=s.u==='mg/tab'||s.u==='mg/dose';vol={v:(fin/s.c).toFixed(2),u:isTab?(s.u==='mg/tab'?'tab(s)':'dose(s)'):'mL'};}
+                  {meds.filter(m => m.ped?.doses?.length > 0).length === 0 ? (
+                    <div className="no-data"><div className="no-data-i">💊</div><div className="no-data-t">No pediatric dosing data in database</div></div>
+                  ) : meds.filter(m => m.ped?.doses?.length > 0).map((m, idx) => {
+                    const d = m.ped.doses[0];
+                    const raw = weight * (d.dosePerKg || 0);
+                    const fin = d.maxDose ? Math.min(raw, d.maxDose) : raw;
+                    const cap = d.maxDose && raw > d.maxDose;
+                    const vol = m.ped.concentration ? (fin / m.ped.concentration).toFixed(2) : null;
                     return (
                       <div key={idx} className="sol-card">
                         <div style={{display:'flex',justifyContent:'space-between',flexWrap:'wrap',gap:6}}>
                           <div>
-                            <div style={{fontFamily:'Playfair Display,serif',fontSize:13,fontWeight:700,color:T.txt}}>{d.name}</div>
-                            <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:10,color:T.txt3,marginTop:2}}>{d.mpk} mg/kg · {d.route} · {d.freq}</div>
+                            <div style={{fontFamily:'Playfair Display,serif',fontSize:13,fontWeight:700,color:T.txt}}>{m.name}</div>
+                            <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:10,color:T.txt3,marginTop:2}}>{d.dosePerKg} {d.unit||'mg'}/kg · {m.route||''} · {m.ped.repeat||''}</div>
                           </div>
-                          <div style={{display:'flex',gap:4}}><span className="b b-t">{d.route}</span><span className="b b-o">Max {d.mx}mg</span></div>
+                          <div style={{display:'flex',gap:4}}>
+                            {m.route && <span className="b b-t">{m.route}</span>}
+                            {d.maxDose && <span className="b b-o">Max {d.maxDose}{d.unit||'mg'}</span>}
+                          </div>
                         </div>
                         <div style={{padding:'8px 12px',borderRadius:8,marginTop:8,background:cap?'rgba(245,200,66,.06)':'rgba(0,229,192,.06)',border:`1px solid ${cap?'rgba(245,200,66,.18)':'rgba(0,229,192,.18)'}`}}>
                           <div style={{display:'flex',alignItems:'baseline',gap:8}}>
                             <span style={{fontFamily:'JetBrains Mono,monospace',fontSize:8,color:T.txt4,letterSpacing:'2px'}}>DOSE</span>
-                            <span style={{fontFamily:'JetBrains Mono,monospace',fontSize:20,fontWeight:800,color:cap?T.gold:T.teal}}>{fin.toFixed(1)} mg</span>
-                            {cap&&<span className="rmax">MAX</span>}
+                            <span style={{fontFamily:'JetBrains Mono,monospace',fontSize:20,fontWeight:800,color:cap?T.gold:T.teal}}>{fin.toFixed(1)} {d.unit||'mg'}</span>
+                            {cap && <span className="rmax">MAX</span>}
                           </div>
                         </div>
-                        <div style={{marginTop:10}}>
-                          <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:8,color:T.txt4,letterSpacing:'2px',marginBottom:4}}>FORMULATION</div>
-                          <select className="field-select" value={si!==undefined?si:''} onChange={e=>setPedSols(p=>({...p,[d.name]:e.target.value===''?undefined:parseInt(e.target.value)}))}>
-                            <option value="">Select Strength</option>
-                            {d.sols.map((s,si)=><option key={si} value={si}>{s.l}</option>)}
-                          </select>
-                          {vol&&<div className="sol-vol"><span style={{fontFamily:'JetBrains Mono,monospace',fontSize:8,color:T.txt4,letterSpacing:'2px'}}>VOLUME</span><span style={{fontFamily:'JetBrains Mono,monospace',fontSize:18,fontWeight:800,color:T.blue}}>{vol.v} {vol.u}</span></div>}
-                        </div>
-                        <div style={{marginTop:8,fontSize:10,color:T.txt3,fontStyle:'italic',background:T.bg,padding:'6px 8px',borderRadius:4}}>{d.notes}</div>
+                        {vol && m.ped.concLabel && (
+                          <div className="sol-vol" style={{marginTop:10}}>
+                            <span style={{fontFamily:'JetBrains Mono,monospace',fontSize:8,color:T.txt4,letterSpacing:'2px'}}>{m.ped.concLabel}</span>
+                            <span style={{fontFamily:'JetBrains Mono,monospace',fontSize:18,fontWeight:800,color:T.blue}}>{vol} mL</span>
+                          </div>
+                        )}
+                        {m.ped.notes && <div style={{marginTop:8,fontSize:10,color:T.txt3,fontStyle:'italic',background:T.bg,padding:'6px 8px',borderRadius:4}}>{m.ped.notes}</div>}
                       </div>
                     );
                   })}

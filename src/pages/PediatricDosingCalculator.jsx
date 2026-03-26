@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { base44 } from "@/api/base44Client";
 
 /* ─────────────────────────────────────────────
    DESIGN TOKENS — mirrors Layout shell exactly
@@ -20,161 +21,6 @@ const T = {
   txt3:     '#4a6a8a',
   txt4:     '#2e4a6a',
 };
-
-const DRUG_DB = [
-  {
-    id: 'amoxicillin',
-    name: 'Amoxicillin',
-    category: 'Antibiotic',
-    color: T.blue,
-    icon: '💊',
-    ped: {
-      concentration_mg_per_ml: 50,
-      concentration_label: '250 mg/5 mL susp',
-      max_single_dose_mg: 500,
-      max_daily_dose_mg_per_kg: 90,
-      route: 'PO',
-    },
-    indications: [
-      { id: 'oti', label: 'Otitis Media', dose_per_kg: 40, freq: 'q12h', duration: '10 days', unit: 'mg/kg/day', notes: 'High-dose for resistant strains' },
-      { id: 'phar', label: 'Pharyngitis / Strep', dose_per_kg: 25, freq: 'q12h', duration: '10 days', unit: 'mg/kg/day', notes: 'Max 500 mg/dose' },
-      { id: 'pneu', label: 'Community Pneumonia', dose_per_kg: 90, freq: 'q8h', duration: '5–7 days', unit: 'mg/kg/day', notes: 'High-dose protocol — divide by frequency' },
-      { id: 'uti', label: 'UTI (uncomplicated)', dose_per_kg: 20, freq: 'q8h', duration: '7 days', unit: 'mg/kg/day', notes: 'Verify local sensitivity patterns' },
-    ],
-  },
-  {
-    id: 'azithromycin',
-    name: 'Azithromycin',
-    category: 'Macrolide',
-    color: T.teal,
-    icon: '🔵',
-    ped: {
-      concentration_mg_per_ml: 40,
-      concentration_label: '200 mg/5 mL susp',
-      max_single_dose_mg: 500,
-      max_daily_dose_mg_per_kg: 10,
-      route: 'PO',
-    },
-    indications: [
-      { id: 'ati', label: 'Atypical Pneumonia', dose_per_kg: 10, freq: 'qDay × 5', duration: '5 days', unit: 'mg/kg/day', notes: 'Day 1: 10 mg/kg, Days 2–5: 5 mg/kg' },
-      { id: 'sin', label: 'Sinusitis', dose_per_kg: 10, freq: 'qDay × 3', duration: '3 days', unit: 'mg/kg/day', notes: 'Max 500 mg/dose' },
-      { id: 'phar2', label: 'Strep Pharyngitis (PCN allergy)', dose_per_kg: 12, freq: 'qDay × 5', duration: '5 days', unit: 'mg/kg/day', notes: 'For penicillin-allergic patients' },
-    ],
-  },
-  {
-    id: 'ibuprofen',
-    name: 'Ibuprofen',
-    category: 'NSAID / Analgesic',
-    color: T.orange,
-    icon: '🟠',
-    ped: {
-      concentration_mg_per_ml: 20,
-      concentration_label: '100 mg/5 mL susp',
-      max_single_dose_mg: 400,
-      max_daily_dose_mg_per_kg: 40,
-      route: 'PO',
-    },
-    indications: [
-      { id: 'fever', label: 'Fever', dose_per_kg: 10, freq: 'q6–8h PRN', duration: 'PRN', unit: 'mg/kg/dose', notes: 'Max 400 mg/dose. ≥ 6 mo of age.' },
-      { id: 'pain', label: 'Mild–Moderate Pain', dose_per_kg: 10, freq: 'q6–8h PRN', duration: 'PRN', unit: 'mg/kg/dose', notes: 'Max 400 mg/dose' },
-      { id: 'jia', label: 'JIA / Inflammatory', dose_per_kg: 30, freq: 'q6h', duration: 'As directed', unit: 'mg/kg/day', notes: 'Divide into 3–4 doses/day' },
-    ],
-  },
-  {
-    id: 'acetaminophen',
-    name: 'Acetaminophen',
-    category: 'Analgesic / Antipyretic',
-    color: T.gold,
-    icon: '🟡',
-    ped: {
-      concentration_mg_per_ml: 32,
-      concentration_label: '160 mg/5 mL susp',
-      max_single_dose_mg: 1000,
-      max_daily_dose_mg_per_kg: 75,
-      route: 'PO',
-    },
-    indications: [
-      { id: 'fev2', label: 'Fever', dose_per_kg: 15, freq: 'q4–6h PRN', duration: 'PRN', unit: 'mg/kg/dose', notes: 'Max 1000 mg/dose; max 5 doses/day' },
-      { id: 'pain2', label: 'Pain (mild)', dose_per_kg: 15, freq: 'q4–6h', duration: 'PRN', unit: 'mg/kg/dose', notes: 'Max 4 g/day total' },
-    ],
-  },
-  {
-    id: 'ceftriaxone',
-    name: 'Ceftriaxone',
-    category: 'Cephalosporin',
-    color: '#b06aff',
-    icon: '💉',
-    ped: {
-      concentration_mg_per_ml: 100,
-      concentration_label: '1g/10 mL reconstituted',
-      max_single_dose_mg: 2000,
-      max_daily_dose_mg_per_kg: 100,
-      route: 'IV/IM',
-    },
-    indications: [
-      { id: 'men', label: 'Meningitis', dose_per_kg: 100, freq: 'q12h', duration: '7–21 days', unit: 'mg/kg/day', notes: 'Divide into 2 doses. Max 4 g/day.' },
-      { id: 'sepsis', label: 'Sepsis / Bacteremia', dose_per_kg: 50, freq: 'qDay', duration: 'Per culture', unit: 'mg/kg/day', notes: 'Single daily dose. Max 2 g.' },
-      { id: 'pneu2', label: 'CAP (hospitalized)', dose_per_kg: 50, freq: 'qDay', duration: '5–7 days', unit: 'mg/kg/day', notes: 'Max 2 g/day' },
-      { id: 'oti2', label: 'Otitis Media (1-dose)', dose_per_kg: 50, freq: 'Single dose', duration: '1 day', unit: 'mg/kg', notes: 'IM. Max 1 g. For non-adherence cases.' },
-    ],
-  },
-  {
-    id: 'prednisolone',
-    name: 'Prednisolone',
-    category: 'Corticosteroid',
-    color: T.coral,
-    icon: '🔴',
-    ped: {
-      concentration_mg_per_ml: 3,
-      concentration_label: '15 mg/5 mL soln',
-      max_single_dose_mg: 60,
-      max_daily_dose_mg_per_kg: 2,
-      route: 'PO',
-    },
-    indications: [
-      { id: 'asth', label: 'Asthma Exacerbation', dose_per_kg: 1, freq: 'qDay × 3–5', duration: '3–5 days', unit: 'mg/kg/day', notes: 'Max 40 mg/day. Taper if > 5 days.' },
-      { id: 'croup', label: 'Croup', dose_per_kg: 0.6, freq: 'Single dose', duration: '1 day', unit: 'mg/kg', notes: 'Max 10 mg. Alternative: dexamethasone.' },
-      { id: 'neph', label: 'Nephrotic Syndrome', dose_per_kg: 2, freq: 'qDay', duration: '4–6 weeks', unit: 'mg/kg/day', notes: 'Max 60 mg/day. Long taper follows.' },
-    ],
-  },
-  {
-    id: 'albuterol',
-    name: 'Albuterol (Salbutamol)',
-    category: 'Bronchodilator',
-    color: '#44d7a8',
-    icon: '🌀',
-    ped: {
-      concentration_mg_per_ml: 1,
-      concentration_label: '2.5 mg/2.5 mL nebule',
-      max_single_dose_mg: 5,
-      max_daily_dose_mg_per_kg: null,
-      route: 'INH',
-    },
-    indications: [
-      { id: 'asth2', label: 'Acute Asthma (mild)', dose_per_kg: 0.15, freq: 'q20 min × 3', duration: 'PRN', unit: 'mg/kg/dose', notes: 'Min 2.5 mg/dose. Max 5 mg/dose.' },
-      { id: 'bronch', label: 'Bronchospasm', dose_per_kg: 0.1, freq: 'q4–6h PRN', duration: 'PRN', unit: 'mg/kg/dose', notes: 'Via MDI preferred for maintenance.' },
-    ],
-  },
-  {
-    id: 'amoxclav',
-    name: 'Amoxicillin-Clavulanate',
-    category: 'Antibiotic (β-lactam combo)',
-    color: '#3b9eff',
-    icon: '💊',
-    ped: {
-      concentration_mg_per_ml: 40,
-      concentration_label: '200/28.5 mg/5 mL susp',
-      max_single_dose_mg: 875,
-      max_daily_dose_mg_per_kg: 90,
-      route: 'PO',
-    },
-    indications: [
-      { id: 'oti3', label: 'Otitis Media (resistant)', dose_per_kg: 90, freq: 'q12h', duration: '10 days', unit: 'mg/kg/day (amox)', notes: 'High-dose. Use 14:1 formulation.' },
-      { id: 'sin2', label: 'Sinusitis (bacterial)', dose_per_kg: 45, freq: 'q12h', duration: '10–14 days', unit: 'mg/kg/day', notes: 'Standard dosing' },
-      { id: 'bite', label: 'Animal / Human Bite', dose_per_kg: 40, freq: 'q8h', duration: '5–7 days', unit: 'mg/kg/day', notes: 'Max 875 mg amoxicillin/dose' },
-    ],
-  },
-];
 
 const WEIGHT_UNITS = [
   { id: 'kg', label: 'kg', factor: 1 },
@@ -411,13 +257,50 @@ export default function PediatricDosingCalculator() {
   const [ageMonths, setAgeMonths]       = useState('');
   const [concOverride, setConcOverride] = useState(null);
   const [history, setHistory]           = useState([]);
+  const [drugDB, setDrugDB]             = useState([]);
+  const [loading, setLoading]           = useState(true);
   const searchRef = useRef(null);
+
+  useEffect(() => {
+    base44.entities.Medication.filter({ setting: 'er' })
+      .then(meds => {
+        // Only include meds that have pediatric dosing data
+        const withPed = meds
+          .filter(m => m.ped?.doses?.length > 0)
+          .map(m => ({
+            id: m.med_id || m.id,
+            name: m.name,
+            category: m.drugClass || m.category || 'Other',
+            color: m.color || '#3b9eff',
+            icon: m.emoji || '💊',
+            ped: {
+              concentration_mg_per_ml: m.ped.concentration || 1,
+              concentration_label: m.ped.concLabel || `${m.ped.concentration} mg/mL`,
+              max_single_dose_mg: m.ped.doses[0]?.maxDose || 9999,
+              max_daily_dose_mg_per_kg: null,
+              route: m.route || 'PO',
+            },
+            indications: m.ped.doses.map((d, i) => ({
+              id: `${m.med_id || m.id}_${i}`,
+              label: d.label || `Dose ${i + 1}`,
+              dose_per_kg: d.dosePerKg || 0,
+              freq: m.ped.repeat || 'PRN',
+              duration: 'Per clinical judgment',
+              unit: d.unit || 'mg/kg/dose',
+              notes: m.ped.notes || '',
+            })),
+          }));
+        setDrugDB(withPed);
+      })
+      .catch(() => setDrugDB([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   const weightKg = weightVal
     ? parseFloat(weightVal) * (WEIGHT_UNITS.find(u => u.id === weightUnit)?.factor ?? 1)
     : null;
 
-  const filtered = DRUG_DB.filter(d =>
+  const filtered = drugDB.filter(d =>
     !query || d.name.toLowerCase().includes(query.toLowerCase()) ||
     d.category.toLowerCase().includes(query.toLowerCase())
   );
@@ -448,7 +331,7 @@ export default function PediatricDosingCalculator() {
   };
 
   const applyHistory = (item) => {
-    const drug = DRUG_DB.find(d => d.name === item.drug);
+    const drug = drugDB.find(d => d.name === item.drug);
     if (!drug) return;
     setSelectedDrug(drug);
     const ind = drug.indications.find(i => i.label === item.ind);
@@ -501,7 +384,7 @@ export default function PediatricDosingCalculator() {
           <div>
             <div className="dc-sec-hdr">
               <span className="dc-sec-title">Select Drug</span>
-              <span className="dc-sec-badge">{filtered.length} available</span>
+              <span className="dc-sec-badge">{loading ? '...' : `${filtered.length} available`}</span>
               <div className="dc-sec-line" />
             </div>
             <div className="dc-search-wrap" style={{ marginBottom: 14 }}>
@@ -516,7 +399,13 @@ export default function PediatricDosingCalculator() {
               {query && <button className="dc-search-clear" onClick={() => setQuery('')}>✕</button>}
             </div>
             <div className="dc-drug-grid">
-              {filtered.length === 0 && (
+              {loading && (
+                <div className="dc-empty" style={{ gridColumn: '1/-1' }}>
+                  <div className="dc-empty-icon" style={{ animation: 'fadeIn 1s infinite alternate' }}>💊</div>
+                  <div className="dc-empty-txt">Loading medications from database…</div>
+                </div>
+              )}
+              {!loading && filtered.length === 0 && (
                 <div className="dc-empty" style={{ gridColumn: '1/-1' }}>
                   <div className="dc-empty-icon">💊</div>
                   <div className="dc-empty-txt">No drugs match "{query}"</div>

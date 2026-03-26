@@ -381,7 +381,9 @@ const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 .mrp{color:${T.txt};font-family:'DM Sans',sans-serif;font-size:14px;display:flex;flex-direction:column;min-height:0;}
 .mrp *,.mrp *::before,.mrp *::after{box-sizing:border-box}
-.mrp-hdr{height:52px;background:${T.panel};border-bottom:1px solid ${T.border};display:flex;align-items:center;gap:10px;padding:0 16px;flex-shrink:0;flex-wrap:wrap}
+.mrp-hdr{background:${T.panel};border-bottom:1px solid ${T.border};display:flex;flex-direction:column;flex-shrink:0}
+.mrp-hdr-r1{height:52px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid rgba(26,53,85,0.4)}
+.mrp-hdr-r2{display:flex;align-items:center;padding:0 16px;height:44px}
 .mrp-title-wrap{display:flex;align-items:center;gap:8px}
 .mrp-logo{width:28px;height:28px;background:${T.teal};border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:11px;font-weight:700;color:${T.bg};flex-shrink:0}
 .mrp-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:${T.txt};white-space:nowrap}
@@ -782,6 +784,7 @@ export default function MedicationReference() {
       <style>{CSS}</style>
       <div className="mrp">
         <div className="mrp-hdr">
+          <div className="mrp-hdr-r1">
           <div className="mrp-title-wrap">
             <div className="mrp-logo">Mr</div>
             <div className="mrp-title">ED Medication Reference</div>
@@ -793,10 +796,13 @@ export default function MedicationReference() {
               {search && <span style={{cursor:'pointer',color:T.txt3,fontSize:13}} onClick={()=>setSearch('')}>x</span>}
             </div>
           )}
+          </div>
+          <div className="mrp-hdr-r2">
           <div className="mrp-tabs">
             {TABS.map(([id,lbl])=>(
               <div key={id} className={`mrp-tab${tab===id?' on':''}`} onClick={()=>setTab(id)}>{lbl}</div>
             ))}
+          </div>
           </div>
         </div>
 

@@ -354,7 +354,7 @@ export default function NewPatientInput() {
           )}
           {currentTab === 'chart' && (
             <div style={{ margin: '-20px -24px', minHeight: 'calc(100vh - 138px)', overflow: 'hidden' }}>
-              <NotryaApp />
+              <NotryaApp embedded={true} />
             </div>
           )}
           {currentTab === 'mdm' && (

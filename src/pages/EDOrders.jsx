@@ -98,7 +98,7 @@ input, textarea { font-family: 'DM Sans', sans-serif; }
 .btn-ai-analyze:hover { background: rgba(155,109,255,.2); }
 .btn-ai-analyze:disabled { opacity: .5; cursor: not-allowed; }
 
-.catalog-panel { flex: 1; background: ${T.bg}; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+.catalog-panel { flex: 1; background: ${T.bg}; display: flex; flex-direction: column; overflow: hidden; min-width: 0; min-height: 0; }
 .search-row { flex-shrink: 0; padding: 10px 14px 8px; border-bottom: 1px solid ${T.bd}; background: ${T.bgP}; }
 .search-wrap { position: relative; display: flex; align-items: center; background: ${T.bgU}; border: 1px solid ${T.bd}; border-radius: 10px; padding: 0 11px; gap: 7px; transition: all .15s; }
 .search-wrap:focus-within { border-color: rgba(0,229,192,.5); box-shadow: 0 0 0 3px rgba(0,229,192,.07); }

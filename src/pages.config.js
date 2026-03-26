@@ -86,7 +86,6 @@ import NoteTemplates from './pages/NoteTemplates';
 import NotesLibrary from './pages/NotesLibrary';
 import NursingFlowsheet from './pages/NursingFlowsheet';
 import OrderSetBuilder from './pages/OrderSetBuilder';
-import OrdersQueue from './pages/OrdersQueue';
 import PatientDashboard from './pages/PatientDashboard';
 import PatientEducationGenerator from './pages/PatientEducationGenerator';
 import PatientHistory from './pages/PatientHistory';
@@ -142,7 +141,6 @@ export const PAGES = {
     "NotesLibrary": NotesLibrary,
     "NursingFlowsheet": NursingFlowsheet,
     "OrderSetBuilder": OrderSetBuilder,
-    "OrdersQueue": OrdersQueue,
     "PatientDashboard": PatientDashboard,
     "PatientEducationGenerator": PatientEducationGenerator,
     "PatientHistory": PatientHistory,

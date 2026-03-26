@@ -16,7 +16,6 @@ import PatientChart from "@/pages/PatientChart";
 import NotryaApp from "@/pages/NotryaApp";
 import EDProcedureNotes from "@/pages/EDProcedureNotes";
 import MedicationReferencePage from "@/pages/MedicationReference";
-import NotryaAIChat from "@/components/ai/NotryaAIChat";
 
 import { ROS_SYSTEMS, PE_SYSTEMS, PMH_SYSTEMS, TABS } from "@/components/npi/npiData";
 
@@ -215,7 +214,6 @@ export default function NewPatientInput() {
 
   return (
     <div style={{ color: S.txt, fontFamily: "'DM Sans', sans-serif", fontSize: 13 }}>
-      <NotryaAIChat />
 
       {/* MAIN CONTENT */}
       <main style={{ padding: '0', display: 'flex', flexDirection: 'column', gap: 18 }}>

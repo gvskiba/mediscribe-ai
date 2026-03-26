@@ -80,7 +80,6 @@ import MedicalDecisionMaking from './pages/MedicalDecisionMaking';
 import NewNote from './pages/NewNote';
 import NewPatientInput from './pages/NewPatientInput';
 import NoteCreationHub from './pages/NoteCreationHub';
-import NoteDetail from './pages/NoteDetail';
 import NoteEditorTabs from './pages/NoteEditorTabs';
 import NoteTemplates from './pages/NoteTemplates';
 import NotesLibrary from './pages/NotesLibrary';
@@ -135,7 +134,6 @@ export const PAGES = {
     "NewNote": NewNote,
     "NewPatientInput": NewPatientInput,
     "NoteCreationHub": NoteCreationHub,
-    "NoteDetail": NoteDetail,
     "NoteEditorTabs": NoteEditorTabs,
     "NoteTemplates": NoteTemplates,
     "NotesLibrary": NotesLibrary,

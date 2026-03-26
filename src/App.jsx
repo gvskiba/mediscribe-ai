@@ -77,6 +77,7 @@ const AuthenticatedApp = () => {
         </LayoutWrapper>
       } />
       <Route path="/patientchart" element={<PatientChart />} />
+      <Route path="/notedetail" element={<LayoutWrapper currentPageName="NewPatientInput"><NewPatientInput /></LayoutWrapper>} />
       <Route path="/notehistory" element={<NoteHistory />} />
       <Route path="/npidemo" element={<NPIDemo />} />
       <Route path="/basetemplate" element={<BaseTemplate />} />

@@ -218,12 +218,12 @@ export default function NewPatientInput() {
     setCC({ text: '', onset: '', duration: '', severity: '', quality: '', radiation: '', aggravate: '', relieve: '', assoc: '', hpi: '' });
     setVitals({}); setMedications([]); setAllergies([]); setPmhSelected({});
     setRosState({}); setRosSymptoms({}); setRosNotes({}); setPeState({}); setPeFindings({});
-    setCurrentTab('demo'); setParseText('');
+    navigate('/NewPatientInput?tab=demo'); setParseText('');
     toast.success('New patient form cleared');
   };
 
-  const navNext = () => { const i = ALL_TABS.indexOf(currentTab); if (i < ALL_TABS.length - 1) setCurrentTab(ALL_TABS[i + 1]); };
-  const navBack = () => { const i = ALL_TABS.indexOf(currentTab); if (i > 0) setCurrentTab(ALL_TABS[i - 1]); };
+  const navNext = () => { const i = ALL_TABS.indexOf(currentTab); if (i < ALL_TABS.length - 1) navigate(`/NewPatientInput?tab=${ALL_TABS[i + 1]}`); };
+  const navBack = () => { const i = ALL_TABS.indexOf(currentTab); if (i > 0) navigate(`/NewPatientInput?tab=${ALL_TABS[i - 1]}`); };
 
   const currentLabel = SIDEBAR_GROUPS.flatMap(g => g.items).find(i => i.id === currentTab)?.label || '';
   const prevLabel = ALL_TABS.indexOf(currentTab) > 0 ? (SIDEBAR_GROUPS.flatMap(g => g.items).find(i => i.id === ALL_TABS[ALL_TABS.indexOf(currentTab) - 1])?.label || '') : '';
@@ -374,7 +374,7 @@ export default function NewPatientInput() {
                 queryClient={null}
                 isFirstTab={() => false}
                 isLastTab={() => true}
-                handleBack={() => setCurrentTab('medref')}
+                handleBack={() => navigate('/NewPatientInput?tab=medref')}
                 handleNext={() => {}}
               />
             </div>

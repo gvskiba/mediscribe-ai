@@ -379,6 +379,11 @@ export default function StrokeAssessment() {
   const [serialNihss,setSerialNihss] = useState(SERIAL_SLOTS.map(()=>({time:'',score:''})));
   const [secPrevOpen,setSecPrevOpen] = useState({});
   const [pedWorkup,setPedWorkup] = useState({});
+  // Clinical Calculators
+  const [gcs,setGcs] = useState({eye:null,verbal:null,motor:null});
+  const [aspects,setAspects] = useState({});
+  const [tpaWeight,setTpaWeight] = useState('');
+  const [tpaWeightUnit,setTpaWeightUnit] = useState('kg');
 
   const nihssTotal = useMemo(()=>{
     return NIHSS_ITEMS.reduce((sum,item)=>{
@@ -448,7 +453,7 @@ export default function StrokeAssessment() {
 
         {/* TABS */}
         <div className="sa-tabs" style={{overflowX:'auto'}}>
-          {[['nihss','⚡ NIHSS Scale'],['workup','🔬 Workup'],['treatment','💊 Treatment'],['consult','🧠 Neuro Consult']].map(([id,lbl])=>(
+          {[['nihss','⚡ NIHSS Scale'],['workup','🔬 Workup'],['treatment','💊 Treatment'],['consult','🧠 Neuro Consult'],['calc','🧮 Calculators']].map(([id,lbl])=>(
             <button key={id} className={`sa-tab${activeTab===id?' on':''}`} onClick={()=>setActiveTab(id)}>{lbl}</button>
           ))}
         </div>
@@ -849,6 +854,160 @@ export default function StrokeAssessment() {
             </div>
           </div>
         )}
+
+        {/* ── TAB 5: CLINICAL CALCULATORS ── */}
+        {activeTab==='calc' && (() => {
+          const GCS_ITEMS = [
+            {key:'eye',label:'Eye Opening',max:4,options:[
+              {score:1,label:'None',desc:'No eye opening'},
+              {score:2,label:'To pain',desc:'Opens to painful stimulus'},
+              {score:3,label:'To voice',desc:'Opens to verbal command'},
+              {score:4,label:'Spontaneous',desc:'Eyes open spontaneously'},
+            ]},
+            {key:'verbal',label:'Verbal Response',max:5,options:[
+              {score:1,label:'None',desc:'No verbal response'},
+              {score:2,label:'Sounds',desc:'Incomprehensible sounds'},
+              {score:3,label:'Words',desc:'Inappropriate words'},
+              {score:4,label:'Confused',desc:'Confused conversation'},
+              {score:5,label:'Oriented',desc:'Oriented and converses normally'},
+            ]},
+            {key:'motor',label:'Motor Response',max:6,options:[
+              {score:1,label:'None',desc:'No motor response'},
+              {score:2,label:'Extension',desc:'Abnormal extension (decerebrate)'},
+              {score:3,label:'Flexion',desc:'Abnormal flexion (decorticate)'},
+              {score:4,label:'Withdrawal',desc:'Withdraws from pain'},
+              {score:5,label:'Localizes',desc:'Localizes painful stimulus'},
+              {score:6,label:'Obeys',desc:'Obeys commands'},
+            ]},
+          ];
+          const ASPECTS_REGIONS = [
+            {id:'c',label:'Caudate'},
+            {id:'p',label:'Putamen'},
+            {id:'ic',label:'Internal Capsule'},
+            {id:'ic2',label:'Insular Ribbon'},
+            {id:'m1',label:'M1 — Ant MCA'},
+            {id:'m2',label:'M2 — Lat MCA'},
+            {id:'m3',label:'M3 — Post MCA'},
+            {id:'m4',label:'M4 — Ant sup MCA'},
+            {id:'m5',label:'M5 — Lat sup MCA'},
+            {id:'m6',label:'M6 — Post sup MCA'},
+          ];
+          const gcsTotal = (gcs.eye||0)+(gcs.verbal||0)+(gcs.motor||0);
+          const gcsSeverity = gcsTotal>=13?{label:'Mild',color:T.teal}:gcsTotal>=9?{label:'Moderate',color:T.gold}:{label:'Severe',color:T.coral};
+          const aspectsScore = 10 - Object.values(aspects).filter(Boolean).length;
+          const aspectsColor = aspectsScore>=8?T.teal:aspectsScore>=6?T.gold:T.coral;
+          const weightKg = tpaWeight ? parseFloat(tpaWeight)*(tpaWeightUnit==='lbs'?0.453592:1) : null;
+          const tpaTotalDose = weightKg ? Math.min(weightKg*0.9, 90) : null;
+          const tpaBolus = tpaTotalDose ? +(tpaTotalDose*0.1).toFixed(1) : null;
+          const tpaInfusion = tpaTotalDose ? +(tpaTotalDose*0.9).toFixed(1) : null;
+          const bpOk = !(parseInt(sbp)>185 || parseInt(dbp)>110);
+          return (
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:16,alignItems:'start'}} className="sa-2col">
+              {/* GCS */}
+              <div className="sa-card">
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12,flexWrap:'wrap',gap:8}}>
+                  <div className="sa-sec-title" style={{margin:0}}>👁 Glasgow Coma Scale</div>
+                  <div style={{display:'flex',alignItems:'center',gap:8}}>
+                    {gcsTotal>0 && <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:32,fontWeight:800,color:gcsSeverity.color,lineHeight:1}}>{gcsTotal}<span style={{fontSize:14,fontWeight:400,color:T.txt3}}>/15</span></div>}
+                    {gcsTotal>0 && <span style={{padding:'3px 10px',borderRadius:20,fontSize:10,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",background:`${gcsSeverity.color}18`,border:`1px solid ${gcsSeverity.color}44`,color:gcsSeverity.color}}>{gcsSeverity.label}</span>}
+                  </div>
+                </div>
+                {GCS_ITEMS.map(item=>(
+                  <div key={item.key} style={{marginBottom:12}}>
+                    <div style={{fontSize:11,color:T.txt3,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:5}}>{item.label}</div>
+                    <div style={{display:'grid',gridTemplateColumns:`repeat(${item.max},1fr)`,gap:4}}>
+                      {item.options.map(opt=>{
+                        const sel=gcs[item.key]===opt.score;
+                        return (
+                          <div key={opt.score} onClick={()=>setGcs(p=>({...p,[item.key]:sel?null:opt.score}))}
+                            title={`${opt.label}: ${opt.desc}`}
+                            style={{background:sel?`${gcsSeverity.color}20`:T.up,border:`1px solid ${sel?gcsSeverity.color:T.border}`,borderRadius:6,padding:'6px 4px',cursor:'pointer',textAlign:'center',transition:'all .15s'}}>
+                            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:16,fontWeight:800,color:sel?gcsSeverity.color:T.txt3}}>{opt.score}</div>
+                            <div style={{fontSize:9,color:sel?gcsSeverity.color:T.txt4,marginTop:2,lineHeight:1.2}}>{opt.label}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+                {gcsTotal>0 && (
+                  <div style={{marginTop:8,padding:'8px 12px',background:T.up,border:`1px solid ${T.border}`,borderRadius:8,fontSize:11,color:T.txt2,fontFamily:"'JetBrains Mono',monospace"}}>
+                    E{gcs.eye||'?'} + V{gcs.verbal||'?'} + M{gcs.motor||'?'} = <strong style={{color:gcsSeverity.color}}>{gcsTotal}</strong>
+                  </div>
+                )}
+              </div>
+
+              {/* ASPECTS */}
+              <div className="sa-card">
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12,flexWrap:'wrap',gap:8}}>
+                  <div className="sa-sec-title" style={{margin:0}}>🧠 ASPECTS Score</div>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:32,fontWeight:800,color:aspectsColor,lineHeight:1}}>{aspectsScore}<span style={{fontSize:14,fontWeight:400,color:T.txt3}}>/10</span></div>
+                </div>
+                <div style={{fontSize:11,color:T.txt3,marginBottom:10,lineHeight:1.5}}>Check all regions with <strong style={{color:T.coral}}>early ischemic changes</strong> (each reduces score by 1). Score ≥6 generally supports thrombectomy.</div>
+                {ASPECTS_REGIONS.map(r=>{
+                  const ck=aspects[r.id];
+                  return (
+                    <div key={r.id} className={`sa-chk-exc${ck?' on':''}`} onClick={()=>setAspects(p=>({...p,[r.id]:!p[r.id]}))}>
+                      <div className="sa-chk-box">{ck&&<span style={{color:'white',fontSize:10,fontWeight:900}}>✕</span>}</div>
+                      <span style={{fontSize:12,color:ck?T.coral:T.txt2}}>{r.label}</span>
+                      {ck && <span style={{marginLeft:'auto',fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.coral}}>−1</span>}
+                    </div>
+                  );
+                })}
+                <div style={{marginTop:10,padding:'8px 12px',background:aspectsScore>=6?'rgba(0,229,192,.07)':'rgba(255,107,107,.07)',border:`1px solid ${aspectsScore>=6?'rgba(0,229,192,.25)':'rgba(255,107,107,.25)'}`,borderRadius:8,fontSize:11,color:aspectsScore>=6?T.teal:T.coral,fontWeight:600}}>
+                  {aspectsScore>=8?'✓ Favorable — supports intervention':aspectsScore>=6?'⚠ Borderline — discuss with neuro':'✕ Low score — poor thrombectomy candidate'}
+                </div>
+              </div>
+
+              {/* tPA Dose Calculator */}
+              <div className="sa-card">
+                <div className="sa-sec-title">💊 tPA Dose Calculator</div>
+                <div style={{fontSize:11,color:T.txt3,marginBottom:12,lineHeight:1.5}}>Alteplase 0.9 mg/kg (max 90 mg). Enter patient weight to calculate doses.</div>
+                <div style={{marginBottom:14}}>
+                  <div className="sa-label">Patient Weight</div>
+                  <div style={{display:'flex',gap:6}}>
+                    <input type="number" min="0" step="0.1" value={tpaWeight} onChange={e=>setTpaWeight(e.target.value)} placeholder="Enter weight" style={{...INPUT_STYLE,flex:1}}/>
+                    <div style={{display:'flex',border:`1px solid ${T.border}`,borderRadius:6,overflow:'hidden'}}>
+                      {['kg','lbs'].map(u=>(
+                        <button key={u} onClick={()=>setTpaWeightUnit(u)} style={{padding:'7px 10px',background:tpaWeightUnit===u?T.blue:T.up,color:tpaWeightUnit===u?'#050f1e':T.txt2,border:'none',fontWeight:700,fontSize:11,cursor:'pointer',fontFamily:"'DM Sans',sans-serif"}}>{u}</button>
+                      ))}
+                    </div>
+                  </div>
+                  {weightKg && tpaWeightUnit==='lbs' && <div style={{fontSize:10,color:T.txt3,marginTop:4,fontFamily:"'JetBrains Mono',monospace"}}>= {weightKg.toFixed(1)} kg</div>}
+                </div>
+                {tpaTotalDose ? (
+                  <div>
+                    {weightKg>100 && <div style={{padding:'6px 10px',background:'rgba(245,200,66,.08)',border:'1px solid rgba(245,200,66,.25)',borderRadius:6,fontSize:11,color:T.gold,marginBottom:10}}>⚠ Weight &gt;100 kg — dose capped at 90 mg</div>}
+                    {[['Total Dose',`${tpaTotalDose.toFixed(1)} mg`,T.teal],['10% Bolus (1 min)',`${tpaBolus} mg`,T.blue],['90% Infusion (60 min)',`${tpaInfusion} mg`,T.purple]].map(([lbl,val,col])=>(
+                      <div key={lbl} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 14px',background:T.up,border:`1px solid ${T.border}`,borderRadius:8,marginBottom:6}}>
+                        <span style={{fontSize:12,color:T.txt2}}>{lbl}</span>
+                        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:20,fontWeight:800,color:col}}>{val}</span>
+                      </div>
+                    ))}
+                    <div style={{marginTop:10,padding:'8px 12px',background:'rgba(0,229,192,.06)',border:'1px solid rgba(0,229,192,.2)',borderRadius:8,fontSize:11,color:T.teal,lineHeight:1.6}}>
+                      Hold anticoagulants &amp; antiplatelets 24h post-infusion. BP target &lt;180/105 during and 24h after.
+                    </div>
+                    {!bpOk && sbp && <div style={{marginTop:8,padding:'8px 12px',background:'rgba(255,107,107,.08)',border:'1px solid rgba(255,107,107,.3)',borderRadius:8,fontSize:11,color:T.coral,fontWeight:600}}>⚠ Current BP ({sbp}/{dbp}) exceeds pre-tPA threshold. Treat to &lt;185/110 before administering.</div>}
+                    {bpOk && sbp && <div style={{marginTop:8,padding:'8px 12px',background:'rgba(0,229,192,.06)',border:'1px solid rgba(0,229,192,.2)',borderRadius:8,fontSize:11,color:T.teal}}>✓ BP ({sbp}/{dbp}) within pre-tPA target range</div>}
+                  </div>
+                ) : (
+                  <div style={{textAlign:'center',padding:'24px',color:T.txt4}}>
+                    <div style={{fontSize:28,marginBottom:8}}>⚖️</div>
+                    <div style={{fontSize:12}}>Enter patient weight above</div>
+                  </div>
+                )}
+                <div style={{marginTop:14,padding:'8px 12px',background:T.up,border:`1px solid ${T.border}`,borderRadius:8}}>
+                  <div style={{fontSize:10,color:T.txt3,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:6}}>Formula Reference</div>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:T.txt2,lineHeight:1.8}}>
+                    Total = 0.9 mg/kg (max 90 mg)<br/>
+                    Bolus = Total × 10% over 1 min<br/>
+                    Infusion = Total × 90% over 60 min
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* FOOTER */}
         <div style={{marginTop:28,padding:'12px 16px',background:T.panel,border:`1px solid ${T.border}`,borderRadius:8,fontSize:10,color:T.txt3,lineHeight:1.7}}>

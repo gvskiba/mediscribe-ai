@@ -469,7 +469,10 @@ export default function Layout({ children, currentPageName }) {
               <div className="v2-csb-group">{group.label}</div>
               {group.items.map((item, ii) => {
                 const globalIdx = CHART_GROUPS.slice(0, gi).reduce((a, g) => a + g.items.length, 0) + ii;
-                const isActive = location.pathname === item.page.split('?')[0];
+                const itemSearch = item.page.includes('?') ? item.page.split('?')[1] : '';
+                const isActive = item.page.includes('?')
+                  ? location.pathname === item.page.split('?')[0] && location.search === '?' + itemSearch
+                  : location.pathname === item.page && !location.search;
                 const dotState = STEP_STATES[globalIdx] || 'empty';
                 return (
                   <Link

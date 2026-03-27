@@ -12,7 +12,6 @@ import PatientSidebar from '@/components/patient/PatientSidebar';
 import AWSPharmacySection from '@/pages/AWSPharmacySection';
 import PatientChart from '@/pages/PatientChart';
 import ProviderStudio from '@/pages/ProviderStudio';
-import NotryaCardiacHub from '@/pages/NotryaCardiacHub';
 import NoteHistory from '@/pages/NoteHistory';
 import NPIDemo from '@/pages/NPIDemo';
 import BaseTemplate from '@/pages/BaseTemplate';
@@ -22,6 +21,7 @@ import StrokeAssessment from '@/pages/StrokeAssessment';
 import EDOrders from '@/pages/EDOrders';
 import NotryaApp from '@/pages/NotryaApp';
 import NotryaACS from '@/pages/NotryaACS';
+import OrderDashboard from '@/pages/OrderDashboard';
 
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -83,7 +83,6 @@ const AuthenticatedApp = () => {
       } />
       <Route path="/patientchart" element={<PatientChart />} />
       <Route path="/ProviderStudio" element={<LayoutWrapper currentPageName="ProviderStudio"><ProviderStudio /></LayoutWrapper>} />
-      <Route path="/NotryaCardiacHub" element={<LayoutWrapper currentPageName="NotryaCardiacHub"><NotryaCardiacHub /></LayoutWrapper>} />
       <Route path="/notedetail" element={<LayoutWrapper currentPageName="ProviderStudio"><ProviderStudio /></LayoutWrapper>} />
       <Route path="/notehistory" element={<NoteHistory />} />
       <Route path="/npidemo" element={<NPIDemo />} />
@@ -93,6 +92,7 @@ const AuthenticatedApp = () => {
       <Route path="/EDOrders" element={<LayoutWrapper currentPageName="EDOrders"><EDOrders /></LayoutWrapper>} />
       <Route path="/NotryaApp" element={<NotryaApp />} />
       <Route path="/NotryaACS" element={<NotryaACS />} />
+      <Route path="/OrderDashboard" element={<LayoutWrapper currentPageName="OrderDashboard"><OrderDashboard /></LayoutWrapper>} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

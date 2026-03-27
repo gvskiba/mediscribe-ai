@@ -306,24 +306,20 @@ const GLOBAL_CSS = `
 .v2-bot {
   position: fixed; bottom: 0; left: 56px; right: 0; height: 50px;
   background: #081628; border-top: 1px solid #1a3555;
-  display: flex; align-items: center; padding: 0 16px; gap: 8px; z-index: 200;
+  display: flex; align-items: center; padding: 0 8px; gap: 2px; z-index: 200;
+  overflow-x: auto;
 }
-.v2-bot-dots { display: flex; align-items: center; gap: 5px; margin: 0 auto; }
-.v2-bot-dot {
-  width: 8px; height: 8px; border-radius: 50%; cursor: pointer;
-  transition: all 0.2s; flex-shrink: 0; position: relative;
+.v2-bot::-webkit-scrollbar { height: 0; }
+.v2-bot-tab {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: 6px; cursor: pointer;
+  font-size: 11px; color: #4a6a8a; white-space: nowrap;
+  border: 1px solid transparent; transition: all .15s; flex-shrink: 0;
+  text-decoration: none;
 }
-.v2-bot-dot.done    { background: #00e5c0; box-shadow: 0 0 4px rgba(0,229,192,0.4); }
-.v2-bot-dot.current { background: #3b9eff; box-shadow: 0 0 6px rgba(59,158,255,0.5); width: 10px; height: 10px; }
-.v2-bot-dot.partial { background: #ff9f43; }
-.v2-bot-dot.empty   { background: #2e4a6a; }
-.v2-bot-dot:hover::after {
-  content: attr(data-tip); position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
-  background: #0b1e36; border: 1px solid #1a3555; border-radius: 4px;
-  padding: 2px 8px; font-size: 10px; color: #8aaccc; white-space: nowrap; pointer-events: none; z-index: 10;
-}
-.v2-bot-lbl  { font-size: 11px; color: #4a6a8a; white-space: nowrap; }
-.v2-bot-clbl { font-size: 12px; color: #e8f0fe; font-weight: 500; white-space: nowrap; }
+.v2-bot-tab:hover { background: #0e2544; border-color: #1a3555; color: #8aaccc; }
+.v2-bot-tab.active { background: rgba(0,229,192,.1); border-color: rgba(0,229,192,.3); color: #00e5c0; }
+.v2-bot-sep { width: 1px; height: 24px; background: #1a3555; flex-shrink: 0; margin: 0 4px; }
 `;
 
 /* ═══════════════════════════════════════════════════
@@ -503,27 +499,27 @@ export default function Layout({ children, currentPageName }) {
 
       {/* ── BOTTOM BAR ── */}
       <footer className="v2-bot">
-        <button className="v2-btn-ghost" onClick={navPrev}>← Back</button>
-        {prevLabel && <span className="v2-bot-lbl">{prevLabel}</span>}
-
-        <div className="v2-bot-dots">
-          {ALL_CHART_ITEMS.map((item, i) => {
-            const isCurrent = i === activeChartIdx;
-            const state = isCurrent ? 'current' : STEP_STATES[i] || 'empty';
-            return (
-              <div
-                key={i}
-                className={`v2-bot-dot ${state}`}
-                data-tip={item.label}
-                onClick={() => navigate(item.page)}
-                title={item.label}
-              />
-            );
-          })}
-        </div>
-
-        <span className="v2-bot-clbl">{curLabel}</span>
-        <button className="v2-btn-teal" onClick={navNext} style={{ padding: '6px 16px', fontSize: 12, fontWeight: 700 }}>Next →</button>
+        {CHART_GROUPS.map((group, gi) => (
+          <React.Fragment key={gi}>
+            {gi > 0 && <div className="v2-bot-sep" />}
+            {group.items.map((item) => {
+              const itemSearch = item.page.includes('?') ? item.page.split('?')[1] : '';
+              const isActive = item.page.includes('?')
+                ? location.pathname === item.page.split('?')[0] && location.search === '?' + itemSearch
+                : location.pathname === item.page && !location.search;
+              return (
+                <Link
+                  key={item.page}
+                  to={item.page}
+                  className={`v2-bot-tab${isActive ? ' active' : ''}`}
+                >
+                  <span>{item.icon}</span>
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </React.Fragment>
+        ))}
       </footer>
 
       <NotryaFloatingAI />

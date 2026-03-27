@@ -460,11 +460,11 @@ export default function Layout({ children, currentPageName }) {
         {/* Row 2 */}
         <div className="v2-top-r2">
           <span className="v2-chart-badge">PT-4-471-8820</span>
-          <span className="v2-pt-name">New Patient</span>
-          <span className="v2-pt-meta">67 y/o · Male · 03/14/1957</span>
-          <span className="v2-pt-cc">CC: Chest Pain</span>
+          <span className="v2-pt-name">{displayName}</span>
+          <span className="v2-pt-meta">{displayMeta}</span>
+          <span className="v2-pt-cc">{displayCC}</span>
           <div className="v2-vsep" />
-          {[['BP','158/94',true],['HR','108',true],['RR','18',false],['SpO₂','93%',false],['T','37.1°C',false],['GCS','15',false]].map(([l,v,abn]) => (
+          {[['BP',vitals.bp,true],['HR',vitals.hr,true],['RR',vitals.rr,false],['SpO₂',vitals.spo2,false],['T',vitals.temp,false],['GCS',vitals.gcs,false]].map(([l,v,abn]) => (
             <div key={l} className="v2-vital">
               <span className="vl">{l}</span>
               <span className={`vv${abn ? ' abn' : ''}`}>{v}</span>
@@ -475,11 +475,10 @@ export default function Layout({ children, currentPageName }) {
           <span className="v2-badge-room">Room 4B</span>
           <div className="v2-chart-acts">
             <button className="v2-btn-ghost">📋 Orders</button>
-
             <button className="v2-btn-teal">💾 Save Chart</button>
           </div>
-        </div>
-      </header>
+          </div>
+          </header>
 
       {/* ── MAIN CONTENT ── */}
       <div

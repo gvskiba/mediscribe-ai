@@ -125,6 +125,7 @@ const FULLSCREEN_PAGES = new Set([
   'EDProcedureNotesNew',
   'AutoCoder', 'NursingFlowsheet', 'ClinicalDecisionSupport',
   'DischargePlanning', 'UserPreferences', 'NoteTemplates', 'CustomTemplates',
+  'NewPatientInput',
 ]);
 
 /* ═══════════════════════════════════════════════════

@@ -120,7 +120,7 @@ input, textarea { font-family: 'DM Sans', sans-serif; }
 .cat-chip:hover { border-color: ${T.bdHi}; color: ${T.txt2}; }
 .cat-chip.active { background: rgba(59,158,255,.12); border-color: rgba(59,158,255,.4); color: ${T.blue}; font-weight: 600; }
 
-.catalog-body { flex: 1; overflow-y: auto; padding: 13px 14px 64px; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+.catalog-body { flex: 1; overflow-y: auto; padding: 13px 14px 50px; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
 .cat-section-title { font-size: 10px; color: ${T.txt3}; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; margin-bottom: 7px; display: flex; align-items: center; gap: 6px; }
 .cat-section-title::after { content: ''; flex: 1; height: 1px; background: ${T.bd}; }
 .orders-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }

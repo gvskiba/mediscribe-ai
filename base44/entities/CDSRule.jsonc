@@ -1,0 +1,79 @@
+{
+  "name": "CDSRule",
+  "type": "object",
+  "properties": {
+    "rule_id": {
+      "type": "string",
+      "description": "Unique rule identifier"
+    },
+    "name": {
+      "type": "string",
+      "description": "Rule name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Rule description"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "sepsis",
+        "drug_interaction",
+        "lab",
+        "vital",
+        "protocol",
+        "quality"
+      ]
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "conditions": {
+      "type": "object",
+      "description": "Trigger conditions (clinical logic)",
+      "properties": {
+        "lactate_threshold": {
+          "type": "number"
+        },
+        "map_threshold": {
+          "type": "number"
+        },
+        "qtc_threshold": {
+          "type": "number"
+        }
+      }
+    },
+    "alert_type": {
+      "type": "string",
+      "enum": [
+        "critical",
+        "warning",
+        "info"
+      ]
+    },
+    "guideline_reference": {
+      "type": "string",
+      "description": "Associated guideline"
+    },
+    "recommendation_template": {
+      "type": "string",
+      "description": "Recommendation text template"
+    },
+    "priority": {
+      "type": "number",
+      "description": "Rule priority (1-10)"
+    },
+    "usage_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Times this rule fired"
+    }
+  },
+  "required": [
+    "rule_id",
+    "name",
+    "category",
+    "alert_type"
+  ]
+}

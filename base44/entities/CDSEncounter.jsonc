@@ -1,0 +1,119 @@
+{
+  "name": "CDSEncounter",
+  "type": "object",
+  "properties": {
+    "encounter_id": {
+      "type": "string",
+      "description": "Unique encounter identifier"
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "Patient MRN"
+    },
+    "patient_name": {
+      "type": "string",
+      "description": "Patient full name"
+    },
+    "patient_age": {
+      "type": "number",
+      "description": "Patient age in years"
+    },
+    "patient_gender": {
+      "type": "string",
+      "enum": [
+        "M",
+        "F",
+        "Other"
+      ]
+    },
+    "provider_name": {
+      "type": "string",
+      "description": "Attending physician"
+    },
+    "diagnosis": {
+      "type": "string",
+      "description": "Primary diagnosis"
+    },
+    "vitals": {
+      "type": "object",
+      "description": "Current vital signs",
+      "properties": {
+        "hr": {
+          "type": "number"
+        },
+        "sbp": {
+          "type": "number"
+        },
+        "dbp": {
+          "type": "number"
+        },
+        "temp": {
+          "type": "number"
+        },
+        "rr": {
+          "type": "number"
+        },
+        "spo2": {
+          "type": "number"
+        },
+        "gcs": {
+          "type": "number"
+        }
+      }
+    },
+    "labs": {
+      "type": "object",
+      "description": "Critical lab values",
+      "properties": {
+        "lactate": {
+          "type": "number"
+        },
+        "wbc": {
+          "type": "number"
+        },
+        "creatinine": {
+          "type": "number"
+        }
+      }
+    },
+    "medications": {
+      "type": "array",
+      "description": "Active medication list",
+      "items": {
+        "type": "string"
+      }
+    },
+    "active_alerts_count": {
+      "type": "number",
+      "default": 0
+    },
+    "sepsis_bundle_completion": {
+      "type": "number",
+      "description": "SEP-1 completion percentage"
+    },
+    "sepsis_time_zero": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Sepsis recognition time (T=0)"
+    },
+    "sofa_score": {
+      "type": "number",
+      "description": "Sequential Organ Failure Assessment score"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "discharged",
+        "transferred"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "encounter_id",
+    "patient_id",
+    "patient_name",
+    "provider_name"
+  ]
+}

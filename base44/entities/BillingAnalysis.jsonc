@@ -1,0 +1,126 @@
+{
+  "name": "BillingAnalysis",
+  "type": "object",
+  "properties": {
+    "note_id": {
+      "type": "string",
+      "description": "Reference to ClinicalNote"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "patient_id": {
+      "type": "string"
+    },
+    "date_of_visit": {
+      "type": "string",
+      "format": "date"
+    },
+    "note_type": {
+      "type": "string"
+    },
+    "em_level": {
+      "type": "string",
+      "enum": [
+        "99202",
+        "99203",
+        "99204",
+        "99205",
+        "99211",
+        "99212",
+        "99213",
+        "99214",
+        "99215"
+      ],
+      "description": "Recommended E&M CPT code"
+    },
+    "em_level_label": {
+      "type": "string",
+      "description": "Human-readable level (e.g., Level 3 - Moderate)"
+    },
+    "complexity": {
+      "type": "string",
+      "enum": [
+        "straightforward",
+        "low",
+        "moderate",
+        "high"
+      ],
+      "description": "Medical Decision Making complexity"
+    },
+    "score": {
+      "type": "number",
+      "description": "Composite documentation score 0-100"
+    },
+    "mdm_score": {
+      "type": "object",
+      "properties": {
+        "problems": {
+          "type": "number"
+        },
+        "data": {
+          "type": "number"
+        },
+        "risk": {
+          "type": "number"
+        }
+      }
+    },
+    "documentation_gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "warning",
+              "info"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "recommendation": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
+    },
+    "upgrade_opportunities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Actions that could support a higher billing level",
+      "default": []
+    },
+    "compliant": {
+      "type": "boolean",
+      "description": "Whether documentation supports the suggested level"
+    },
+    "time_based_eligible": {
+      "type": "boolean",
+      "default": false
+    },
+    "estimated_time_minutes": {
+      "type": "number"
+    },
+    "ai_reasoning": {
+      "type": "string",
+      "description": "AI explanation of the billing determination"
+    },
+    "analyzed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "note_id"
+  ]
+}

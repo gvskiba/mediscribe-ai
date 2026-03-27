@@ -1,0 +1,67 @@
+{
+  "name": "GuidelineQuery",
+  "type": "object",
+  "properties": {
+    "question": {
+      "type": "string",
+      "description": "Clinical question asked"
+    },
+    "answer": {
+      "type": "string",
+      "description": "AI-generated evidence-based answer"
+    },
+    "sources": {
+      "type": "array",
+      "description": "Referenced guidelines and sources",
+      "items": {
+        "type": "string"
+      }
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "cardiology",
+        "pulmonology",
+        "endocrinology",
+        "infectious_disease",
+        "neurology",
+        "oncology",
+        "gastroenterology",
+        "nephrology",
+        "rheumatology",
+        "general"
+      ],
+      "default": "general"
+    },
+    "confidence_level": {
+      "type": "string",
+      "enum": [
+        "high",
+        "moderate",
+        "low"
+      ],
+      "description": "Confidence in the evidence"
+    },
+    "rating": {
+      "type": "number",
+      "description": "User rating from 1-5",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "related_questions": {
+      "type": "array",
+      "description": "AI-suggested related questions",
+      "items": {
+        "type": "string"
+      }
+    },
+    "is_favorite": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this guideline is saved as a favorite"
+    }
+  },
+  "required": [
+    "question"
+  ]
+}

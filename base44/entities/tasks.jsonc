@@ -1,0 +1,73 @@
+{
+  "name": "tasks",
+  "type": "object",
+  "properties": {
+    "shift_id": {
+      "type": "string",
+      "description": "ID of the shift"
+    },
+    "encounter_id": {
+      "type": "string",
+      "description": "ID of the encounter (optional, can be null for shift-level tasks)"
+    },
+    "provider_id": {
+      "type": "string",
+      "description": "ID of the provider"
+    },
+    "task_text": {
+      "type": "string",
+      "description": "Task description"
+    },
+    "task_type": {
+      "type": "string",
+      "enum": [
+        "recheck",
+        "pain_reassessment",
+        "result_review",
+        "consult_callback",
+        "medication_reassessment",
+        "family_update",
+        "procedure_pending",
+        "disposition_decision",
+        "documentation",
+        "shift_level"
+      ],
+      "default": "recheck",
+      "description": "Type of task"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "urgent",
+        "routine"
+      ],
+      "default": "routine",
+      "description": "Task priority"
+    },
+    "due_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When task is due"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "completed",
+        "dismissed"
+      ],
+      "default": "open",
+      "description": "Task status"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When task was completed"
+    }
+  },
+  "required": [
+    "shift_id",
+    "provider_id",
+    "task_text"
+  ]
+}

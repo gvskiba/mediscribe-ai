@@ -12,9 +12,11 @@ import PETab from "@/components/npi/PETab";
 import AutoCoderTab from "@/components/npi/AutoCoderTab";
 import MedicalDecisionMaking from "@/pages/MedicalDecisionMaking";
 import DischargePlanning from "@/pages/DischargePlanning";
+import NotryaApp from "@/pages/NotryaApp";
 import EDProcedureNotes from "@/pages/EDProcedureNotes";
 import EDOrders from "@/pages/EDOrders";
 import MedicationReferencePage from "@/pages/MedicationReference";
+import ACSPage from "@/components/acs/ACSPage";
 import ERPlanBuilder from "@/pages/ERPlanBuilder";
 
 // ─── NAV DATA ────────────────────────────────────────
@@ -273,17 +275,17 @@ export default function NewPatientInput() {
       case "ros":  return <ROSTab />;
       case "pe":   return <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} />;
       case "mdm":  return <MedicalDecisionMaking embedded patientName={patientName} chiefComplaint={cc.text} />;
-      case "chart":    return <div style={{ padding: "20px", textAlign: "center", color: "#8aaccc" }}><div style={{ fontSize: 32, marginBottom: 12 }}>📊</div><p>Save the chart first to view full patient details in the Clinical Note Studio.</p><button onClick={() => navigate("/ClinicalNoteStudio")} style={{ marginTop: 12, background: "#00e5c0", color: "#050f1e", border: "none", borderRadius: 8, padding: "8px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Open Clinical Note Studio →</button></div>;
+      case "chart":    return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto" }}><NotryaApp embedded={true} /></div>;
       case "discharge": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><DischargePlanning embedded /></div>;
       case "orders":   return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><EDOrders embedded /></div>;
       case "autocoder": return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} />;
       case "procedures": return <EDProcedureNotes embedded patientName={patientName} patientAllergies={allergies.join(", ")} physicianName="" />;
       case "medref": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto" }}><MedicationReferencePage embedded /></div>;
-      case "acs":
-      case "tachy":
-      case "brady":
-      case "peds":
-      case "pregnancy": return <div style={{ padding: "20px", textAlign: "center", color: "#8aaccc" }}><div style={{ fontSize: 32, marginBottom: 12 }}>🫀</div><p>Cardiac protocols are available in the Clinical Note Studio.</p><button onClick={() => navigate("/ClinicalNoteStudio")} style={{ marginTop: 12, background: "#00e5c0", color: "#050f1e", border: "none", borderRadius: 8, padding: "8px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Open Clinical Note Studio →</button></div>;
+      case "acs":      return <ACSPage />;
+      case "tachy":     return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", background: "#050f1e" }}><ACSPage defaultSection="tachy" /></div>;
+      case "brady":     return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", background: "#050f1e" }}><ACSPage defaultSection="brady" /></div>;
+      case "peds":      return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", background: "#050f1e" }}><ACSPage defaultSection="peds" /></div>;
+      case "pregnancy": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", background: "#050f1e" }}><ACSPage defaultSection="pregnancy" /></div>;
       case "erplan": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><ERPlanBuilder embedded /></div>;
       case "erx": return (
         <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center", justifyContent: "center", height: 300 }}>

@@ -1,0 +1,51 @@
+{
+  "name": "TabGroup",
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string",
+      "description": "Unique group identifier"
+    },
+    "label": {
+      "type": "string",
+      "description": "Group display name"
+    },
+    "color": {
+      "type": "string",
+      "enum": [
+        "blue",
+        "purple",
+        "emerald",
+        "rose",
+        "amber"
+      ],
+      "default": "blue",
+      "description": "Group color theme"
+    },
+    "tabs": {
+      "type": "array",
+      "description": "Tabs in this group",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
+    },
+    "order": {
+      "type": "number",
+      "default": 0,
+      "description": "Display order"
+    }
+  },
+  "required": [
+    "group_id",
+    "label"
+  ]
+}

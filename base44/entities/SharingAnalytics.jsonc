@@ -1,0 +1,39 @@
+{
+  "name": "SharingAnalytics",
+  "type": "object",
+  "properties": {
+    "article_url": {
+      "type": "string",
+      "description": "URL of the shared article"
+    },
+    "article_title": {
+      "type": "string",
+      "description": "Title of the shared article"
+    },
+    "source_name": {
+      "type": "string",
+      "description": "News source (WHO, CDC, etc.)"
+    },
+    "share_method": {
+      "type": "string",
+      "enum": [
+        "copy_link",
+        "email",
+        "twitter",
+        "facebook",
+        "linkedin"
+      ],
+      "description": "How the article was shared"
+    },
+    "shared_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the article was shared"
+    }
+  },
+  "required": [
+    "article_url",
+    "article_title",
+    "share_method"
+  ]
+}

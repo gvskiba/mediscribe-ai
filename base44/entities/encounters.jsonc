@@ -1,0 +1,176 @@
+{
+  "name": "encounters",
+  "type": "object",
+  "properties": {
+    "shift_id": {
+      "type": "string",
+      "description": "ID of the shift this encounter belongs to"
+    },
+    "provider_id": {
+      "type": "string",
+      "description": "ID of the provider"
+    },
+    "mrn": {
+      "type": "string",
+      "description": "Medical record number"
+    },
+    "patient_initials": {
+      "type": "string",
+      "description": "Patient initials"
+    },
+    "patient_age": {
+      "type": "number",
+      "description": "Patient age"
+    },
+    "patient_sex": {
+      "type": "string",
+      "enum": [
+        "M",
+        "F",
+        "Other",
+        "Unknown"
+      ],
+      "description": "Patient sex"
+    },
+    "room": {
+      "type": "string",
+      "description": "Room or bed assignment"
+    },
+    "chief_complaint": {
+      "type": "string",
+      "description": "Chief complaint",
+      "required": true
+    },
+    "acuity": {
+      "type": "string",
+      "enum": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "description": "ESI acuity level"
+    },
+    "arrival_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Patient arrival time"
+    },
+    "provider_seen_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When provider first saw patient"
+    },
+    "disposition": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "discharge",
+        "admit",
+        "transfer",
+        "observation",
+        "ama",
+        "lwbs",
+        "deceased"
+      ],
+      "default": "pending",
+      "description": "Patient disposition"
+    },
+    "disposition_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When disposition was set"
+    },
+    "primary_diagnosis": {
+      "type": "string",
+      "description": "Primary diagnosis"
+    },
+    "icd10_code": {
+      "type": "string",
+      "description": "ICD-10 diagnosis code"
+    },
+    "note_status": {
+      "type": "string",
+      "enum": [
+        "not_started",
+        "in_progress",
+        "drafted",
+        "signed"
+      ],
+      "default": "not_started",
+      "description": "Clinical note status"
+    },
+    "note_id": {
+      "type": "string",
+      "description": "ID of the associated clinical note"
+    },
+    "allergies": {
+      "type": "string",
+      "default": "NKDA",
+      "description": "Known allergies"
+    },
+    "flags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Active flags for this encounter"
+    },
+    "vitals": {
+      "type": "object",
+      "description": "Patient vital signs",
+      "properties": {
+        "hr": {
+          "type": "number",
+          "description": "Heart rate"
+        },
+        "bp": {
+          "type": "string",
+          "description": "Blood pressure"
+        },
+        "rr": {
+          "type": "number",
+          "description": "Respiratory rate"
+        },
+        "temp": {
+          "type": "number",
+          "description": "Temperature"
+        },
+        "spo2": {
+          "type": "number",
+          "description": "Oxygen saturation"
+        },
+        "gcs": {
+          "type": "number",
+          "description": "Glasgow Coma Scale"
+        },
+        "pain": {
+          "type": "number",
+          "description": "Pain score 0-10"
+        }
+      }
+    },
+    "signout": {
+      "type": "string",
+      "description": "AI-generated sign-out"
+    },
+    "signout_generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When sign-out was generated"
+    },
+    "signout_reviewed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When sign-out was reviewed"
+    }
+  },
+  "required": [
+    "shift_id",
+    "provider_id",
+    "chief_complaint",
+    "acuity",
+    "arrival_time"
+  ]
+}

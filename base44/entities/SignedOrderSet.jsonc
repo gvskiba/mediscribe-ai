@@ -1,0 +1,79 @@
+{
+  "name": "SignedOrderSet",
+  "type": "object",
+  "properties": {
+    "condition_id": {
+      "type": "string"
+    },
+    "condition_name": {
+      "type": "string"
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "Reference to OrderSetPatient entity ID"
+    },
+    "patient_name": {
+      "type": "string",
+      "description": "Patient name at time of signing"
+    },
+    "patient_mrn": {
+      "type": "string",
+      "description": "Patient MRN at time of signing"
+    },
+    "encounter_id": {
+      "type": "string"
+    },
+    "signed_by": {
+      "type": "string"
+    },
+    "signer_name": {
+      "type": "string"
+    },
+    "signed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "signature_note": {
+      "type": "string"
+    },
+    "orders": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "total_orders": {
+      "type": "number"
+    },
+    "stat_count": {
+      "type": "number",
+      "default": 0
+    },
+    "urgent_count": {
+      "type": "number",
+      "default": 0
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "signed",
+        "transmitted",
+        "completed",
+        "cancelled"
+      ],
+      "default": "signed"
+    },
+    "transmitted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ehr_reference": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "condition_id",
+    "condition_name",
+    "orders"
+  ]
+}

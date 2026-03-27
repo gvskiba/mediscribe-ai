@@ -1,0 +1,26 @@
+{
+  "name": "CalculatorFavorite",
+  "type": "object",
+  "properties": {
+    "calculator_name": {
+      "type": "string",
+      "description": "Name of the calculator"
+    },
+    "calculator_id": {
+      "type": "string",
+      "description": "Unique identifier for the calculator"
+    },
+    "category": {
+      "type": "string",
+      "description": "Calculator category"
+    },
+    "url": {
+      "type": "string",
+      "description": "External URL (e.g., MDCalc link)"
+    }
+  },
+  "required": [
+    "calculator_name",
+    "calculator_id"
+  ]
+}

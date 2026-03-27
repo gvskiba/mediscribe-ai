@@ -1,0 +1,142 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "preferences": {
+      "type": "object",
+      "description": "User preferences and settings",
+      "properties": {
+        "clock_face_style": {
+          "type": "string",
+          "enum": [
+            "digital",
+            "analog",
+            "minimal",
+            "binary"
+          ],
+          "default": "digital"
+        },
+        "dashboard_layout": {
+          "type": "string",
+          "enum": [
+            "2x2",
+            "3x3",
+            "4x4",
+            "6x6",
+            "horizontal"
+          ],
+          "default": "2x2"
+        },
+        "active_widgets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "quicklinks",
+            "stats",
+            "recentnotes",
+            "news"
+          ]
+        },
+        "widget_order": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "notifications_email": {
+          "type": "boolean",
+          "default": true
+        },
+        "notifications_inapp": {
+          "type": "boolean",
+          "default": true
+        },
+        "notify_on_save": {
+          "type": "boolean",
+          "default": false
+        },
+        "color_theme": {
+          "type": "string",
+          "default": "blue"
+        },
+        "font_size": {
+          "type": "string",
+          "enum": [
+            "small",
+            "medium",
+            "large"
+          ],
+          "default": "medium"
+        },
+        "compact_mode": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "clinical_settings": {
+      "type": "object",
+      "description": "Clinical workflow settings and defaults",
+      "properties": {
+        "ros_defaults": {
+          "type": "object",
+          "description": "Custom default normal text for each ROS system"
+        },
+        "physexam_defaults": {
+          "type": "object",
+          "description": "Custom default normal text for each physical exam section"
+        },
+        "default_note_type": {
+          "type": "string",
+          "default": "progress_note"
+        },
+        "default_template_id": {
+          "type": "string"
+        },
+        "auto_save": {
+          "type": "boolean",
+          "default": true
+        },
+        "ai_verbosity": {
+          "type": "string",
+          "enum": [
+            "concise",
+            "standard",
+            "detailed"
+          ],
+          "default": "standard"
+        },
+        "ai_auto_fill_ros": {
+          "type": "boolean",
+          "default": true
+        },
+        "ai_suggest_icd10": {
+          "type": "boolean",
+          "default": true
+        },
+        "ai_differential_on_load": {
+          "type": "boolean",
+          "default": false
+        },
+        "ai_guideline_suggestions": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "user"
+      ],
+      "default": "user"
+    }
+  },
+  "required": [
+    "preferences",
+    "clinical_settings"
+  ]
+}

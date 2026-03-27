@@ -1,0 +1,69 @@
+{
+  "name": "NoteRevision",
+  "type": "object",
+  "properties": {
+    "note_id": {
+      "type": "string",
+      "description": "Reference to the ClinicalNote entity"
+    },
+    "revision_number": {
+      "type": "number",
+      "description": "Sequential revision number starting from 1"
+    },
+    "summary": {
+      "type": "string",
+      "description": "AI-generated summary of the clinical note"
+    },
+    "chief_complaint": {
+      "type": "string",
+      "description": "Chief complaint at this revision"
+    },
+    "history_of_present_illness": {
+      "type": "string",
+      "description": "HPI at this revision"
+    },
+    "review_of_systems": {
+      "type": "string",
+      "description": "ROS at this revision"
+    },
+    "physical_exam": {
+      "type": "string",
+      "description": "Physical exam at this revision"
+    },
+    "assessment": {
+      "type": "string",
+      "description": "Assessment at this revision"
+    },
+    "plan": {
+      "type": "string",
+      "description": "Plan at this revision"
+    },
+    "diagnoses": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Diagnoses at this revision"
+    },
+    "medications": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Medications at this revision"
+    },
+    "change_summary": {
+      "type": "string",
+      "description": "User-provided or AI-generated summary of changes made"
+    },
+    "revision_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this revision was created"
+    }
+  },
+  "required": [
+    "note_id",
+    "revision_number"
+  ]
+}

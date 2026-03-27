@@ -1,0 +1,69 @@
+{
+  "name": "Patient",
+  "type": "object",
+  "properties": {
+    "patient_name": {
+      "type": "string",
+      "description": "Patient's full name"
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "Patient MRN or medical record number"
+    },
+    "date_of_birth": {
+      "type": "string",
+      "format": "date",
+      "description": "Patient's date of birth"
+    },
+    "gender": {
+      "type": "string",
+      "enum": [
+        "male",
+        "female",
+        "other"
+      ],
+      "description": "Patient's gender"
+    },
+    "contact_number": {
+      "type": "string",
+      "description": "Patient's contact phone number"
+    },
+    "email": {
+      "type": "string",
+      "description": "Patient's email address"
+    },
+    "address": {
+      "type": "string",
+      "description": "Patient's address"
+    },
+    "emergency_contact": {
+      "type": "string",
+      "description": "Emergency contact name and number"
+    },
+    "insurance_provider": {
+      "type": "string",
+      "description": "Insurance provider name"
+    },
+    "insurance_id": {
+      "type": "string",
+      "description": "Insurance policy/member ID"
+    },
+    "allergies": {
+      "type": "array",
+      "description": "Known allergies",
+      "items": {
+        "type": "string"
+      }
+    },
+    "chronic_conditions": {
+      "type": "array",
+      "description": "Known chronic conditions",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "patient_name"
+  ]
+}

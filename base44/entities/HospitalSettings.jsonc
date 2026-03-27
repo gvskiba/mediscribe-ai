@@ -1,0 +1,64 @@
+{
+  "name": "HospitalSettings",
+  "type": "object",
+  "properties": {
+    "company_name": {
+      "type": "string",
+      "description": "Company or practice name"
+    },
+    "hospital_name": {
+      "type": "string",
+      "description": "Hospital or facility name"
+    },
+    "address": {
+      "type": "string",
+      "description": "Hospital address"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Hospital phone number"
+    },
+    "api_tokens": {
+      "type": "object",
+      "description": "Stored API tokens for news sources",
+      "properties": {
+        "thenewsapi_token": {
+          "type": "string"
+        },
+        "webzio_token": {
+          "type": "string"
+        },
+        "newsdata_token": {
+          "type": "string"
+        }
+      }
+    },
+    "attendings": {
+      "type": "array",
+      "description": "List of attending physicians",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "specialty": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
+    },
+    "default_attending_id": {
+      "type": "string",
+      "description": "ID of the default attending physician"
+    }
+  },
+  "required": []
+}

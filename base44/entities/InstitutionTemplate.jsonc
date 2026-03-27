@@ -1,0 +1,59 @@
+{
+  "name": "InstitutionTemplate",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "subtitle": {
+      "type": "string"
+    },
+    "icon": {
+      "type": "string",
+      "default": "\ud83d\udccb"
+    },
+    "specialty": {
+      "type": "string"
+    },
+    "guideline": {
+      "type": "string",
+      "default": "Institution Custom Template"
+    },
+    "acuity": {
+      "type": "string",
+      "enum": [
+        "stat",
+        "urgent",
+        "routine"
+      ],
+      "default": "routine"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "orders": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "base_condition_id": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "institution_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "orders"
+  ]
+}

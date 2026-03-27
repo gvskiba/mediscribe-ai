@@ -1,0 +1,103 @@
+{
+  "name": "OrderSetPatient",
+  "type": "object",
+  "properties": {
+    "patient_name": {
+      "type": "string",
+      "description": "Patient's full name"
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "Patient MRN or identifier"
+    },
+    "age": {
+      "type": "number",
+      "description": "Patient age in years"
+    },
+    "weight_kg": {
+      "type": "number",
+      "description": "Patient weight in kilograms"
+    },
+    "diagnosis": {
+      "type": "string",
+      "description": "Primary diagnosis or chief complaint"
+    },
+    "mobility": {
+      "type": "string",
+      "enum": [
+        "ambulatory",
+        "limited",
+        "bedbound"
+      ],
+      "default": "ambulatory",
+      "description": "Patient mobility status"
+    },
+    "vitals": {
+      "type": "object",
+      "description": "Vital signs",
+      "properties": {
+        "hr": {
+          "type": "number",
+          "description": "Heart rate (bpm)"
+        },
+        "sbp": {
+          "type": "number",
+          "description": "Systolic blood pressure (mmHg)"
+        },
+        "dbp": {
+          "type": "number",
+          "description": "Diastolic blood pressure (mmHg)"
+        },
+        "rr": {
+          "type": "number",
+          "description": "Respiratory rate (breaths/min)"
+        },
+        "temp": {
+          "type": "number",
+          "description": "Temperature (\u00b0F)"
+        },
+        "spo2": {
+          "type": "number",
+          "description": "Oxygen saturation (%)"
+        }
+      }
+    },
+    "medical_history": {
+      "type": "object",
+      "description": "Medical history checkboxes",
+      "properties": {
+        "diabetes": {
+          "type": "boolean",
+          "default": false
+        },
+        "ckd": {
+          "type": "boolean",
+          "default": false
+        },
+        "anticoagulation": {
+          "type": "boolean",
+          "default": false
+        },
+        "sepsis": {
+          "type": "boolean",
+          "default": false
+        },
+        "gi_bleed": {
+          "type": "boolean",
+          "default": false
+        },
+        "stroke_risk": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "additional_notes": {
+      "type": "string",
+      "description": "Additional clinical notes"
+    }
+  },
+  "required": [
+    "patient_name"
+  ]
+}

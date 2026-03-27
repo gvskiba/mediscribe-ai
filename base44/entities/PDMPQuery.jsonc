@@ -1,0 +1,116 @@
+{
+  "name": "PDMPQuery",
+  "type": "object",
+  "properties": {
+    "patient_name": {
+      "type": "string",
+      "description": "Patient name for PDMP lookup"
+    },
+    "patient_dob": {
+      "type": "string",
+      "format": "date",
+      "description": "Patient date of birth"
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "Patient MRN or ID"
+    },
+    "state": {
+      "type": "string",
+      "description": "State code (e.g., TX, CA, NY)"
+    },
+    "controlled_prescriptions": {
+      "type": "array",
+      "description": "List of controlled substance prescriptions found",
+      "items": {
+        "type": "object",
+        "properties": {
+          "drug_name": {
+            "type": "string"
+          },
+          "prescriber_name": {
+            "type": "string"
+          },
+          "prescriber_npi": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "date_filled": {
+            "type": "string",
+            "format": "date"
+          },
+          "pharmacy": {
+            "type": "string"
+          },
+          "days_supply": {
+            "type": "number"
+          }
+        }
+      },
+      "default": []
+    },
+    "doctor_shopping_risk": {
+      "type": "string",
+      "enum": [
+        "none",
+        "low",
+        "moderate",
+        "high"
+      ],
+      "default": "none",
+      "description": "Risk level based on prescriber frequency and patterns"
+    },
+    "doctor_shopping_details": {
+      "type": "string",
+      "description": "Description of doctor shopping indicators"
+    },
+    "opioid_overlap_risk": {
+      "type": "string",
+      "enum": [
+        "none",
+        "low",
+        "moderate",
+        "high"
+      ],
+      "default": "none",
+      "description": "Risk level for concurrent opioid prescriptions"
+    },
+    "opioid_overlap_details": {
+      "type": "string",
+      "description": "Details on concurrent opioid prescriptions"
+    },
+    "benzodiazepine_opioid_combo": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether patient has concurrent opioid + benzodiazepine prescriptions"
+    },
+    "total_mme_past_30_days": {
+      "type": "number",
+      "description": "Total morphine milligram equivalent from opioids in past 30 days"
+    },
+    "flagged_for_review": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this PDMP query needs clinical review"
+    },
+    "reviewed_by": {
+      "type": "string",
+      "description": "Email of clinician who reviewed this query"
+    },
+    "review_notes": {
+      "type": "string",
+      "description": "Clinical review notes"
+    },
+    "queried_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this PDMP query was performed"
+    }
+  },
+  "required": [
+    "patient_name",
+    "state"
+  ]
+}

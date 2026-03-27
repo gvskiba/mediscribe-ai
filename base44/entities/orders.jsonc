@@ -1,0 +1,83 @@
+{
+  "name": "orders",
+  "type": "object",
+  "properties": {
+    "encounter_id": {
+      "type": "string",
+      "description": "ID of the encounter"
+    },
+    "provider_id": {
+      "type": "string",
+      "description": "ID of the provider"
+    },
+    "order_type": {
+      "type": "string",
+      "enum": [
+        "lab",
+        "imaging",
+        "medication",
+        "consult",
+        "procedure",
+        "nursing",
+        "other"
+      ],
+      "description": "Type of order"
+    },
+    "order_name": {
+      "type": "string",
+      "description": "Name of the order"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "stat",
+        "routine"
+      ],
+      "default": "routine",
+      "description": "Order priority"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "in_progress",
+        "resulted",
+        "critical",
+        "done",
+        "cancelled"
+      ],
+      "default": "pending",
+      "description": "Order status"
+    },
+    "result_value": {
+      "type": "string",
+      "description": "Result value"
+    },
+    "is_critical": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether result is critical"
+    },
+    "ordered_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When order was placed"
+    },
+    "resulted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When result came back"
+    },
+    "acknowledged_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When order was acknowledged"
+    }
+  },
+  "required": [
+    "encounter_id",
+    "provider_id",
+    "order_type",
+    "order_name"
+  ]
+}

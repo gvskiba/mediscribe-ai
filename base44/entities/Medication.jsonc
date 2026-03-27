@@ -1,0 +1,249 @@
+{
+  "name": "Medication",
+  "type": "object",
+  "properties": {
+    "med_id": {
+      "type": "string",
+      "description": "Unique drug identifier (e.g. 'warfarin', 'apixaban')"
+    },
+    "name": {
+      "type": "string",
+      "description": "Generic drug name"
+    },
+    "brand": {
+      "type": "string",
+      "description": "Brand name(s)"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "anticoag",
+        "cardiac",
+        "psych",
+        "analgesic",
+        "abx",
+        "gi",
+        "other",
+        "resuscitation",
+        "rsi",
+        "sedation",
+        "seizure",
+        "respiratory",
+        "antibiotics"
+      ],
+      "description": "Drug category for filtering"
+    },
+    "subcategory": {
+      "type": "string",
+      "description": "Clinical subcategory within the main category (e.g. 'opioid', 'nsaid', 'htn', 'arr', 'antipsych')"
+    },
+    "drugClass": {
+      "type": "string",
+      "description": "Pharmacological class (e.g. 'ACE Inhibitor')"
+    },
+    "strengths": {
+      "type": "array",
+      "description": "Available drug strengths/doses",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "forms": {
+      "type": "array",
+      "description": "Available formulations",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "route": {
+      "type": "string",
+      "description": "Default route of administration"
+    },
+    "schedule": {
+      "type": "integer",
+      "description": "DEA schedule (1-5, null for non-controlled)"
+    },
+    "highAlert": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this is a high-alert medication"
+    },
+    "pregnancy": {
+      "type": "string",
+      "description": "FDA pregnancy category (A/B/C/D/X)"
+    },
+    "color": {
+      "type": "string",
+      "description": "Hex color for UI display"
+    },
+    "mechanism": {
+      "type": "string",
+      "description": "Mechanism of action"
+    },
+    "indications": {
+      "type": "string",
+      "description": "Clinical indications"
+    },
+    "dosing": {
+      "type": "array",
+      "description": "Dosing regimens",
+      "items": {
+        "type": "object",
+        "properties": {
+          "indication": {
+            "type": "string"
+          },
+          "dose": {
+            "type": "string"
+          },
+          "route": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
+    },
+    "renal": {
+      "type": "array",
+      "description": "Renal dosing adjustments",
+      "items": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "string"
+          },
+          "dose": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
+    },
+    "hepatic": {
+      "type": "string",
+      "description": "Hepatic dosing guidance"
+    },
+    "contraindications": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "interactions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "allergy": {
+      "type": "string",
+      "description": "Known cross-reactivity/allergy info"
+    },
+    "monitoring": {
+      "type": "string",
+      "description": "Monitoring parameters"
+    },
+    "halfLife": {
+      "type": "string",
+      "description": "Half-life"
+    },
+    "pb": {
+      "type": "string",
+      "description": "Protein binding"
+    },
+    "renalExc": {
+      "type": "string",
+      "description": "Renal excretion"
+    },
+    "ba": {
+      "type": "string",
+      "description": "Bioavailability"
+    },
+    "vd": {
+      "type": "string",
+      "description": "Volume of distribution"
+    },
+    "emoji": {
+      "type": "string",
+      "description": "Emoji for UI display"
+    },
+    "ped": {
+      "type": "object",
+      "description": "Pediatric weight-based dosing",
+      "properties": {
+        "doses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "dosePerKg": {
+                "type": "number"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "maxDose": {
+                "type": "number"
+              },
+              "minDose": {
+                "type": "number"
+              },
+              "label": {
+                "type": "string"
+              },
+              "fixedDose": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "concentration": {
+          "type": "number"
+        },
+        "concLabel": {
+          "type": "string"
+        },
+        "repeat": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "setting": {
+      "type": "string",
+      "enum": [
+        "er",
+        "outpatient"
+      ],
+      "description": "Clinical setting (ER/inpatient or outpatient)"
+    }
+  },
+  "required": [
+    "med_id",
+    "name",
+    "category",
+    "drugClass"
+  ]
+}

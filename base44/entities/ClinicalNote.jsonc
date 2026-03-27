@@ -1,0 +1,370 @@
+{
+  "name": "ClinicalNote",
+  "type": "object",
+  "properties": {
+    "patient_name": {
+      "type": "string",
+      "description": "Patient's name"
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "Patient identifier/MRN"
+    },
+    "patient_age": {
+      "type": "string",
+      "description": "Patient's age"
+    },
+    "patient_gender": {
+      "type": "string",
+      "enum": [
+        "male",
+        "female",
+        "other"
+      ],
+      "description": "Patient's gender"
+    },
+    "date_of_birth": {
+      "type": "string",
+      "format": "date",
+      "description": "Patient's date of birth"
+    },
+    "date_of_visit": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the clinical encounter"
+    },
+    "time_of_visit": {
+      "type": "string",
+      "description": "Time of the clinical encounter (HH:MM format)"
+    },
+    "raw_note": {
+      "type": "string",
+      "description": "Original transcribed or typed note"
+    },
+    "summary": {
+      "type": "string",
+      "description": "AI-generated concise summary of the clinical note"
+    },
+    "chief_complaint": {
+      "type": "string",
+      "description": "AI-extracted chief complaint"
+    },
+    "history_of_present_illness": {
+      "type": "string",
+      "description": "Detailed HPI with OLDCARTS elements"
+    },
+    "medical_history": {
+      "type": "string",
+      "description": "Relevant past medical history"
+    },
+    "review_of_systems": {
+      "type": "string",
+      "description": "Systematic review of symptoms"
+    },
+    "physical_exam": {
+      "type": "string",
+      "description": "Physical examination findings"
+    },
+    "vital_signs": {
+      "type": "object",
+      "description": "Structured vital signs data",
+      "properties": {
+        "temperature": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "enum": [
+                "F",
+                "C"
+              ],
+              "default": "F"
+            }
+          }
+        },
+        "heart_rate": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "default": "bpm"
+            }
+          }
+        },
+        "blood_pressure": {
+          "type": "object",
+          "properties": {
+            "systolic": {
+              "type": "number"
+            },
+            "diastolic": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "default": "mmHg"
+            }
+          }
+        },
+        "respiratory_rate": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "default": "breaths/min"
+            }
+          }
+        },
+        "oxygen_saturation": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "default": "%"
+            }
+          }
+        },
+        "weight": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "enum": [
+                "kg",
+                "lbs"
+              ],
+              "default": "lbs"
+            }
+          }
+        },
+        "height": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "enum": [
+                "cm",
+                "in"
+              ],
+              "default": "in"
+            }
+          }
+        }
+      }
+    },
+    "lab_findings": {
+      "type": "array",
+      "description": "Laboratory test results and findings",
+      "items": {
+        "type": "object",
+        "properties": {
+          "test_name": {
+            "type": "string",
+            "description": "Name of the lab test"
+          },
+          "result": {
+            "type": "string",
+            "description": "Test result or value"
+          },
+          "reference_range": {
+            "type": "string",
+            "description": "Normal reference range"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "abnormal",
+              "critical"
+            ],
+            "description": "Status of the result"
+          },
+          "unit": {
+            "type": "string",
+            "description": "Unit of measurement"
+          }
+        }
+      },
+      "default": []
+    },
+    "imaging_findings": {
+      "type": "array",
+      "description": "Imaging study results and findings",
+      "items": {
+        "type": "object",
+        "properties": {
+          "study_type": {
+            "type": "string",
+            "description": "Type of imaging (e.g., X-ray, CT, MRI, Ultrasound)"
+          },
+          "location": {
+            "type": "string",
+            "description": "Body part or area imaged"
+          },
+          "findings": {
+            "type": "string",
+            "description": "Detailed findings from the imaging study"
+          },
+          "impression": {
+            "type": "string",
+            "description": "Radiologist's impression or conclusion"
+          }
+        }
+      },
+      "default": []
+    },
+    "assessment": {
+      "type": "string",
+      "description": "AI-extracted assessment"
+    },
+    "plan": {
+      "type": "string",
+      "description": "AI-extracted plan"
+    },
+    "mdm": {
+      "type": "string",
+      "description": "Medical Decision Making - documentation of clinical reasoning, risk analysis, and decision complexity"
+    },
+    "clinical_impression": {
+      "type": "string",
+      "description": "Synthesized impression of primary issues and key findings"
+    },
+    "diagnoses": {
+      "type": "array",
+      "description": "AI-extracted diagnoses/ICD codes",
+      "items": {
+        "type": "string"
+      }
+    },
+    "medications": {
+      "type": "array",
+      "description": "Medications mentioned",
+      "items": {
+        "type": "string"
+      }
+    },
+    "allergies": {
+      "type": "array",
+      "description": "Patient allergies extracted from note",
+      "items": {
+        "type": "string"
+      }
+    },
+    "section_references": {
+      "type": "array",
+      "description": "Cross-references between note sections",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "source_section": {
+            "type": "string"
+          },
+          "source_text": {
+            "type": "string"
+          },
+          "target_section": {
+            "type": "string"
+          },
+          "target_text": {
+            "type": "string"
+          },
+          "relationship": {
+            "type": "string",
+            "enum": [
+              "supports",
+              "explains",
+              "contradicts",
+              "follows_from"
+            ]
+          }
+        }
+      }
+    },
+    "linked_guidelines": {
+      "type": "array",
+      "description": "Guidelines referenced in this note",
+      "items": {
+        "type": "object",
+        "properties": {
+          "guideline_query_id": {
+            "type": "string",
+            "description": "Reference to GuidelineQuery entity"
+          },
+          "condition": {
+            "type": "string",
+            "description": "Condition this guideline addresses"
+          },
+          "incorporated": {
+            "type": "boolean",
+            "description": "Whether guideline was incorporated into plan"
+          },
+          "adherence_notes": {
+            "type": "string",
+            "description": "Notes on guideline adherence"
+          }
+        }
+      }
+    },
+    "disposition_plan": {
+      "type": "string",
+      "description": "Patient disposition plan (discharge, admission, transfer)"
+    },
+    "discharge_summary": {
+      "type": "string",
+      "description": "Discharge summary and instructions"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "finalized",
+        "amended"
+      ],
+      "default": "draft"
+    },
+    "archived": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether note is archived"
+    },
+    "note_type": {
+      "type": "string",
+      "enum": [
+        "progress_note",
+        "h_and_p",
+        "discharge_summary",
+        "consult",
+        "procedure_note"
+      ],
+      "default": "progress_note"
+    },
+    "specialty": {
+      "type": "string",
+      "description": "Medical specialty"
+    }
+  },
+  "required": [
+    "raw_note"
+  ]
+}

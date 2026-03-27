@@ -1,0 +1,53 @@
+{
+  "name": "Snippet",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Snippet name"
+    },
+    "category": {
+      "type": "string",
+      "description": "Snippet category"
+    },
+    "content": {
+      "type": "string",
+      "description": "Snippet text content"
+    },
+    "specialty": {
+      "type": "string",
+      "description": "Medical specialty (optional)"
+    },
+    "folder_id": {
+      "type": "string",
+      "description": "Reference to SnippetFolder"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Tags for organizing snippets"
+    },
+    "usage_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of times used"
+    },
+    "is_favorite": {
+      "type": "boolean",
+      "default": false,
+      "description": "Mark as favorite"
+    },
+    "last_used": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last time this snippet was used"
+    }
+  },
+  "required": [
+    "name",
+    "content"
+  ]
+}

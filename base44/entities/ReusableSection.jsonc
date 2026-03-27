@@ -1,0 +1,74 @@
+{
+  "name": "ReusableSection",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Section name (e.g., 'Standard HPI - Chest Pain')"
+    },
+    "section_type": {
+      "type": "string",
+      "enum": [
+        "hpi",
+        "ros",
+        "physical_exam",
+        "assessment",
+        "plan",
+        "custom"
+      ],
+      "description": "Type of clinical section"
+    },
+    "content": {
+      "type": "string",
+      "description": "The template content for this section"
+    },
+    "specialty": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Applicable specialties (e.g., 'cardiology', 'pulmonology')"
+    },
+    "visit_types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Applicable visit types (e.g., 'progress_note', 'h_and_p', 'consult')"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Custom tags for organization"
+    },
+    "is_favorite": {
+      "type": "boolean",
+      "default": false,
+      "description": "Mark as favorite for quick access"
+    },
+    "usage_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of times this section has been used"
+    },
+    "last_used": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last time this section was used"
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description of what this section contains"
+    }
+  },
+  "required": [
+    "name",
+    "section_type",
+    "content"
+  ]
+}

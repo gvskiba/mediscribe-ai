@@ -1,0 +1,63 @@
+{
+  "name": "MedicalNewsCache",
+  "type": "object",
+  "properties": {
+    "sourceId": {
+      "type": "string",
+      "description": "ID of the news source"
+    },
+    "sourceName": {
+      "type": "string",
+      "description": "Display name of the source (e.g. WHO, NEJM)"
+    },
+    "title": {
+      "type": "string",
+      "description": "Article title"
+    },
+    "url": {
+      "type": "string",
+      "description": "Direct link to original article"
+    },
+    "summary": {
+      "type": "string",
+      "description": "AI-generated 2-sentence clinical summary"
+    },
+    "originalDescription": {
+      "type": "string",
+      "description": "Raw description from the RSS feed"
+    },
+    "category": {
+      "type": "string",
+      "description": "News category (e.g. Research, Public Health)"
+    },
+    "publishedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Original publication date"
+    },
+    "imageUrl": {
+      "type": "string",
+      "description": "Thumbnail image URL if available"
+    },
+    "author": {
+      "type": "string",
+      "description": "Article author"
+    },
+    "isBookmarked": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether user has bookmarked this article"
+    },
+    "cachedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this article was cached"
+    }
+  },
+  "required": [
+    "sourceId",
+    "sourceName",
+    "title",
+    "url"
+  ]
+}

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import CardiacHub from "@/pages/CardiacHub";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useOfflineNoteSync } from "../offline/useOfflineNoteSync";
@@ -49,8 +48,6 @@ const TAB_GROUPS = [
     tabs:[{id:'treatment_plan',label:'Treatment Plan',icon:FileText},{id:'medications',label:'Medications',icon:Pill},{id:'procedures',label:'Procedures',icon:Activity}]},
   { id:'disposition', label:'Disposition', color:'purple',
     tabs:[{id:'disposition_plan',label:'Disposition',icon:FileText},{id:'discharge_summary',label:'Discharge Summary',icon:FileText}]},
-  { id:'cardiac', label:'Cardiac', color:'rose',
-    tabs:[{id:'cardiac_hub',label:'Cardiac Protocols',icon:FileText}]},
 ];
 
 export default function NoteEditorTabs({ note, noteId, initialTab = "patient_intake" }) {
@@ -413,10 +410,6 @@ Provide results with: diagnosis, likelihood_rank (1-5, 5 being most likely), cli
 
             <TabsContent value="procedures" className="overflow-y-auto" style={{background:C.navy}}>
               <ProceduresTabContent note={note} />
-            </TabsContent>
-
-            <TabsContent value="cardiac_hub" className="overflow-y-auto" style={{background:C.navy}}>
-              <CardiacHub />
             </TabsContent>
 
             {/* Custom tabs */}

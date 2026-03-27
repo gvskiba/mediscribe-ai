@@ -1,0 +1,82 @@
+{
+  "name": "Antibiogram",
+  "type": "object",
+  "properties": {
+    "facility_name": {
+      "type": "string",
+      "description": "Name of the hospital or facility"
+    },
+    "department": {
+      "type": "string",
+      "description": "Department or unit (e.g., ICU, ED, General Floor)"
+    },
+    "year": {
+      "type": "number",
+      "description": "Year of the antibiogram data"
+    },
+    "mrsa": {
+      "type": "number",
+      "description": "MRSA prevalence (%)",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "esbl": {
+      "type": "number",
+      "description": "ESBL E. coli / Klebsiella (%)",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "pseudo": {
+      "type": "number",
+      "description": "Pseudomonas pip/tazo-resistant (%)",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "fqec": {
+      "type": "number",
+      "description": "Fluoroquinolone-resistant E. coli (%)",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "spneu": {
+      "type": "number",
+      "description": "Penicillin-resistant S. pneumoniae (%)",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "carbapenem_r": {
+      "type": "number",
+      "description": "Carbapenem-resistant Enterobacteriaceae (%)",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "vre": {
+      "type": "number",
+      "description": "Vancomycin-resistant Enterococcus (%)",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes about the antibiogram data"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this is the currently active antibiogram"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "uploaded"
+      ],
+      "default": "manual",
+      "description": "How the data was entered"
+    }
+  },
+  "required": [
+    "facility_name",
+    "year"
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "name": "OrderSetAuditLog",
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "enum": [
+        "loaded",
+        "modified",
+        "custom_added",
+        "ai_suggested",
+        "signed",
+        "template_saved",
+        "template_deleted"
+      ]
+    },
+    "order_set_id": {
+      "type": "string"
+    },
+    "patient_id": {
+      "type": "string"
+    },
+    "encounter_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "details": {
+      "type": "object"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ip_address": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "action",
+    "user_id"
+  ]
+}

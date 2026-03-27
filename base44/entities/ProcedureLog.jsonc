@@ -1,0 +1,159 @@
+{
+  "name": "ProcedureLog",
+  "type": "object",
+  "properties": {
+    "note_id": {
+      "type": "string",
+      "description": "Reference to the ClinicalNote"
+    },
+    "patient_name": {
+      "type": "string",
+      "description": "Patient name"
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "Patient MRN"
+    },
+    "procedure_name": {
+      "type": "string",
+      "description": "Name of the procedure performed"
+    },
+    "procedure_code": {
+      "type": "string",
+      "description": "CPT or procedure code"
+    },
+    "icd10_codes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "ICD-10 diagnosis codes linked to this procedure"
+    },
+    "indication": {
+      "type": "string",
+      "description": "Clinical indication for the procedure"
+    },
+    "date_performed": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the procedure was performed"
+    },
+    "operator": {
+      "type": "string",
+      "description": "Physician who performed the procedure"
+    },
+    "assistant": {
+      "type": "string",
+      "description": "Assistant or support staff"
+    },
+    "location": {
+      "type": "string",
+      "enum": [
+        "bedside",
+        "procedure_room",
+        "or",
+        "clinic",
+        "er",
+        "icu"
+      ],
+      "default": "clinic",
+      "description": "Location where procedure was performed"
+    },
+    "anesthesia_type": {
+      "type": "string",
+      "enum": [
+        "none",
+        "local",
+        "regional",
+        "conscious_sedation",
+        "general"
+      ],
+      "description": "Type of anesthesia used"
+    },
+    "technique": {
+      "type": "string",
+      "description": "Brief description of technique used"
+    },
+    "findings": {
+      "type": "string",
+      "description": "Procedure findings"
+    },
+    "complications": {
+      "type": "string",
+      "description": "Any complications encountered"
+    },
+    "specimens_collected": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Specimens collected during procedure"
+    },
+    "estimated_blood_loss": {
+      "type": "string",
+      "description": "Estimated blood loss"
+    },
+    "duration_minutes": {
+      "type": "number",
+      "description": "Procedure duration in minutes"
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "successful",
+        "partially_successful",
+        "unsuccessful",
+        "aborted"
+      ],
+      "default": "successful",
+      "description": "Procedure outcome"
+    },
+    "post_procedure_plan": {
+      "type": "string",
+      "description": "Post-procedure care plan"
+    },
+    "follow_up_required": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether follow-up is needed"
+    },
+    "consent_obtained": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether informed consent was obtained"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "completed",
+        "cancelled"
+      ],
+      "default": "completed",
+      "description": "Procedure status"
+    },
+    "documentation_files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file_url": {
+            "type": "string"
+          },
+          "file_type": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Uploaded procedure documentation (images, reports, etc.)"
+    }
+  },
+  "required": [
+    "procedure_name",
+    "indication",
+    "date_performed"
+  ]
+}

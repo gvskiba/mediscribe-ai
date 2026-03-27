@@ -1,0 +1,292 @@
+{
+  "name": "NoteTemplate",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Template name"
+    },
+    "description": {
+      "type": "string",
+      "description": "What this template is for"
+    },
+    "note_type": {
+      "type": "string",
+      "enum": [
+        "progress_note",
+        "h_and_p",
+        "discharge_summary",
+        "consult",
+        "procedure_note"
+      ],
+      "default": "progress_note"
+    },
+    "specialty": {
+      "type": "string",
+      "description": "Medical specialty this template is for"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "general",
+        "cardiology",
+        "pulmonology",
+        "endocrinology",
+        "neurology",
+        "oncology",
+        "pediatrics",
+        "emergency",
+        "surgery",
+        "psychiatry",
+        "custom"
+      ],
+      "default": "general",
+      "description": "Template category for organization"
+    },
+    "tags": {
+      "type": "array",
+      "description": "Custom tags for filtering and organization",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "dynamic_fields": {
+      "type": "array",
+      "description": "Placeholders that auto-fill with patient data",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique field identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Field display name"
+          },
+          "placeholder": {
+            "type": "string",
+            "description": "Placeholder text to use in template (e.g., {{patient_name}})"
+          },
+          "data_source": {
+            "type": "string",
+            "enum": [
+              "patient",
+              "note",
+              "user",
+              "custom"
+            ],
+            "description": "Where to get the data from"
+          },
+          "data_path": {
+            "type": "string",
+            "description": "Path to data (e.g., 'patient_name', 'vital_signs.blood_pressure.systolic')"
+          },
+          "default_value": {
+            "type": "string",
+            "description": "Default value if data not available"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "text",
+              "date",
+              "age",
+              "number",
+              "calculation"
+            ],
+            "default": "text",
+            "description": "How to format the field value"
+          },
+          "calculation": {
+            "type": "string",
+            "description": "Formula for calculated fields (e.g., 'current_year - birth_year')"
+          }
+        }
+      },
+      "default": []
+    },
+    "sections": {
+      "type": "array",
+      "description": "Sections that define note structure",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique section identifier"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "content_template": {
+            "type": "string",
+            "description": "Template content with placeholders (e.g., 'Patient {{patient_name}} is a {{patient_age}}-year-old {{patient_gender}}')"
+          },
+          "ai_instructions": {
+            "type": "string",
+            "description": "AI instructions specific to this section"
+          },
+          "ai_instructions_detailed": {
+            "type": "object",
+            "description": "Granular AI instructions for the section",
+            "properties": {
+              "global_instructions": {
+                "type": "string",
+                "description": "Overall guidance for the entire section"
+              },
+              "field_instructions": {
+                "type": "array",
+                "description": "Field-specific extraction instructions",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "field_name": {
+                      "type": "string",
+                      "description": "Name of the field (e.g., 'symptom_onset')"
+                    },
+                    "instructions": {
+                      "type": "string",
+                      "description": "Specific instructions for this field"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether this section is active"
+          },
+          "order": {
+            "type": "number",
+            "description": "Display order of the section"
+          },
+          "conditional_logic": {
+            "type": "object",
+            "description": "Complex conditions for when to include this section",
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": false
+              },
+              "operator": {
+                "type": "string",
+                "enum": [
+                  "AND",
+                  "OR"
+                ],
+                "default": "AND",
+                "description": "How to combine multiple conditions"
+              },
+              "conditions": {
+                "type": "array",
+                "description": "Array of individual conditions",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Unique condition identifier"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "note_type",
+                        "specialty",
+                        "diagnosis_contains",
+                        "chronic_condition_contains",
+                        "medication_contains",
+                        "allergy_contains",
+                        "patient_age",
+                        "symptom_contains",
+                        "custom"
+                      ],
+                      "description": "Type of condition to evaluate"
+                    },
+                    "value": {
+                      "type": "string",
+                      "description": "Primary value to match against"
+                    },
+                    "match_type": {
+                      "type": "string",
+                      "enum": [
+                        "exact",
+                        "partial",
+                        "regex"
+                      ],
+                      "default": "partial",
+                      "description": "How to match the value (exact match, partial string match, or regex pattern)"
+                    },
+                    "secondary_value": {
+                      "type": "string",
+                      "description": "Secondary value for age ranges (e.g., '18-65')"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "fallback_from_hpi": {
+            "type": "boolean",
+            "default": false,
+            "description": "If section data is missing, allow AI to infer from HPI"
+          }
+        }
+      }
+    },
+    "ai_instructions": {
+      "type": "string",
+      "description": "Overall AI instructions for the template"
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this is the default template"
+    },
+    "version": {
+      "type": "number",
+      "default": 1,
+      "description": "Template version number"
+    },
+    "parent_template_id": {
+      "type": "string",
+      "description": "ID of parent template for versioning"
+    },
+    "version_notes": {
+      "type": "string",
+      "description": "Notes about changes in this version"
+    },
+    "shared_with": {
+      "type": "array",
+      "description": "User emails or 'all' for public sharing",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether template is shared with all users"
+    },
+    "usage_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of times template has been used"
+    },
+    "last_used": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last time template was used"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

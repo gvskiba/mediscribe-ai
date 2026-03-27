@@ -1,0 +1,103 @@
+{
+  "name": "PatientEducationMaterial",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title of the education material"
+    },
+    "diagnosis": {
+      "type": "string",
+      "description": "The diagnosis or condition this material covers"
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "English",
+        "Spanish",
+        "French",
+        "Chinese",
+        "Arabic",
+        "Portuguese"
+      ],
+      "default": "English",
+      "description": "Language of the material"
+    },
+    "sections": {
+      "type": "object",
+      "description": "Structured content sections",
+      "properties": {
+        "what_is_it": {
+          "type": "string"
+        },
+        "symptoms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "causes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "treatment": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "medications": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "lifestyle": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "when_to_call": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "follow_up": {
+          "type": "string"
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "is_favorite": {
+      "type": "boolean",
+      "default": false
+    },
+    "usage_count": {
+      "type": "number",
+      "default": 0
+    },
+    "note_id": {
+      "type": "string",
+      "description": "Optional reference to a ClinicalNote"
+    },
+    "patient_name": {
+      "type": "string",
+      "description": "Optional patient name for personalization"
+    }
+  },
+  "required": [
+    "title",
+    "diagnosis",
+    "language"
+  ]
+}

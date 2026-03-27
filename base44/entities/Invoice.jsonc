@@ -1,0 +1,94 @@
+{
+  "name": "Invoice",
+  "type": "object",
+  "properties": {
+    "invoice_number": {
+      "type": "string",
+      "description": "Unique invoice identifier"
+    },
+    "patient_name": {
+      "type": "string",
+      "description": "Patient name"
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "Patient MRN or identifier"
+    },
+    "procedure_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date procedure was performed"
+    },
+    "cpt_codes": {
+      "type": "array",
+      "description": "CPT codes for billing",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "CPT code"
+          },
+          "description": {
+            "type": "string",
+            "description": "Procedure description"
+          },
+          "units": {
+            "type": "number",
+            "default": 1,
+            "description": "Number of units"
+          },
+          "rvu": {
+            "type": "number",
+            "description": "Relative Value Units"
+          },
+          "base_charge": {
+            "type": "number",
+            "description": "Base charge for this procedure"
+          }
+        }
+      }
+    },
+    "total_rvu": {
+      "type": "number",
+      "description": "Total RVU for invoice"
+    },
+    "total_charge": {
+      "type": "number",
+      "description": "Total billable charge"
+    },
+    "provider_name": {
+      "type": "string",
+      "description": "Performing provider"
+    },
+    "facility": {
+      "type": "string",
+      "description": "Facility where procedure was performed"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "submitted",
+        "paid",
+        "denied"
+      ],
+      "default": "draft",
+      "description": "Invoice status"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes or comments"
+    },
+    "source_procedure_id": {
+      "type": "string",
+      "description": "Reference to source ProcedureLog entity"
+    }
+  },
+  "required": [
+    "invoice_number",
+    "patient_name",
+    "procedure_date",
+    "cpt_codes"
+  ]
+}

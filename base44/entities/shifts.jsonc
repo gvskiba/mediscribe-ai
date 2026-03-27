@@ -1,0 +1,61 @@
+{
+  "name": "shifts",
+  "type": "object",
+  "properties": {
+    "provider_id": {
+      "type": "string",
+      "description": "User ID of the provider"
+    },
+    "provider_name": {
+      "type": "string",
+      "description": "Name of the provider"
+    },
+    "department": {
+      "type": "string",
+      "description": "Department name"
+    },
+    "facility": {
+      "type": "string",
+      "description": "Facility name"
+    },
+    "shift_start": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the shift started"
+    },
+    "shift_end": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the shift ended"
+    },
+    "shift_duration_hours": {
+      "type": "number",
+      "description": "Planned shift duration in hours",
+      "default": 12
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "closing",
+        "closed"
+      ],
+      "default": "active",
+      "description": "Current shift status"
+    },
+    "incoming_provider": {
+      "type": "string",
+      "description": "Name of the incoming provider for handoff"
+    },
+    "handoff_notes": {
+      "type": "string",
+      "description": "Notes for shift handoff"
+    }
+  },
+  "required": [
+    "provider_id",
+    "provider_name",
+    "shift_start",
+    "status"
+  ]
+}

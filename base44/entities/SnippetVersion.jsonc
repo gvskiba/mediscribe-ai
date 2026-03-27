@@ -1,0 +1,42 @@
+{
+  "name": "SnippetVersion",
+  "type": "object",
+  "properties": {
+    "snippet_id": {
+      "type": "string",
+      "description": "Reference to the parent Snippet"
+    },
+    "version_number": {
+      "type": "number",
+      "description": "Version number (1, 2, 3, etc)"
+    },
+    "content": {
+      "type": "string",
+      "description": "Snippet content at this version"
+    },
+    "name": {
+      "type": "string",
+      "description": "Snippet name at this version"
+    },
+    "category": {
+      "type": "string",
+      "description": "Category at this version"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags at this version"
+    },
+    "change_summary": {
+      "type": "string",
+      "description": "Summary of what changed"
+    }
+  },
+  "required": [
+    "snippet_id",
+    "version_number",
+    "content"
+  ]
+}

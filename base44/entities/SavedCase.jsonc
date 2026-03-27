@@ -1,0 +1,42 @@
+{
+  "name": "SavedCase",
+  "type": "object",
+  "properties": {
+    "patient_name": {
+      "type": "string",
+      "description": "Patient name or identifier"
+    },
+    "patient_age": {
+      "type": "string",
+      "description": "Patient age with unit (e.g. '4 years')"
+    },
+    "weight_kg": {
+      "type": "number",
+      "description": "Patient weight in kg"
+    },
+    "weight_source": {
+      "type": "string",
+      "enum": [
+        "age-estimated",
+        "measured"
+      ],
+      "description": "Whether weight was estimated from age or entered manually"
+    },
+    "broselow_zone": {
+      "type": "string",
+      "description": "Broselow tape zone color"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Clinical notes for this case"
+    },
+    "category_filter": {
+      "type": "string",
+      "description": "Drug category filter applied"
+    }
+  },
+  "required": [
+    "patient_name",
+    "weight_kg"
+  ]
+}

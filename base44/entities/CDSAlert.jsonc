@@ -1,0 +1,118 @@
+{
+  "name": "CDSAlert",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "Reference to patient MRN"
+    },
+    "encounter_id": {
+      "type": "string",
+      "description": "Reference to encounter ID"
+    },
+    "alert_type": {
+      "type": "string",
+      "enum": [
+        "critical",
+        "warning",
+        "info"
+      ],
+      "description": "Alert severity level"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "sepsis",
+        "drug_interaction",
+        "lab",
+        "vital",
+        "protocol",
+        "quality"
+      ],
+      "description": "Alert category"
+    },
+    "title": {
+      "type": "string",
+      "description": "Alert title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed alert description"
+    },
+    "recommendation": {
+      "type": "string",
+      "description": "AI-generated recommendation"
+    },
+    "triggered_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When alert fired"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "acknowledged",
+        "dismissed",
+        "resolved"
+      ],
+      "default": "active",
+      "description": "Alert status"
+    },
+    "acknowledged_by": {
+      "type": "string",
+      "description": "User email who acknowledged"
+    },
+    "acknowledged_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When acknowledged"
+    },
+    "priority_score": {
+      "type": "number",
+      "description": "AI-calculated priority (0-100)"
+    },
+    "related_data": {
+      "type": "object",
+      "description": "Related clinical data (vitals, labs, etc)",
+      "properties": {
+        "lactate": {
+          "type": "number"
+        },
+        "map": {
+          "type": "number"
+        },
+        "qtc": {
+          "type": "number"
+        },
+        "drugs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "rule_id": {
+      "type": "string",
+      "description": "CDS rule that triggered this alert"
+    },
+    "guideline_ref": {
+      "type": "string",
+      "description": "Reference guideline (e.g., SEP-1, CMS)"
+    },
+    "due_by": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Action deadline if applicable"
+    }
+  },
+  "required": [
+    "patient_id",
+    "encounter_id",
+    "alert_type",
+    "category",
+    "title",
+    "description"
+  ]
+}

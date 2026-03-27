@@ -1,0 +1,43 @@
+{
+  "name": "SavedGuideline",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title of the guideline"
+    },
+    "url": {
+      "type": "string",
+      "description": "URL to the guideline"
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description of the guideline"
+    },
+    "source": {
+      "type": "string",
+      "description": "Source of the guideline (e.g., ACC, AHA, etc.)"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Tags for organizing guidelines"
+    },
+    "notes": {
+      "type": "string",
+      "description": "User notes about the guideline"
+    },
+    "saved_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the guideline was saved"
+    }
+  },
+  "required": [
+    "title",
+    "url"
+  ]
+}

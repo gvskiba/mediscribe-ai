@@ -1,0 +1,102 @@
+{
+  "name": "ProcedureTemplate",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "description": "Short unique identifier like lac, intub, cl"
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name like Laceration Repair"
+    },
+    "icon": {
+      "type": "string",
+      "description": "Emoji icon"
+    },
+    "subtitle": {
+      "type": "string",
+      "description": "Short description"
+    },
+    "risk": {
+      "type": "string",
+      "enum": [
+        "low",
+        "mod",
+        "high"
+      ]
+    },
+    "category": {
+      "type": "string",
+      "description": "Category key: wound, airway, vascular, thoracic, ortho, cardiac, procedure, ent, nerve, gu, trauma"
+    },
+    "tips": {
+      "type": "string",
+      "description": "Clinical reminders text"
+    },
+    "sections": {
+      "type": "array",
+      "description": "Array of form sections",
+      "items": {
+        "type": "object",
+        "properties": {
+          "icon": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "warning": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "input",
+                    "select",
+                    "textarea",
+                    "chips"
+                  ]
+                },
+                "required": {
+                  "type": "boolean"
+                },
+                "placeholder": {
+                  "type": "string"
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "defaults": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "default": []
+    }
+  },
+  "required": [
+    "key",
+    "name"
+  ]
+}

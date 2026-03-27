@@ -1,0 +1,54 @@
+{
+  "name": "CustomLink",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Link title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Link description"
+    },
+    "url": {
+      "type": "string",
+      "description": "Link URL or page name"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "work",
+        "patient_care",
+        "research",
+        "education",
+        "personal",
+        "other"
+      ],
+      "default": "other",
+      "description": "Link category"
+    },
+    "icon_name": {
+      "type": "string",
+      "description": "Lucide icon name"
+    },
+    "color": {
+      "type": "string",
+      "default": "blue",
+      "description": "Color theme for the link"
+    },
+    "is_external": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether link is external URL"
+    },
+    "order": {
+      "type": "number",
+      "default": 0,
+      "description": "Display order"
+    }
+  },
+  "required": [
+    "title",
+    "url"
+  ]
+}

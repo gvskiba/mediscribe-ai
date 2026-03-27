@@ -1,0 +1,26 @@
+{
+  "name": "SnippetFolder",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Folder name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Folder description"
+    },
+    "color": {
+      "type": "string",
+      "default": "blue",
+      "description": "Folder color for visual organization"
+    },
+    "icon": {
+      "type": "string",
+      "description": "Folder icon identifier"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

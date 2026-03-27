@@ -329,6 +329,19 @@ export default function NewPatientInput() {
 
       {/* ═══ TOP BAR ═══ */}
       <header className="npi-top-bar">
+        <div className="npi-top-row-1">
+          <span className="npi-welcome">Welcome, <strong>Dr. Skiba</strong></span>
+          <div className="npi-vsep" />
+          <div className="npi-stat"><span className="npi-stat-val">0</span><span className="npi-stat-lbl">Active</span></div>
+          <div className="npi-stat"><span className="npi-stat-val alert">14</span><span className="npi-stat-lbl">Pending</span></div>
+          <div className="npi-stat"><span className="npi-stat-val">—</span><span className="npi-stat-lbl">Orders</span></div>
+          <div className="npi-stat"><span className="npi-stat-val">11.6</span><span className="npi-stat-lbl">Hours</span></div>
+          <div className="npi-top-right">
+            <div className="npi-clock">{clock}</div>
+            <div className="npi-ai-on"><div className="npi-ai-dot" /> AI ON</div>
+            <button className="npi-new-pt" onClick={() => navigate("/NewPatientInput?tab=demo")}>+ New Patient</button>
+          </div>
+        </div>
         <div className="npi-top-row-2">
           <span className="npi-chart-badge">PT-NEW</span>
           <span className="npi-pt-name">{patientName}</span>

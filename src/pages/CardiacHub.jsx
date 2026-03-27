@@ -1,8 +1,691 @@
-export default function CardiacHub() {
+import { useState, useRef, useEffect, useCallback } from "react";
+
+// ════════════════════════════════════════════════════════════
+//  ACS HOME PAGE — GLASSMORPHISM HUB
+// ════════════════════════════════════════════════════════════
+const HOME_PROTOCOLS = [
+  { id:"acs",       icon:"🫀", abbr:"ACS",   title:"Acute Coronary Syndrome",       subtitle:"STEMI · NSTEMI · Unstable Angina",        badge:"2025 ACC/AHA", tagline:"From door-to-ECG to complete revascularisation", color:"#ff6b6b", glow:"rgba(255,107,107,0.35)", glass:"rgba(255,107,107,0.06)", border:"rgba(255,107,107,0.25)", accent:"#ff9999", stat:{value:"≤ 90",unit:"min",label:"Door-to-Balloon"}, tags:["TNK Tool","Risk Scores","Cardiology Consult"] },
+  { id:"tachy",     icon:"⚡", abbr:"TACHY", title:"Adult Tachycardia",             subtitle:"Stable · Unstable · SVT · VT · TdP",      badge:"ACLS 2025",   tagline:"Stable vs unstable pathway with cardioversion guide", color:"#f5c842", glow:"rgba(245,200,66,0.3)",  glass:"rgba(245,200,66,0.06)", border:"rgba(245,200,66,0.25)", accent:"#f7d875", stat:{value:"< 3",unit:"min",label:"Cardiovert if unstable"}, tags:["Cardioversion","Adenosine","Amiodarone"] },
+  { id:"brady",     icon:"🔻", abbr:"BRADY", title:"Adult Bradycardia",             subtitle:"Symptomatic · AV Block · Pacing",          badge:"ACLS 2025",   tagline:"Atropine first · TCP · Vasopressor infusions",       color:"#3b9eff", glow:"rgba(59,158,255,0.3)",  glass:"rgba(59,158,255,0.06)", border:"rgba(59,158,255,0.25)", accent:"#6ab8ff", stat:{value:"1 mg",unit:"IV",label:"Atropine first dose"}, tags:["Atropine","TCP","H's & T's"] },
+  { id:"peds",      icon:"👶", abbr:"PALS",  title:"Pediatric ACLS",               subtitle:"Cardiac Arrest · Brady · Tachy · PALS",   badge:"PALS 2025",   tagline:"Weight-based dosing · Defibrillation · All rhythms",  color:"#9b6dff", glow:"rgba(155,109,255,0.3)", glass:"rgba(155,109,255,0.06)",border:"rgba(155,109,255,0.25)",accent:"#b99bff",stat:{value:"2 J/kg",unit:"VF/pVT",label:"1st defibrillation"}, tags:["Weight-based","Broselow","Epinephrine"] },
+  { id:"pregnancy", icon:"🤰", abbr:"OB",    title:"Cardiac Arrest in Pregnancy",  subtitle:"PMCD · LUD · Maternal Resuscitation",     badge:"AHA 2020",    tagline:"Dual-patient emergency · Perimortem C-section by 5 min",color:"#00e5c0",glow:"rgba(0,229,192,0.3)",  glass:"rgba(0,229,192,0.06)", border:"rgba(0,229,192,0.25)", accent:"#33eccc", stat:{value:"5 min",unit:"PMCD",label:"If no ROSC"}, tags:["LUD","ABCDEFGH","PMCD Tool"] },
+];
+
+function ecgPath(x=0,y=0,s=1){ return [`M${x},${y}`,`L${x+15*s},${y}`,`Q${x+18*s},${y} ${x+20*s},${y-3*s}`,`L${x+22*s},${y+6*s}`,`L${x+24*s},${y-28*s}`,`L${x+26*s},${y+14*s}`,`L${x+28*s},${y}`,`Q${x+32*s},${y} ${x+35*s},${y-4*s}`,`Q${x+38*s},${y-8*s} ${x+41*s},${y}`,`L${x+60*s},${y}`].join(" "); }
+
+function ProtocolCard({ p, onClick, index }) {
+  const [hov, setHov] = useState(false);
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold">Cardiac Hub</h1>
-      <p className="text-gray-600 mt-2">Welcome to the Cardiac Hub</p>
+    <div onClick={()=>onClick(p.id)} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
+      style={{
+        position:"relative", borderRadius:20, padding:"22px 22px 20px", cursor:"pointer", overflow:"hidden",
+        transition:"all 0.35s cubic-bezier(0.34,1.56,0.64,1)",
+        transform: hov ? "translateY(-6px) scale(1.02)" : "translateY(0) scale(1)",
+        animation:`card-in 0.55s ease both ${index*0.08}s`,
+        background: hov
+          ? `linear-gradient(135deg, ${p.glass.replace("0.06","0.22")}, ${p.glass.replace("0.06","0.06")})`
+          : "rgba(8,22,40,0.65)",
+        backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)",
+        border:`1px solid ${hov ? p.border : "rgba(26,53,85,0.7)"}`,
+        boxShadow: hov
+          ? `0 24px 48px rgba(0,0,0,0.45), 0 0 0 1px ${p.border}, inset 0 1px 0 rgba(255,255,255,0.06), 0 0 40px ${p.glow}`
+          : "0 4px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)",
+      }}>
+      {/* Corner glow */}
+      <div style={{position:"absolute",top:-40,right:-40,width:150,height:150,borderRadius:"50%",background:`radial-gradient(circle, ${p.glow} 0%, transparent 70%)`,opacity:hov?1:0,transition:"opacity 0.3s",pointerEvents:"none"}}/>
+      {/* Shimmer */}
+      <div style={{position:"absolute",inset:0,borderRadius:20,background:"linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.04) 50%,transparent 60%)",opacity:hov?1:0,transition:"opacity 0.4s",pointerEvents:"none"}}/>
+      {/* Top row */}
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:14}}>
+        <div style={{width:52,height:52,borderRadius:14,background:`linear-gradient(135deg,${p.glass.replace("0.06","0.28")},${p.glass})`,border:`1px solid ${p.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,boxShadow:hov?`0 0 20px ${p.glow}`:"none",transition:"box-shadow 0.3s",flexShrink:0}}>
+          {p.icon}
+        </div>
+        <span style={{fontSize:9,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,padding:"3px 9px",borderRadius:20,background:p.glass.replace("0.06","0.2"),border:`1px solid ${p.border}`,color:p.color,letterSpacing:".05em",backdropFilter:"blur(8px)"}}>
+          {p.badge}
+        </span>
+      </div>
+      <div style={{fontSize:10,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,color:p.accent,letterSpacing:".12em",textTransform:"uppercase",marginBottom:4,opacity:0.85}}>
+        {p.abbr}
+      </div>
+      <div style={{fontSize:15,fontFamily:"'Playfair Display',serif",fontWeight:600,color:"#e8f0fe",lineHeight:1.3,marginBottom:4}}>
+        {p.title}
+      </div>
+      <div style={{fontSize:11,color:"#4a6a8a",marginBottom:14,lineHeight:1.4}}>
+        {p.subtitle}
+      </div>
+      <div style={{height:1,background:`linear-gradient(90deg, ${p.border}, transparent)`,marginBottom:12}}/>
+      <div style={{display:"flex",alignItems:"baseline",gap:4,marginBottom:12}}>
+        <span style={{fontSize:22,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",color:p.color}}>{p.stat.value}</span>
+        <span style={{fontSize:11,color:p.accent,fontFamily:"'JetBrains Mono',monospace"}}>{p.stat.unit}</span>
+        <span style={{fontSize:10,color:"#4a6a8a",marginLeft:4}}>{p.stat.label}</span>
+      </div>
+      <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+        {p.tags.map((t,i)=><span key={i} style={{fontSize:10,padding:"2px 8px",borderRadius:20,background:p.glass,border:`1px solid ${p.border.replace("0.25","0.18")}`,color:"#8aaccc",backdropFilter:"blur(4px)"}}>{t}</span>)}
+      </div>
+      <div style={{position:"absolute",bottom:18,right:18,width:28,height:28,borderRadius:"50%",background:p.glass.replace("0.06","0.18"),border:`1px solid ${p.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:p.color,opacity:hov?1:0,transform:hov?"scale(1) translateX(0)":"scale(0.7) translateX(-4px)",transition:"all 0.25s ease"}}>
+        →
+      </div>
     </div>
   );
 }
+
+function ACSHomePage({ onNavigate }) {
+  const [bannerOpen, setBannerOpen] = useState(true);
+
+  return (
+    <div style={{position:"relative",minHeight:"100%",fontFamily:"'DM Sans',sans-serif"}}>
+      {/* ── Background ── */}
+      <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}>
+        {[{x:"10%",y:"20%",r:280,c:"rgba(255,107,107,0.07)"},{x:"85%",y:"15%",r:220,c:"rgba(245,200,66,0.06)"},{x:"75%",y:"75%",r:300,c:"rgba(155,109,255,0.07)"},{x:"20%",y:"80%",r:200,c:"rgba(0,229,192,0.06)"},{x:"50%",y:"45%",r:350,c:"rgba(59,158,255,0.04)"}].map((orb,i)=>(
+          <div key={i} style={{position:"absolute",left:orb.x,top:orb.y,width:orb.r*2,height:orb.r*2,borderRadius:"50%",background:`radial-gradient(circle, ${orb.c} 0%, transparent 70%)`,transform:"translate(-50%,-50%)",animation:`of${i%3} ${7+i*1.5}s ease-in-out infinite`}}/>
+        ))}
+        <svg width="100%" height="100%" style={{position:"absolute",inset:0,opacity:0.055}}>
+          <defs>
+            <pattern id="hg" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#3b9eff" strokeWidth="0.5"/></pattern>
+            <pattern id="hgl" width="200" height="200" patternUnits="userSpaceOnUse"><path d="M 200 0 L 0 0 0 200" fill="none" stroke="#3b9eff" strokeWidth="1"/></pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#hg)"/>
+          <rect width="100%" height="100%" fill="url(#hgl)"/>
+        </svg>
+        <svg width="100%" height="100%" style={{position:"absolute",inset:0,opacity:0.1}}>
+          {[0,1,2].map(row=>(
+            <g key={row} transform={`translate(0,${row*160+80})`}>
+              {[0,1,2,3,4,5,6].map(seg=>(
+                <path key={seg} d={ecgPath(seg*180+(row%2)*90-60,0,1.4)} fill="none" stroke={["#ff6b6b","#f5c842","#00e5c0"][row]} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+              ))}
+            </g>
+          ))}
+        </svg>
+      </div>
+
+      <div style={{position:"relative",zIndex:1}}>
+        {/* ── Hero ── */}
+        <div style={{borderRadius:20,padding:"26px 28px 22px",background:"rgba(5,15,30,0.78)",backdropFilter:"blur(24px)",WebkitBackdropFilter:"blur(24px)",border:"1px solid rgba(255,107,107,0.18)",marginBottom:16,position:"relative",overflow:"hidden",animation:"card-in 0.55s ease both",boxShadow:"0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)"}}>
+          <div style={{position:"absolute",inset:0,background:"linear-gradient(105deg,rgba(255,107,107,0.06) 0%,transparent 50%,rgba(155,109,255,0.05) 100%)",pointerEvents:"none"}}/>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:2,borderRadius:"20px 20px 0 0",background:"linear-gradient(90deg,#ff6b6b,#f5c842,#00e5c0,#9b6dff,#3b9eff)"}}/>
+          <div style={{display:"flex",alignItems:"flex-start",gap:18,position:"relative"}}>
+            {/* Beating heart */}
+            <div style={{width:56,height:56,borderRadius:16,background:"linear-gradient(135deg,rgba(255,107,107,0.2),rgba(155,109,255,0.15))",border:"1px solid rgba(255,107,107,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0,animation:"hb 1.4s ease-in-out infinite",position:"relative"}}>
+              🫀
+              <span style={{position:"absolute",inset:-4,borderRadius:20,border:"1.5px solid rgba(255,107,107,0.2)",animation:"pr 1.4s ease-in-out infinite"}}/>
+            </div>
+            <div style={{flex:1}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6,flexWrap:"wrap"}}>
+                <span style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:700,color:"#e8f0fe",letterSpacing:"-0.01em"}}>Cardiac Protocol Hub</span>
+                <span style={{fontSize:9,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,padding:"3px 10px",borderRadius:20,background:"rgba(0,229,192,0.1)",color:"#00e5c0",border:"1px solid rgba(0,229,192,0.3)",letterSpacing:".06em"}}>NOTRYA TOOLS</span>
+              </div>
+              <p style={{fontSize:13,color:"#8aaccc",margin:0,lineHeight:1.6,maxWidth:560}}>
+                Evidence-based algorithms for the emergency physician — five guideline-integrated cardiac protocols spanning the full spectrum of acute cardiovascular emergencies.
+              </p>
+            </div>
+            <div style={{borderRadius:12,padding:"10px 14px",background:"rgba(8,22,40,0.85)",border:"1px solid rgba(26,53,85,0.9)",textAlign:"center",flexShrink:0}}>
+              <div style={{fontSize:9,color:"#4a6a8a",textTransform:"uppercase",letterSpacing:".07em",marginBottom:4}}>Protocols</div>
+              <div style={{fontSize:28,fontWeight:700,color:"#3b9eff",fontFamily:"'JetBrains Mono',monospace",lineHeight:1}}>5</div>
+              <div style={{fontSize:9,color:"#4a6a8a",marginTop:2}}>available</div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Alert banner ── */}
+        {bannerOpen && (
+          <div style={{borderRadius:12,padding:"10px 16px",marginBottom:14,background:"rgba(255,107,107,0.07)",border:"1px solid rgba(255,107,107,0.22)",backdropFilter:"blur(12px)",display:"flex",alignItems:"center",gap:12,animation:"card-in 0.5s ease both 0.1s"}}>
+            <div style={{width:8,height:8,borderRadius:"50%",background:"#ff6b6b",animation:"ap 1.5s ease-in-out infinite",flexShrink:0}}/>
+            <span style={{fontSize:11,color:"#ff9999",fontFamily:"'JetBrains Mono',monospace",fontWeight:600,flexShrink:0}}>CARDIAC PROTOCOL HUB</span>
+            <span style={{fontSize:11,color:"#8aaccc",flex:1}}>All algorithms follow 2025 ACC/AHA/ACEP guidelines · Clinical decision support only</span>
+            <button onClick={()=>setBannerOpen(false)} style={{background:"none",border:"none",color:"#4a6a8a",fontSize:18,cursor:"pointer",lineHeight:1,padding:0,flexShrink:0}}>×</button>
+          </div>
+        )}
+
+        {/* ── ECG Ticker ── */}
+        <div style={{borderRadius:12,padding:"11px 16px",marginBottom:16,background:"rgba(5,15,30,0.82)",border:"1px solid rgba(26,53,85,0.8)",backdropFilter:"blur(16px)",overflow:"hidden",position:"relative",animation:"card-in 0.5s ease both 0.15s"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <span style={{fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:"#00e5c0",fontWeight:700,flexShrink:0}}>LIVE ECG</span>
+            <div style={{flex:1,overflow:"hidden",height:32,position:"relative"}}>
+              <svg width="100%" height="32" style={{position:"absolute"}}>
+                <g transform="translate(0,16)">
+                  {[0,1,2,3,4,5,6,7,8].map(i=>(
+                    <path key={i} d={ecgPath(i*140-20,0,0.85)} fill="none" stroke="#00e5c0" strokeWidth="1.5" strokeLinecap="round" opacity="0.6" style={{animation:`ecm 4.5s linear infinite`,animationDelay:`${i*-0.5}s`}}/>
+                  ))}
+                </g>
+              </svg>
+            </div>
+            <div style={{display:"flex",gap:18,flexShrink:0}}>
+              {[{l:"HR",v:"72 bpm",c:"#00e5c0"},{l:"SpO₂",v:"98%",c:"#3b9eff"},{l:"BP",v:"118/76",c:"#f5c842"}].map((v,i)=>(
+                <div key={i} style={{textAlign:"center"}}>
+                  <div style={{fontSize:8,color:"#4a6a8a",textTransform:"uppercase",letterSpacing:".06em"}}>{v.l}</div>
+                  <div style={{fontSize:12,fontWeight:700,color:v.c,fontFamily:"'JetBrains Mono',monospace"}}>{v.v}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Stats row ── */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:22}}>
+          {[{icon:"📋",label:"Guidelines",value:"5 Protocols",c:"#3b9eff"},{icon:"⚕",label:"Evidence Base",value:"2025 ACC/AHA",c:"#00e5c0"},{icon:"💊",label:"Medications",value:"40+ Drugs",c:"#f5c842"},{icon:"🧮",label:"Decision Tools",value:"TNK · TIMI · GRACE",c:"#9b6dff"}].map((s,i)=>(
+            <div key={i} style={{borderRadius:12,padding:"12px 14px",background:"rgba(8,22,40,0.72)",border:"1px solid rgba(26,53,85,0.8)",backdropFilter:"blur(12px)",display:"flex",alignItems:"center",gap:10,animation:`card-in 0.55s ease both ${0.28+i*0.07}s`}}>
+              <span style={{fontSize:18,flexShrink:0}}>{s.icon}</span>
+              <div>
+                <div style={{fontSize:9,color:"#4a6a8a",textTransform:"uppercase",letterSpacing:".06em",marginBottom:2}}>{s.label}</div>
+                <div style={{fontSize:11,fontWeight:700,color:s.c,fontFamily:"'JetBrains Mono',monospace"}}>{s.value}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Divider ── */}
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
+          <div style={{height:1,flex:1,background:"linear-gradient(90deg,rgba(26,53,85,0.8),transparent)"}}/>
+          <span style={{fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:"#4a6a8a",textTransform:"uppercase",letterSpacing:".12em",fontWeight:600}}>Select a protocol</span>
+          <div style={{height:1,flex:1,background:"linear-gradient(90deg,transparent,rgba(26,53,85,0.8))"}}/>
+        </div>
+
+        {/* ── Cards top row ── */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:14}}>
+          {HOME_PROTOCOLS.slice(0,3).map((p,i)=><ProtocolCard key={p.id} p={p} onClick={onNavigate} index={i}/>)}
+        </div>
+
+        {/* ── Cards bottom row ── */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:22}}>
+          {HOME_PROTOCOLS.slice(3).map((p,i)=><ProtocolCard key={p.id} p={p} onClick={onNavigate} index={i+3}/>)}
+        </div>
+
+        {/* ── Footer strip ── */}
+        <div style={{borderRadius:12,padding:"12px 18px",background:"rgba(5,15,30,0.65)",border:"1px solid rgba(26,53,85,0.6)",backdropFilter:"blur(12px)",display:"flex",alignItems:"center",gap:14,flexWrap:"wrap",animation:"card-in 0.55s ease both 0.55s"}}>
+          <span style={{fontSize:10,color:"#3b9eff",fontFamily:"'JetBrains Mono',monospace",fontWeight:700,flexShrink:0}}>⚕ EVIDENCE BASE</span>
+          {["2025 ACC/AHA/ACEP/NAEMSP/SCAI ACS Guideline","AHA/ACLS 2025 Tachycardia & Bradycardia","AHA/AAP PALS 2025","AHA 2020 Maternal Resuscitation"].map((ref,i)=>(
+            <span key={i} style={{fontSize:10,color:"#4a6a8a"}}>
+              {i>0&&<span style={{marginRight:10,color:"#1a3555"}}>·</span>}
+              {ref}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes card-in { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes hb { 0%,100%{transform:scale(1)} 14%{transform:scale(1.15)} 28%{transform:scale(1)} 42%{transform:scale(1.1)} 70%{transform:scale(1)} }
+        @keyframes pr { 0%{opacity:.6;transform:scale(1)} 100%{opacity:0;transform:scale(1.5)} }
+        @keyframes ap { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(255,107,107,.4)} 50%{opacity:.8;box-shadow:0 0 0 6px rgba(255,107,107,0)} }
+        @keyframes ecm { 0%{transform:translateX(0)} 100%{transform:translateX(-140px)} }
+        @keyframes of0 { 0%,100%{transform:translate(-50%,-50%) scale(1)} 50%{transform:translate(-50%,-50%) scale(1.15)} }
+        @keyframes of1 { 0%,100%{transform:translate(-50%,-50%) scale(1.1)} 50%{transform:translate(-50%,-50%) scale(0.9)} }
+        @keyframes of2 { 0%,100%{transform:translate(-50%,-50%) scale(0.95)} 50%{transform:translate(-50%,-50%) scale(1.12)} }
+      `}</style>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+//  SHARED DESIGN PRIMITIVES (Protocol Pages)
+// ════════════════════════════════════════════════════════════
+const nowTime=()=>{const d=new Date();return`${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;};
+
+function CORBadge({cor}){const M={I:{bg:"rgba(0,229,192,.12)",br:"rgba(0,229,192,.4)",c:"var(--teal)"},IIa:{bg:"rgba(59,158,255,.12)",br:"rgba(59,158,255,.4)",c:"var(--blue)"},IIb:{bg:"rgba(245,200,66,.12)",br:"rgba(245,200,66,.4)",c:"var(--gold)"},III:{bg:"rgba(255,107,107,.12)",br:"rgba(255,107,107,.4)",c:"var(--coral)"}};const s=M[cor]||M.IIa;return<span style={{fontSize:10,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,padding:"2px 7px",borderRadius:20,background:s.bg,border:`1px solid ${s.br}`,color:s.c,whiteSpace:"nowrap"}}>COR {cor}</span>;}
+
+const GlassArrow=()=>(
+  <div style={{display:"flex",flexDirection:"column",alignItems:"center",margin:"2px 0"}}>
+    <div style={{width:1.5,height:14,background:"rgba(42,79,122,0.8)"}}/>
+    <div style={{width:0,height:0,borderLeft:"6px solid transparent",borderRight:"6px solid transparent",borderTop:"8px solid rgba(42,79,122,0.8)"}}/>
+  </div>
+);
+
+function FlowNode({type,text,sub,items,badge,color,branches}){
+  const col={coral:"var(--coral)",orange:"var(--orange)",blue:"var(--blue)",teal:"var(--teal)",gold:"var(--gold)",purple:"var(--purple)"}[color]||"var(--blue)";
+  const bg={coral:"rgba(255,107,107,.06)",orange:"rgba(255,159,67,.06)",blue:"rgba(59,158,255,.06)",teal:"rgba(0,229,192,.06)",gold:"rgba(245,200,66,.06)",purple:"rgba(155,109,255,.08)"}[color]||"rgba(59,158,255,.06)";
+  const br={coral:"rgba(255,107,107,.25)",orange:"rgba(255,159,67,.25)",blue:"rgba(59,158,255,.25)",teal:"rgba(0,229,192,.25)",gold:"rgba(245,200,66,.25)",purple:"rgba(155,109,255,.25)"}[color]||"rgba(59,158,255,.25)";
+  if(type==="start")return(<div style={{background:"rgba(155,109,255,.1)",border:"1px solid rgba(155,109,255,.3)",borderRadius:28,padding:"10px 24px",textAlign:"center",maxWidth:500,width:"100%",backdropFilter:"blur(8px)"}}><div style={{fontSize:13,fontWeight:600,color:"var(--purple)"}}>{text}</div>{sub&&<div style={{fontSize:11,color:"var(--txt3)",marginTop:3}}>{sub}</div>}</div>);
+  if(type==="action")return(<div style={{background:bg,border:`1px solid ${br}`,borderRadius:10,padding:"11px 16px",maxWidth:500,width:"100%",backdropFilter:"blur(8px)"}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:items?.length?7:0}}><div style={{fontSize:13,fontWeight:700,color:col}}>{text}</div>{badge&&<span style={{fontSize:9,background:col,color:"#000",borderRadius:20,padding:"2px 8px",fontFamily:"'JetBrains Mono',monospace",fontWeight:700,marginLeft:8,whiteSpace:"nowrap"}}>{badge}</span>}</div>{sub&&<div style={{fontSize:11,color:"var(--txt3)",marginBottom:items?.length?6:0,lineHeight:1.4}}>{sub}</div>}{items?.map((it,j)=><div key={j} style={{display:"flex",alignItems:"flex-start",gap:6,fontSize:12,color:"var(--txt2)",marginBottom:2}}><span style={{color:col,flexShrink:0,marginTop:1}}>▸</span>{it}</div>)}</div>);
+  if(type==="decision")return(<div style={{width:"100%",maxWidth:540}}><div style={{background:"rgba(245,200,66,.07)",border:"1px solid rgba(245,200,66,.25)",borderRadius:10,padding:"9px 16px",textAlign:"center",marginBottom:8,backdropFilter:"blur(8px)"}}><div style={{fontSize:12,fontWeight:700,color:"var(--gold)"}}>⬡ {text}</div></div><div style={{display:"grid",gridTemplateColumns:`repeat(${branches.length},1fr)`,gap:8}}>{branches.map((b,j)=>{const bc={coral:"var(--coral)",orange:"var(--orange)",blue:"var(--blue)",teal:"var(--teal)",gold:"var(--gold)"}[b.color]||"var(--blue)";const bbg={coral:"rgba(255,107,107,.07)",orange:"rgba(255,159,67,.07)",blue:"rgba(59,158,255,.07)",teal:"rgba(0,229,192,.06)",gold:"rgba(245,200,66,.07)"}[b.color]||"rgba(59,158,255,.07)";return(<div key={j} style={{background:bbg,border:`1px solid ${bc}35`,borderRadius:8,padding:"9px 10px",textAlign:"center",backdropFilter:"blur(6px)"}}>{b.tag&&<div style={{fontSize:9,fontWeight:700,color:bc,fontFamily:"'JetBrains Mono',monospace",marginBottom:4}}>{b.tag}</div>}<div style={{fontSize:11,color:"var(--txt2)",lineHeight:1.45,whiteSpace:"pre-line"}}>{b.label}</div></div>);})}</div></div>);
+  if(type==="outcome")return(<div style={{background:bg,border:`1px solid ${br}`,borderRadius:10,padding:"10px 18px",maxWidth:500,width:"100%",textAlign:"center",backdropFilter:"blur(8px)"}}><div style={{fontSize:13,fontWeight:700,color:col}}>{text}</div>{sub&&<div style={{fontSize:11,color:"var(--txt3)",marginTop:4,lineHeight:1.4}}>{sub}</div>}</div>);
+  return null;
+}
+
+function FlowChart({nodes}){return(<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:0}}>{nodes.map((n,i)=>{if(n.arrow)return<GlassArrow key={i}/>;return<FlowNode key={i} {...n}/>;})}</div>);}
+
+function DrugTable({rows}){const cats=[...new Set(rows.map(r=>r.cat))];return(<div style={{display:"flex",flexDirection:"column",gap:14}}>{cats.map(cat=>(<div key={cat}><div style={{fontSize:10,color:"var(--txt3)",textTransform:"uppercase",letterSpacing:".07em",fontWeight:700,marginBottom:6,paddingBottom:4,borderBottom:"1px solid var(--border)"}}>{cat}</div>{rows.filter(r=>r.cat===cat).map((rx,i)=>(<div key={i} style={{background:"rgba(14,37,68,0.5)",border:"1px solid var(--border)",borderRadius:8,padding:"8px 12px",display:"grid",gridTemplateColumns:"170px 1fr auto",gap:10,alignItems:"start",marginBottom:4,backdropFilter:"blur(8px)"}}><div><div style={{fontSize:12,fontWeight:600,color:"var(--txt)"}}>{rx.drug}</div>{rx.note&&<div style={{fontSize:10,color:"var(--txt3)",marginTop:2}}>{rx.note}</div>}</div><div style={{fontSize:12,color:"var(--txt2)",fontFamily:"'JetBrains Mono',monospace",lineHeight:1.4}}>{rx.dose}</div><CORBadge cor={rx.cor}/></div>))}</div>))}</div>);}
+
+function TimeBanner({targets}){return(<div style={{display:"flex",gap:8}}>{targets.map((t,i)=>(<div key={i} style={{flex:1,background:"rgba(8,22,40,0.65)",border:"1px solid rgba(26,53,85,0.8)",borderRadius:8,padding:"8px 12px",display:"flex",alignItems:"center",gap:8,backdropFilter:"blur(10px)"}}><span style={{fontSize:16}}>{t.icon}</span><div><div style={{fontSize:10,color:"var(--txt3)"}}>{t.label}</div><div style={{fontSize:14,fontWeight:700,color:t.color||"var(--blue)",fontFamily:"'JetBrains Mono',monospace"}}>{t.target}</div></div></div>))}</div>);}
+
+function GlassPageHeader({icon,title,badge,badgeColor,sub,extra,onBack}){
+  const bc={coral:"var(--coral)",teal:"var(--teal)",blue:"var(--blue)",gold:"var(--gold)",purple:"var(--purple)",orange:"var(--orange)"}[badgeColor]||"var(--teal)";
+  const bbg={coral:"rgba(255,107,107,.1)",teal:"rgba(0,229,192,.08)",blue:"rgba(59,158,255,.1)",gold:"rgba(245,200,66,.08)",purple:"rgba(155,109,255,.1)",orange:"rgba(255,159,67,.08)"}[badgeColor]||"rgba(0,229,192,.08)";
+  const bbr={coral:"rgba(255,107,107,.28)",teal:"rgba(0,229,192,.28)",blue:"rgba(59,158,255,.28)",gold:"rgba(245,200,66,.28)",purple:"rgba(155,109,255,.28)",orange:"rgba(255,159,67,.28)"}[badgeColor]||"rgba(0,229,192,.28)";
+  return(
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12,background:"rgba(8,22,40,0.72)",border:`1px solid ${bbr}`,borderRadius:14,padding:"14px 18px",borderLeft:`3px solid ${bc}`,backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",boxShadow:`0 4px 24px rgba(0,0,0,0.4), 0 0 20px ${bbg}`}}>
+      <div style={{display:"flex",alignItems:"center",gap:12}}>
+        {onBack&&<button onClick={onBack} style={{background:"rgba(26,53,85,0.6)",border:"1px solid rgba(42,79,122,0.6)",borderRadius:8,padding:"5px 10px",color:"var(--txt3)",fontSize:11,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",backdropFilter:"blur(8px)"}}>← Back</button>}
+        <div style={{width:44,height:44,borderRadius:12,background:bbg,border:`1px solid ${bbr}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,boxShadow:`0 0 16px ${bbg}`}}>{icon}</div>
+        <div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:"var(--txt)"}}>{title}</span><span style={{fontSize:9,fontFamily:"'JetBrains Mono',monospace",background:bbg,color:bc,border:`1px solid ${bbr}`,borderRadius:20,padding:"2px 9px",fontWeight:700}}>{badge}</span></div>
+          <div style={{fontSize:11,color:"var(--txt3)",marginTop:2}}>{sub}</div>
+        </div>
+      </div>
+      {extra}
+    </div>
+  );
+}
+
+function GlassSectionBox({icon,title,sub,children}){return(<div style={{background:"rgba(8,22,40,0.65)",border:"1px solid rgba(26,53,85,0.75)",borderRadius:14,padding:"18px 20px",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",boxShadow:"0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03)"}}><div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,paddingBottom:12,borderBottom:"1px solid rgba(26,53,85,0.6)"}}><span style={{fontSize:18}}>{icon}</span><div><div style={{fontSize:14,fontWeight:700,color:"var(--txt)"}}>{title}</div>{sub&&<div style={{fontSize:11,color:"var(--txt3)"}}>{sub}</div>}</div><span style={{marginLeft:"auto",fontSize:10,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,padding:"3px 10px",borderRadius:20,background:"linear-gradient(90deg,rgba(0,229,192,.1),rgba(59,158,255,.1))",border:"1px solid rgba(0,229,192,.25)",color:"var(--teal)"}}>Guideline-Integrated</span></div>{children}</div>);}
+
+// ════════════════════════════════════════════════════════════
+//  ALL PROTOCOL DATA (abbreviated for the integrated pages)
+// ════════════════════════════════════════════════════════════
+const TNK_ABSOLUTE=[{id:"a1",label:"Any prior intracranial haemorrhage (ICH)"},{id:"a2",label:"Known structural cerebrovascular lesion (AVM / aneurysm)"},{id:"a3",label:"Known intracranial malignancy"},{id:"a4",label:"Ischaemic stroke within 3 months"},{id:"a5",label:"Suspected aortic dissection"},{id:"a6",label:"Active bleeding / bleeding diathesis (excluding menses)"},{id:"a7",label:"Significant closed-head / facial trauma within 3 months"},{id:"a8",label:"Intracranial or intraspinal surgery within 2 months"},{id:"a9",label:"Severe uncontrolled HTN (SBP > 180 / DBP > 110) unresponsive to therapy"}];
+const TNK_RELATIVE=[{id:"r1",label:"Chronic severe poorly controlled hypertension"},{id:"r2",label:"BP SBP > 180 or DBP > 110 on presentation (responding to Rx)"},{id:"r3",label:"Prior ischaemic stroke > 3 months ago"},{id:"r4",label:"Dementia or intracranial pathology"},{id:"r5",label:"Traumatic/prolonged CPR (> 10 min) within 3 weeks"},{id:"r6",label:"Major surgery within 3 weeks"},{id:"r7",label:"Recent (2–4 wk) internal bleeding GI / GU"},{id:"r8",label:"Non-compressible vascular punctures"},{id:"r9",label:"Active peptic ulcer disease"},{id:"r10",label:"Oral anticoagulant therapy (INR > 1.7)"},{id:"r11",label:"Pregnancy"},{id:"r12",label:"Age > 75 years (dose-reduce)"},{id:"r13",label:"Weight < 60 kg"}];
+const TNK_DOSING=[{weight:"< 60 kg",dose:"30 mg",vol:"6 mL"},{weight:"60–<70 kg",dose:"35 mg",vol:"7 mL"},{weight:"70–<80 kg",dose:"40 mg",vol:"8 mL"},{weight:"80–<90 kg",dose:"45 mg",vol:"9 mL"},{weight:"≥ 90 kg",dose:"50 mg",vol:"10 mL"}];
+const STEMI_RX=[{cat:"Antiplatelet",drug:"Aspirin",dose:"324 mg PO chewed — STAT",cor:"I",loe:"A",note:"Immediately, unless true allergy."},{cat:"Antiplatelet",drug:"Ticagrelor",dose:"180 mg PO load → 90 mg BID",cor:"I",loe:"B",note:"Preferred P2Y₁₂ inhibitor."},{cat:"Anticoagulation",drug:"UFH",dose:"60 U/kg IV (max 4,000 U) → 12 U/kg/h",cor:"I",loe:"C",note:"Standard for PCI."},{cat:"Anticoagulation",drug:"Bivalirudin",dose:"0.75 mg/kg IV → 1.75 mg/kg/h",cor:"IIa",loe:"A",note:"Less bleeding."},{cat:"Reperfusion",drug:"Primary PCI",dose:"Door-to-balloon ≤ 90 min / ≤ 120 min (transfer)",cor:"I",loe:"A",note:"Gold standard."},{cat:"Reperfusion",drug:"TNK (Tenecteplase)",dose:"Weight-based single IV bolus — see TNK tab",cor:"I",loe:"A",note:"If PCI > 120 min."},{cat:"Adjunct",drug:"β-Blocker (Metoprolol)",dose:"25–50 mg PO q6–12h within 24 h",cor:"I",loe:"A",note:""},{cat:"Adjunct",drug:"High-Intensity Statin",dose:"Atorvastatin 80 mg PO STAT",cor:"I",loe:"A",note:""}];
+const STEMI_WORKUP=[{icon:"⚡",time:"0 min",label:"12-Lead ECG",detail:"Within 10 min. Right-sided V3R–V4R for RV MI.",class1:true},{icon:"🧬",time:"0 min",label:"High-Sensitivity Troponin",detail:"0h + 1–3h serial draws.",class1:true},{icon:"🩸",time:"0 min",label:"STAT Labs",detail:"CBC, CMP, PT/INR, aPTT, BMP, T&S.",class1:true},{icon:"📷",time:"0 min",label:"Portable CXR",detail:"Cardiomegaly, pulmonary oedema, wide mediastinum.",class1:true},{icon:"🔊",time:"ASAP",label:"Bedside Echo",detail:"LV function, wall motion, effusion.",class1:false},{icon:"💉",time:"0 min",label:"IV Access × 2",detail:"Continuous monitoring, SpO₂, BP q5 min.",class1:true}];
+const NSTEMI_RX=[{cat:"Antiplatelet",drug:"Aspirin",dose:"324 mg PO chewed — STAT",cor:"I",loe:"A",note:""},{cat:"Antiplatelet",drug:"Ticagrelor",dose:"180 mg PO load → 90 mg BID",cor:"I",loe:"B",note:""},{cat:"Anticoagulation",drug:"Enoxaparin",dose:"1 mg/kg SQ BID",cor:"I",loe:"A",note:""},{cat:"Reperfusion",drug:"Urgent PCI (< 2 h)",dose:"Refractory ischaemia / shock / haemodynamic instability",cor:"I",loe:"B",note:""},{cat:"Reperfusion",drug:"Early Invasive (< 24 h)",dose:"GRACE > 140, elevated hs-cTn, new STD",cor:"I",loe:"A",note:""},{cat:"Adjunct",drug:"High-Intensity Statin",dose:"Atorvastatin 80 mg PO STAT",cor:"I",loe:"A",note:""}];
+const TACHY_DRUGS=[{cat:"Unstable → Electrical",drug:"Synchronized Cardioversion",dose:"SVT: 50–100J · AFib: 120–200J biphasic · VT wide/regular: 100J · Polymorphic VT: defibrillation dose (UNSYNC)",cor:"I",loe:"B",note:"Sedate conscious patients if time permits. Never delay for unstable."},{cat:"Stable Narrow Regular",drug:"Vagal Maneuvers",dose:"Modified Valsalva (strain × 15 sec, supine leg raise) — first-line",cor:"I",loe:"B",note:"Effective in ~50% SVT."},{cat:"Stable Narrow Regular",drug:"Adenosine",dose:"6 mg rapid IV push + 20 mL NS flush; if no conversion: 12 mg × 2",cor:"I",loe:"B",note:"⚠ Do NOT use for irregular or pre-excited AFib."},{cat:"Stable Narrow Regular",drug:"Diltiazem",dose:"0.25 mg/kg IV over 2 min (max 25 mg) → 0.35 mg/kg → infusion 5–15 mg/h",cor:"I",loe:"B",note:"Rate control for AFib/flutter. Avoid if EF < 40%."},{cat:"Stable Wide Regular",drug:"Procainamide",dose:"20–50 mg/min IV until suppressed, max 17 mg/kg → maintenance 1–4 mg/min",cor:"IIa",loe:"B",note:"Preferred for stable monomorphic VT. Avoid if prolonged QT."},{cat:"Stable Wide Regular",drug:"Amiodarone",dose:"150 mg over 10 min; repeat prn → 1 mg/min × 6 h → 0.5 mg/min × 18 h",cor:"IIa",loe:"B",note:""},{cat:"Torsades de Pointes",drug:"Magnesium Sulphate",dose:"1–2 g IV over 5–60 min loading; maintenance 0.5–1 g/h",cor:"IIb",loe:"C",note:"First-line for TdP. Correct K⁺, Mg²⁺."}];
+const BRADY_DRUGS=[{cat:"First-Line",drug:"Atropine",dose:"1 mg IV/IO bolus; repeat q3–5 min; max 3 mg total",cor:"I",loe:"B",note:"Ineffective for Mobitz II / 3rd-degree block."},{cat:"Second-Line",drug:"Transcutaneous Pacing (TCP)",dose:"Rate 60–80 bpm; start at 0 mA, ↑ until capture; sedate before if conscious",cor:"I",loe:"B",note:"First-line for Mobitz II / 3rd-degree — do NOT wait for atropine."},{cat:"Second-Line",drug:"Dopamine Infusion",dose:"5–20 mcg/kg/min IV; titrate to HR & BP",cor:"IIa",loe:"B",note:"Equal alternative to TCP if atropine fails."},{cat:"Second-Line",drug:"Epinephrine Infusion",dose:"2–10 mcg/min IV; titrate to response",cor:"IIa",loe:"B",note:""},{cat:"Special Cases",drug:"Glucagon",dose:"3 mg IV bolus; then 3 mg/h infusion if needed",cor:"IIa",loe:"C",note:"β-blocker OR CCB overdose."},{cat:"Special Cases",drug:"Calcium Chloride",dose:"1 g IV slow push over 10 min",cor:"IIa",loe:"C",note:"CCB overdose or hyperkalaemia."}];
+const PALS_DRUGS=[{cat:"Cardiac Arrest",drug:"Epinephrine",dose:"0.01 mg/kg IV/IO q3–5 min (0.1 mL/kg of 1:10,000)\nMax single dose 1 mg",cor:"I",loe:"B",note:"First vasopressor all rhythms."},{cat:"Cardiac Arrest",drug:"Amiodarone",dose:"5 mg/kg IV/IO bolus (shockable) · max 15 mg/kg/day",cor:"IIb",loe:"B",note:"Refractory VF/pVT."},{cat:"Bradycardia",drug:"Atropine",dose:"0.02 mg/kg IV/IO (min 0.1 mg, max 0.5 mg); repeat once",cor:"IIa",loe:"C",note:"Vagal bradycardia / pre-intubation."},{cat:"SVT",drug:"Adenosine",dose:"0.1 mg/kg IV/IO rapid push (max 6 mg)\n2nd: 0.2 mg/kg (max 12 mg)",cor:"I",loe:"B",note:"Proximal IV, immediate NS flush."}];
+
+// ════════════════════════════════════════════════════════════
+//  PROTOCOL PAGES (glass-themed variants)
+// ════════════════════════════════════════════════════════════
+function TNKChecker(){
+  const[abs,setAbs]=useState({});const[rel,setRel]=useState({});const[weight,setWeight]=useState("");const[over75,setOver75]=useState(false);const[pciTime,setPciTime]=useState("");
+  const absCount=Object.values(abs).filter(Boolean).length;const relCount=Object.values(rel).filter(Boolean).length;const pciMins=parseInt(pciTime)||0;const pciDelay=pciMins>120;
+  const wt=parseFloat(weight);const doseRow=!isNaN(wt)&&wt>0?(wt<60?TNK_DOSING[0]:wt<70?TNK_DOSING[1]:wt<80?TNK_DOSING[2]:wt<90?TNK_DOSING[3]:TNK_DOSING[4]):null;
+  let rec="UNDETERMINED",recCol="var(--txt3)",recBg="rgba(74,106,138,.12)",recBr="rgba(74,106,138,.3)",recIcon="❓",recDetail="Complete checklist and enter PCI time.";
+  if(absCount>0){rec="CONTRAINDICATED";recCol="var(--coral)";recBg="rgba(255,107,107,.1)";recBr="rgba(255,107,107,.4)";recIcon="🚫";recDetail=`${absCount} absolute CI(s). TNK CONTRAINDICATED.`;}
+  else if(!pciTime){rec="AWAITING DATA";recIcon="⏳";recDetail="Enter estimated minutes to PCI.";}
+  else if(!pciDelay){rec="PCI PREFERRED";recCol="var(--teal)";recBg="rgba(0,229,192,.08)";recBr="rgba(0,229,192,.35)";recIcon="🏥";recDetail=`PCI ${pciMins} min (≤ 120 min). PRIMARY PCI PREFERRED.`;}
+  else if(relCount>=3){rec="HIGH CAUTION";recCol="var(--gold)";recBg="rgba(245,200,66,.1)";recBr="rgba(245,200,66,.4)";recIcon="⚠️";recDetail=`PCI > 120 min AND ${relCount} relative CIs. Senior/cardiology decision required.`;}
+  else{rec="TNK INDICATED";recCol="var(--teal)";recBg="rgba(0,229,192,.12)";recBr="rgba(0,229,192,.5)";recIcon="✅";const ds=doseRow?` Dose: ${doseRow.dose} (${doseRow.vol}).${over75?" ⚠ Age >75 — consider 50% dose reduction.":""}`:""  ;recDetail=`No absolute CIs. PCI ${pciMins} min > 120 min. TNK INDICATED.${ds}`;}
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{background:recBg,border:`1.5px solid ${recBr}`,borderRadius:12,padding:"13px 16px",backdropFilter:"blur(12px)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:7}}><span style={{fontSize:20}}>{recIcon}</span><div><div style={{fontSize:10,color:"var(--txt3)",textTransform:"uppercase",letterSpacing:".08em",fontFamily:"'JetBrains Mono',monospace"}}>TNK Recommendation</div><div style={{fontSize:16,fontWeight:700,color:recCol,fontFamily:"'JetBrains Mono',monospace"}}>{rec}</div></div></div>
+        <div style={{fontSize:12,color:"var(--txt2)",lineHeight:1.6}}>{recDetail}</div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+        <div><label style={{fontSize:9,color:"var(--txt3)",textTransform:"uppercase",letterSpacing:".06em",fontWeight:700,display:"block",marginBottom:4}}>Weight (kg)</label><input type="number" value={weight} onChange={e=>setWeight(e.target.value)} placeholder="kg…" style={{width:"100%",background:"rgba(14,37,68,.5)",border:"1px solid var(--border)",borderRadius:6,padding:"7px 10px",color:"var(--txt)",fontFamily:"'DM Sans',sans-serif",fontSize:13,outline:"none",backdropFilter:"blur(8px)"}}/>{doseRow&&<div style={{marginTop:4,fontSize:11,color:"var(--teal)",fontFamily:"'JetBrains Mono',monospace"}}>Dose: <strong>{doseRow.dose}</strong> ({doseRow.vol})</div>}</div>
+        <div><label style={{fontSize:9,color:"var(--txt3)",textTransform:"uppercase",letterSpacing:".06em",fontWeight:700,display:"block",marginBottom:4}}>Est. min to PCI</label><input type="number" value={pciTime} onChange={e=>setPciTime(e.target.value)} placeholder="minutes…" style={{width:"100%",background:"rgba(14,37,68,.5)",border:`1px solid ${pciDelay&&pciTime?"var(--coral)":"var(--border)"}`,borderRadius:6,padding:"7px 10px",color:"var(--txt)",fontFamily:"'DM Sans',sans-serif",fontSize:13,outline:"none",backdropFilter:"blur(8px)"}}/>{pciTime&&<div style={{marginTop:4,fontSize:11,color:pciDelay?"var(--coral)":"var(--teal)",fontFamily:"'JetBrains Mono',monospace"}}>{pciDelay?"⚠ >120 min":"✓ PCI preferred"}</div>}</div>
+        <div style={{display:"flex",alignItems:"flex-end",paddingBottom:2}}><label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,color:"var(--txt2)"}}><input type="checkbox" checked={over75} onChange={e=>setOver75(e.target.checked)} style={{width:16,height:16,accentColor:"var(--teal)"}}/>Age &gt; 75</label></div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:6}}>
+        {TNK_DOSING.map((d,i)=>{const active=doseRow&&doseRow.dose===d.dose;return(<div key={i} style={{background:active?"rgba(0,229,192,.12)":"rgba(14,37,68,.4)",border:`1px solid ${active?"rgba(0,229,192,.5)":"var(--border)"}`,borderRadius:8,padding:"8px 10px",textAlign:"center",transition:"all .2s",backdropFilter:"blur(8px)"}}><div style={{fontSize:10,color:"var(--txt3)",marginBottom:3}}>{d.weight}</div><div style={{fontSize:14,fontWeight:700,color:active?"var(--teal)":"var(--txt)",fontFamily:"'JetBrains Mono',monospace"}}>{d.dose}</div><div style={{fontSize:10,color:"var(--txt3)",marginTop:2}}>{d.vol}</div></div>);})}
+      </div>
+      <div style={{fontSize:11,fontWeight:700,color:"var(--coral)",marginBottom:6}}>🚫 Absolute Contraindications</div>
+      <div style={{display:"flex",flexDirection:"column",gap:4}}>{TNK_ABSOLUTE.map(c=>{const on=abs[c.id];return(<label key={c.id} style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",background:on?"rgba(255,107,107,.09)":"rgba(14,37,68,.4)",border:`1px solid ${on?"rgba(255,107,107,.4)":"var(--border)"}`,borderRadius:7,padding:"7px 12px",transition:"all .15s",backdropFilter:"blur(6px)"}}><input type="checkbox" checked={!!on} onChange={e=>setAbs(p=>({...p,[c.id]:e.target.checked}))} style={{width:15,height:15,accentColor:"var(--coral)",cursor:"pointer",flexShrink:0}}/><span style={{fontSize:12,color:on?"var(--coral)":"var(--txt2)"}}>{c.label}</span></label>);})}</div>
+      <div style={{fontSize:11,fontWeight:700,color:"var(--gold)",marginBottom:6,marginTop:4}}>⚠️ Relative Contraindications</div>
+      <div style={{display:"flex",flexDirection:"column",gap:4}}>{TNK_RELATIVE.map(c=>{const on=rel[c.id];return(<label key={c.id} style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",background:on?"rgba(245,200,66,.07)":"rgba(14,37,68,.4)",border:`1px solid ${on?"rgba(245,200,66,.35)":"var(--border)"}`,borderRadius:7,padding:"7px 12px",transition:"all .15s",backdropFilter:"blur(6px)"}}><input type="checkbox" checked={!!on} onChange={e=>setRel(p=>({...p,[c.id]:e.target.checked}))} style={{width:15,height:15,accentColor:"var(--gold)",cursor:"pointer",flexShrink:0}}/><span style={{fontSize:12,color:on?"var(--gold)":"var(--txt2)"}}>{c.label}</span></label>);})}</div>
+    </div>
+  );
+}
+
+function CardiologyConsult(){
+  const[ct,setCt]=useState("");const[cbt,setCbt]=useState("");const[dr,setDr]=useState("");const[mode,setMode]=useState("phone");const[recs,setRecs]=useState("");const[saved,setSaved]=useState(false);const[disp,setDisp]=useState("");const[urg,setUrg]=useState("");
+  return(<div style={{display:"flex",flexDirection:"column",gap:14}}>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+      {[{label:"Consult Time",value:ct||"—",icon:"📞",color:"var(--blue)"},{label:"Cardiologist",value:dr||"—",icon:"🫀",color:"var(--teal)"},{label:"Urgency",value:urg||"—",icon:"⚡",color:"var(--coral)"}].map((s,i)=><div key={i} style={{background:"rgba(14,37,68,.5)",border:"1px solid var(--border)",borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,backdropFilter:"blur(10px)"}}><span style={{fontSize:20}}>{s.icon}</span><div><div style={{fontSize:9,color:"var(--txt3)",textTransform:"uppercase",letterSpacing:".06em"}}>{s.label}</div><div style={{fontSize:13,fontWeight:700,color:s.color,fontFamily:"'JetBrains Mono',monospace"}}>{s.value}</div></div></div>)}
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+      {[{label:"Time Consulted",val:ct,set:setCt},{label:"Time Called Back",val:cbt,set:setCbt}].map((f,i)=><div key={i}><label style={{fontSize:9,color:"var(--txt3)",textTransform:"uppercase",letterSpacing:".06em",fontWeight:700,display:"block",marginBottom:4}}>{f.label}</label><div style={{display:"flex",gap:6}}><input type="time" value={f.val} onChange={e=>f.set(e.target.value)} style={{flex:1,background:"rgba(14,37,68,.5)",border:"1px solid var(--border)",borderRadius:6,padding:"7px 10px",color:"var(--txt)",fontFamily:"'JetBrains Mono',monospace",fontSize:13,outline:"none",backdropFilter:"blur(8px)"}}/><button onClick={()=>f.set(nowTime())} style={{background:"rgba(59,158,255,.15)",border:"1px solid rgba(59,158,255,.3)",borderRadius:6,padding:"0 10px",color:"var(--blue)",fontSize:11,cursor:"pointer",whiteSpace:"nowrap"}}>Now</button></div></div>)}
+      <div><label style={{fontSize:9,color:"var(--txt3)",textTransform:"uppercase",letterSpacing:".06em",fontWeight:700,display:"block",marginBottom:4}}>Cardiologist</label><input value={dr} onChange={e=>setDr(e.target.value)} placeholder="Dr. …" style={{width:"100%",background:"rgba(14,37,68,.5)",border:"1px solid var(--border)",borderRadius:6,padding:"7px 10px",color:"var(--txt)",fontFamily:"'DM Sans',sans-serif",fontSize:13,outline:"none",backdropFilter:"blur(8px)"}}/></div>
+      <div><label style={{fontSize:9,color:"var(--txt3)",textTransform:"uppercase",letterSpacing:".06em",fontWeight:700,display:"block",marginBottom:4}}>Urgency</label><div style={{display:"flex",gap:5}}>{[{v:"STAT",c:"var(--coral)",bg:"rgba(255,107,107,.15)",br:"rgba(255,107,107,.4)"},{v:"Urgent",c:"var(--gold)",bg:"rgba(245,200,66,.12)",br:"rgba(245,200,66,.3)"},{v:"Routine",c:"var(--blue)",bg:"rgba(59,158,255,.12)",br:"rgba(59,158,255,.3)"}].map(({v,c,bg,br})=><button key={v} onClick={()=>setUrg(v)} style={{flex:1,padding:"7px 0",borderRadius:6,fontSize:11,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontWeight:700,background:urg===v?bg:"rgba(14,37,68,.5)",border:`1px solid ${urg===v?br:"var(--border)"}`,color:urg===v?c:"var(--txt3)",backdropFilter:"blur(6px)"}}>{v}</button>)}</div></div>
+      <div style={{gridColumn:"1/-1"}}><label style={{fontSize:9,color:"var(--txt3)",textTransform:"uppercase",letterSpacing:".06em",fontWeight:700,display:"block",marginBottom:4}}>Disposition</label><select value={disp} onChange={e=>setDisp(e.target.value)} style={{width:"100%",background:"rgba(14,37,68,.5)",border:"1px solid var(--border)",borderRadius:6,padding:"7px 10px",color:"var(--txt)",fontFamily:"'DM Sans',sans-serif",fontSize:13,outline:"none"}}><option value="">— Select —</option><option>Cath lab — emergent</option><option>CCU / Cardiac ICU</option><option>Telemetry floor</option><option>Transfer to PCI centre</option><option>Medical management</option><option>Discharge with follow-up</option></select></div>
+    </div>
+    <textarea value={recs} onChange={e=>setRecs(e.target.value)} rows={4} placeholder="Document cardiologist's recommendations…" style={{width:"100%",background:"rgba(14,37,68,.5)",border:"1px solid var(--border)",borderRadius:8,padding:"10px 12px",color:"var(--txt)",fontFamily:"'DM Sans',sans-serif",fontSize:13,outline:"none",resize:"vertical",lineHeight:1.5,backdropFilter:"blur(8px)"}}/>
+    <button onClick={()=>{setSaved(true);setTimeout(()=>setSaved(false),2500);}} style={{background:saved?"rgba(0,229,192,.2)":"var(--teal)",color:saved?"var(--teal)":"var(--bg)",border:`1px solid ${saved?"rgba(0,229,192,.5)":"transparent"}`,borderRadius:8,padding:"10px 0",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,cursor:"pointer",transition:"all .3s",width:"100%"}}>{saved?"✓ Consult Saved":"💾 Save Cardiology Consult"}</button>
+  </div>);
+}
+
+// Compact inline protocol pages — each uses GlassPageHeader/GlassSectionBox
+function ACSPage({onBack}){const[acsType,setAcsType]=useState("STEMI");const[tab,setTab]=useState("algorithm");const TABS=[{id:"algorithm",label:"Algorithm",icon:"🔄"},{id:"workup",label:"Workup",icon:"✅"},{id:"treatment",label:"Rx",icon:"💊"},{id:"tnk",label:"TNK Tool",icon:"💉"},{id:"cardiology",label:"Consult",icon:"📞"}];const[checked,setChecked]=useState({});
+  return(<div style={{display:"flex",flexDirection:"column",gap:14}}>
+    <GlassPageHeader icon="🫀" title="Acute Coronary Syndrome" badge="2025 ACC/AHA" badgeColor="coral" sub="STEMI · NSTEMI · Unstable Angina" onBack={onBack} extra={<div style={{display:"flex",gap:8,alignItems:"center"}}>{[{v:"STEMI",c:"var(--coral)",bg:"rgba(255,107,107,.15)",br:"rgba(255,107,107,.5)"},{v:"NSTEMI",c:"var(--orange)",bg:"rgba(255,159,67,.12)",br:"rgba(255,159,67,.4)"},{v:"UA",c:"var(--gold)",bg:"rgba(245,200,66,.12)",br:"rgba(245,200,66,.4)"}].map(({v,c,bg,br})=><button key={v} onClick={()=>setAcsType(v)} style={{padding:"6px 14px",borderRadius:20,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",transition:"all .2s",background:acsType===v?bg:"rgba(14,37,68,.5)",border:`1.5px solid ${acsType===v?br:"rgba(26,53,85,.7)"}`,color:acsType===v?c:"var(--txt3)",backdropFilter:"blur(8px)"}}>{v}</button>)}</div>}/>
+    <TimeBanner targets={acsType==="STEMI"?[{icon:"📋",label:"Door-to-ECG",target:"≤ 10 min",color:"var(--blue)"},{icon:"🏥",label:"D2B",target:"≤ 90 min",color:"var(--teal)"},{icon:"💉",label:"D2N (TNK)",target:"≤ 30 min",color:"var(--coral)"},{icon:"⏱",label:"FMC-to-Device",target:"≤ 120 min",color:"var(--gold)"}]:[{icon:"📋",label:"Door-to-ECG",target:"≤ 10 min",color:"var(--blue)"},{icon:"🧬",label:"Troponin",target:"≤ 60 min",color:"var(--purple)"},{icon:"🏥",label:"High-Risk PCI",target:"≤ 2 h",color:"var(--coral)"},{icon:"⏱",label:"Early Invasive",target:"≤ 24 h",color:"var(--gold)"}]}/>
+    <div style={{display:"flex",gap:4,background:"rgba(8,22,40,0.65)",border:"1px solid rgba(26,53,85,.75)",borderRadius:10,padding:4,backdropFilter:"blur(12px)"}}>
+      {TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:7,fontSize:12,fontWeight:tab===t.id?700:500,fontFamily:"'DM Sans',sans-serif",cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,transition:"all .2s",background:tab===t.id?"rgba(255,107,107,.12)":"transparent",border:tab===t.id?"1px solid rgba(255,107,107,.3)":"1px solid transparent",color:tab===t.id?"var(--coral)":"var(--txt3)"}}><span>{t.icon}</span>{t.label}</button>)}
+    </div>
+    <GlassSectionBox icon={TABS.find(t=>t.id===tab)?.icon} title={TABS.find(t=>t.id===tab)?.label+" — "+acsType} sub="2025 ACC/AHA/ACEP/NAEMSP/SCAI">
+      {tab==="algorithm"&&<FlowChart nodes={[{type:"start",text:"Chest pain / ACS symptoms"},{arrow:true},{type:"action",color:"blue",text:"Immediate Assessment",badge:"0–10 min",items:["12-lead ECG within 10 min","IV × 2, O₂ monitoring","ASA 324 mg PO","Vital signs, SpO₂"]},{arrow:true},{type:"decision",text:"ECG Interpretation",branches:[{color:"coral",tag:"STEMI",label:"STE ≥ 1 mm\nOR New LBBB"},{color:"blue",tag:"UA",label:"Normal ECG\nSerial + hs-cTn"},{color:"orange",tag:"NSTE-ACS",label:"STD / T-wave\nchanges"}]},{arrow:true},...(acsType==="STEMI"?[{type:"action",color:"coral",text:"STEMI Activation",badge:"< 10 min",items:["Cath lab alert STAT","Cardiology consult","ASA + P2Y₁₂ load","UFH / bivalirudin"]},{arrow:true},{type:"decision",text:"PCI ≤ 120 min?",branches:[{color:"teal",tag:"YES",label:"Primary PCI\nD2B ≤ 90 min"},{color:"gold",tag:"NO",label:"TNK fibrinolysis\nD2N ≤ 30 min"}]}]:[{type:"action",color:"orange",text:"NSTE-ACS Management",badge:"< 30 min",items:["hs-cTn 0h+1–3h","ASA + ticagrelor","Enoxaparin / fondaparinux","GRACE / TIMI risk"]},{arrow:true},{type:"decision",text:"GRACE Risk?",branches:[{color:"coral",tag:"HIGH > 140",label:"Urgent cath\n< 2–24 h"},{color:"blue",tag:"LOW/MED",label:"Selective invasive\nMedical Rx first"}]}]),{arrow:true},{type:"outcome",color:"teal",text:"Complete Revascularisation (Class I — 2025)",sub:"DAPT · Statin · ACE-I · β-blocker · Cardiac rehab"}]}/>}
+      {tab==="workup"&&<div style={{display:"flex",flexDirection:"column",gap:7}}>{STEMI_WORKUP.map((w,i)=>{const done=checked[w.icon+i];return(<div key={i} onClick={()=>setChecked(p=>({...p,[w.icon+i]:!done}))} style={{display:"grid",gridTemplateColumns:"32px 1fr auto",gap:10,alignItems:"center",background:done?"rgba(0,229,192,.05)":"rgba(14,37,68,.4)",border:`1px solid ${done?"rgba(0,229,192,.3)":"rgba(26,53,85,.7)"}`,borderRadius:8,padding:"9px 12px",cursor:"pointer",transition:"all .2s",backdropFilter:"blur(8px)"}}><div style={{width:28,height:28,borderRadius:8,background:done?"rgba(0,229,192,.15)":"rgba(59,158,255,.08)",border:`1px solid ${done?"rgba(0,229,192,.4)":"rgba(59,158,255,.25)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>{done?"✓":w.icon}</div><div><div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:12,fontWeight:600,color:done?"var(--teal)":"var(--txt)",textDecoration:done?"line-through":"none"}}>{w.label}</span>{w.class1&&<span style={{fontSize:9,background:"rgba(0,229,192,.1)",color:"var(--teal)",border:"1px solid rgba(0,229,192,.3)",borderRadius:20,padding:"1px 6px",fontFamily:"'JetBrains Mono',monospace",fontWeight:700}}>COR I</span>}</div><div style={{fontSize:11,color:"var(--txt3)",marginTop:2}}>{w.detail}</div></div><div style={{fontSize:9,color:"var(--txt4)",fontFamily:"'JetBrains Mono',monospace",whiteSpace:"nowrap"}}>{w.time}</div></div>);})}</div>}
+      {tab==="treatment"&&<DrugTable rows={acsType==="STEMI"?STEMI_RX:NSTEMI_RX}/>}
+      {tab==="tnk"&&<>{acsType!=="STEMI"&&<div style={{background:"rgba(245,200,66,.08)",border:"1px solid rgba(245,200,66,.3)",borderRadius:8,padding:"8px 14px",fontSize:11,color:"var(--gold)",marginBottom:14}}>⚠ TNK indicated for STEMI only.</div>}<TNKChecker/></>}
+      {tab==="cardiology"&&<CardiologyConsult/>}
+    </GlassSectionBox>
+  </div>);}
+
+function TachycardiaPage({onBack}){const[tab,setTab]=useState("algorithm");const TABS=[{id:"algorithm",label:"Algorithm",icon:"🔄"},{id:"drugs",label:"Drugs",icon:"💊"},{id:"cardioversion",label:"Cardioversion",icon:"⚡"}];
+  return(<div style={{display:"flex",flexDirection:"column",gap:14}}>
+    <GlassPageHeader icon="⚡" title="Adult Tachycardia" badge="ACLS 2025" badgeColor="gold" sub="HR > 100 bpm with pulse · Stable vs Unstable assessment" onBack={onBack}/>
+    <TimeBanner targets={[{icon:"📋",label:"Assess Stability",target:"Immediate",color:"var(--coral)"},{icon:"⚡",label:"Cardiovert (Unstable)",target:"< 3 min",color:"var(--gold)"},{icon:"💊",label:"Adenosine (SVT)",target:"Rapid IV push",color:"var(--teal)"},{icon:"🔍",label:"12-Lead ECG",target:"STAT",color:"var(--blue)"}]}/>
+    <div style={{display:"flex",gap:4,background:"rgba(8,22,40,0.65)",border:"1px solid rgba(26,53,85,.75)",borderRadius:10,padding:4,backdropFilter:"blur(12px)"}}>{TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:7,fontSize:12,fontWeight:tab===t.id?700:500,fontFamily:"'DM Sans',sans-serif",cursor:"pointer",whiteSpace:"nowrap",transition:"all .2s",background:tab===t.id?"rgba(245,200,66,.12)":"transparent",border:tab===t.id?"1px solid rgba(245,200,66,.3)":"1px solid transparent",color:tab===t.id?"var(--gold)":"var(--txt3)"}}><span>{t.icon}</span>{t.label}</button>)}</div>
+    <GlassSectionBox icon={TABS.find(t=>t.id===tab)?.icon} title={TABS.find(t=>t.id===tab)?.label+" — Adult Tachycardia"} sub="AHA/ACLS 2025 Algorithm">
+      {tab==="algorithm"&&<FlowChart nodes={[{type:"start",text:"Tachycardia with pulse — HR > 100 bpm (symptomatic typically > 150)"},{arrow:true},{type:"action",color:"blue",text:"Initial Assessment",badge:"Immediate",items:["12-lead ECG · Airway · O₂ if SpO₂ < 94%","IV access · BP · SpO₂ · Continuous monitor","Treat reversible causes (H's & T's)"]},{arrow:true},{type:"decision",text:"Haemodynamically stable?",branches:[{color:"coral",tag:"UNSTABLE",label:"Hypotension · Altered MS\nShock · Ischaemic pain · AHF"},{color:"teal",tag:"STABLE",label:"Adequate perfusion\nNo shock signs"}]},{arrow:true},{type:"action",color:"coral",text:"UNSTABLE — Immediate Synchronized Cardioversion",items:["Sedate if time permits — never delay","Narrow/regular: 50–100 J · AFib: 120–200 J","Wide/regular: 100 J · Polymorphic VT: defibrillate (unsync)"]},{arrow:true},{type:"decision",text:"QRS Duration?",branches:[{color:"blue",tag:"NARROW < 0.12s",label:"SVT likely\nVagal → Adenosine → CCB/BB"},{color:"orange",tag:"WIDE ≥ 0.12s",label:"VT until proven otherwise\nProcainamide or Amiodarone"}]},{arrow:true},{type:"action",color:"blue",text:"Stable SVT — Narrow QRS",items:["1️⃣ Vagal maneuvers (modified Valsalva)","2️⃣ Adenosine 6 mg rapid IV push → 12 mg × 2","3️⃣ Diltiazem 0.25 mg/kg IV OR Metoprolol 2.5–5 mg IV"]},{arrow:true},{type:"outcome",color:"teal",text:"Expert Consultation + Post-Conversion Care",sub:"Identify underlying cause · Anticoagulation if AFib · EP referral for recurrent SVT"}]}/>}
+      {tab==="drugs"&&<DrugTable rows={TACHY_DRUGS}/>}
+      {tab==="cardioversion"&&(<div style={{display:"flex",flexDirection:"column",gap:10}}><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>{[{rhythm:"SVT (narrow, regular)",energy:"50–100 J",type:"Sync"},{rhythm:"AFib (narrow, irregular)",energy:"120–200 J biphasic",type:"Sync"},{rhythm:"Monomorphic VT",energy:"100 J",type:"Sync"},{rhythm:"Polymorphic VT / TdP",energy:"200 J biphasic",type:"UNSYNC"},{rhythm:"VF / Pulseless VT",energy:"200 J biphasic",type:"UNSYNC"},{rhythm:"AFL / narrow SVT",energy:"50–100 J",type:"Sync"}].map((c,i)=><div key={i} style={{background:"rgba(14,37,68,.5)",border:"1px solid var(--border)",borderRadius:10,padding:"12px 14px",backdropFilter:"blur(8px)"}}><div style={{fontSize:11,color:"var(--txt3)",marginBottom:6}}>{c.rhythm}</div><div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}><div style={{fontSize:16,fontWeight:700,color:c.type==="UNSYNC"?"var(--coral)":"var(--teal)",fontFamily:"'JetBrains Mono',monospace"}}>{c.energy}</div><span style={{fontSize:9,background:c.type==="UNSYNC"?"rgba(255,107,107,.15)":"rgba(0,229,192,.1)",color:c.type==="UNSYNC"?"var(--coral)":"var(--teal)",border:`1px solid ${c.type==="UNSYNC"?"rgba(255,107,107,.4)":"rgba(0,229,192,.3)"}`,borderRadius:20,padding:"2px 7px",fontFamily:"'JetBrains Mono',monospace",fontWeight:700}}>{c.type}</span></div></div>)}</div><div style={{fontSize:10,color:"var(--txt4)",fontFamily:"'JetBrains Mono',monospace",padding:"10px 12px",background:"rgba(14,37,68,.4)",borderRadius:8,border:"1px solid var(--border)",lineHeight:1.7,backdropFilter:"blur(8px)"}}>⚠ Always sync on R-wave for organized rhythms · Sedate conscious patients · NEVER sync for polymorphic VT/VF<br/>Source: AHA/ACLS 2025 — cpr.heart.org</div></div>)}
+    </GlassSectionBox>
+  </div>);}
+
+function BradycardiaPage({onBack}){const[tab,setTab]=useState("algorithm");const TABS=[{id:"algorithm",label:"Algorithm",icon:"🔄"},{id:"drugs",label:"Drugs",icon:"💊"}];
+  const HTS=[{cat:"H's",items:[["Hypovolaemia","IV fluids, transfusion"],["Hypoxia","O₂, airway"],["Acidosis","NaHCO₃, treat cause"],["Hypo/Hyperkalaemia","Correct K⁺; Ca²⁺ for hyperK"],["Hypothermia","Active re-warming"]]},{cat:"T's",items:[["Tension PTX","Needle decompression → chest tube"],["Tamponade","Pericardiocentesis / ECHO"],["Toxins","β-blockers, CCBs — specific antidotes"],["Thrombosis","Heparin / thrombolytics / cath lab"],["Trauma","Haemorrhage control"]]}];
+  return(<div style={{display:"flex",flexDirection:"column",gap:14}}>
+    <GlassPageHeader icon="🔻" title="Adult Bradycardia" badge="ACLS 2025" badgeColor="blue" sub="HR < 50 bpm · Symptomatic assessment · AHA/ACLS 2025" onBack={onBack}/>
+    <TimeBanner targets={[{icon:"📋",label:"Identify Symptoms",target:"Immediate",color:"var(--coral)"},{icon:"💊",label:"Atropine",target:"< 2 min",color:"var(--teal)"},{icon:"🔌",label:"TCP if no response",target:"< 5 min",color:"var(--gold)"},{icon:"📡",label:"Transvenous Pacing",target:"If TCP fails",color:"var(--blue)"}]}/>
+    <div style={{display:"flex",gap:4,background:"rgba(8,22,40,0.65)",border:"1px solid rgba(26,53,85,.75)",borderRadius:10,padding:4,backdropFilter:"blur(12px)"}}>{[...TABS,{id:"causes",label:"H's & T's",icon:"🔍"}].map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:7,fontSize:12,fontWeight:tab===t.id?700:500,fontFamily:"'DM Sans',sans-serif",cursor:"pointer",whiteSpace:"nowrap",transition:"all .2s",background:tab===t.id?"rgba(59,158,255,.12)":"transparent",border:tab===t.id?"1px solid rgba(59,158,255,.3)":"1px solid transparent",color:tab===t.id?"var(--blue)":"var(--txt3)"}}><span>{t.icon}</span>{t.label}</button>)}</div>
+    <GlassSectionBox icon="🔻" title="Adult Bradycardia with Pulse" sub="AHA/ACLS 2025">
+      {tab==="algorithm"&&<FlowChart nodes={[{type:"start",text:"Bradycardia with pulse — HR typically < 50 bpm"},{arrow:true},{type:"action",color:"blue",text:"Initial Assessment",badge:"Immediate",items:["Airway · breathing · O₂ if SpO₂ < 94%","12-lead ECG — identify block type","IV/IO access · continuous monitoring"]},{arrow:true},{type:"decision",text:"Haemodynamic compromise?",branches:[{color:"teal",tag:"ADEQUATE",label:"Observe & monitor\nTreat underlying cause"},{color:"coral",tag:"POOR PERFUSION",label:"Hypotension · AMS\nShock · Ischaemia"}]},{arrow:true},{type:"decision",text:"Block type?",branches:[{color:"blue",tag:"1st / Mobitz I",label:"Atropine likely effective\nStart with atropine first"},{color:"coral",tag:"Mobitz II / 3rd",label:"Atropine UNLIKELY effective\n→ TCP IMMEDIATELY"}]},{arrow:true},{type:"action",color:"teal",text:"Atropine — First Line",items:["1 mg IV bolus q3–5 min","Max 3 mg total","⚠ Ineffective for Mobitz II / 3rd-degree"]},{arrow:true},{type:"action",color:"orange",text:"Second Line: TCP + Vasopressor Infusions",items:["TCP: set 60–80 bpm, ↑ mA until capture, sedate","Dopamine 5–20 mcg/kg/min IV","OR Epinephrine 2–10 mcg/min IV","Expert consultation — EP/cardiology"]},{arrow:true},{type:"outcome",color:"teal",text:"Transvenous Pacing if Refractory",sub:"Central venous access · EP / Cardiology mandatory · Consider permanent pacemaker"}]}/>}
+      {tab==="drugs"&&<DrugTable rows={BRADY_DRUGS}/>}
+      {tab==="causes"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>{HTS.map((g,i)=><div key={i} style={{background:"rgba(14,37,68,.5)",border:"1px solid var(--border)",borderRadius:10,padding:"14px 16px",backdropFilter:"blur(8px)"}}><div style={{fontSize:13,fontWeight:700,color:i===0?"var(--blue)":"var(--orange)",marginBottom:12,fontFamily:"'JetBrains Mono',monospace"}}>{g.cat}</div>{g.items.map(([cause,tx],j)=><div key={j} style={{display:"grid",gridTemplateColumns:"1fr 1.2fr",gap:8,marginBottom:8,paddingBottom:8,borderBottom:j<g.items.length-1?"1px solid rgba(26,53,85,.5)":"none"}}><div style={{fontSize:12,fontWeight:600,color:"var(--txt)"}}>{cause}</div><div style={{fontSize:11,color:"var(--txt3)"}}>{tx}</div></div>)}</div>)}</div>}
+    </GlassSectionBox>
+  </div>);}
+
+function PediatricsPage({onBack}){const[tab,setTab]=useState("cardiac");const TABS=[{id:"cardiac",label:"Cardiac Arrest",icon:"💔"},{id:"brady",label:"Bradycardia",icon:"🔻"},{id:"tachy",label:"Tachycardia",icon:"⚡"},{id:"drugs",label:"Drugs",icon:"💊"}];
+  return(<div style={{display:"flex",flexDirection:"column",gap:14}}>
+    <GlassPageHeader icon="👶" title="Pediatric ACLS" badge="PALS 2025" badgeColor="purple" sub="AHA/AAP · Weight-based dosing · All rhythms" onBack={onBack}/>
+    <TimeBanner targets={[{icon:"💔",label:"Start CPR",target:"Immediately",color:"var(--coral)"},{icon:"⚡",label:"1st Defib (VF/pVT)",target:"2 J/kg",color:"var(--gold)"},{icon:"💉",label:"Epinephrine",target:"0.01 mg/kg q3–5min",color:"var(--teal)"},{icon:"📋",label:"IO if no IV",target:"< 90 sec",color:"var(--blue)"}]}/>
+    <div style={{display:"flex",gap:4,overflowX:"auto",background:"rgba(8,22,40,0.65)",border:"1px solid rgba(26,53,85,.75)",borderRadius:10,padding:4,backdropFilter:"blur(12px)"}}>{TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:7,fontSize:12,fontWeight:tab===t.id?700:500,fontFamily:"'DM Sans',sans-serif",cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,transition:"all .2s",background:tab===t.id?"rgba(155,109,255,.12)":"transparent",border:tab===t.id?"1px solid rgba(155,109,255,.3)":"1px solid transparent",color:tab===t.id?"var(--purple)":"var(--txt3)"}}><span>{t.icon}</span>{t.label}</button>)}</div>
+    <GlassSectionBox icon={TABS.find(t=>t.id===tab)?.icon} title={TABS.find(t=>t.id===tab)?.label+" — Pediatric ACLS"} sub="AHA/AAP PALS 2025 · All doses weight-based">
+      {tab==="cardiac"&&<FlowChart nodes={[{type:"start",text:"Paediatric cardiac arrest — no pulse or not breathing normally"},{arrow:true},{type:"action",color:"coral",text:"High-Quality CPR",badge:"Start immediately",items:["Rate 100–120/min · Depth ≥ ⅓ AP diameter","Full chest recoil · CCF ≥ 60%","1 rescuer 30:2 · 2 rescuers 15:2","IO if IV not established within 90 sec"]},{arrow:true},{type:"decision",text:"Rhythm shockable?",branches:[{color:"coral",tag:"SHOCKABLE — VF/pVT",label:"Defibrillate 2 J/kg\nResume CPR immediately"},{color:"blue",tag:"NON-SHOCKABLE — Asystole/PEA",label:"CPR + Epinephrine\n0.01 mg/kg q3–5 min"}]},{arrow:true},{type:"action",color:"coral",text:"Shockable — VF / pVT",items:["2 J/kg → CPR 2 min → check rhythm","4 J/kg → CPR → Epi 0.01 mg/kg IV/IO","4 J/kg → CPR → Amiodarone 5 mg/kg OR Lidocaine 1 mg/kg","Max 10 J/kg · Identify reversible causes"]},{arrow:true},{type:"outcome",color:"teal",text:"ROSC → Post-Cardiac Arrest Care",sub:"Target SpO₂ 94–99% · No hyperthermia · TTM · Treat seizures · PICU"}]}/>}
+      {tab==="brady"&&<FlowChart nodes={[{type:"start",text:"Paediatric bradycardia — HR < 60 bpm with poor perfusion"},{arrow:true},{type:"action",color:"blue",text:"Support ABCs",badge:"Immediate",items:["Airway · PPV if inadequate breathing","O₂ target SpO₂ ≥ 94%","Monitor · IV/IO access"]},{arrow:true},{type:"decision",text:"HR < 60 despite adequate oxygenation?",branches:[{color:"coral",tag:"YES — compromised",label:"Begin CPR 15:2\nEpinephrine 0.01 mg/kg"},{color:"teal",tag:"NO — HR ≥ 60",label:"Observe · ABCs\nTreat cause · Cardiology"}]},{arrow:true},{type:"outcome",color:"teal",text:"TCP for refractory bradycardia",sub:"Paediatric cardiology referral · Treat reversible causes"}]}/>}
+      {tab==="tachy"&&<FlowChart nodes={[{type:"start",text:"Paediatric tachycardia — HR > age-appropriate normal"},{arrow:true},{type:"decision",text:"Haemodynamically stable?",branches:[{color:"coral",tag:"UNSTABLE",label:"Sync cardioversion\nSVT: 0.5–1 J/kg → 2 J/kg\nVT: 0.5–1 J/kg"},{color:"teal",tag:"STABLE",label:"Narrow: vagal + adenosine\nWide: expert consultation"}]},{arrow:true},{type:"action",color:"blue",text:"Stable SVT — Narrow QRS",items:["Vagal maneuvers (ice to face infant; Valsalva older child)","Adenosine 0.1 mg/kg IV rapid (max 6 mg) → 0.2 mg/kg","Amiodarone 5 mg/kg over 20–60 min OR Procainamide 15 mg/kg"]},{arrow:true},{type:"outcome",color:"teal",text:"Conversion to Sinus Rhythm",sub:"Paediatric cardiology · EP referral for recurrent SVT"}]}/>}
+      {tab==="drugs"&&<DrugTable rows={PALS_DRUGS}/>}
+    </GlassSectionBox>
+  </div>);}
+
+function PregnancyPage({onBack}){const[tab,setTab]=useState("algorithm");const[gest,setGest]=useState("");const[mins,setMins]=useState("");const[rosc,setROSC]=useState(false);const TABS=[{id:"algorithm",label:"Algorithm",icon:"🔄"},{id:"causes",label:"ABCDEFGH",icon:"🔍"},{id:"pmcd",label:"PMCD Tool",icon:"⚕"}];
+  const g=parseFloat(gest)||0;const m=parseFloat(mins)||0;const pmcdOk=g>=20;const urgent=m>=4;
+  const CAUSES=[{l:"A",title:"Anaesthetic complications",d:"Local anaesthetic toxicity, failed intubation, high spinal — call anaesthesiology"},{l:"B",title:"Bleeding",d:"Haemorrhage, DIC, placenta praevia/abruption, uterine rupture"},{l:"C",title:"Cardiovascular",d:"MI, dissection, peripartum cardiomyopathy, arrhythmia"},{l:"D",title:"Drugs",d:"Magnesium toxicity → give Ca²⁺; oxytocin bolus; opioids"},{l:"E",title:"Embolic",d:"PE (massive), amniotic fluid embolism"},{l:"F",title:"Fever / sepsis",d:"Chorioamnionitis, septic abortion — antibiotics + source control"},{l:"G",title:"General H's & T's",d:"Hypovolaemia, Hypoxia, Hypo/Hyperkalemia, Hypothermia, Tension PTX, Tamponade, Toxins, Thrombosis"},{l:"H",title:"Hypertension / eclampsia",d:"Severe HTN, HELLP, eclampsia — MgSO₄, antihypertensives, expedite delivery"}];
+  return(<div style={{display:"flex",flexDirection:"column",gap:14}}>
+    <GlassPageHeader icon="🤰" title="Cardiac Arrest in Pregnancy" badge="AHA 2020" badgeColor="purple" sub="In-hospital ACLS · Maternal resuscitation · Perimortem C-section" onBack={onBack}/>
+    <div style={{background:"rgba(155,109,255,.07)",border:"1px solid rgba(155,109,255,.28)",borderRadius:10,padding:"10px 16px",display:"flex",alignItems:"center",gap:10,backdropFilter:"blur(10px)"}}><span style={{fontSize:18}}>⚠️</span><div style={{fontSize:12,color:"var(--txt2)",lineHeight:1.5}}><strong style={{color:"var(--purple)"}}>Dual-patient emergency.</strong> Standard ACLS + obstetric interventions simultaneously from minute 0. Assemble maternal cardiac arrest team AND neonatal team immediately.</div></div>
+    <TimeBanner targets={[{icon:"🔄",label:"CPR + LUD",target:"Immediately",color:"var(--coral)"},{icon:"✈️",label:"IV above diaphragm",target:"0–2 min",color:"var(--orange)"},{icon:"🫁",label:"Advanced airway",target:"ASAP",color:"var(--gold)"},{icon:"🔪",label:"PMCD if no ROSC",target:"By 5 min",color:"var(--purple)"}]}/>
+    <div style={{display:"flex",gap:4,overflowX:"auto",background:"rgba(8,22,40,0.65)",border:"1px solid rgba(26,53,85,.75)",borderRadius:10,padding:4,backdropFilter:"blur(12px)"}}>{TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:7,fontSize:12,fontWeight:tab===t.id?700:500,fontFamily:"'DM Sans',sans-serif",cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,transition:"all .2s",background:tab===t.id?"rgba(155,109,255,.12)":"transparent",border:tab===t.id?"1px solid rgba(155,109,255,.3)":"1px solid transparent",color:tab===t.id?"var(--purple)":"var(--txt3)"}}><span>{t.icon}</span>{t.label}</button>)}</div>
+    <GlassSectionBox icon={TABS.find(t=>t.id===tab)?.icon} title={TABS.find(t=>t.id===tab)?.label+" — Cardiac Arrest in Pregnancy"} sub="AHA 2020 In-Hospital Algorithm">
+      {tab==="algorithm"&&<FlowChart nodes={[{type:"start",text:"Pregnant patient — cardiac arrest · Call maternal arrest team + neonatal team STAT"},{arrow:true},{type:"action",color:"purple",text:"Simultaneously: BLS/ACLS + Obstetric Interventions",badge:"Time 0",items:["HIGH-QUALITY CPR — compressions slightly higher on sternum","Manual Left Uterine Displacement (LUD) — continuous, dedicated team member","100% O₂ — most experienced provider for airway; early intubation","IV above diaphragm (arm/central) — aortocaval compression impairs leg IVs","Defibrillate per standard ACLS — same energy doses","Epinephrine 1 mg IV q3–5 min (not vasopressin — causes uterine contraction)","Stop Mg²⁺ if running → give Calcium chloride 1 g IV immediately"]},{arrow:true},{type:"decision",text:"ROSC within 4 minutes?",branches:[{color:"teal",tag:"ROSC ACHIEVED",label:"Maternal stabilisation\nFoetal monitoring\nICU / OB care"},{color:"coral",tag:"NO ROSC by 4 min",label:"PMCD NOW\nDeliver by 5 min\nIf fundus ≥ umbilicus"}]},{arrow:true},{type:"action",color:"coral",text:"Perimortem Caesarean Delivery (PMCD)",badge:"By 5 min",items:["Perform at bedside — do NOT transfer to OR","Vertical midline incision — fastest access","Continue CPR during and after delivery","Neonatal team resuscitates infant immediately","Relieves aortocaval compression → ↑ venous return → ↑ CPR efficacy"]},{arrow:true},{type:"outcome",color:"teal",text:"Post-ROSC: Maternal + Foetal ICU Care",sub:"TTM · Haemodynamic support · Treat aetiology · Neonatal care · MFM consultation"}]}/>}
+      {tab==="causes"&&<div style={{display:"flex",flexDirection:"column",gap:5}}>{CAUSES.map((c,i)=><div key={i} style={{display:"grid",gridTemplateColumns:"36px 160px 1fr",gap:12,alignItems:"center",background:"rgba(14,37,68,.4)",border:"1px solid rgba(26,53,85,.6)",borderRadius:8,padding:"10px 14px",backdropFilter:"blur(8px)"}}><div style={{width:32,height:32,borderRadius:8,background:"rgba(155,109,255,.15)",border:"1px solid rgba(155,109,255,.3)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'JetBrains Mono',monospace",fontSize:16,fontWeight:700,color:"var(--purple)"}}>{c.l}</div><div style={{fontSize:12,fontWeight:600,color:"var(--txt)"}}>{c.title}</div><div style={{fontSize:11,color:"var(--txt3)",lineHeight:1.4}}>{c.d}</div></div>)}</div>}
+      {tab==="pmcd"&&<div style={{display:"flex",flexDirection:"column",gap:14}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+          <div><label style={{fontSize:9,color:"var(--txt3)",textTransform:"uppercase",letterSpacing:".06em",fontWeight:700,display:"block",marginBottom:4}}>Gestational Age (weeks)</label><input type="number" value={gest} onChange={e=>setGest(e.target.value)} placeholder="e.g. 28" style={{width:"100%",background:"rgba(14,37,68,.5)",border:"1px solid var(--border)",borderRadius:6,padding:"7px 10px",color:"var(--txt)",fontFamily:"'DM Sans',sans-serif",fontSize:13,outline:"none",backdropFilter:"blur(8px)"}}/>{gest&&<div style={{marginTop:4,fontSize:11,fontFamily:"'JetBrains Mono',monospace",color:pmcdOk?"var(--coral)":"var(--teal)"}}>{pmcdOk?"⚠ PMCD may be indicated":"✓ PMCD not indicated < 20 wk"}</div>}</div>
+          <div><label style={{fontSize:9,color:"var(--txt3)",textTransform:"uppercase",letterSpacing:".06em",fontWeight:700,display:"block",marginBottom:4}}>Minutes since arrest</label><input type="number" value={mins} onChange={e=>setMins(e.target.value)} placeholder="minutes…" style={{width:"100%",background:"rgba(14,37,68,.5)",border:`1px solid ${urgent&&mins?"var(--coral)":"var(--border)"}`,borderRadius:6,padding:"7px 10px",color:"var(--txt)",fontFamily:"'DM Sans',sans-serif",fontSize:13,outline:"none",backdropFilter:"blur(8px)"}}/>{mins&&<div style={{marginTop:4,fontSize:11,fontFamily:"'JetBrains Mono',monospace",color:urgent?"var(--coral)":"var(--gold)"}}>{urgent?"🚨 PMCD NOW":"⏳ < 4 min — continue ACLS"}</div>}</div>
+          <div style={{display:"flex",alignItems:"flex-end",paddingBottom:2}}><label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,color:"var(--txt2)"}}><input type="checkbox" checked={rosc} onChange={e=>setROSC(e.target.checked)} style={{width:16,height:16,accentColor:"var(--teal)"}}/>ROSC achieved</label></div>
+        </div>
+        {(gest||mins)&&<div style={{borderRadius:12,padding:"14px 18px",background:rosc?"rgba(0,229,192,.08)":pmcdOk&&urgent?"rgba(255,107,107,.1)":pmcdOk?"rgba(245,200,66,.07)":"rgba(0,229,192,.07)",border:`1.5px solid ${rosc?"rgba(0,229,192,.4)":pmcdOk&&urgent?"rgba(255,107,107,.4)":pmcdOk?"rgba(245,200,66,.3)":"rgba(0,229,192,.35)"}`,backdropFilter:"blur(12px)"}}>
+          <div style={{fontSize:17,fontWeight:700,color:rosc?"var(--teal)":pmcdOk&&urgent?"var(--coral)":pmcdOk?"var(--gold)":"var(--teal)",fontFamily:"'JetBrains Mono',monospace",marginBottom:8}}>{rosc?"✅ ROSC ACHIEVED":pmcdOk&&urgent?"🚨 PMCD INDICATED — ACT NOW":pmcdOk?"⚠ PMCD ON STANDBY":"✓ PMCD NOT INDICATED"}</div>
+          <div style={{fontSize:12,color:"var(--txt2)",lineHeight:1.6}}>{rosc?"Maternal stabilisation, foetal monitoring, ICU admission. Treat arrest aetiology.":pmcdOk&&urgent?`No ROSC at ${mins} min. GA ${gest} wk. PERFORM PMCD IMMEDIATELY at bedside. Continue CPR during delivery. Neonatal team present.`:pmcdOk?`GA ${gest} wk — PMCD indicated if no ROSC. Continue ACLS. Prepare PMCD kit. Deliver by 5 min from arrest.`:`GA ${gest} wk < 20 wk — delivery unlikely to improve haemodynamics. Standard ACLS + reversible causes.`}</div>
+        </div>}
+      </div>}
+    </GlassSectionBox>
+  </div>);}
+
+// ════════════════════════════════════════════════════════════
+//  NAV DATA
+// ════════════════════════════════════════════════════════════
+const NAV_DATA={
+  intake:[{section:"chart",abbr:"Pc",icon:"📊",label:"Patient Chart",dot:"done"},{section:"demographics",abbr:"Dm",icon:"👤",label:"Demographics",dot:"partial"},{section:"cc",abbr:"Cc",icon:"💬",label:"Chief Complaint",dot:"empty"},{section:"vitals",abbr:"Vt",icon:"📈",label:"Vitals",dot:"empty"}],
+  documentation:[{section:"meds",abbr:"Rx",icon:"💊",label:"Meds & PMH",dot:"empty"},{section:"ros",abbr:"Rs",icon:"🔍",label:"Review of Systems",dot:"empty"},{section:"exam",abbr:"Pe",icon:"🩺",label:"Physical Exam",dot:"empty"},{section:"mdm",abbr:"Md",icon:"⚖️",label:"MDM",dot:"empty"}],
+  disposition:[{section:"orders",abbr:"Or",icon:"📋",label:"Orders",dot:"empty"},{section:"discharge",abbr:"Dc",icon:"🚪",label:"Discharge",dot:"empty"},{section:"erplan",abbr:"Ep",icon:"🗺️",label:"ER Plan Builder",dot:"empty"}],
+  tools:[{section:"cardiac-home",abbr:"Ch",icon:"🏠",label:"Cardiac Hub",dot:"empty"},{section:"acs",abbr:"CS",icon:"🫀",label:"ACS Protocol",dot:"empty"},{section:"tachy",abbr:"Tc",icon:"⚡",label:"Tachycardia",dot:"empty"},{section:"brady",abbr:"Br",icon:"🔻",label:"Bradycardia",dot:"empty"},{section:"peds",abbr:"Pd",icon:"👶",label:"Pediatric ACLS",dot:"empty"},{section:"pregnancy",abbr:"Pg",icon:"🤰",label:"Arrest: Pregnancy",dot:"empty"}],
+};
+const GROUP_META=[{key:"intake",icon:"📋",label:"Intake"},{key:"documentation",icon:"🩺",label:"Documentation"},{key:"disposition",icon:"🚪",label:"Disposition"},{key:"tools",icon:"🔧",label:"Tools"}];
+const SIDEBAR_BTNS=[{icon:"🏠",label:"Home"},{icon:"📊",label:"Dash"},{icon:"👥",label:"Patients",active:true},{icon:"🔄",label:"Shift"},"sep",{icon:"💊",label:"Drugs"},{icon:"🧮",label:"Calc"}];
+const QUICK_ACTIONS=[{icon:"📋",label:"Summarise",prompt:"Summarise what I have entered so far."},{icon:"🔍",label:"Check",prompt:"What am I missing? Check my entries for completeness."},{icon:"📝",label:"Draft Note",prompt:"Generate a draft note from the data entered."},{icon:"🧠",label:"DDx",prompt:"Suggest differential diagnoses based on current data."}];
+const ALL_SECTIONS=Object.values(NAV_DATA).flat();
+const SYSTEM_PROMPT="You are Notrya AI — a helpful AI assistant embedded in an emergency medicine documentation platform. Respond in 2–4 concise, actionable sentences. Be direct. Never fabricate data.";
+
+// ════════════════════════════════════════════════════════════
+//  PLACEHOLDER
+// ════════════════════════════════════════════════════════════
+function PlaceholderPage({section}){
+  const meta={chart:{icon:"📊",title:"Patient Chart",sub:"Overview"},demographics:{icon:"👤",title:"Demographics",sub:"Patient info"},cc:{icon:"💬",title:"Chief Complaint",sub:"Primary reason for visit"},vitals:{icon:"📈",title:"Vitals",sub:"Current vitals"},meds:{icon:"💊",title:"Meds & PMH",sub:"Medications, allergies, history"},ros:{icon:"🔍",title:"Review of Systems",sub:"Systematic review"},exam:{icon:"🩺",title:"Physical Exam",sub:"Examination findings"},mdm:{icon:"⚖️",title:"MDM",sub:"Medical decision making"},orders:{icon:"📋",title:"Orders",sub:"Lab, imaging & meds"},discharge:{icon:"🚪",title:"Discharge",sub:"Instructions & follow-up"},erplan:{icon:"🗺️",title:"ER Plan Builder",sub:"Care plan"},erx:{icon:"💉",title:"eRx",sub:"Electronic prescribing"},procedures:{icon:"✂️",title:"Procedures",sub:"Procedure documentation"}}[section]||{icon:"📄",title:"Section",sub:""};
+  return(<><div className="page-header"><span className="page-header-icon">{meta.icon}</span><div><div className="page-title">{meta.title}</div><div className="page-subtitle">{meta.sub}</div></div><div className="page-header-right"><button className="btn-ghost">+ Add Item</button></div></div><div className="section-box"><div className="sec-header"><span className="sec-icon">{meta.icon}</span><div><div className="sec-title">{meta.title}</div><div className="sec-subtitle">{meta.sub}</div></div><button className="btn-ghost ml-auto">Action</button></div><div className="grid-2 mb-8"><div className="field"><label className="field-label">Field Label</label><input type="text" className="field-input" placeholder="Enter value…"/></div><div className="field"><label className="field-label">Another Field</label><select className="field-select" defaultValue=""><option value="">— Select —</option><option>Option A</option><option>Option B</option></select></div><div className="field col-full"><label className="field-label">Notes</label><textarea className="field-textarea" placeholder="Enter notes…"/></div></div><div className="flex gap-6" style={{flexWrap:"wrap"}}><div className="chip selected">✓ Item One</div><div className="chip">Item Two</div></div></div></>);
+}
+
+// ════════════════════════════════════════════════════════════
+//  MAIN APP SHELL
+// ════════════════════════════════════════════════════════════
+const PROTOCOL_SECTIONS=["cardiac-home","acs","tachy","brady","peds","pregnancy"];
+
+export default function NotryaApp(){
+  const[activeGroup,setActiveGroup]=useState("tools");
+  const[activeSection,setActiveSection]=useState("cardiac-home");
+  const[navDots]=useState(()=>{const m={};ALL_SECTIONS.forEach(s=>(m[s.section]=s.dot));return m;});
+  const[clock,setClock]=useState("");
+  useEffect(()=>{const tick=()=>{const d=new Date();setClock(String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"))};tick();const id=setInterval(tick,10000);return()=>clearInterval(id);},[]);
+  const currentItem=ALL_SECTIONS.find(s=>s.section===activeSection);
+  const pageAbbr=currentItem?.abbr||"Nt";
+  const[aiOpen,setAiOpen]=useState(false);const[aiMsgs,setAiMsgs]=useState([{role:"sys",text:"Notrya AI ready — select a quick action or ask a clinical question."}]);const[aiInput,setAiInput]=useState("");const[aiLoading,setAiLoading]=useState(false);const[unread,setUnread]=useState(0);const[history,setHistory]=useState([]);
+  const msgsRef=useRef(null);const inputRef=useRef(null);const pillsRef=useRef(null);
+  useEffect(()=>{msgsRef.current?.scrollTo({top:msgsRef.current.scrollHeight,behavior:"smooth"});},[aiMsgs,aiLoading]);
+  useEffect(()=>{if(aiOpen)setTimeout(()=>inputRef.current?.focus(),280);},[aiOpen]);
+  useEffect(()=>{const h=e=>{if(e.key==="Escape"&&aiOpen)setAiOpen(false)};window.addEventListener("keydown",h);return()=>window.removeEventListener("keydown",h);},[aiOpen]);
+  useEffect(()=>{const h=e=>{if(["INPUT","TEXTAREA","SELECT"].includes(e.target.tagName))return;if(e.key==="ArrowRight"||e.key==="ArrowLeft"){const idx=ALL_SECTIONS.findIndex(s=>s.section===activeSection);const next=e.key==="ArrowRight"?idx+1:idx-1;if(next>=0&&next<ALL_SECTIONS.length)selectSection(ALL_SECTIONS[next].section);}};window.addEventListener("keydown",h);return()=>window.removeEventListener("keydown",h);},[activeSection]);
+  useEffect(()=>{pillsRef.current?.querySelector(".bn-sub-pill.active")?.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});},[activeSection,activeGroup]);
+  const selectGroup=useCallback(group=>{setActiveGroup(group);const items=NAV_DATA[group];setActiveSection(prev=>items.find(i=>i.section===prev)?prev:items[0].section);},[]);
+  const selectSection=useCallback(sectionId=>{setActiveSection(sectionId);for(const[group,items]of Object.entries(NAV_DATA)){if(items.find(i=>i.section===sectionId)){setActiveGroup(group);break;}}},[]);
+  const getGroupBadge=useCallback(gk=>{const items=NAV_DATA[gk];if(items.every(i=>navDots[i.section]==="done"))return"done";if(items.some(i=>navDots[i.section]==="done"||navDots[i.section]==="partial"))return"partial";return"empty";},[navDots]);
+  const toggleAI=useCallback(()=>setAiOpen(o=>{if(!o)setUnread(0);return!o;}),[]);
+  const sendMessage=useCallback(async text=>{
+    if(!text.trim()||aiLoading)return;
+    setAiMsgs(m=>[...m,{role:"user",text:text.trim()}]);setAiInput("");setAiLoading(true);
+    const ctx=`=== PAGE CONTEXT ===\nActive: ${currentItem?.label||"Unknown"}\nGroup: ${activeGroup}\n====================`;
+    const newHistory=[...history,{role:"user",content:ctx+"\n\n"+text.trim()}];setHistory(newHistory);
+    try{const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,system:SYSTEM_PROMPT,messages:newHistory})});
+      const data=await res.json();const reply=data.content?.[0]?.text||"No response received.";
+      setHistory(h=>[...h,{role:"assistant",content:reply}]);setAiMsgs(m=>[...m,{role:"bot",text:reply}]);
+      setAiOpen(open=>{if(!open)setUnread(u=>u+1);return open;});
+    }catch{setAiMsgs(m=>[...m,{role:"sys",text:"⚠ Connection error — please try again."}]);}
+    finally{setAiLoading(false);}
+  },[aiLoading,history,currentItem,activeGroup]);
+  const handleAIKey=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage(aiInput);}};
+  const renderMsg=text=>text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>").replace(/\*\*(.*?)\*\*/g,'<strong style="color:#00e5c0">$1</strong>');
+  const subItems=NAV_DATA[activeGroup]||[];
+  const navigateTo=useCallback(id=>selectSection(id),[selectSection]);
+  const backToHub=useCallback(()=>selectSection("cardiac-home"),[selectSection]);
+
+  return(<>
+    <style>{CSS}</style>
+    <aside className="icon-sidebar">
+      <div className="isb-logo"><div className="isb-logo-box">{pageAbbr}</div></div>
+      <div className="isb-scroll">{SIDEBAR_BTNS.map((b,i)=>b==="sep"?<div key={i} className="isb-sep"/>:<div key={i} className={`isb-btn${b.active?" active":""}`} title={b.label}><span>{b.icon}</span><span className="isb-lbl">{b.label}</span></div>)}</div>
+      <div className="isb-bottom"><div className="isb-btn" title="Settings"><span>⚙️</span><span className="isb-lbl">Settings</span></div></div>
+    </aside>
+    <header className="top-bar">
+      <div className="top-row-1">
+        <span className="nav-welcome">Welcome, <strong>Dr. Gabriel Skiba</strong></span><div className="nav-sep"/>
+        <div className="nav-stat"><span className="nav-stat-val">0</span><span className="nav-stat-lbl">Active</span></div>
+        <div className="nav-stat"><span className="nav-stat-val alert">14</span><span className="nav-stat-lbl">Pending</span></div>
+        <div className="nav-stat"><span className="nav-stat-val">—</span><span className="nav-stat-lbl">Orders</span></div>
+        <div className="nav-stat"><span className="nav-stat-val">11.6</span><span className="nav-stat-lbl">Hours</span></div>
+        <div className="nav-right"><div className="nav-time">{clock}</div><div className="nav-ai-on"><div className="nav-ai-dot"/> AI ON</div><button className="nav-new-pt">+ New Patient</button></div>
+      </div>
+      <div className="top-row-2">
+        <span className="chart-badge">[CHART-ID]</span><span className="pt-name">— Patient —</span><span className="pt-meta">Age · Sex · DOB</span><span className="pt-cc">CC: —</span><div className="vb-div"/>
+        {[{l:"BP",v:"—"},{l:"HR",v:"—"},{l:"RR",v:"—"},{l:"SpO₂",v:"—"},{l:"T",v:"—"},{l:"GCS",v:"—"}].map(vt=><div key={vt.l} className="vb-vital"><span className="lbl">{vt.l}</span><span className="val">{vt.v}</span></div>)}
+        <div className="vb-div"/><span className="status-badge status-stable">STABLE</span><span className="status-badge status-room">Room —</span>
+        <div className="chart-actions"><button className="btn-ghost">📋 Orders</button><button className="btn-ghost">📝 SOAP Note</button><button className="btn-coral">🚪 Discharge</button><button className="btn-primary" onClick={()=>setAiMsgs(m=>[...m,{role:"sys",text:"💾 Chart saved successfully."}])}>💾 Save Chart</button></div>
+      </div>
+    </header>
+    <div className="main-wrap">
+      <main className="content">
+        {activeSection==="cardiac-home" && <ACSHomePage onNavigate={navigateTo}/>}
+        {activeSection==="acs"          && <ACSPage onBack={backToHub}/>}
+        {activeSection==="tachy"        && <TachycardiaPage onBack={backToHub}/>}
+        {activeSection==="brady"        && <BradycardiaPage onBack={backToHub}/>}
+        {activeSection==="peds"         && <PediatricsPage onBack={backToHub}/>}
+        {activeSection==="pregnancy"    && <PregnancyPage onBack={backToHub}/>}
+        {!PROTOCOL_SECTIONS.includes(activeSection) && <PlaceholderPage section={activeSection}/>}
+      </main>
+    </div>
+    <div className={`n-scrim${aiOpen?" open":""}`} onClick={toggleAI}/>
+    <div className={`n-overlay${aiOpen?" open":""}`}>
+      <div className="n-hdr">
+        <div className="n-hdr-top"><div className="n-avatar">🤖</div><div className="n-hdr-info"><div className="n-hdr-name">Notrya AI</div><div className="n-hdr-sub"><span className="dot"/> claude-sonnet-4 · online</div></div><button className="n-close" onClick={toggleAI}>✕</button></div>
+        <div className="n-quick">{QUICK_ACTIONS.map(q=><button key={q.label} className="n-qbtn" onClick={()=>sendMessage(q.prompt)} disabled={aiLoading}>{q.icon} {q.label}</button>)}</div>
+      </div>
+      <div className="n-msgs" ref={msgsRef}>{aiMsgs.map((m,i)=><div key={i} className={`n-msg ${m.role}`} dangerouslySetInnerHTML={{__html:renderMsg(m.text)}}/>) }{aiLoading&&<div className="n-dots"><span/><span/><span/></div>}</div>
+      <div className="n-input-bar"><textarea ref={inputRef} className="n-ta" rows={1} placeholder="Ask anything…" value={aiInput} onChange={e=>setAiInput(e.target.value)} onKeyDown={handleAIKey} onInput={e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,90)+"px";}} disabled={aiLoading}/><button className="n-send" onClick={()=>sendMessage(aiInput)} disabled={aiLoading||!aiInput.trim()}>↑</button></div>
+    </div>
+    <button className={`n-fab${aiOpen?" open":""}`} onClick={toggleAI}><span className="n-fab-icon">{aiOpen?"✕":"🤖"}</span><span className={`n-fab-badge${unread>0?" show":""}`}>{unread>9?"9+":unread}</span></button>
+    <nav className="bottom-nav">
+      <div className="bn-sub-wrap"><div className="bn-sub-row" ref={pillsRef}>{subItems.map(item=><button key={item.section} className={`bn-sub-pill${item.section===activeSection?" active":""}`} onClick={()=>selectSection(item.section)}><span className="pill-icon">{item.icon}</span>{item.label}<span className={`pill-dot ${navDots[item.section]}`}/></button>)}</div></div>
+      <div className="bn-groups">{GROUP_META.map(g=><button key={g.key} className={`bn-group-tab${g.key===activeGroup?" active":""}`} onClick={()=>selectGroup(g.key)}><div className="bn-group-icon">{g.icon}<span className={`bn-group-badge ${getGroupBadge(g.key)}`}/></div><span className="bn-group-label">{g.label}</span></button>)}</div>
+    </nav>
+  </>);
+}
+
+const CSS=`
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{--bg:#050f1e;--bg-panel:#081628;--bg-card:#0b1e36;--bg-up:#0e2544;--border:#1a3555;--border-hi:#2a4f7a;--blue:#3b9eff;--cyan:#00d4ff;--teal:#00e5c0;--gold:#f5c842;--purple:#9b6dff;--coral:#ff6b6b;--green:#3dffa0;--orange:#ff9f43;--txt:#e8f0fe;--txt2:#8aaccc;--txt3:#4a6a8a;--txt4:#2e4a6a;--icon-sb:56px;--top-h:88px;--bot-h:108px;--r:8px;--rl:12px;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body,#root{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;overflow:hidden}
+.icon-sidebar{position:fixed;top:0;left:0;bottom:0;width:var(--icon-sb);background:#040d19;border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;z-index:200}
+.isb-logo{width:100%;height:48px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--border)}
+.isb-logo-box{width:30px;height:30px;background:var(--blue);border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:13px;font-weight:700;color:white;cursor:pointer;transition:filter .15s}
+.isb-logo-box:hover{filter:brightness(1.2)}
+.isb-scroll{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:2px;overflow-y:auto}
+.isb-btn{width:42px;height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:6px;cursor:pointer;transition:all .15s;color:var(--txt3);border:1px solid transparent;font-size:15px}
+.isb-btn:hover{background:var(--bg-up);border-color:var(--border);color:var(--txt2)}
+.isb-btn.active{background:rgba(59,158,255,.1);border-color:rgba(59,158,255,.3);color:var(--blue)}
+.isb-lbl{font-size:8px;line-height:1;white-space:nowrap}
+.isb-sep{width:30px;height:1px;background:var(--border);margin:4px 0;flex-shrink:0}
+.isb-bottom{padding:8px 0;border-top:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:2px}
+.top-bar{position:fixed;top:0;left:var(--icon-sb);right:0;height:var(--top-h);background:var(--bg-panel);border-bottom:1px solid var(--border);z-index:100;display:flex;flex-direction:column}
+.top-row-1{height:44px;flex-shrink:0;display:flex;align-items:center;padding:0 14px;gap:8px;border-bottom:1px solid rgba(26,53,85,.5)}
+.nav-welcome{font-size:12px;color:var(--txt2);font-weight:500;white-space:nowrap}
+.nav-welcome strong{color:var(--txt);font-weight:600}
+.nav-sep{width:1px;height:20px;background:var(--border);flex-shrink:0}
+.nav-stat{display:flex;align-items:center;gap:5px;background:var(--bg-up);border:1px solid var(--border);border-radius:6px;padding:3px 10px;cursor:pointer}
+.nav-stat-val{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--txt)}
+.nav-stat-val.alert{color:var(--gold)}
+.nav-stat-lbl{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.04em}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:6px}
+.nav-time{background:var(--bg-up);border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--txt2);display:flex;align-items:center;gap:4px}
+.nav-ai-on{display:flex;align-items:center;gap:4px;background:rgba(0,229,192,.08);border:1px solid rgba(0,229,192,.3);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;color:var(--teal);cursor:pointer}
+.nav-ai-dot{width:6px;height:6px;border-radius:50%;background:var(--teal);animation:ai-pulse 2s ease-in-out infinite}
+@keyframes ai-pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,229,192,.4)}50%{opacity:.8;box-shadow:0 0 0 5px rgba(0,229,192,0)}}
+.nav-new-pt{background:var(--teal);color:var(--bg);border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;transition:filter .15s;white-space:nowrap}
+.nav-new-pt:hover{filter:brightness(1.15)}
+.top-row-2{height:44px;flex-shrink:0;display:flex;align-items:center;padding:0 14px;gap:8px;overflow:hidden}
+.pt-name{font-family:'Playfair Display',serif;font-size:14px;font-weight:600;color:var(--txt);white-space:nowrap}
+.pt-meta{font-size:11px;color:var(--txt3);white-space:nowrap}
+.pt-cc{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--orange);white-space:nowrap}
+.vb-div{width:1px;height:18px;background:var(--border);flex-shrink:0}
+.vb-vital{display:flex;align-items:center;gap:3px;font-family:'JetBrains Mono',monospace;font-size:10.5px;white-space:nowrap}
+.vb-vital .lbl{color:var(--txt4);font-size:9px}.vb-vital .val{color:var(--txt2)}
+.chart-badge{font-family:'JetBrains Mono',monospace;font-size:10px;background:var(--bg-up);border:1px solid var(--border);border-radius:20px;padding:1px 8px;color:var(--teal);white-space:nowrap}
+.status-badge{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;white-space:nowrap}
+.status-stable{background:rgba(0,229,192,.1);color:var(--teal);border:1px solid rgba(0,229,192,.3)}
+.status-room{background:rgba(0,229,192,.1);color:var(--teal);border:1px solid rgba(0,229,192,.3)}
+.chart-actions{margin-left:auto;display:flex;align-items:center;gap:5px;flex-shrink:0}
+.btn-ghost{background:var(--bg-up);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--txt2);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.btn-ghost:hover{border-color:var(--border-hi);color:var(--txt)}
+.btn-primary{background:var(--teal);color:var(--bg);border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;transition:filter .15s;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.btn-primary:hover{filter:brightness(1.15)}
+.btn-coral{background:rgba(255,107,107,.15);color:var(--coral);border:1px solid rgba(255,107,107,.3);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.btn-coral:hover{background:rgba(255,107,107,.25)}
+.main-wrap{position:fixed;top:var(--top-h);left:var(--icon-sb);right:0;bottom:var(--bot-h);display:flex}
+.content{flex:1;overflow-y:auto;padding:18px 28px 30px;display:flex;flex-direction:column;gap:18px}
+.page-header{display:flex;align-items:center;gap:10px}
+.page-header-icon{font-size:20px}
+.page-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:var(--txt)}
+.page-subtitle{font-size:12px;color:var(--txt3);margin-top:1px}
+.page-header-right{margin-left:auto;display:flex;align-items:center;gap:6px}
+.bottom-nav{position:fixed;bottom:0;left:var(--icon-sb);right:0;height:var(--bot-h);background:var(--bg-panel);border-top:1px solid var(--border);z-index:100;display:flex;flex-direction:column}
+.bn-sub-wrap{position:relative;flex-shrink:0;height:44px}
+.bn-sub-wrap::before,.bn-sub-wrap::after{content:'';position:absolute;top:0;bottom:0;width:24px;z-index:2;pointer-events:none}
+.bn-sub-wrap::before{left:0;background:linear-gradient(90deg,var(--bg-panel) 0%,transparent 100%)}
+.bn-sub-wrap::after{right:0;background:linear-gradient(-90deg,var(--bg-panel) 0%,transparent 100%)}
+.bn-sub-row{height:44px;display:flex;align-items:center;padding:0 12px;gap:6px;overflow-x:auto;overflow-y:hidden;border-bottom:1px solid rgba(26,53,85,.4);scrollbar-width:none;-ms-overflow-style:none}
+.bn-sub-row::-webkit-scrollbar{display:none}
+.bn-sub-pill{display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:500;color:var(--txt3);background:transparent;border:1px solid transparent;cursor:pointer;transition:all .2s ease;white-space:nowrap;flex-shrink:0;font-family:'DM Sans',sans-serif}
+.bn-sub-pill:hover{color:var(--txt2);background:var(--bg-up);border-color:var(--border)}
+.bn-sub-pill.active{color:var(--blue);background:rgba(59,158,255,.1);border-color:rgba(59,158,255,.35);font-weight:600}
+.bn-sub-pill .pill-icon{font-size:12px}
+.bn-sub-pill .pill-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.bn-sub-pill .pill-dot.done{background:var(--teal)}
+.bn-sub-pill .pill-dot.partial{background:var(--orange)}
+.bn-sub-pill .pill-dot.empty{background:var(--txt4)}
+.bn-groups{height:64px;flex-shrink:0;display:flex;align-items:stretch}
+.bn-group-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;position:relative;transition:all .2s ease;border:none;background:none;font-family:'DM Sans',sans-serif;padding:6px 0}
+.bn-group-tab::before{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;background:var(--blue);border-radius:0 0 2px 2px;transform:scaleX(0);transition:transform .25s cubic-bezier(.34,1.56,.64,1)}
+.bn-group-tab.active::before{transform:scaleX(1)}
+.bn-group-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;background:transparent;border:1px solid transparent;transition:all .2s ease;position:relative}
+.bn-group-tab:hover .bn-group-icon{background:var(--bg-up);border-color:var(--border)}
+.bn-group-tab.active .bn-group-icon{background:rgba(59,158,255,.1);border-color:rgba(59,158,255,.3)}
+.bn-group-badge{position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;border:1.5px solid var(--bg-panel)}
+.bn-group-badge.done{background:var(--teal)}
+.bn-group-badge.partial{background:var(--orange)}
+.bn-group-badge.empty{background:transparent;border-color:transparent}
+.bn-group-label{font-size:9px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--txt4);transition:color .2s}
+.bn-group-tab:hover .bn-group-label{color:var(--txt3)}
+.bn-group-tab.active .bn-group-label{color:var(--blue);font-weight:600}
+.bn-group-tab+.bn-group-tab{border-left:1px solid rgba(26,53,85,.4)}
+.n-scrim{position:fixed;inset:0;z-index:9997;background:rgba(3,8,16,.4);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .3s}
+.n-scrim.open{opacity:1;pointer-events:auto}
+.n-fab{position:fixed;bottom:124px;right:24px;z-index:9999;width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--teal) 0%,#00b4d8 100%);box-shadow:0 6px 24px rgba(0,229,192,.35);transition:all .35s cubic-bezier(.34,1.56,.64,1);animation:n-ring 3s ease-in-out infinite}
+.n-fab:hover{transform:scale(1.12)}
+.n-fab:active{transform:scale(.92)}
+.n-fab.open{animation:none;background:linear-gradient(135deg,var(--coral) 0%,#e05555 100%);box-shadow:0 6px 24px rgba(255,107,107,.35);transform:rotate(90deg) scale(1)}
+.n-fab.open:hover{transform:rotate(90deg) scale(1.12)}
+@keyframes n-ring{0%,100%{box-shadow:0 6px 24px rgba(0,229,192,.35),0 0 0 0 rgba(0,229,192,.28)}50%{box-shadow:0 6px 24px rgba(0,229,192,.35),0 0 0 12px rgba(0,229,192,0)}}
+.n-fab-icon{font-size:24px;line-height:1}
+.n-fab-badge{position:absolute;top:-3px;right:-3px;min-width:20px;height:20px;border-radius:10px;background:var(--coral);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2.5px solid var(--bg);padding:0 5px;font-family:'JetBrains Mono',monospace;opacity:0;transform:scale(0);transition:all .3s cubic-bezier(.34,1.56,.64,1)}
+.n-fab-badge.show{opacity:1;transform:scale(1)}
+.n-overlay{position:fixed;bottom:194px;right:24px;z-index:9998;width:340px;height:520px;background:#081628;border:1px solid var(--border);border-radius:20px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.03);opacity:0;transform:translateY(20px) scale(.94);pointer-events:none;transition:all .35s cubic-bezier(.34,1.56,.64,1)}
+.n-overlay.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+.n-hdr{padding:16px 16px 12px;flex-shrink:0;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(0,229,192,.05) 0%,transparent 100%)}
+.n-hdr-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.n-avatar{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--teal),var(--blue));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;position:relative}
+.n-avatar::after{content:'';position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:var(--teal);border:2px solid #081628;animation:n-pulse 2s ease-in-out infinite}
+@keyframes n-pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,229,192,.4)}50%{box-shadow:0 0 0 5px rgba(0,229,192,0)}}
+.n-hdr-info{flex:1;min-width:0}
+.n-hdr-name{font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:var(--txt)}
+.n-hdr-sub{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--txt3);margin-top:2px;display:flex;align-items:center;gap:4px}
+.n-hdr-sub .dot{width:5px;height:5px;border-radius:50%;background:var(--teal)}
+.n-close{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--bg-up);color:var(--txt3);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.n-close:hover{border-color:var(--border-hi);color:var(--txt2)}
+.n-quick{display:flex;flex-wrap:wrap;gap:5px}
+.n-qbtn{padding:5px 11px;border-radius:20px;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;transition:all .2s;background:var(--bg-up);border:1px solid var(--border);color:var(--txt2);display:flex;align-items:center;gap:4px}
+.n-qbtn:hover{border-color:rgba(0,229,192,.4);color:var(--teal);background:rgba(0,229,192,.06);transform:translateY(-1px)}
+.n-qbtn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.n-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
+.n-msgs::-webkit-scrollbar{width:4px}
+.n-msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.n-msg{padding:10px 13px;border-radius:12px;font-size:12.5px;line-height:1.65;max-width:88%;animation:n-msgIn .3s ease both;font-family:'DM Sans',sans-serif}
+@keyframes n-msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.n-msg.sys{background:rgba(14,37,68,.6);color:var(--txt3);border:1px solid rgba(26,53,85,.5);align-self:center;max-width:100%;text-align:center;font-size:11px;font-style:italic;border-radius:8px}
+.n-msg.user{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.22);color:var(--txt);align-self:flex-end;border-radius:14px 14px 3px 14px}
+.n-msg.bot{background:rgba(0,229,192,.06);border:1px solid rgba(0,229,192,.15);color:var(--txt);align-self:flex-start;border-radius:14px 14px 14px 3px;position:relative}
+.n-msg.bot::before{content:'✦';position:absolute;top:-6px;left:-2px;font-size:10px;color:var(--teal);opacity:.6}
+.n-dots{display:flex;gap:5px;padding:12px 14px;align-self:flex-start;align-items:center}
+.n-dots span{width:7px;height:7px;border-radius:50%;background:var(--teal);animation:n-bounce 1.2s ease-in-out infinite}
+.n-dots span:nth-child(2){animation-delay:.15s}
+.n-dots span:nth-child(3){animation-delay:.3s}
+@keyframes n-bounce{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-7px);opacity:1}}
+.n-input-bar{padding:10px 14px 16px;flex-shrink:0;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;background:linear-gradient(0deg,rgba(0,229,192,.02) 0%,transparent 100%)}
+.n-ta{flex:1;background:var(--bg-up);border:1px solid var(--border);border-radius:12px;padding:9px 13px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:12.5px;outline:none;resize:none;min-height:40px;max-height:90px;line-height:1.5;transition:border-color .2s}
+.n-ta:focus{border-color:var(--teal)}
+.n-ta::placeholder{color:var(--txt4)}
+.n-ta:disabled{opacity:.5}
+.n-send{width:40px;height:40px;flex-shrink:0;background:linear-gradient(135deg,var(--teal),#00b4d8);border:none;border-radius:12px;color:var(--bg);font-size:18px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center}
+.n-send:hover{transform:scale(1.08)}
+.n-send:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.section-box{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px}
+.sec-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.sec-icon{font-size:16px}
+.sec-title{font-size:14px;font-weight:600;color:var(--txt)}
+.sec-subtitle{font-size:11px;color:var(--txt3);margin-top:1px}
+.field{display:flex;flex-direction:column;gap:3px}
+.field-label{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;font-weight:500}
+.field-input{background:var(--bg-up);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%}
+.field-input::placeholder{color:var(--txt4)}
+.field-textarea{background:var(--bg-up);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;resize:vertical;min-height:70px;width:100%;line-height:1.5}
+.field-textarea::placeholder{color:var(--txt4)}
+.field-select{background:var(--bg-up);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;cursor:pointer;width:100%}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.col-full{grid-column:1/-1}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid var(--border);background:var(--bg-up);color:var(--txt2);transition:all .15s;user-select:none}
+.chip.selected{background:rgba(59,158,255,.15);border-color:var(--blue);color:var(--blue)}
+.flex{display:flex}.gap-6{gap:6px}.ml-auto{margin-left:auto}.mb-8{margin-bottom:8px}
+.text-muted{color:var(--txt3)}.text-sm{font-size:12px}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--border-hi)}
+`;

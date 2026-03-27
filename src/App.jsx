@@ -22,6 +22,7 @@ import EDOrders from '@/pages/EDOrders';
 import NotryaApp from '@/pages/NotryaApp';
 import NotryaACS from '@/pages/NotryaACS';
 import OrderDashboard from '@/pages/OrderDashboard';
+import CardiacHub from '@/pages/CardiacHub';
 
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -93,6 +94,7 @@ const AuthenticatedApp = () => {
       <Route path="/NotryaApp" element={<NotryaApp />} />
       <Route path="/NotryaACS" element={<NotryaACS />} />
       <Route path="/OrderDashboard" element={<LayoutWrapper currentPageName="OrderDashboard"><OrderDashboard /></LayoutWrapper>} />
+      <Route path="/cardiac-hub" element={<CardiacHub />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

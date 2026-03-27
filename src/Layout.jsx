@@ -450,7 +450,7 @@ export default function Layout({ children, currentPageName }) {
           <span className="v2-badge-monitor">MONITORING</span>
           <span className="v2-badge-room">Room 4B</span>
           <div className="v2-chart-acts">
-            <button className="v2-btn-ghost">📋 Orders</button>
+            <button className="v2-btn-ghost" onClick={() => navigate('/NewPatientInput?tab=orders')}>📋 Orders</button>
 
             <button className="v2-btn-teal">💾 Save Chart</button>
           </div>

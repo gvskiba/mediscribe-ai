@@ -456,40 +456,9 @@ export default function Layout({ children, currentPageName }) {
         </div>
       </header>
 
-      {/* ── CHART SECTION SIDEBAR ── */}
-      {showChartSidebar && (
-        <aside className="v2-csb">
-          {CHART_GROUPS.map((group, gi) => (
-            <div key={gi}>
-              {gi > 0 && <div className="v2-csb-div" />}
-              <div className="v2-csb-group">{group.label}</div>
-              {group.items.map((item, ii) => {
-                const globalIdx = CHART_GROUPS.slice(0, gi).reduce((a, g) => a + g.items.length, 0) + ii;
-                const itemSearch = item.page.includes('?') ? item.page.split('?')[1] : '';
-                const isActive = item.page.includes('?')
-                  ? location.pathname === item.page.split('?')[0] && location.search === '?' + itemSearch
-                  : location.pathname === item.page && !location.search;
-                const dotState = STEP_STATES[globalIdx] || 'empty';
-                return (
-                  <Link
-                    key={item.page}
-                    to={item.page}
-                    className={`v2-csb-item${isActive ? ' active' : ''}`}
-                  >
-                    <span className="v2-csb-icon">{item.icon}</span>
-                    <span style={{ flex: 1 }}>{item.label}</span>
-                    <span className={`v2-csb-dot ${dotState}`} />
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
-        </aside>
-      )}
-
       {/* ── MAIN CONTENT ── */}
       <div
-        className={`v2-content-wrap ${showChartSidebar ? 'v2-content-with-sb' : 'v2-content-no-sb'}`}
+        className="v2-content-no-sb"
         style={{ minHeight: 'calc(100vh - 138px)' }}
       >
         <div className="v2-content-inner">

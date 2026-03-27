@@ -294,7 +294,7 @@ const GLOBAL_CSS = `
 
 /* CONTENT AREA */
 .v2-content-with-sb { margin-left: 226px; } /* 56 icon + 170 chart sb */
-.v2-content-no-sb   { margin-left: 56px; padding-bottom: 50px; }
+.v2-content-no-sb   { margin-left: 56px; }
 .v2-content-wrap {
   margin-top: 88px; margin-bottom: 50px;
   min-height: calc(100vh - 138px); overflow-y: auto;

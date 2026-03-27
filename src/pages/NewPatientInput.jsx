@@ -15,6 +15,7 @@ import AutoCoderTab from "@/components/npi/AutoCoderTab";
 import PatientChart from "@/pages/PatientChart";
 import NotryaApp from "@/pages/NotryaApp";
 import EDProcedureNotes from "@/pages/EDProcedureNotes";
+import EDOrders from "@/pages/EDOrders";
 import MedicationReferencePage from "@/pages/MedicationReference";
 
 import { ROS_SYSTEMS, PE_SYSTEMS, PMH_SYSTEMS, TABS } from "@/components/npi/npiData";
@@ -293,10 +294,8 @@ export default function NewPatientInput() {
             </div>
           )}
           {currentTab === 'orders' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', justifyContent: 'center', height: 300 }}>
-              <div style={{ fontSize: 32 }}>📋</div>
-              <div style={{ color: S.txt2, fontSize: 14 }}>Orders</div>
-              <button onClick={() => navigate('/OrderSetBuilder')} style={{ background: S.teal, color: S.bg, border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Open Order Set Builder →</button>
+            <div style={{ margin: '-20px -24px', height: 'calc(100vh - 138px)', overflow: 'hidden' }}>
+              <EDOrders embedded />
             </div>
           )}
       </main>

@@ -11,7 +11,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import PatientSidebar from '@/components/patient/PatientSidebar';
 import AWSPharmacySection from '@/pages/AWSPharmacySection';
 import PatientChart from '@/pages/PatientChart';
-import NewPatientInput from '@/pages/NewPatientInput';
+import ProviderStudio from '@/pages/ProviderStudio';
 import NoteHistory from '@/pages/NoteHistory';
 import NPIDemo from '@/pages/NPIDemo';
 import BaseTemplate from '@/pages/BaseTemplate';
@@ -82,7 +82,8 @@ const AuthenticatedApp = () => {
         </LayoutWrapper>
       } />
       <Route path="/patientchart" element={<PatientChart />} />
-      <Route path="/notedetail" element={<LayoutWrapper currentPageName="NewPatientInput"><NewPatientInput /></LayoutWrapper>} />
+      <Route path="/ProviderStudio" element={<LayoutWrapper currentPageName="ProviderStudio"><ProviderStudio /></LayoutWrapper>} />
+      <Route path="/notedetail" element={<LayoutWrapper currentPageName="ProviderStudio"><ProviderStudio /></LayoutWrapper>} />
       <Route path="/notehistory" element={<NoteHistory />} />
       <Route path="/npidemo" element={<NPIDemo />} />
       <Route path="/basetemplate" element={<BaseTemplate />} />

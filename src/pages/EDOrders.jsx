@@ -122,18 +122,18 @@ input, textarea { font-family: 'DM Sans', sans-serif; }
 .catalog-body { flex: 1; overflow-y: auto; padding: 13px 14px 64px; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
 .cat-section-title { font-size: 10px; color: ${T.txt3}; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; margin-bottom: 7px; display: flex; align-items: center; gap: 6px; }
 .cat-section-title::after { content: ''; flex: 1; height: 1px; background: ${T.bd}; }
-.orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(195px, 1fr)); gap: 7px; }
+.orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; }
 
-.order-card { background: ${T.bgP}; border: 1px solid ${T.bd}; border-radius: 12px; padding: 10px 11px; cursor: pointer; transition: all .15s; display: flex; flex-direction: column; gap: 4px; position: relative; user-select: none; }
+.order-card { background: ${T.bgP}; border: 1px solid ${T.bd}; border-radius: 8px; padding: 7px 9px; cursor: pointer; transition: all .15s; display: flex; flex-direction: column; gap: 2px; position: relative; user-select: none; }
 .order-card:hover { border-color: ${T.bdHi}; background: ${T.bgC}; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,.3); }
 .order-card.in-queue { border-color: rgba(0,229,192,.35); background: rgba(0,229,192,.03); }
 .order-card.in-queue:hover { border-color: rgba(255,107,107,.4); background: rgba(255,107,107,.04); }
 .oc-top { display: flex; align-items: flex-start; gap: 6px; }
-.oc-icon { font-size: 15px; flex-shrink: 0; line-height: 1.2; }
-.oc-name { font-size: 12px; font-weight: 600; color: ${T.txt}; line-height: 1.35; flex: 1; padding-right: 22px; }
-.oc-check { position: absolute; top: 9px; right: 9px; width: 17px; height: 17px; border-radius: 50%; background: ${T.teal}; color: ${T.bg}; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
-.oc-meta { font-size: 10.5px; color: ${T.txt3}; line-height: 1.4; }
-.oc-footer { display: flex; align-items: center; gap: 4px; margin-top: 2px; flex-wrap: wrap; }
+.oc-icon { font-size: 12px; flex-shrink: 0; line-height: 1.2; }
+.oc-name { font-size: 11px; font-weight: 600; color: ${T.txt}; line-height: 1.3; flex: 1; padding-right: 18px; }
+.oc-check { position: absolute; top: 6px; right: 6px; width: 14px; height: 14px; border-radius: 50%; background: ${T.teal}; color: ${T.bg}; font-size: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.oc-meta { font-size: 9.5px; color: ${T.txt3}; line-height: 1.35; }
+.oc-footer { display: flex; align-items: center; gap: 3px; margin-top: 2px; flex-wrap: wrap; }
 .prio-badge { font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 20px; }
 .prio-STAT { background: rgba(255,107,107,.15); color: ${T.coral}; border: 1px solid rgba(255,107,107,.3); }
 .prio-URGENT { background: rgba(255,159,67,.12); color: ${T.orange}; border: 1px solid rgba(255,159,67,.3); }

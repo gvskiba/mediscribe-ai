@@ -345,8 +345,26 @@ export default function NewPatientInput() {
           <span className="npi-pt-name">{patientName}</span>
           {demo.age && <span className="npi-pt-meta">{demo.age}y · {demo.sex || "—"}</span>}
           {cc.text && <span className="npi-pt-cc">CC: {cc.text}</span>}
+          <div className="npi-allergy-wrap" onClick={() => selectSection('meds')}>
+            <span>⚠️</span>
+            <span className="npi-allergy-lbl">Allergies</span>
+            <div className="npi-allergy-pills">
+              {allergies.length === 0 ? <span className="npi-allergy-pill npi-muted">None</span> : allergies.slice(0, 2).map(a => <span key={a} className="npi-allergy-pill">{a}</span>)}
+            </div>
+          </div>
+          <div className="npi-vb-div"></div>
+          <div className="npi-vb-vital"><span className="npi-vl">BP</span><span className="npi-vv">{vitals.bp || "—"}</span></div>
+          <div className="npi-vb-vital"><span className="npi-vl">HR</span><span className={parseInt(vitals.hr) > 120 ? 'npi-vv npi-abn' : 'npi-vv'}>{vitals.hr || "—"}</span></div>
+          <div className="npi-vb-vital"><span className="npi-vl">RR</span><span className="npi-vv">{vitals.rr || "—"}</span></div>
+          <div className="npi-vb-vital"><span className="npi-vl">SpO₂</span><span className="npi-vv">{vitals.spo2 || "—"}</span></div>
+          <div className="npi-vb-vital"><span className="npi-vl">T</span><span className="npi-vv">{vitals.temp || "—"}</span></div>
+          <div className="npi-vb-div"></div>
+          <span className="npi-status-badge npi-status-stable">STABLE</span>
+          <span className="npi-status-badge npi-status-room">Room —</span>
           <div className="npi-top-acts">
-            <button className="npi-btn-ghost" onClick={() => navigate("/Dashboard")}>← Dashboard</button>
+            <button className="npi-btn-ghost">📋 Orders</button>
+            <button className="npi-btn-ghost">📝 SOAP Note</button>
+            <button className="npi-btn-coral">🚪 Discharge</button>
             <button className="npi-btn-primary" onClick={async () => {
               try {
                 const payload = { raw_note: parseText || `Patient ${patientName} presenting with ${cc.text || "unspecified complaint"}`, patient_name: patientName, patient_id: demo.mrn || "", patient_age: demo.age || "", patient_gender: demo.sex?.toLowerCase() === "male" ? "male" : demo.sex?.toLowerCase() === "female" ? "female" : "other", date_of_birth: demo.dob || "", chief_complaint: cc.text || "", history_of_present_illness: cc.hpi || "", medications, allergies, status: "draft" };
@@ -354,7 +372,7 @@ export default function NewPatientInput() {
                 toast.success("Patient saved!");
                 navigate(`/ClinicalNoteStudio?noteId=${created.id}`);
               } catch (e) { toast.error("Failed to save: " + e.message); }
-            }}>💾 Save & Open Note</button>
+            }}>💾 Save Chart</button>
           </div>
         </div>
       </header>
@@ -505,6 +523,27 @@ const CSS = `
 .npi-btn-ghost:hover{border-color:var(--npi-bhi);color:var(--npi-txt)}
 .npi-btn-primary{background:var(--npi-teal);color:var(--npi-bg);border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;transition:filter .15s;font-family:'DM Sans',sans-serif}
 .npi-btn-primary:hover{filter:brightness(1.15)}
+.npi-allergy-wrap{display:flex;align-items:center;gap:5px;background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.35);border-radius:6px;padding:3px 10px;cursor:pointer;flex-shrink:0;transition:background .15s}
+.npi-allergy-wrap:hover{background:rgba(255,107,107,.16)}
+.npi-allergy-lbl{font-size:9px;color:var(--npi-coral);text-transform:uppercase;letter-spacing:.06em;font-weight:600;white-space:nowrap}
+.npi-allergy-pills{display:flex;gap:4px}
+.npi-allergy-pill{font-size:10px;font-weight:600;font-family:'JetBrains Mono',monospace;background:rgba(255,107,107,.2);color:var(--npi-coral);border-radius:4px;padding:1px 6px;white-space:nowrap}
+.npi-allergy-pill.npi-muted{background:rgba(74,106,138,.15);color:var(--npi-txt3)}
+.npi-vb-div{width:1px;height:18px;background:var(--npi-bd);flex-shrink:0}
+.npi-vb-vital{display:flex;align-items:center;gap:3px;font-family:'JetBrains Mono',monospace;font-size:10.5px;white-space:nowrap}
+.npi-vl{color:var(--npi-txt4);font-size:9px}
+.npi-vv{color:var(--npi-txt2)}
+.npi-vv.npi-abn{color:var(--npi-coral);animation:npi-glow-red 2s ease-in-out infinite}
+.npi-vv.npi-lo{color:var(--npi-blue);animation:npi-glow-blue 2s ease-in-out infinite}
+@keyframes npi-glow-red{0%,100%{text-shadow:0 0 4px rgba(255,107,107,.4)}50%{text-shadow:0 0 10px rgba(255,107,107,.9)}}
+@keyframes npi-glow-blue{0%,100%{text-shadow:0 0 4px rgba(59,158,255,.4)}50%{text-shadow:0 0 10px rgba(59,158,255,.9)}}
+.npi-status-badge{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;white-space:nowrap}
+.npi-status-stable{background:rgba(0,229,192,.1);color:var(--npi-teal);border:1px solid rgba(0,229,192,.3)}
+.npi-status-unstable{background:rgba(255,107,107,.1);color:var(--npi-coral);border:1px solid rgba(255,107,107,.3)}
+.npi-status-muted{background:rgba(74,106,138,.15);color:var(--npi-txt3);border:1px solid var(--npi-bd)}
+.npi-status-room{background:rgba(0,229,192,.1);color:var(--npi-teal);border:1px solid rgba(0,229,192,.3)}
+.npi-btn-coral{background:rgba(255,107,107,.15);color:var(--npi-coral);border:1px solid rgba(255,107,107,.3);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;transition:all .15s;font-family:'DM Sans',sans-serif}
+.npi-btn-coral:hover{background:rgba(255,107,107,.25)}
 
 /* MAIN CONTENT */
 .npi-main-wrap{position:fixed;top:var(--npi-top);left:var(--npi-isb);right:0;bottom:var(--npi-bot);display:flex;background:var(--npi-bg)}

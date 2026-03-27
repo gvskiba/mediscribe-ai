@@ -340,6 +340,7 @@ export default function NewPatientInput() {
             <button className="npi-new-pt" onClick={() => navigate("/NewPatientInput?tab=demo")}>+ New Patient</button>
           </div>
         </div>
+        {currentTab !== 'orders' && (
         <div className="npi-top-row-2">
           <span className="npi-chart-badge">PT-NEW</span>
           <span className="npi-pt-name">{patientName}</span>
@@ -357,6 +358,7 @@ export default function NewPatientInput() {
             }}>💾 Save & Open Note</button>
           </div>
         </div>
+        )}
       </header>
 
       {/* ═══ MAIN CONTENT ═══ */}

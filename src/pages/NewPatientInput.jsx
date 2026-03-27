@@ -365,7 +365,6 @@ export default function NewPatientInput() {
           <span className="npi-status-badge npi-status-room">Room —</span>
           <div className="npi-top-acts">
             <button className="npi-btn-ghost">📋 Orders</button>
-            <button className="npi-btn-ghost">📝 SOAP Note</button>
             <button className="npi-btn-coral">🚪 Discharge</button>
             <button className="npi-btn-primary" onClick={async () => {
               try {

@@ -371,7 +371,9 @@ export default function Layout({ children, currentPageName }) {
   const prevLabel = activeChartIdx > 0 ? ALL_CHART_ITEMS[activeChartIdx - 1].label : '';
   const curLabel  = activeChartItem?.label || currentPageName || '';
 
-  if (isFullscreen) {
+  const hideTopBar = ['NewPatientInput'].includes(currentPageName);
+
+  if (isFullscreen || hideTopBar) {
     return (
       <div className="v2-shell">
         <style>{GLOBAL_CSS}</style>

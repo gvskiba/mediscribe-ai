@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { usePatientData } from "@/lib/PatientDataContext";
 import { toast } from "sonner";
 
 const T = {
@@ -382,6 +384,8 @@ const AI_CSS = `
 `;
 
 export default function NotryaFloatingAI() {
+  const location = useLocation();
+  const { patientData } = usePatientData();
   const [aiOpen, setAiOpen] = useState(false);
   const [aiMsgs, setAiMsgs] = useState([
     { role: "sys", text: "👋 Hi! I'm Notrya AI. Ask me about what you're viewing or anything clinical." }
@@ -389,7 +393,28 @@ export default function NotryaFloatingAI() {
   const [aiInput, setAiInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [conversationHistory, setConversationHistory] = useState([]);
   const msgsRef = useRef(null);
+
+  // Get current page name from location
+  const getCurrentPage = () => {
+    const path = location.pathname.replace(/^\/$/, "Home").replace(/^\//, "");
+    return path.charAt(0).toUpperCase() + path.slice(1);
+  };
+
+  // Build context from patient data
+  const getContextString = () => {
+    const patientName = [patientData.firstName, patientData.lastName].filter(Boolean).join(" ") || "New Patient";
+    const currentPage = getCurrentPage();
+    const vitals = [];
+    if (patientData.bp) vitals.push(`BP ${patientData.bp}`);
+    if (patientData.hr) vitals.push(`HR ${patientData.hr}`);
+    if (patientData.temp) vitals.push(`T ${patientData.temp}°F`);
+    if (patientData.spo2) vitals.push(`SpO₂ ${patientData.spo2}%`);
+    const vitalStr = vitals.length > 0 ? ` Vitals: ${vitals.join(" · ")}.` : "";
+    const ccStr = patientData.cc_text ? ` CC: ${patientData.cc_text}.` : "";
+    return `Current page: ${currentPage}. Patient: ${patientName}.${vitalStr}${ccStr}`;
+  };
 
   useEffect(() => {
     if (msgsRef.current) {
@@ -406,7 +431,16 @@ export default function NotryaFloatingAI() {
     setAiMsgs(prev => [...prev, { role: "user", text: msg }]);
     setAiLoading(true);
 
+    // Add to conversation history
+    const newHistory = [
+      ...conversationHistory,
+      { role: "user", content: msg }
+    ];
+
     try {
+      const context = getContextString();
+      const systemPrompt = `You are Notrya AI, a helpful clinical assistant embedded in an emergency medicine documentation app. You provide concise, actionable advice. Context: ${context}. Respond in 2–4 sentences. Never fabricate data. If information is missing, ask for clarification.`;
+
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -417,8 +451,11 @@ export default function NotryaFloatingAI() {
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
           max_tokens: 1000,
-          system: "You are a helpful AI assistant embedded in this app. You have context on what the user is currently viewing. Respond in 2–4 concise, actionable sentences. Be direct. Never fabricate data. If unsure, say so.",
-          messages: [{ role: "user", content: msg }],
+          system: systemPrompt,
+          messages: newHistory.map(m => ({
+            role: m.role,
+            content: m.content
+          })),
         }),
       });
 
@@ -429,6 +466,10 @@ export default function NotryaFloatingAI() {
       const data = await response.json();
       const botMsg = data.content?.[0]?.text || "Sorry, I couldn't process that.";
       setAiMsgs(prev => [...prev, { role: "bot", text: botMsg }]);
+      setConversationHistory([
+        ...newHistory,
+        { role: "assistant", content: botMsg }
+      ]);
       if (!aiOpen) setUnread(n => n + 1);
     } catch (e) {
       setAiMsgs(prev => [...prev, { role: "sys", text: "⚠ Error — check API key or connection." }]);

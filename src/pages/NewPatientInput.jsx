@@ -245,23 +245,27 @@ export default function NewPatientInput() {
             <MedicalDecisionMaking embedded patientName={patientName} chiefComplaint={cc.text} />
           )}
           {currentTab === 'discharge' && (
-            <div style={{ margin: '-20px -24px', height: 'calc(100vh - 138px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              <DischargeSummaryTab
-                note={{
-                  assessment: cc.text || '',
-                  summary: cc.hpi || '',
-                  diagnoses: [],
-                  medications,
-                  allergies,
-                }}
-                noteId={null}
-                queryClient={null}
-                isFirstTab={() => false}
-                isLastTab={() => true}
-                handleBack={() => navigate('/NewPatientInput?tab=medref')}
-                handleNext={() => {}}
-              />
-            </div>
+            <DischargeSummaryTab
+              note={{
+                assessment: cc.text || '',
+                summary: cc.hpi || '',
+                history_of_present_illness: cc.hpi || '',
+                chief_complaint: cc.text || '',
+                diagnoses: [],
+                medications,
+                allergies,
+                patient_name: [demo.firstName, demo.lastName].filter(Boolean).join(' ') || '',
+                patient_age: demo.age || '',
+                patient_gender: demo.sex || '',
+                patient_id: demo.mrn || '',
+              }}
+              noteId={null}
+              queryClient={null}
+              isFirstTab={() => false}
+              isLastTab={() => true}
+              handleBack={() => navigate('/NewPatientInput?tab=medref')}
+              handleNext={() => {}}
+            />
           )}
           {currentTab === 'autocoder' && (
             <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} />

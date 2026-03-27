@@ -16,10 +16,10 @@ export default function DischargeSummaryTab({
 }) {
   const [dischargeData, setDischargeData] = useState({
     finalImpression: {
-      primaryDx: note?.assessment || "",
+      primaryDx: note?.assessment || note?.chief_complaint || "",
       icd10: note?.diagnoses?.[0]?.split(" - ")[0] || "",
       secondaryDx: note?.diagnoses?.slice(1).join("\n") || "",
-      clinicalSummary: note?.summary || "",
+      clinicalSummary: note?.summary || note?.history_of_present_illness || "",
       conditionAtDischarge: "Stable",
       mdmLevel: "99283",
     },
@@ -30,12 +30,15 @@ export default function DischargeSummaryTab({
       consults: "",
     },
     treatmentProvided: {
-      medicationsGivenInED: "",
+      medicationsGivenInED: note?.medications?.join(", ") || "",
       ivFluids: "",
       oxygenTherapy: "None — Room air throughout",
       responseToTreatment: "",
     },
-    dischargeMedications: [],
+    dischargeMedications: (note?.medications || []).map(m => ({
+      name: m, brandName: "", dose: "", route: "By mouth (PO)",
+      frequency: "", duration: "", purpose: "", isNew: false, importantNotes: "", controlled: false,
+    })),
     followUpPlan: [],
     patientAcknowledgment: {
       instructionsExplained: false,

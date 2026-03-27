@@ -1,0 +1,90 @@
+{
+  "name": "ClinicalOrder",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "Reference to the Patient entity ID"
+    },
+    "patient_name": {
+      "type": "string",
+      "description": "Patient's full name for quick reference"
+    },
+    "note_id": {
+      "type": "string",
+      "description": "Reference to the ClinicalNote entity ID"
+    },
+    "order_name": {
+      "type": "string",
+      "description": "Name of the order (e.g., CBC, Chest X-Ray, Metoprolol)"
+    },
+    "order_type": {
+      "type": "string",
+      "enum": [
+        "lab",
+        "imaging",
+        "medication",
+        "procedure",
+        "consult",
+        "other"
+      ],
+      "description": "Category of the order"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "active",
+        "completed",
+        "cancelled",
+        "on_hold"
+      ],
+      "default": "pending",
+      "description": "Current status of the order"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "stat",
+        "urgent",
+        "routine"
+      ],
+      "default": "routine",
+      "description": "Order priority level"
+    },
+    "details": {
+      "type": "string",
+      "description": "Additional instructions, dose, frequency, or clinical context"
+    },
+    "indication": {
+      "type": "string",
+      "description": "Clinical indication or reason for the order"
+    },
+    "ordered_by": {
+      "type": "string",
+      "description": "Name or ID of the ordering clinician"
+    },
+    "ordered_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Date and time the order was placed"
+    },
+    "result": {
+      "type": "string",
+      "description": "Result or response from the order (e.g., lab value, imaging finding)"
+    },
+    "result_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Date and time the result was received"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional clinical notes about this order"
+    }
+  },
+  "required": [
+    "order_name",
+    "order_type"
+  ]
+}

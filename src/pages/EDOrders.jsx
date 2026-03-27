@@ -377,13 +377,6 @@ IMPORTANT: Do NOT recommend contrast-based imaging (i_ctca, i_ctpe) or codeine (
       {/* TOP BAR */}
       <header className="topbar">
         <div className="logo-box">Pc</div>
-        <nav className="breadcrumb">
-          <span className="bc-link">Patients</span>
-          <span className="bc-sep">›</span>
-          <span className="bc-link">Nakamura, Hiroshi</span>
-          <span className="bc-sep">›</span>
-          <span className="bc-cur">📋 Orders</span>
-        </nav>
         <div className="vsep"></div>
         <div className="pt-pill">
           <span className="pt-name">Nakamura, H.</span>

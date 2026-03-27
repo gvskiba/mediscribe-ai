@@ -374,22 +374,7 @@ IMPORTANT: Do NOT recommend contrast-based imaging (i_ctca, i_ctpe) or codeine (
     <div style={{ height: embedded ? '100%' : 'calc(100vh - 138px)', margin: 0, display: 'flex', flexDirection: 'column', backgroundColor: T.bg, color: T.txt, fontFamily: "'DM Sans', sans-serif" }}>
       <style>{CSS}</style>
 
-      {/* TOP BAR */}
-      <header className="topbar">
-        <div className="logo-box">Pc</div>
-        <div className="vsep"></div>
-        <div className="pt-pill">
-          <span className="pt-name">Nakamura, H.</span>
-          <span className="pt-meta">67y M · NSTEMI · ESI-2 · Room 4B</span>
-        </div>
-        <div className="allergy-pill" title="Known allergies">⚠ PCN · Contrast · Codeine</div>
-        <div className="topbar-right">
-          <span style={{ fontSize: '11px', color: T.txt4, fontFamily: "'JetBrains Mono', monospace" }}>⌘K to search</span>
-          <button className="btn-ghost">⬅ Back to Chart</button>
-          <button className="btn-ghost">📚 Saved Sets</button>
-          <button className="btn-teal">💾 Save Draft</button>
-        </div>
-      </header>
+
 
       {/* APP LAYOUT */}
       <div className="app-layout">

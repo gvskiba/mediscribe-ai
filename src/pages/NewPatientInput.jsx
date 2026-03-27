@@ -145,7 +145,6 @@ export default function NewPatientInput() {
   const [o2del, setO2del] = useState("");
   const [pain, setPain] = useState("");
   const [triage, setTriage] = useState("");
-  const [esiLevel, setEsiLevel] = useState("");
 
   // ─── AI state ───
   const [aiOpen, setAiOpen] = useState(false);
@@ -266,41 +265,6 @@ export default function NewPatientInput() {
 
   // ─── Render tab content ───
   const renderContent = () => {
-    if (currentTab === "chart") return (
-      <>
-        <div className="npi-section-box">
-          <div className="npi-sec-header">
-            <span className="npi-sec-icon">📋</span>
-            <div>
-              <div className="npi-sec-title">Registration</div>
-              <div className="npi-sec-subtitle">Patient assignment and chart identifiers</div>
-            </div>
-          </div>
-          <div className="npi-grid-2">
-            <div className="npi-field">
-              <label className="npi-field-label">Medical Record Number</label>
-              <input type="text" className="npi-field-input" placeholder="Enter MRN..." value={demo.mrn || ""} onChange={(e) => setDemo({...demo, mrn: e.target.value})} />
-            </div>
-            <div className="npi-field">
-              <label className="npi-field-label">Room</label>
-              <input type="text" className="npi-field-input" placeholder="e.g., 4B" value={demo.city || ""} onChange={(e) => setDemo({...demo, city: e.target.value})} />
-            </div>
-          </div>
-        </div>
-        <div className="npi-section-box">
-          <div className="npi-sec-header">
-            <span className="npi-sec-icon">🚨</span>
-            <div>
-              <div className="npi-sec-title">Triage</div>
-              <div className="npi-sec-subtitle">ESI level and arrival mode</div>
-            </div>
-          </div>
-          <div className="npi-esi-row">
-            {[{v:"1",l:"ESI 1 — Immediate",c:"coral"},{v:"2",l:"ESI 2 — Emergent",c:"orange"},{v:"3",l:"ESI 3 — Urgent",c:"gold"},{v:"4",l:"ESI 4 — Less Urgent",c:"blue"},{v:"5",l:"ESI 5 — Non-Urgent",c:"teal"}].map(e=><button key={e.v} className={`npi-esi-btn npi-esi-${e.c}${esiLevel === e.v ? " active" : ""}`} onClick={() => setEsiLevel(e.v)}>{e.l}</button>)}
-          </div>
-        </div>
-      </>
-    );
     switch (currentTab) {
       case "demo": return <DemoTab demo={demo} setDemo={setDemo} parseText={parseText} setParseText={setParseText} parsing={parsing} onSmartParse={smartParse} />;
       case "cc":   return <CCTab cc={cc} setCC={setCC} selectedCC={selectedCC} setSelectedCC={setSelectedCC} />;
@@ -580,26 +544,6 @@ const CSS = `
 .npi-status-room{background:rgba(0,229,192,.1);color:var(--npi-teal);border:1px solid rgba(0,229,192,.3)}
 .npi-btn-coral{background:rgba(255,107,107,.15);color:var(--npi-coral);border:1px solid rgba(255,107,107,.3);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;transition:all .15s;font-family:'DM Sans',sans-serif}
 .npi-btn-coral:hover{background:rgba(255,107,107,.25)}
-
-.npi-section-box{background:var(--npi-panel);border:1px solid var(--npi-bd);border-radius:12px;padding:16px 18px}
-.npi-sec-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.npi-sec-icon{font-size:16px}
-.npi-sec-title{font-size:14px;font-weight:600;color:var(--npi-txt)}
-.npi-sec-subtitle{font-size:11px;color:var(--npi-txt3);margin-top:1px}
-.npi-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px}
-.npi-field{display:flex;flex-direction:column;gap:3px}
-.npi-field-label{font-size:9px;color:var(--npi-txt3);text-transform:uppercase;letter-spacing:.06em;font-weight:500}
-.npi-field-input{background:var(--npi-up);border:1px solid var(--npi-bd);border-radius:6px;padding:7px 10px;color:var(--npi-txt);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color .15s;width:100%}
-.npi-field-input:focus{border-color:var(--npi-blue)}
-.npi-field-input::placeholder{color:var(--npi-txt4)}
-.npi-esi-row{display:flex;gap:6px;flex-wrap:wrap}
-.npi-esi-btn{padding:7px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid rgba(74,106,138,.4);background:rgba(14,37,68,.3);color:var(--npi-txt3);transition:all .2s;font-family:'DM Sans',sans-serif;white-space:nowrap}
-.npi-esi-btn:hover{border-color:var(--npi-bd);color:var(--npi-txt2);background:var(--npi-up)}
-.npi-esi-btn.npi-esi-coral.active{background:rgba(255,107,107,.15);color:var(--npi-coral);border-color:rgba(255,107,107,.5)}
-.npi-esi-btn.npi-esi-orange.active{background:rgba(255,159,67,.12);color:var(--npi-orange);border-color:rgba(255,159,67,.5)}
-.npi-esi-btn.npi-esi-gold.active{background:rgba(245,200,66,.1);color:var(--npi-gold);border-color:rgba(245,200,66,.5)}
-.npi-esi-btn.npi-esi-blue.active{background:rgba(59,158,255,.12);color:var(--npi-blue);border-color:rgba(59,158,255,.5)}
-.npi-esi-btn.npi-esi-teal.active{background:rgba(0,229,192,.1);color:var(--npi-teal);border-color:rgba(0,229,192,.5)}
 
 /* MAIN CONTENT */
 .npi-main-wrap{position:fixed;top:var(--npi-top);left:var(--npi-isb);right:0;bottom:var(--npi-bot);display:flex;background:var(--npi-bg)}

@@ -34,8 +34,9 @@ const grid3 = {
 
 const field = { display: 'flex', flexDirection: 'column' };
 
-export default function DemoTab({ demo, setDemo, parseText, setParseText, parsing, onSmartParse, esiLevel, setEsiLevel }) {
+export default function DemoTab({ demo, setDemo, parseText, setParseText, parsing, onSmartParse, esiLevel, setEsiLevel, registration, setRegistration }) {
   const handleChange = (f, v) => setDemo(prev => ({ ...prev, [f]: v }));
+  const handleRegistrationChange = (f, v) => setRegistration(prev => ({ ...prev, [f]: v }));
 
   const handleDob = (value) => {
     handleChange('dob', value);
@@ -226,11 +227,11 @@ export default function DemoTab({ demo, setDemo, parseText, setParseText, parsin
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div style={field}>
             <label style={label}>Medical Record Number</label>
-            <input style={{ ...input, fontFamily: "'JetBrains Mono', monospace" }} placeholder="e.g. 12-345-6789" value={demo.mrn} onChange={e => handleChange('mrn', e.target.value)} />
+            <input style={{ ...input, fontFamily: "'JetBrains Mono', monospace" }} placeholder="e.g. 12-345-6789" value={registration.mrn} onChange={e => handleRegistrationChange('mrn', e.target.value)} />
           </div>
           <div style={field}>
             <label style={label}>Room / Bed Assignment</label>
-            <input style={input} placeholder="e.g. ER-4B" value={demo.city || ''} onChange={e => handleChange('city', e.target.value)} />
+            <input style={input} placeholder="e.g. ER-4B" value={registration.room} onChange={e => handleRegistrationChange('room', e.target.value)} />
           </div>
         </div>
       </div>

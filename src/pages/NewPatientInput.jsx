@@ -146,6 +146,7 @@ export default function NewPatientInput() {
   const [pain, setPain] = useState("");
   const [triage, setTriage] = useState("");
   const [esiLevel, setEsiLevel] = useState("");
+  const [registration, setRegistration] = useState({ mrn: "", room: "" });
 
   // ─── AI state ───
   const [aiOpen, setAiOpen] = useState(false);
@@ -267,7 +268,7 @@ export default function NewPatientInput() {
   // ─── Render tab content ───
   const renderContent = () => {
     switch (currentTab) {
-      case "demo": return <DemoTab demo={demo} setDemo={setDemo} parseText={parseText} setParseText={setParseText} parsing={parsing} onSmartParse={smartParse} esiLevel={esiLevel} setEsiLevel={setEsiLevel} />;
+      case "demo": return <DemoTab demo={demo} setDemo={setDemo} parseText={parseText} setParseText={setParseText} parsing={parsing} onSmartParse={smartParse} esiLevel={esiLevel} setEsiLevel={setEsiLevel} registration={registration} setRegistration={setRegistration} />;
       case "cc":   return <CCTab cc={cc} setCC={setCC} selectedCC={selectedCC} setSelectedCC={setSelectedCC} />;
       case "vit":  return <VitalsTab vitals={vitals} setVitals={setVitals} avpu={avpu} setAvpu={setAvpu} o2del={o2del} setO2del={setO2del} pain={pain} setPain={setPain} triage={triage} setTriage={setTriage} />;
       case "meds": return <MedsTab medications={medications} setMedications={setMedications} allergies={allergies} setAllergies={setAllergies} pmhSelected={pmhSelected} setPmhSelected={setPmhSelected} pmhExtra={pmhExtra} setPmhExtra={setPmhExtra} surgHx={surgHx} setSurgHx={setSurgHx} famHx={famHx} setFamHx={setFamHx} socHx={socHx} setSocHx={setSocHx} pmhExpanded={pmhExpanded} setPmhExpanded={setPmhExpanded} />;
@@ -368,7 +369,7 @@ export default function NewPatientInput() {
             <button className="npi-btn-coral">🚪 Discharge</button>
             <button className="npi-btn-primary" onClick={async () => {
               try {
-                const payload = { raw_note: parseText || `Patient ${patientName} presenting with ${cc.text || "unspecified complaint"}`, patient_name: patientName, patient_id: demo.mrn || "", patient_age: demo.age || "", patient_gender: demo.sex?.toLowerCase() === "male" ? "male" : demo.sex?.toLowerCase() === "female" ? "female" : "other", date_of_birth: demo.dob || "", chief_complaint: cc.text || "", history_of_present_illness: cc.hpi || "", medications, allergies, status: "draft" };
+                const payload = { raw_note: parseText || `Patient ${patientName} presenting with ${cc.text || "unspecified complaint"}`, patient_name: patientName, patient_id: registration.mrn || demo.mrn || "", patient_age: demo.age || "", patient_gender: demo.sex?.toLowerCase() === "male" ? "male" : demo.sex?.toLowerCase() === "female" ? "female" : "other", date_of_birth: demo.dob || "", chief_complaint: cc.text || "", history_of_present_illness: cc.hpi || "", medications, allergies, status: "draft", registration_mrn: registration.mrn || "", registration_room: registration.room || "", triage_esi_level: esiLevel || "" };
                 const created = await base44.entities.ClinicalNote.create(payload);
                 toast.success("Patient saved!");
                 navigate(`/ClinicalNoteStudio?noteId=${created.id}`);

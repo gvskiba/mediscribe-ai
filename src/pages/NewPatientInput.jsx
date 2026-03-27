@@ -16,6 +16,7 @@ import NotryaApp from "@/pages/NotryaApp";
 import EDProcedureNotes from "@/pages/EDProcedureNotes";
 import EDOrders from "@/pages/EDOrders";
 import MedicationReferencePage from "@/pages/MedicationReference";
+import ACSPage from "@/components/acs/ACSPage";
 
 // ─── NAV DATA ────────────────────────────────────────
 const NAV_DATA = {
@@ -41,6 +42,7 @@ const NAV_DATA = {
     { section: "erx",        icon: "💉", label: "eRx",                 abbr: "Ex", dot: "empty" },
     { section: "procedures", icon: "✂️", label: "Procedures",          abbr: "Pr", dot: "empty" },
     { section: "medref",     icon: "🧬", label: "ED Med Ref",          abbr: "Mr", dot: "empty" },
+    { section: "acs",        icon: "🫀", label: "ACS Protocol",        abbr: "CS", dot: "empty" },
   ],
 };
 
@@ -272,6 +274,7 @@ export default function NewPatientInput() {
       case "autocoder": return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} />;
       case "procedures": return <EDProcedureNotes embedded patientName={patientName} patientAllergies={allergies.join(", ")} physicianName="" />;
       case "medref": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto" }}><MedicationReferencePage embedded /></div>;
+      case "acs": return <ACSPage />;
       case "erplan": return (
         <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center", justifyContent: "center", height: 300 }}>
           <div style={{ fontSize: 32 }}>🗺️</div>

@@ -19,6 +19,7 @@ import PediatricDosingCalculator from '@/pages/PediatricDosingCalculator';
 import StrokeAssessment from '@/pages/StrokeAssessment';
 import EDOrders from '@/pages/EDOrders';
 import NotryaApp from '@/pages/NotryaApp';
+import NotryaACS from '@/pages/NotryaACS';
 
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -87,6 +88,7 @@ const AuthenticatedApp = () => {
       <Route path="/StrokeAssessment" element={<LayoutWrapper currentPageName="StrokeAssessment"><StrokeAssessment /></LayoutWrapper>} />
       <Route path="/EDOrders" element={<LayoutWrapper currentPageName="EDOrders"><EDOrders /></LayoutWrapper>} />
       <Route path="/NotryaApp" element={<NotryaApp />} />
+      <Route path="/NotryaACS" element={<NotryaACS />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

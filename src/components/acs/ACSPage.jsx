@@ -553,7 +553,7 @@ function RiskScores() {
   );
 }
 
-export default function ACSPage() {
+export default function ACSPage({ defaultSection } = {}) {
   const [acsType, setAcsType] = useState("STEMI");
   const [activeTab, setActiveTab] = useState("algorithm");
   const TABS = [

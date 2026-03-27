@@ -378,6 +378,11 @@ IMPORTANT: Do NOT recommend contrast-based imaging (i_ctca, i_ctpe) or codeine (
       <header className="topbar">
         <div className="logo-box">Pc</div>
         <div className="vsep"></div>
+        <div className="pt-pill">
+          <span className="pt-name">Nakamura, H.</span>
+          <span className="pt-meta">67y M · NSTEMI · ESI-2 · Room 4B</span>
+        </div>
+        <div className="allergy-pill" title="Known allergies">⚠ PCN · Contrast · Codeine</div>
         <div className="topbar-right">
           <span style={{ fontSize: '11px', color: T.txt4, fontFamily: "'JetBrains Mono', monospace" }}>⌘K to search</span>
           <button className="btn-ghost">⬅ Back to Chart</button>

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import ERPlanBuilder from "@/pages/ERPlanBuilder";
 
 // ─── NAV DATA ────────────────────────────────────────
 const NAV_DATA = {
@@ -330,52 +331,12 @@ export default function BaseTemplate() {
 
       {/* ═══ 3. MAIN CONTENT ═══ */}
       <div className="main-wrap">
-        <main className="content">
-          <div className="page-header">
-            <span className="page-header-icon">📄</span>
-            <div>
-              <div className="page-title">[Page Title]</div>
-              <div className="page-subtitle">Brief description of what this page does</div>
+        <main className="content" style={activeSection === 'erplan' ? {padding:0,overflow:'hidden'} : {}}>
+          {activeSection === 'erplan' ? (
+            <div style={{width:'100%',height:'100%',overflow:'hidden'}}>
+              <ERPlanBuilder embedded />
             </div>
-            <div className="page-header-right">
-              <button className="btn-ghost">+ Add Item</button>
-            </div>
-          </div>
-
-          <div className="section-box">
-            <div className="sec-header">
-              <span className="sec-icon">📄</span>
-              <div>
-                <div className="sec-title">Section Title</div>
-                <div className="sec-subtitle">Brief description of what this section does</div>
-              </div>
-              <button className="btn-ghost ml-auto">Action</button>
-            </div>
-            <div className="grid-2 mb-8">
-              <div className="field">
-                <label className="field-label">Field Label</label>
-                <input type="text" className="field-input" placeholder="Enter value…" />
-              </div>
-              <div className="field">
-                <label className="field-label">Another Field</label>
-                <select className="field-select" defaultValue="">
-                  <option value="">— Select —</option>
-                  <option>Option A</option>
-                  <option>Option B</option>
-                </select>
-              </div>
-              <div className="field col-full">
-                <label className="field-label">Notes</label>
-                <textarea className="field-textarea" placeholder="Enter notes…" />
-              </div>
-            </div>
-            <div className="flex gap-6" style={{ flexWrap: "wrap" }}>
-              <div className="chip selected">✓ Chip One</div>
-              <div className="chip">Chip Two</div>
-              <div className="chip">Chip Three</div>
-            </div>
-          </div>
-
+          ) : (<>
           <div className="section-box">
             <div className="sec-header">
               <span className="sec-icon">📊</span>
@@ -391,6 +352,7 @@ export default function BaseTemplate() {
               </p>
             </div>
           </div>
+          </>)}
         </main>
       </div>
 

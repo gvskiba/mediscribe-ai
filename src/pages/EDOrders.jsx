@@ -371,7 +371,7 @@ IMPORTANT: Do NOT recommend contrast-based imaging (i_ctca, i_ctpe) or codeine (
   };
 
   return (
-    <div style={{ height: embedded ? '100%' : 'calc(100vh - 138px)', margin: embedded ? '0' : '-20px -24px', display: 'flex', flexDirection: 'column', backgroundColor: T.bg, color: T.txt, fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ height: embedded ? '100%' : 'calc(100vh - 138px)', margin: 0, display: 'flex', flexDirection: 'column', backgroundColor: T.bg, color: T.txt, fontFamily: "'DM Sans', sans-serif" }}>
       <style>{CSS}</style>
 
       {/* TOP BAR */}

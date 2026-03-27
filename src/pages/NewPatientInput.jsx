@@ -272,7 +272,7 @@ export default function NewPatientInput() {
       case "ros":  return <ROSTab />;
       case "pe":   return <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} />;
       case "mdm":  return <MedicalDecisionMaking embedded patientName={patientName} chiefComplaint={cc.text} />;
-      case "chart":    return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><NotryaApp embedded={true} /></div>;
+      case "chart":    return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto" }}><NotryaApp embedded={true} /></div>;
       case "discharge": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><DischargePlanning embedded /></div>;
       case "orders":   return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><EDOrders embedded /></div>;
       case "autocoder": return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} />;

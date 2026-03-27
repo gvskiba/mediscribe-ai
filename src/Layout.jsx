@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { usePatient } from "./lib/PatientContext";
 
 import OfflineSync from "./components/offline/OfflineSync";
 import NotryaFloatingAI from "./components/ai/NotryaFloatingAI";
@@ -244,9 +243,6 @@ const GLOBAL_CSS = `
 @keyframes v2glowred { 0%,100%{text-shadow:0 0 4px rgba(255,107,107,0.4)} 50%{text-shadow:0 0 10px rgba(255,107,107,0.9)} }
 .v2-badge-monitor { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: rgba(255,107,107,0.15); color: #ff6b6b; border: 1px solid rgba(255,107,107,0.3); white-space: nowrap; flex-shrink: 0; }
 .v2-badge-room { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: rgba(0,229,192,0.1); color: #00e5c0; border: 1px solid rgba(0,229,192,0.3); white-space: nowrap; flex-shrink: 0; }
-.status-unstable { background: rgba(255,107,107,.1); color: #ff6b6b; border: 1px solid rgba(255,107,107,.3); }
-.status-muted { background: rgba(74,106,138,.15); color: #4a6a8a; border: 1px solid #1a3555; }
-.allergy-pill.muted { background: rgba(74,106,138,.15); color: #4a6a8a; }
 .v2-chart-acts { margin-left: auto; display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
 .v2-btn-ghost {
   background: #0e2544; border: 1px solid #1a3555; border-radius: 6px;
@@ -343,7 +339,6 @@ const STEP_STATES = [
 export default function Layout({ children, currentPageName }) {
   const [user, setUser] = useState(null);
   const [clock, setClock] = useState('');
-  const { state } = usePatient();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -440,51 +435,20 @@ export default function Layout({ children, currentPageName }) {
 
         {/* Row 2 */}
         <div className="v2-top-r2">
-          {(() => {
-            const displayChart = state.patientId || 'PT-NEW';
-            const displayName = state.lastName
-              ? `${state.lastName}, ${state.firstName?.charAt(0) || ''}.`
-              : '— Patient —';
-            const displayMeta = [
-              state.age ? `${state.age}y` : null,
-              state.sex || null,
-              state.dob || null,
-            ].filter(Boolean).join(' · ') || 'Age · Sex · DOB';
-            const displayCC = state.chiefComplaint
-              ? `CC: ${state.chiefComplaint}`
-              : 'CC: —';
-            const vitals = {
-              bp:   state.vitals?.bp   || '—',
-              hr:   state.vitals?.hr   || '—',
-              rr:   state.vitals?.rr   || '—',
-              spo2: state.vitals?.spo2 || '—',
-              temp: state.vitals?.temp || '—',
-              gcs:  state.vitals?.gcs  || '—',
-            };
-            const isUnstable = (parseInt(state.vitals?.hr) > 120) || (parseInt(state.vitals?.spo2) < 93);
-            const hasVitals = Object.values(state.vitals || {}).some(v => v && v !== '');
-            const statusLabel = !hasVitals ? 'NO DATA' : isUnstable ? 'UNSTABLE' : 'STABLE';
-            const statusClass = !hasVitals ? 'status-muted' : isUnstable ? 'status-unstable' : 'status-stable';
-            const displayRoom = state.room || 'Room —';
-            return (
-              <>
-                <span className="v2-chart-badge">{displayChart}</span>
-                <span className="v2-pt-name">{displayName}</span>
-                <span className="v2-pt-meta">{displayMeta}</span>
-                <span className="v2-pt-cc">{displayCC}</span>
-                <div className="v2-vsep" />
-                {[['BP',vitals.bp,false],['HR',vitals.hr,(parseInt(state.vitals?.hr) > 120)],['RR',vitals.rr,false],['SpO₂',vitals.spo2,(parseInt(state.vitals?.spo2) < 93)],['T',vitals.temp,false],['GCS',vitals.gcs,false]].map(([l,v,abn]) => (
-                  <div key={l} className="v2-vital">
-                    <span className="vl">{l}</span>
-                    <span className={`vv${abn ? ' abn' : ''}`}>{v}</span>
-                  </div>
-                ))}
-                <div className="v2-vsep" />
-                <span className={`v2-badge-monitor ${statusClass}`}>{statusLabel}</span>
-                <span className="v2-badge-room">{displayRoom}</span>
-              </>
-            );
-          })()}
+          <span className="v2-chart-badge">PT-4-471-8820</span>
+          <span className="v2-pt-name">New Patient</span>
+          <span className="v2-pt-meta">67 y/o · Male · 03/14/1957</span>
+          <span className="v2-pt-cc">CC: Chest Pain</span>
+          <div className="v2-vsep" />
+          {[['BP','158/94',true],['HR','108',true],['RR','18',false],['SpO₂','93%',false],['T','37.1°C',false],['GCS','15',false]].map(([l,v,abn]) => (
+            <div key={l} className="v2-vital">
+              <span className="vl">{l}</span>
+              <span className={`vv${abn ? ' abn' : ''}`}>{v}</span>
+            </div>
+          ))}
+          <div className="v2-vsep" />
+          <span className="v2-badge-monitor">MONITORING</span>
+          <span className="v2-badge-room">Room 4B</span>
           <div className="v2-chart-acts">
             <button className="v2-btn-ghost">📋 Orders</button>
 

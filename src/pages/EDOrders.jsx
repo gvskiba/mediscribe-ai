@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { base44 } from '@/api/base44Client';
 
 const EDOrders = () => {
   /* ══════════════════════════════════════════
@@ -279,6 +280,7 @@ input, textarea { font-family: 'DM Sans', sans-serif; }
     { id: 'nstemi', title: 'NSTEMI Management', conf: 97, confCls: 'coral', basis: 'Troponin-I 0.84 (>20× ULN) · ST depression V4–V6', open: true, orders: [{ id: 'm_asp325', st: 'done', note: 'Given 70 min ago' }, { id: 'm_hep', st: 'active', note: 'Drip running · PTT subtherapeutic' }, { id: 'm_ticag', st: 'done', note: 'Given 9 min ago' }, { id: 'c_cards', st: 'done', note: 'Dr. Chen at bedside' }, { id: 'p_tele', st: 'active', note: 'Active monitoring' }] },
   ]);
   const [toast, setToast] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
   const toastRef = useRef(null);
 
   const showToast = (msg) => {
@@ -312,6 +314,61 @@ input, textarea { font-family: 'DM Sans', sans-serif; }
   };
 
   const escHtml = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  const runAIAnalysis = async () => {
+    setAiLoading(true);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are an emergency medicine clinical decision support AI. Analyze this patient and recommend order sets.
+
+Patient: Nakamura, Hiroshi | 67y Male | Room 4B
+Diagnosis: NSTEMI (Non-ST Elevation MI)
+Allergies: Penicillin (anaphylaxis), Iodinated Contrast (urticaria), Codeine (nausea)
+Vitals: BP 158/94, HR 108, RR 18, SpO2 93%, Temp 37.1°C
+Key findings: Troponin-I 0.84 (>20x ULN), ST depression V4-V6, K+ 5.4, Glucose 218
+Current meds: Aspirin 325mg given, Ticagrelor loaded, Heparin drip running
+
+Generate 2-3 clinical order set recommendations with confidence scores. For each set include 3-5 specific orders from this list: l_trop, l_bnp, l_ckmb, l_bmp, l_cmp, l_mg, l_lac, l_a1c, l_cbc, l_coag, l_type, i_cxr, i_tte, i_ctca, i_ctpe, m_ntg_sl, m_ntg_iv, m_metop, m_amio, m_asp325, m_hep, m_ticag, m_pred, p_ecg, p_ecg_serial, p_tele, p_o2_2l, c_cards, c_pharm
+
+IMPORTANT: Do NOT recommend contrast-based imaging (i_ctca, i_ctpe) or codeine (m_codeine) due to allergies.`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            sets: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  title: { type: 'string' },
+                  conf: { type: 'number' },
+                  basis: { type: 'string' },
+                  orders: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string' },
+                        st: { type: 'string' },
+                        note: { type: 'string' }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+      if (result?.sets?.length) {
+        setAiSets(result.sets.map(s => ({ ...s, open: true, confCls: s.conf >= 90 ? 'coral' : s.conf >= 75 ? 'orange' : 'teal' })));
+        showToast('✦ AI analysis complete — ' + result.sets.length + ' recommendation sets generated');
+      }
+    } catch (e) {
+      showToast('⚠ AI analysis failed — ' + e.message);
+    }
+    setAiLoading(false);
+  };
 
   return (
     <div style={{ height: 'calc(100vh - 138px)', display: 'flex', flexDirection: 'column', backgroundColor: T.bg, color: T.txt, fontFamily: "'DM Sans', sans-serif" }}>
@@ -353,10 +410,61 @@ input, textarea { font-family: 'DM Sans', sans-serif; }
             </div>
           </div>
           <div className="ai-panel-body">
-            <button className="add-all-btn" disabled>✦ Add All New (0)</button>
+            {aiSets.length > 0 && (
+              <button className="add-all-btn"
+                onClick={() => {
+                  aiSets.forEach(set => set.orders.forEach(o => {
+                    if (o.st === 'add') { const ord = ALL_ORDERS.find(x => x.id === o.id); if (ord) addToQueue(ord); }
+                  }));
+                }}
+              >✦ Add All New ({aiSets.reduce((acc, s) => acc + s.orders.filter(o => o.st === 'add').length, 0)})</button>
+            )}
+            {aiLoading && (
+              <div style={{ textAlign: 'center', padding: '20px 10px', color: T.teal, fontSize: 12 }}>
+                <div style={{ fontSize: 24, marginBottom: 8, animation: 'aipulse 1s ease-in-out infinite' }}>✦</div>
+                Analyzing patient chart…
+              </div>
+            )}
+            {!aiLoading && aiSets.map(set => (
+              <div key={set.id} className={`ai-set ${set.open ? 'open' : ''}`}>
+                <div className="ai-set-hdr" onClick={() => setAiSets(prev => prev.map(s => s.id === set.id ? { ...s, open: !s.open } : s))}>
+                  <span className="ai-conf" style={{ background: set.conf >= 90 ? 'rgba(255,107,107,.15)' : 'rgba(255,159,67,.12)', color: set.conf >= 90 ? T.coral : T.orange, border: `1px solid ${set.conf >= 90 ? 'rgba(255,107,107,.3)' : 'rgba(255,159,67,.3)'}` }}>{set.conf}%</span>
+                  <div className="ai-set-info">
+                    <div className="ai-set-name">{set.title}</div>
+                    <div className="ai-set-basis">{set.basis}</div>
+                  </div>
+                  <span className="ai-chevron">▼</span>
+                </div>
+                <div className="ai-set-body">
+                  {set.orders.map((o, i) => {
+                    const ord = ALL_ORDERS.find(x => x.id === o.id);
+                    const canAdd = o.st === 'add' && ord;
+                    return (
+                      <div key={i} className={`ai-order-row ${canAdd ? 'clickable' : ''}`} onClick={() => canAdd && addToQueue(ord)}>
+                        <div className={`ai-order-status-dot ${o.st}`}>{o.st === 'done' ? '✓' : o.st === 'active' ? '●' : o.st === 'queued' ? '↑' : '+'}</div>
+                        <span className="ai-order-name">{ord?.name || o.id}</span>
+                        {o.note && <span className="ai-order-note">{o.note}</span>}
+                        {canAdd && <div className="ai-add-icon">+</div>}
+                      </div>
+                    );
+                  })}
+                  <div className="ai-set-actions">
+                    <button className="ai-add-set-btn" onClick={() => set.orders.forEach(o => { if (o.st === 'add') { const ord = ALL_ORDERS.find(x => x.id === o.id); if (ord) addToQueue(ord); } })}>+ Add New</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {!aiLoading && aiSets.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '28px 10px', color: T.txt4, fontSize: 12 }}>
+                <div style={{ fontSize: 28, opacity: .2, marginBottom: 8 }}>🤖</div>
+                Click Live AI Analysis to generate recommendations
+              </div>
+            )}
           </div>
           <div className="ai-panel-footer">
-            <button className="btn-ai-analyze">🤖 Live AI Analysis</button>
+            <button className="btn-ai-analyze" onClick={runAIAnalysis} disabled={aiLoading}>
+              {aiLoading ? '⏳ Analyzing…' : '🤖 Live AI Analysis'}
+            </button>
           </div>
         </aside>
 

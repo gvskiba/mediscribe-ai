@@ -17,6 +17,7 @@ import EDProcedureNotes from "@/pages/EDProcedureNotes";
 import EDOrders from "@/pages/EDOrders";
 import MedicationReferencePage from "@/pages/MedicationReference";
 import ACSPage from "@/components/acs/ACSPage";
+import CardiacHub from "@/pages/CardiacHub";
 import ERPlanBuilder from "@/pages/ERPlanBuilder";
 
 // ─── NAV DATA ────────────────────────────────────────
@@ -43,6 +44,7 @@ const NAV_DATA = {
     { section: "erx",        icon: "💉", label: "eRx",                 abbr: "Ex", dot: "empty" },
     { section: "procedures", icon: "✂️", label: "Procedures",          abbr: "Pr", dot: "empty" },
     { section: "medref",     icon: "🧬", label: "ED Med Ref",          abbr: "Mr", dot: "empty" },
+    { section: "cardiac-hub", icon: "🏥", label: "Cardiac Hub",        abbr: "Ch", dot: "empty" },
     { section: "acs",        icon: "🫀", label: "ACS Protocol",        abbr: "CS", dot: "empty" },
     { section: "tachy",      icon: "⚡", label: "Adult Tachycardia",    abbr: "Tc", dot: "empty" },
     { section: "brady",      icon: "🔻", label: "Adult Bradycardia",   abbr: "Br", dot: "empty" },
@@ -281,6 +283,7 @@ export default function NewPatientInput() {
       case "autocoder": return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} />;
       case "procedures": return <EDProcedureNotes embedded patientName={patientName} patientAllergies={allergies.join(", ")} physicianName="" />;
       case "medref": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto" }}><MedicationReferencePage embedded /></div>;
+      case "cardiac-hub": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", background: "#050f1e" }}><CardiacHub /></div>;
       case "acs":      return <ACSPage />;
       case "tachy":     return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", background: "#050f1e" }}><ACSPage defaultSection="tachy" /></div>;
       case "brady":     return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", background: "#050f1e" }}><ACSPage defaultSection="brady" /></div>;

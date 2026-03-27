@@ -145,6 +145,7 @@ export default function NewPatientInput() {
   const [o2del, setO2del] = useState("");
   const [pain, setPain] = useState("");
   const [triage, setTriage] = useState("");
+  const [esiLevel, setEsiLevel] = useState("");
 
   // ─── AI state ───
   const [aiOpen, setAiOpen] = useState(false);
@@ -266,7 +267,7 @@ export default function NewPatientInput() {
   // ─── Render tab content ───
   const renderContent = () => {
     switch (currentTab) {
-      case "demo": return <DemoTab demo={demo} setDemo={setDemo} parseText={parseText} setParseText={setParseText} parsing={parsing} onSmartParse={smartParse} />;
+      case "demo": return <DemoTab demo={demo} setDemo={setDemo} parseText={parseText} setParseText={setParseText} parsing={parsing} onSmartParse={smartParse} esiLevel={esiLevel} setEsiLevel={setEsiLevel} />;
       case "cc":   return <CCTab cc={cc} setCC={setCC} selectedCC={selectedCC} setSelectedCC={setSelectedCC} />;
       case "vit":  return <VitalsTab vitals={vitals} setVitals={setVitals} avpu={avpu} setAvpu={setAvpu} o2del={o2del} setO2del={setO2del} pain={pain} setPain={setPain} triage={triage} setTriage={setTriage} />;
       case "meds": return <MedsTab medications={medications} setMedications={setMedications} allergies={allergies} setAllergies={setAllergies} pmhSelected={pmhSelected} setPmhSelected={setPmhSelected} pmhExtra={pmhExtra} setPmhExtra={setPmhExtra} surgHx={surgHx} setSurgHx={setSurgHx} famHx={famHx} setFamHx={setFamHx} socHx={socHx} setSocHx={setSocHx} pmhExpanded={pmhExpanded} setPmhExpanded={setPmhExpanded} />;

@@ -34,7 +34,7 @@ const grid3 = {
 
 const field = { display: 'flex', flexDirection: 'column' };
 
-export default function DemoTab({ demo, setDemo, parseText, setParseText, parsing, onSmartParse }) {
+export default function DemoTab({ demo, setDemo, parseText, setParseText, parsing, onSmartParse, esiLevel, setEsiLevel }) {
   const handleChange = (f, v) => setDemo(prev => ({ ...prev, [f]: v }));
 
   const handleDob = (value) => {
@@ -212,6 +212,65 @@ export default function DemoTab({ demo, setDemo, parseText, setParseText, parsin
           value={demo.notes}
           onChange={e => handleChange('notes', e.target.value)}
         />
+      </div>
+
+      {/* Registration */}
+      <div style={card}>
+        <div style={cardHeader}>
+          <span style={{ fontSize: 16 }}>📋</span>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: S.txt }}>Registration</div>
+            <div style={{ fontSize: 11, color: S.txt3, marginTop: 1 }}>Patient assignment and chart identifiers</div>
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div style={field}>
+            <label style={label}>Medical Record Number</label>
+            <input style={{ ...input, fontFamily: "'JetBrains Mono', monospace" }} placeholder="e.g. 12-345-6789" value={demo.mrn} onChange={e => handleChange('mrn', e.target.value)} />
+          </div>
+          <div style={field}>
+            <label style={label}>Room / Bed Assignment</label>
+            <input style={input} placeholder="e.g. ER-4B" value={demo.city || ''} onChange={e => handleChange('city', e.target.value)} />
+          </div>
+        </div>
+      </div>
+
+      {/* Triage */}
+      <div style={card}>
+        <div style={cardHeader}>
+          <span style={{ fontSize: 16 }}>🏥</span>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: S.txt }}>Triage</div>
+            <div style={{ fontSize: 11, color: S.txt3, marginTop: 1 }}>ESI level and arrival mode</div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+          {[1, 2, 3, 4, 5].map(level => {
+            const levels = {
+              1: { label: 'ESI 1 — Immediate', color: '#ff6b6b', bg: 'rgba(255,107,107,0.12)', border: 'rgba(255,107,107,0.3)' },
+              2: { label: 'ESI 2 — Emergent', color: '#ff9f43', bg: 'rgba(255,159,67,0.12)', border: 'rgba(255,159,67,0.3)' },
+              3: { label: 'ESI 3 — Urgent', color: '#3b9eff', bg: 'rgba(59,158,255,0.12)', border: 'rgba(59,158,255,0.3)' },
+              4: { label: 'ESI 4 — Less Urgent', color: '#00e5c0', bg: 'rgba(0,229,192,0.12)', border: 'rgba(0,229,192,0.3)' },
+              5: { label: 'ESI 5 — Non-Urgent', color: '#8aaccc', bg: 'rgba(138,172,204,0.12)', border: 'rgba(138,172,204,0.3)' },
+            };
+            const l = levels[level];
+            const isSelected = String(esiLevel) === String(level);
+            return (
+              <button
+                key={level}
+                onClick={() => setEsiLevel(level)}
+                style={{
+                  padding: '6px 14px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                  fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', border: `1px solid ${l.border}`,
+                  background: isSelected ? l.bg : 'transparent', color: l.color,
+                  opacity: isSelected ? 1 : 0.6, transition: 'all 0.15s',
+                }}
+              >
+                {l.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
     </div>

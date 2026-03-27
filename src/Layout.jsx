@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { usePatientData } from '@/lib/PatientDataContext';
 
 import OfflineSync from "./components/offline/OfflineSync";
 import NotryaFloatingAI from "./components/ai/NotryaFloatingAI";
@@ -370,6 +371,29 @@ export default function Layout({ children, currentPageName }) {
   const navNext = () => { if (activeChartIdx < ALL_CHART_ITEMS.length - 1) navigate(ALL_CHART_ITEMS[activeChartIdx + 1].page); };
   const prevLabel = activeChartIdx > 0 ? ALL_CHART_ITEMS[activeChartIdx - 1].label : '';
   const curLabel  = activeChartItem?.label || currentPageName || '';
+
+  const { patientData } = usePatientData();
+
+  const displayName = patientData.lastName
+    ? `${patientData.lastName}, ${patientData.firstName?.charAt(0) || ''}.`
+    : '— Patient —';
+
+  const displayMeta = [
+    patientData.age ? `${patientData.age}y` : null,
+    patientData.sex || null,
+  ].filter(Boolean).join(' · ') || 'Age · Sex';
+
+  const displayCC = patientData.cc_text
+    ? `CC: ${patientData.cc_text}` : 'CC: —';
+
+  const vitals = {
+    bp: patientData.bp || '—',
+    hr: patientData.hr || '—',
+    rr: patientData.rr || '—',
+    spo2: patientData.spo2 || '—',
+    temp: patientData.temp || '—',
+    gcs: patientData.gcs || '—',
+  };
 
   if (isFullscreen) {
     return (

@@ -178,7 +178,7 @@ const GLOBAL_CSS = `
 
 /* TOP BAR */
 .v2-top {
-  position: fixed; top: 0; left: 56px; right: 0; height: 88px;
+  position: fixed; top: 0; left: 56px; right: 0; height: 64px;
   background: #081628; border-bottom: 1px solid #1a3555;
   z-index: 200; display: flex; flex-direction: column;
 }
@@ -268,7 +268,7 @@ const GLOBAL_CSS = `
 
 /* CHART SECTION SIDEBAR */
 .v2-csb {
-  position: fixed; top: 88px; left: 56px; bottom: 50px; width: 170px;
+  position: fixed; top: 64px; left: 56px; bottom: 50px; width: 170px;
   background: #081628; border-right: 1px solid #1a3555;
   overflow-y: auto; padding: 10px 8px;
   display: flex; flex-direction: column; gap: 1px; z-index: 100;
@@ -297,8 +297,8 @@ const GLOBAL_CSS = `
 .v2-content-with-sb { margin-left: 226px; } /* 56 icon + 170 chart sb */
 .v2-content-no-sb   { margin-left: 56px; padding-bottom: 50px; }
 .v2-content-wrap {
-  margin-top: 88px; margin-bottom: 50px;
-  min-height: calc(100vh - 138px); overflow-y: auto;
+  margin-top: 64px; margin-bottom: 50px;
+  min-height: calc(100vh - 114px); overflow-y: auto;
 }
 .v2-content-inner { padding: 20px 24px; max-width: 1200px; }
 .v2-content-full { padding: 0; max-width: none; width: 100%; height: 100%; }

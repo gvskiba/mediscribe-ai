@@ -365,7 +365,7 @@ export default function NewPatientInput() {
           <span className="npi-status-badge npi-status-room">Room —</span>
           <div className="npi-top-acts">
             <button className="npi-btn-ghost" onClick={() => selectSection('orders')}>📋 Orders</button>
-            <button className="npi-btn-coral">🚪 Discharge</button>
+            <button className="npi-btn-coral" onClick={() => selectSection('discharge')}>🚪 Discharge</button>
             <button className="npi-btn-primary" onClick={async () => {
               try {
                 const payload = { raw_note: parseText || `Patient ${patientName} presenting with ${cc.text || "unspecified complaint"}`, patient_name: patientName, patient_id: registration.mrn || demo.mrn || "", patient_age: demo.age || "", patient_gender: demo.sex?.toLowerCase() === "male" ? "male" : demo.sex?.toLowerCase() === "female" ? "female" : "other", date_of_birth: demo.dob || "", chief_complaint: cc.text || "", history_of_present_illness: cc.hpi || "", medications, allergies, status: "draft", registration_mrn: registration.mrn || "", registration_room: registration.room || "", triage_esi_level: esiLevel || "" };

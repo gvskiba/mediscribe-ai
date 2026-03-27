@@ -45,11 +45,6 @@ const NAV_DATA = {
     { section: "procedures", icon: "✂️", label: "Procedures",          abbr: "Pr", dot: "empty" },
     { section: "medref",     icon: "🧬", label: "ED Med Ref",          abbr: "Mr", dot: "empty" },
     { section: "cardiac-hub", icon: "🏥", label: "Cardiac Hub",        abbr: "Ch", dot: "empty" },
-    { section: "acs",        icon: "🫀", label: "ACS Protocol",        abbr: "CS", dot: "empty" },
-    { section: "tachy",      icon: "⚡", label: "Adult Tachycardia",    abbr: "Tc", dot: "empty" },
-    { section: "brady",      icon: "🔻", label: "Adult Bradycardia",   abbr: "Br", dot: "empty" },
-    { section: "peds",       icon: "👶", label: "Pediatric ACLS",      abbr: "Pd", dot: "empty" },
-    { section: "pregnancy",  icon: "🤰", label: "Arrest in Pregnancy", abbr: "Pg", dot: "empty" },
   ],
 };
 
@@ -284,11 +279,6 @@ export default function NewPatientInput() {
       case "procedures": return <EDProcedureNotes embedded patientName={patientName} patientAllergies={allergies.join(", ")} physicianName="" />;
       case "medref": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto" }}><MedicationReferencePage embedded /></div>;
       case "cardiac-hub": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", background: "#050f1e" }}><CardiacHub /></div>;
-      case "acs":      return <ACSPage />;
-      case "tachy":     return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", background: "#050f1e" }}><ACSPage defaultSection="tachy" /></div>;
-      case "brady":     return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", background: "#050f1e" }}><ACSPage defaultSection="brady" /></div>;
-      case "peds":      return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", background: "#050f1e" }}><ACSPage defaultSection="peds" /></div>;
-      case "pregnancy": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", background: "#050f1e" }}><ACSPage defaultSection="pregnancy" /></div>;
       case "erplan": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><ERPlanBuilder embedded /></div>;
       case "erx": return (
         <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center", justifyContent: "center", height: 300 }}>

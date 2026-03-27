@@ -20,6 +20,11 @@ const CSS = `
   display:flex;flex-direction:column;overflow:hidden;
   height:100vh;margin-left:72px;
 }
+.erp-root.embedded {
+  height:100%;
+  margin-left:0;
+  min-height:0;
+}
 .erp-root * { box-sizing:border-box; }
 .erp-root input,.erp-root select,.erp-root textarea { font-family:'DM Sans',sans-serif; }
 
@@ -255,7 +260,7 @@ const IVF_QUICK = [
   ['Norepinephrine (0.1 mcg/kg/min)','—','IV','Continuous drip'],
 ];
 
-export default function ERPlanBuilder() {
+export default function ERPlanBuilder({ embedded = false }) {
   const navigate = useNavigate();
   const [esi, setEsiState] = useState(null);
   const [demo, setDemo] = useState({ name:'', demographics:'', cc:'', bp:'', hr:'', rr:'', spo2:'', temp:'', wt:'', hpi:'' });
@@ -423,11 +428,11 @@ Apply clinical decision rules (HEART, PERC, Wells, Ottawa, NEXUS, CURB-65, sepsi
   const updConsult = (id, field, value) => setConsults(p => p.map(c => c.id === id ? {...c, [field]: value} : c));
 
   return (
-    <div className="erp-root">
+    <div className={`erp-root${embedded ? ' embedded' : ''}`}>
       <style>{CSS}</style>
 
-      {/* NAVBAR */}
-      <nav className="erp-nav">
+      {/* NAVBAR — hidden when embedded */}
+      {!embedded && <nav className="erp-nav">
         <span className="erp-logo">Notrya</span>
         <div className="erp-ndiv"/>
         <span className="erp-ntitle">ER Plan Builder</span>
@@ -438,7 +443,7 @@ Apply clinical decision rules (HEART, PERC, Wells, Ottawa, NEXUS, CURB-65, sepsi
           <button className="erp-btn-gold" onClick={generatePlan} disabled={generating}>{generating ? '⏳ Generating…' : '✨ AI Generate Plan'}</button>
           <button className="erp-btn-primary" onClick={() => { toast.success('Plan saved'); appendAiMsg('sys','💾 Plan saved.'); }}>💾 Save Plan</button>
         </div>
-      </nav>
+      </nav>}
 
       {/* VITALS BAR */}
       <div className="erp-vbar">
@@ -812,7 +817,7 @@ Apply clinical decision rules (HEART, PERC, Wells, Ottawa, NEXUS, CURB-65, sepsi
         </aside>
 
       </div>
-      <ClinicalTabBar currentPage="ERPlanBuilder" />
+      {!embedded && <ClinicalTabBar currentPage="ERPlanBuilder" />}
     </div>
   );
 }

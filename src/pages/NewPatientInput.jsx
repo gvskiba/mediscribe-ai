@@ -17,6 +17,7 @@ import EDProcedureNotes from "@/pages/EDProcedureNotes";
 import EDOrders from "@/pages/EDOrders";
 import MedicationReferencePage from "@/pages/MedicationReference";
 import ACSPage from "@/components/acs/ACSPage";
+import ERPlanBuilder from "@/pages/ERPlanBuilder";
 
 // ─── NAV DATA ────────────────────────────────────────
 const NAV_DATA = {
@@ -283,13 +284,7 @@ export default function NewPatientInput() {
       case "brady":     return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", background: "#050f1e" }}><ACSPage defaultSection="brady" /></div>;
       case "peds":      return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", background: "#050f1e" }}><ACSPage defaultSection="peds" /></div>;
       case "pregnancy": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", background: "#050f1e" }}><ACSPage defaultSection="pregnancy" /></div>;
-      case "erplan": return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center", justifyContent: "center", height: 300 }}>
-          <div style={{ fontSize: 32 }}>🗺️</div>
-          <div style={{ color: "#8aaccc" }}>ER Plan Builder</div>
-          <button onClick={() => navigate("/ERPlanBuilder")} style={{ background: "#00e5c0", color: "#050f1e", border: "none", borderRadius: 8, padding: "8px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Open ER Plan Builder →</button>
-        </div>
-      );
+      case "erplan": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><ERPlanBuilder embedded /></div>;
       case "erx": return (
         <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center", justifyContent: "center", height: 300 }}>
           <div style={{ fontSize: 32 }}>💉</div>

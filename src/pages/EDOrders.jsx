@@ -122,7 +122,7 @@ input, textarea { font-family: 'DM Sans', sans-serif; }
 .catalog-body { flex: 1; overflow-y: auto; padding: 13px 14px 64px; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
 .cat-section-title { font-size: 10px; color: ${T.txt3}; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; margin-bottom: 7px; display: flex; align-items: center; gap: 6px; }
 .cat-section-title::after { content: ''; flex: 1; height: 1px; background: ${T.bd}; }
-.orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; }
+.orders-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 
 .order-card { background: ${T.bgP}; border: 1px solid ${T.bd}; border-radius: 8px; padding: 7px 9px; cursor: pointer; transition: all .15s; display: flex; flex-direction: column; gap: 2px; position: relative; user-select: none; }
 .order-card:hover { border-color: ${T.bdHi}; background: ${T.bgC}; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,.3); }
@@ -216,7 +216,13 @@ input, textarea { font-family: 'DM Sans', sans-serif; }
     labs: [
       { id: 'l_trop', cat: 'labs', sub: 'Cardiac', icon: '❤️', name: 'Troponin-I (High Sensitivity)', detail: 'Serial q3h · NSTEMI protocol', meta: '~30 min · Cardiac', priority: 'STAT', alert: null, contrast: false },
       { id: 'l_bnp', cat: 'labs', sub: 'Cardiac', icon: '❤️', name: 'BNP (B-Natriuretic Peptide)', detail: 'Heart failure marker', meta: '~45 min · Cardiac', priority: 'STAT', alert: null, contrast: false },
+      { id: 'l_ckmb', cat: 'labs', sub: 'Cardiac', icon: '❤️', name: 'CK-MB', detail: 'Cardiac isoenzyme', meta: '~45 min · Cardiac', priority: 'URGENT', alert: null, contrast: false },
+      { id: 'l_ldh', cat: 'labs', sub: 'Cardiac', icon: '❤️', name: 'LDH', detail: 'Lactate dehydrogenase', meta: '~30 min · Cardiac', priority: 'URGENT', alert: null, contrast: false },
       { id: 'l_bmp', cat: 'labs', sub: 'Metabolic', icon: '🧪', name: 'BMP (Basic Metabolic Panel)', detail: 'Na, K, Cl, CO₂, BUN, Cr, Glu · K+ 5.4 trend', meta: '~30 min · Chem', priority: 'STAT', alert: null, contrast: false },
+      { id: 'l_cmp', cat: 'labs', sub: 'Metabolic', icon: '🧪', name: 'CMP (Comprehensive Metabolic)', detail: 'Full metabolic + LFTs', meta: '~45 min · Chem', priority: 'ROUTINE', alert: null, contrast: false },
+      { id: 'l_mg', cat: 'labs', sub: 'Metabolic', icon: '🧪', name: 'Magnesium (Serum)', detail: 'Electrolyte monitoring', meta: '~30 min · Chem', priority: 'ROUTINE', alert: null, contrast: false },
+      { id: 'l_lac', cat: 'labs', sub: 'Metabolic', icon: '🧪', name: 'Lactate (Serum)', detail: 'Perfusion / shock marker', meta: '~25 min · Chem', priority: 'URGENT', alert: null, contrast: false },
+      { id: 'l_a1c', cat: 'labs', sub: 'Metabolic', icon: '🩸', name: 'Hemoglobin A1c', detail: 'Diabetes monitoring · Glucose 218', meta: '~2 hr · Endo', priority: 'ROUTINE', alert: null, contrast: false },
       { id: 'l_cbc', cat: 'labs', sub: 'Hematology', icon: '🩸', name: 'CBC with Differential', detail: 'Complete blood count + diff', meta: '~30 min · Heme', priority: 'STAT', alert: null, contrast: false },
       { id: 'l_coag', cat: 'labs', sub: 'Hematology', icon: '🩸', name: 'Coagulation Panel (PT/INR/PTT)', detail: 'Required on Heparin drip · PTT goal 60–100', meta: '~30 min · Heme', priority: 'STAT', alert: null, contrast: false },
       { id: 'l_type', cat: 'labs', sub: 'Hematology', icon: '🩸', name: 'Type & Screen', detail: 'Blood bank · pre-cath lab req.', meta: 'Blood Bank', priority: 'URGENT', alert: null, contrast: false },
@@ -225,17 +231,22 @@ input, textarea { font-family: 'DM Sans', sans-serif; }
       { id: 'i_cxr', cat: 'imaging', sub: 'X-Ray', icon: '🫁', name: 'Chest X-Ray PA / Lateral', detail: 'Cardiomegaly, pulm edema, effusion', meta: 'XR · ~15 min', priority: 'STAT', alert: null, contrast: false },
       { id: 'i_tte', cat: 'imaging', sub: 'Echo', icon: '❤️', name: 'Echocardiogram (TTE)', detail: 'LV function, wall motion, EF', meta: 'Echo · ~45 min', priority: 'URGENT', alert: null, contrast: false },
       { id: 'i_ctca', cat: 'imaging', sub: 'CT', icon: '🩻', name: 'CT Coronary Angiography', detail: 'Non-invasive coronary imaging', meta: 'CT W · ~45 min', priority: 'URGENT', alert: 'contrast', contrast: true },
+      { id: 'i_ctpe', cat: 'imaging', sub: 'CT', icon: '🩻', name: 'CT Pulmonary Angiography', detail: 'R/O pulmonary embolism', meta: 'CT W · ~30 min', priority: 'STAT', alert: 'contrast', contrast: true },
     ],
     meds: [
+      { id: 'm_ntg_sl', cat: 'meds', sub: 'Cardiac', icon: '💊', name: 'Nitroglycerin SL', detail: '0.4 mg SL PRN chest pain q5 min × 3', meta: 'Nitrate · Sublingual', priority: 'STAT', alert: null, contrast: false },
+      { id: 'm_ntg_iv', cat: 'meds', sub: 'Cardiac', icon: '💉', name: 'Nitroglycerin Infusion', detail: '5 mcg/min IV, titrate for BP', meta: 'Nitrate drip · IV', priority: 'URGENT', alert: null, contrast: false },
+      { id: 'm_metop', cat: 'meds', sub: 'Cardiac', icon: '💉', name: 'Metoprolol IV', detail: '5 mg IV q5 min × 3 PRN HR > 100', meta: 'Beta-blocker · IV', priority: 'URGENT', alert: null, contrast: false },
+      { id: 'm_amio', cat: 'meds', sub: 'Cardiac', icon: '💉', name: 'Amiodarone', detail: '150 mg IV over 10 min', meta: 'Antiarrhythmic · IV', priority: 'STAT', alert: null, contrast: false },
       { id: 'm_asp325', cat: 'meds', sub: 'Antiplatelet', icon: '💊', name: 'Aspirin', detail: '325 mg PO × 1 dose', meta: 'Antiplatelet · PO', priority: 'STAT', alert: null, contrast: false },
       { id: 'm_hep', cat: 'meds', sub: 'Anticoagulation', icon: '💉', name: 'Heparin Infusion (UFH)', detail: '80 U/kg bolus → 18 U/kg/hr drip', meta: 'Anticoag · IV drip', priority: 'STAT', alert: null, contrast: false },
       { id: 'm_ticag', cat: 'meds', sub: 'Antiplatelet', icon: '💊', name: 'Ticagrelor (Brilinta)', detail: '180 mg loading dose PO', meta: 'P2Y12 inhibitor · PO', priority: 'STAT', alert: null, contrast: false },
-      { id: 'm_ntg_sl', cat: 'meds', sub: 'Cardiac', icon: '💊', name: 'Nitroglycerin SL', detail: '0.4 mg SL PRN chest pain q5 min × 3', meta: 'Nitrate · Sublingual', priority: 'STAT', alert: null, contrast: false },
       { id: 'm_pred', cat: 'meds', sub: 'Contrast Prep', icon: '💊', name: 'Prednisone (Contrast Pre-med)', detail: '50 mg PO × 3 doses (13h, 7h, 1h pre)', meta: 'Steroid · PO', priority: 'URGENT', alert: null, contrast: false },
       { id: 'm_codeine', cat: 'meds', sub: 'Symptom Mgmt', icon: '💊', name: 'Codeine', detail: '30 mg PO q4h PRN pain', meta: 'Opioid · PO', priority: 'ROUTINE', alert: 'codeine', contrast: false },
     ],
     procedures: [
       { id: 'p_ecg', cat: 'procedures', sub: 'Cardiac', icon: '⚡', name: '12-Lead ECG', detail: 'ST changes, rhythm eval', meta: '~5 min · Bedside', priority: 'STAT', alert: null, contrast: false },
+      { id: 'p_ecg_serial', cat: 'procedures', sub: 'Cardiac', icon: '⚡', name: 'Serial 12-Lead ECG (q4h × 3)', detail: 'NSTEMI monitoring protocol', meta: '~5 min each · Bedside', priority: 'URGENT', alert: null, contrast: false },
       { id: 'p_tele', cat: 'procedures', sub: 'Monitoring', icon: '📡', name: 'Continuous Cardiac Telemetry', detail: 'Real-time arrhythmia monitoring', meta: 'Ongoing · Telemetry', priority: 'STAT', alert: null, contrast: false },
       { id: 'p_o2_2l', cat: 'procedures', sub: 'Monitoring', icon: '💨', name: 'Supplemental O₂ — 2L NC', detail: 'SpO₂ target ≥ 94%', meta: 'Ongoing · Respiratory', priority: 'STAT', alert: null, contrast: false },
     ],
@@ -371,32 +382,47 @@ input, textarea { font-family: 'DM Sans', sans-serif; }
             ))}
           </div>
           <div className="catalog-body">
-            {getFiltered().length === 0 ? (
-              <div className="no-results">
-                <div style={{ fontSize: '30px', marginBottom: '8px', opacity: '0.25' }}>🔍</div>
-                <div>No results</div>
-              </div>
-            ) : (
-              getFiltered().map((order) => {
-                const inQ = queue.some(q => q.id === order.id);
-                const aw = getAllergyWarn(order);
-                return (
-                  <div key={order.id} className={`order-card ${inQ ? 'in-queue' : ''}`} onClick={() => inQ ? removeFromQueue(order.id) : addToQueue(order)}>
-                    {inQ && <div className="oc-check">✓</div>}
-                    <div className="oc-top">
-                      <span className="oc-icon">{order.icon}</span>
-                      <span className="oc-name">{order.name}</span>
-                    </div>
-                    <div className="oc-meta">{order.detail}</div>
-                    {aw && <div className="allergy-chip">⚠ {aw.name} · {aw.sev}</div>}
-                    <div className="oc-footer">
-                      <span className={`prio-badge prio-${order.priority}`}>{order.priority}</span>
-                      <span style={{ fontSize: '10px', color: T.txt4 }}>{order.meta}</span>
-                    </div>
+            {(() => {
+              const filtered = getFiltered();
+              if (filtered.length === 0) return (
+                <div className="no-results">
+                  <div style={{ fontSize: '30px', marginBottom: '8px', opacity: '0.25' }}>🔍</div>
+                  <div>No results</div>
+                </div>
+              );
+              // Group by sub-category
+              const groups = {};
+              filtered.forEach(o => {
+                if (!groups[o.sub]) groups[o.sub] = [];
+                groups[o.sub].push(o);
+              });
+              return Object.entries(groups).map(([sub, orders]) => (
+                <div key={sub}>
+                  <div className="cat-section-title">{sub}</div>
+                  <div className="orders-grid">
+                    {orders.map((order) => {
+                      const inQ = queue.some(q => q.id === order.id);
+                      const aw = getAllergyWarn(order);
+                      return (
+                        <div key={order.id} className={`order-card ${inQ ? 'in-queue' : ''}`} onClick={() => inQ ? removeFromQueue(order.id) : addToQueue(order)}>
+                          {inQ && <div className="oc-check">✓</div>}
+                          <div className="oc-top">
+                            <span className="oc-icon">{order.icon}</span>
+                            <span className="oc-name">{order.name}</span>
+                          </div>
+                          <div className="oc-meta">{order.detail}</div>
+                          {aw && <div className="allergy-chip">⚠ {aw.name} · {aw.sev}</div>}
+                          <div className="oc-footer">
+                            <span className={`prio-badge prio-${order.priority}`}>{order.priority}</span>
+                            <span style={{ fontSize: '10px', color: T.txt4 }}>{order.meta}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })
-            )}
+                </div>
+              ));
+            })()}
           </div>
         </main>
 

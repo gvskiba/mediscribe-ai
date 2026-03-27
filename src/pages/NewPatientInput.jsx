@@ -124,6 +124,13 @@ export default function NewPatientInput() {
     return 'empty';
   };
 
+  const dotColor = (status) => {
+    if (status === 'done')    return 'var(--teal)';
+    if (status === 'partial') return 'var(--orange)';
+    if (status === 'current') return 'var(--blue)';
+    return 'var(--txt4)';
+  };
+
 
 
   const smartParse = async () => {
@@ -185,123 +192,32 @@ export default function NewPatientInput() {
     toast.success('New patient form cleared');
   };
 
+  const navNext = () => { const i = ALL_TABS.indexOf(currentTab); if (i < ALL_TABS.length - 1) navigate(`/NewPatientInput?tab=${ALL_TABS[i + 1]}`); };
+  const navBack = () => { const i = ALL_TABS.indexOf(currentTab); if (i > 0) navigate(`/NewPatientInput?tab=${ALL_TABS[i - 1]}`); };
 
-  const navNext = () => { if (currentIdx < allItems.length - 1) navigate(`/NewPatientInput?tab=${allItems[currentIdx + 1].id}`); };
-  const navBack = () => { if (currentIdx > 0) navigate(`/NewPatientInput?tab=${allItems[currentIdx - 1].id}`); };
+  const currentLabel = SIDEBAR_GROUPS.flatMap(g => g.items).find(i => i.id === currentTab)?.label || '';
+  const prevLabel = ALL_TABS.indexOf(currentTab) > 0 ? (SIDEBAR_GROUPS.flatMap(g => g.items).find(i => i.id === ALL_TABS[ALL_TABS.indexOf(currentTab) - 1])?.label || '') : '';
 
-
-  const T = {
+  const S = { // style tokens
     bg: '#050f1e', panel: '#081628', card: '#0b1e36', up: '#0e2544',
     border: '#1a3555', borderHi: '#2a4f7a',
-    blue: '#3b9eff', teal: '#00e5c0', gold: '#f5c842', coral: '#ff6b6b', orange: '#ff9f43',
+    blue: '#3b9eff', cyan: '#00d4ff', teal: '#00e5c0',
+    gold: '#f5c842', coral: '#ff6b6b', orange: '#ff9f43',
     txt: '#e8f0fe', txt2: '#8aaccc', txt3: '#4a6a8a', txt4: '#2e4a6a',
   };
 
-  const dotState = (id) => {
-    const s = getTabStatus(id);
-    if (id === currentTab) return 'current';
-    return s;
+  const vbAbn = (v, lo, hi) => {
+    if (!v) return false;
+    const n = parseFloat(v);
+    return (hi && n > hi) || (lo && n < lo);
   };
 
-  const FULLSCREEN_TABS = new Set(['chart', 'orders', 'procedures', 'medref']);
-  const isFullscreen = FULLSCREEN_TABS.has(currentTab);
-
-  const allItems = SIDEBAR_GROUPS.flatMap(g => g.items);
-  const currentIdx = allItems.findIndex(i => i.id === currentTab);
-
-  const SHELL_CSS = `
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap');
-    .npi-shell { display: flex; flex-direction: column; height: 100vh; background: ${T.bg}; color: ${T.txt}; font-family: 'DM Sans', sans-serif; overflow: hidden; }
-    .npi-topbar { height: 52px; flex-shrink: 0; background: ${T.panel}; border-bottom: 1px solid ${T.border}; display: flex; align-items: center; padding: 0 16px; gap: 10px; z-index: 300; }
-    .npi-logo { width: 30px; height: 30px; background: ${T.teal}; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 12px; font-weight: 700; color: #050f1e; flex-shrink: 0; }
-    .npi-pt-pill { background: ${T.up}; border: 1px solid ${T.border}; border-radius: 20px; padding: 3px 12px; display: flex; align-items: center; gap: 7px; font-size: 12px; }
-    .npi-pt-name { font-family: 'Playfair Display', serif; font-weight: 600; color: ${T.txt}; }
-    .npi-pt-meta { color: ${T.txt3}; font-size: 11px; }
-    .npi-allergy { background: rgba(255,107,107,.1); border: 1px solid rgba(255,107,107,.3); border-radius: 20px; padding: 2px 9px; font-size: 11px; color: #ff6b6b; font-weight: 600; }
-    .npi-vsep { width: 1px; height: 18px; background: ${T.border}; flex-shrink: 0; }
-    .npi-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
-    .npi-btn { background: ${T.up}; border: 1px solid ${T.border}; border-radius: 6px; padding: 4px 11px; font-size: 11px; color: ${T.txt2}; cursor: pointer; transition: all .15s; white-space: nowrap; font-family: 'DM Sans', sans-serif; }
-    .npi-btn:hover { border-color: ${T.borderHi}; color: ${T.txt}; }
-    .npi-btn-teal { background: ${T.teal}; color: #050f1e; border: none; border-radius: 6px; padding: 4px 12px; font-size: 11px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; }
-    .npi-btn-teal:hover { filter: brightness(1.1); }
-    .npi-body { flex: 1; display: flex; overflow: hidden; min-height: 0; }
-    .npi-sidebar { width: 172px; flex-shrink: 0; background: ${T.panel}; border-right: 1px solid ${T.border}; overflow-y: auto; padding: 10px 8px; display: flex; flex-direction: column; gap: 1px; }
-    .npi-sidebar::-webkit-scrollbar { width: 3px; } .npi-sidebar::-webkit-scrollbar-thumb { background: ${T.border}; border-radius: 2px; }
-    .npi-grp-lbl { font-size: 9px; color: ${T.txt4}; text-transform: uppercase; letter-spacing: .08em; padding: 10px 8px 4px; font-weight: 600; }
-    .npi-grp-lbl:first-child { padding-top: 4px; }
-    .npi-tab { display: flex; align-items: center; gap: 7px; padding: 6px 8px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; font-size: 12px; color: ${T.txt2}; text-decoration: none; transition: all .15s; }
-    .npi-tab:hover { background: ${T.up}; border-color: ${T.border}; color: ${T.txt}; }
-    .npi-tab.active { background: rgba(0,229,192,.08); border-color: rgba(0,229,192,.3); color: ${T.teal}; }
-    .npi-tab-icon { font-size: 13px; width: 18px; text-align: center; flex-shrink: 0; }
-    .npi-tab-dot { width: 6px; height: 6px; border-radius: 50%; background: ${T.border}; margin-left: auto; flex-shrink: 0; }
-    .npi-tab-dot.done { background: ${T.teal}; box-shadow: 0 0 5px rgba(0,229,192,.5); }
-    .npi-tab-dot.partial { background: ${T.orange}; }
-    .npi-tab-dot.current { background: ${T.blue}; box-shadow: 0 0 5px rgba(59,158,255,.5); width: 8px; height: 8px; }
-    .npi-grp-div { height: 1px; background: ${T.border}; margin: 6px 4px; }
-    .npi-content { flex: 1; overflow-y: auto; min-width: 0; }
-    .npi-content::-webkit-scrollbar { width: 4px; } .npi-content::-webkit-scrollbar-thumb { background: ${T.border}; border-radius: 2px; }
-    .npi-inner { padding: 20px 24px; }
-    .npi-fullscreen { padding: 0; height: 100%; overflow: hidden; }
-    .npi-botbar { height: 50px; flex-shrink: 0; background: ${T.panel}; border-top: 1px solid ${T.border}; display: flex; align-items: center; padding: 0 16px; gap: 8px; z-index: 300; }
-    .npi-stepper { display: flex; align-items: center; gap: 5px; margin: 0 auto; }
-    .npi-step { width: 8px; height: 8px; border-radius: 50%; cursor: pointer; transition: all .2s; flex-shrink: 0; }
-    .npi-step.done { background: ${T.teal}; box-shadow: 0 0 4px rgba(0,229,192,.4); }
-    .npi-step.current { background: ${T.blue}; box-shadow: 0 0 6px rgba(59,158,255,.5); width: 10px; height: 10px; }
-    .npi-step.partial { background: ${T.orange}; }
-    .npi-step.empty { background: ${T.txt4}; }
-    .npi-lbl { font-size: 11px; color: ${T.txt3}; white-space: nowrap; }
-    .npi-clbl { font-size: 12px; color: ${T.txt}; font-weight: 600; white-space: nowrap; }
-  `;
 
   return (
-    <div className="npi-shell">
-      <style>{SHELL_CSS}</style>
+    <div style={{ color: S.txt, fontFamily: "'DM Sans', sans-serif", fontSize: 13 }}>
 
-      {/* TOP BAR */}
-      <header className="npi-topbar">
-        <div className="npi-logo">NP</div>
-        <div className="npi-pt-pill">
-          <span className="npi-pt-name">{patientName}</span>
-          {(demo.age || demo.sex) && <span className="npi-pt-meta">{[demo.age && `${demo.age}y`, demo.sex].filter(Boolean).join(' · ')}</span>}
-          {demo.mrn && <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.txt4 }}>#{demo.mrn}</span>}
-        </div>
-        {allergies.length > 0 && <span className="npi-allergy">⚠ {allergies.slice(0,3).join(' · ')}{allergies.length > 3 ? ` +${allergies.length-3}` : ''}</span>}
-        {cc.text && <>
-          <div className="npi-vsep"/>
-          <span style={{ fontSize: 12, color: T.orange, fontWeight: 600 }}>CC: {cc.text}</span>
-        </>}
-        <div className="npi-topbar-right">
-          <button className="npi-btn" onClick={resetForm}>🔄 New Patient</button>
-          <button className="npi-btn-teal" onClick={savePatient}>💾 Save & Open Note</button>
-        </div>
-      </header>
-
-      {/* BODY */}
-      <div className="npi-body">
-        {/* SIDEBAR */}
-        <aside className="npi-sidebar">
-          {SIDEBAR_GROUPS.map((group, gi) => (
-            <div key={gi}>
-              {gi > 0 && <div className="npi-grp-div"/>}
-              <div className="npi-grp-lbl">{group.label}</div>
-              {group.items.map(item => {
-                const isActive = currentTab === item.id;
-                const st = isActive ? 'current' : getTabStatus(item.id);
-                return (
-                  <div key={item.id} className={`npi-tab${isActive ? ' active' : ''}`} onClick={() => navigate(`/NewPatientInput?tab=${item.id}`)}>
-                    <span className="npi-tab-icon">{item.icon}</span>
-                    <span style={{ flex: 1 }}>{item.label}</span>
-                    <span className={`npi-tab-dot ${st}`}/>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </aside>
-
-        {/* CONTENT */}
-        <main className={`npi-content`}>
-          <div className={isFullscreen ? 'npi-fullscreen' : 'npi-inner'}>
+      {/* MAIN CONTENT */}
+      <main style={{ padding: '0', display: 'flex', flexDirection: 'column', gap: 18 }}>
           {currentTab === 'demo' && (
             <DemoTab demo={demo} setDemo={setDemo} parseText={parseText} setParseText={setParseText} parsing={parsing} onSmartParse={smartParse} />
           )}
@@ -314,12 +230,14 @@ export default function NewPatientInput() {
           {currentTab === 'meds' && (
             <MedsTab medications={medications} setMedications={setMedications} allergies={allergies} setAllergies={setAllergies} pmhSelected={pmhSelected} setPmhSelected={setPmhSelected} pmhExtra={pmhExtra} setPmhExtra={setPmhExtra} surgHx={surgHx} setSurgHx={setSurgHx} famHx={famHx} setFamHx={setFamHx} socHx={socHx} setSocHx={setSocHx} pmhExpanded={pmhExpanded} setPmhExpanded={setPmhExpanded} />
           )}
-          {currentTab === 'ros' && <ROSTab />}
+          {currentTab === 'ros' && (
+            <ROSTab />
+          )}
           {currentTab === 'pe' && (
             <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} />
           )}
           {currentTab === 'chart' && (
-            <div style={{ height: '100%', overflow: 'hidden' }}>
+            <div style={{ margin: '-20px -24px', minHeight: 'calc(100vh - 138px)', overflow: 'hidden' }}>
               <NotryaApp embedded={true} />
             </div>
           )}
@@ -336,7 +254,7 @@ export default function NewPatientInput() {
                 diagnoses: [],
                 medications,
                 allergies,
-                patient_name: patientName,
+                patient_name: [demo.firstName, demo.lastName].filter(Boolean).join(' ') || '',
                 patient_age: demo.age || '',
                 patient_gender: demo.sex || '',
                 patient_id: demo.mrn || '',
@@ -355,47 +273,38 @@ export default function NewPatientInput() {
           {currentTab === 'erplan' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', justifyContent: 'center', height: 300 }}>
               <div style={{ fontSize: 32 }}>🗺️</div>
-              <div style={{ color: T.txt2, fontSize: 14 }}>ER Plan Builder</div>
-              <button onClick={() => navigate('/ERPlanBuilder')} style={{ background: T.teal, color: T.bg, border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Open ER Plan Builder →</button>
+              <div style={{ color: S.txt2, fontSize: 14 }}>ER Plan Builder</div>
+              <button onClick={() => navigate('/ERPlanBuilder')} style={{ background: S.teal, color: S.bg, border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Open ER Plan Builder →</button>
             </div>
           )}
           {currentTab === 'erx' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', justifyContent: 'center', height: 300 }}>
               <div style={{ fontSize: 32 }}>💉</div>
-              <div style={{ color: T.txt2, fontSize: 14 }}>eRx — Electronic Prescriptions</div>
-              <button onClick={() => navigate('/ERx')} style={{ background: T.teal, color: T.bg, border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Open eRx →</button>
+              <div style={{ color: S.txt2, fontSize: 14 }}>eRx — Electronic Prescriptions</div>
+              <button onClick={() => navigate('/ERx')} style={{ background: S.teal, color: S.bg, border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Open eRx →</button>
             </div>
           )}
           {currentTab === 'procedures' && (
-            <EDProcedureNotes embedded patientName={patientName} patientAllergies={allergies.join(', ')} physicianName={''} />
+            <EDProcedureNotes
+              embedded
+              patientName={patientName}
+              patientAllergies={allergies.join(', ')}
+              physicianName={''}
+            />
           )}
           {currentTab === 'medref' && (
-            <div style={{ height: '100%', overflow: 'auto' }}>
+            <div style={{ margin: '-20px -24px', height: 'calc(100vh - 138px)', overflow: 'auto' }}>
               <MedicationReferencePage embedded />
             </div>
           )}
           {currentTab === 'orders' && (
-            <div style={{ height: '100%', overflow: 'hidden' }}>
+            <div style={{ margin: '-20px -24px', height: 'calc(100vh - 138px)', overflow: 'hidden' }}>
               <EDOrders embedded />
             </div>
           )}
-          </div>
-        </main>
-      </div>
+      </main>
 
-      {/* BOTTOM BAR */}
-      <footer className="npi-botbar">
-        <button className="npi-btn" onClick={navBack} disabled={currentIdx <= 0} style={{ opacity: currentIdx <= 0 ? 0.4 : 1 }}>← Back</button>
-        {currentIdx > 0 && <span className="npi-lbl">{allItems[currentIdx - 1]?.label}</span>}
-        <div className="npi-stepper">
-          {allItems.map((item, i) => {
-            const s = i === currentIdx ? 'current' : getTabStatus(item.id);
-            return <div key={item.id} className={`npi-step ${s}`} onClick={() => navigate(`/NewPatientInput?tab=${item.id}`)} title={item.label}/>;
-          })}
-        </div>
-        <span className="npi-clbl">{allItems[currentIdx]?.label}</span>
-        <button className="npi-btn-teal" onClick={navNext} disabled={currentIdx >= allItems.length - 1} style={{ opacity: currentIdx >= allItems.length - 1 ? 0.4 : 1 }}>Next →</button>
-      </footer>
+
     </div>
   );
 }

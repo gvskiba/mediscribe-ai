@@ -342,6 +342,40 @@ export default function NewPatientInput() {
             <button className="npi-new-pt" onClick={() => navigate("/NewPatientInput?tab=demo")}>+ New Patient</button>
           </div>
         </div>
+        <div className="npi-top-row-2">
+          <span className="npi-chart-badge">PT-NEW</span>
+          <span className="npi-pt-name">{patientName}</span>
+          {demo.age && <span className="npi-pt-meta">{demo.age}y · {demo.sex || "—"}</span>}
+          {cc.text && <span className="npi-pt-cc">CC: {cc.text}</span>}
+          <div className="npi-allergy-wrap" onClick={() => selectSection('meds')}>
+            <span>⚠️</span>
+            <span className="npi-allergy-lbl">Allergies</span>
+            <div className="npi-allergy-pills">
+              {allergies.length === 0 ? <span className="npi-allergy-pill npi-muted">None</span> : allergies.slice(0, 2).map(a => <span key={a} className="npi-allergy-pill">{a}</span>)}
+            </div>
+          </div>
+          <div className="npi-vb-div"></div>
+          <div className="npi-vb-vital"><span className="npi-vl">BP</span><span className="npi-vv">{vitals.bp || "—"}</span></div>
+          <div className="npi-vb-vital"><span className="npi-vl">HR</span><span className={parseInt(vitals.hr) > 120 ? 'npi-vv npi-abn' : 'npi-vv'}>{vitals.hr || "—"}</span></div>
+          <div className="npi-vb-vital"><span className="npi-vl">RR</span><span className="npi-vv">{vitals.rr || "—"}</span></div>
+          <div className="npi-vb-vital"><span className="npi-vl">SpO₂</span><span className="npi-vv">{vitals.spo2 || "—"}</span></div>
+          <div className="npi-vb-vital"><span className="npi-vl">T</span><span className="npi-vv">{vitals.temp || "—"}</span></div>
+          <div className="npi-vb-div"></div>
+          <span className="npi-status-badge" style={esiLevel ? { background: `rgba(${esiLevel <= 2 ? '255,107,107' : esiLevel === 3 ? '255,159,67' : '0,229,192'},.1)`, color: esiLevel <= 2 ? 'var(--npi-coral)' : esiLevel === 3 ? 'var(--npi-orange)' : 'var(--npi-teal)', border: `1px solid rgba(${esiLevel <= 2 ? '255,107,107' : esiLevel === 3 ? '255,159,67' : '0,229,192'},.3)` } : { color: 'var(--npi-txt4)', border: '1px solid var(--npi-bd)' }}>ESI {esiLevel || '—'}</span>
+          <span className="npi-status-badge npi-status-room">Room —</span>
+          <div className="npi-top-acts">
+            <button className="npi-btn-ghost">📋 Orders</button>
+            <button className="npi-btn-coral">🚪 Discharge</button>
+            <button className="npi-btn-primary" onClick={async () => {
+              try {
+                const payload = { raw_note: parseText || `Patient ${patientName} presenting with ${cc.text || "unspecified complaint"}`, patient_name: patientName, patient_id: registration.mrn || demo.mrn || "", patient_age: demo.age || "", patient_gender: demo.sex?.toLowerCase() === "male" ? "male" : demo.sex?.toLowerCase() === "female" ? "female" : "other", date_of_birth: demo.dob || "", chief_complaint: cc.text || "", history_of_present_illness: cc.hpi || "", medications, allergies, status: "draft", registration_mrn: registration.mrn || "", registration_room: registration.room || "", triage_esi_level: esiLevel || "" };
+                const created = await base44.entities.ClinicalNote.create(payload);
+                toast.success("Patient saved!");
+                navigate(`/ClinicalNoteStudio?noteId=${created.id}`);
+              } catch (e) { toast.error("Failed to save: " + e.message); }
+            }}>💾 Save Chart</button>
+          </div>
+        </div>
       </header>
 
       {/* ═══ MAIN CONTENT ═══ */}

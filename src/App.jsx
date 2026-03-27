@@ -22,7 +22,6 @@ import StrokeAssessment from '@/pages/StrokeAssessment';
 import EDOrders from '@/pages/EDOrders';
 import NotryaApp from '@/pages/NotryaApp';
 import NotryaACS from '@/pages/NotryaACS';
-import OrderDashboard from '@/pages/OrderDashboard';
 
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -94,7 +93,6 @@ const AuthenticatedApp = () => {
       <Route path="/EDOrders" element={<LayoutWrapper currentPageName="EDOrders"><EDOrders /></LayoutWrapper>} />
       <Route path="/NotryaApp" element={<NotryaApp />} />
       <Route path="/NotryaACS" element={<NotryaACS />} />
-      <Route path="/OrderDashboard" element={<LayoutWrapper currentPageName="OrderDashboard"><OrderDashboard /></LayoutWrapper>} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

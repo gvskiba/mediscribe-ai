@@ -364,7 +364,7 @@ export default function NewPatientInput() {
           <span className="npi-status-badge" style={esiLevel ? { background: `rgba(${esiLevel <= 2 ? '255,107,107' : esiLevel === 3 ? '255,159,67' : '0,229,192'},.1)`, color: esiLevel <= 2 ? 'var(--npi-coral)' : esiLevel === 3 ? 'var(--npi-orange)' : 'var(--npi-teal)', border: `1px solid rgba(${esiLevel <= 2 ? '255,107,107' : esiLevel === 3 ? '255,159,67' : '0,229,192'},.3)` } : { color: 'var(--npi-txt4)', border: '1px solid var(--npi-bd)' }}>ESI {esiLevel || '—'}</span>
           <span className="npi-status-badge npi-status-room">Room —</span>
           <div className="npi-top-acts">
-            <button className="npi-btn-ghost">📋 Orders</button>
+            <button className="npi-btn-ghost" onClick={() => selectSection('orders')}>📋 Orders</button>
             <button className="npi-btn-coral">🚪 Discharge</button>
             <button className="npi-btn-primary" onClick={async () => {
               try {

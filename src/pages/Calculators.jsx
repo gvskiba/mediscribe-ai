@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 
 // ════════════════════════════════════════════════════════════
 //  DESIGN TOKENS
@@ -1100,6 +1101,8 @@ function CalcCard({calc,onOpen,index}){
 //  MAIN HUB PAGE
 // ════════════════════════════════════════════════════════════
 export default function CalculatorHub({ onBack, navigateToMedRef }) {
+  const navigate = useNavigate();
+  const handleBack = onBack || (() => navigate("/hub"));
   const[search,setSearch]=useState("");
   const[cat,setCat]=useState("All");
   const[activeCalc,setActiveCalc]=useState(null);
@@ -1121,7 +1124,7 @@ export default function CalculatorHub({ onBack, navigateToMedRef }) {
           <div style={{position:"absolute",top:0,left:0,right:0,height:2.5,background:"linear-gradient(90deg,#00e5c0,#3b9eff,#9b6dff,#ff6b6b,#f5c842,#00e5c0)",borderRadius:"16px 16px 0 0"}}/>
           <div style={{position:"absolute",inset:0,background:"linear-gradient(108deg,rgba(0,229,192,0.04) 0%,transparent 55%,rgba(59,158,255,0.03) 100%)",pointerEvents:"none"}}/>
           <div style={{display:"flex",alignItems:"center",gap:18,position:"relative"}}>
-            {onBack&&<button onClick={onBack} style={{padding:"6px 14px",background:"rgba(14,37,68,0.6)",border:"1px solid rgba(42,79,122,0.6)",borderRadius:10,color:C.txt3,fontSize:11,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",backdropFilter:"blur(8px)",transition:"all .2s",flexShrink:0,whiteSpace:"nowrap"}} onMouseEnter={e=>{e.currentTarget.style.color=C.teal;e.currentTarget.style.borderColor="rgba(0,229,192,0.4)";}} onMouseLeave={e=>{e.currentTarget.style.color=C.txt3;e.currentTarget.style.borderColor="rgba(42,79,122,0.6)";}}>← Hub</button>}
+            {<button onClick={handleBack} style={{padding:"6px 14px",background:"rgba(14,37,68,0.6)",border:"1px solid rgba(42,79,122,0.6)",borderRadius:10,color:C.txt3,fontSize:11,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",backdropFilter:"blur(8px)",transition:"all .2s",flexShrink:0,whiteSpace:"nowrap"}} onMouseEnter={e=>{e.currentTarget.style.color=C.teal;e.currentTarget.style.borderColor="rgba(0,229,192,0.4)";}} onMouseLeave={e=>{e.currentTarget.style.color=C.txt3;e.currentTarget.style.borderColor="rgba(42,79,122,0.6)";}}>← Hub</button>}
             <div style={{width:58,height:58,borderRadius:16,background:"linear-gradient(135deg,rgba(0,229,192,0.2),rgba(59,158,255,0.12))",border:"1px solid rgba(0,229,192,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0,boxShadow:"0 0 22px rgba(0,229,192,0.2)"}}>🧮</div>
             <div style={{flex:1}}>
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:5,flexWrap:"wrap"}}>

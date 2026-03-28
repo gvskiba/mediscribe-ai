@@ -23,6 +23,7 @@ import NotryaApp from '@/pages/NotryaApp';
 import NotryaACS from '@/pages/NotryaACS';
 import OrderDashboard from '@/pages/OrderDashboard';
 import CardiacHub from '@/pages/CardiacHub';
+import TraumaHub from '@/pages/TraumaHub';
 import HubSelectorPage from '@/pages/HubSelectorPage';
 import OBGYNHub from '@/pages/OBGYNHub';
 
@@ -97,6 +98,7 @@ const AuthenticatedApp = () => {
       <Route path="/NotryaACS" element={<NotryaACS />} />
       <Route path="/OrderDashboard" element={<LayoutWrapper currentPageName="OrderDashboard"><OrderDashboard /></LayoutWrapper>} />
       <Route path="/cardiac-hub" element={<CardiacHub />} />
+      <Route path="/trauma-hub" element={<TraumaHub />} />
       <Route path="/hub" element={<HubSelectorPage />} />
       <Route path="/ob-hub" element={<OBGYNHub />} />
 

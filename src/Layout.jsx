@@ -46,6 +46,7 @@ const APP_ICONS = [
 const CHART_GROUPS = [
   {
     label: 'Intake',
+    groupIcon: '📋',
     items: [
       { icon: '📊', label: 'Patient Chart',      page: '/NewPatientInput?tab=chart' },
       { icon: '👤', label: 'Demographics',       page: '/NewPatientInput?tab=demo' },
@@ -55,6 +56,7 @@ const CHART_GROUPS = [
   },
   {
     label: 'Documentation',
+    groupIcon: '🩺',
     items: [
       { icon: '💊', label: 'Meds & PMH',         page: '/NewPatientInput?tab=meds' },
       { icon: '🔍', label: 'Review of Systems',  page: '/NewPatientInput?tab=ros' },
@@ -64,6 +66,7 @@ const CHART_GROUPS = [
   },
   {
     label: 'Disposition',
+    groupIcon: '🚪',
     items: [
       { icon: '📋', label: 'Orders',            page: '/NewPatientInput?tab=orders' },
       { icon: '🚪', label: 'Discharge',         page: '/NewPatientInput?tab=discharge' },
@@ -72,6 +75,7 @@ const CHART_GROUPS = [
   },
   {
     label: 'Tools',
+    groupIcon: '🔧',
     items: [
       { icon: '🤖', label: 'AutoCoder',         page: '/NewPatientInput?tab=autocoder' },
       { icon: '💉', label: 'eRx',               page: '/NewPatientInput?tab=erx' },
@@ -295,32 +299,44 @@ const GLOBAL_CSS = `
 
 /* CONTENT AREA */
 .v2-content-with-sb { margin-left: 226px; } /* 56 icon + 170 chart sb */
-.v2-content-no-sb   { margin-left: 56px; padding-bottom: 50px; }
+.v2-content-no-sb   { margin-left: 56px; padding-bottom: 108px; }
 .v2-content-wrap {
-  margin-top: 64px; margin-bottom: 50px;
-  min-height: calc(100vh - 114px); overflow-y: auto;
+  margin-top: 64px; margin-bottom: 108px;
+  min-height: calc(100vh - 172px); overflow-y: auto;
 }
 .v2-content-inner { padding: 20px 24px; max-width: 1200px; }
 .v2-content-full { padding: 0; max-width: none; width: 100%; height: 100%; }
 
 /* BOTTOM BAR */
-.v2-bot {
-  position: fixed; bottom: 0; left: 56px; right: 0; height: 50px;
-  background: #081628; border-top: 1px solid #1a3555;
-  display: flex; align-items: center; padding: 0 8px; gap: 2px; z-index: 200;
-  overflow-x: auto;
-}
-.v2-bot::-webkit-scrollbar { height: 0; }
-.v2-bot-tab {
-  display: flex; align-items: center; gap: 5px;
-  padding: 5px 10px; border-radius: 6px; cursor: pointer;
-  font-size: 11px; color: #4a6a8a; white-space: nowrap;
-  border: 1px solid transparent; transition: all .15s; flex-shrink: 0;
-  text-decoration: none;
-}
-.v2-bot-tab:hover { background: #0e2544; border-color: #1a3555; color: #8aaccc; }
-.v2-bot-tab.active { background: rgba(0,229,192,.1); border-color: rgba(0,229,192,.3); color: #00e5c0; }
-.v2-bot-sep { width: 1px; height: 24px; background: #1a3555; flex-shrink: 0; margin: 0 4px; }
+.bottom-nav{position:fixed;bottom:0;left:56px;right:0;height:108px;background:#081628;border-top:1px solid #1a3555;z-index:200;display:flex;flex-direction:column}
+.bn-sub-wrap{position:relative;flex-shrink:0;height:44px}
+.bn-sub-wrap::before,.bn-sub-wrap::after{content:'';position:absolute;top:0;bottom:0;width:24px;z-index:2;pointer-events:none}
+.bn-sub-wrap::before{left:0;background:linear-gradient(90deg,#081628,transparent)}
+.bn-sub-wrap::after{right:0;background:linear-gradient(-90deg,#081628,transparent)}
+.bn-sub-row{height:44px;display:flex;align-items:center;padding:0 12px;gap:6px;overflow-x:auto;overflow-y:hidden;border-bottom:1px solid rgba(26,53,85,.4);scrollbar-width:none;-ms-overflow-style:none}
+.bn-sub-row::-webkit-scrollbar{display:none}
+.bn-sub-pill{display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:500;color:#4a6a8a;background:transparent;border:1px solid transparent;cursor:pointer;transition:all .2s ease;white-space:nowrap;flex-shrink:0;font-family:'DM Sans',sans-serif;text-decoration:none}
+.bn-sub-pill:hover{color:#8aaccc;background:#0e2544;border-color:#1a3555}
+.bn-sub-pill.active{color:#3b9eff;background:rgba(59,158,255,.1);border-color:rgba(59,158,255,.35);font-weight:600}
+.pill-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.pill-dot.done{background:#00e5c0;box-shadow:0 0 4px rgba(0,229,192,.5)}
+.pill-dot.partial{background:#ff9f43}
+.pill-dot.empty{background:#2e4a6a}
+.bn-groups{height:64px;flex-shrink:0;display:flex;align-items:stretch}
+.bn-group-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;position:relative;transition:all .2s ease;border:none;background:none;font-family:'DM Sans',sans-serif;padding:6px 0}
+.bn-group-tab::before{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;background:#3b9eff;border-radius:0 0 2px 2px;transform:scaleX(0);transition:transform .25s cubic-bezier(.34,1.56,.64,1)}
+.bn-group-tab.active::before{transform:scaleX(1)}
+.bn-group-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;background:transparent;border:1px solid transparent;transition:all .2s ease;position:relative}
+.bn-group-tab:hover .bn-group-icon{background:#0e2544;border-color:#1a3555}
+.bn-group-tab.active .bn-group-icon{background:rgba(59,158,255,.1);border-color:rgba(59,158,255,.3)}
+.bn-group-badge{position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;border:1.5px solid #081628}
+.bn-group-badge.done{background:#00e5c0}
+.bn-group-badge.partial{background:#ff9f43}
+.bn-group-badge.empty{background:transparent;border-color:transparent}
+.bn-group-label{font-size:9px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:#2e4a6a;transition:color .2s}
+.bn-group-tab:hover .bn-group-label{color:#4a6a8a}
+.bn-group-tab.active .bn-group-label{color:#3b9eff;font-weight:600}
+.bn-group-tab+.bn-group-tab{border-left:1px solid rgba(26,53,85,.4)}
 `;
 
 /* ═══════════════════════════════════════════════════
@@ -339,6 +355,7 @@ const STEP_STATES = [
 export default function Layout({ children, currentPageName }) {
   const [user, setUser] = useState(null);
   const [clock, setClock] = useState('');
+  const [activeGroup, setActiveGroup] = useState('Intake');
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -355,6 +372,18 @@ export default function Layout({ children, currentPageName }) {
     const t = setInterval(tick, 10000);
     return () => clearInterval(t);
   }, []);
+
+  useEffect(() => {
+    const found = CHART_GROUPS.find(g =>
+      g.items.some(item => {
+        const itemSearch = item.page.includes('?') ? item.page.split('?')[1] : '';
+        return item.page.includes('?')
+          ? location.pathname === item.page.split('?')[0] && location.search === '?' + itemSearch
+          : location.pathname === item.page && !location.search;
+      })
+    );
+    if (found) setActiveGroup(found.label);
+  }, [location]);
 
   const isFullscreen = FULLSCREEN_PAGES.has(currentPageName);
   const showChartSidebar = !NO_CHART_SIDEBAR.has(currentPageName) && !isFullscreen;
@@ -460,7 +489,7 @@ export default function Layout({ children, currentPageName }) {
       {/* ── MAIN CONTENT ── */}
       <div
         className="v2-content-no-sb"
-        style={{ minHeight: 'calc(100vh - 138px)' }}
+        style={{ minHeight: 'calc(100vh - 196px)' }}
       >
         <div className="v2-content-inner">
           {children}
@@ -468,29 +497,45 @@ export default function Layout({ children, currentPageName }) {
       </div>
 
       {/* ── BOTTOM BAR ── */}
-      <footer className="v2-bot">
-        {CHART_GROUPS.map((group, gi) => (
-          <React.Fragment key={gi}>
-            {gi > 0 && <div className="v2-bot-sep" />}
-            {group.items.map((item) => {
+      <nav className="bottom-nav">
+        <div className="bn-sub-wrap">
+          <div className="bn-sub-row">
+            {(CHART_GROUPS.find(g => g.label === activeGroup) || CHART_GROUPS[0]).items.map((item) => {
               const itemSearch = item.page.includes('?') ? item.page.split('?')[1] : '';
               const isActive = item.page.includes('?')
                 ? location.pathname === item.page.split('?')[0] && location.search === '?' + itemSearch
                 : location.pathname === item.page && !location.search;
               return (
-                <Link
-                  key={item.page}
-                  to={item.page}
-                  className={`v2-bot-tab${isActive ? ' active' : ''}`}
-                >
+                <Link key={item.page} to={item.page} className={`bn-sub-pill${isActive ? ' active' : ''}`}>
                   <span>{item.icon}</span>
                   <span>{item.label}</span>
+                  <span className={`pill-dot ${isActive ? 'done' : 'empty'}`}></span>
                 </Link>
               );
             })}
-          </React.Fragment>
-        ))}
-      </footer>
+          </div>
+        </div>
+        <div className="bn-groups">
+          {CHART_GROUPS.map((group) => {
+            const isGroupActive = activeGroup === group.label;
+            const hasActive = group.items.some(item => {
+              const itemSearch = item.page.includes('?') ? item.page.split('?')[1] : '';
+              return item.page.includes('?')
+                ? location.pathname === item.page.split('?')[0] && location.search === '?' + itemSearch
+                : location.pathname === item.page && !location.search;
+            });
+            return (
+              <button key={group.label} className={`bn-group-tab${isGroupActive ? ' active' : ''}`} onClick={() => setActiveGroup(group.label)}>
+                <div className="bn-group-icon">
+                  {group.groupIcon}
+                  <span className={`bn-group-badge ${hasActive ? 'done' : 'empty'}`}></span>
+                </div>
+                <span className="bn-group-label">{group.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
 
       <NotryaFloatingAI />
     </div>

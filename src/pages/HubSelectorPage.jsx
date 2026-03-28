@@ -393,7 +393,7 @@ export default function HubSelectorPage() {
     <div style={{ minHeight: "100vh", background: "#050f1e", fontFamily: "'DM Sans',sans-serif", position: "relative" }}>
       <Background />
 
-      <div style={{ position: "relative", zIndex: 1, padding: "80px 36px 48px", maxWidth: 1300, margin: "0 auto" }}>
+      <div style={{ position: "relative", zIndex: 1, padding: "32px 36px 48px", maxWidth: 1300, margin: "0 auto" }}>
 
         {/* Hero Header */}
         <div style={{ borderRadius: 22, padding: "28px 32px 24px", background: "rgba(5,15,30,0.82)", backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)", border: "1px solid rgba(42,79,122,0.5)", marginBottom: 24, position: "relative", overflow: "hidden", animation: "hub-appear 0.5s ease both", boxShadow: "0 8px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)" }}>

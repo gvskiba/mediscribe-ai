@@ -1,1310 +1,1210 @@
-import React, { useState, useMemo, useEffect, useCallback } from "react";
-import { base44 } from "@/api/base44Client";
-import { Search, Loader2, ChevronDown, ChevronUp, Sparkles, Star, Plus, AlertTriangle, Save, Clock, Trash2 } from "lucide-react";
-import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useMemo, useRef } from "react";
 
-// ─── Color palette ────────────────────────────────────────────────────────────
-const T = {
-  navy: "#050f1e", slate: "#0b1d35", panel: "#0e2340",
-  edge: "#162d4f", border: "#1e3a5f", muted: "#2a4d72",
-  dim: "#4a7299", text: "#c8ddf0", bright: "#e8f4ff",
-  teal: "#00d4bc", amber: "#f5a623", red: "#ff5c6c",
-  green: "#2ecc71", purple: "#9b6dff",
+// ════════════════════════════════════════════════════════════
+//  DESIGN TOKENS
+// ════════════════════════════════════════════════════════════
+const C = {
+  bg:"#050f1e", panel:"rgba(8,22,40,0.72)", card:"rgba(11,30,54,0.6)", up:"rgba(14,37,68,0.5)",
+  border:"rgba(26,53,85,0.8)", borderHi:"rgba(42,79,122,0.9)",
+  teal:"#00e5c0", blue:"#3b9eff", gold:"#f5c842", coral:"#ff6b6b",
+  purple:"#9b6dff", orange:"#ff9f43", green:"#3dffa0", pink:"#ff6b9d",
+  txt:"#e8f0fe", txt2:"#8aaccc", txt3:"#4a6a8a", txt4:"#2e4a6a",
+};
+const ACCENT = "#00e5c0"; // hub colour
+
+// ════════════════════════════════════════════════════════════
+//  CALCULATOR REGISTRY  (50 entries)
+// ════════════════════════════════════════════════════════════
+const CALCS = [
+
+  // ── CARDIAC / CV RISK ──────────────────────────────────────
+  {id:"grace",cat:"Cardiac",icon:"🫀",name:"GRACE Score",
+   desc:"In-hospital & 6-month mortality in ACS",ref:"GRACE Registry",
+   fields:[
+     {k:"age",label:"Age (years)",type:"number",min:18,max:120},
+     {k:"hr",label:"Heart Rate (bpm)",type:"number",min:0,max:250},
+     {k:"sbp",label:"SBP (mmHg)",type:"number",min:0,max:300},
+     {k:"cr",label:"Creatinine (mg/dL)",type:"number",min:0,max:20},
+     {k:"killip",label:"Killip Class",type:"select",options:["1 — No signs HF","2 — Rales / JVD","3 — Pulmonary oedema","4 — Cardiogenic shock"]},
+     {k:"cardiac_arrest",label:"Cardiac arrest at admission",type:"checkbox"},
+     {k:"st_dev",label:"ST-segment deviation",type:"checkbox"},
+     {k:"elevated_enzymes",label:"Elevated cardiac enzymes",type:"checkbox"},
+   ],
+   compute(v){
+     let s=0;
+     const age=+v.age||0; s += age<30?0:age<40?8:age<50?25:age<60?41:age<70?58:age<80?75:91;
+     const hr=+v.hr||0; s += hr<50?0:hr<70?3:hr<90?9:hr<110?15:hr<150?24:hr<200?38:46;
+     const sbp=+v.sbp||0; s += sbp<80?58:sbp<100?53:sbp<120?43:sbp<140?34:sbp<160?24:sbp<200?10:0;
+     const cr=+v.cr||0; s += cr<0.4?1:cr<0.8?3:cr<1.2?5:cr<1.6?7:cr<2?9:cr<4?15:20;
+     const ki=[1,2,3,4].indexOf(+(v.killip?.charAt(0)||1))+1;
+     s += ki===2?20:ki===3?39:ki===4?59:0;
+     if(v.cardiac_arrest) s+=39;
+     if(v.st_dev) s+=28;
+     if(v.elevated_enzymes) s+=14;
+     const risk = s<109?"Low":s<=140?"Intermediate":"High";
+     const mort = s<109?"<1%":s<=140?"1–3%":">3%";
+     return {score:s, label:risk, detail:`6-month mortality: ${mort}`,
+             color:risk==="Low"?C.teal:risk==="Intermediate"?C.gold:C.coral};
+   }},
+
+  {id:"timi_nstemi",cat:"Cardiac",icon:"📉",name:"TIMI (UA/NSTEMI)",
+   desc:"Risk of adverse cardiac events in NSTE-ACS",ref:"TIMI Study Group",
+   fields:[
+     {k:"age65",label:"Age ≥ 65 years",type:"checkbox"},
+     {k:"cad3",label:"≥ 3 CAD risk factors",type:"checkbox"},
+     {k:"known_cad",label:"Known CAD (stenosis ≥ 50%)",type:"checkbox"},
+     {k:"asa",label:"ASA use in past 7 days",type:"checkbox"},
+     {k:"angina",label:"≥ 2 anginal events in past 24 h",type:"checkbox"},
+     {k:"st_dev",label:"ST deviation ≥ 0.5 mm",type:"checkbox"},
+     {k:"enzymes",label:"Elevated cardiac markers",type:"checkbox"},
+   ],
+   compute(v){
+     const s=[v.age65,v.cad3,v.known_cad,v.asa,v.angina,v.st_dev,v.enzymes].filter(Boolean).length;
+     const risk=s<=2?"Low (4.7%)":s<=4?"Intermediate (13.2%)":"High (40.9%)";
+     const c=s<=2?C.teal:s<=4?C.gold:C.coral;
+     return{score:s,label:risk,detail:"14-day MACE risk",color:c};
+   }},
+
+  {id:"heart",cat:"Cardiac",icon:"💓",name:"HEART Score",
+   desc:"Chest pain risk stratification in ED",ref:"HEART score",
+   fields:[
+     {k:"history",label:"History",type:"select",options:["0 — Slightly suspicious","1 — Moderately suspicious","2 — Highly suspicious"]},
+     {k:"ecg",label:"ECG",type:"select",options:["0 — Normal","1 — Non-specific repolarization","2 — Significant ST deviation"]},
+     {k:"age",label:"Age",type:"select",options:["0 — < 45 years","1 — 45–64 years","2 — ≥ 65 years"]},
+     {k:"rf",label:"Risk Factors",type:"select",options:["0 — No risk factors","1 — 1–2 risk factors","2 — ≥ 3 risk factors or history of atherosclerosis"]},
+     {k:"troponin",label:"Troponin",type:"select",options:["0 — ≤ Normal limit","1 — 1–3× normal limit","2 — > 3× normal limit"]},
+   ],
+   compute(v){
+     const s=[v.history,v.ecg,v.age,v.rf,v.troponin].reduce((a,x)=>a+(+(x?.charAt(0)||0)),0);
+     const r=s<=3?"Low — MACE < 2%":s<=6?"Moderate — MACE 12–17%":"High — MACE > 65%";
+     const c=s<=3?C.teal:s<=6?C.gold:C.coral;
+     return{score:s,label:r,detail:"Major adverse cardiac event risk",color:c};
+   }},
+
+  {id:"chadsvasc",cat:"Cardiac",icon:"🧲",name:"CHA₂DS₂-VASc",
+   desc:"Stroke risk in non-valvular AFib",ref:"ESC Guidelines",
+   fields:[
+     {k:"chf",label:"Congestive heart failure / LV dysfunction",type:"checkbox"},
+     {k:"htn",label:"Hypertension",type:"checkbox"},
+     {k:"age75",label:"Age ≥ 75 years (×2)",type:"checkbox"},
+     {k:"dm",label:"Diabetes mellitus",type:"checkbox"},
+     {k:"stroke",label:"Prior stroke / TIA / thromboembolism (×2)",type:"checkbox"},
+     {k:"vascular",label:"Vascular disease (prior MI, PAD, aortic plaque)",type:"checkbox"},
+     {k:"age65",label:"Age 65–74 years",type:"checkbox"},
+     {k:"female",label:"Female sex",type:"checkbox"},
+   ],
+   compute(v){
+     const s=(v.chf?1:0)+(v.htn?1:0)+(v.age75?2:0)+(v.dm?1:0)+(v.stroke?2:0)+(v.vascular?1:0)+(v.age65?1:0)+(v.female?1:0);
+     const strokes=[0,1.3,2.2,3.2,4.0,6.7,9.8,9.6,6.7,15.2];
+     const annual=strokes[Math.min(s,9)]||">";
+     const rec=s===0?"Anticoagulation not recommended":s===1?"Consider anticoagulation (male) — low risk":"Anticoagulation recommended";
+     const c=s===0?C.teal:s===1?C.gold:C.coral;
+     return{score:s,label:rec,detail:`Annual stroke risk ≈ ${annual}%`,color:c};
+   }},
+
+  {id:"hasbled",cat:"Cardiac",icon:"🩸",name:"HAS-BLED Score",
+   desc:"Bleeding risk on anticoagulation for AFib",ref:"CHEST 2010",
+   fields:[
+     {k:"htn",label:"H — Uncontrolled HTN (SBP > 160)",type:"checkbox"},
+     {k:"renal",label:"A — Renal disease (dialysis / creatinine > 2.3)",type:"checkbox"},
+     {k:"liver",label:"A — Liver disease (cirrhosis / bilirubin > 3×)",type:"checkbox"},
+     {k:"stroke",label:"S — Stroke history",type:"checkbox"},
+     {k:"bleeding",label:"B — Prior bleeding or predisposition",type:"checkbox"},
+     {k:"inr",label:"L — Labile INR (< 60% time in therapeutic range)",type:"checkbox"},
+     {k:"elderly",label:"E — Age > 65 years",type:"checkbox"},
+     {k:"drugs",label:"D — Drugs (antiplatelets / NSAIDs)",type:"checkbox"},
+     {k:"alcohol",label:"D — Alcohol (≥ 8 drinks/week)",type:"checkbox"},
+   ],
+   compute(v){
+     const s=[v.htn,v.renal,v.liver,v.stroke,v.bleeding,v.inr,v.elderly,v.drugs,v.alcohol].filter(Boolean).length;
+     const r=s<=1?"Low bleeding risk":s<=2?"Moderate bleeding risk":"High bleeding risk — does NOT preclude anticoagulation; correct modifiable factors";
+     const c=s<=1?C.teal:s<=2?C.gold:C.coral;
+     return{score:s,label:r,detail:s>=3?"Consider correcting modifiable factors":"Annual bleed risk: Low–Moderate",color:c};
+   }},
+
+  {id:"wells_dvt",cat:"Vascular",icon:"🦵",name:"Wells (DVT)",
+   desc:"Pre-test probability of deep vein thrombosis",ref:"Wells et al. Lancet 1997",
+   fields:[
+     {k:"cancer",label:"Active cancer (treatment or palliation within 6 mo)",type:"checkbox"},
+     {k:"paralysis",label:"Paralysis / recent plaster cast of lower extremity",type:"checkbox"},
+     {k:"bedridden",label:"Bedridden > 3 days OR major surgery within 12 weeks",type:"checkbox"},
+     {k:"tenderness",label:"Localised tenderness along deep venous system",type:"checkbox"},
+     {k:"swelling",label:"Entire leg swollen",type:"checkbox"},
+     {k:"calf",label:"Calf swelling > 3 cm vs. other leg",type:"checkbox"},
+     {k:"pitting",label:"Pitting oedema — greater in symptomatic leg",type:"checkbox"},
+     {k:"collateral",label:"Collateral superficial veins",type:"checkbox"},
+     {k:"prev_dvt",label:"Previously documented DVT",type:"checkbox"},
+     {k:"alt_dx",label:"Alternative diagnosis at least as likely as DVT (−2 pts)",type:"checkbox"},
+   ],
+   compute(v){
+     let s=[v.cancer,v.paralysis,v.bedridden,v.tenderness,v.swelling,v.calf,v.pitting,v.collateral,v.prev_dvt].filter(Boolean).length;
+     if(v.alt_dx) s-=2;
+     const r=s<=0?"Low probability (~3%)":s<=2?"Moderate probability (~17%)":"High probability (~75%)";
+     const c=s<=0?C.teal:s<=2?C.gold:C.coral;
+     return{score:s,label:r,detail:"If low: D-dimer to rule out. If moderate/high: duplex USS.",color:c};
+   }},
+
+  {id:"wells_pe",cat:"Vascular",icon:"🫁",name:"Wells (PE)",
+   desc:"Pre-test probability of pulmonary embolism",ref:"Wells et al. 2001",
+   fields:[
+     {k:"clinical_dvt",label:"Clinical signs / symptoms of DVT (+3)",type:"checkbox"},
+     {k:"alt_less",label:"PE most likely diagnosis or equally likely (+3)",type:"checkbox"},
+     {k:"hr",label:"Heart rate > 100 bpm (+1.5)",type:"checkbox"},
+     {k:"immob",label:"Immobilisation ≥ 3 days OR surgery in past 4 weeks (+1.5)",type:"checkbox"},
+     {k:"prev_dvt_pe",label:"Previous DVT or PE (+1.5)",type:"checkbox"},
+     {k:"haemoptysis",label:"Haemoptysis (+1)",type:"checkbox"},
+     {k:"malignancy",label:"Malignancy — treatment within 6 months or palliative (+1)",type:"checkbox"},
+   ],
+   compute(v){
+     const s=(v.clinical_dvt?3:0)+(v.alt_less?3:0)+(v.hr?1.5:0)+(v.immob?1.5:0)+(v.prev_dvt_pe?1.5:0)+(v.haemoptysis?1:0)+(v.malignancy?1:0);
+     const r=s<2?"Low probability (~1.3%)":s<7?"Moderate probability (~16.2%)":"High probability (~37.5%)";
+     const c=s<2?C.teal:s<7?C.gold:C.coral;
+     return{score:s,label:r,detail:"Low: D-dimer. Moderate: CT-PA or V/Q. High: CT-PA directly.",color:c};
+   }},
+
+  {id:"pesi",cat:"Vascular",icon:"📊",name:"PESI Score",
+   desc:"Pulmonary Embolism Severity Index",ref:"JAMA 2005",
+   fields:[
+     {k:"age",label:"Age (years)",type:"number",min:18,max:120},
+     {k:"male",label:"Male sex (+10)",type:"checkbox"},
+     {k:"cancer",label:"Cancer (+30)",type:"checkbox"},
+     {k:"hf",label:"Heart failure (+10)",type:"checkbox"},
+     {k:"cpd",label:"Chronic pulmonary disease (+10)",type:"checkbox"},
+     {k:"hr",label:"HR ≥ 110 bpm (+20)",type:"checkbox"},
+     {k:"sbp",label:"SBP < 100 mmHg (+30)",type:"checkbox"},
+     {k:"rr",label:"RR ≥ 30/min (+20)",type:"checkbox"},
+     {k:"temp",label:"Temp < 36°C (+20)",type:"checkbox"},
+     {k:"altered_ms",label:"Altered mental status (+60)",type:"checkbox"},
+     {k:"spo2",label:"SpO₂ < 90% (+20)",type:"checkbox"},
+   ],
+   compute(v){
+     let s=+(v.age||0);
+     s+=(v.male?10:0)+(v.cancer?30:0)+(v.hf?10:0)+(v.cpd?10:0)+(v.hr?20:0)+(v.sbp?30:0)+(v.rr?20:0)+(v.temp?20:0)+(v.altered_ms?60:0)+(v.spo2?20:0);
+     const cls=s<=65?"I":s<=85?"II":s<=105?"III":s<=125?"IV":"V";
+     const risk=s<=65?"Very low (0.0–1.6%)":s<=85?"Low (1.7–3.5%)":s<=105?"Moderate (3.2–7.1%)":s<=125?"High (4.0–11.4%)":"Very high (10.0–24.5%)";
+     const c=s<=65?C.teal:s<=85?C.green:s<=105?C.gold:s<=125?C.orange:C.coral;
+     return{score:s,label:`Class ${cls} — ${risk}`,detail:"30-day mortality estimate",color:c};
+   }},
+
+  {id:"killip",cat:"Cardiac",icon:"🏥",name:"Killip Classification",
+   desc:"Heart failure severity in acute MI",ref:"Killip & Kimball 1967",
+   fields:[{k:"cls",label:"Clinical Class",type:"select",options:[
+     "I — No clinical signs of HF","II — Rales < 50%, S3 gallop, JVD",
+     "III — Pulmonary oedema (rales > 50% of lung fields)","IV — Cardiogenic shock"
+   ]}],
+   compute(v){
+     const cls=+(v.cls?.charAt(0)||1);
+     const mort=["<6%","6–17%","38%","60–80%"][cls-1];
+     const c=[C.teal,C.gold,C.orange,C.coral][cls-1];
+     return{score:`Class ${cls}`,label:`30-day mortality: ${mort}`,detail:"Assess volume status and initiate appropriate management",color:c};
+   }},
+
+  {id:"shock_index",cat:"Cardiac",icon:"⚡",name:"Shock Index",
+   desc:"Early haemodynamic deterioration",ref:"Allgöwer & Burri 1967",
+   fields:[
+     {k:"hr",label:"Heart Rate (bpm)",type:"number",min:0,max:300},
+     {k:"sbp",label:"Systolic BP (mmHg)",type:"number",min:0,max:300},
+   ],
+   compute(v){
+     const si=((+v.hr||0)/((+v.sbp||1))).toFixed(2);
+     const r=si<0.6?"Normal":si<1.0?"Mild haemodynamic compromise":si<1.4?"Moderate — consider resuscitation":"Severe — activate trauma/haemorrhage protocol";
+     const c=si<0.6?C.teal:si<1.0?C.gold:si<1.4?C.orange:C.coral;
+     return{score:si,label:r,detail:"SI > 1.0 = mortality ↑ significantly",color:c};
+   }},
+
+  // ── NEUROLOGY ──────────────────────────────────────────────
+  {id:"gcs",cat:"Neurology",icon:"🧠",name:"Glasgow Coma Scale",
+   desc:"Level of consciousness assessment",ref:"Teasdale & Jennett 1974",
+   fields:[
+     {k:"eye",label:"Eye Opening",type:"select",options:["4 — Spontaneous","3 — To voice","2 — To pain","1 — None"]},
+     {k:"verbal",label:"Verbal Response",type:"select",options:["5 — Oriented","4 — Confused","3 — Inappropriate words","2 — Sounds","1 — None"]},
+     {k:"motor",label:"Motor Response",type:"select",options:["6 — Obeys commands","5 — Localises pain","4 — Withdraws","3 — Abnormal flexion","2 — Extension","1 — None"]},
+   ],
+   compute(v){
+     const s=(+(v.eye?.charAt(0)||1))+(+(v.verbal?.charAt(0)||1))+(+(v.motor?.charAt(0)||1));
+     const r=s<=8?"Severe TBI (coma — consider intubation)":s<=12?"Moderate TBI":"Mild / No TBI";
+     const c=s<=8?C.coral:s<=12?C.gold:C.teal;
+     return{score:s,label:r,detail:`E${+(v.eye?.charAt(0)||1)}V${+(v.verbal?.charAt(0)||1)}M${+(v.motor?.charAt(0)||1)}`,color:c};
+   }},
+
+  {id:"nihss",cat:"Neurology",icon:"🎯",name:"NIHSS — Simplified",
+   desc:"Stroke severity & tPA eligibility indicator",ref:"Brott et al. 1989",
+   fields:[
+     {k:"loc",label:"1a. Level of consciousness",type:"select",options:["0 — Alert","1 — Not alert but arousable","2 — Requires repeated stimulation","3 — Unresponsive"]},
+     {k:"gaze",label:"2. Best gaze",type:"select",options:["0 — Normal","1 — Partial gaze palsy","2 — Forced deviation"]},
+     {k:"visual",label:"3. Visual",type:"select",options:["0 — No visual loss","1 — Partial hemianopia","2 — Complete hemianopia","3 — Bilateral blindness"]},
+     {k:"facial",label:"4. Facial palsy",type:"select",options:["0 — Normal","1 — Minor","2 — Partial","3 — Complete"]},
+     {k:"arm_l",label:"5a. Left arm motor",type:"select",options:["0 — No drift","1 — Drift","2 — Some effort against gravity","3 — No effort against gravity","4 — No movement","UN — Untestable"]},
+     {k:"arm_r",label:"5b. Right arm motor",type:"select",options:["0 — No drift","1 — Drift","2 — Some effort against gravity","3 — No effort against gravity","4 — No movement","UN — Untestable"]},
+     {k:"leg_l",label:"6a. Left leg motor",type:"select",options:["0 — No drift","1 — Drift","2 — Some effort against gravity","3 — No effort against gravity","4 — No movement","UN — Untestable"]},
+     {k:"leg_r",label:"6b. Right leg motor",type:"select",options:["0 — No drift","1 — Drift","2 — Some effort against gravity","3 — No effort against gravity","4 — No movement","UN — Untestable"]},
+     {k:"ataxia",label:"7. Limb ataxia",type:"select",options:["0 — Absent","1 — One limb","2 — Two limbs"]},
+     {k:"sensory",label:"8. Sensory",type:"select",options:["0 — Normal","1 — Mild–moderate loss","2 — Severe or total loss"]},
+     {k:"language",label:"9. Best language",type:"select",options:["0 — No aphasia","1 — Mild–moderate","2 — Severe","3 — Mute / global aphasia"]},
+     {k:"dysarthria",label:"10. Dysarthria",type:"select",options:["0 — Normal","1 — Mild–moderate","2 — Severe","UN — Intubated"]},
+     {k:"neglect",label:"11. Extinction / inattention",type:"select",options:["0 — No abnormality","1 — Partial neglect","2 — Complete neglect"]},
+   ],
+   compute(v){
+     const fields=[v.loc,v.gaze,v.visual,v.facial,v.arm_l,v.arm_r,v.leg_l,v.leg_r,v.ataxia,v.sensory,v.language,v.dysarthria,v.neglect];
+     const s=fields.reduce((a,x)=>{const n=+(x?.charAt(0)||0); return a+(isNaN(n)?0:n);},0);
+     const r=s===0?"No stroke symptoms":s<=4?"Minor stroke":s<=15?"Moderate stroke":s<=20?"Moderate–severe":"Severe stroke";
+     const c=s===0?C.teal:s<=4?C.green:s<=15?C.gold:s<=20?C.orange:C.coral;
+     return{score:s,label:r,detail:"0–42 scale · Consider tPA if 2–22 and within 4.5 h",color:c};
+   }},
+
+  {id:"abcd2",cat:"Neurology",icon:"⏰",name:"ABCD² Score",
+   desc:"Short-term stroke risk after TIA",ref:"Johnston et al. Lancet 2007",
+   fields:[
+     {k:"age",label:"A — Age ≥ 60 years (+1)",type:"checkbox"},
+     {k:"bp",label:"B — BP ≥ 140/90 on presentation (+1)",type:"checkbox"},
+     {k:"clinical",label:"C — Clinical features",type:"select",options:["0 — Other symptom","1 — Speech disturbance without weakness","2 — Unilateral weakness"]},
+     {k:"duration",label:"D — Duration",type:"select",options:["0 — < 10 minutes","1 — 10–59 minutes","2 — ≥ 60 minutes"]},
+     {k:"diabetes",label:"D — Diabetes (+1)",type:"checkbox"},
+   ],
+   compute(v){
+     const s=(v.age?1:0)+(v.bp?1:0)+(+(v.clinical?.charAt(0)||0))+(+(v.duration?.charAt(0)||0))+(v.diabetes?1:0);
+     const r=s<=3?"Low — 2-day stroke risk ~1%":s<=5?"Moderate — 2-day risk ~4%":"High — 2-day risk ~8%";
+     const c=s<=3?C.teal:s<=5?C.gold:C.coral;
+     return{score:s,label:r,detail:"Scores ≥ 4 generally warrant admission for work-up",color:c};
+   }},
+
+  {id:"hunt_hess",cat:"Neurology",icon:"🔴",name:"Hunt & Hess Scale",
+   desc:"Subarachnoid haemorrhage severity",ref:"Hunt & Hess 1968",
+   fields:[{k:"grade",label:"Clinical Grade",type:"select",options:[
+     "I — Asymptomatic / mild headache","II — Moderate–severe headache, no neuro deficit",
+     "III — Drowsy, mild focal deficit","IV — Stupor, moderate–severe hemiparesis",
+     "V — Deep coma, decerebrate posturing"
+   ]}],
+   compute(v){
+     const g=+(v.grade?.charAt(0)||1);
+     const mort=["~5%","~10%","~20%","~40%","~80%"][g-1];
+     const c=[C.teal,C.green,C.gold,C.orange,C.coral][g-1];
+     return{score:`Grade ${g}`,label:`30-day mortality: ${mort}`,detail:"Grade I–II: early surgery favourable. Grade IV–V: defer if possible.",color:c};
+   }},
+
+  {id:"canadian_ct",cat:"Neurology",icon:"📷",name:"Canadian CT Head Rule",
+   desc:"CT head necessity in minor head injury",ref:"Stiell et al. Lancet 2001",
+   fields:[
+     {k:"gcs_14_2h",label:"GCS score < 15 at 2 h after injury (HIGH RISK)",type:"checkbox"},
+     {k:"suspected_open",label:"Suspected open / depressed skull fracture (HIGH RISK)",type:"checkbox"},
+     {k:"signs_base",label:"Signs of basal skull fracture (HIGH RISK)",type:"checkbox"},
+     {k:"vomit2",label:"Vomiting ≥ 2 episodes (HIGH RISK)",type:"checkbox"},
+     {k:"age65",label:"Age ≥ 65 years (HIGH RISK)",type:"checkbox"},
+     {k:"amnesia_30",label:"Amnesia before impact ≥ 30 min (MEDIUM RISK)",type:"checkbox"},
+     {k:"dangerous_mech",label:"Dangerous mechanism (pedestrian, ejection, fall > 3 ft) (MEDIUM RISK)",type:"checkbox"},
+   ],
+   compute(v){
+     const high=[v.gcs_14_2h,v.suspected_open,v.signs_base,v.vomit2,v.age65].some(Boolean);
+     const medium=[v.amnesia_30,v.dangerous_mech].some(Boolean);
+     if(high) return{score:"HIGH",label:"CT required — high-risk factor present",detail:"Risk of neurosurgical intervention",color:C.coral};
+     if(medium) return{score:"MEDIUM",label:"CT required — medium-risk factor present",detail:"Risk of brain injury on CT",color:C.gold};
+     return{score:"LOW",label:"CT not required — no risk factors",detail:"Applies only to GCS 13–15, no coagulopathy",color:C.teal};
+   }},
+
+  // ── SEPSIS / CRITICAL CARE ─────────────────────────────────
+  {id:"qsofa",cat:"Sepsis",icon:"🦠",name:"qSOFA Score",
+   desc:"Rapid bedside sepsis screen",ref:"Singer et al. JAMA 2016",
+   fields:[
+     {k:"rr",label:"Respiratory rate ≥ 22/min",type:"checkbox"},
+     {k:"ams",label:"Altered mental status (GCS < 15)",type:"checkbox"},
+     {k:"sbp",label:"SBP ≤ 100 mmHg",type:"checkbox"},
+   ],
+   compute(v){
+     const s=[v.rr,v.ams,v.sbp].filter(Boolean).length;
+     const r=s<2?"Negative — low risk of sepsis organ dysfunction":s===2?"Positive (score 2) — consider sepsis work-up":"Positive (score 3) — high risk — activate Sepsis-3 bundle";
+     const c=s<2?C.teal:s===2?C.gold:C.coral;
+     return{score:s,label:r,detail:"qSOFA ≥ 2 = prompt evaluation for sepsis",color:c};
+   }},
+
+  {id:"sofa",cat:"Sepsis",icon:"📊",name:"SOFA Score",
+   desc:"Sequential Organ Failure Assessment — sepsis severity",ref:"Vincent et al. ICM 1996",
+   fields:[
+     {k:"pao2_fio2",label:"PaO₂/FiO₂ ratio",type:"select",options:["4 — < 100 with vent","3 — 100–199 with vent","2 — 200–299","1 — 300–399","0 — ≥ 400"]},
+     {k:"platelets",label:"Platelets (×10³/µL)",type:"select",options:["4 — < 20","3 — 20–49","2 — 50–99","1 — 100–149","0 — ≥ 150"]},
+     {k:"bilirubin",label:"Bilirubin (mg/dL)",type:"select",options:["4 — ≥ 12","3 — 6.0–11.9","2 — 2.0–5.9","1 — 1.2–1.9","0 — < 1.2"]},
+     {k:"map",label:"MAP / Vasopressor use",type:"select",options:["4 — Dopamine > 15 OR Epi/Norepi > 0.1","3 — Dopamine > 5 OR Epi/Norepi ≤ 0.1","2 — Dopamine ≤ 5 OR Dobutamine","1 — MAP < 70 mmHg","0 — MAP ≥ 70 mmHg"]},
+     {k:"gcs_sofa",label:"GCS",type:"select",options:["4 — < 6","3 — 6–9","2 — 10–12","1 — 13–14","0 — 15"]},
+     {k:"creatinine",label:"Creatinine (mg/dL) or UO",type:"select",options:["4 — > 5.0 OR UO < 200 mL/d","3 — 3.5–4.9 OR UO < 500 mL/d","2 — 2.0–3.4","1 — 1.2–1.9","0 — < 1.2"]},
+   ],
+   compute(v){
+     const s=[v.pao2_fio2,v.platelets,v.bilirubin,v.map,v.gcs_sofa,v.creatinine].reduce((a,x)=>a+(+(x?.charAt(0)||0)),0);
+     const mort=s<2?"<10%":s<8?"15–20%":s<12?"40–60%":"80–95%";
+     const c=s<2?C.teal:s<8?C.gold:s<12?C.orange:C.coral;
+     return{score:s,label:`Predicted mortality: ${mort}`,detail:"Sepsis = suspected infection + SOFA ↑ ≥ 2",color:c};
+   }},
+
+  {id:"curb65",cat:"Sepsis",icon:"🫁",name:"CURB-65",
+   desc:"Pneumonia severity & admission decision",ref:"Lim et al. Thorax 2003",
+   fields:[
+     {k:"confusion",label:"C — New confusion (AMT ≤ 8 or new disorientation)",type:"checkbox"},
+     {k:"urea",label:"U — BUN > 19 mg/dL (urea > 7 mmol/L)",type:"checkbox"},
+     {k:"rr",label:"R — Respiratory rate ≥ 30/min",type:"checkbox"},
+     {k:"bp",label:"B — SBP < 90 or DBP ≤ 60 mmHg",type:"checkbox"},
+     {k:"age65",label:"65 — Age ≥ 65 years",type:"checkbox"},
+   ],
+   compute(v){
+     const s=[v.confusion,v.urea,v.rr,v.bp,v.age65].filter(Boolean).length;
+     const r=s<=1?"Low severity (30-day mortality ~2%) — consider outpatient treatment":s===2?"Moderate severity (~9%) — short hospitalisation or supervised outpatient":"Severe pneumonia (~22%) — hospitalise, consider ICU if score 4–5";
+     const c=s<=1?C.teal:s===2?C.gold:C.coral;
+     return{score:s,label:r,detail:"PSI/PORT preferred for outpatient decision in low risk",color:c};
+   }},
+
+  {id:"ranson",cat:"Sepsis",icon:"🔬",name:"Ranson's Criteria",
+   desc:"Acute pancreatitis severity",ref:"Ranson et al. Surg Gynecol Obstet 1974",
+   fields:[
+     {k:"age",label:"On Admission: Age > 55 years",type:"checkbox"},
+     {k:"wbc",label:"On Admission: WBC > 16,000/µL",type:"checkbox"},
+     {k:"glucose",label:"On Admission: Glucose > 200 mg/dL",type:"checkbox"},
+     {k:"ldh",label:"On Admission: LDH > 350 IU/L",type:"checkbox"},
+     {k:"ast",label:"On Admission: AST > 250 IU/L",type:"checkbox"},
+     {k:"hct",label:"At 48 h: HCT decrease > 10%",type:"checkbox"},
+     {k:"bun",label:"At 48 h: BUN increase > 5 mg/dL",type:"checkbox"},
+     {k:"ca",label:"At 48 h: Calcium < 8 mg/dL",type:"checkbox"},
+     {k:"pao2",label:"At 48 h: PaO₂ < 60 mmHg",type:"checkbox"},
+     {k:"base_deficit",label:"At 48 h: Base deficit > 4 mEq/L",type:"checkbox"},
+     {k:"fluids",label:"At 48 h: Fluid sequestration > 6 L",type:"checkbox"},
+   ],
+   compute(v){
+     const s=[v.age,v.wbc,v.glucose,v.ldh,v.ast,v.hct,v.bun,v.ca,v.pao2,v.base_deficit,v.fluids].filter(Boolean).length;
+     const r=s<=2?"Mild pancreatitis — mortality < 1%":s<=4?"Moderate — mortality 15%":s<=6?"Severe — mortality 40%":"Critical — mortality ~100%";
+     const c=s<=2?C.teal:s<=4?C.gold:s<=6?C.orange:C.coral;
+     return{score:s,label:r,detail:"Scores ≥ 3 = severe disease — consider ICU care",color:c};
+   }},
+
+  {id:"bisap",cat:"Sepsis",icon:"⚗️",name:"BISAP Score",
+   desc:"Bedside pancreatitis severity at 24 h",ref:"Wu et al. AJG 2009",
+   fields:[
+     {k:"bun",label:"B — BUN > 25 mg/dL",type:"checkbox"},
+     {k:"ams",label:"I — Impaired mental status (GCS < 15)",type:"checkbox"},
+     {k:"sirs",label:"S — SIRS criteria (≥ 2 of: Temp, RR, HR, WBC abnormal)",type:"checkbox"},
+     {k:"age",label:"A — Age > 60 years",type:"checkbox"},
+     {k:"pleural",label:"P — Pleural effusion on imaging",type:"checkbox"},
+   ],
+   compute(v){
+     const s=[v.bun,v.ams,v.sirs,v.age,v.pleural].filter(Boolean).length;
+     const mort=s===0?"<1%":s===1?"<1%":s===2?"~2%":s===3?"~5–8%":s===4?"~13%":"~22%";
+     const c=s<=1?C.teal:s<=2?C.green:s<=3?C.gold:s<=4?C.orange:C.coral;
+     return{score:s,label:`Mortality: ${mort}`,detail:"BISAP ≥ 3 = severe acute pancreatitis",color:c};
+   }},
+
+  // ── RENAL / METABOLIC ──────────────────────────────────────
+  {id:"egfr",cat:"Renal",icon:"🫘",name:"eGFR (CKD-EPI)",
+   desc:"Estimated glomerular filtration rate",ref:"CKD-EPI 2021",
+   fields:[
+     {k:"cr",label:"Serum Creatinine (mg/dL)",type:"number",min:0.1,max:30},
+     {k:"age",label:"Age (years)",type:"number",min:18,max:120},
+     {k:"female",label:"Female sex",type:"checkbox"},
+   ],
+   compute(v){
+     const cr=+v.cr||0; const age=+v.age||30; const sex=v.female?1:0;
+     if(!cr||!age) return{score:"—",label:"Enter creatinine and age",detail:"",color:C.txt3};
+     const k=sex?0.7:0.9; const a=sex?-0.241:-0.302;
+     const egfr=Math.round(142*Math.pow(Math.min(cr/k,1),a)*Math.pow(Math.max(cr/k,1),-1.200)*Math.pow(0.9938,age)*(sex?1.012:1));
+     const stage=egfr>=90?"G1 — Normal":egfr>=60?"G2 — Mildly reduced":egfr>=45?"G3a — Mild–mod reduced":egfr>=30?"G3b — Mod–severely reduced":egfr>=15?"G4 — Severely reduced":"G5 — Kidney failure";
+     const c=egfr>=60?C.teal:egfr>=45?C.gold:egfr>=30?C.orange:C.coral;
+     return{score:`${egfr} mL/min/1.73m²`,label:stage,detail:"CKD-EPI 2021 equation (race-free)",color:c};
+   }},
+
+  {id:"cockcroft",cat:"Renal",icon:"💉",name:"Cockcroft-Gault CrCl",
+   desc:"Creatinine clearance for drug dosing",ref:"Cockcroft & Gault 1976",
+   fields:[
+     {k:"age",label:"Age (years)",type:"number",min:18,max:120},
+     {k:"weight",label:"Actual Body Weight (kg)",type:"number",min:20,max:300},
+     {k:"cr",label:"Serum Creatinine (mg/dL)",type:"number",min:0.1,max:30},
+     {k:"female",label:"Female sex",type:"checkbox"},
+   ],
+   compute(v){
+     const age=+v.age||0,wt=+v.weight||0,cr=+v.cr||1;
+     if(!age||!wt) return{score:"—",label:"Enter all values",detail:"",color:C.txt3};
+     const crcl=Math.round(((140-age)*wt/(72*cr))*(v.female?0.85:1));
+     const dose=crcl>=50?"Standard dosing":"Reduce dose — see drug-specific recommendations";
+     const c=crcl>=50?C.teal:crcl>=30?C.gold:crcl>=15?C.orange:C.coral;
+     return{score:`${crcl} mL/min`,label:dose,detail:"Used for drug dose adjustment — not CKD staging",color:c};
+   }},
+
+  {id:"anion_gap",cat:"Renal",icon:"⚗️",name:"Anion Gap",
+   desc:"Metabolic acidosis work-up",ref:"Standard formula",
+   fields:[
+     {k:"na",label:"Sodium (mEq/L)",type:"number",min:100,max:200},
+     {k:"cl",label:"Chloride (mEq/L)",type:"number",min:60,max:140},
+     {k:"bicarb",label:"Bicarbonate (mEq/L)",type:"number",min:1,max:45},
+     {k:"albumin",label:"Albumin (g/dL) — for correction",type:"number",min:0.1,max:6},
+   ],
+   compute(v){
+     const na=+v.na||0,cl=+v.cl||0,hco3=+v.bicarb||0,alb=+v.albumin||4;
+     const ag=(na-cl-hco3);
+     const correctedAG=Math.round(ag+2.5*(4-alb));
+     const elevated=correctedAG>12;
+     const r=elevated?"Elevated AG — consider MUDPILES (Methanol, Uraemia, DKA, Propylene glycol, Isoniazid, Lactic acidosis, Ethylene glycol, Salicylates)":"Normal AG — consider non-AG acidosis (HARDUPS)";
+     const c=elevated?C.coral:C.teal;
+     return{score:`AG: ${ag} (corrected: ${correctedAG})`,label:r,detail:"Normal AG: 8–12 mEq/L (albumin-corrected: 8–12)",color:c};
+   }},
+
+  {id:"delta_delta",cat:"Renal",icon:"🔬",name:"Delta-Delta Ratio",
+   desc:"Identifies mixed acid-base disorders",ref:"Standard formula",
+   fields:[
+     {k:"ag",label:"Anion Gap (calculated)",type:"number",min:0,max:50},
+     {k:"bicarb",label:"Bicarbonate (mEq/L)",type:"number",min:1,max:45},
+   ],
+   compute(v){
+     const ag=+v.ag||12,hco3=+v.bicarb||24;
+     const delta_ag=ag-12; const delta_bicarb=24-hco3;
+     const dd=(delta_bicarb!==0?delta_ag/delta_bicarb:0).toFixed(2);
+     const r=dd<0.4?"Additional non-AG metabolic acidosis":dd<1?"Mixed AG + non-AG metabolic acidosis":dd<2?"Pure AG metabolic acidosis":"Metabolic alkalosis co-existing with AG acidosis";
+     const c=dd<0.4||dd>=2?C.coral:dd<1?C.orange:C.teal;
+     return{score:`Δ/Δ = ${dd}`,label:r,detail:"<1 = extra non-AG acidosis | 1–2 = pure AGMA | >2 = concurrent metabolic alkalosis",color:c};
+   }},
+
+  {id:"fena",cat:"Renal",icon:"🧪",name:"FENa",
+   desc:"Fractional excretion of sodium — AKI cause",ref:"Standard formula",
+   fields:[
+     {k:"s_na",label:"Serum Sodium (mEq/L)",type:"number",min:100,max:180},
+     {k:"u_na",label:"Urine Sodium (mEq/L)",type:"number",min:0,max:200},
+     {k:"s_cr",label:"Serum Creatinine (mg/dL)",type:"number",min:0.1,max:30},
+     {k:"u_cr",label:"Urine Creatinine (mg/dL)",type:"number",min:1,max:500},
+   ],
+   compute(v){
+     const sna=+v.s_na,una=+v.u_na,scr=+v.s_cr,ucr=+v.u_cr;
+     if(!sna||!una||!scr||!ucr) return{score:"—",label:"Enter all values",detail:"",color:C.txt3};
+     const fena=((una*scr)/(sna*ucr)*100).toFixed(2);
+     const r=fena<1?"Pre-renal AKI — FENa < 1% (intrinsic if ATN superimposed)":fena<2?"Borderline — clinical correlation required":"Intrinsic renal disease / ATN — FENa ≥ 2%";
+     const c=fena<1?C.gold:fena<2?C.orange:C.coral;
+     return{score:`FENa = ${fena}%`,label:r,detail:"Unreliable if diuretics given — use FEUrea instead",color:c};
+   }},
+
+  // ── TRAUMA ──────────────────────────────────────────────────
+  {id:"rts",cat:"Trauma",icon:"🚑",name:"Revised Trauma Score",
+   desc:"Physiological trauma severity score",ref:"Champion et al. 1989",
+   fields:[
+     {k:"rr",label:"Respiratory Rate (/min)",type:"select",options:["4 — 10–29/min","3 — > 29/min","2 — 6–9/min","1 — 1–5/min","0 — None"]},
+     {k:"sbp",label:"Systolic BP (mmHg)",type:"select",options:["4 — > 89","3 — 76–89","2 — 50–75","1 — 1–49","0 — None"]},
+     {k:"gcs_cat",label:"Glasgow Coma Scale",type:"select",options:["4 — 13–15","3 — 9–12","2 — 6–8","1 — 4–5","0 — 3"]},
+   ],
+   compute(v){
+     const s=(+(v.rr?.charAt(0)||0))+(+(v.sbp?.charAt(0)||0))+(+(v.gcs_cat?.charAt(0)||0));
+     const surv=s>=11?"95%":s>=8?"85–95%":s>=5?"60–85%":"<50%";
+     const c=s>=11?C.teal:s>=8?C.gold:s>=5?C.orange:C.coral;
+     return{score:s,label:`Predicted survival: ${surv}`,detail:"Score 0–12 · Lower = more severe injury",color:c};
+   }},
+
+  {id:"abc_score",cat:"Trauma",icon:"🩹",name:"ABC Score",
+   desc:"Assessment of Blood Consumption — MTP activation",ref:"Nunez et al. 2009",
+   fields:[
+     {k:"hr",label:"HR > 120 bpm (+1)",type:"checkbox"},
+     {k:"sbp",label:"SBP ≤ 90 mmHg (+1)",type:"checkbox"},
+     {k:"pen",label:"Penetrating mechanism (+1)",type:"checkbox"},
+     {k:"fast",label:"Positive FAST (free fluid on USS) (+1)",type:"checkbox"},
+   ],
+   compute(v){
+     const s=[v.hr,v.sbp,v.pen,v.fast].filter(Boolean).length;
+     const r=s<2?"MTP activation unlikely — ongoing monitoring":"MTP activation indicated — initiate 1:1:1 transfusion protocol";
+     const c=s<2?C.teal:C.coral;
+     return{score:s,label:r,detail:"Score ≥ 2 = sensitivity 75%, specificity 86% for massive transfusion",color:c};
+   }},
+
+  {id:"burn_tbsa",cat:"Trauma",icon:"🔥",name:"Burns — %TBSA (Rule of Nines)",
+   desc:"Burn area estimation for resuscitation",ref:"Wallace 1951",
+   fields:[
+     {k:"head",label:"Head & neck (%)",type:"number",min:0,max:9},
+     {k:"chest",label:"Anterior trunk (%)",type:"number",min:0,max:18},
+     {k:"back",label:"Posterior trunk (%)",type:"number",min:0,max:18},
+     {k:"arm_l",label:"Left arm (%)",type:"number",min:0,max:9},
+     {k:"arm_r",label:"Right arm (%)",type:"number",min:0,max:9},
+     {k:"leg_l",label:"Left leg (%)",type:"number",min:0,max:18},
+     {k:"leg_r",label:"Right leg (%)",type:"number",min:0,max:18},
+     {k:"perineum",label:"Perineum (%)",type:"number",min:0,max:1},
+   ],
+   compute(v){
+     const tbsa=[v.head,v.chest,v.back,v.arm_l,v.arm_r,v.leg_l,v.leg_r,v.perineum].reduce((a,x)=>a+(+x||0),0);
+     return{score:`${tbsa}% TBSA`,label:tbsa>=20?"Major burns — activate burns team, consider transfer":tbsa>=10?"Moderate — burns unit input recommended":"Minor burns — outpatient management may be appropriate",detail:"Parkland formula: 4 mL × kg × %TBSA in first 24h — link to dosing",color:tbsa>=20?C.coral:tbsa>=10?C.gold:C.teal};
+   }},
+
+  {id:"parkland",cat:"Trauma",icon:"💧",name:"Parkland Formula",
+   desc:"Fluid resuscitation for burns",ref:"Baxter 1968",medRef:true,
+   fields:[
+     {k:"weight",label:"Weight (kg)",type:"number",min:1,max:300},
+     {k:"tbsa",label:"% TBSA Burns (2nd/3rd degree only)",type:"number",min:1,max:100},
+   ],
+   compute(v){
+     const wt=+v.weight||0,tbsa=+v.tbsa||0;
+     if(!wt||!tbsa) return{score:"—",label:"Enter weight and TBSA",detail:"",color:C.txt3};
+     const total=Math.round(4*wt*tbsa);
+     const first8h=Math.round(total/2), next16h=Math.round(total/2);
+     const rate8h=Math.round(first8h/8);
+     return{score:`${total} mL Lactated Ringer's`,label:`Give ${first8h} mL in first 8 h (${rate8h} mL/h), then ${next16h} mL over next 16 h`,detail:"Start clock from time of injury, not arrival. Add colloid after 24 h.",color:C.blue};
+   }},
+
+  // ── OB/GYN ─────────────────────────────────────────────────
+  {id:"bishop",cat:"OB/GYN",icon:"🤰",name:"Bishop Score",
+   desc:"Cervical ripeness and induction success prediction",ref:"Bishop 1964",
+   fields:[
+     {k:"dilation",label:"Dilation (cm)",type:"select",options:["0 — Closed","1 — 1–2 cm","2 — 3–4 cm","3 — ≥ 5 cm"]},
+     {k:"effacement",label:"Effacement (%)",type:"select",options:["0 — 0–30%","1 — 40–50%","2 — 60–70%","3 — ≥ 80%"]},
+     {k:"station",label:"Fetal Station",type:"select",options:["0 — –3","1 — –2","2 — –1 / 0","3 — +1 / +2"]},
+     {k:"consistency",label:"Cervical Consistency",type:"select",options:["0 — Firm","1 — Medium","2 — Soft"]},
+     {k:"position",label:"Cervical Position",type:"select",options:["0 — Posterior","1 — Mid","2 — Anterior"]},
+   ],
+   compute(v){
+     const s=[v.dilation,v.effacement,v.station,v.consistency,v.position].reduce((a,x)=>a+(+(x?.charAt(0)||0)),0);
+     const r=s>=8?"Favourable — induction likely successful (success rate > 90%)":s>=6?"Moderate — induction usually successful":s<=5?"Unfavourable — consider cervical ripening agent first":"—";
+     const c=s>=8?C.teal:s>=6?C.gold:C.coral;
+     return{score:s,label:r,detail:"Score < 6 in nulliparous — high failure rate with oxytocin alone",color:c};
+   }},
+
+  {id:"apgar",cat:"OB/GYN",icon:"👶",name:"Apgar Score",
+   desc:"Neonatal assessment at 1 and 5 minutes",ref:"Virginia Apgar 1953",
+   fields:[
+     {k:"appearance",label:"A — Appearance (skin colour)",type:"select",options:["0 — Blue/pale all over","1 — Body pink, extremities blue","2 — Pink all over"]},
+     {k:"pulse",label:"P — Pulse (HR)",type:"select",options:["0 — Absent","1 — < 100 bpm","2 — ≥ 100 bpm"]},
+     {k:"grimace",label:"G — Grimace (reflex irritability)",type:"select",options:["0 — No response","1 — Grimace only","2 — Cry / cough / sneeze"]},
+     {k:"activity",label:"A — Activity (muscle tone)",type:"select",options:["0 — Limp","1 — Some flexion","2 — Active flexion"]},
+     {k:"respiration",label:"R — Respiration",type:"select",options:["0 — Absent","1 — Weak / irregular","2 — Strong cry"]},
+   ],
+   compute(v){
+     const s=[v.appearance,v.pulse,v.grimace,v.activity,v.respiration].reduce((a,x)=>a+(+(x?.charAt(0)||0)),0);
+     const r=s>=7?"Reassuring — routine post-delivery care":s>=4?"Moderately depressed — stimulate and provide O₂":s<4?"Severely depressed — neonatal resuscitation indicated":"—";
+     const c=s>=7?C.teal:s>=4?C.gold:C.coral;
+     return{score:s,label:r,detail:"Repeat at 5 min. If < 7 at 5 min, continue at 10, 15, 20 min.",color:c};
+   }},
+
+  {id:"ega",cat:"OB/GYN",icon:"📅",name:"Gestational Age (LMP)",
+   desc:"Gestational age and EDD from last menstrual period",ref:"Naegele's Rule",
+   fields:[{k:"lmp",label:"First day of last menstrual period",type:"date"}],
+   compute(v){
+     if(!v.lmp) return{score:"—",label:"Enter LMP date",detail:"",color:C.txt3};
+     const lmp=new Date(v.lmp); const today=new Date();
+     const days=Math.floor((today-lmp)/86400000);
+     const weeks=Math.floor(days/7), rem=days%7;
+     const edd=new Date(lmp); edd.setDate(edd.getDate()+280);
+     const eddStr=edd.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+     const r=weeks<20?"1st/2nd trimester":weeks<28?"2nd trimester":weeks<37?"3rd trimester — pre-term period":weeks<42?"At term":"Post-term";
+     return{score:`${weeks}w ${rem}d`,label:r,detail:`EDD: ${eddStr}`,color:weeks<37?C.gold:weeks<42?C.teal:C.orange};
+   }},
+
+  // ── PEDIATRIC ──────────────────────────────────────────────
+  {id:"broselow",cat:"Pediatric",icon:"📏",name:"Broselow Length–Weight",
+   desc:"Weight estimation from height for drug dosing",ref:"Broselow-Luten System",
+   fields:[{k:"height",label:"Patient height / length (cm)",type:"number",min:46,max:150}],
+   compute(v){
+     const h=+v.height||0;
+     const bands=[{max:55,color:"Grey",wt:3,zone:"3–5 kg"},{max:60,color:"Pink",wt:5.5,zone:"5–7 kg"},{max:68,color:"Red",wt:7,zone:"6–9 kg"},{max:77,color:"Purple",wt:9.5,zone:"8–11 kg"},{max:88,color:"Yellow",wt:12,zone:"10–14 kg"},{max:100,color:"White",wt:16,zone:"13–18 kg"},{max:111,color:"Blue",wt:20,zone:"16–23 kg"},{max:124,color:"Orange",wt:26,zone:"20–29 kg"},{max:135,color:"Green",wt:32,zone:"27–35 kg"},{max:150,color:"Tan",wt:40,zone:"30–40 kg"}];
+     const band=bands.find(b=>h<=b.max)||bands[bands.length-1];
+     return{score:`${band.color} band — ${band.wt} kg (${band.zone})`,label:"Use for weight-based drug dosing",detail:"Estimated weight: use for all paediatric drug calculations",color:C.teal};
+   }},
+
+  {id:"peds_vitals",cat:"Pediatric",icon:"📈",name:"Paediatric Normal Vitals",
+   desc:"Age-based normal vital sign ranges",ref:"PALS / Harriet Lane",
+   fields:[{k:"age",label:"Age of child",type:"select",options:["Neonate (0–28 d)","Infant (1–12 mo)","Toddler (1–3 yr)","Preschool (3–6 yr)","School age (6–12 yr)","Adolescent (12–18 yr)"]}],
+   compute(v){
+     const ranges={
+       "Neonate":{hr:"100–160",rr:"30–60",sbp:"60–90"},
+       "Infant":{hr:"100–160",rr:"25–50",sbp:"70–100"},
+       "Toddler":{hr:"90–150",rr:"20–30",sbp:"80–110"},
+       "Preschool":{hr:"80–140",rr:"20–25",sbp:"80–110"},
+       "School":{hr:"70–120",rr:"15–20",sbp:"85–120"},
+       "Adolescent":{hr:"60–100",rr:"12–20",sbp:"90–130"}};
+     const key=Object.keys(ranges).find(k=>v.age?.startsWith(k))||"Infant";
+     const r=ranges[key];
+     return{score:v.age?.split(" (")[0]||"—",label:`HR: ${r.hr} · RR: ${r.rr} · SBP: ${r.sbp}`,detail:"Lower limit SBP (1–10 yr): 70 + (2 × age in years) mmHg",color:C.teal};
+   }},
+
+  {id:"peds_gcs",cat:"Pediatric",icon:"🧒",name:"Paediatric GCS",
+   desc:"Modified GCS for children < 5 years",ref:"James & Trauner 1985",
+   fields:[
+     {k:"eye",label:"Eye Opening",type:"select",options:["4 — Spontaneous","3 — To voice","2 — To pain","1 — None"]},
+     {k:"verbal",label:"Verbal (Modified)",type:"select",options:["5 — Smiles / coos / words age-appropriate","4 — Crying but consolable","3 — Persistent irritable cry","2 — Restless / agitated","1 — None"]},
+     {k:"motor",label:"Motor Response",type:"select",options:["6 — Normal spontaneous movement","5 — Withdraws to touch","4 — Withdraws to pain","3 — Abnormal flexion","2 — Extension","1 — None"]},
+   ],
+   compute(v){
+     const s=(+(v.eye?.charAt(0)||1))+(+(v.verbal?.charAt(0)||1))+(+(v.motor?.charAt(0)||1));
+     const r=s<=8?"Severe (coma — airway management)":s<=12?"Moderate brain injury":"Mild brain injury";
+     const c=s<=8?C.coral:s<=12?C.gold:C.teal;
+     return{score:s,label:r,detail:"GCS ≤ 8 = consider early intubation",color:c};
+   }},
+
+  {id:"apnea_of_prematurity",cat:"Pediatric",icon:"🫁",name:"Newborn Respiratory Rate",
+   desc:"Tachypnoea threshold for neonates",ref:"WHO / NRP",
+   fields:[
+     {k:"rr",label:"Respiratory Rate (/min)",type:"number",min:0,max:120},
+     {k:"gest_age",label:"Gestational age at birth (weeks)",type:"number",min:23,max:42},
+   ],
+   compute(v){
+     const rr=+v.rr||0; const ga=+v.gest_age||40;
+     if(rr>=60) return{score:`${rr}/min`,label:"Tachypnoea — ≥ 60/min is abnormal in neonates",detail:"Assess for respiratory distress, infection, TTN, RDS",color:C.coral};
+     if(rr<30) return{score:`${rr}/min`,label:"Bradypnoea — consider apnoea of prematurity",detail:ga<37?"Prematurity-related apnoea — caffeine citrate may be indicated":"Evaluate for neurological or metabolic cause",color:C.coral};
+     return{score:`${rr}/min`,label:"Normal neonatal respiratory rate (30–60/min)",detail:"Continue clinical monitoring",color:C.teal};
+   }},
+
+  // ── WEIGHT-BASED DOSING (medRef:true) ─────────────────────
+  {id:"tnk_dose",cat:"Dosing",icon:"💉",name:"TNK (Tenecteplase) Dose",
+   desc:"Weight-based tenecteplase dosing for STEMI",ref:"ASSENT-2 Trial / FDA Label",medRef:true,
+   fields:[{k:"weight",label:"Patient weight (kg)",type:"number",min:20,max:200}],
+   compute(v){
+     const wt=+v.weight||0;
+     if(!wt) return{score:"—",label:"Enter patient weight",detail:"",color:C.txt3};
+     const dose=wt<60?30:wt<70?35:wt<80?40:wt<90?45:50;
+     const vol=dose/5;
+     return{score:`${dose} mg (${vol} mL)`,label:"Single IV bolus over 5–10 seconds",detail:"Max 50 mg. Reconstitute with sterile water only. Age > 75: consider 50% dose reduction. ⚠ See medication reference for full contraindications.",color:C.teal};
+   }},
+
+  {id:"tpa_alteplase",cat:"Dosing",icon:"💊",name:"tPA Alteplase (Stroke)",
+   desc:"IV alteplase for acute ischaemic stroke",ref:"NINDS / AHA Guidelines",medRef:true,
+   fields:[{k:"weight",label:"Patient weight (kg)",type:"number",min:20,max:200}],
+   compute(v){
+     const wt=+v.weight||0;
+     if(!wt) return{score:"—",label:"Enter patient weight",detail:"",color:C.txt3};
+     const total=Math.min(Math.round(0.9*wt*10)/10,90);
+     const bolus=Math.round(total*0.1*10)/10;
+     const infusion=Math.round((total-bolus)*10)/10;
+     return{score:`${total} mg total`,label:`Bolus: ${bolus} mg IV over 1 min → infusion: ${infusion} mg over 60 min`,detail:"Max 90 mg. Only in eligible patients within 4.5 h onset. ⚠ See medication reference for contraindications.",color:C.teal};
+   }},
+
+  {id:"heparin_wbp",cat:"Dosing",icon:"🩺",name:"Heparin Weight-Based",
+   desc:"UFH dosing protocol for ACS/VTE",ref:"Raschke Nomogram",medRef:true,
+   fields:[
+     {k:"weight",label:"Patient weight (kg)",type:"number",min:20,max:300},
+     {k:"indication",label:"Indication",type:"select",options:["ACS (target aPTT 50–70 s)","VTE treatment (target aPTT 60–100 s)"]},
+   ],
+   compute(v){
+     const wt=+v.weight||0;
+     if(!wt) return{score:"—",label:"Enter weight",detail:"",color:C.txt3};
+     const isACS=v.indication?.includes("ACS");
+     const bolus=Math.min(Math.round(60*wt),4000);
+     const infRate=Math.min(Math.round(12*wt),1000);
+     return{score:`Bolus: ${bolus} U IV`,label:`Infusion: ${infRate} U/h IV`,detail:`Target aPTT ${isACS?"50–70":"60–100"} s. ⚠ Check aPTT q6h. Adjust per hospital nomogram. See medication reference.`,color:C.teal};
+   }},
+
+  {id:"enoxaparin",cat:"Dosing",icon:"💉",name:"Enoxaparin (LMWH)",
+   desc:"Enoxaparin weight-based dosing",ref:"ACOG / ACC/AHA Guidelines",medRef:true,
+   fields:[
+     {k:"weight",label:"Patient weight (kg)",type:"number",min:20,max:250},
+     {k:"crcl",label:"CrCl (mL/min)",type:"number",min:5,max:200},
+     {k:"indication",label:"Indication",type:"select",options:["VTE Treatment — 1 mg/kg SQ q12h","NSTEMI — 1 mg/kg SQ q12h","VTE Prophylaxis — 40 mg SQ daily"]},
+   ],
+   compute(v){
+     const wt=+v.weight||0,crcl=+v.crcl||60;
+     if(!wt) return{score:"—",label:"Enter weight",detail:"",color:C.txt3};
+     const prophylaxis=v.indication?.includes("Prophylaxis");
+     const dose=prophylaxis?40:Math.round(wt*1);
+     const renalAdj=crcl<30&&!prophylaxis?"⚠ CrCl < 30 mL/min — use 1 mg/kg SQ DAILY (not BID)":crcl<30&&prophylaxis?"⚠ CrCl < 30 mL/min — reduce prophylaxis dose to 20 mg SQ daily":"Renal dose OK";
+     return{score:`${dose} mg`,label:prophylaxis?"SQ once daily":renalAdj.includes("DAILY")?"SQ once daily":"SQ every 12 hours",detail:`${renalAdj}. Avoid if CrCl < 15. ⚠ See medication reference for anti-Xa monitoring.`,color:crcl<30?C.gold:C.teal};
+   }},
+
+  {id:"vancomycin",cat:"Dosing",icon:"🏥",name:"Vancomycin AUC/MIC",
+   desc:"Vancomycin dosing for serious infections (AUC-guided)",ref:"ASHP/IDSA/SIDP Guidelines 2020",medRef:true,
+   fields:[
+     {k:"weight",label:"Actual body weight (kg)",type:"number",min:20,max:300},
+     {k:"crcl",label:"CrCl (mL/min)",type:"number",min:5,max:250},
+     {k:"indication",label:"Indication",type:"select",options:["Serious infection (MRSA)","Standard infection","Empirical / prophylaxis"]},
+   ],
+   compute(v){
+     const wt=+v.weight||0,crcl=+v.crcl||80;
+     if(!wt||!crcl) return{score:"—",label:"Enter weight and CrCl",detail:"",color:C.txt3};
+     const loadingDose=Math.round(wt*25/250)*250;
+     const interval=crcl>=60?"q8–12h":crcl>=30?"q24–48h":"q48h+ or avoid";
+     return{score:`Loading dose: ${loadingDose} mg IV`,label:`Maintenance: 15–20 mg/kg IV ${interval}`,detail:"Target AUC24/MIC 400–600 for serious MRSA. ⚠ Monitor AUC with pharmacy. See medication reference.",color:C.teal};
+   }},
+
+  {id:"gentamicin",cat:"Dosing",icon:"⚗️",name:"Gentamicin (Extended Interval)",
+   desc:"Once-daily aminoglycoside dosing",ref:"Hartford Nomogram",medRef:true,
+   fields:[
+     {k:"weight",label:"Actual body weight (kg)",type:"number",min:20,max:250},
+     {k:"height",label:"Height (cm) — for IBW calculation",type:"number",min:100,max:220},
+     {k:"crcl",label:"CrCl (mL/min)",type:"number",min:10,max:250},
+     {k:"male",label:"Male sex",type:"checkbox"},
+   ],
+   compute(v){
+     const wt=+v.weight||0,ht=+v.height||170,crcl=+v.crcl||80;
+     if(!wt||!crcl) return{score:"—",label:"Enter values",detail:"",color:C.txt3};
+     const ibw=v.male?(50+0.9*(ht-152.4)):(45.5+0.9*(ht-152.4));
+     const dosWt=wt>(1.3*ibw)?Math.round(ibw+0.4*(wt-ibw)):Math.min(wt,ibw);
+     const dose=Math.round(dosWt*5/10)*10;
+     const interval=crcl>=60?"q24h":crcl>=40?"q36h":"q48h — consider alternative or pharmacist review";
+     return{score:`${dose} mg IV`,label:`Infuse over 30–60 min ${interval}`,detail:"Use adjusted BW if obese. ⚠ Monitor trough level at 18 h. See medication reference.",color:crcl<40?C.gold:C.teal};
+   }},
+
+  {id:"ketamine_rsi",cat:"Dosing",icon:"🌙",name:"Ketamine (RSI)",
+   desc:"Ketamine for rapid sequence intubation",ref:"ACEP / EM Standard of Care",medRef:true,
+   fields:[
+     {k:"weight",label:"Patient weight (kg)",type:"number",min:10,max:250},
+     {k:"indication",label:"Indication",type:"select",options:["RSI induction","Procedural sedation","Pain (sub-dissociative)"]},
+   ],
+   compute(v){
+     const wt=+v.weight||0;
+     if(!wt) return{score:"—",label:"Enter patient weight",detail:"",color:C.txt3};
+     const isRSI=v.indication?.includes("RSI"), isProc=v.indication?.includes("Procedural"), isPain=v.indication?.includes("Pain");
+     let dose,route,notes;
+     if(isRSI){dose=Math.round(wt*1.5);route="1–2 mg/kg IV (1.5 mg/kg typical)";notes="⚠ Use with succinylcholine/rocuronium. Caution in ↑ ICP (controversial). See medication reference.";}
+     else if(isProc){dose=Math.round(wt*1);route="1–1.5 mg/kg IV over 1–2 min";notes="Titrate to effect. Have airway equipment ready. See medication reference.";}
+     else{dose=Math.round(wt*0.3);route="0.1–0.5 mg/kg IV slow push";notes="Sub-dissociative analgesia. Onset 1–2 min. See medication reference.";}
+     return{score:`${dose} mg`,label:route,detail:notes,color:C.teal};
+   }},
+
+  {id:"succinylcholine",cat:"Dosing",icon:"💪",name:"Succinylcholine (RSI)",
+   desc:"Succinylcholine dosing for intubation",ref:"ACEP Guidelines",medRef:true,
+   fields:[
+     {k:"weight",label:"Patient weight (kg)",type:"number",min:10,max:250},
+     {k:"peds",label:"Paediatric (< 10 years)",type:"checkbox"},
+   ],
+   compute(v){
+     const wt=+v.weight||0;
+     if(!wt) return{score:"—",label:"Enter weight",detail:"",color:C.txt3};
+     const dose=v.peds?Math.round(wt*2):Math.round(wt*1.5);
+     return{score:`${dose} mg IV`,label:v.peds?"2 mg/kg IV (paediatric dose)":"1–1.5 mg/kg IV (adult dose)",detail:"Onset 45–60 sec. Duration 8–12 min. ⚠ Contraindications: ↑ K⁺, burns, crush, denervation, myopathy. See medication reference.",color:C.teal};
+   }},
+
+  {id:"rocuronium",cat:"Dosing",icon:"💊",name:"Rocuronium (RSI / NMBA)",
+   desc:"Rocuronium dosing for intubation and paralysis",ref:"ACEP / EM Standard",medRef:true,
+   fields:[
+     {k:"weight",label:"Patient weight (kg)",type:"number",min:10,max:300},
+     {k:"indication",label:"Indication",type:"select",options:["RSI (high dose)","Routine intubation","Maintenance paralysis (ICU)"]},
+   ],
+   compute(v){
+     const wt=+v.weight||0;
+     if(!wt) return{score:"—",label:"Enter weight",detail:"",color:C.txt3};
+     const isRSI=v.indication?.includes("RSI"),isMaint=v.indication?.includes("Maintenance");
+     const dose=isRSI?Math.round(wt*1.2):isMaint?Math.round(wt*0.1):Math.round(wt*0.6);
+     const notes=isRSI?"Onset 60 sec at 1.2 mg/kg. Reversal: sugammadex 16 mg/kg.":isMaint?"Maintain with infusion 10–12 mcg/kg/min IV. Monitor TOF.":"Onset 2–3 min. Reversal: neostigmine or sugammadex.";
+     return{score:`${dose} mg IV`,label:isRSI?"High-dose RSI (1.2 mg/kg)":isMaint?"Maintenance ICU paralysis":"Standard intubation (0.6 mg/kg)",detail:notes+" ⚠ See medication reference.",color:C.teal};
+   }},
+
+  {id:"midazolam",cat:"Dosing",icon:"😴",name:"Midazolam (Sedation)",
+   desc:"Midazolam procedural sedation dosing",ref:"Standard of care",medRef:true,
+   fields:[
+     {k:"weight",label:"Patient weight (kg)",type:"number",min:10,max:250},
+     {k:"age65",label:"Age ≥ 65 years or compromised",type:"checkbox"},
+   ],
+   compute(v){
+     const wt=+v.weight||0;
+     if(!wt) return{score:"—",label:"Enter weight",detail:"",color:C.txt3};
+     const dose=v.age65?Math.round(wt*0.02*10)/10:Math.round(wt*0.05*10)/10;
+     return{score:`${dose} mg IV`,label:`0.02–0.05 mg/kg IV — titrate slowly${v.age65?" (reduced dose — elderly/compromised)":""}`,detail:"Onset 2–3 min. Titrate 1 mg q2–3 min to effect. Reversal: flumazenil 0.2 mg IV. ⚠ See medication reference.",color:C.teal};
+   }},
+
+  // ── MISC CLINICAL ──────────────────────────────────────────
+  {id:"corrected_ca",cat:"Metabolic",icon:"⚗️",name:"Corrected Calcium",
+   desc:"Albumin-corrected serum calcium",ref:"Standard formula",
+   fields:[
+     {k:"ca",label:"Serum Calcium (mg/dL)",type:"number",min:4,max:20},
+     {k:"albumin",label:"Serum Albumin (g/dL)",type:"number",min:0.5,max:6},
+   ],
+   compute(v){
+     const ca=+v.ca,alb=+v.albumin;
+     if(!ca||!alb) return{score:"—",label:"Enter values",detail:"",color:C.txt3};
+     const corrCa=(ca+0.8*(4-alb)).toFixed(2);
+     const r=corrCa<8.5?"Hypocalcaemia — consider IV calcium repletion":corrCa>10.5?"Hypercalcaemia — evaluate for PTH, malignancy, vitamin D toxicity":"Normal corrected calcium";
+     const c=corrCa<8.5||corrCa>10.5?C.coral:C.teal;
+     return{score:`${corrCa} mg/dL`,label:r,detail:"Normal: 8.5–10.5 mg/dL. Formula: Corrected Ca = Ca + 0.8 × (4 − albumin)",color:c};
+   }},
+
+  {id:"bmi",cat:"Metabolic",icon:"📐",name:"BMI Calculator",
+   desc:"Body Mass Index",ref:"WHO Classification",
+   fields:[
+     {k:"weight",label:"Weight (kg)",type:"number",min:1,max:500},
+     {k:"height",label:"Height (cm)",type:"number",min:50,max:250},
+   ],
+   compute(v){
+     const wt=+v.weight,ht=+v.height;
+     if(!wt||!ht) return{score:"—",label:"Enter values",detail:"",color:C.txt3};
+     const bmi=(wt/((ht/100)**2)).toFixed(1);
+     const r=bmi<18.5?"Underweight":bmi<25?"Normal weight":bmi<30?"Overweight":bmi<35?"Obese Class I":bmi<40?"Obese Class II":"Obese Class III (morbid)";
+     const c=bmi<18.5?C.gold:bmi<25?C.teal:bmi<30?C.gold:C.coral;
+     return{score:`BMI: ${bmi}`,label:r,detail:"Consider ideal body weight for drug dosing in obese patients",color:c};
+   }},
+
+  {id:"ibw",cat:"Metabolic",icon:"⚖️",name:"Ideal Body Weight",
+   desc:"Devine formula IBW for drug dosing",ref:"Devine 1974",
+   fields:[
+     {k:"height",label:"Height (cm)",type:"number",min:100,max:250},
+     {k:"male",label:"Male sex",type:"checkbox"},
+     {k:"weight",label:"Actual body weight (kg) — for adjusted BW",type:"number",min:20,max:300},
+   ],
+   compute(v){
+     const ht=+v.height,wt=+v.weight||0;
+     if(!ht) return{score:"—",label:"Enter height",detail:"",color:C.txt3};
+     const ibw=Math.round((v.male?(50+0.9*(ht-152.4)):(45.5+0.9*(ht-152.4)))*10)/10;
+     const obese=wt>0&&wt>(1.3*ibw);
+     const adjBW=obese?Math.round((ibw+0.4*(wt-ibw))*10)/10:null;
+     return{score:`IBW: ${ibw} kg${adjBW?` / AdjBW: ${adjBW} kg`:""}`,label:`Use IBW for aminoglycosides, linezolid, digoxin${obese?" — patient is obese: use AdjBW":""}`,detail:"AdjBW = IBW + 0.4 × (Actual – IBW). Used when actual > 130% IBW.",color:C.teal};
+   }},
+
+  {id:"osmolality",cat:"Metabolic",icon:"💧",name:"Serum Osmolality",
+   desc:"Calculated osmolality & osmolar gap",ref:"Standard formula",
+   fields:[
+     {k:"na",label:"Sodium (mEq/L)",type:"number",min:100,max:200},
+     {k:"bun",label:"BUN (mg/dL)",type:"number",min:0,max:200},
+     {k:"glucose",label:"Glucose (mg/dL)",type:"number",min:50,max:2000},
+     {k:"measured",label:"Measured osmolality (mOsm/kg) — optional",type:"number",min:0,max:500},
+   ],
+   compute(v){
+     const na=+v.na,bun=+v.bun,gluc=+v.glucose;
+     if(!na) return{score:"—",label:"Enter sodium",detail:"",color:C.txt3};
+     const calc=Math.round(2*na+(bun/2.8)+(gluc/18));
+     const gap=v.measured?Math.round(+v.measured-calc):null;
+     const r=calc<275?"Hypo-osmolar (< 275)":calc<295?"Normal (275–295)":"Hyperosmolar (> 295)";
+     const gapStr=gap!==null?(gap>10?"Osmolar gap elevated (> 10) — consider toxic alcohol (methanol, ethylene glycol)":`Osmolar gap normal (${gap} mOsm/kg)`):"";
+     const c=calc<275||calc>320?C.coral:calc>295?C.gold:C.teal;
+     return{score:`${calc} mOsm/kg`,label:r,detail:gapStr||"Formula: 2×Na + BUN/2.8 + Glucose/18",color:c};
+   }},
+
+  {id:"steroid_conversion",cat:"Metabolic",icon:"🔄",name:"Steroid Conversion",
+   desc:"Equivalent glucocorticoid doses",ref:"Standard pharmacology",medRef:true,
+   fields:[
+     {k:"drug",label:"Current steroid",type:"select",options:["Prednisone (5 mg)","Prednisolone (5 mg)","Methylprednisolone (4 mg)","Dexamethasone (0.75 mg)","Hydrocortisone (20 mg)","Triamcinolone (4 mg)"]},
+     {k:"dose",label:"Current dose (mg)",type:"number",min:0.1,max:1000},
+   ],
+   compute(v){
+     const dose=+v.dose||0; if(!dose) return{score:"—",label:"Enter dose",detail:"",color:C.txt3};
+     const equiv={"Prednisone":5,"Prednisolone":5,"Methylprednisolone":4,"Dexamethasone":0.75,"Hydrocortisone":20,"Triamcinolone":4};
+     const drug=Object.keys(equiv).find(k=>v.drug?.startsWith(k))||"Prednisone";
+     const unit=equiv[drug];
+     const prednisoneEq=Math.round(dose/unit*5*100)/100;
+     const results=Object.entries(equiv).map(([d,u])=>({d,v:Math.round(prednisoneEq/5*u*100)/100}));
+     return{score:`${prednisoneEq} mg prednisone equivalent`,label:`${results.map(r=>`${r.d}: ${r.v} mg`).join(" · ")}`,detail:"Relative anti-inflammatory potency only. Does not account for mineralocorticoid effects. ⚠ See medication reference.",color:C.blue};
+   }},
+
+  {id:"map",cat:"Cardiac",icon:"📊",name:"Mean Arterial Pressure",
+   desc:"MAP calculation and clinical target",ref:"Critical care standard",
+   fields:[
+     {k:"sbp",label:"Systolic BP (mmHg)",type:"number",min:0,max:300},
+     {k:"dbp",label:"Diastolic BP (mmHg)",type:"number",min:0,max:200},
+   ],
+   compute(v){
+     const sbp=+v.sbp,dbp=+v.dbp;
+     if(!sbp||!dbp) return{score:"—",label:"Enter BP values",detail:"",color:C.txt3};
+     const map=Math.round(dbp+(sbp-dbp)/3);
+     const r=map<65?"Hypotension — initiate vasopressor if unresponsive to fluids":map<70?"Borderline — target MAP ≥ 65 in sepsis":map>100?"Hypertensive — evaluate for organ damage target":"Adequate perfusion pressure";
+     const c=map<65?C.coral:map<70?C.gold:C.teal;
+     return{score:`MAP: ${map} mmHg`,label:r,detail:"Formula: DBP + (SBP − DBP)/3 · Sepsis target MAP ≥ 65 mmHg",color:c};
+   }},
+
+  {id:"meld",cat:"GI",icon:"🫀",name:"MELD Score",
+   desc:"Model for End-Stage Liver Disease — mortality risk",ref:"Kamath et al. Hepatology 2001",
+   fields:[
+     {k:"bilirubin",label:"Bilirubin (mg/dL)",type:"number",min:0.1,max:50},
+     {k:"inr",label:"INR",type:"number",min:0.5,max:15},
+     {k:"cr",label:"Creatinine (mg/dL)",type:"number",min:0.1,max:20},
+     {k:"dialysis",label:"On dialysis or creatinine ≥ 4 mg/dL (counts as 4)",type:"checkbox"},
+   ],
+   compute(v){
+     let cr=v.dialysis?4:Math.min(+v.cr||1,4);
+     const bili=Math.max(+v.bilirubin||1,1); const inr=Math.max(+v.inr||1,1);
+     cr=Math.max(cr,1);
+     const meld=Math.round(3.78*Math.log(bili)+11.2*Math.log(inr)+9.57*Math.log(cr)+6.43);
+     const mort=meld<10?"<2%":meld<20?"6–20%":meld<30?"20–52%":"52–75%";
+     const c=meld<10?C.teal:meld<20?C.gold:meld<30?C.orange:C.coral;
+     return{score:meld,label:`3-month mortality: ${mort}`,detail:"MELD ≥ 15 — evaluate for transplantation listing",color:c};
+   }},
+
+  {id:"child_pugh",cat:"GI",icon:"🫘",name:"Child-Pugh Score",
+   desc:"Cirrhosis severity and prognosis",ref:"Child & Turcotte 1964; Pugh 1973",
+   fields:[
+     {k:"bili",label:"Bilirubin (mg/dL)",type:"select",options:["1 — < 2","2 — 2–3","3 — > 3"]},
+     {k:"albumin",label:"Albumin (g/dL)",type:"select",options:["1 — > 3.5","2 — 2.8–3.5","3 — < 2.8"]},
+     {k:"pt",label:"INR",type:"select",options:["1 — < 1.7","2 — 1.7–2.3","3 — > 2.3"]},
+     {k:"ascites",label:"Ascites",type:"select",options:["1 — None","2 — Mild (responds to diuretics)","3 — Moderate to severe / refractory"]},
+     {k:"enceph",label:"Hepatic Encephalopathy",type:"select",options:["1 — None","2 — Grade I–II (or suppressed with medication)","3 — Grade III–IV (or refractory)"]},
+   ],
+   compute(v){
+     const s=[v.bili,v.albumin,v.pt,v.ascites,v.enceph].reduce((a,x)=>a+(+(x?.charAt(0)||1)),0);
+     const cls=s<=6?"A":s<=9?"B":"C";
+     const mort=cls==="A":"1–yr: 100%, 2-yr: 85%":cls==="B":"1-yr: 81%, 2-yr: 57%":"1-yr: 45%, 2-yr: 35%";
+     const c=cls==="A"?C.teal:cls==="B"?C.gold:C.coral;
+     return{score:`${s} — Class ${cls}`,label:`Survival: ${mort}`,detail:"Class C (≥ 10) — consider transplant evaluation",color:c};
+   }},
+
+  {id:"glasgow_blatchford",cat:"GI",icon:"🔴",name:"Glasgow-Blatchford Score",
+   desc:"Upper GI bleed — need for intervention",ref:"Blatchford et al. Lancet 2000",
+   fields:[
+     {k:"bun",label:"BUN (mg/dL)",type:"select",options:["0 — < 18.2","2 — 18.2–22.3","3 — 22.4–27.9","4 — 28–70","6 — > 70"]},
+     {k:"hgb_m",label:"Haemoglobin — Male (g/dL)",type:"select",options:["0 — ≥ 13","1 — 12–12.9","3 — 10–11.9","6 — < 10"]},
+     {k:"sbp",label:"Systolic BP (mmHg)",type:"select",options:["0 — ≥ 110","1 — 100–109","2 — 90–99","3 — < 90"]},
+     {k:"hr",label:"HR ≥ 100 bpm",type:"checkbox"},
+     {k:"melena",label:"Melena",type:"checkbox"},
+     {k:"syncope",label:"Syncope",type:"checkbox"},
+     {k:"liver_disease",label:"Hepatic disease",type:"checkbox"},
+     {k:"cardiac_failure",label:"Cardiac failure",type:"checkbox"},
+   ],
+   compute(v){
+     const s=(+(v.bun?.charAt(0)||0))+(+(v.hgb_m?.charAt(0)||0))+(+(v.sbp?.charAt(0)||0))+(v.hr?1:0)+(v.melena?1:0)+(v.syncope?2:0)+(v.liver_disease?2:0)+(v.cardiac_failure?2:0);
+     const r=s===0?"Score 0 — very low risk — consider outpatient management":s<=6?"Low–moderate risk — may require endoscopy":"High risk — urgent upper endoscopy, admit to monitored bed";
+     const c=s===0?C.teal:s<=6?C.gold:C.coral;
+     return{score:s,label:r,detail:"Score 0 = safe for outpatient (no need for emergency endoscopy)",color:c};
+   }},
+
+  {id:"cha2ds2_female",cat:"Cardiac",icon:"♀️",name:"Female Sex Correction (AFib)",
+   desc:"Is female sex a net risk modifier for stroke in AFib?",ref:"ESC 2020 Guidelines",
+   fields:[
+     {k:"age",label:"Age (years)",type:"number",min:18,max:120},
+     {k:"other_rf",label:"Non-sex risk factors (CHA₂DS₂ points excl. sex)",type:"number",min:0,max:8},
+   ],
+   compute(v){
+     const age=+v.age,rf=+v.other_rf||0;
+     if(!age) return{score:"—",label:"Enter age",detail:"",color:C.txt3};
+     const score_with_sex=rf+1;
+     const anticoag=rf>=1?"Anticoagulation recommended — female sex adds net risk factor":"Female sex alone is NOT an indication for anticoagulation (score 1 from sex only = not treated as real risk factor)";
+     return{score:`CHA₂DS₂-VASc (with F): ${score_with_sex}`,label:anticoag,detail:"Female sex adds 1 point but is only a risk modifier. Anticoag if ≥2 in females (≥1 non-sex risk factor) per ESC 2020.",color:rf>=1?C.teal:C.gold};
+   }},
+];
+
+// ════════════════════════════════════════════════════════════
+//  CATEGORIES
+// ════════════════════════════════════════════════════════════
+const ALL_CATS = ["All","Cardiac","Vascular","Neurology","Sepsis","Renal","Metabolic","Trauma","OB/GYN","Pediatric","Dosing","GI"];
+const CAT_COLORS = {
+  All:C.teal, Cardiac:C.coral, Vascular:"#ff9f43", Neurology:C.purple,
+  Sepsis:"#f5c842", Renal:C.blue, Metabolic:C.green, Trauma:"#ff9999",
+  "OB/GYN":C.pink, Pediatric:"#b99bff", Dosing:"#6ab8ff", GI:"#3dffa0"
 };
 
-// ─── Calculator Categories ────────────────────────────────────────────────────
-const CATEGORIES = [
-  { id: "all",       label: "All",              icon: "📋" },
-  { id: "cardiac",   label: "Cardiac",          icon: "🫀" },
-  { id: "pulmonary", label: "Pulmonary / VTE",  icon: "🫁" },
-  { id: "neuro",     label: "Neurology",        icon: "🧠" },
-  { id: "sepsis",    label: "Sepsis",           icon: "🦠" },
-  { id: "gi",        label: "GI / Abdominal",   icon: "🫃" },
-  { id: "ortho",     label: "Orthopedic",       icon: "🦴" },
-  { id: "substance", label: "Substance / Tox",  icon: "💊" },
-  { id: "general",   label: "General",          icon: "📊" },
-];
-
-const EVIDENCE_COLORS = {
-  green: { bg: "rgba(46,204,113,.12)", color: "#2ecc71" },
-  amber: { bg: "rgba(245,166,35,.1)",  color: "#f5a623" },
-  red:   { bg: "rgba(255,92,108,.1)",  color: "#ff5c6c" },
-  teal:  { bg: "rgba(0,212,188,.1)",   color: "#00d4bc" },
-  dim:   { bg: "rgba(74,114,153,.12)", color: "#4a7299" },
-};
-
-// ─── Calculators Data ─────────────────────────────────────────────────────────
-const CALCULATORS = [
-  {
-    id: "heart_score", name: "HEART Score", category: "cardiac",
-    description: "Risk stratifies chest pain patients for MACE at 6 weeks.",
-    source: "Backus et al., Heart 2010",
-    fields: [
-      { id:"history",  label:"History",          type:"select", options:[{label:"Slightly suspicious",value:0},{label:"Moderately suspicious",value:1},{label:"Highly suspicious",value:2}] },
-      { id:"ekg",      label:"EKG",              type:"select", options:[{label:"Normal",value:0},{label:"Non-specific repolarization",value:1},{label:"Significant ST deviation",value:2}] },
-      { id:"age",      label:"Age",              type:"select", options:[{label:"< 45 years",value:0},{label:"45–64 years",value:1},{label:"≥ 65 years",value:2}] },
-      { id:"risk",     label:"Risk Factors",     type:"select", options:[{label:"No known risk factors",value:0},{label:"1–2 risk factors",value:1},{label:"≥ 3 risk factors or atherosclerotic disease",value:2}] },
-      { id:"troponin", label:"Initial Troponin", type:"select", options:[{label:"≤ Normal limit",value:0},{label:"1–3× normal limit",value:1},{label:"> 3× normal limit",value:2}] },
-    ],
-    score: (v) => Object.values(v).reduce((a,b) => a + Number(b), 0),
-    interpret: (s) =>
-      s <= 3  ? { label:"Low Risk",    color:"green", action:"Consider discharge. < 2% 30-day MACE." } :
-      s <= 6  ? { label:"Moderate Risk",color:"amber", action:"Observation and serial troponins. ~12% 30-day MACE." } :
-               { label:"High Risk",   color:"red",   action:"Early invasive strategy. ~65% 30-day MACE." },
-  },
-  {
-    id: "wells_pe", name: "Wells PE Score", category: "pulmonary",
-    description: "Estimates pre-test probability of PE. Guides D-dimer / PERC / imaging decision.",
-    source: "Wells et al., Thromb Haemost 2000",
-    fields: [
-      { id:"clinical_dvt", label:"Clinical signs/symptoms of DVT",                  type:"checkbox", value:3 },
-      { id:"alt_dx",       label:"PE is #1 diagnosis OR equally likely",            type:"checkbox", value:3 },
-      { id:"hr_100",       label:"Heart Rate > 100 bpm",                            type:"checkbox", value:1.5 },
-      { id:"immob",        label:"Immobilization ≥ 3 days OR surgery in past 4 wks",type:"checkbox", value:1.5 },
-      { id:"prev_pe_dvt",  label:"Previous PE or DVT",                              type:"checkbox", value:1.5 },
-      { id:"hemoptysis",   label:"Hemoptysis",                                       type:"checkbox", value:1 },
-      { id:"malignancy",   label:"Malignancy (active or palliative)",               type:"checkbox", value:1 },
-    ],
-    score: (v) => Object.entries(v).reduce((a,[k,checked]) => {
-      const field = CALCULATORS.find(c=>c.id==="wells_pe").fields.find(f=>f.id===k);
-      return a + (checked ? (field?.value||0) : 0);
-    }, 0),
-    interpret: (s) =>
-      s < 2   ? { label:"Low Probability",      color:"green", action:"PERC rule applicable. D-dimer if PERC not met." } :
-      s <= 6  ? { label:"Moderate Probability",  color:"amber", action:"D-dimer recommended. CTA-PE if positive." } :
-               { label:"High Probability",      color:"red",   action:"CTA-PE without D-dimer. Empiric anticoagulation if delay." },
-  },
-  {
-    id: "wells_dvt", name: "Wells DVT Score", category: "pulmonary",
-    description: "Estimates pre-test probability of lower extremity DVT.",
-    source: "Wells et al., Lancet 1997",
-    fields: [
-      { id:"active_cancer",  label:"Active cancer (treatment within 6 months)",   type:"checkbox", value:1 },
-      { id:"paralysis",      label:"Paralysis, paresis, or recent cast",          type:"checkbox", value:1 },
-      { id:"bedridden",      label:"Bedridden ≥ 3 days OR major surgery ≤12 wks",type:"checkbox", value:1 },
-      { id:"tenderness",     label:"Tenderness along deep venous system",         type:"checkbox", value:1 },
-      { id:"entire_leg",     label:"Entire leg swollen",                          type:"checkbox", value:1 },
-      { id:"calf_swelling",  label:"Calf swelling > 3 cm vs asymptomatic leg",   type:"checkbox", value:1 },
-      { id:"pitting",        label:"Pitting edema (greater in symptomatic leg)",  type:"checkbox", value:1 },
-      { id:"collateral",     label:"Collateral non-varicose superficial veins",   type:"checkbox", value:1 },
-      { id:"prev_dvt",       label:"Previously documented DVT",                   type:"checkbox", value:1 },
-      { id:"alt_dx_likely",  label:"Alternative diagnosis at least as likely",    type:"checkbox", value:-2 },
-    ],
-    score: (v) => Object.entries(v).reduce((a,[k,checked]) => {
-      const field = CALCULATORS.find(c=>c.id==="wells_dvt").fields.find(f=>f.id===k);
-      return a + (checked ? (field?.value||0) : 0);
-    }, 0),
-    interpret: (s) =>
-      s <= 0  ? { label:"Low Probability",    color:"green", action:"D-dimer; if negative, no imaging required." } :
-      s <= 2  ? { label:"Moderate Probability",color:"amber", action:"D-dimer. Ultrasound if D-dimer positive." } :
-               { label:"High Probability",   color:"red",   action:"Venous ultrasound recommended. Treat if confirmed." },
-  },
-  {
-    id: "gcs", name: "Glasgow Coma Scale (GCS)", category: "neuro",
-    description: "Assesses level of consciousness. Standard for neurological monitoring and intubation decision.",
-    source: "Teasdale & Jennett, Lancet 1974",
-    fields: [
-      { id:"eyes",   label:"Eye Opening",     type:"select", options:[{label:"None (1)",value:1},{label:"To pain (2)",value:2},{label:"To voice (3)",value:3},{label:"Spontaneous (4)",value:4}] },
-      { id:"verbal", label:"Verbal Response", type:"select", options:[{label:"None (1)",value:1},{label:"Incomprehensible (2)",value:2},{label:"Inappropriate words (3)",value:3},{label:"Confused (4)",value:4},{label:"Oriented (5)",value:5}] },
-      { id:"motor",  label:"Motor Response",  type:"select", options:[{label:"None (1)",value:1},{label:"Decerebrate extension (2)",value:2},{label:"Decorticate flexion (3)",value:3},{label:"Withdrawal (4)",value:4},{label:"Localizes pain (5)",value:5},{label:"Obeys commands (6)",value:6}] },
-    ],
-    score: (v) => (Number(v.eyes||1)) + (Number(v.verbal||1)) + (Number(v.motor||1)),
-    interpret: (s) =>
-      s <= 8  ? { label:"Severe TBI",   color:"red",   action:`GCS ≤ 8 — consider intubation. Neurosurgery consult. CT head.` } :
-      s <= 12 ? { label:"Moderate TBI", color:"amber", action:"Careful monitoring. CT head. Consider ICU." } :
-               { label:"Mild / Normal", color:"green", action:"GCS 13–14: minor TBI. GCS 15: intact. Reassess frequently." },
-  },
-  {
-    id: "nihss", name: "NIH Stroke Scale (NIHSS)", category: "neuro",
-    description: "Quantifies stroke severity. Required for tPA eligibility determination.",
-    source: "Brott et al., Stroke 1989",
-    fields: [
-      { id:"loc",       label:"1a. Level of Consciousness",   type:"select", options:[{label:"Alert (0)",value:0},{label:"Not alert, arousable (1)",value:1},{label:"Requires stimulation (2)",value:2},{label:"Unresponsive (3)",value:3}] },
-      { id:"loc_q",     label:"1b. LOC Questions",           type:"select", options:[{label:"Both correct (0)",value:0},{label:"One correct (1)",value:1},{label:"Neither correct (2)",value:2}] },
-      { id:"loc_cmd",   label:"1c. LOC Commands",            type:"select", options:[{label:"Both correct (0)",value:0},{label:"One correct (1)",value:1},{label:"Neither correct (2)",value:2}] },
-      { id:"gaze",      label:"2. Best Gaze",                type:"select", options:[{label:"Normal (0)",value:0},{label:"Partial palsy (1)",value:1},{label:"Forced deviation (2)",value:2}] },
-      { id:"visual",    label:"3. Visual Fields",            type:"select", options:[{label:"No loss (0)",value:0},{label:"Partial hemianopia (1)",value:1},{label:"Complete hemianopia (2)",value:2},{label:"Bilateral (3)",value:3}] },
-      { id:"facial",    label:"4. Facial Palsy",             type:"select", options:[{label:"Normal (0)",value:0},{label:"Minor (1)",value:1},{label:"Partial (2)",value:2},{label:"Complete (3)",value:3}] },
-      { id:"arm_l",     label:"5a. Motor Arm (Left)",        type:"select", options:[{label:"No drift (0)",value:0},{label:"Drift (1)",value:1},{label:"Some effort vs gravity (2)",value:2},{label:"No effort vs gravity (3)",value:3},{label:"No movement (4)",value:4}] },
-      { id:"arm_r",     label:"5b. Motor Arm (Right)",       type:"select", options:[{label:"No drift (0)",value:0},{label:"Drift (1)",value:1},{label:"Some effort vs gravity (2)",value:2},{label:"No effort vs gravity (3)",value:3},{label:"No movement (4)",value:4}] },
-      { id:"leg_l",     label:"6a. Motor Leg (Left)",        type:"select", options:[{label:"No drift (0)",value:0},{label:"Drift (1)",value:1},{label:"Some effort vs gravity (2)",value:2},{label:"No effort vs gravity (3)",value:3},{label:"No movement (4)",value:4}] },
-      { id:"leg_r",     label:"6b. Motor Leg (Right)",       type:"select", options:[{label:"No drift (0)",value:0},{label:"Drift (1)",value:1},{label:"Some effort vs gravity (2)",value:2},{label:"No effort vs gravity (3)",value:3},{label:"No movement (4)",value:4}] },
-      { id:"ataxia",    label:"7. Limb Ataxia",              type:"select", options:[{label:"Absent (0)",value:0},{label:"1 limb (1)",value:1},{label:"2 limbs (2)",value:2}] },
-      { id:"sensory",   label:"8. Sensory",                  type:"select", options:[{label:"Normal (0)",value:0},{label:"Mild-moderate loss (1)",value:1},{label:"Severe/total loss (2)",value:2}] },
-      { id:"language",  label:"9. Best Language",            type:"select", options:[{label:"No aphasia (0)",value:0},{label:"Mild-moderate (1)",value:1},{label:"Severe (2)",value:2},{label:"Mute/global (3)",value:3}] },
-      { id:"dysarthria",label:"10. Dysarthria",              type:"select", options:[{label:"Normal (0)",value:0},{label:"Mild-moderate (1)",value:1},{label:"Severe/mute (2)",value:2}] },
-      { id:"extinction",label:"11. Extinction/Inattention",  type:"select", options:[{label:"No abnormality (0)",value:0},{label:"1 modality (1)",value:1},{label:"Severe (2)",value:2}] },
-    ],
-    score: (v) => Object.values(v).reduce((a,b) => a + Number(b||0), 0),
-    interpret: (s) =>
-      s === 0 ? { label:"No Stroke",       color:"green", action:"Stroke absent or resolved. TIA protocol." } :
-      s <= 4  ? { label:"Minor Stroke",    color:"teal",  action:"tPA may be beneficial. Neurology consult." } :
-      s <= 15 ? { label:"Moderate Stroke", color:"amber", action:"Strong tPA candidate. Consider thrombectomy." } :
-      s <= 20 ? { label:"Moderate-Severe", color:"red",   action:"High disability expected. Thrombectomy evaluation." } :
-               { label:"Severe Stroke",   color:"red",   action:"Severe. Goals of care discussion. Thrombectomy if appropriate." },
-  },
-  {
-    id: "chads_vasc", name: "CHA₂DS₂-VASc", category: "cardiac",
-    description: "Estimates annual stroke risk in non-valvular atrial fibrillation. Guides anticoagulation.",
-    source: "Lip et al., Chest 2010",
-    fields: [
-      { id:"chf",    label:"Congestive Heart Failure",                  type:"checkbox", value:1 },
-      { id:"htn",    label:"Hypertension",                             type:"checkbox", value:1 },
-      { id:"age_75", label:"Age ≥ 75 years",                          type:"checkbox", value:2 },
-      { id:"dm",     label:"Diabetes Mellitus",                        type:"checkbox", value:1 },
-      { id:"stroke", label:"Prior Stroke / TIA / Thromboembolism",     type:"checkbox", value:2 },
-      { id:"vasc",   label:"Vascular Disease (MI, PAD, aortic plaque)",type:"checkbox", value:1 },
-      { id:"age_65", label:"Age 65–74 years",                         type:"checkbox", value:1 },
-      { id:"female", label:"Female Sex",                               type:"checkbox", value:1 },
-    ],
-    score: (v) => Object.entries(v).reduce((a,[k,checked]) => {
-      const field = CALCULATORS.find(c=>c.id==="chads_vasc").fields.find(f=>f.id===k);
-      return a + (checked ? (field?.value||0) : 0);
-    }, 0),
-    interpret: (s) =>
-      s === 0 ? { label:"Low Risk",               color:"green", action:"No anticoagulation (male). Clinical judgment (female)." } :
-      s === 1 ? { label:"Low-Moderate Risk",       color:"amber", action:"Consider anticoagulation in males. Sole female criterion: do NOT anticoagulate." } :
-               { label:"High Risk — Anticoagulate",color:"red",   action:"Oral anticoagulation recommended (DOAC preferred). Assess bleeding risk (HAS-BLED)." },
-  },
-  {
-    id: "curb65", name: "CURB-65", category: "pulmonary",
-    description: "Predicts 30-day mortality in community-acquired pneumonia. Guides admission decision.",
-    source: "Lim et al., Thorax 2003",
-    fields: [
-      { id:"confusion", label:"Confusion (new disorientation)",            type:"checkbox", value:1 },
-      { id:"bun",       label:"BUN > 19 mg/dL (Urea > 7 mmol/L)",         type:"checkbox", value:1 },
-      { id:"rr",        label:"Respiratory Rate ≥ 30 breaths/min",         type:"checkbox", value:1 },
-      { id:"bp",        label:"BP: Systolic < 90 OR Diastolic ≤ 60 mmHg", type:"checkbox", value:1 },
-      { id:"age_65",    label:"Age ≥ 65 years",                            type:"checkbox", value:1 },
-    ],
-    score: (v) => Object.values(v).reduce((a,b) => a + (b?1:0), 0),
-    interpret: (s) =>
-      s <= 1 ? { label:"Low Risk",      color:"green", action:"30-day mortality < 3%. Consider outpatient treatment." } :
-      s === 2 ? { label:"Moderate Risk", color:"amber", action:"~9% mortality. Consider hospitalization." } :
-               { label:"High Risk",     color:"red",   action:"15–40% mortality. Hospital admission required. ICU if score 4–5." },
-  },
-  {
-    id: "qsofa", name: "qSOFA (Sepsis-3)", category: "sepsis",
-    description: "Rapid bedside screen for sepsis in patients with suspected infection.",
-    source: "Singer et al., JAMA 2016",
-    fields: [
-      { id:"rr",  label:"Respiratory Rate ≥ 22 breaths/min", type:"checkbox", value:1 },
-      { id:"ams", label:"Altered Mentation (GCS < 15)",       type:"checkbox", value:1 },
-      { id:"sbp", label:"Systolic BP ≤ 100 mmHg",            type:"checkbox", value:1 },
-    ],
-    score: (v) => Object.values(v).reduce((a,b) => a + (b?1:0), 0),
-    interpret: (s) =>
-      s < 2 ? { label:"Low Risk",           color:"green", action:"Low risk for poor outcome. Continue monitoring." } :
-              { label:"High Risk — Sepsis", color:"red",   action:"qSOFA ≥ 2: Initiate Sepsis Bundle. Blood cultures. Lactate. Antibiotics within 1 hour." },
-  },
-  {
-    id: "perc", name: "PERC Rule", category: "pulmonary",
-    description: "Excludes PE without further testing. Apply only if Wells PE Score = Low Probability. ALL must be absent.",
-    source: "Kline et al., J Thromb Haemost 2004",
-    fields: [
-      { id:"age",     label:"Age ≥ 50 years",                 type:"checkbox", value:1 },
-      { id:"hr",      label:"Heart Rate ≥ 100 bpm",           type:"checkbox", value:1 },
-      { id:"spo2",    label:"SpO₂ < 95% on room air",         type:"checkbox", value:1 },
-      { id:"dvt",     label:"Unilateral leg swelling",         type:"checkbox", value:1 },
-      { id:"hemopt",  label:"Hemoptysis",                      type:"checkbox", value:1 },
-      { id:"surgery", label:"Surgery or trauma within 4 weeks",type:"checkbox", value:1 },
-      { id:"prev_pe", label:"Prior PE or DVT",                 type:"checkbox", value:1 },
-      { id:"hcg",     label:"Exogenous estrogen use",          type:"checkbox", value:1 },
-    ],
-    score: (v) => Object.values(v).reduce((a,b) => a + (b?1:0), 0),
-    interpret: (s) =>
-      s === 0 ? { label:"PERC Negative — PE Excluded",         color:"green", action:"All criteria absent: PE excluded without further testing in low pre-test probability patients." } :
-               { label:"PERC Positive — Further Workup Needed",color:"red",   action:"Proceed with D-dimer. If positive, CTA-PE required." },
-  },
-  {
-    id: "ciwa", name: "CIWA-Ar", category: "substance",
-    description: "Quantifies alcohol withdrawal severity. Guides benzodiazepine dosing protocol.",
-    source: "Sullivan et al., Br J Addict 1989",
-    fields: [
-      { id:"nausea",   label:"Nausea/Vomiting",     type:"select", options:[{label:"None (0)",value:0},{label:"Mild nausea (1)",value:1},{label:"Intermittent dry heaves (4)",value:4},{label:"Constant nausea/vomiting (7)",value:7}] },
-      { id:"tremor",   label:"Tremor",               type:"select", options:[{label:"None (0)",value:0},{label:"Not visible, felt (1)",value:1},{label:"Moderate with arms extended (4)",value:4},{label:"Severe (7)",value:7}] },
-      { id:"sweats",   label:"Diaphoresis",          type:"select", options:[{label:"None (0)",value:0},{label:"Barely perceptible (1)",value:1},{label:"Beads on forehead (4)",value:4},{label:"Drenching sweats (7)",value:7}] },
-      { id:"anxiety",  label:"Anxiety",              type:"select", options:[{label:"None (0)",value:0},{label:"Mildly anxious (1)",value:1},{label:"Moderately anxious (4)",value:4},{label:"Acute panic state (7)",value:7}] },
-      { id:"agitation",label:"Agitation",            type:"select", options:[{label:"Normal (0)",value:0},{label:"Somewhat more active (1)",value:1},{label:"Moderately fidgety (4)",value:4},{label:"Pacing/thrashing (7)",value:7}] },
-      { id:"tactile",  label:"Tactile Disturbances", type:"select", options:[{label:"None (0)",value:0},{label:"Very mild itching (1)",value:1},{label:"Mild (2)",value:2},{label:"Moderate (3)",value:3},{label:"Mod-severe halluc. (4)",value:4},{label:"Severe (5)",value:5},{label:"Extremely severe (6)",value:6},{label:"Continuous (7)",value:7}] },
-      { id:"auditory", label:"Auditory Disturbances",type:"select", options:[{label:"None (0)",value:0},{label:"Very mild (1)",value:1},{label:"Mild (2)",value:2},{label:"Moderate (3)",value:3},{label:"Mod-severe halluc. (4)",value:4},{label:"Severe (5)",value:5},{label:"Extremely severe (6)",value:6},{label:"Continuous (7)",value:7}] },
-      { id:"visual",   label:"Visual Disturbances",  type:"select", options:[{label:"None (0)",value:0},{label:"Very mild (1)",value:1},{label:"Mild (2)",value:2},{label:"Moderate (3)",value:3},{label:"Mod-severe halluc. (4)",value:4},{label:"Severe (5)",value:5},{label:"Extremely severe (6)",value:6},{label:"Continuous (7)",value:7}] },
-      { id:"headache", label:"Headache / Fullness",  type:"select", options:[{label:"None (0)",value:0},{label:"Very mild (1)",value:1},{label:"Mild (2)",value:2},{label:"Moderate (3)",value:3},{label:"Mod-severe (4)",value:4},{label:"Severe (5)",value:5},{label:"Very severe (6)",value:6},{label:"Extremely severe (7)",value:7}] },
-      { id:"orient",   label:"Orientation/Clouding", type:"select", options:[{label:"Oriented, can do serial additions (0)",value:0},{label:"Cannot do serial additions or unsure of date (2)",value:2},{label:"Date disorientation ≤ 2 days (4)",value:4},{label:"Date disorientation > 2 days (6)",value:6}] },
-    ],
-    score: (v) => Object.values(v).reduce((a,b) => a + Number(b||0), 0),
-    interpret: (s) =>
-      s <= 9  ? { label:"Mild Withdrawal",    color:"green", action:"Monitor. PRN lorazepam. IV thiamine, folate, MVI." } :
-      s <= 19 ? { label:"Moderate Withdrawal",color:"amber", action:"Symptom-triggered benzodiazepines. IV thiamine. Admit." } :
-               { label:"Severe Withdrawal",  color:"red",   action:"High seizure/DT risk. IV diazepam protocol. ICU consideration. Seizure precautions." },
-  },
-  {
-    id: "alvarado", name: "Alvarado Score", category: "gi",
-    description: "Predicts likelihood of acute appendicitis. Guides CT decision and surgical consult.",
-    source: "Alvarado, Ann Emerg Med 1986",
-    fields: [
-      { id:"migration",  label:"Migration of pain to RLQ",                type:"checkbox", value:1 },
-      { id:"anorexia",   label:"Anorexia",                                type:"checkbox", value:1 },
-      { id:"nausea",     label:"Nausea / Vomiting",                       type:"checkbox", value:1 },
-      { id:"rlq_tend",   label:"RLQ Tenderness",                         type:"checkbox", value:2 },
-      { id:"rebound",    label:"Rebound Tenderness",                      type:"checkbox", value:1 },
-      { id:"temp",       label:"Elevated Temperature > 37.3°C (99.1°F)", type:"checkbox", value:1 },
-      { id:"leukocytes", label:"Leukocytosis > 10,000",                   type:"checkbox", value:2 },
-      { id:"shift",      label:"Left Shift (> 75% neutrophils)",          type:"checkbox", value:1 },
-    ],
-    score: (v) => Object.entries(v).reduce((a,[k,checked]) => {
-      const field = CALCULATORS.find(c=>c.id==="alvarado").fields.find(f=>f.id===k);
-      return a + (checked ? (field?.value||0) : 0);
-    }, 0),
-    interpret: (s) =>
-      s <= 4 ? { label:"Low Probability",    color:"green", action:"< 5% probability. Observe, analgesia, serial exams." } :
-      s <= 6 ? { label:"Moderate Probability",color:"amber", action:"~20–30%. CT abdomen/pelvis recommended. Surgery consult." } :
-               { label:"High Probability",   color:"red",   action:"≥ 80%. Likely appendicitis. Surgical consult." },
-  },
-  {
-    id: "ottawa_ankle", name: "Ottawa Ankle Rules", category: "ortho",
-    description: "Determines necessity of ankle/foot X-ray after trauma.",
-    source: "Stiell et al., JAMA 1994",
-    fields: [
-      { id:"posterior_fibula",label:"Bone tenderness: posterior 6cm fibula or lateral malleolus",type:"checkbox", value:1 },
-      { id:"posterior_tibia", label:"Bone tenderness: posterior 6cm tibia or medial malleolus",  type:"checkbox", value:1 },
-      { id:"navicular",       label:"Point tenderness at navicular",                              type:"checkbox", value:1 },
-      { id:"fifth_met",       label:"Point tenderness at base of 5th metatarsal",               type:"checkbox", value:1 },
-      { id:"wt_bearing",      label:"Unable to bear weight for 4 steps (at injury and in ED)",   type:"checkbox", value:1 },
-    ],
-    score: (v) => Object.values(v).reduce((a,b) => a + (b?1:0), 0),
-    interpret: (s) =>
-      s === 0 ? { label:"X-Ray NOT Required", color:"green", action:"No Ottawa criteria met. ~98% sensitivity. Treat as sprain." } :
-               { label:"X-Ray REQUIRED",      color:"amber", action:"Obtain ankle and/or foot X-ray based on tenderness location." },
-  },
-  {
-    id: "mews", name: "MEWS", category: "general",
-    description: "Tracks physiological deterioration. Triggers rapid response team activation at threshold.",
-    source: "Subbe et al., QJM 2001",
-    fields: [
-      { id:"sbp",  label:"Systolic BP (mmHg)",       type:"select", options:[{label:"≤ 70 (3)",value:3},{label:"71–80 (2)",value:2},{label:"81–100 (1)",value:1},{label:"101–199 (0)",value:0},{label:"≥ 200 (2)",value:2}] },
-      { id:"hr",   label:"Heart Rate (bpm)",         type:"select", options:[{label:"< 40 (2)",value:2},{label:"40–50 (1)",value:1},{label:"51–100 (0)",value:0},{label:"101–110 (1)",value:1},{label:"111–129 (2)",value:2},{label:"≥ 130 (3)",value:3}] },
-      { id:"rr",   label:"Respiratory Rate (/min)",  type:"select", options:[{label:"< 9 (2)",value:2},{label:"9–14 (0)",value:0},{label:"15–20 (1)",value:1},{label:"21–29 (2)",value:2},{label:"≥ 30 (3)",value:3}] },
-      { id:"temp", label:"Temperature (°C)",         type:"select", options:[{label:"< 35.0 (2)",value:2},{label:"35.0–38.4 (0)",value:0},{label:"≥ 38.5 (2)",value:2}] },
-      { id:"avpu", label:"AVPU Neurological Score",  type:"select", options:[{label:"Alert (0)",value:0},{label:"Voice responsive (1)",value:1},{label:"Pain responsive (2)",value:2},{label:"Unresponsive (3)",value:3}] },
-    ],
-    score: (v) => Object.values(v).reduce((a,b) => a + Number(b||0), 0),
-    interpret: (s) =>
-      s <= 2 ? { label:"Low Risk",     color:"green", action:"Routine monitoring. Reassess in 4–6 hours." } :
-      s <= 4 ? { label:"Moderate Risk",color:"amber", action:"Increased monitoring. Physician notification." } :
-               { label:"High Risk",   color:"red",   action:"MEWS ≥ 5: Urgent review. Consider rapid response. ICU evaluation." },
-  },
-];
-
-// ─── Pediatric Drugs ──────────────────────────────────────────────────────────
-// doseMode: "weight" | "bsa" | "crcl"
-// For bsa drugs: dosePerBSA = { min, max } in mg/m² (or mg/m²/day)
-// For crcl drugs: doseByCrCl = array of { maxCrCl, dose, note }
-const PED_DRUGS = [
-  // ── Analgesics / Antipyretics ──────────────────────────────────────────────
-  { id:"acetaminophen_po", name:"Acetaminophen (PO)", category:"analgesic_antipyretic", indications:"Fever, Mild-moderate pain", route:"PO", doseMode:"weight", dosePerKg:{min:10,max:15}, unit:"mg/kg", maxSingle:1000, maxDaily:4000, frequency:"Q4-6h PRN", form:"160 mg/5 mL suspension", pearls:["Do not exceed 5 doses in 24 hours","Check for acetaminophen in combination products (Percocet, NyQuil)"] },
-  { id:"ibuprofen_po", name:"Ibuprofen (PO)", category:"analgesic_antipyretic", indications:"Fever, Pain, Inflammation", route:"PO", doseMode:"weight", dosePerKg:{min:5,max:10}, unit:"mg/kg", maxSingle:400, maxDaily:1200, frequency:"Q6-8h PRN", form:"100 mg/5 mL suspension", ageRestriction:"≥ 6 months only", pearls:["Avoid in dehydration, renal insufficiency, GI bleed","Give with food"] },
-  { id:"morphine_iv", name:"Morphine (IV/IM)", category:"analgesic_antipyretic", indications:"Moderate-severe pain, Post-op pain", route:"IV/IM", doseMode:"weight", dosePerKg:{min:0.05,max:0.1}, unit:"mg/kg", maxSingle:10, frequency:"Q2-4h PRN; titrate to effect", form:"1 mg/mL, 2 mg/mL, 4 mg/mL", ageRestriction:"≥ 6 months; use with caution in neonates", pearls:["Monitor respiratory status and SpO₂","Naloxone reversal: 0.01 mg/kg IV","Histamine release may cause pruritus","Reduce dose in renal impairment"] },
-  { id:"ketorolac_iv", name:"Ketorolac (IV/IM)", category:"analgesic_antipyretic", indications:"Moderate-severe pain, Renal colic", route:"IV/IM", doseMode:"weight", dosePerKg:{min:0.5,max:0.5}, unit:"mg/kg", maxSingle:30, frequency:"Q6h (max 5 days total)", form:"15 mg/mL, 30 mg/mL", ageRestriction:"≥ 2 years", pearls:["Limit to ≤ 5 days (GI/renal toxicity)","Avoid in renal impairment, bleeding, or dehydration","IV/IM dose: 0.5 mg/kg (max 30 mg)"] },
-
-  // ── Antibiotics ────────────────────────────────────────────────────────────
-  { id:"amoxicillin_po", name:"Amoxicillin (PO)", category:"antibiotic", indications:"AOM, Strep pharyngitis, Sinusitis, CAP, UTI", route:"PO", doseMode:"weight", dosePerKg:{min:40,max:90}, unit:"mg/kg/day", maxSingle:875, frequency:"Divided Q8-12h × 5-10 days", form:"400 mg/5 mL suspension", pearls:["PCN allergy → azithromycin or clindamycin","High-dose 80-90 mg/kg/day for PCN-resistant AOM"] },
-  { id:"azithromycin_po", name:"Azithromycin (PO)", category:"antibiotic", indications:"CAP, Atypical pneumonia, Strep (PCN-allergic), Pertussis", route:"PO", doseMode:"weight", dosePerKg:{min:5,max:12}, unit:"mg/kg/day", maxSingle:500, frequency:"QD × 5 days (10 mg/kg day 1, 5 mg/kg days 2-5)", form:"200 mg/5 mL suspension", ageRestriction:"≥ 6 months", pearls:["QTc prolongation risk","Not for S. aureus infections"] },
-  { id:"ceftriaxone_im_iv", name:"Ceftriaxone (IM/IV)", category:"antibiotic", indications:"AOM (refractory), Pneumonia, UTI, Sepsis, Meningitis", route:"IM/IV", doseMode:"weight", dosePerKg:{min:50,max:100}, unit:"mg/kg/day", maxSingle:4000, frequency:"QD (Q12h for meningitis at 100 mg/kg/day)", form:"250 mg/mL reconstituted", pearls:["Lidocaine 1% diluent for IM reduces pain","Avoid in neonates < 28d with hyperbilirubinemia","Meningitis: 100 mg/kg/day divided Q12h"] },
-  { id:"clindamycin_po_iv", name:"Clindamycin (PO/IV)", category:"antibiotic", indications:"MRSA skin/soft tissue, PCN allergy, Strep, Anaerobic infections", route:"PO/IV", doseMode:"weight", dosePerKg:{min:25,max:40}, unit:"mg/kg/day", maxSingle:600, frequency:"Divided Q6-8h", form:"75 mg/5 mL oral; 150 mg/mL IV", pearls:["C. diff risk — monitor for diarrhea","Drug of choice for MRSA SSTI in children","Oral bioavailability ~90% (equivalent to IV in mild-moderate disease)"] },
-  { id:"trimethoprim_smx", name:"TMP-SMX (PO)", category:"antibiotic", indications:"UTI, MRSA SSTI, PCP prophylaxis/treatment", route:"PO", doseMode:"weight", dosePerKg:{min:6,max:12}, unit:"mg/kg/day TMP", maxSingle:320, frequency:"Divided Q12h", form:"40/200 mg per 5 mL suspension", ageRestriction:"≥ 2 months", pearls:["Dose based on TMP component","Avoid in sulfa allergy, G6PD deficiency","Excellent MRSA SSTI coverage — community acquired"] },
-  { id:"vancomycin_iv", name:"Vancomycin (IV)", category:"antibiotic", indications:"MRSA, Serious gram-positive infections, Sepsis", route:"IV", doseMode:"weight", dosePerKg:{min:15,max:20}, unit:"mg/kg", maxSingle:3000, frequency:"Q6h — infuse over ≥ 60 min. Target AUC/MIC 400-600.", form:"500 mg, 1 g vials", pearls:["Infuse SLOWLY over ≥ 60 min — red man syndrome if rapid","Monitor renal function and trough levels (target trough 10-20 mcg/mL)","AUC-guided monitoring preferred in serious infections","Renal dose adjustment required"] },
-  { id:"amox_clav_po", name:"Amoxicillin-Clavulanate (PO)", category:"antibiotic", indications:"AOM (failed therapy), Sinusitis, Animal bites, Skin infections", route:"PO", doseMode:"weight", dosePerKg:{min:40,max:90}, unit:"mg/kg/day", maxSingle:875, frequency:"Divided Q8-12h × 7-10 days", form:"600/42.9 mg per 5 mL (ES formulation)", pearls:["GI side effects common — give with food","Use ES formulation (90/6.4) for AOM in high PCN resistance areas","Dose based on amoxicillin component"] },
-  { id:"gentamicin_iv", name:"Gentamicin (IV)", category:"antibiotic", indications:"Gram-negative infections, UTI, Sepsis, Synergy with PCN for endocarditis", route:"IV", doseMode:"crcl", dosePerKg:{min:2.5,max:3.5}, unit:"mg/kg", maxSingle:500, frequency:"Q8h standard dosing; extended interval Q24h in some protocols", form:"10 mg/mL, 40 mg/mL", doseByCrCl:[
-    { maxCrCl: 10,  dose: "2 mg/kg Q48h",  note: "Severe renal impairment" },
-    { maxCrCl: 30,  dose: "2 mg/kg Q24h",  note: "Moderate impairment" },
-    { maxCrCl: 60,  dose: "2.5 mg/kg Q12h",note: "Mild impairment" },
-    { maxCrCl: 999, dose: "2.5-3.5 mg/kg Q8h", note: "Normal function — standard dosing" },
-  ], pearls:["Monitor peak (5-10 mcg/mL) and trough (< 2 mcg/mL) levels","Nephrotoxic + ototoxic — avoid with other nephrotoxins","Once-daily dosing (5-7 mg/kg Q24h) used in many pediatric centers for reduced toxicity"] },
-
-  // ── Emergency / Resuscitation ─────────────────────────────────────────────
-  { id:"epinephrine_im", name:"Epinephrine IM (Anaphylaxis)", category:"emergency", indications:"Anaphylaxis, Severe allergic reaction, Bronchospasm", route:"IM anterolateral thigh", doseMode:"weight", dosePerKg:{min:0.01,max:0.01}, unit:"mg/kg", maxSingle:0.5, frequency:"May repeat Q5-15 min × 1. If 2 doses needed, admit.", form:"1 mg/mL (1:1000)", pearls:["ALWAYS IM anterolateral thigh","EpiPen Jr (0.15 mg) for 10-25 kg; EpiPen (0.3 mg) for ≥ 25 kg","First-line — NO contraindications in anaphylaxis","Antihistamines/steroids are adjuncts only"] },
-  { id:"adenosine_iv", name:"Adenosine (IV) — SVT", category:"emergency", indications:"SVT, Supraventricular tachycardia", route:"IV rapid push", doseMode:"weight", dosePerKg:{min:0.1,max:0.3}, unit:"mg/kg", maxSingle:12, frequency:"First dose: 0.1 mg/kg. If no response in 2 min → 0.2 mg/kg. Max third dose 0.3 mg/kg.", form:"3 mg/mL", pearls:["Rapid IV push into antecubital and IMMEDIATELY flush with 20 mL NS","Brief asystole (5-10 sec) is expected and therapeutic","Have defibrillator at bedside","Caffeine blocks effect — may need higher dose"] },
-  { id:"atropine_bradycardia", name:"Atropine (IV) — Bradycardia", category:"emergency", indications:"Symptomatic bradycardia, Vagally-mediated bradycardia, Pre-intubation", route:"IV/IO", doseMode:"weight", dosePerKg:{min:0.02,max:0.02}, unit:"mg/kg", maxSingle:0.5, frequency:"May repeat × 1 in 3-5 min. Max total: 1 mg in children.", form:"0.1 mg/mL, 0.4 mg/mL", pearls:["Minimum dose 0.1 mg (paradoxical bradycardia risk with smaller doses)","Pre-RSI dose to prevent vagal response during laryngoscopy","Monitor for tachycardia, urinary retention"] },
-  { id:"rocuronium_rsi", name:"Rocuronium (IV) — RSI", category:"emergency", indications:"RSI, Emergency intubation", route:"IV", doseMode:"weight", dosePerKg:{min:1.2,max:1.6}, unit:"mg/kg", maxSingle:200, frequency:"Single IV bolus. Onset 45-60 seconds.", form:"10 mg/mL", pearls:["Standard RSI: 1.2 mg/kg (onset 60s, duration 30-60 min)","If succinylcholine contraindicated: 1.6 mg/kg","Sugammadex reversal: 16 mg/kg IV","Atropine 0.02 mg/kg pretreatment for infants < 1 year"] },
-  { id:"succinylcholine_rsi", name:"Succinylcholine (IV) — RSI", category:"emergency", indications:"RSI, Short-duration paralysis", route:"IV/IM", doseMode:"weight", dosePerKg:{min:1.5,max:2.0}, unit:"mg/kg", maxSingle:150, frequency:"Single bolus. Onset 30-60 sec. Duration 5-10 min.", form:"20 mg/mL", pearls:["CONTRAINDICATED in hyperkalemia — fatal cardiac arrest risk","Pediatric dose higher: 2 mg/kg for infants/children","IM dose: 4 mg/kg (onset 3-4 min)","Malignant hyperthermia risk — have dantrolene available"] },
-  { id:"ns_bolus", name:"Normal Saline Bolus (IV)", category:"emergency", indications:"Dehydration, Hypovolemia, Shock, Sepsis", route:"IV", doseMode:"weight", dosePerKg:{min:10,max:20}, unit:"mL/kg", maxSingle:2000, frequency:"Over 15-60 min. Reassess after each bolus.", form:"0.9% NaCl — 250 mL or 500 mL bags", pearls:["Max 60 mL/kg total in first hour for septic shock","DKA: limit 10 mL/kg — avoid rapid shifts (cerebral edema risk)","Reassess for fluid overload after each bolus","LR may be preferred over NS for large-volume resuscitation"] },
-  { id:"lorazepam_iv", name:"Lorazepam (IV/IM) — Seizure", category:"emergency", indications:"Acute seizure, Status epilepticus", route:"IV/IM", doseMode:"weight", dosePerKg:{min:0.05,max:0.1}, unit:"mg/kg", maxSingle:4, frequency:"May repeat × 1 after 5-10 min if seizure continues.", form:"2 mg/mL injectable", pearls:["IV lorazepam first-line for status epilepticus","IM equally effective if no IV access","Have bag-valve-mask and intubation equipment at bedside","Monitor respiratory rate and SpO₂ closely"] },
-  { id:"glucose_d10", name:"Dextrose — Hypoglycemia", category:"emergency", indications:"Symptomatic hypoglycemia (glucose < 50 mg/dL)", route:"IV", doseMode:"weight", dosePerKg:{min:2,max:4}, unit:"mL/kg D10W", maxSingle:500, frequency:"Over 5-10 min. Recheck glucose in 15 min.", form:"D10W (10% dextrose)", pearls:["D10W preferred in children (D25W, D50W too hypertonic for small veins)","Recheck BGL in 15-30 min and start dextrose maintenance infusion","Cause of hypoglycemia must be identified"] },
-
-  // ── Respiratory ───────────────────────────────────────────────────────────
-  { id:"albuterol_neb", name:"Albuterol (Nebulized)", category:"respiratory", indications:"Asthma, Bronchospasm, Wheezing, RAD", route:"Inhalation", doseMode:"weight", dosePerKg:{min:0.15,max:0.15}, unit:"mg/kg", maxSingle:5, frequency:"Q20 min × 3 (acute), then Q4h PRN. Continuous neb for severe.", form:"2.5 mg/3 mL unit-dose nebulizer", pearls:["< 20 kg → 2.5 mg per neb; ≥ 20 kg → 5 mg per neb","MDI + valved spacer equals nebulizer in mild-moderate disease","Add ipratropium for first 3 treatments in moderate-severe asthma","Monitor for hypokalemia with high-dose"] },
-  { id:"ipratropium_neb", name:"Ipratropium (Nebulized)", category:"respiratory", indications:"Asthma (add-on), COPD exacerbation", route:"Inhalation", doseMode:"weight", dosePerKg:{min:0.25,max:0.5}, unit:"mg (fixed)", maxSingle:0.5, frequency:"Q20 min × 3 doses alongside albuterol, then Q6h PRN", form:"0.5 mg/2.5 mL unit-dose nebulizer", pearls:["Fixed dose: < 20 kg → 0.25 mg; ≥ 20 kg → 0.5 mg","Use only for first 3 doses in acute asthma — no additional benefit afterward","Combined with albuterol reduces hospitalization in moderate-severe asthma"] },
-  { id:"dexamethasone", name:"Dexamethasone (PO/IV/IM)", category:"respiratory", indications:"Croup, Asthma, Allergic reaction, Cerebral edema, Meningitis (adjunct)", route:"PO/IV/IM", doseMode:"weight", dosePerKg:{min:0.15,max:0.6}, unit:"mg/kg", maxSingle:16, frequency:"Single dose for croup/allergic. BID × 2 days for asthma.", form:"4 mg/mL injectable or 0.5 mg/5 mL oral", pearls:["Croup: 0.6 mg/kg PO, max 10 mg — single dose as effective as IM","Asthma: 2-day course non-inferior to 5-day prednisone","Meningitis: 0.15 mg/kg IV Q6h × 4 days — give BEFORE or WITH first antibiotic"] },
-  { id:"magnesium_iv", name:"Magnesium Sulfate (IV) — Asthma", category:"respiratory", indications:"Severe/refractory asthma, Status asthmaticus", route:"IV", doseMode:"weight", dosePerKg:{min:25,max:75}, unit:"mg/kg", maxSingle:2000, frequency:"Single dose IV over 20-30 min. Repeat in 4-6h if needed.", form:"500 mg/mL (50%) diluted to 20 mg/mL", pearls:["Dilute to 20 mg/mL or less — infuse slowly over 20 min","Monitor BP and respiratory rate during infusion","Bronchodilatory effect: smooth muscle relaxation","Calcium gluconate (100 mg/kg IV) reverses toxicity if needed"] },
-  { id:"racepinephrine_neb", name:"Racepinephrine (Nebulized) — Croup", category:"respiratory", indications:"Moderate-severe croup, Post-extubation stridor", route:"Inhalation", doseMode:"weight", dosePerKg:{min:0.5,max:0.5}, unit:"mL/kg of 2.25% solution", maxSingle:3, frequency:"Q1-4h PRN. Observe 2-4 hrs after last dose for rebound.", form:"2.25% racepinephrine solution", pearls:["Maximum: 3 mL of 2.25% solution; dilute to 3 mL total with NS","Rebound effect 2-4 hrs — keep patient for observation","Dexamethasone MUST accompany racepinephrine treatment","Does not change natural disease course — only symptomatic relief"] },
-
-  // ── Antiemetics ───────────────────────────────────────────────────────────
-  { id:"ondansetron", name:"Ondansetron (PO/IV)", category:"antiemetic", indications:"Nausea, Vomiting, Gastroenteritis", route:"PO/IV", doseMode:"weight", dosePerKg:{min:0.1,max:0.15}, unit:"mg/kg", maxSingle:8, frequency:"Q8h PRN", form:"4 mg ODT or 2 mg/mL IV", ageRestriction:"≥ 6 months IV, ≥ 4 years PO", pearls:["QTc prolongation — avoid if QTc > 450ms","ODT preferred for vomiting patients","Weight-based: < 30 kg → 4 mg, ≥ 30 kg → 8 mg"] },
-  { id:"diphenhydramine", name:"Diphenhydramine (PO/IV/IM)", category:"antiemetic", indications:"Allergic reaction, Urticaria, Pruritus, Dystonic reaction", route:"PO/IV/IM", doseMode:"weight", dosePerKg:{min:1,max:1.25}, unit:"mg/kg", maxSingle:50, maxDaily:300, frequency:"Q6h PRN", form:"50 mg/mL injectable", ageRestriction:"Avoid < 2 years", pearls:["Significant sedation — warn family","For anaphylaxis: epinephrine is first-line, diphenhydramine is adjunct ONLY"] },
-
-  // ── Oncology / BSA-Dosed ──────────────────────────────────────────────────
-  { id:"vincristine", name:"Vincristine (IV)", category:"oncology", indications:"ALL, Lymphoma, Wilms tumor, Rhabdomyosarcoma", route:"IV", doseMode:"bsa", dosePerBSA:{min:1.5,max:2.0}, unit:"mg/m²", maxSingle:2, frequency:"Q1-3 weeks per protocol", form:"1 mg/mL (intrathecal administration is FATAL)", pearls:["NEVER intrathecal — causes fatal neurotoxicity","Max dose typically 2 mg regardless of BSA","Neurotoxic: monitor for peripheral neuropathy, constipation, SIADH","Vesicant — extravasation causes tissue necrosis"] },
-  { id:"methotrexate_it", name:"Methotrexate (Intrathecal)", category:"oncology", indications:"CNS prophylaxis/treatment in ALL, Lymphomatous meningitis", route:"Intrathecal", doseMode:"bsa", dosePerBSA:{min:8,max:15}, unit:"mg/m²", maxSingle:15, frequency:"Per chemotherapy protocol (varies)", form:"25 mg/mL preservative-free solution", pearls:["BSA-based IT dosing; age-based alternative: < 1yr → 6 mg, 1-2yr → 8 mg, 2-3yr → 10 mg, > 3yr → 12 mg","Must use PRESERVATIVE-FREE formulation for IT route","Leucovorin rescue for high-dose IV methotrexate","Monitor CBC, LFTs, renal function"] },
-  { id:"etoposide_iv", name:"Etoposide (VP-16) (IV)", category:"oncology", indications:"Relapsed leukemia, Lymphoma, Neuroblastoma, Germ cell tumors", route:"IV", doseMode:"bsa", dosePerBSA:{min:75,max:200}, unit:"mg/m²/day", maxSingle:500, frequency:"Per protocol (varies by indication)", form:"20 mg/mL — dilute to ≤ 0.4 mg/mL for infusion", pearls:["Infuse over ≥ 60 min — hypotension with rapid infusion","Significant myelosuppression — nadir 10-14 days","Secondary AML risk with cumulative exposure > 2000 mg/m²","Hypersensitivity reactions possible — premedicate"] },
-  { id:"cytarabine_it", name:"Cytarabine (IT/IV)", category:"oncology", indications:"ALL, AML, Lymphoma, CNS prophylaxis", route:"IV/IT", doseMode:"bsa", dosePerBSA:{min:100,max:3000}, unit:"mg/m²", maxSingle:6000, frequency:"Per protocol (varies widely)", form:"20 mg/mL, 100 mg/mL", pearls:["High-dose (HD-Ara-C ≥ 1 g/m²): give pyridoxine and steroid eye drops to prevent ocular toxicity","IT: use preservative-free formulation only","Cerebellar toxicity with HD-Ara-C — assess for ataxia, dysarthria","Major myelosuppression — monitor CBC closely"] },
-  { id:"carboplatin_iv", name:"Carboplatin (IV)", category:"oncology", indications:"Neuroblastoma, Brain tumors, Germ cell tumors, Osteosarcoma", route:"IV", doseMode:"bsa", dosePerBSA:{min:175,max:560}, unit:"mg/m²", maxSingle:Infinity, frequency:"Per protocol (typically Q3-4 weeks)", form:"10 mg/mL", pearls:["AUC-based dosing (Calvert formula) for adults; BSA-based for children","Thrombocytopenia is dose-limiting toxicity — nadir at 21 days","Less nephrotoxic/neurotoxic than cisplatin","Pre-hydration required; monitor renal function"] },
-
-  // ── Renal-Dosed (CrCl) ───────────────────────────────────────────────────
-  { id:"acyclovir_iv", name:"Acyclovir (IV)", category:"antiviral", indications:"HSV encephalitis, Disseminated HSV, Varicella-zoster (immunocompromised)", route:"IV", doseMode:"crcl", dosePerKg:{min:10,max:20}, unit:"mg/kg", maxSingle:800, frequency:"Q8h; adjust for renal impairment", form:"50 mg/mL for reconstitution", doseByCrCl:[
-    { maxCrCl: 10,  dose: "10 mg/kg Q24h",  note: "Severe renal impairment" },
-    { maxCrCl: 25,  dose: "10 mg/kg Q12h",  note: "Moderate impairment" },
-    { maxCrCl: 50,  dose: "10 mg/kg Q8h", note: "Mild impairment — standard dose" },
-    { maxCrCl: 999, dose: "10-20 mg/kg Q8h", note: "Normal function — full dose by indication" },
-  ], pearls:["Nephrotoxic — pre-hydrate, infuse over ≥ 60 min","HSV encephalitis: 20 mg/kg/dose Q8h in children","Neonatal HSV: 60 mg/kg/day divided Q8h × 14-21 days","Precipitation in urine — keep patient well hydrated"] },
-  { id:"trimethoprim_smx_crcl", name:"TMP-SMX Renal Dosing (IV)", category:"antiviral", indications:"PCP pneumonia, Serious UTI, Nocardia (renal adjusted)", route:"IV/PO", doseMode:"crcl", dosePerKg:{min:5,max:20}, unit:"mg/kg/day TMP", maxSingle:640, frequency:"Divided Q6-12h based on indication", form:"16 mg TMP + 80 mg SMX per mL IV", doseByCrCl:[
-    { maxCrCl: 15,  dose: "Avoid if possible", note: "High risk of accumulation" },
-    { maxCrCl: 30,  dose: "50% of normal dose", note: "Moderate impairment" },
-    { maxCrCl: 999, dose: "Full dose Q6-12h per indication", note: "Normal function" },
-  ], pearls:["PCP treatment: 15-20 mg/kg/day TMP component divided Q6h × 21 days","Monitor creatinine, BMP during therapy","Risk of hyperkalemia in renal impairment","Adequate hydration to prevent crystalluria"] },
-];
-
-// ─── Helper: initial field values ─────────────────────────────────────────────
-function initValues(fields) {
-  const v = {};
-  fields.forEach(f => {
-    if (f.type === "checkbox") v[f.id] = false;
-    else v[f.id] = f.options?.[0]?.value ?? 0;
-  });
-  return v;
-}
-
-// ─── AI Insight Panel ─────────────────────────────────────────────────────────
-function AIInsightPanel({ calc, values, score, result }) {
-  const [loading, setLoading] = useState(false);
-  const [insight, setInsight] = useState(null);
-  const [open, setOpen] = useState(false);
-
-  const handleAnalyze = async () => {
-    setOpen(true);
-    if (insight) return; // already loaded
-    setLoading(true);
-
-    // Build human-readable inputs summary
-    const inputsSummary = calc.fields.map(f => {
-      if (f.type === "checkbox") {
-        return `${f.label}: ${values[f.id] ? "Yes" : "No"}`;
-      } else {
-        const selected = f.options?.find(o => String(o.value) === String(values[f.id]));
-        return `${f.label}: ${selected?.label || values[f.id]}`;
-      }
-    }).join("\n");
-
-    const resp = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are a clinical decision support AI. A clinician has just calculated a ${calc.name} score.
-
-Calculator: ${calc.name}
-Description: ${calc.description}
-Inputs entered:
-${inputsSummary}
-
-Calculated Score: ${score}
-Result: ${result.label}
-Standard Recommendation: ${result.action}
-
-Provide a concise, clinically actionable AI analysis with:
-1. clinical_context: 2-3 sentences explaining what this score means for this specific patient given their inputs. Be specific about which inputs drove the score.
-2. next_steps: Array of 3-5 specific, prioritized clinical actions to take right now (e.g., order specific labs, consult, medication, imaging). Be concrete.
-3. pitfalls: Array of 2-3 common pitfalls or caveats specific to this score and these inputs that the clinician should be aware of.
-4. resources: Array of 2-3 relevant guidelines or reference resources (name and brief description only).`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          clinical_context: { type: "string" },
-          next_steps: { type: "array", items: { type: "string" } },
-          pitfalls: { type: "array", items: { type: "string" } },
-          resources: { type: "array", items: { type: "string" } },
-        }
-      }
-    });
-
-    setInsight(resp);
-    setLoading(false);
-  };
-
-  return (
-    <div>
-      <button
-        onClick={handleAnalyze}
-        className="px-3 py-1.5 rounded text-xs border border-[#9b6dff] bg-[rgba(155,109,255,0.1)] text-[#9b6dff] hover:bg-[rgba(155,109,255,0.2)] transition-all cursor-pointer flex items-center gap-1.5 font-semibold"
-      >
-        <Sparkles size={11} /> AI Analysis
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
-          >
-            <div className="mt-3 rounded-lg border border-[#9b6dff]/40 bg-[rgba(155,109,255,0.06)] p-3 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[#9b6dff]">
-                  <Sparkles size={11} /> AI Clinical Insight
-                </div>
-                <button onClick={() => setOpen(false)} className="text-[#4a7299] hover:text-[#c8ddf0] text-xs cursor-pointer">✕</button>
-              </div>
-
-              {loading ? (
-                <div className="flex items-center gap-2 py-3 justify-center">
-                  <Loader2 size={14} className="animate-spin text-[#9b6dff]" />
-                  <span className="text-xs text-[#4a7299]">Analyzing clinical context…</span>
-                </div>
-              ) : insight ? (
-                <>
-                  {insight.clinical_context && (
-                    <div>
-                      <div className="text-xs font-semibold text-[#c8ddf0] mb-1">Clinical Context</div>
-                      <p className="text-xs text-[#a8c4e0] leading-relaxed">{insight.clinical_context}</p>
-                    </div>
-                  )}
-                  {insight.next_steps?.length > 0 && (
-                    <div>
-                      <div className="text-xs font-semibold text-[#00d4bc] mb-1.5">Recommended Next Steps</div>
-                      <div className="flex flex-col gap-1">
-                        {insight.next_steps.map((step, i) => (
-                          <div key={i} className="flex gap-2 text-xs text-[#c8ddf0]">
-                            <span className="text-[#00d4bc] font-bold shrink-0">{i + 1}.</span>
-                            <span>{step}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {insight.pitfalls?.length > 0 && (
-                    <div>
-                      <div className="text-xs font-semibold text-[#f5a623] mb-1.5 flex items-center gap-1">
-                        <AlertTriangle size={11} /> Clinical Pitfalls
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        {insight.pitfalls.map((p, i) => (
-                          <div key={i} className="flex gap-2 text-xs text-[#c8ddf0]">
-                            <span className="text-[#f5a623] shrink-0">⚠</span>
-                            <span>{p}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {insight.resources?.length > 0 && (
-                    <div>
-                      <div className="text-xs font-semibold text-[#4a7299] mb-1.5">Resources & Guidelines</div>
-                      <div className="flex flex-col gap-1">
-                        {insight.resources.map((r, i) => (
-                          <div key={i} className="text-xs text-[#4a7299] flex gap-1.5">
-                            <span className="text-[#2a4d72]">📚</span>
-                            <span>{r}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <button
-                    onClick={() => { setInsight(null); setLoading(false); handleAnalyze(); }}
-                    className="text-xs text-[#4a7299] hover:text-[#9b6dff] cursor-pointer self-start transition-all"
-                  >
-                    ↻ Re-analyze with current values
-                  </button>
-                </>
-              ) : null}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+// ════════════════════════════════════════════════════════════
+//  GLASS PRIMITIVES
+// ════════════════════════════════════════════════════════════
+function GlassBg(){
+  return(
+    <div style={{position:"fixed",inset:0,overflow:"hidden",pointerEvents:"none",zIndex:0}}>
+      {[{x:"8%",y:"18%",r:320,c:"rgba(0,229,192,0.055)"},{x:"88%",y:"10%",r:260,c:"rgba(59,158,255,0.05)"},{x:"80%",y:"78%",r:340,c:"rgba(155,109,255,0.05)"},{x:"15%",y:"82%",r:220,c:"rgba(245,200,66,0.04)"},{x:"50%",y:"45%",r:400,c:"rgba(0,229,192,0.03)"}].map((o,i)=>(
+        <div key={i} style={{position:"absolute",left:o.x,top:o.y,width:o.r*2,height:o.r*2,borderRadius:"50%",background:`radial-gradient(circle,${o.c} 0%,transparent 68%)`,transform:"translate(-50%,-50%)",animation:`cg${i%3} ${8+i*1.3}s ease-in-out infinite`}}/>
+      ))}
+      <svg width="100%" height="100%" style={{position:"absolute",inset:0,opacity:0.038}}>
+        <defs>
+          <pattern id="cgg" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0L0 0 0 40" fill="none" stroke="#00e5c0" strokeWidth="0.5"/></pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#cgg)"/>
+      </svg>
+      <style>{`
+        @keyframes cg0{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.12)}}
+        @keyframes cg1{0%,100%{transform:translate(-50%,-50%) scale(1.08)}50%{transform:translate(-50%,-50%) scale(0.9)}}
+        @keyframes cg2{0%,100%{transform:translate(-50%,-50%) scale(0.94)}50%{transform:translate(-50%,-50%) scale(1.1)}}
+      `}</style>
     </div>
   );
 }
 
-// ─── Local storage helpers ────────────────────────────────────────────────────
-const FAVORITES_KEY = "calc_favorites_v1";
-const SAVED_RESULTS_KEY = "calc_saved_results_v1";
-
-function getFavorites() {
-  try { return JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]"); } catch { return []; }
-}
-function toggleFavoriteStorage(calcId) {
-  const favs = getFavorites();
-  const next = favs.includes(calcId) ? favs.filter(f => f !== calcId) : [...favs, calcId];
-  localStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
-  return next;
-}
-function getSavedResults() {
-  try { return JSON.parse(localStorage.getItem(SAVED_RESULTS_KEY) || "[]"); } catch { return []; }
-}
-function saveResult(entry) {
-  const results = getSavedResults();
-  results.unshift(entry);
-  localStorage.setItem(SAVED_RESULTS_KEY, JSON.stringify(results.slice(0, 50))); // keep last 50
-}
-function deleteResult(id) {
-  const results = getSavedResults().filter(r => r.id !== id);
-  localStorage.setItem(SAVED_RESULTS_KEY, JSON.stringify(results));
-}
-
-// ─── Saved Results Panel ──────────────────────────────────────────────────────
-function SavedResultsPanel({ onClose }) {
-  const [results, setResults] = useState(getSavedResults);
-
-  const handleDelete = (id) => {
-    deleteResult(id);
-    setResults(getSavedResults());
-  };
-
-  return (
-    <div className="flex flex-col gap-3 h-full">
-      <div className="flex items-center justify-between">
-        <div className="text-xs font-bold uppercase tracking-wide text-[#00d4bc] flex items-center gap-1.5">
-          <Clock size={12} /> Saved Results ({results.length})
-        </div>
-        <button onClick={onClose} className="text-xs text-[#4a7299] hover:text-[#c8ddf0] cursor-pointer">✕ Close</button>
-      </div>
-      {results.length === 0 ? (
-        <div className="text-center text-[#4a7299] text-xs py-10">No saved results yet.<br/>Use "Save Result" after calculating a score.</div>
-      ) : (
-        <div className="flex flex-col gap-2 overflow-y-auto scrollbar-hide">
-          {results.map(r => {
-            const ec = EVIDENCE_COLORS[r.resultColor] || EVIDENCE_COLORS.green;
-            return (
-              <div key={r.id} className="bg-[#0e2340] border border-[#1e3a5f] rounded-xl p-3 flex flex-col gap-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="text-xs font-bold text-[#e8f4ff]">{r.calcName}</div>
-                  <div className="flex items-center gap-2">
-                    <div className="text-xs text-[#4a7299]">{r.savedAt}</div>
-                    <button onClick={() => handleDelete(r.id)} className="text-[#4a7299] hover:text-[#ff5c6c] cursor-pointer transition-all">
-                      <Trash2 size={11} />
-                    </button>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="px-2 py-0.5 rounded text-xs font-bold" style={{ background: ec.bg, color: ec.color }}>
-                    Score: {r.score} — {r.resultLabel}
-                  </div>
-                </div>
-                <p className="text-xs text-[#a8c4e0] leading-relaxed">{r.resultAction}</p>
-                {r.note && <p className="text-xs text-[#4a7299] italic border-t border-[#1e3a5f] pt-1 mt-0.5">{r.note}</p>}
-              </div>
-            );
-          })}
-        </div>
-      )}
+function GBox({children,style={},accent=null}){
+  return(
+    <div style={{background:"rgba(8,22,40,0.72)",backdropFilter:"blur(22px)",WebkitBackdropFilter:"blur(22px)",border:`1px solid ${accent?`${accent}30`:"rgba(26,53,85,0.8)"}`,borderRadius:16,boxShadow:accent?`0 4px 24px rgba(0,0,0,0.4),0 0 20px ${accent}15`:"0 4px 20px rgba(0,0,0,0.38),inset 0 1px 0 rgba(255,255,255,0.025)",...style}}>
+      {children}
     </div>
   );
 }
 
-// ─── Calculator Card ──────────────────────────────────────────────────────────
-function CalculatorCard({ calc, initialExpanded = false, favorites, onToggleFavorite, onResultSaved }) {
-  const [values, setValues] = useState(() => initValues(calc.fields));
-  const [expanded, setExpanded] = useState(initialExpanded);
-  const [saveNote, setSaveNote] = useState("");
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
+// ════════════════════════════════════════════════════════════
+//  INDIVIDUAL CALCULATOR PANEL
+// ════════════════════════════════════════════════════════════
+function CalcPanel({calc,onClose,onMedRef}){
+  const[vals,setVals]=useState({});
+  const result=useMemo(()=>{
+    try{return calc.compute(vals);}catch{return null;}
+  },[vals,calc]);
 
-  const isFav = favorites.includes(calc.id);
+  const set=(k,v)=>setVals(p=>({...p,[k]:v}));
+  const catColor=CAT_COLORS[calc.cat]||C.teal;
 
-  const score = useMemo(() => {
-    try { return calc.score(values); } catch { return 0; }
-  }, [values, calc]);
-
-  const result = useMemo(() => calc.interpret(score), [score, calc]);
-  const ec = EVIDENCE_COLORS[result.color] || EVIDENCE_COLORS.green;
-
-  const handleChange = (id, val) => setValues(prev => ({ ...prev, [id]: val }));
-
-  const handleReset = () => {
-    setValues(initValues(calc.fields));
-    setShowSaveDialog(false);
-    setSaveNote("");
-  };
-
-  const handleSaveResult = () => {
-    const entry = {
-      id: Date.now().toString(),
-      calcId: calc.id,
-      calcName: calc.name,
-      score,
-      resultLabel: result.label,
-      resultAction: result.action,
-      resultColor: result.color,
-      note: saveNote.trim(),
-      savedAt: new Date().toLocaleString(),
-    };
-    saveResult(entry);
-    setShowSaveDialog(false);
-    setSaveNote("");
-    toast.success(`${calc.name} result saved`);
-    onResultSaved?.();
-  };
-
-  return (
-    <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-xl transition-all">
-      {/* Header */}
-      <div className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-[#162d4f] transition-all"
-        onClick={() => setExpanded(e => !e)}
-      >
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-bold text-[#e8f4ff]">{calc.name}</div>
-          <div className="text-xs text-[#4a7299] mt-0.5 truncate">{calc.description}</div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0 ml-2">
-          <button
-            onClick={e => { e.stopPropagation(); onToggleFavorite(calc.id); }}
-            className={`transition-all cursor-pointer ${isFav ? "text-[#fbbf24]" : "text-[#2a4d72] hover:text-[#4a7299]"}`}
-            title={isFav ? "Remove from favorites" : "Add to favorites"}
-          >
-            <Star size={14} fill={isFav ? "#fbbf24" : "none"} />
-          </button>
-          {expanded && (
-            <div className="px-2 py-1 rounded text-xs font-bold" style={{ background: ec.bg, color: ec.color }}>
-              {score} — {result.label}
+  return(
+    <div style={{position:"fixed",inset:0,zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(3,8,16,0.75)",backdropFilter:"blur(8px)"}}>
+      <div style={{width:"min(600px,96vw)",maxHeight:"88vh",display:"flex",flexDirection:"column",background:"rgba(5,15,30,0.95)",border:`1px solid ${catColor}35`,borderRadius:20,overflow:"hidden",boxShadow:`0 32px 80px rgba(0,0,0,0.7),0 0 0 1px ${catColor}20`}}>
+        {/* Header */}
+        <div style={{padding:"18px 22px 14px",borderBottom:"1px solid rgba(26,53,85,0.7)",background:`linear-gradient(135deg,${catColor}08,transparent)`,flexShrink:0}}>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:2,borderRadius:"20px 20px 0 0",background:`linear-gradient(90deg,${catColor},transparent)`}}/>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div style={{width:44,height:44,borderRadius:12,background:`${catColor}20`,border:`1px solid ${catColor}35`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{calc.icon}</div>
+            <div style={{flex:1}}>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:C.txt,lineHeight:1}}>{calc.name}</div>
+              <div style={{fontSize:11,color:C.txt3,marginTop:3}}>{calc.desc}</div>
             </div>
-          )}
-          {expanded ? <ChevronUp size={14} className="text-[#4a7299]" /> : <ChevronDown size={14} className="text-[#4a7299]" />}
+            <div style={{display:"flex",gap:6,flexShrink:0}}>
+              {calc.medRef&&<button onClick={()=>onMedRef&&onMedRef()} style={{padding:"5px 12px",background:`${C.orange}15`,border:`1px solid ${C.orange}35`,borderRadius:20,color:C.orange,fontSize:10,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,cursor:"pointer"}}>⚕ Med Ref</button>}
+              <button onClick={onClose} style={{width:32,height:32,background:"rgba(42,79,122,0.3)",border:"1px solid rgba(42,79,122,0.5)",borderRadius:8,color:C.txt3,fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Body */}
-      {expanded && (
-        <div className="border-t border-[#1e3a5f] px-4 py-3 flex flex-col gap-3">
-          <div className="text-xs text-[#4a7299] italic">{calc.source}</div>
-
-          {/* Fields */}
-          <div className="flex flex-col gap-2">
-            {calc.fields.map(f => (
-              <div key={f.id} className="flex items-center justify-between gap-2">
-                <label className="text-xs text-[#c8ddf0] flex-1">{f.label}</label>
-                {f.type === "checkbox" ? (
-                  <input type="checkbox" checked={!!values[f.id]} onChange={e => handleChange(f.id, e.target.checked)}
-                    className="w-4 h-4 cursor-pointer accent-[#9b6dff]" />
-                ) : (
-                  <select value={values[f.id]} onChange={e => handleChange(f.id, Number(e.target.value))}
-                    className="bg-[#162d4f] border border-[#1e3a5f] text-[#c8ddf0] text-xs rounded px-2 py-1 cursor-pointer outline-none max-w-[55%]">
-                    {f.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        {/* Fields + Result */}
+        <div style={{flex:1,overflowY:"auto",padding:"16px 22px"}}>
+          <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:16}}>
+            {calc.fields.map(f=>(
+              <div key={f.k}>
+                <label style={{fontSize:10,color:C.txt3,textTransform:"uppercase",letterSpacing:".06em",fontWeight:700,display:"block",marginBottom:4}}>{f.label}</label>
+                {f.type==="checkbox"?(
+                  <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",background:vals[f.k]?`${catColor}08`:"rgba(14,37,68,0.4)",border:`1px solid ${vals[f.k]?`${catColor}35`:"rgba(26,53,85,0.7)"}`,borderRadius:8,padding:"8px 12px",transition:"all .15s"}}>
+                    <input type="checkbox" checked={!!vals[f.k]} onChange={e=>set(f.k,e.target.checked)} style={{width:16,height:16,accentColor:catColor,cursor:"pointer"}}/>
+                    <span style={{fontSize:12,color:vals[f.k]?catColor:C.txt2}}>{f.label}</span>
+                  </label>
+                ):f.type==="select"?(
+                  <select value={vals[f.k]||""} onChange={e=>set(f.k,e.target.value)} style={{width:"100%",background:"rgba(14,37,68,0.5)",border:"1px solid rgba(26,53,85,0.8)",borderRadius:8,padding:"8px 11px",color:C.txt,fontFamily:"'DM Sans',sans-serif",fontSize:12,outline:"none"}}>
+                    <option value="">— Select —</option>
+                    {f.options.map(o=><option key={o} value={o}>{o}</option>)}
                   </select>
+                ):f.type==="date"?(
+                  <input type="date" value={vals[f.k]||""} onChange={e=>set(f.k,e.target.value)} style={{width:"100%",background:"rgba(14,37,68,0.5)",border:"1px solid rgba(26,53,85,0.8)",borderRadius:8,padding:"8px 11px",color:C.txt,fontFamily:"'JetBrains Mono',monospace",fontSize:12,outline:"none"}}/>
+                ):(
+                  <input type="number" min={f.min} max={f.max} value={vals[f.k]||""} onChange={e=>set(f.k,e.target.value)} placeholder="Enter value…" style={{width:"100%",background:"rgba(14,37,68,0.5)",border:"1px solid rgba(26,53,85,0.8)",borderRadius:8,padding:"8px 11px",color:C.txt,fontFamily:"'JetBrains Mono',monospace",fontSize:12,outline:"none"}}
+                  onFocus={e=>e.target.style.borderColor=catColor} onBlur={e=>e.target.style.borderColor="rgba(26,53,85,0.8)"}/>
                 )}
               </div>
             ))}
           </div>
 
-          {/* Score result */}
-          <div className="rounded-lg p-3 mt-1 border" style={{ background: ec.bg, borderColor: ec.color + "40" }}>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-bold" style={{ color: ec.color }}>{result.label}</span>
-              <span className="text-lg font-bold" style={{ color: ec.color }}>Score: {score}</span>
+          {/* Result */}
+          {result&&(
+            <div style={{borderRadius:14,padding:"16px 18px",background:`${result.color}10`,border:`1.5px solid ${result.color}40`,backdropFilter:"blur(8px)"}}>
+              <div style={{fontSize:11,color:C.txt3,textTransform:"uppercase",letterSpacing:".08em",fontFamily:"'JetBrains Mono',monospace",marginBottom:8}}>Result</div>
+              <div style={{fontSize:26,fontWeight:700,color:result.color,fontFamily:"'JetBrains Mono',monospace",lineHeight:1,marginBottom:8}}>{result.score}</div>
+              <div style={{fontSize:13,fontWeight:600,color:result.color,marginBottom:result.detail?6:0,lineHeight:1.4}}>{result.label}</div>
+              {result.detail&&<div style={{fontSize:11,color:C.txt2,lineHeight:1.55}}>{result.detail}</div>}
+              {calc.medRef&&<div style={{marginTop:12,fontSize:11,color:C.orange,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer"}} onClick={()=>onMedRef&&onMedRef()}>⚕ See Medication Reference for full dosing details →</div>}
             </div>
-            <p className="text-xs leading-relaxed" style={{ color: ec.color }}>{result.action}</p>
-          </div>
+          )}
+          {!result&&<div style={{textAlign:"center",padding:"16px 0",color:C.txt3,fontSize:12}}>Enter values above to calculate</div>}
+        </div>
 
-          {/* Save dialog */}
-          <AnimatePresence>
-            {showSaveDialog && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-                <div className="bg-[#162d4f] border border-[#1e3a5f] rounded-lg p-3 flex flex-col gap-2">
-                  <div className="text-xs font-semibold text-[#c8ddf0]">Add note (optional)</div>
-                  <input
-                    type="text"
-                    placeholder="e.g. Patient: J. Doe, 65F with ACS…"
-                    value={saveNote}
-                    onChange={e => setSaveNote(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && handleSaveResult()}
-                    className="bg-[#0e2340] border border-[#1e3a5f] rounded px-2 py-1.5 text-xs text-[#e8f4ff] outline-none placeholder:text-[#4a7299]"
-                  />
-                  <div className="flex gap-2">
-                    <button onClick={handleSaveResult} className="px-3 py-1.5 rounded text-xs border-none bg-[#00d4bc] text-[#050f1e] font-bold cursor-pointer hover:bg-[#00a896] transition-all flex items-center gap-1">
-                      <Save size={10} /> Save
-                    </button>
-                    <button onClick={() => setShowSaveDialog(false)} className="px-3 py-1.5 rounded text-xs border border-[#1e3a5f] bg-transparent text-[#4a7299] cursor-pointer hover:text-[#c8ddf0] transition-all">
-                      Cancel
-                    </button>
-                  </div>
+        <div style={{padding:"10px 22px 14px",borderTop:"1px solid rgba(26,53,85,0.5)",flexShrink:0}}>
+          <div style={{fontSize:9,color:C.txt4,fontFamily:"'JetBrains Mono',monospace"}}>Ref: {calc.ref} · Clinical decision support only — verify with primary sources</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+//  CALCULATOR CARD
+// ════════════════════════════════════════════════════════════
+function CalcCard({calc,onOpen,index}){
+  const[hov,setHov]=useState(false);
+  const cc=CAT_COLORS[calc.cat]||C.teal;
+  return(
+    <div onClick={()=>onOpen(calc)} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
+      style={{position:"relative",borderRadius:16,padding:"16px 16px 14px",cursor:"pointer",overflow:"hidden",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",transform:hov?"translateY(-5px) scale(1.02)":"translateY(0) scale(1)",animation:`ci ${0.45+index*0.03}s ease both`,
+        background:hov?`linear-gradient(135deg,${cc}18,${cc}06)`:"rgba(8,22,40,0.65)",
+        backdropFilter:"blur(18px)",WebkitBackdropFilter:"blur(18px)",
+        border:`1px solid ${hov?`${cc}40`:"rgba(26,53,85,0.75)"}`,
+        boxShadow:hov?`0 16px 36px rgba(0,0,0,0.45),0 0 24px ${cc}15`:"0 3px 14px rgba(0,0,0,0.35)"}}>
+      <div style={{position:"absolute",top:0,left:0,right:0,height:1.5,background:`linear-gradient(90deg,${cc},transparent)`,opacity:hov?1:0.2,transition:"opacity 0.3s"}}/>
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:10}}>
+        <div style={{width:38,height:38,borderRadius:10,background:`${cc}20`,border:`1px solid ${cc}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,boxShadow:hov?`0 0 14px ${cc}30`:"none",transition:"box-shadow 0.3s"}}>{calc.icon}</div>
+        <div style={{display:"flex",gap:4,flexDirection:"column",alignItems:"flex-end"}}>
+          <span style={{fontSize:8,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,padding:"2px 7px",borderRadius:20,background:`${cc}15`,border:`1px solid ${cc}25`,color:cc,letterSpacing:".06em"}}>{calc.cat}</span>
+          {calc.medRef&&<span style={{fontSize:8,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,padding:"2px 7px",borderRadius:20,background:`${C.orange}12`,border:`1px solid ${C.orange}25`,color:C.orange}}>DOSING</span>}
+        </div>
+      </div>
+      <div style={{fontSize:12,fontWeight:700,color:C.txt,lineHeight:1.25,marginBottom:4}}>{calc.name}</div>
+      <div style={{fontSize:10,color:C.txt3,lineHeight:1.35}}>{calc.desc}</div>
+      <div style={{position:"absolute",bottom:12,right:12,fontSize:10,color:cc,opacity:hov?0.8:0,transition:"opacity 0.2s"}}>Open →</div>
+      <style>{`@keyframes ci{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}`}</style>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+//  MAIN HUB PAGE
+// ════════════════════════════════════════════════════════════
+export default function CalculatorHub({ onBack, navigateToMedRef }) {
+  const[search,setSearch]=useState("");
+  const[cat,setCat]=useState("All");
+  const[activeCalc,setActiveCalc]=useState(null);
+  const searchRef=useRef(null);
+
+  const filtered=useMemo(()=>CALCS.filter(c=>(cat==="All"||c.cat===cat)&&(!search||c.name.toLowerCase().includes(search.toLowerCase())||c.desc.toLowerCase().includes(search.toLowerCase())||c.cat.toLowerCase().includes(search.toLowerCase()))),[search,cat]);
+
+  const catCounts=useMemo(()=>Object.fromEntries(ALL_CATS.map(c=>[c,c==="All"?CALCS.length:CALCS.filter(x=>x.cat===c).length])),[]);
+
+  return(
+    <div style={{minHeight:"100vh",background:C.bg,fontFamily:"'DM Sans',sans-serif",position:"relative"}}>
+      <GlassBg/>
+      {activeCalc&&<CalcPanel calc={activeCalc} onClose={()=>setActiveCalc(null)} onMedRef={()=>{setActiveCalc(null);if(navigateToMedRef)navigateToMedRef();}}/>}
+
+      <div style={{position:"relative",zIndex:1,padding:"24px 32px 48px",maxWidth:1400,margin:"0 auto"}}>
+
+        {/* ── Hero ── */}
+        <GBox style={{padding:"22px 28px 20px",marginBottom:16,position:"relative",overflow:"hidden",boxShadow:`0 8px 40px rgba(0,0,0,0.55),0 0 30px rgba(0,229,192,0.08),inset 0 1px 0 rgba(255,255,255,0.04)`}}>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:2.5,background:"linear-gradient(90deg,#00e5c0,#3b9eff,#9b6dff,#ff6b6b,#f5c842,#00e5c0)",borderRadius:"16px 16px 0 0"}}/>
+          <div style={{position:"absolute",inset:0,background:"linear-gradient(108deg,rgba(0,229,192,0.04) 0%,transparent 55%,rgba(59,158,255,0.03) 100%)",pointerEvents:"none"}}/>
+          <div style={{display:"flex",alignItems:"center",gap:18,position:"relative"}}>
+            {onBack&&<button onClick={onBack} style={{padding:"6px 14px",background:"rgba(14,37,68,0.6)",border:"1px solid rgba(42,79,122,0.6)",borderRadius:10,color:C.txt3,fontSize:11,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",backdropFilter:"blur(8px)",transition:"all .2s",flexShrink:0,whiteSpace:"nowrap"}} onMouseEnter={e=>{e.currentTarget.style.color=C.teal;e.currentTarget.style.borderColor="rgba(0,229,192,0.4)";}} onMouseLeave={e=>{e.currentTarget.style.color=C.txt3;e.currentTarget.style.borderColor="rgba(42,79,122,0.6)";}}>← Hub</button>}
+            <div style={{width:58,height:58,borderRadius:16,background:"linear-gradient(135deg,rgba(0,229,192,0.2),rgba(59,158,255,0.12))",border:"1px solid rgba(0,229,192,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0,boxShadow:"0 0 22px rgba(0,229,192,0.2)"}}>🧮</div>
+            <div style={{flex:1}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:5,flexWrap:"wrap"}}>
+                <span style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:C.txt,lineHeight:1}}>Calculator Hub</span>
+                <span style={{fontSize:9,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,padding:"3px 10px",borderRadius:20,background:"rgba(0,229,192,0.1)",color:C.teal,border:"1px solid rgba(0,229,192,0.3)",letterSpacing:".06em"}}>{CALCS.length} CALCULATORS</span>
+              </div>
+              <p style={{fontSize:12,color:C.txt2,margin:0,lineHeight:1.6}}>Clinical scores · Risk stratification · Weight-based dosing · Metabolic calculations — all evidence-based.</p>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,flexShrink:0}}>
+              {[{v:CALCS.filter(c=>c.cat==="Dosing").length,l:"Dosing Calcs",col:C.orange},{v:CALCS.filter(c=>!c.medRef).length,l:"Clinical Scores",col:C.teal},{v:ALL_CATS.length-1,l:"Categories",col:C.blue},{v:"ACLS\n+ACOG",l:"Evidence Base",col:C.purple}].map((s,i)=>(
+                <div key={i} style={{textAlign:"center",background:"rgba(14,37,68,0.6)",borderRadius:10,padding:"7px 10px",border:"1px solid rgba(26,53,85,0.8)"}}>
+                  <div style={{fontSize:13,fontWeight:700,color:s.col,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.1,whiteSpace:"pre-line"}}>{s.v}</div>
+                  <div style={{fontSize:8,color:C.txt4,marginTop:2,textTransform:"uppercase",letterSpacing:".06em"}}>{s.l}</div>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              ))}
+            </div>
+          </div>
+        </GBox>
 
-          {/* Actions */}
-          <div className="flex gap-2 flex-wrap">
-            <button onClick={handleReset}
-              className="px-3 py-1.5 rounded text-xs border border-[#1e3a5f] bg-[#162d4f] text-[#4a7299] hover:text-[#c8ddf0] transition-all cursor-pointer">
-              Reset
-            </button>
-            {!showSaveDialog && (
-              <button onClick={() => setShowSaveDialog(true)}
-                className="px-3 py-1.5 rounded text-xs border border-[#00d4bc] bg-[rgba(0,212,188,0.1)] text-[#00d4bc] hover:bg-[rgba(0,212,188,0.2)] transition-all cursor-pointer flex items-center gap-1">
-                <Save size={10} /> Save Result
+        {/* ── Search + Filters ── */}
+        <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:14,flexWrap:"wrap"}}>
+          <div style={{position:"relative",flex:1,minWidth:220,maxWidth:400}}>
+            <span style={{position:"absolute",left:13,top:"50%",transform:"translateY(-50%)",fontSize:14,opacity:0.35}}>🔍</span>
+            <input ref={searchRef} type="text" placeholder="Search calculators…" value={search} onChange={e=>setSearch(e.target.value)}
+              style={{width:"100%",background:"rgba(8,22,40,0.8)",border:"1px solid rgba(42,79,122,0.6)",borderRadius:11,padding:"9px 14px 9px 40px",color:C.txt,fontFamily:"'DM Sans',sans-serif",fontSize:12,outline:"none",backdropFilter:"blur(14px)",transition:"border-color .2s"}}
+              onFocus={e=>e.target.style.borderColor="rgba(0,229,192,0.5)"} onBlur={e=>e.target.style.borderColor="rgba(42,79,122,0.6)"}/>
+            {search&&<button onClick={()=>setSearch("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:C.txt3,cursor:"pointer",fontSize:16,lineHeight:1,padding:0}}>×</button>}
+          </div>
+          <span style={{fontSize:11,color:C.txt4,fontFamily:"'JetBrains Mono',monospace",marginLeft:"auto"}}>{filtered.length} result{filtered.length!==1?"s":""}</span>
+        </div>
+
+        {/* ── Category tabs ── */}
+        <div style={{display:"flex",gap:5,overflowX:"auto",marginBottom:18,paddingBottom:4,scrollbarWidth:"none"}}>
+          {ALL_CATS.map(c=>{
+            const active=c===cat; const cc=CAT_COLORS[c]||C.teal;
+            return(
+              <button key={c} onClick={()=>setCat(c)}
+                style={{display:"flex",alignItems:"center",gap:5,padding:"7px 14px",borderRadius:24,fontSize:11,fontWeight:active?700:500,fontFamily:"'DM Sans',sans-serif",cursor:"pointer",transition:"all .2s",whiteSpace:"nowrap",flexShrink:0,background:active?`${cc}18`:"rgba(8,22,40,0.75)",border:`1px solid ${active?`${cc}45`:"rgba(42,79,122,0.5)"}`,color:active?cc:C.txt3,backdropFilter:"blur(12px)",boxShadow:active?`0 0 12px ${cc}18`:"none"}}>
+                {c} <span style={{fontSize:9,opacity:0.65,fontFamily:"'JetBrains Mono',monospace"}}>({catCounts[c]})</span>
               </button>
-            )}
-            <AIInsightPanel calc={calc} values={values} score={score} result={result} />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── BSA Formula (Mosteller) ──────────────────────────────────────────────────
-function calcBSA(weightKg, heightCm) {
-  const w = parseFloat(weightKg);
-  const h = parseFloat(heightCm);
-  if (!w || !h || w <= 0 || h <= 0) return null;
-  return Math.sqrt((w * h) / 3600);
-}
-
-// ─── Schwartz CrCl ────────────────────────────────────────────────────────────
-function calcCrCl(heightCm, serumCr) {
-  const h = parseFloat(heightCm);
-  const scr = parseFloat(serumCr);
-  if (!h || !scr || h <= 0 || scr <= 0) return null;
-  // Bedside Schwartz formula: CrCl = 0.413 × Height(cm) / SCr
-  return (0.413 * h) / scr;
-}
-
-const DRUG_CATEGORIES = [
-  { id:"all", label:"All Drugs" },
-  { id:"analgesic_antipyretic", label:"Analgesics" },
-  { id:"antibiotic", label:"Antibiotics" },
-  { id:"antiviral", label:"Antivirals" },
-  { id:"antiemetic", label:"Antiemetics" },
-  { id:"respiratory", label:"Respiratory" },
-  { id:"emergency", label:"Emergency" },
-  { id:"oncology", label:"Oncology (BSA)" },
-];
-
-// ─── Pediatric Dosing Calculator ──────────────────────────────────────────────
-function PedDosingCalc() {
-  const [weightKg, setWeightKg] = useState("");
-  const [heightCm, setHeightCm] = useState("");
-  const [serumCr, setSerumCr] = useState("");
-  const [search, setSearch] = useState("");
-  const [selectedDrug, setSelectedDrug] = useState(null);
-  const [drugCategory, setDrugCategory] = useState("all");
-
-  const bsa = useMemo(() => calcBSA(weightKg, heightCm), [weightKg, heightCm]);
-  const crCl = useMemo(() => calcCrCl(heightCm, serumCr), [heightCm, serumCr]);
-
-  const filteredDrugs = useMemo(() => {
-    let drugs = PED_DRUGS;
-    if (drugCategory !== "all") drugs = drugs.filter(d => d.category === drugCategory);
-    if (!search.trim()) return drugs;
-    const q = search.toLowerCase();
-    return drugs.filter(d =>
-      d.name.toLowerCase().includes(q) ||
-      d.indications.toLowerCase().includes(q) ||
-      d.category.toLowerCase().includes(q)
-    );
-  }, [search, drugCategory]);
-
-  const calcDose = (drug) => {
-    const w = parseFloat(weightKg);
-    if (drug.doseMode === "bsa") {
-      if (!bsa) return null;
-      const minDose = drug.dosePerBSA.min * bsa;
-      const maxDose = drug.dosePerBSA.max * bsa;
-      const capMin = drug.maxSingle && drug.maxSingle !== Infinity ? Math.min(minDose, drug.maxSingle) : minDose;
-      const capMax = drug.maxSingle && drug.maxSingle !== Infinity ? Math.min(maxDose, drug.maxSingle) : maxDose;
-      return { minDose: capMin.toFixed(2), maxDose: capMax.toFixed(2), capped: maxDose > (drug.maxSingle||Infinity), bsaUsed: bsa.toFixed(2), mode: "bsa" };
-    }
-    if (drug.doseMode === "crcl") {
-      const weightDose = w > 0 ? (() => {
-        const mn = drug.dosePerKg.min * w;
-        const mx = drug.dosePerKg.max * w;
-        return { min: Math.min(mn, drug.maxSingle||mn).toFixed(2), max: Math.min(mx, drug.maxSingle||mx).toFixed(2) };
-      })() : null;
-      const crClTier = crCl && drug.doseByCrCl ? drug.doseByCrCl.find(t => crCl <= t.maxCrCl) : null;
-      return { weightDose, crClTier, crClValue: crCl ? crCl.toFixed(1) : null, mode: "crcl" };
-    }
-    // weight-based (default)
-    if (!w || w <= 0) return null;
-    const minDose = drug.dosePerKg.min * w;
-    const maxDose = drug.dosePerKg.max * w;
-    const capMin = drug.maxSingle ? Math.min(minDose, drug.maxSingle) : minDose;
-    const capMax = drug.maxSingle ? Math.min(maxDose, drug.maxSingle) : maxDose;
-    return { minDose: capMin.toFixed(2), maxDose: capMax.toFixed(2), capped: maxDose > (drug.maxSingle||Infinity), mode: "weight" };
-  };
-
-  const DosePreview = ({ drug }) => {
-    const dose = calcDose(drug);
-    if (!dose) {
-      const needsBSA = drug.doseMode === "bsa";
-      const needsCrCl = drug.doseMode === "crcl";
-      return <div className="text-xs text-[#4a7299]">{needsBSA ? "Enter wt+ht" : needsCrCl ? "Enter inputs" : "Enter weight"}</div>;
-    }
-    if (dose.mode === "bsa") {
-      return (
-        <div className="text-right shrink-0">
-          <div className="text-sm font-bold text-[#9b6dff]">
-            {dose.minDose === dose.maxDose ? dose.minDose : `${dose.minDose}–${dose.maxDose}`} {drug.unit.replace("/m²","")}
-          </div>
-          <div className="text-xs text-[#4a7299]">BSA {dose.bsaUsed} m²</div>
-          {dose.capped && <div className="text-xs text-[#f5a623]">Max capped</div>}
-        </div>
-      );
-    }
-    if (dose.mode === "crcl") {
-      return (
-        <div className="text-right shrink-0">
-          {dose.crClTier ? (
-            <div className="text-sm font-bold text-[#f5a623]">{dose.crClTier.dose}</div>
-          ) : dose.weightDose ? (
-            <div className="text-sm font-bold text-[#00d4bc]">{dose.weightDose.min === dose.weightDose.max ? dose.weightDose.min : `${dose.weightDose.min}–${dose.weightDose.max}`} {drug.unit.replace("/kg","")}</div>
-          ) : null}
-          {dose.crClValue && <div className="text-xs text-[#4a7299]">CrCl {dose.crClValue} mL/min</div>}
-        </div>
-      );
-    }
-    return (
-      <div className="text-right shrink-0">
-        <div className="text-sm font-bold text-[#00d4bc]">
-          {dose.minDose === dose.maxDose ? dose.minDose : `${dose.minDose}–${dose.maxDose}`} {drug.unit.replace("/kg","").replace("/kg/day","")}
-        </div>
-        {dose.capped && <div className="text-xs text-[#f5a623]">Max capped</div>}
-      </div>
-    );
-  };
-
-  return (
-    <div className="flex flex-col gap-3 h-full">
-      {/* Patient Parameters */}
-      <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-xl p-4 flex flex-col gap-3">
-        <div className="text-xs font-bold uppercase tracking-wide text-[#9b6dff]">Patient Parameters</div>
-
-        {/* Weight + Height */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs text-[#4a7299] mb-1 block">Weight</label>
-            <div className="flex items-center gap-1.5 bg-[#162d4f] border border-[#1e3a5f] rounded-lg px-2 py-1.5">
-              <input type="number" min="0" step="0.1" placeholder="0.0" value={weightKg} onChange={e => setWeightKg(e.target.value)}
-                className="flex-1 bg-transparent border-none outline-none text-sm text-[#e8f4ff] placeholder:text-[#4a7299] w-0" />
-              <span className="text-xs text-[#4a7299] shrink-0">kg</span>
-            </div>
-            {weightKg && <div className="text-xs text-[#4a7299] mt-0.5">= {(parseFloat(weightKg)*2.205).toFixed(1)} lbs</div>}
-          </div>
-          <div>
-            <label className="text-xs text-[#4a7299] mb-1 block">Height</label>
-            <div className="flex items-center gap-1.5 bg-[#162d4f] border border-[#1e3a5f] rounded-lg px-2 py-1.5">
-              <input type="number" min="0" step="1" placeholder="0" value={heightCm} onChange={e => setHeightCm(e.target.value)}
-                className="flex-1 bg-transparent border-none outline-none text-sm text-[#e8f4ff] placeholder:text-[#4a7299] w-0" />
-              <span className="text-xs text-[#4a7299] shrink-0">cm</span>
-            </div>
-            {heightCm && <div className="text-xs text-[#4a7299] mt-0.5">= {(parseFloat(heightCm)/2.54).toFixed(1)} in</div>}
-          </div>
+            );
+          })}
         </div>
 
-        {/* Serum Creatinine */}
-        <div>
-          <label className="text-xs text-[#4a7299] mb-1 block">Serum Creatinine <span className="text-[#2a4d72]">(for CrCl dosing)</span></label>
-          <div className="flex items-center gap-1.5 bg-[#162d4f] border border-[#1e3a5f] rounded-lg px-2 py-1.5 max-w-[180px]">
-            <input type="number" min="0" step="0.01" placeholder="0.00" value={serumCr} onChange={e => setSerumCr(e.target.value)}
-              className="flex-1 bg-transparent border-none outline-none text-sm text-[#e8f4ff] placeholder:text-[#4a7299] w-0" />
-            <span className="text-xs text-[#4a7299] shrink-0">mg/dL</span>
-          </div>
-        </div>
-
-        {/* Derived values */}
-        {(bsa || crCl) && (
-          <div className="flex gap-3 flex-wrap">
-            {bsa && (
-              <div className="flex items-center gap-2 bg-[rgba(155,109,255,0.1)] border border-[#9b6dff]/30 rounded-lg px-3 py-1.5">
-                <span className="text-xs text-[#4a7299]">BSA (Mosteller):</span>
-                <span className="text-sm font-bold text-[#9b6dff]">{bsa.toFixed(2)} m²</span>
-              </div>
-            )}
-            {crCl && (
-              <div className="flex items-center gap-2 bg-[rgba(245,166,35,0.1)] border border-[#f5a623]/30 rounded-lg px-3 py-1.5">
-                <span className="text-xs text-[#4a7299]">CrCl (Schwartz):</span>
-                <span className="text-sm font-bold text-[#f5a623]">{crCl.toFixed(1)} mL/min</span>
-              </div>
-            )}
+        {/* ── Dosing warning ── */}
+        {(cat==="Dosing"||cat==="All")&&(
+          <div style={{background:"rgba(255,159,67,0.06)",border:"1px solid rgba(255,159,67,0.2)",borderRadius:10,padding:"9px 14px",marginBottom:16,display:"flex",alignItems:"center",gap:10,backdropFilter:"blur(10px)"}}>
+            <span style={{fontSize:16}}>⚕</span>
+            <span style={{fontSize:11,color:C.txt2}}>Dosing calculators are clinical decision support tools only. Always verify with the <span style={{color:C.orange,cursor:navigateToMedRef?"pointer":"default",fontWeight:600}} onClick={()=>navigateToMedRef&&navigateToMedRef()}>Medication Reference</span> page for full contraindications, drug interactions, and monitoring parameters.</span>
           </div>
         )}
-      </div>
 
-      {/* Search + Category Filter */}
-      <div className="flex gap-2">
-        <div className="flex items-center gap-2 bg-[#0e2340] border border-[#1e3a5f] rounded-lg px-3 py-2 flex-1">
-          <Search size={13} className="text-[#4a7299] shrink-0" />
-          <input type="text" placeholder="Search drug, indication…" value={search} onChange={e => setSearch(e.target.value)}
-            className="flex-1 bg-transparent border-none outline-none text-xs text-[#e8f4ff] placeholder:text-[#4a7299]" />
-        </div>
-        <select value={drugCategory} onChange={e => setDrugCategory(e.target.value)}
-          className="bg-[#0e2340] border border-[#1e3a5f] text-[#c8ddf0] text-xs rounded-lg px-2 py-2 outline-none cursor-pointer">
-          {DRUG_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
-        </select>
-      </div>
-
-      {/* Legend */}
-      <div className="flex gap-3 text-xs text-[#4a7299]">
-        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#00d4bc] inline-block" /> Weight-based</span>
-        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#9b6dff] inline-block" /> BSA-based</span>
-        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#f5a623] inline-block" /> Renal-adjusted</span>
-      </div>
-
-      {/* Drug list */}
-      <div className="flex-1 overflow-y-auto scrollbar-hide flex flex-col gap-2">
-        {filteredDrugs.map(drug => {
-          const isSelected = selectedDrug?.id === drug.id;
-          const modeColor = drug.doseMode === "bsa" ? "#9b6dff" : drug.doseMode === "crcl" ? "#f5a623" : "#00d4bc";
-          return (
-            <div key={drug.id} className={`bg-[#0e2340] border rounded-xl overflow-hidden transition-all`}
-              style={{ borderColor: isSelected ? modeColor : "#1e3a5f" }}>
-              <div className="px-4 py-3 cursor-pointer hover:bg-[#162d4f] transition-all" onClick={() => setSelectedDrug(isSelected ? null : drug)}>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <div className="text-sm font-bold text-[#e8f4ff] truncate">{drug.name}</div>
-                      <span className="text-xs px-1.5 py-0.5 rounded font-bold shrink-0" style={{ background: modeColor + "20", color: modeColor }}>
-                        {drug.doseMode === "bsa" ? "BSA" : drug.doseMode === "crcl" ? "CrCl" : "Wt"}
-                      </span>
-                    </div>
-                    <div className="text-xs text-[#4a7299] mt-0.5 truncate">{drug.indications}</div>
-                  </div>
-                  <DosePreview drug={drug} />
-                  {isSelected ? <ChevronUp size={12} className="text-[#4a7299] shrink-0 ml-1" /> : <ChevronDown size={12} className="text-[#4a7299] shrink-0 ml-1" />}
-                </div>
-              </div>
-
-              {isSelected && (() => {
-                const dose = calcDose(drug);
-                return (
-                  <div className="border-t border-[#1e3a5f] px-4 py-3 flex flex-col gap-2">
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                      <div><span className="text-[#4a7299]">Route:</span> <span className="text-[#c8ddf0] font-medium">{drug.route}</span></div>
-                      <div><span className="text-[#4a7299]">Frequency:</span> <span className="text-[#c8ddf0] font-medium">{drug.frequency}</span></div>
-                      {drug.dosePerBSA && <div className="col-span-2"><span className="text-[#4a7299]">BSA Range:</span> <span className="text-[#c8ddf0] font-medium">{drug.dosePerBSA.min}–{drug.dosePerBSA.max} {drug.unit}</span></div>}
-                      {drug.dosePerKg && !drug.dosePerBSA && <div className="col-span-2"><span className="text-[#4a7299]">Dose Range:</span> <span className="text-[#c8ddf0] font-medium">{drug.dosePerKg.min}–{drug.dosePerKg.max} {drug.unit}</span></div>}
-                      {drug.maxSingle && drug.maxSingle !== Infinity && <div className="col-span-2"><span className="text-[#4a7299]">Max Single:</span> <span className="text-[#c8ddf0] font-medium">{drug.maxSingle} {drug.unit.replace("/kg","").replace("/m²","")}</span></div>}
-                      <div className="col-span-2"><span className="text-[#4a7299]">Formulation:</span> <span className="text-[#c8ddf0] font-medium">{drug.form}</span></div>
-                      {drug.ageRestriction && <div className="col-span-2"><span className="text-[#4a7299]">Age:</span> <span className="text-[#f5a623] font-medium">{drug.ageRestriction}</span></div>}
-                    </div>
-
-                    {/* Calculated dose box */}
-                    {dose && dose.mode === "weight" && (
-                      <div className="rounded-lg p-2.5 bg-[rgba(0,212,188,0.08)] border border-[rgba(0,212,188,0.2)]">
-                        <div className="text-xs font-bold text-[#00d4bc] mb-1">Calculated Dose ({weightKg} kg)</div>
-                        <div className="text-sm font-bold text-[#e8f4ff]">
-                          {dose.minDose === dose.maxDose ? `${dose.minDose}` : `${dose.minDose} – ${dose.maxDose}`} {drug.unit.replace("/kg","").replace("/kg/day","")}
-                        </div>
-                        {dose.capped && <div className="text-xs text-[#f5a623] mt-0.5">⚠ Capped at maximum single dose</div>}
-                      </div>
-                    )}
-
-                    {dose && dose.mode === "bsa" && (
-                      <div className="rounded-lg p-2.5 bg-[rgba(155,109,255,0.08)] border border-[rgba(155,109,255,0.3)]">
-                        <div className="text-xs font-bold text-[#9b6dff] mb-1">BSA-Calculated Dose (BSA = {dose.bsaUsed} m²)</div>
-                        <div className="text-sm font-bold text-[#e8f4ff]">
-                          {dose.minDose === dose.maxDose ? `${dose.minDose}` : `${dose.minDose} – ${dose.maxDose}`} {drug.unit.replace("/m²","")}
-                        </div>
-                        {dose.capped && <div className="text-xs text-[#f5a623] mt-0.5">⚠ Capped at maximum dose</div>}
-                      </div>
-                    )}
-
-                    {dose && dose.mode === "crcl" && (
-                      <div className="flex flex-col gap-2">
-                        {dose.weightDose && (
-                          <div className="rounded-lg p-2.5 bg-[rgba(0,212,188,0.08)] border border-[rgba(0,212,188,0.2)]">
-                            <div className="text-xs font-bold text-[#00d4bc] mb-1">Weight-Based Dose ({weightKg} kg)</div>
-                            <div className="text-sm font-bold text-[#e8f4ff]">
-                              {dose.weightDose.min === dose.weightDose.max ? dose.weightDose.min : `${dose.weightDose.min} – ${dose.weightDose.max}`} {drug.unit.replace("/kg","")}
-                            </div>
-                          </div>
-                        )}
-                        {drug.doseByCrCl && (
-                          <div className="rounded-lg p-2.5 bg-[rgba(245,166,35,0.08)] border border-[rgba(245,166,35,0.3)]">
-                            <div className="text-xs font-bold text-[#f5a623] mb-2">Renal Dose Adjustment {dose.crClValue ? `(CrCl ${dose.crClValue} mL/min)` : ""}</div>
-                            <div className="flex flex-col gap-1">
-                              {drug.doseByCrCl.map((tier, i) => (
-                                <div key={i} className={`flex items-center justify-between rounded px-2 py-1 text-xs ${dose.crClTier === tier ? "bg-[rgba(245,166,35,0.2)] border border-[#f5a623]/40" : ""}`}>
-                                  <span className="text-[#4a7299]">CrCl ≤ {tier.maxCrCl === 999 ? "normal" : tier.maxCrCl}</span>
-                                  <span className={`font-semibold ${dose.crClTier === tier ? "text-[#f5a623]" : "text-[#c8ddf0]"}`}>{tier.dose}</span>
-                                </div>
-                              ))}
-                            </div>
-                            {!crCl && <div className="text-xs text-[#4a7299] mt-1.5">Enter height + serum creatinine above to highlight recommended tier</div>}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {drug.pearls && drug.pearls.length > 0 && (
-                      <div>
-                        <div className="text-xs font-semibold text-[#9b6dff] mb-1">Clinical Pearls</div>
-                        {drug.pearls.map((p,i) => (
-                          <div key={i} className="text-xs text-[#c8ddf0] flex gap-1.5 mb-0.5">
-                            <span className="text-[#9b6dff] shrink-0">•</span>
-                            <span>{p}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-            </div>
-          );
-        })}
-        {filteredDrugs.length === 0 && (
-          <div className="text-center text-[#4a7299] text-xs py-8">No drugs found</div>
+        {/* ── Grid ── */}
+        {filtered.length===0?(
+          <div style={{textAlign:"center",padding:"60px 0",color:C.txt3}}>
+            <div style={{fontSize:40,marginBottom:12}}>🔍</div>
+            <div style={{fontSize:14,fontFamily:"'Playfair Display',serif"}}>No calculators found</div>
+            <div style={{fontSize:12,marginTop:6}}>Try a different search term or category</div>
+          </div>
+        ):(
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:10}}>
+            {filtered.map((c,i)=><CalcCard key={c.id} calc={c} onOpen={setActiveCalc} index={i}/>)}
+          </div>
         )}
-      </div>
-    </div>
-  );
-}
 
-// ─── AI Complaint Search ──────────────────────────────────────────────────────
-function AISearchPanel({ onSelectCalc }) {
-  const [complaint, setComplaint] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [recs, setRecs] = useState([]);
-
-  const handleAI = async () => {
-    if (!complaint.trim()) return;
-    setLoading(true);
-    setRecs([]);
-    const resp = await base44.integrations.Core.InvokeLLM({
-      prompt: `Given the clinical complaint or presentation: "${complaint}", identify the most relevant validated clinical scoring tools and calculators for emergency and inpatient medicine. Return a JSON array of 4-7 recommended calculators ranked by clinical importance. For each include: calculatorId (matching one of: heart_score, wells_pe, wells_dvt, gcs, nihss, chads_vasc, curb65, qsofa, perc, ciwa, alvarado, ottawa_ankle, mews), calculatorName, reason (why relevant, 1 sentence), priority (1=most important).`,
-      response_json_schema: {
-        type:"object",
-        properties:{ recommendations:{ type:"array", items:{ type:"object", properties:{ calculatorId:{type:"string"}, calculatorName:{type:"string"}, reason:{type:"string"}, priority:{type:"number"} }}}}
-      }
-    });
-    setRecs((resp?.recommendations || []).sort((a,b) => a.priority - b.priority));
-    setLoading(false);
-  };
-
-  return (
-    <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-xl p-4 flex flex-col gap-3">
-      <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-[#9b6dff]">
-        <Sparkles size={13} /> AI Calculator Finder
-      </div>
-      <div className="flex gap-2">
-        <input
-          type="text"
-          placeholder="Enter chief complaint or presentation…"
-          value={complaint}
-          onChange={e => setComplaint(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && handleAI()}
-          className="flex-1 bg-[#162d4f] border border-[#1e3a5f] rounded-lg px-3 py-2 text-xs text-[#e8f4ff] outline-none placeholder:text-[#4a7299]"
-        />
-        <button
-          onClick={handleAI}
-          disabled={loading || !complaint.trim()}
-          className="px-3 py-2 rounded-lg text-xs font-bold bg-[#9b6dff] text-white border-none cursor-pointer hover:bg-[#8b5cf6] disabled:opacity-50 flex items-center gap-1.5 transition-all"
-        >
-          {loading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-          {loading ? "…" : "Search"}
-        </button>
-      </div>
-      {recs.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          <div className="text-xs text-[#4a7299] font-semibold">Recommended for: {complaint}</div>
-          {recs.map((r,i) => (
-            <button
-              key={i}
-              onClick={() => onSelectCalc(r.calculatorId)}
-              className="flex items-start gap-2 p-2.5 rounded-lg border border-[#1e3a5f] bg-[#162d4f] hover:border-[#9b6dff] text-left transition-all cursor-pointer group"
-            >
-              <span className="text-xs font-bold text-[#9b6dff] shrink-0 mt-0.5">#{r.priority}</span>
-              <div>
-                <div className="text-xs font-semibold text-[#e8f4ff] group-hover:text-white">{r.calculatorName}</div>
-                <div className="text-xs text-[#4a7299] mt-0.5">{r.reason}</div>
-              </div>
-            </button>
+        {/* ── Footer ── */}
+        <div style={{marginTop:24,borderRadius:12,padding:"11px 16px",background:"rgba(5,15,30,0.65)",border:"1px solid rgba(26,53,85,0.6)",backdropFilter:"blur(12px)",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+          <span style={{fontSize:10,color:C.teal,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,flexShrink:0}}>⚕ EVIDENCE BASE</span>
+          {["GRACE Registry","TIMI Study Group","Wells (DVT/PE)","PESI Score","NIHSS","SOFA / Sepsis-3","Broselow-Luten","ACOG Obstetric Guidelines","CKD-EPI 2021","Cockcroft-Gault","ASSENT-2 (TNK)","Ranson / BISAP","GBS Score"].map((r,i)=>(
+            <span key={i} style={{fontSize:10,color:C.txt4}}>{i>0&&<span style={{marginRight:8,color:C.txt4}}>·</span>}{r}</span>
           ))}
         </div>
-      )}
-    </div>
-  );
-}
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
-export default function Calculators() {
-  const [activeTab, setActiveTab] = useState("calculators");
-  const [category, setCategory] = useState("all");
-  const [search, setSearch] = useState("");
-  const [expandedCalcId, setExpandedCalcId] = useState(null);
-  const [favorites, setFavorites] = useState(getFavorites);
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
-  const [showSaved, setShowSaved] = useState(false);
-  const [savedCount, setSavedCount] = useState(() => getSavedResults().length);
-
-  const handleToggleFavorite = useCallback((calcId) => {
-    const next = toggleFavoriteStorage(calcId);
-    setFavorites(next);
-    const isFav = !next.includes(calcId); // was it removed?
-    toast(isFav ? "Removed from favorites" : "⭐ Added to favorites");
-  }, []);
-
-  const handleResultSaved = useCallback(() => {
-    setSavedCount(getSavedResults().length);
-  }, []);
-
-  const filtered = useMemo(() => {
-    return CALCULATORS.filter(c => {
-      const matchCat = category === "all" || c.category === category;
-      const matchFav = !showFavoritesOnly || favorites.includes(c.id);
-      const matchSearch = !search.trim() ||
-        c.name.toLowerCase().includes(search.toLowerCase()) ||
-        c.description.toLowerCase().includes(search.toLowerCase());
-      return matchCat && matchFav && matchSearch;
-    });
-  }, [category, search, showFavoritesOnly, favorites]);
-
-  const handleSelectCalc = (calcId) => {
-    setCategory("all");
-    setSearch("");
-    setShowFavoritesOnly(false);
-    setActiveTab("calculators");
-    setTimeout(() => setExpandedCalcId(calcId), 100);
-  };
-
-  return (
-    <div className="flex flex-col h-screen bg-[#050f1e] text-[#c8ddf0] overflow-hidden" style={{paddingTop:80}}>
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" />
-
-      {/* Topbar */}
-      <div className="h-14 bg-[#0b1d35] border-b border-[#1e3a5f] px-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="text-base font-bold text-[#e8f4ff]">Medical Calculators</span>
-          <span className="text-sm text-[#9b6dff] font-medium">— Clinical Decision Tools</span>
-        </div>
-        <div className="flex gap-2 items-center text-xs text-[#4a7299]">
-          <span>{CALCULATORS.length} Calculators</span>
-          <span>·</span>
-          <span>{PED_DRUGS.length} Pediatric Drugs</span>
-          <span>·</span>
-          <span className="text-[#00d4bc] font-semibold">Validated formulas</span>
-          <button
-            onClick={() => setShowSaved(s => !s)}
-            className={`ml-2 flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border cursor-pointer transition-all ${showSaved ? "border-[#00d4bc] bg-[rgba(0,212,188,0.15)] text-[#00d4bc]" : "border-[#1e3a5f] bg-[#162d4f] text-[#4a7299] hover:text-[#c8ddf0]"}`}
-          >
-            <Clock size={11} /> Saved Results {savedCount > 0 && <span className="bg-[#00d4bc] text-[#050f1e] rounded-full px-1.5 font-bold">{savedCount}</span>}
-          </button>
-        </div>
-      </div>
-
-      {/* Content grid */}
-      <div className="flex-1 grid grid-cols-[300px_1fr] gap-3 p-3 overflow-hidden">
-
-        {/* Left Column */}
-        <div className="flex flex-col gap-3 overflow-hidden">
-          <AISearchPanel onSelectCalc={handleSelectCalc} />
-
-          {/* Category browser */}
-          <div className="bg-[#0e2340] border border-[#1e3a5f] rounded-xl p-3 flex flex-col gap-1.5 overflow-y-auto scrollbar-hide flex-1">
-            <div className="text-xs font-bold uppercase tracking-wide text-[#4a7299] mb-1">Categories</div>
-
-            {/* Favorites shortcut */}
-            <button
-              onClick={() => { setShowFavoritesOnly(f => !f); setActiveTab("calculators"); }}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-all text-left ${showFavoritesOnly ? "border border-[#fbbf24] bg-[rgba(251,191,36,0.12)] text-[#fbbf24]" : "border border-transparent text-[#4a7299] hover:bg-[#162d4f] hover:text-[#c8ddf0]"}`}
-            >
-              <Star size={13} fill={showFavoritesOnly ? "#fbbf24" : "none"} className={showFavoritesOnly ? "text-[#fbbf24]" : ""} />
-              <span>Favorites</span>
-              <span className="ml-auto text-[#2a4d72]">{favorites.length}</span>
-            </button>
-
-            {CATEGORIES.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => { setCategory(cat.id); setShowFavoritesOnly(false); setActiveTab("calculators"); }}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-all text-left ${category === cat.id && activeTab === "calculators" && !showFavoritesOnly ? "border border-[#9b6dff] bg-[rgba(155,109,255,0.15)] text-[#9b6dff]" : "border border-transparent text-[#4a7299] hover:bg-[#162d4f] hover:text-[#c8ddf0]"}`}
-              >
-                <span>{cat.icon}</span>
-                <span>{cat.label}</span>
-                <span className="ml-auto text-[#2a4d72]">
-                  {cat.id === "all" ? CALCULATORS.length : CALCULATORS.filter(c => c.category === cat.id).length}
-                </span>
-              </button>
-            ))}
-            <button
-              onClick={() => setActiveTab("peddosing")}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-all text-left mt-1 ${activeTab === "peddosing" ? "border border-[#00d4bc] bg-[rgba(0,212,188,0.12)] text-[#00d4bc]" : "border border-transparent text-[#4a7299] hover:bg-[#162d4f] hover:text-[#c8ddf0]"}`}
-            >
-              <span>👶</span>
-              <span>Pediatric Dosing</span>
-              <span className="ml-auto text-[#2a4d72]">{PED_DRUGS.length}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Right Column */}
-        <div className="flex flex-col gap-3 overflow-hidden">
-          {/* Tab bar */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => { setActiveTab("calculators"); setShowSaved(false); }}
-              className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all ${activeTab === "calculators" && !showSaved ? "border-[#9b6dff] bg-[rgba(155,109,255,0.15)] text-[#9b6dff]" : "border-[#1e3a5f] bg-[#0e2340] text-[#4a7299] hover:text-[#c8ddf0]"}`}
-            >
-              Clinical Calculators
-            </button>
-            <button
-              onClick={() => { setActiveTab("peddosing"); setShowSaved(false); }}
-              className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all ${activeTab === "peddosing" && !showSaved ? "border-[#00d4bc] bg-[rgba(0,212,188,0.12)] text-[#00d4bc]" : "border-[#1e3a5f] bg-[#0e2340] text-[#4a7299] hover:text-[#c8ddf0]"}`}
-            >
-              👶 Pediatric Dosing
-            </button>
-
-            {activeTab === "calculators" && !showSaved && (
-              <div className="flex items-center gap-2 ml-auto bg-[#0e2340] border border-[#1e3a5f] rounded-lg px-3 py-1.5">
-                <Search size={12} className="text-[#4a7299]" />
-                <input
-                  type="text"
-                  placeholder="Search calculators…"
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="bg-transparent border-none outline-none text-xs text-[#e8f4ff] placeholder:text-[#4a7299] w-36"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Tab content */}
-          <div className="flex-1 overflow-y-auto scrollbar-hide">
-            <div className="flex flex-col gap-2.5 pb-4">
-              {showSaved ? (
-                <SavedResultsPanel onClose={() => { setShowSaved(false); setSavedCount(getSavedResults().length); }} />
-              ) : activeTab === "calculators" ? (
-                <>
-                  {showFavoritesOnly && favorites.length === 0 && (
-                    <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-                      <div className="text-4xl">⭐</div>
-                      <div className="text-sm text-[#4a7299]">No favorites yet.<br/>Click the <Star size={12} className="inline" /> icon on any calculator to add it.</div>
-                    </div>
-                  )}
-                  {filtered.map(calc => (
-                    <CalculatorCard
-                      key={calc.id}
-                      calc={calc}
-                      initialExpanded={calc.id === expandedCalcId}
-                      favorites={favorites}
-                      onToggleFavorite={handleToggleFavorite}
-                      onResultSaved={handleResultSaved}
-                    />
-                  ))}
-                  {!showFavoritesOnly && filtered.length === 0 && (
-                    <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-                      <div className="text-4xl">🔍</div>
-                      <div className="text-sm text-[#4a7299]">No calculators found for &quot;{search}&quot;</div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <PedDosingCalc />
-              )}
-            </div>
-          </div>
-        </div>
       </div>
 
       <style>{`
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600&display=swap');
+        *{box-sizing:border-box}
+        input::placeholder{color:#2e4a6a}
+        button{outline:none}
+        ::-webkit-scrollbar{width:4px;height:4px}
+        ::-webkit-scrollbar-track{background:transparent}
+        ::-webkit-scrollbar-thumb{background:#1a3555;border-radius:2px}
       `}</style>
     </div>
   );

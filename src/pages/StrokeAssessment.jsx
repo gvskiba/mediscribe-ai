@@ -745,6 +745,7 @@ export default function StrokeAssessment() {
                 ))}
               </div>
             </div>
+            </div>
             )}
 
             {/* ── Stroke / Workup ── */}

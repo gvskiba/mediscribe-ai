@@ -22,7 +22,7 @@ const HUBS = [
   },
   {
     id: "neuro",
-    route: "/neuro-hub",
+    route: "/StrokeAssessment",
     icon: "🧠",
     abbr: "NEURO",
     title: "Neuro",

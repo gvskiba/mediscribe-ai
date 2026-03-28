@@ -6,6 +6,7 @@
  */
 
 import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 
 // ════════════════════════════════════════════════════════════
 //  HUB IDENTITY
@@ -1183,6 +1184,7 @@ function ConditionCard({ condition, onSelect, index }) {
 }
 
 export default function TraumaHub({ onBack }) {
+  const navigate = useNavigate();
   const [selected,  setSelected]  = useState(null);
   const [search,    setSearch]    = useState("");
   const [category,  setCategory]  = useState("All");
@@ -1199,8 +1201,8 @@ export default function TraumaHub({ onBack }) {
 
   const handleBack = useCallback(() => {
     if (onBack) onBack();
-    else window.history.back();
-  }, [onBack]);
+    else navigate("/hub");
+  }, [onBack, navigate]);
 
   if (selected) {
     return (

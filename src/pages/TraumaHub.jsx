@@ -5,7 +5,8 @@
  * ╚══════════════════════════════════════════════════════════════╝
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
 
 // ════════════════════════════════════════════════════════════
@@ -892,10 +893,8 @@ function SectionHeader({ icon, title, sub }) {
   );
 }
 
-function ConditionPage({ condition, onBack }) {
-  const [tab,     setTab]     = useState("overview");
-  const [checked, setChecked] = useState({});
-  const data = CLINICAL_DATA[condition.id] || {};
+function ConditionPage({ condition, onBack, contentMap }) {
+  const data = contentMap?.[condition.id] || CLINICAL_DATA[condition.id] || {};
 
   const TABS = [
     { id:"overview",  label:"Overview",   icon:"📋" },
@@ -1188,6 +1187,17 @@ export default function TraumaHub({ onBack }) {
   const [selected,  setSelected]  = useState(null);
   const [search,    setSearch]    = useState("");
   const [category,  setCategory]  = useState("All");
+  const [contentMap, setContentMap] = useState({});
+
+  useEffect(() => {
+    base44.entities.ProtocolContent.filter({ hub_id: "trauma" })
+      .then(records => {
+        const map = {};
+        records.forEach(r => { if (r.condition_id) map[r.condition_id] = r; });
+        setContentMap(map);
+      })
+      .catch(() => {});
+  }, []);
 
   const allCats = ["All", ...CATEGORIES];
 
@@ -1209,7 +1219,7 @@ export default function TraumaHub({ onBack }) {
       <div style={{ minHeight:"100vh", background:T.bg, fontFamily:"'DM Sans',sans-serif", position:"relative" }}>
         <GlassBg/>
         <div style={{ position:"relative", zIndex:1, padding:"28px 36px 48px", maxWidth:1100, margin:"0 auto" }}>
-          <ConditionPage condition={selected} onBack={() => setSelected(null)}/>
+          <ConditionPage condition={selected} onBack={() => setSelected(null)} contentMap={contentMap}/>
         </div>
       </div>
     );

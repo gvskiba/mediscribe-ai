@@ -24,6 +24,7 @@ import NotryaACS from '@/pages/NotryaACS';
 import OrderDashboard from '@/pages/OrderDashboard';
 import CardiacHub from '@/pages/CardiacHub';
 import HubSelectorPage from '@/pages/HubSelectorPage';
+import OBGYNHub from '@/pages/OBGYNHub';
 
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -97,6 +98,7 @@ const AuthenticatedApp = () => {
       <Route path="/OrderDashboard" element={<LayoutWrapper currentPageName="OrderDashboard"><OrderDashboard /></LayoutWrapper>} />
       <Route path="/cardiac-hub" element={<CardiacHub />} />
       <Route path="/hub" element={<HubSelectorPage />} />
+      <Route path="/ob-hub" element={<OBGYNHub />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

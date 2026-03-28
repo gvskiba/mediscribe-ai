@@ -80,6 +80,7 @@ const CHART_GROUPS = [
       { icon: '🤖', label: 'AutoCoder',         page: '/NewPatientInput?tab=autocoder' },
       { icon: '💉', label: 'eRx',               page: '/NewPatientInput?tab=erx' },
       { icon: '✂️', label: 'Procedures',        page: '/NewPatientInput?tab=procedures' },
+      { icon: '🏠', label: 'Hub',                page: '/hub' },
     ]
   },
 ];

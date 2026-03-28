@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 
 // ════════════════════════════════════════════════════════════
 //  DESIGN TOKENS — Notrya dark theme
@@ -560,6 +561,7 @@ function EmergencyCard({em,onSelect,index}){
 }
 
 export default function OBGYNHub() {
+  const navigate = useNavigate();
   const[selected,setSelected]=useState(null);
   const[search,setSearch]=useState("");
   const[category,setCategory]=useState("All");
@@ -582,6 +584,12 @@ export default function OBGYNHub() {
       <GlassBg/>
       <div style={{position:"relative",zIndex:1,padding:"28px 36px 48px",maxWidth:1200,margin:"0 auto"}}>
 
+        <div style={{marginBottom:12,animation:"ob-in 0.4s ease both"}}>
+          <button onClick={()=>navigate("/hub")} style={{background:"rgba(8,22,40,0.8)",border:"1px solid rgba(42,79,122,0.6)",borderRadius:10,padding:"7px 16px",color:"#8aaccc",fontSize:12,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",backdropFilter:"blur(12px)",display:"inline-flex",alignItems:"center",gap:6,transition:"all .2s"}}
+            onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(255,107,157,0.5)";e.currentTarget.style.color="#ff6b9d";}}
+            onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(42,79,122,0.6)";e.currentTarget.style.color="#8aaccc";}}
+          >← Back to Hub</button>
+        </div>
         <GlassBox style={{padding:"26px 30px 22px",marginBottom:18,position:"relative",overflow:"hidden",boxShadow:`0 8px 40px rgba(0,0,0,0.55), 0 0 30px rgba(255,107,157,0.1), inset 0 1px 0 rgba(255,255,255,0.04)`}}>
           <div style={{position:"absolute",top:0,left:0,right:0,height:2.5,borderRadius:"16px 16px 0 0",background:`linear-gradient(90deg,#ff6b9d,#ff6b6b,#ff9f43,#f5c842,#9b6dff,#ff6b9d)`}}/>
           <div style={{position:"absolute",inset:0,background:"linear-gradient(108deg,rgba(255,107,157,0.05) 0%,transparent 55%,rgba(155,109,255,0.04) 100%)",pointerEvents:"none"}}/>

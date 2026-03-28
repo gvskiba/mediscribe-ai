@@ -908,7 +908,7 @@ const CALCS = [
    compute(v){
      const s=[v.bili,v.albumin,v.pt,v.ascites,v.enceph].reduce((a,x)=>a+(+(x?.charAt(0)||1)),0);
      const cls=s<=6?"A":s<=9?"B":"C";
-     const mort=cls==="A":"1–yr: 100%, 2-yr: 85%":cls==="B":"1-yr: 81%, 2-yr: 57%":"1-yr: 45%, 2-yr: 35%";
+     const mort=cls==="A"?"1-yr: 100%, 2-yr: 85%":cls==="B"?"1-yr: 81%, 2-yr: 57%":"1-yr: 45%, 2-yr: 35%";
      const c=cls==="A"?C.teal:cls==="B"?C.gold:C.coral;
      return{score:`${s} — Class ${cls}`,label:`Survival: ${mort}`,detail:"Class C (≥ 10) — consider transplant evaluation",color:c};
    }},

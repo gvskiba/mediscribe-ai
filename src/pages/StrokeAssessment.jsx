@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 
 const T = {
   bg:'#050f1e',panel:'#081628',card:'#0b1e36',up:'#0e2544',
@@ -351,6 +352,7 @@ const NIHSSCard = React.memo(({ item, score, time, onScore, onTime, nowFn }) => 
 });
 
 export default function StrokeAssessment() {
+  const navigate = useNavigate();
   const [patMode,setPatMode] = useState('adult');
   const [activeTab,setActiveTab] = useState('nihss');
   const [scores,setScores] = useState({});
@@ -425,6 +427,7 @@ export default function StrokeAssessment() {
 
         {/* PAGE HEADER */}
         <div style={{marginBottom:20}}>
+          <button onClick={()=>navigate('/hub')} style={{marginBottom:12,background:'rgba(8,22,40,0.8)',border:'1px solid rgba(42,79,122,0.6)',borderRadius:10,padding:'7px 16px',color:'#8aaccc',fontSize:12,cursor:'pointer',fontFamily:"'DM Sans',sans-serif",backdropFilter:'blur(12px)',display:'inline-flex',alignItems:'center',gap:6,transition:'all .2s'}} onMouseEnter={e=>{e.currentTarget.style.borderColor='rgba(59,158,255,0.5)';e.currentTarget.style.color='#3b9eff';}} onMouseLeave={e=>{e.currentTarget.style.borderColor='rgba(42,79,122,0.6)';e.currentTarget.style.color='#8aaccc';}}>← Back to Hub</button>
           <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:12,flexWrap:'wrap'}}>
             <div style={{width:44,height:44,borderRadius:12,background:`linear-gradient(135deg,${T.blue},${T.purple})`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,flexShrink:0,boxShadow:`0 4px 14px rgba(59,158,255,0.25)`}}>🧠</div>
             <div>

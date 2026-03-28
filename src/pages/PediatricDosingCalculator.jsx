@@ -405,7 +405,7 @@ export default function PediatricDosingCalculator() {
       <style>{CSS}</style>
 
       {/* PAGE HEADER */}
-      <div style={{ marginBottom: 24 }}>
+      <div style={{ marginBottom: 24, paddingTop: 80 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 4 }}>
           <div style={{
             width: 40, height: 40, borderRadius: 10,

@@ -1114,7 +1114,7 @@ export default function CalculatorHub({ onBack, navigateToMedRef }) {
       <GlassBg/>
       {activeCalc&&<CalcPanel calc={activeCalc} onClose={()=>setActiveCalc(null)} onMedRef={()=>{setActiveCalc(null);if(navigateToMedRef)navigateToMedRef();}}/>}
 
-      <div style={{position:"relative",zIndex:1,padding:"24px 32px 48px",maxWidth:1400,margin:"0 auto"}}>
+      <div style={{position:"relative",zIndex:1,padding:"100px 32px 48px",maxWidth:1400,margin:"0 auto"}}>
 
         {/* ── Hero ── */}
         <GBox style={{padding:"22px 28px 20px",marginBottom:16,position:"relative",overflow:"hidden",boxShadow:`0 8px 40px rgba(0,0,0,0.55),0 0 30px rgba(0,229,192,0.08),inset 0 1px 0 rgba(255,255,255,0.04)`}}>

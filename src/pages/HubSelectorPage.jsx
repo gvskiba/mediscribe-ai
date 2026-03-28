@@ -39,7 +39,7 @@ const HUBS = [
   },
   {
     id: "calculator",
-    route: "/calculator-hub",
+    route: "/Calculators",
     icon: "🧮",
     abbr: "CALC",
     title: "Calculator",

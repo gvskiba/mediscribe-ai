@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { base44 } from "@/api/base44Client";
 
 // ════════════════════════════════════════════════════════════
 //  DESIGN TOKENS — Notrya dark theme
@@ -404,10 +405,10 @@ function DrugRow({rx}){
   );
 }
 
-function ConditionPage({emergency,onBack}){
+function ConditionPage({emergency,onBack,contentMap}){
   const[activeTab,setActiveTab]=useState("overview");
   const[checked,setChecked]=useState({});
-  const data=CLINICAL_DATA[emergency.id];
+  const data=contentMap?.[emergency.id] || CLINICAL_DATA[emergency.id];
   const TABS=[{id:"overview",label:"Overview",icon:"📋"},{id:"workup",label:"Workup",icon:"✅"},{id:"treatment",label:"Treatment",icon:"💊"},{id:"followup",label:"Follow-up",icon:"📅"}];
 
   return(
@@ -565,6 +566,17 @@ export default function OBGYNHub() {
   const[selected,setSelected]=useState(null);
   const[search,setSearch]=useState("");
   const[category,setCategory]=useState("All");
+  const[contentMap,setContentMap]=useState({});
+
+  useEffect(()=>{
+    base44.entities.ProtocolContent.filter({ hub_id: "ob" })
+      .then(records => {
+        const map = {};
+        records.forEach(r => { if (r.condition_id) map[r.condition_id] = r; });
+        setContentMap(map);
+      })
+      .catch(()=>{});
+  },[]);
 
   const filtered=EMERGENCIES
     .filter(e=>category==="All"||e.category===category)
@@ -574,7 +586,7 @@ export default function OBGYNHub() {
     <div style={{minHeight:"100vh",background:T.bg,fontFamily:"'DM Sans',sans-serif",position:"relative"}}>
       <GlassBg/>
       <div style={{position:"relative",zIndex:1,padding:"28px 36px 48px",maxWidth:1100,margin:"0 auto"}}>
-        <ConditionPage emergency={selected} onBack={()=>setSelected(null)}/>
+        <ConditionPage emergency={selected} onBack={()=>setSelected(null)} contentMap={contentMap}/>
       </div>
     </div>
   );

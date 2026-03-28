@@ -1164,7 +1164,7 @@ export default function Calculators() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#050f1e] text-[#c8ddf0] overflow-hidden">
+    <div className="flex flex-col h-screen bg-[#050f1e] text-[#c8ddf0] overflow-hidden" style={{paddingTop:80}}>
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" />
 
       {/* Topbar */}

@@ -507,7 +507,8 @@ const NIHSSCard = React.memo(({ item, score, time, onScore, onTime, nowFn }) => 
 export default function StrokeAssessment() {
   const navigate = useNavigate();
   const [patMode,setPatMode] = useState('adult');
-  const [activeTab,setActiveTab] = useState('nihss');
+  const [activeTab,setActiveTab] = useState('stroke');
+  const [strokeSubTab,setStrokeSubTab] = useState('nihss');
 
   // NIHSS state
   const [scores,setScores] = useState({});
@@ -599,14 +600,12 @@ export default function StrokeAssessment() {
 
   // Tab configs
   const TABS = [
-    {id:'nihss',label:'⚡ NIHSS',cls:'on'},
-    {id:'workup',label:'🔬 Workup',cls:'on'},
-    {id:'treatment',label:'💊 Treatment',cls:'on'},
-    {id:'consult',label:'🧠 Consult',cls:'on'},
-    {id:'calc',label:'🧮 Calculators',cls:'on'},
-    {id:'tia',label:'⚠️ TIA',cls:'on-teal'},
-    {id:'seizure',label:'⚡ Seizure',cls:'on-purple'},
-    {id:'ams',label:'🌀 AMS',cls:'on-coral'},
+    {id:'stroke',  label:'🧠 Stroke',      cls:'on'},
+    {id:'tia',     label:'⚠️ TIA',          cls:'on-teal'},
+    {id:'seizure', label:'⚡ Seizure',       cls:'on-purple'},
+    {id:'ams',     label:'🌀 AMS',           cls:'on-coral'},
+    {id:'calc',    label:'🧮 Calculators',   cls:'on'},
+    {id:'consult', label:'📋 Consult',       cls:'on'},
   ];
 
   return (
@@ -651,9 +650,19 @@ export default function StrokeAssessment() {
           ))}
         </div>
 
-        {/* ════════════ TAB: NIHSS ════════════ */}
-        {activeTab==='nihss'&&(
+        {/* ════════════ TAB: STROKE ════════════ */}
+        {activeTab==='stroke'&&(
           <div>
+            {/* Stroke sub-tabs */}
+            <div className="sub-tabs" style={{marginBottom:20}}>
+              {[['nihss','⚡ NIHSS Scale'],['workup','🔬 Workup'],['treatment','💊 Treatment']].map(([id,lbl])=>(
+                <button key={id} className={`sub-tab${strokeSubTab===id?' on':''}`} onClick={()=>setStrokeSubTab(id)}>{lbl}</button>
+              ))}
+            </div>
+
+            {/* ── Stroke / NIHSS ── */}
+            {strokeSubTab==='nihss'&&(
+              <div>
             {/* Score Bar */}
             <div className="sa-panel-glass" style={{marginBottom:18}}>
               <div style={{display:'flex',alignItems:'center',gap:18,marginBottom:12,flexWrap:'wrap'}}>
@@ -736,12 +745,11 @@ export default function StrokeAssessment() {
                 ))}
               </div>
             </div>
-          </div>
-        )}
+            )}
 
-        {/* ════════════ TAB: WORKUP ════════════ */}
-        {activeTab==='workup'&&(
-          <div>
+            {/* ── Stroke / Workup ── */}
+            {strokeSubTab==='workup'&&(
+            <div>
             <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16,padding:'10px 16px',background:'rgba(8,24,48,0.55)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:12,backdropFilter:'blur(20px)'}}>
               <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,color:T.teal,fontWeight:700}}>✅ {doneWorkup} / {totalWorkup} completed</span>
               <div style={{flex:1}}><div className="sa-prog"><div className="sa-prog-fill" style={{width:`${doneWorkup/totalWorkup*100}%`,background:T.teal}}/></div></div>
@@ -793,8 +801,8 @@ export default function StrokeAssessment() {
           </div>
         )}
 
-        {/* ════════════ TAB: TREATMENT ════════════ */}
-        {activeTab==='treatment'&&(
+            {/* ── Stroke / Treatment ── */}
+            {strokeSubTab==='treatment'&&(
           <div>
             {patMode==='ped'?(
               <div>
@@ -852,6 +860,9 @@ export default function StrokeAssessment() {
                 </div>
               </div>
             )}
+          </div>
+            )}
+
           </div>
         )}
 

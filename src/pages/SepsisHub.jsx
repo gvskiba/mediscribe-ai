@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { base44 } from "@/api/base44Client";
 
 /* ═══ TOKENS ═══════════════════════════════════════════════════════ */
 const T = {
@@ -340,20 +341,19 @@ function ResistanceAI() {
     if (!loc.trim()) return;
     setLoading(true); setErr(null); setResult(null);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-          model:"claude-sonnet-4-20250514",
-          max_tokens:1000,
-          system:`You are a clinical antimicrobial stewardship expert. Given a hospital name, city, or US region, provide estimated local resistance rates for key pathogen-antibiotic combinations relevant to sepsis. Use CDC SENTRY, NHSN, IDSA, and published regional antibiogram data. If lacking specific institutional data, provide regional or national estimates with ranges. Return ONLY a valid JSON object — no markdown, no preamble:
-{"location":"name","note":"one-sentence data source","updated":"year range","rates":[{"organism":"E. coli","antibiotic":"Fluoroquinolones","resistance":"25–35%","trend":"rising","impact":"Avoid FQ empirically for urosepsis"},{"organism":"E. coli","antibiotic":"3rd-gen Cephalosporins (ESBL)","resistance":"12–20%","trend":"stable","impact":"ESBL risk stratification required"},{"organism":"Klebsiella pneumoniae","antibiotic":"Carbapenems (CRE)","resistance":"2–5%","trend":"rising","impact":"CRE screen for prior healthcare exposure"},{"organism":"S. aureus","antibiotic":"Methicillin (MRSA)","resistance":"30–40%","trend":"decreasing","impact":"MRSA nasal screen before vancomycin"},{"organism":"S. pneumoniae","antibiotic":"Penicillin (non-susceptible)","resistance":"25–30%","trend":"stable","impact":"Add vancomycin for empiric meningitis"},{"organism":"Pseudomonas aeruginosa","antibiotic":"Piperacillin-Tazobactam","resistance":"15–25%","trend":"stable","impact":"Extended infusion may improve PTA"},{"organism":"Enterococcus spp.","antibiotic":"Vancomycin (VRE)","resistance":"10–20%","trend":"rising","impact":"VRE risk for nosocomial/abdominal sepsis"},{"organism":"Acinetobacter spp.","antibiotic":"Carbapenems","resistance":"40–60%","trend":"rising","impact":"MDR-Ab — ID consult mandatory"}]}`,
-          messages:[{role:"user",content:`Provide antimicrobial resistance rates for sepsis management at or near: ${loc}`}],
-        }),
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Provide antimicrobial resistance rates for sepsis management at or near: ${loc}. Return ONLY a valid JSON object — no markdown, no preamble: {"location":"name","note":"one-sentence data source","updated":"year range","rates":[{"organism":"E. coli","antibiotic":"Fluoroquinolones","resistance":"25–35%","trend":"rising","impact":"Avoid FQ empirically for urosepsis"},{"organism":"E. coli","antibiotic":"3rd-gen Cephalosporins (ESBL)","resistance":"12–20%","trend":"stable","impact":"ESBL risk stratification required"},{"organism":"Klebsiella pneumoniae","antibiotic":"Carbapenems (CRE)","resistance":"2–5%","trend":"rising","impact":"CRE screen for prior healthcare exposure"},{"organism":"S. aureus","antibiotic":"Methicillin (MRSA)","resistance":"30–40%","trend":"decreasing","impact":"MRSA nasal screen before vancomycin"},{"organism":"S. pneumoniae","antibiotic":"Penicillin (non-susceptible)","resistance":"25–30%","trend":"stable","impact":"Add vancomycin for empiric meningitis"},{"organism":"Pseudomonas aeruginosa","antibiotic":"Piperacillin-Tazobactam","resistance":"15–25%","trend":"stable","impact":"Extended infusion may improve PTA"},{"organism":"Enterococcus spp.","antibiotic":"Vancomycin (VRE)","resistance":"10–20%","trend":"rising","impact":"VRE risk for nosocomial/abdominal sepsis"},{"organism":"Acinetobacter spp.","antibiotic":"Carbapenems","resistance":"40–60%","trend":"rising","impact":"MDR-Ab — ID consult mandatory"}]}`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            location: { type: "string" },
+            note: { type: "string" },
+            updated: { type: "string" },
+            rates: { type: "array", items: { type: "object", properties: { organism:{type:"string"}, antibiotic:{type:"string"}, resistance:{type:"string"}, trend:{type:"string"}, impact:{type:"string"} } } }
+          }
+        }
       });
-      const d = await res.json();
-      const raw = (d.content[0]?.text||"").replace(/```json|```/g,"").trim();
-      setResult(JSON.parse(raw));
+      setResult(result);
     } catch(e) { setErr("Unable to retrieve data. Check connection and try again."); }
     setLoading(false);
   };

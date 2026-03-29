@@ -173,7 +173,12 @@ export default function Home() {
     arrived: n.created_date ? new Date(n.created_date).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:false}) : "—",
     los: "—",
     noteId: n.id,
-    vitals: n.vital_signs || { hr:null, sbp:null, spo2:null, temp:null },
+    vitals: {
+      hr:   n.vital_signs?.heart_rate?.value ?? null,
+      sbp:  n.vital_signs?.blood_pressure?.systolic ?? null,
+      spo2: n.vital_signs?.oxygen_saturation?.value ?? null,
+      temp: n.vital_signs?.temperature?.value ?? null,
+    },
     flags: [],
   }));
 
@@ -346,7 +351,7 @@ export default function Home() {
                 const isSelected = selected===p.id;
                 const isExpanded = expanded === p.id;
                 return (
-                  <div key={p.id}>
+                  <motion.div key={p.id} layout initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}>
                   <motion.div
                     layout
                     initial={{ opacity:0, y:-4 }}
@@ -409,7 +414,7 @@ export default function Home() {
                         const vc = vitalColor(v.k, v.val);
                         return (
                           <div key={v.k} style={{ textAlign:"center" }}>
-                            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12, fontWeight:700, color:vc, lineHeight:1 }}>{v.val}{v.unit}</div>
+                            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12, fontWeight:700, color:vc, lineHeight:1 }}>{v.val != null ? `${v.val}${v.unit}` : "—"}</div>
                             <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7, color:C.muted, marginTop:1 }}>{v.label}</div>
                           </div>
                         );
@@ -510,7 +515,7 @@ export default function Home() {
                       </motion.div>
                     )}
                   </AnimatePresence>
-                  </div>
+                  </motion.div>
                 );
               })}
             </AnimatePresence>

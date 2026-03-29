@@ -1,10 +1,9 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ProcedureTemplateManager from "../components/procedures/ProcedureTemplateManager";
 import BillingModule from "../components/billing/BillingModule";
 
-// ── Font + Glass CSS Injection ──────────────────────────────────────
 (() => {
   if (document.getElementById("proc-fonts")) return;
   const l = document.createElement("link"); l.id = "proc-fonts";
@@ -15,7 +14,6 @@ import BillingModule from "../components/billing/BillingModule";
   s.textContent = `
     @keyframes proc-fadeSlide { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
     @keyframes proc-shimmer   { 0%{background-position:-200% center} 100%{background-position:200% center} }
-    @keyframes proc-glow      { 0%,100%{opacity:.55} 50%{opacity:1} }
     .proc-fade { animation: proc-fadeSlide .3s ease forwards; }
     .proc-nav-item { transition: all .18s ease; cursor: pointer; }
     .proc-nav-item:hover { transform: translateX(3px); }
@@ -34,7 +32,6 @@ import BillingModule from "../components/billing/BillingModule";
   document.head.appendChild(s);
 })();
 
-// ── Design Tokens ───────────────────────────────────────────────────
 const T = {
   navy:"#050f1e", slate:"#0b1d35", panel:"#0e2340", edge:"#162d4f",
   border:"#1e3a5f", muted:"#2a4d72", dim:"#4a7299", text:"#c8ddf0",
@@ -43,7 +40,6 @@ const T = {
   green:"#2ecc71", purple:"#9b6dff", rose:"#f472b6", blue:"#3b9eff",
 };
 
-// ── Section Registry ────────────────────────────────────────────────
 const SECTIONS = [
   { id:"proc-notes",  icon:"📋", label:"Procedure Notes",  sub:"AI-drafted templates",  color:T.amber,  gl:"rgba(245,166,35,0.12)",  br:"rgba(245,166,35,0.4)"  },
   { id:"ed-notes",    icon:"📝", label:"ED Notes",         sub:"Critical care, AMA…",   color:T.rose,   gl:"rgba(244,114,182,0.12)", br:"rgba(244,114,182,0.4)" },
@@ -53,7 +49,6 @@ const SECTIONS = [
   { id:"templates",   icon:"🛠️", label:"Template Manager", sub:"Custom note templates",  color:T.blue,   gl:"rgba(59,158,255,0.12)",  br:"rgba(59,158,255,0.4)"  },
 ];
 
-// ── Glass Style Helpers ─────────────────────────────────────────────
 const glass = (extra = {}) => ({
   backdropFilter:"blur(24px) saturate(200%)",
   WebkitBackdropFilter:"blur(24px) saturate(200%)",
@@ -71,9 +66,6 @@ const deepGlass = (extra = {}) => ({
   ...extra,
 });
 
-// ─────────────────────────────────────────────────────────────────────
-// CPT DATA
-// ─────────────────────────────────────────────────────────────────────
 const CPT_DATA = [
   { cptCode:"12001", procedureName:"Simple repair, scalp/neck/axillae ≤2.5cm",    category:"wound-repair",  rvu:1.83 },
   { cptCode:"12002", procedureName:"Simple repair, scalp/neck/axillae 2.6–7.5cm", category:"wound-repair",  rvu:2.08 },
@@ -133,7 +125,6 @@ const CATEGORY_COLORS = {
   "neuro":        { bg:"rgba(244,114,182,0.1)", fg:"#f472b6" },
 };
 
-// ── Procedure Templates (abbreviated for space — same as original) ──
 const PROC_CATEGORIES = [
   { id:"all", label:"All" },
   { id:"wound", label:"🩹 Wound" },
@@ -205,13 +196,13 @@ const PROC_TEMPLATES = [
   },
   { id:"io-access", label:"Intraosseous Access", category:"vascular", icon:"🦴", color:T.amber,
     fields:[
-      { id:"indication",   label:"Indication",            type:"textarea",required:true,  placeholder:"e.g., cardiac arrest, failed peripheral IV × 2 attempts" },
-      { id:"io_site",      label:"IO Site",               type:"select",  required:true,  options:["Proximal tibia","Distal tibia","Proximal humerus","Sternal","Distal femur"] },
-      { id:"device",       label:"Device Used",           type:"select",  required:true,  options:["EZ-IO — 15mm needle","EZ-IO — 25mm needle","EZ-IO — 45mm needle","FAST1 — sternal","Manual IO needle"] },
-      { id:"attempts",     label:"Attempts",              type:"number",  required:true,  placeholder:"1" },
-      { id:"confirmation", label:"Confirmation Method",   type:"text",    required:true,  placeholder:"e.g., IO seated, aspirated marrow, flushed 10 mL NS" },
-      { id:"initial_flush",label:"Initial Flush",         type:"text",    required:true,  placeholder:"e.g., 10 mL NS + lidocaine 40 mg IO" },
-      { id:"complications",label:"Complications",         type:"text",    required:false, placeholder:"None" },
+      { id:"indication",    label:"Indication",            type:"textarea",required:true,  placeholder:"e.g., cardiac arrest, failed peripheral IV × 2 attempts" },
+      { id:"io_site",       label:"IO Site",               type:"select",  required:true,  options:["Proximal tibia","Distal tibia","Proximal humerus","Sternal","Distal femur"] },
+      { id:"device",        label:"Device Used",           type:"select",  required:true,  options:["EZ-IO — 15mm needle","EZ-IO — 25mm needle","EZ-IO — 45mm needle","FAST1 — sternal","Manual IO needle"] },
+      { id:"attempts",      label:"Attempts",              type:"number",  required:true,  placeholder:"1" },
+      { id:"confirmation",  label:"Confirmation Method",   type:"text",    required:true,  placeholder:"e.g., IO seated, aspirated marrow, flushed 10 mL NS" },
+      { id:"initial_flush", label:"Initial Flush",         type:"text",    required:true,  placeholder:"e.g., 10 mL NS + lidocaine 40 mg IO" },
+      { id:"complications", label:"Complications",         type:"text",    required:false, placeholder:"None" },
     ]
   },
   { id:"rsi-intubation", label:"RSI / ETT Intubation", category:"airway", icon:"🫁", color:T.red,
@@ -233,19 +224,19 @@ const PROC_TEMPLATES = [
   },
   { id:"cricothyrotomy", label:"Cricothyrotomy", category:"airway", icon:"⚡", color:T.red,
     fields:[
-      { id:"indication",   label:"Indication",              type:"textarea",required:true,  placeholder:"e.g., cannot intubate cannot oxygenate (CICO)" },
-      { id:"technique",    label:"Technique",               type:"select",  required:true,  options:["Surgical cricothyrotomy — scalpel-finger-bougie","Needle cricothyrotomy — 14G angiocath","Commercial kit"] },
-      { id:"landmark",     label:"Landmark Identified",     type:"select",  required:true,  options:["Cricothyroid membrane identified by palpation","Ultrasound-assisted","Neck landmarks obscured — surgical approach"] },
-      { id:"tube_placed",  label:"Tube Placed",             type:"text",    required:true,  placeholder:"e.g., 6.0 cuffed ETT via surgical cric" },
-      { id:"confirmation", label:"Confirmation",            type:"text",    required:true,  placeholder:"e.g., EtCO2 detected, bilateral breath sounds" },
-      { id:"complications",label:"Complications",           type:"text",    required:false, placeholder:"None" },
+      { id:"indication",    label:"Indication",              type:"textarea",required:true,  placeholder:"e.g., cannot intubate cannot oxygenate (CICO)" },
+      { id:"technique",     label:"Technique",               type:"select",  required:true,  options:["Surgical cricothyrotomy — scalpel-finger-bougie","Needle cricothyrotomy — 14G angiocath","Commercial kit"] },
+      { id:"landmark",      label:"Landmark Identified",     type:"select",  required:true,  options:["Cricothyroid membrane identified by palpation","Ultrasound-assisted","Neck landmarks obscured — surgical approach"] },
+      { id:"tube_placed",   label:"Tube Placed",             type:"text",    required:true,  placeholder:"e.g., 6.0 cuffed ETT via surgical cric" },
+      { id:"confirmation",  label:"Confirmation",            type:"text",    required:true,  placeholder:"e.g., EtCO2 detected, bilateral breath sounds" },
+      { id:"complications", label:"Complications",           type:"text",    required:false, placeholder:"None" },
     ]
   },
   { id:"tube-thoracostomy", label:"Chest Tube (Tube Thoracostomy)", category:"thoracic", icon:"🫁", color:T.purple,
     fields:[
       { id:"indication",    label:"Indication",           type:"textarea",required:true },
       { id:"side",          label:"Side",                 type:"select",  required:true,  options:["Right","Left"] },
-      { id:"site",          label:"Insertion Site",       type:"select",  required:true,  options:["4th or 5th ICS — anterior axillary line","2nd ICS — mid-clavicular line (emergency)","6th ICS — posterior axillary line"] },
+      { id:"ct_site",       label:"Insertion Site",       type:"select",  required:true,  options:["4th or 5th ICS — anterior axillary line","2nd ICS — mid-clavicular line (emergency)","6th ICS — posterior axillary line"] },
       { id:"anesthesia",    label:"Anesthesia",           type:"text",    required:true,  placeholder:"e.g., 1% lidocaine 15 mL subcutaneous + intercostal" },
       { id:"tube_size",     label:"Tube Size",            type:"text",    required:true,  placeholder:"e.g., 28 Fr chest tube" },
       { id:"output",        label:"Immediate Output",     type:"text",    required:true,  placeholder:"e.g., ~400 mL serosanguinous fluid, air rush" },
@@ -256,15 +247,15 @@ const PROC_TEMPLATES = [
   },
   { id:"thoracentesis", label:"Thoracentesis", category:"thoracic", icon:"💧", color:"#4a90d9",
     fields:[
-      { id:"indication",    label:"Indication",           type:"textarea",required:true },
-      { id:"side",          label:"Side",                 type:"select",  required:true,  options:["Right","Left"] },
-      { id:"us_guidance",   label:"Ultrasound Guidance",  type:"select",  required:true,  options:["Real-time ultrasound guidance","Ultrasound-marked landmark","Percussion — no US available"] },
-      { id:"site",          label:"Insertion Site",       type:"text",    required:true,  placeholder:"e.g., posterior 8th ICS below tip of scapula" },
-      { id:"anesthesia",    label:"Anesthesia",           type:"text",    required:true,  placeholder:"e.g., 1% lidocaine 10 mL infiltrated to pleura" },
-      { id:"volume",        label:"Volume Removed",       type:"text",    required:true,  placeholder:"e.g., 900 mL straw-colored fluid" },
-      { id:"fluid_sent",    label:"Labs Sent",            type:"text",    required:false, placeholder:"e.g., LDH, protein, glucose, culture, cytology" },
-      { id:"cxr",           label:"Post-procedure CXR",   type:"select",  required:true,  options:["No PTX — stable","PTX identified — managed","Pending"] },
-      { id:"complications", label:"Complications",        type:"text",    required:false, placeholder:"None" },
+      { id:"indication",      label:"Indication",           type:"textarea",required:true },
+      { id:"side",            label:"Side",                 type:"select",  required:true,  options:["Right","Left"] },
+      { id:"us_guidance",     label:"Ultrasound Guidance",  type:"select",  required:true,  options:["Real-time ultrasound guidance","Ultrasound-marked landmark","Percussion — no US available"] },
+      { id:"insertion_site",  label:"Insertion Site",       type:"text",    required:true,  placeholder:"e.g., posterior 8th ICS below tip of scapula" },
+      { id:"anesthesia",      label:"Anesthesia",           type:"text",    required:true,  placeholder:"e.g., 1% lidocaine 10 mL infiltrated to pleura" },
+      { id:"volume",          label:"Volume Removed",       type:"text",    required:true,  placeholder:"e.g., 900 mL straw-colored fluid" },
+      { id:"fluid_sent",      label:"Labs Sent",            type:"text",    required:false, placeholder:"e.g., LDH, protein, glucose, culture, cytology" },
+      { id:"cxr",             label:"Post-procedure CXR",   type:"select",  required:true,  options:["No PTX — stable","PTX identified — managed","Pending"] },
+      { id:"complications",   label:"Complications",        type:"text",    required:false, placeholder:"None" },
     ]
   },
   { id:"cardioversion", label:"Electrical Cardioversion", category:"cardiac", icon:"⚡", color:T.red,
@@ -281,51 +272,51 @@ const PROC_TEMPLATES = [
   },
   { id:"paracentesis", label:"Paracentesis", category:"abdominal", icon:"🫀", color:T.green,
     fields:[
-      { id:"indication",      label:"Indication",           type:"textarea",required:true },
-      { id:"us_guidance",     label:"Ultrasound Guidance",  type:"select",  required:true,  options:["Real-time ultrasound guidance","Ultrasound-marked site","Percussion — no US available"] },
-      { id:"site",            label:"Insertion Site",       type:"select",  required:true,  options:["Left lower quadrant — lateral to rectus","Right lower quadrant — lateral to rectus","Midline infraumbilical"] },
-      { id:"anesthesia",      label:"Anesthesia",           type:"text",    required:true,  placeholder:"e.g., 1% lidocaine 10 mL infiltrated to peritoneum" },
-      { id:"volume_removed",  label:"Volume Removed",       type:"text",    required:true,  placeholder:"e.g., 5.5 L clear amber fluid" },
-      { id:"fluid_appearance",label:"Fluid Appearance",     type:"select",  required:true,  options:["Clear amber","Straw-colored","Bloody — traumatic","Cloudy/turbid — SBP suspected","Milky — chylous"] },
-      { id:"labs_sent",       label:"Labs Sent",            type:"text",    required:false, placeholder:"e.g., cell count, albumin, culture, total protein" },
-      { id:"complications",   label:"Complications",        type:"text",    required:false, placeholder:"None" },
+      { id:"indication",       label:"Indication",           type:"textarea",required:true },
+      { id:"us_guidance",      label:"Ultrasound Guidance",  type:"select",  required:true,  options:["Real-time ultrasound guidance","Ultrasound-marked site","Percussion — no US available"] },
+      { id:"site",             label:"Insertion Site",       type:"select",  required:true,  options:["Left lower quadrant — lateral to rectus","Right lower quadrant — lateral to rectus","Midline infraumbilical"] },
+      { id:"anesthesia",       label:"Anesthesia",           type:"text",    required:true,  placeholder:"e.g., 1% lidocaine 10 mL infiltrated to peritoneum" },
+      { id:"volume_removed",   label:"Volume Removed",       type:"text",    required:true,  placeholder:"e.g., 5.5 L clear amber fluid" },
+      { id:"fluid_appearance", label:"Fluid Appearance",     type:"select",  required:true,  options:["Clear amber","Straw-colored","Bloody — traumatic","Cloudy/turbid — SBP suspected","Milky — chylous"] },
+      { id:"labs_sent",        label:"Labs Sent",            type:"text",    required:false, placeholder:"e.g., cell count, albumin, culture, total protein" },
+      { id:"complications",    label:"Complications",        type:"text",    required:false, placeholder:"None" },
     ]
   },
   { id:"lumbar-puncture", label:"Lumbar Puncture", category:"neuro", icon:"🧠", color:T.rose,
     fields:[
-      { id:"indication",       label:"Indication",              type:"textarea",required:true },
-      { id:"position",         label:"Patient Position",        type:"select",  required:true,  options:["Lateral decubitus — fetal position","Seated leaning forward"] },
-      { id:"level",            label:"Intervertebral Level",    type:"select",  required:true,  options:["L3-L4","L4-L5","L2-L3"] },
-      { id:"needle",           label:"Needle Used",             type:"text",    required:true,  placeholder:"e.g., 22G, 3.5 inch Quincke needle" },
-      { id:"attempts",         label:"Attempts",                type:"number",  required:true },
-      { id:"opening_pressure", label:"Opening Pressure (cmH2O)",type:"number",  required:false },
-      { id:"csf_appearance",   label:"CSF Appearance",          type:"select",  required:true,  options:["Clear and colorless","Xanthochromic","Bloody — clears with sequential tubes","Bloody — does not clear","Turbid/cloudy"] },
-      { id:"tubes",            label:"Tubes Collected",         type:"text",    required:true,  placeholder:"e.g., 4 tubes: cell count, glucose/protein, culture, cell count" },
-      { id:"complications",    label:"Complications",           type:"text",    required:false, placeholder:"None" },
+      { id:"indication",        label:"Indication",              type:"textarea",required:true },
+      { id:"position",          label:"Patient Position",        type:"select",  required:true,  options:["Lateral decubitus — fetal position","Seated leaning forward"] },
+      { id:"level",             label:"Intervertebral Level",    type:"select",  required:true,  options:["L3-L4","L4-L5","L2-L3"] },
+      { id:"needle",            label:"Needle Used",             type:"text",    required:true,  placeholder:"e.g., 22G, 3.5 inch Quincke needle" },
+      { id:"attempts",          label:"Attempts",                type:"number",  required:true },
+      { id:"opening_pressure",  label:"Opening Pressure (cmH2O)",type:"number", required:false },
+      { id:"csf_appearance",    label:"CSF Appearance",          type:"select",  required:true,  options:["Clear and colorless","Xanthochromic","Bloody — clears with sequential tubes","Bloody — does not clear","Turbid/cloudy"] },
+      { id:"tubes",             label:"Tubes Collected",         type:"text",    required:true,  placeholder:"e.g., 4 tubes: cell count, glucose/protein, culture, cell count" },
+      { id:"complications",     label:"Complications",           type:"text",    required:false, placeholder:"None" },
     ]
   },
   { id:"joint-aspiration-injection", label:"Joint Aspiration / Injection", category:"ortho", icon:"💉", color:T.teal,
     fields:[
-      { id:"joint",           label:"Joint",                  type:"select",  required:true,  options:["Knee (right)","Knee (left)","Shoulder (right)","Shoulder (left)","Elbow (right)","Elbow (left)","Ankle (right)","Ankle (left)","Wrist (right)","Wrist (left)","First MTP (gout)"] },
-      { id:"indication",      label:"Indication",             type:"select",  required:true,  options:["Diagnostic aspiration — r/o septic arthritis","Diagnostic aspiration — r/o crystal arthropathy","Therapeutic drainage","Corticosteroid injection"] },
-      { id:"us_guidance",     label:"Guidance",               type:"select",  required:true,  options:["Landmark technique","Real-time ultrasound guidance"] },
-      { id:"approach",        label:"Approach",               type:"text",    required:true,  placeholder:"e.g., lateral parapatellar approach" },
-      { id:"fluid_aspirated", label:"Fluid Aspirated",        type:"text",    required:false, placeholder:"e.g., 20 mL cloudy synovial fluid" },
-      { id:"injection_given", label:"Injection Given",        type:"text",    required:false, placeholder:"e.g., triamcinolone 40 mg + bupivacaine 3 mL" },
-      { id:"complications",   label:"Complications",          type:"text",    required:false, placeholder:"None" },
+      { id:"joint",            label:"Joint",                  type:"select",  required:true,  options:["Knee (right)","Knee (left)","Shoulder (right)","Shoulder (left)","Elbow (right)","Elbow (left)","Ankle (right)","Ankle (left)","Wrist (right)","Wrist (left)","First MTP (gout)"] },
+      { id:"indication",       label:"Indication",             type:"select",  required:true,  options:["Diagnostic aspiration — r/o septic arthritis","Diagnostic aspiration — r/o crystal arthropathy","Therapeutic drainage","Corticosteroid injection"] },
+      { id:"us_guidance",      label:"Guidance",               type:"select",  required:true,  options:["Landmark technique","Real-time ultrasound guidance"] },
+      { id:"approach",         label:"Approach",               type:"text",    required:true,  placeholder:"e.g., lateral parapatellar approach" },
+      { id:"fluid_aspirated",  label:"Fluid Aspirated",        type:"text",    required:false, placeholder:"e.g., 20 mL cloudy synovial fluid" },
+      { id:"injection_given",  label:"Injection Given",        type:"text",    required:false, placeholder:"e.g., triamcinolone 40 mg + bupivacaine 3 mL" },
+      { id:"complications",    label:"Complications",          type:"text",    required:false, placeholder:"None" },
     ]
   },
   { id:"shoulder-reduction", label:"Shoulder Dislocation Reduction", category:"ortho", icon:"💪", color:T.amber,
     fields:[
-      { id:"direction",       label:"Dislocation Direction",     type:"select",  required:true,  options:["Anterior (most common)","Posterior","Inferior (luxatio erecta)"] },
-      { id:"pre_imaging",     label:"Pre-reduction Imaging",     type:"select",  required:true,  options:["X-ray confirmed — AP, scapular Y, axillary views","Clinical diagnosis — emergent","CT obtained"] },
-      { id:"neurovasc_pre",   label:"Neurovascular Status Pre",  type:"text",    required:true,  placeholder:"e.g., axillary nerve sensation intact, radial pulse 2+" },
-      { id:"sedation",        label:"Analgesia/Sedation",        type:"text",    required:true,  placeholder:"e.g., ketamine 0.5 mg/kg + midazolam 2 mg IV" },
-      { id:"technique",       label:"Reduction Technique",       type:"select",  required:true,  options:["Cunningham technique","Stimson (gravity) technique","Mitch technique","FARES technique","Traction-countertraction","External rotation method","Milch technique"] },
-      { id:"attempts",        label:"Attempts",                  type:"number",  required:true,  placeholder:"1" },
-      { id:"post_imaging",    label:"Post-reduction Imaging",    type:"select",  required:true,  options:["Confirmed reduction — no fracture","Confirmed reduction — Hill-Sachs noted","Associated fracture — see imaging","Pending"] },
-      { id:"neurovasc_post",  label:"Neurovascular Status Post", type:"text",    required:true,  placeholder:"e.g., intact" },
-      { id:"immobilization",  label:"Immobilization",            type:"text",    required:true,  placeholder:"e.g., sling and swath × 3 weeks" },
+      { id:"direction",        label:"Dislocation Direction",     type:"select",  required:true,  options:["Anterior (most common)","Posterior","Inferior (luxatio erecta)"] },
+      { id:"pre_imaging",      label:"Pre-reduction Imaging",     type:"select",  required:true,  options:["X-ray confirmed — AP, scapular Y, axillary views","Clinical diagnosis — emergent","CT obtained"] },
+      { id:"neurovasc_pre",    label:"Neurovascular Status Pre",  type:"text",    required:true,  placeholder:"e.g., axillary nerve sensation intact, radial pulse 2+" },
+      { id:"sedation",         label:"Analgesia/Sedation",        type:"text",    required:true,  placeholder:"e.g., ketamine 0.5 mg/kg + midazolam 2 mg IV" },
+      { id:"technique",        label:"Reduction Technique",       type:"select",  required:true,  options:["Cunningham technique","Stimson (gravity) technique","Mitch technique","FARES technique","Traction-countertraction","External rotation method","Milch technique"] },
+      { id:"attempts",         label:"Attempts",                  type:"number",  required:true,  placeholder:"1" },
+      { id:"post_imaging",     label:"Post-reduction Imaging",    type:"select",  required:true,  options:["Confirmed reduction — no fracture","Confirmed reduction — Hill-Sachs noted","Associated fracture — see imaging","Pending"] },
+      { id:"neurovasc_post",   label:"Neurovascular Status Post", type:"text",    required:true,  placeholder:"e.g., intact" },
+      { id:"immobilization",   label:"Immobilization",            type:"text",    required:true,  placeholder:"e.g., sling and swath × 3 weeks" },
     ]
   },
   { id:"bladder-cath", label:"Bladder Catheterization", category:"uro", icon:"🚿", color:"#4a90d9",
@@ -370,120 +361,417 @@ const PROC_TEMPLATES = [
 const ED_NOTES = [
   { id:"critical-care-note", label:"Critical Care", icon:"🚨", color:T.red, description:"99291/99292 — documents time-based critical care",
     fields:[
-      { id:"critical_care_time", label:"Total Critical Care Time (min)", type:"number", required:true },
-      { id:"presenting_problem", label:"Critical Presenting Problem",    type:"textarea",required:true },
-      { id:"interventions",      label:"Critical Care Interventions",    type:"textarea",required:true, placeholder:"e.g., intubation, central line, vasopressor initiation" },
-      { id:"disposition",        label:"Disposition",                    type:"select", required:true,  options:["ICU admission","ICU transfer","Step-down care","ROSC — admitted to ICU","Deceased"] },
+      { id:"critical_care_time", label:"Total Critical Care Time (min)", type:"number",  required:true },
+      { id:"presenting_problem", label:"Critical Presenting Problem",    type:"textarea", required:true },
+      { id:"interventions",      label:"Critical Care Interventions",    type:"textarea", required:true, placeholder:"e.g., intubation, central line, vasopressor initiation" },
+      { id:"disposition",        label:"Disposition",                    type:"select",   required:true, options:["ICU admission","ICU transfer","Step-down care","ROSC — admitted to ICU","Deceased"] },
     ]
   },
   { id:"ama-note", label:"Against Medical Advice", icon:"⚠️", color:T.amber, description:"Documents capacity assessment, AMA decision",
     fields:[
-      { id:"presenting_complaint",   label:"Presenting Complaint",               type:"text",    required:true },
-      { id:"recommended_treatment",  label:"Recommended Treatment / Admission",  type:"textarea",required:true },
-      { id:"capacity_assessment",    label:"Capacity Assessment",                type:"select",  required:true,  options:["Patient demonstrates capacity — alert, oriented ×4, understands diagnosis and risks","Capacity borderline — psych consult obtained","Capacity absent — surrogate contacted"] },
-      { id:"risks_discussed",        label:"Specific Risks Communicated",        type:"textarea",required:true },
-      { id:"patient_statement",      label:"Patient's Stated Reason",            type:"text",    required:true },
-      { id:"ama_form_signed",        label:"AMA Form",                           type:"select",  required:true,  options:["Signed by patient","Patient refused to sign — documented","Representative signed"] },
+      { id:"presenting_complaint",  label:"Presenting Complaint",              type:"text",     required:true },
+      { id:"recommended_treatment", label:"Recommended Treatment / Admission", type:"textarea", required:true },
+      { id:"capacity_assessment",   label:"Capacity Assessment",               type:"select",   required:true, options:["Patient demonstrates capacity — alert, oriented ×4, understands diagnosis and risks","Capacity borderline — psych consult obtained","Capacity absent — surrogate contacted"] },
+      { id:"risks_discussed",       label:"Specific Risks Communicated",       type:"textarea", required:true },
+      { id:"patient_statement",     label:"Patient's Stated Reason",           type:"text",     required:true },
+      { id:"ama_form_signed",       label:"AMA Form",                          type:"select",   required:true, options:["Signed by patient","Patient refused to sign — documented","Representative signed"] },
     ]
   },
   { id:"code-note", label:"Code / Resuscitation", icon:"❤️", color:T.red, description:"Cardiac arrest documentation with timeline and ROSC",
     fields:[
-      { id:"arrest_time",    label:"Time of Arrest",       type:"text",    required:true },
-      { id:"initial_rhythm", label:"Initial Rhythm",       type:"select",  required:true,  options:["VF","pVT","PEA","Asystole"] },
-      { id:"epi_doses",      label:"Epinephrine Doses",    type:"number",  required:true },
-      { id:"medications",    label:"Medications Given",    type:"textarea",required:true,  placeholder:"e.g., Epi 1mg × 4, Amiodarone 300mg + 150mg" },
-      { id:"airway_management",label:"Airway Management", type:"text",    required:true },
-      { id:"total_downtime", label:"Total Downtime (min)", type:"number",  required:true },
-      { id:"outcome",        label:"Outcome",              type:"select",  required:true,  options:["ROSC achieved — admitted to ICU","ROSC — cath lab activated","Resuscitation unsuccessful — death pronounced"] },
+      { id:"arrest_time",       label:"Time of Arrest",       type:"text",     required:true },
+      { id:"initial_rhythm",    label:"Initial Rhythm",       type:"select",   required:true, options:["VF","pVT","PEA","Asystole"] },
+      { id:"epi_doses",         label:"Epinephrine Doses",    type:"number",   required:true },
+      { id:"medications",       label:"Medications Given",    type:"textarea", required:true, placeholder:"e.g., Epi 1mg × 4, Amiodarone 300mg + 150mg" },
+      { id:"airway_management", label:"Airway Management",    type:"text",     required:true },
+      { id:"total_downtime",    label:"Total Downtime (min)", type:"number",   required:true },
+      { id:"outcome",           label:"Outcome",              type:"select",   required:true, options:["ROSC achieved — admitted to ICU","ROSC — cath lab activated","Resuscitation unsuccessful — death pronounced"] },
     ]
   },
-  { id:"trauma-note",         label:"Trauma Activation",       icon:"🏥", color:T.red, description:"Primary and secondary survey, mechanism, resuscitation",
+  { id:"trauma-note", label:"Trauma Activation", icon:"🏥", color:T.red, description:"Primary and secondary survey, mechanism, resuscitation",
     fields:[
-      { id:"trauma_mechanism",   label:"Mechanism of Injury",              type:"textarea",required:true },
-      { id:"ems_report",        label:"EMS Report / Transfer",           type:"textarea",required:true },
-      { id:"primary_survey",    label:"Primary Survey (ABCDE)",          type:"textarea",required:true },
-      { id:"vitals_arrival",    label:"Vitals on Arrival",              type:"text",    required:true,  placeholder:"BP, HR, RR, SpO2, GCS" },
-      { id:"secondary_survey",  label:"Secondary Survey (Head to Toe)",  type:"textarea",required:true },
-      { id:"imaging_ordered",   label:"Imaging Ordered",                type:"text",    required:true,  placeholder:"FAST, CT, X-rays" },
-      { id:"procedures_done",   label:"Procedures Performed",           type:"textarea",required:false, placeholder:"Chest tube, intubation, etc." },
-      { id:"transfusion",       label:"Blood Products Given",           type:"text",    required:false, placeholder:"PRBC units, FFP, platelets" },
-      { id:"disposition_trauma",label:"Disposition",                   type:"select",  required:true,  options:["OR activation","ICU admission","Trauma floor","Observation","Deceased"] },
+      { id:"trauma_mechanism",   label:"Mechanism of Injury",             type:"textarea", required:true },
+      { id:"ems_report",         label:"EMS Report / Transfer",           type:"textarea", required:true },
+      { id:"primary_survey",     label:"Primary Survey (ABCDE)",          type:"textarea", required:true },
+      { id:"vitals_arrival",     label:"Vitals on Arrival",               type:"text",     required:true,  placeholder:"BP, HR, RR, SpO2, GCS" },
+      { id:"secondary_survey",   label:"Secondary Survey (Head to Toe)",  type:"textarea", required:true },
+      { id:"imaging_ordered",    label:"Imaging Ordered",                 type:"text",     required:true,  placeholder:"FAST, CT, X-rays" },
+      { id:"procedures_done",    label:"Procedures Performed",            type:"textarea", required:false, placeholder:"Chest tube, intubation, etc." },
+      { id:"transfusion",        label:"Blood Products Given",            type:"text",     required:false, placeholder:"PRBC units, FFP, platelets" },
+      { id:"disposition_trauma", label:"Disposition",                     type:"select",   required:true,  options:["OR activation","ICU admission","Trauma floor","Observation","Deceased"] },
     ]
   },
-  { id:"psychiatric-hold",    label:"Psychiatric Hold / 5150", icon:"🧠", color:T.rose, description:"Involuntary hold documentation with danger criteria",
+  { id:"psychiatric-hold", label:"Psychiatric Hold / 5150", icon:"🧠", color:T.rose, description:"Involuntary hold documentation with danger criteria",
     fields:[
-      { id:"danger_to_self",     label:"Danger to Self",              type:"select",  required:true,  options:["Yes — specific plan/intent","Yes — passive ideation","No"] },
-      { id:"danger_to_others",   label:"Danger to Others",            type:"select",  required:true,  options:["Yes — specific threat","Yes — history","No"] },
-      { id:"grave_disability",   label:"Grave Disability",            type:"select",  required:true,  options:["Yes — cannot care for self","Yes — high risk","No"] },
-      { id:"psychiatric_history",label:"Relevant Psychiatric History",  type:"textarea",required:true },
-      { id:"current_medications",label:"Current Psych Medications",    type:"text",    required:false },
-      { id:"substance_use",      label:"Substance Use Today",         type:"text",    required:false },
-      { id:"mental_status",      label:"Mental Status Exam",          type:"textarea",required:true,  placeholder:"Appearance, behavior, affect, mood, speech, thought process, SI/HI" },
-      { id:"rights_informed",    label:"Patient Rights Informed",     type:"select",  required:true,  options:["Yes — patient understood","Yes — patient refused to acknowledge","No — patient unable to understand"] },
-      { id:"hold_type",          label:"Hold Type",                  type:"select",  required:true,  options:["5150 (72-hour involuntary hold)","5250 (14-day extension)","Voluntary hold"] },
-      { id:"facility_placement", label:"Placement Facility",          type:"text",    required:true,  placeholder:"Psychiatric hospital name" },
+      { id:"danger_to_self",      label:"Danger to Self",               type:"select",   required:true,  options:["Yes — specific plan/intent","Yes — passive ideation","No"] },
+      { id:"danger_to_others",    label:"Danger to Others",             type:"select",   required:true,  options:["Yes — specific threat","Yes — history","No"] },
+      { id:"grave_disability",    label:"Grave Disability",             type:"select",   required:true,  options:["Yes — cannot care for self","Yes — high risk","No"] },
+      { id:"psychiatric_history", label:"Relevant Psychiatric History", type:"textarea", required:true },
+      { id:"current_medications", label:"Current Psych Medications",    type:"text",     required:false },
+      { id:"substance_use",       label:"Substance Use Today",          type:"text",     required:false },
+      { id:"mental_status",       label:"Mental Status Exam",           type:"textarea", required:true,  placeholder:"Appearance, behavior, affect, mood, speech, thought process, SI/HI" },
+      { id:"rights_informed",     label:"Patient Rights Informed",      type:"select",   required:true,  options:["Yes — patient understood","Yes — patient refused to acknowledge","No — patient unable to understand"] },
+      { id:"hold_type",           label:"Hold Type",                    type:"select",   required:true,  options:["5150 (72-hour involuntary hold)","5250 (14-day extension)","Voluntary hold"] },
+      { id:"facility_placement",  label:"Placement Facility",           type:"text",     required:true,  placeholder:"Psychiatric hospital name" },
     ]
   },
-  { id:"restraint-note",      label:"Physical/Chemical Restraint",icon:"🔐",color:T.purple,description:"Restraint application note with indication and monitoring",
+  { id:"restraint-note", label:"Physical/Chemical Restraint", icon:"🔐", color:T.purple, description:"Restraint application note with indication and monitoring",
     fields:[
-      { id:"restraint_indication",label:"Clinical Indication",             type:"select",  required:true,  options:["Danger to self/others","Medical procedure necessity","Agitation/delirium","Behavioral threat"] },
-      { id:"alternatives_tried", label:"De-escalation / Alternatives",   type:"textarea",required:true,  placeholder:"e.g., verbal calming, 1:1 staff, family presence" },
-      { id:"restraint_type",     label:"Type of Restraint",             type:"select",  required:true,  options:["Physical (4-point)","Physical (2-point)","Chemical (medication)","Seclusion","Combination"] },
-      { id:"chemical_agent",     label:"Chemical Agent Used",           type:"text",    required:false, placeholder:"e.g., midazolam 2mg IV, haloperidol 5mg IM" },
-      { id:"time_applied",       label:"Time Applied",                 type:"text",    required:true },
-      { id:"provider_present",   label:"Provider Present During",      type:"select",  required:true,  options:["Yes — continuous","Yes — periodic checks","Applied by staff only"] },
-      { id:"monitoring",         label:"Monitoring During Restraint",   type:"textarea",required:true,  placeholder:"Vitals q15min, skin checks, circulation checks" },
-      { id:"release_criteria",   label:"Release Criteria Met",         type:"textarea",required:true,  placeholder:"e.g., patient calm, oriented, no threat" },
-      { id:"duration_minutes",   label:"Total Duration (minutes)",     type:"number",  required:true },
-      { id:"restraint_order",    label:"Physician Order",             type:"select",  required:true,  options:["Ordered by MD/DO","Ordered by NP/PA","Emergency protocol — orders pending"] },
+      { id:"restraint_indication", label:"Clinical Indication",           type:"select",   required:true,  options:["Danger to self/others","Medical procedure necessity","Agitation/delirium","Behavioral threat"] },
+      { id:"alternatives_tried",   label:"De-escalation / Alternatives", type:"textarea", required:true,  placeholder:"e.g., verbal calming, 1:1 staff, family presence" },
+      { id:"restraint_type",       label:"Type of Restraint",             type:"select",   required:true,  options:["Physical (4-point)","Physical (2-point)","Chemical (medication)","Seclusion","Combination"] },
+      { id:"chemical_agent",       label:"Chemical Agent Used",           type:"text",     required:false, placeholder:"e.g., midazolam 2mg IV, haloperidol 5mg IM" },
+      { id:"time_applied",         label:"Time Applied",                  type:"text",     required:true },
+      { id:"provider_present",     label:"Provider Present During",       type:"select",   required:true,  options:["Yes — continuous","Yes — periodic checks","Applied by staff only"] },
+      { id:"monitoring",           label:"Monitoring During Restraint",   type:"textarea", required:true,  placeholder:"Vitals q15min, skin checks, circulation checks" },
+      { id:"release_criteria",     label:"Release Criteria Met",          type:"textarea", required:true,  placeholder:"e.g., patient calm, oriented, no threat" },
+      { id:"duration_minutes",     label:"Total Duration (minutes)",      type:"number",   required:true },
+      { id:"restraint_order",      label:"Physician Order",               type:"select",   required:true,  options:["Ordered by MD/DO","Ordered by NP/PA","Emergency protocol — orders pending"] },
     ]
   },
-  { id:"pronouncement-note",  label:"Death Pronouncement",     icon:"🕯️", color:T.dim, description:"Death pronouncement note with time and notification",
+  { id:"pronouncement-note", label:"Death Pronouncement", icon:"🕯️", color:T.dim, description:"Death pronouncement note with time and notification",
     fields:[
-      { id:"time_of_death",       label:"Time of Death Pronounced",    type:"text",    required:true },
-      { id:"final_rhythm",        label:"Final Rhythm / Findings",      type:"select",  required:true,  options:["Asystole","Agonal rhythm","No pulse/BP after exam","Other"] },
-      { id:"resuscitation_duration",label:"Duration of Resuscitation (min)",type:"number",required:true },
-      { id:"resuscitation_summary",label:"Resuscitation Summary",       type:"textarea",required:true,  placeholder:"Final interventions, medications, rhythm checks" },
-      { id:"physical_exam_death", label:"Physical Exam at Pronouncement",type:"textarea",required:true,  placeholder:"No breath sounds, no heart sounds, pupils fixed/dilated" },
-      { id:"family_present",      label:"Family Present",              type:"select",  required:false, options:["Yes","No","Family in waiting area"] },
-      { id:"family_notification", label:"Family Notification",         type:"select",  required:true,  options:["Notified in person by provider","Notified by phone","Family was present"] },
-      { id:"organ_donation_discussed",label:"Organ Donation Discussed",type:"select",required:true,options:["Yes — family interested","Yes — family declined","No — medical contraindication"] },
-      { id:"coroner_notification",label:"Coroner / ME Notification",   type:"select",  required:true,  options:["Routine — no coroner involvement","Notified — investigation pending","Autopsy ordered"] },
-      { id:"disposition_body",    label:"Disposition of Body",        type:"select",  required:true,  options:["Released to funeral home","Coroner/ME custody","Pending family decision"] },
+      { id:"time_of_death",            label:"Time of Death Pronounced",       type:"text",     required:true },
+      { id:"final_rhythm",             label:"Final Rhythm / Findings",        type:"select",   required:true,  options:["Asystole","Agonal rhythm","No pulse/BP after exam","Other"] },
+      { id:"resuscitation_duration",   label:"Duration of Resuscitation (min)",type:"number",   required:true },
+      { id:"resuscitation_summary",    label:"Resuscitation Summary",          type:"textarea", required:true,  placeholder:"Final interventions, medications, rhythm checks" },
+      { id:"physical_exam_death",      label:"Physical Exam at Pronouncement", type:"textarea", required:true,  placeholder:"No breath sounds, no heart sounds, pupils fixed/dilated" },
+      { id:"family_present",           label:"Family Present",                 type:"select",   required:false, options:["Yes","No","Family in waiting area"] },
+      { id:"family_notification",      label:"Family Notification",            type:"select",   required:true,  options:["Notified in person by provider","Notified by phone","Family was present"] },
+      { id:"organ_donation_discussed", label:"Organ Donation Discussed",       type:"select",   required:true,  options:["Yes — family interested","Yes — family declined","No — medical contraindication"] },
+      { id:"coroner_notification",     label:"Coroner / ME Notification",      type:"select",   required:true,  options:["Routine — no coroner involvement","Notified — investigation pending","Autopsy ordered"] },
+      { id:"disposition_body",         label:"Disposition of Body",            type:"select",   required:true,  options:["Released to funeral home","Coroner/ME custody","Pending family decision"] },
     ]
   },
-  { id:"transfer-note",       label:"Transfer / EMTALA",       icon:"🚑", color:T.blue, description:"EMTALA-compliant transfer note",
+  { id:"transfer-note", label:"Transfer / EMTALA", icon:"🚑", color:T.blue, description:"EMTALA-compliant transfer note",
     fields:[
-      { id:"transfer_reason",      label:"Reason for Transfer",        type:"textarea",required:true,  placeholder:"e.g., higher level of care, specialty unavailable" },
-      { id:"mse_completed",       label:"Medical Screening Exam Done",type:"select",  required:true,  options:["Yes — completed before transfer","Yes — in progress","No — emergency transfer only"] },
-      { id:"stabilizing_tx",      label:"Stabilizing Treatment Given",type:"textarea",required:true,  placeholder:"Medications, fluids, monitoring initiated" },
-      { id:"transfer_risks",      label:"Risks of Transfer Discussed",type:"textarea",required:true },
-      { id:"receiving_facility",  label:"Receiving Facility",         type:"text",    required:true },
-      { id:"receiving_provider",  label:"Receiving Provider",         type:"text",    required:true },
-      { id:"consent_obtained",    label:"Informed Consent",           type:"select",  required:true,  options:["Yes — patient signed","Yes — proxy/family signed","Emergency transfer — verbal consent","Patient refused but medically necessary"] },
-      { id:"transport_method",    label:"Transport Method",          type:"select",  required:true,  options:["Ambulance — ALS","Ambulance — BLS","Private transport","Air transport"] },
-      { id:"accompanying_staff",  label:"Accompanying Staff",        type:"text",    required:false, placeholder:"e.g., RN, paramedic, physician" },
-      { id:"records_sent",        label:"Records / Copies Sent",      type:"select",  required:true,  options:["Originals in hand","Faxed ahead","Electronic transmission","Pending — will follow"] },
+      { id:"transfer_reason",     label:"Reason for Transfer",         type:"textarea", required:true,  placeholder:"e.g., higher level of care, specialty unavailable" },
+      { id:"mse_completed",       label:"Medical Screening Exam Done", type:"select",   required:true,  options:["Yes — completed before transfer","Yes — in progress","No — emergency transfer only"] },
+      { id:"stabilizing_tx",      label:"Stabilizing Treatment Given", type:"textarea", required:true,  placeholder:"Medications, fluids, monitoring initiated" },
+      { id:"transfer_risks",      label:"Risks of Transfer Discussed", type:"textarea", required:true },
+      { id:"receiving_facility",  label:"Receiving Facility",          type:"text",     required:true },
+      { id:"receiving_provider",  label:"Receiving Provider",          type:"text",     required:true },
+      { id:"consent_obtained",    label:"Informed Consent",            type:"select",   required:true,  options:["Yes — patient signed","Yes — proxy/family signed","Emergency transfer — verbal consent","Patient refused but medically necessary"] },
+      { id:"transport_method",    label:"Transport Method",            type:"select",   required:true,  options:["Ambulance — ALS","Ambulance — BLS","Private transport","Air transport"] },
+      { id:"accompanying_staff",  label:"Accompanying Staff",          type:"text",     required:false, placeholder:"e.g., RN, paramedic, physician" },
+      { id:"records_sent",        label:"Records / Copies Sent",       type:"select",   required:true,  options:["Originals in hand","Faxed ahead","Electronic transmission","Pending — will follow"] },
     ]
   },
-  { id:"discharge-instructions",label:"Discharge Instructions",icon:"🏠", color:T.green, description:"Comprehensive discharge instructions with return precautions",
+  { id:"discharge-instructions", label:"Discharge Instructions", icon:"🏠", color:T.green, description:"Comprehensive discharge instructions with return precautions",
     fields:[
-      { id:"diagnosis_summary",      label:"Discharge Diagnosis (Summary)",type:"text",    required:true },
-      { id:"treatment_provided",     label:"Treatment Provided in ED",    type:"textarea",required:true,  placeholder:"Meds given, procedures, imaging" },
-      { id:"home_medications",       label:"Home Medications to Continue", type:"textarea",required:false },
-      { id:"new_prescriptions",      label:"New Prescriptions",           type:"textarea",required:false,  placeholder:"Drug names, dosages, duration" },
-      { id:"medication_allergies_confirm",label:"Allergies Confirmed with Patient",type:"select",required:true,options:["Yes","No","Patient confirmed no allergies"] },
-      { id:"activity_restrictions",  label:"Activity Restrictions",       type:"textarea",required:false,  placeholder:"e.g., no heavy lifting, bed rest" },
-      { id:"diet_restrictions",      label:"Diet Restrictions",          type:"textarea",required:false,  placeholder:"NPO, soft foods, clear liquids" },
-      { id:"wound_care",            label:"Wound / Dressing Care",       type:"textarea",required:false,  placeholder:"Keep dry, change dressing daily, steri-strips" },
-      { id:"follow_up_provider",     label:"Follow-up Provider",        type:"text",    required:true,  placeholder:"PCP name & phone" },
-      { id:"follow_up_timeframe",    label:"Follow-up Timeframe",       type:"select",  required:true,  options:["Within 24-48 hours","Within 1 week","Within 2 weeks","As needed"] },
-      { id:"return_precautions",     label:"Return Precautions",        type:"textarea",required:true,  placeholder:"Fever > 38.5C, increased pain, difficulty breathing, etc." },
-      { id:"instructions_understood",label:"Patient Understanding Confirmed",type:"select",required:true,options:["Yes — patient verbalized understanding","Yes — written instructions given","No — language barrier — interpreter used","No — patient altered mental status"] },
-      { id:"discharge_form_signed",  label:"Discharge Form",           type:"select",  required:true,  options:["Signed by patient","Signed by proxy","Refused to sign — documented"] },
+      { id:"diagnosis_summary",            label:"Discharge Diagnosis (Summary)",     type:"text",     required:true },
+      { id:"treatment_provided",           label:"Treatment Provided in ED",          type:"textarea", required:true,  placeholder:"Meds given, procedures, imaging" },
+      { id:"home_medications",             label:"Home Medications to Continue",      type:"textarea", required:false },
+      { id:"new_prescriptions",            label:"New Prescriptions",                 type:"textarea", required:false, placeholder:"Drug names, dosages, duration" },
+      { id:"medication_allergies_confirm", label:"Allergies Confirmed with Patient",  type:"select",   required:true,  options:["Yes","No","Patient confirmed no allergies"] },
+      { id:"activity_restrictions",        label:"Activity Restrictions",             type:"textarea", required:false, placeholder:"e.g., no heavy lifting, bed rest" },
+      { id:"diet_restrictions",            label:"Diet Restrictions",                 type:"textarea", required:false, placeholder:"NPO, soft foods, clear liquids" },
+      { id:"wound_care",                   label:"Wound / Dressing Care",             type:"textarea", required:false, placeholder:"Keep dry, change dressing daily, steri-strips" },
+      { id:"follow_up_provider",           label:"Follow-up Provider",                type:"text",     required:true,  placeholder:"PCP name & phone" },
+      { id:"follow_up_timeframe",          label:"Follow-up Timeframe",               type:"select",   required:true,  options:["Within 24-48 hours","Within 1 week","Within 2 weeks","As needed"] },
+      { id:"return_precautions",           label:"Return Precautions",                type:"textarea", required:true,  placeholder:"Fever > 38.5C, increased pain, difficulty breathing, etc." },
+      { id:"instructions_understood",      label:"Patient Understanding Confirmed",   type:"select",   required:true,  options:["Yes — patient verbalized understanding","Yes — written instructions given","No — language barrier — interpreter used","No — patient altered mental status"] },
+      { id:"discharge_form_signed",        label:"Discharge Form",                    type:"select",   required:true,  options:["Signed by patient","Signed by proxy","Refused to sign — documented"] },
     ]
   },
 ];
+
+// ── Shared Field Renderer ─────────────────────────────────────────
+function FieldRenderer({ fields, values, onChange, accentColor }) {
+  const inputStyle = {
+    width:"100%", background:"rgba(14,37,68,0.8)",
+    border:"1px solid rgba(30,58,95,0.6)", borderRadius:8,
+    padding:"9px 12px", color:T.bright, fontSize:13,
+    outline:"none", boxSizing:"border-box", transition:"border-color .15s",
+  };
+  return (
+    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+      {fields.map(field => (
+        <div key={field.id} style={{ gridColumn: field.type === "textarea" ? "1/-1" : "auto" }}>
+          <label style={{ display:"block", fontSize:11, fontWeight:600, color:T.dim, marginBottom:5, textTransform:"uppercase", letterSpacing:".05em" }}>
+            {field.label}{field.required && <span style={{color:accentColor}}> *</span>}
+          </label>
+          {field.type === "select" ? (
+            <select value={values[field.id]||""} onChange={e=>onChange({...values,[field.id]:e.target.value})}
+              style={{...inputStyle, cursor:"pointer"}}>
+              <option value="">Select…</option>
+              {field.options.map(o=><option key={o} value={o}>{o}</option>)}
+            </select>
+          ) : field.type === "textarea" ? (
+            <textarea value={values[field.id]||""} onChange={e=>onChange({...values,[field.id]:e.target.value})}
+              placeholder={field.placeholder} rows={3}
+              style={{...inputStyle, resize:"vertical"}} />
+          ) : (
+            <input type={field.type==="number"?"number":"text"}
+              value={values[field.id]||""} placeholder={field.placeholder}
+              onChange={e=>onChange({...values,[field.id]:e.target.value})}
+              style={inputStyle}
+              onFocus={e=>e.target.style.borderColor=accentColor}
+              onBlur={e=>e.target.style.borderColor="rgba(30,58,95,0.6)"}
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Procedure Notes Panel ─────────────────────────────────────────
+function ProcNotesPanel({ color }) {
+  const [openCats, setOpenCats] = useState({});
+  const [selTmpl, setSelTmpl] = useState(null);
+  const [fields, setFields] = useState({});
+  const [note, setNote] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [genType, setGenType] = useState(null);
+  const [extras, setExtras] = useState({ findings:"", impression:"", summary:"" });
+
+  const byCategory = useMemo(() => {
+    const g = {};
+    PROC_CATEGORIES.filter(c=>c.id!=="all").forEach(c=>{
+      g[c.id] = PROC_TEMPLATES.filter(t=>t.category===c.id);
+    });
+    return g;
+  },[]);
+
+  const cleanMarkdown = (t) => t.replace(/^#+\s+/gm,"").replace(/\*\*/g,"").replace(/\*/g,"").replace(/^-\s+/gm,"• ").replace(/\n{3,}/g,"\n\n");
+
+  const generate = async (type) => {
+    if(!selTmpl) return;
+    setGenType(type); setGenerating(true);
+    try {
+      const fs = selTmpl.fields.map(f=>`${f.label}: ${fields[f.id]||"(not provided)"}`).join("\n");
+      const prompts = {
+        note:`You are Notrya AI. Draft a complete, medicolegally sound ${selTmpl.label} procedure note.\n\nCOMPLETED FIELDS:\n${fs}\n\nGenerate a complete structured note including: indication, preprocedure assessment, procedure description, postprocedure status, attestation. Format professionally.`,
+        findings:`Based on the following ${selTmpl.label} procedure, generate 3-5 key findings:\n\n${fs}\n\nBullet list format.`,
+        impression:`Generate a 2-3 sentence clinical impression for this ${selTmpl.label}:\n\n${fs}`,
+        summary:`Provide a 1-paragraph summary (under 100 words) of this ${selTmpl.label}:\n\n${fs}`,
+      };
+      const result = await base44.integrations.Core.InvokeLLM({ prompt: prompts[type] });
+      if(type==="note") setNote(result);
+      else setExtras(p=>({...p,[type]:result}));
+    } catch(e){console.error(e);} finally{setGenerating(false);setGenType(null);}
+  };
+
+  const handlePrint = () => {
+    const win = window.open("","_blank");
+    win.document.write(`<!DOCTYPE html><html><head><title>Procedure Note</title><style>body{font-family:'Segoe UI',Arial,sans-serif;max-width:800px;margin:40px auto;line-height:1.6;color:#333;}h1{border-bottom:2px solid #1f2937;padding-bottom:12px;}.content{white-space:pre-wrap;font-size:11pt;}</style></head><body><h1>PROCEDURE NOTE — ${selTmpl?.label||""}</h1><p>${new Date().toLocaleString()}</p><div class="content">${cleanMarkdown(note)}</div></body></html>`);
+    win.document.close(); setTimeout(()=>win.print(),250);
+  };
+
+  return (
+    <div style={{display:"flex",gap:14,height:"100%",minHeight:0}}>
+      <div style={{...glass({borderRadius:12}),width:220,flexShrink:0,overflowY:"auto",padding:8}}>
+        <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.dim,textTransform:"uppercase",letterSpacing:2,padding:"8px 8px 10px"}}>TEMPLATES</div>
+        {PROC_CATEGORIES.filter(c=>c.id!=="all").map(cat=>(
+          <div key={cat.id}>
+            <button onClick={()=>setOpenCats(p=>({...p,[cat.id]:!p[cat.id]}))}
+              style={{width:"100%",padding:"8px 10px",background:openCats[cat.id]?"rgba(22,45,79,0.8)":"transparent",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:6,borderRadius:8,borderBottom:"1px solid rgba(30,58,95,0.3)",marginBottom:2}}>
+              <span style={{fontSize:12}}>{cat.label.split(" ")[0]}</span>
+              <span style={{flex:1,textAlign:"left",fontSize:11,fontWeight:600,color:T.text}}>{cat.label.split(" ").slice(1).join(" ")}</span>
+              <span style={{fontSize:10,color:T.dim,fontFamily:"JetBrains Mono"}}>{byCategory[cat.id]?.length||0}</span>
+            </button>
+            {openCats[cat.id] && byCategory[cat.id]?.map(t=>(
+              <button key={t.id} onClick={()=>{setSelTmpl(t);setFields({});setNote("");setExtras({findings:"",impression:"",summary:""});}}
+                style={{width:"100%",padding:"7px 8px 7px 20px",textAlign:"left",background:selTmpl?.id===t.id?`${color}20`:"transparent",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:6,fontSize:11.5,color:selTmpl?.id===t.id?T.bright:T.text,fontWeight:selTmpl?.id===t.id?700:400,borderRadius:6}}>
+                <span>{t.icon}</span>{t.label}
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+      <div style={{flex:1,minWidth:0,display:"flex",flexDirection:"column",gap:10}}>
+        {!selTmpl ? (
+          <div style={{...glass({borderRadius:12}),flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:10}}>
+            <span style={{fontSize:48}}>📋</span>
+            <div style={{fontFamily:"DM Sans",fontSize:14,color:T.dim}}>Select a procedure template from the left to begin</div>
+          </div>
+        ) : (
+          <>
+            <div style={{...glass({borderRadius:12,background:`linear-gradient(135deg,${color}18,rgba(8,22,40,0.85))`}),padding:"14px 18px",display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:20}}>{selTmpl.icon}</span>
+              <div>
+                <div style={{fontFamily:"Playfair Display",fontSize:16,fontWeight:700,color:T.bright}}>{selTmpl.label}</div>
+                <div style={{fontFamily:"DM Sans",fontSize:11,color:T.dim}}>Fill fields below then generate note</div>
+              </div>
+              {note && <button onClick={()=>navigator.clipboard.writeText(note)} style={{marginLeft:"auto",padding:"5px 12px",borderRadius:8,background:`${color}22`,border:`1px solid ${color}55`,color,fontSize:11,fontWeight:700,cursor:"pointer"}}>📋 Copy</button>}
+            </div>
+            <div style={{...glass({borderRadius:12}),padding:"16px 18px",overflowY:"auto",flex:1,display:"flex",flexDirection:"column",gap:14}}>
+              <FieldRenderer fields={selTmpl.fields} values={fields} onChange={setFields} accentColor={color}/>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap",paddingTop:4}}>
+                <button onClick={()=>generate("note")} disabled={generating}
+                  style={{flex:"1 1 auto",background:generating&&genType==="note"?`${color}30`:`linear-gradient(135deg,${color},${color}bb)`,color:generating&&genType==="note"?color:"#fff",fontWeight:700,fontSize:13,padding:"10px 16px",borderRadius:9,border:"none",cursor:generating?"not-allowed":"pointer",fontFamily:"DM Sans"}}>
+                  {generating&&genType==="note"?"✨ Generating…":"✨ Generate Note"}
+                </button>
+                {[{k:"findings",label:"🔍 Findings"},{k:"impression",label:"💭 Impression"},{k:"summary",label:"📋 Summary"}].map(btn=>(
+                  <button key={btn.k} onClick={()=>generate(btn.k)} disabled={generating}
+                    style={{padding:"10px 14px",borderRadius:9,background:generating&&genType===btn.k?`${color}25`:"rgba(14,37,68,0.8)",border:`1px solid ${color}44`,color:generating&&genType===btn.k?color:T.dim,fontSize:12,fontWeight:600,cursor:generating?"not-allowed":"pointer",fontFamily:"DM Sans"}}>
+                    {generating&&genType===btn.k?"✨…":btn.label}
+                  </button>
+                ))}
+              </div>
+              {(extras.summary||extras.findings||extras.impression||note) && (
+                <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                  {extras.summary && (
+                    <div style={{padding:"12px 14px",background:"rgba(155,109,255,0.08)",border:"1px solid rgba(155,109,255,0.25)",borderRadius:10,borderLeft:`3px solid ${T.purple}`}}>
+                      <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.purple,marginBottom:6,textTransform:"uppercase",letterSpacing:2}}>Summary</div>
+                      <div style={{fontFamily:"DM Sans",fontSize:13,color:T.text,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{cleanMarkdown(extras.summary)}</div>
+                    </div>
+                  )}
+                  {extras.findings && (
+                    <div style={{padding:"12px 14px",background:`${color}08`,border:`1px solid ${color}25`,borderRadius:10,borderLeft:`3px solid ${color}`}}>
+                      <div style={{fontFamily:"JetBrains Mono",fontSize:9,color,marginBottom:6,textTransform:"uppercase",letterSpacing:2}}>Key Findings</div>
+                      <div style={{fontFamily:"DM Sans",fontSize:13,color:T.text,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{cleanMarkdown(extras.findings)}</div>
+                    </div>
+                  )}
+                  {extras.impression && (
+                    <div style={{padding:"12px 14px",background:"rgba(244,114,182,0.08)",border:"1px solid rgba(244,114,182,0.25)",borderRadius:10,borderLeft:`3px solid ${T.rose}`}}>
+                      <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.rose,marginBottom:6,textTransform:"uppercase",letterSpacing:2}}>Clinical Impression</div>
+                      <div style={{fontFamily:"DM Sans",fontSize:13,color:T.text,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{cleanMarkdown(extras.impression)}</div>
+                    </div>
+                  )}
+                  {note && (
+                    <div style={{padding:"14px 16px",background:"rgba(5,15,30,0.6)",border:"1px solid rgba(30,58,95,0.5)",borderRadius:10}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                        <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.amber,textTransform:"uppercase",letterSpacing:2,flex:1}}>Full Procedure Note</div>
+                        <button onClick={handlePrint} style={{padding:"4px 10px",borderRadius:6,background:`${color}15`,border:`1px solid ${color}40`,color,fontSize:10,fontWeight:700,cursor:"pointer"}}>🖨️ Print</button>
+                      </div>
+                      <div style={{fontFamily:"DM Sans",fontSize:13,color:T.text,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{cleanMarkdown(note)}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── ED Notes Panel ────────────────────────────────────────────────
+function EDNotesPanel({ color }) {
+  const [sel, setSel] = useState(null);
+  const [fields, setFields] = useState({});
+  const [note, setNote] = useState("");
+  const [generating, setGenerating] = useState(false);
+
+  const generate = async () => {
+    if(!sel) return; setGenerating(true);
+    try {
+      const fs = (sel.fields||[]).map(f=>`${f.label}: ${fields[f.id]||"(not provided)"}`).join("\n");
+      const result = await base44.integrations.Core.InvokeLLM({ prompt:`You are Notrya AI. Draft a complete, medicolegally sound ${sel.label} note for an emergency medicine provider.\n\n${fs?`COMPLETED FIELDS:\n${fs}\n`:""}Generate a professional, complete note suitable for the medical record.` });
+      setNote(result);
+    } catch(e){console.error(e);} finally{setGenerating(false);}
+  };
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:12,height:"100%"}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:8}}>
+        {ED_NOTES.map(n=>(
+          <div key={n.id} onClick={()=>{setSel(n);setFields({});setNote("");}}
+            style={{...glass({borderRadius:12,background:sel?.id===n.id?`linear-gradient(135deg,${n.color}22,rgba(8,22,40,0.85))`:"rgba(8,22,40,0.75)",borderColor:sel?.id===n.id?n.color+"66":"rgba(30,58,95,0.55)"}),padding:"14px 16px",cursor:"pointer",transition:"all .18s"}}
+            onMouseEnter={e=>{ if(sel?.id!==n.id) e.currentTarget.style.borderColor=n.color+"44"; }}
+            onMouseLeave={e=>{ if(sel?.id!==n.id) e.currentTarget.style.borderColor="rgba(30,58,95,0.55)"; }}>
+            <div style={{fontSize:24,marginBottom:6}}>{n.icon}</div>
+            <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:13,color:T.bright,marginBottom:3}}>{n.label}</div>
+            <div style={{fontFamily:"DM Sans",fontSize:11,color:T.dim,lineHeight:1.4}}>{n.description}</div>
+          </div>
+        ))}
+      </div>
+      {sel && (
+        <div className="proc-fade" style={{...glass({borderRadius:12}),padding:"16px 18px",flex:1,display:"flex",flexDirection:"column",gap:12,minHeight:0,overflowY:"auto"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:18}}>{sel.icon}</span>
+            <span style={{fontFamily:"Playfair Display",fontWeight:700,fontSize:15,color:T.bright}}>{sel.label}</span>
+            {note && <button onClick={()=>navigator.clipboard.writeText(note)} style={{marginLeft:"auto",padding:"4px 10px",borderRadius:7,background:`${sel.color}20`,border:`1px solid ${sel.color}55`,color:sel.color,fontSize:11,fontWeight:700,cursor:"pointer"}}>📋 Copy</button>}
+          </div>
+          {sel.fields?.length > 0 && <FieldRenderer fields={sel.fields} values={fields} onChange={setFields} accentColor={sel.color}/>}
+          <button onClick={generate} disabled={generating}
+            style={{width:"100%",background:generating?`${sel.color}30`:`linear-gradient(135deg,${sel.color},${sel.color}bb)`,color:generating?sel.color:"#fff",fontWeight:700,fontSize:13,padding:"11px",borderRadius:9,border:"none",cursor:generating?"not-allowed":"pointer",fontFamily:"DM Sans"}}>
+            {generating?"✨ Drafting note…":"✨ AI Draft Note"}
+          </button>
+          {note && (
+            <div style={{padding:"14px 16px",background:"rgba(5,15,30,0.6)",border:"1px solid rgba(30,58,95,0.5)",borderRadius:10,fontFamily:"DM Sans",fontSize:13,color:T.text,lineHeight:1.8,whiteSpace:"pre-wrap"}}>
+              {note.replace(/^#+\s+/gm,"").replace(/\*\*/g,"").replace(/\*/g,"")}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── CPT Search Panel ──────────────────────────────────────────────
+function CPTSearchPanel({ color }) {
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("all");
+  const [copied, setCopied] = useState(null);
+
+  const filtered = useMemo(()=>CPT_DATA.filter(row=>{
+    const matchCat = category==="all" || row.category===category;
+    const q = query.toLowerCase();
+    return matchCat && (!q || row.cptCode.includes(q) || row.procedureName.toLowerCase().includes(q));
+  }),[query,category]);
+
+  const copyCode = (code) => { navigator.clipboard.writeText(code); setCopied(code); setTimeout(()=>setCopied(null),1500); };
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:12,height:"100%"}}>
+      <input value={query} onChange={e=>setQuery(e.target.value)}
+        placeholder="Search procedures or CPT codes… e.g. 'laceration', '12002', 'intubation'"
+        style={{width:"100%",background:"rgba(14,37,68,0.8)",border:"1px solid rgba(30,58,95,0.6)",borderRadius:10,padding:"12px 16px",color:T.bright,fontSize:13,fontFamily:"DM Sans",outline:"none",boxSizing:"border-box",transition:"border-color .15s"}}
+        onFocus={e=>e.target.style.borderColor=color}
+        onBlur={e=>e.target.style.borderColor="rgba(30,58,95,0.6)"}
+      />
+      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+        {["all",...Object.keys(CATEGORY_LABELS)].map(cat=>(
+          <button key={cat} onClick={()=>setCategory(cat)}
+            style={{padding:"5px 12px",borderRadius:20,fontSize:11,fontWeight:600,cursor:"pointer",border:`1px solid ${category===cat?color+"55":"rgba(30,58,95,0.5)"}`,background:category===cat?`${color}18`:"transparent",color:category===cat?color:T.dim,transition:"all .15s",fontFamily:"DM Sans"}}>
+            {cat==="all"?"All":CATEGORY_LABELS[cat]}
+          </button>
+        ))}
+      </div>
+      <div style={{...glass({borderRadius:12}),overflow:"hidden",flex:1,overflowY:"auto"}}>
+        <div style={{display:"grid",gridTemplateColumns:"100px 1fr 120px 60px",borderBottom:"1px solid rgba(30,58,95,0.5)"}}>
+          {["CPT Code","Procedure","Category","RVU"].map(h=>(
+            <div key={h} style={{padding:"10px 14px",fontSize:10,fontWeight:700,color:T.dim,textTransform:"uppercase",letterSpacing:".06em"}}>{h}</div>
+          ))}
+        </div>
+        {filtered.slice(0,60).map(row=>{
+          const cc = CATEGORY_COLORS[row.category]||{bg:"rgba(74,114,153,0.12)",fg:T.dim};
+          return (
+            <React.Fragment key={row.cptCode}>
+              <div style={{padding:"10px 14px",borderBottom:"1px solid rgba(30,58,95,0.25)",display:"flex",alignItems:"center",gap:6}}>
+                <span style={{fontFamily:"JetBrains Mono",fontSize:13,fontWeight:700,color}}>{row.cptCode}</span>
+                <button onClick={()=>copyCode(row.cptCode)} style={{background:"transparent",border:"none",cursor:"pointer",color:copied===row.cptCode?T.green:T.muted,fontSize:11}}>
+                  {copied===row.cptCode?"✓":"⎘"}
+                </button>
+              </div>
+              <div style={{padding:"10px 14px",fontSize:13,color:T.bright,borderBottom:"1px solid rgba(30,58,95,0.25)"}}>{row.procedureName}</div>
+              <div style={{padding:"10px 14px",borderBottom:"1px solid rgba(30,58,95,0.25)",display:"flex",alignItems:"center"}}>
+                <span style={{padding:"2px 8px",borderRadius:6,fontSize:10,fontWeight:600,background:cc.bg,color:cc.fg}}>{CATEGORY_LABELS[row.category]||row.category}</span>
+              </div>
+              <div style={{padding:"10px 14px",fontFamily:"JetBrains Mono",fontSize:12,color:T.dim,borderBottom:"1px solid rgba(30,58,95,0.25)"}}>{row.rvu}</div>
+            </React.Fragment>
+          );
+        })}
+        {filtered.length===0 && <div style={{padding:"40px",textAlign:"center",color:T.dim,fontSize:13,gridColumn:"1/-1"}}>🔍 No results found</div>}
+      </div>
+    </div>
+  );
+}
+
+// ── Procedure Log Panel ───────────────────────────────────────────
+function ProcLogPanel({ color }) {
+  const queryClient = useQueryClient();
+  const emptyForm = { procedure_name:"",cpt_code:"",date_performed:new Date().toISOString().split("T")[0],location:"",supervision:"Attending (primary operator)",attempts:1,success:true,ultrasound_used:false,complications:"None",indication:"",attending_name:"",notes:"" };
+  const [form, setForm] = useState(emptyForm);
+  const [showForm, setShowForm] = useState(true);
+
+  const { data:logs=[], isLoading } = useQuery({ queryKey:["procedureLogs"], queryFn:()=>base44.entities.ProcedureLog.list("-date_performed",50) });
+  const createMutation = useMutation({ mutationFn:d=>base44.entities.ProcedureLog.create(d), onSuccess:()=>{ queryClient.invalidateQueries({queryKey:["procedureLogs"]}); setForm(emptyForm); } });
+  const deleteMutation = useMutation({ mutationFn:id=>base44.entities.ProcedureLog.delete(id), onSuccess:()=>queryClient.invalidateQueries({queryKey:["procedureLogs"]}) });
 
   const exportCSV = () => {
     const cols=["procedure_name","cpt_code","date_performed","location","supervision","attempts","success","ultrasound_used","complications","attending_name","indication"];
@@ -496,7 +784,6 @@ const ED_NOTES = [
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:12,height:"100%"}}>
-      {/* Stats strip */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
         {[
           {label:"Total Logged",val:logs.length,c:color},
@@ -510,8 +797,6 @@ const ED_NOTES = [
           </div>
         ))}
       </div>
-
-      {/* Form toggle */}
       <div style={{...glass({borderRadius:12}),overflow:"hidden"}}>
         <button onClick={()=>setShowForm(!showForm)}
           style={{width:"100%",padding:"12px 16px",background:showForm?"rgba(14,37,68,0.9)":"transparent",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:8,borderBottom:showForm?"1px solid rgba(30,58,95,0.5)":"none"}}>
@@ -575,8 +860,6 @@ const ED_NOTES = [
           </div>
         )}
       </div>
-
-      {/* Log table */}
       <div style={{...glass({borderRadius:12}),flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
         <div style={{padding:"10px 16px",borderBottom:"1px solid rgba(30,58,95,0.4)",fontFamily:"DM Sans",fontWeight:700,fontSize:12,color:T.text}}>
           Procedure History ({logs.length})
@@ -638,13 +921,11 @@ export default function Procedures() {
 
   return (
     <div style={{ background:T.navy, minHeight:"100vh", fontFamily:"DM Sans,sans-serif", display:"flex", flexDirection:"column", position:"relative", overflow:"hidden" }}>
-      {/* Ambient glow */}
       <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0}}>
         <div style={{position:"absolute",top:"-20%",left:"-5%",width:"50%",height:"50%",background:`radial-gradient(circle,${active.color}18 0%,transparent 70%)`,transition:"background 1s ease"}}/>
         <div style={{position:"absolute",bottom:"-15%",right:"0",width:"40%",height:"40%",background:"radial-gradient(circle,rgba(0,212,188,0.08) 0%,transparent 70%)"}}/>
       </div>
 
-      {/* Header */}
       <div style={{...deepGlass({borderRadius:0}),padding:"16px 24px",flexShrink:0,zIndex:10,position:"relative",borderBottom:"1px solid rgba(30,58,95,0.6)"}}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           <div style={{...deepGlass({borderRadius:10}),padding:"6px 12px",display:"flex",gap:8,alignItems:"center"}}>
@@ -657,10 +938,7 @@ export default function Procedures() {
         </div>
       </div>
 
-      {/* Body: sidebar + content */}
       <div style={{display:"flex",flex:1,minHeight:0,position:"relative",zIndex:1,overflow:"hidden"}}>
-
-        {/* Sidebar */}
         <div style={{...deepGlass({borderRadius:0,borderRight:"1px solid rgba(30,58,95,0.6)"}),width:220,flexShrink:0,padding:"16px 10px",display:"flex",flexDirection:"column",gap:4,overflowY:"auto"}}>
           <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.dim,textTransform:"uppercase",letterSpacing:3,padding:"4px 8px 10px"}}>SECTIONS</div>
           {SECTIONS.map(sec=>{
@@ -679,7 +957,6 @@ export default function Procedures() {
               </div>
             );
           })}
-
           <div style={{flex:1}}/>
           <div style={{padding:"10px 8px",fontFamily:"JetBrains Mono",fontSize:9,color:T.dim,lineHeight:1.6,borderTop:"1px solid rgba(30,58,95,0.4)",marginTop:8}}>
             {CPT_DATA.length} CPT codes<br/>
@@ -688,9 +965,7 @@ export default function Procedures() {
           </div>
         </div>
 
-        {/* Main content */}
         <div style={{flex:1,minWidth:0,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-          {/* Section header */}
           <div style={{...glass({borderRadius:0,background:`linear-gradient(135deg,${active.gl},rgba(8,22,40,0.88))`,borderColor:active.br,borderLeft:"none",borderRight:"none",borderTop:"none"}),padding:"14px 24px",flexShrink:0,position:"relative",overflow:"hidden"}}>
             <div style={{position:"absolute",top:-30,right:-20,fontSize:100,opacity:.05}}>{active.icon}</div>
             <div style={{display:"flex",alignItems:"center",gap:12}}>
@@ -702,15 +977,12 @@ export default function Procedures() {
               <span style={{marginLeft:"auto",fontFamily:"JetBrains Mono",fontSize:9,color:active.color,background:`${active.color}18`,border:`1px solid ${active.color}44`,padding:"3px 10px",borderRadius:20,fontWeight:700,letterSpacing:1}}>ACTIVE</span>
             </div>
           </div>
-
-          {/* Panel */}
           <div className="proc-fade" key={activeId} style={{flex:1,minHeight:0,overflowY:"auto",padding:"18px 24px"}}>
             {renderPanel()}
           </div>
         </div>
       </div>
 
-      {/* Footer */}
       <div style={{textAlign:"center",padding:"8px",borderTop:"1px solid rgba(30,58,95,0.3)",position:"relative",zIndex:2}}>
         <span style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.dim,letterSpacing:2}}>NOTRYA PROCEDURE SUITE · {PROC_TEMPLATES.length} TEMPLATES · {CPT_DATA.length} CPT CODES</span>
       </div>

@@ -441,38 +441,23 @@ export default function NotryaFloatingAI() {
       const context = getContextString();
       const systemPrompt = `You are Notrya AI, a helpful clinical assistant embedded in an emergency medicine documentation app. You provide concise, actionable advice. Context: ${context}. Respond in 2–4 sentences. Never fabricate data. If information is missing, ask for clarification.`;
 
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": import.meta.env.VITE_ANTHROPIC_API_KEY || "",
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: systemPrompt,
-          messages: newHistory.map(m => ({
-            role: m.role,
-            content: m.content
-          })),
-        }),
+      const fullPrompt = newHistory.map(m =>
+        m.role === "user" ? `User: ${m.content}` : `Assistant: ${m.content}`
+      ).join("\n");
+
+      const botMsg = await base44.integrations.Core.InvokeLLM({
+        prompt: `${systemPrompt}\n\n${fullPrompt}`,
       });
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const botMsg = data.content?.[0]?.text || "Sorry, I couldn't process that.";
-      setAiMsgs(prev => [...prev, { role: "bot", text: botMsg }]);
+      const replyText = typeof botMsg === "string" ? botMsg : JSON.stringify(botMsg);
+      setAiMsgs(prev => [...prev, { role: "bot", text: replyText }]);
       setConversationHistory([
         ...newHistory,
-        { role: "assistant", content: botMsg }
+        { role: "assistant", content: replyText }
       ]);
       if (!aiOpen) setUnread(n => n + 1);
     } catch (e) {
-      setAiMsgs(prev => [...prev, { role: "sys", text: "⚠ Error — check API key or connection." }]);
+      setAiMsgs(prev => [...prev, { role: "sys", text: "⚠ Error — please try again." }]);
     }
     setAiLoading(false);
   };

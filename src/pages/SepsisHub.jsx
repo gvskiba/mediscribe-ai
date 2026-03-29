@@ -762,7 +762,7 @@ export default function SepsisHub() {
 
   if (selected) {
     const cond = CONDITIONS.find(c=>c.id===selected);
-    if (!cond) { setSelected(null); return null; }
+    if (!cond) { return null; }
     return (
       <div style={{height:"100vh",background:T.bg,color:T.txt,fontFamily:"'DM Sans',sans-serif",display:"flex",flexDirection:"column",overflow:"hidden"}}>
         <ConditionPage cond={cond} onBack={()=>setSelected(null)} />

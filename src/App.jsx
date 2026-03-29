@@ -30,6 +30,7 @@ import SepsisHub from '@/pages/SepsisHub';
 import AirwayHub from '@/pages/AirwayHub';
 import ToxicologyHub from '@/pages/ToxicologyHub';
 import PedsHub from '@/pages/PedsHub';
+import ProviderBilling from '@/pages/ProviderBilling';
 
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -109,6 +110,7 @@ const AuthenticatedApp = () => {
       <Route path="/airway-hub" element={<AirwayHub />} />
       <Route path="/tox-hub" element={<ToxicologyHub />} />
       <Route path="/peds-hub" element={<PedsHub />} />
+      <Route path="/provider-billing" element={<LayoutWrapper currentPageName="ProviderBilling"><ProviderBilling /></LayoutWrapper>} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

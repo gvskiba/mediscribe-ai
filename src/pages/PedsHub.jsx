@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 
 // ── Design Tokens ───────────────────────────────────────────────────
 const T = {
@@ -701,6 +702,7 @@ function FollowupTab({ fu }) {
 
 // ── Main Component ─────────────────────────────────────────────────
 export default function PedsHub() {
+  const navigate = useNavigate();
   const [sel, setSel] = useState("pals");
   const [tab, setTab] = useState("overview");
   const [filter, setFilter] = useState("All");
@@ -746,12 +748,12 @@ export default function PedsHub() {
               <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.txt3,letterSpacing:2}}>PEDIATRICS</span>
             </div>
             <div style={{height:1,flex:1,background:"linear-gradient(90deg,rgba(42,79,122,0.6),transparent)"}}/>
-            <a href="#medication-reference" style={{textDecoration:"none"}}>
-              <div style={{backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",background:"rgba(59,158,255,0.12)",border:"1px solid rgba(59,158,255,0.4)",borderRadius:10,padding:"6px 14px",display:"flex",alignItems:"center",gap:6,cursor:"pointer",transition:"all .2s"}}>
+            <button onClick={()=>navigate("/MedicationReference")} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}>
+              <div style={{backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",background:"rgba(59,158,255,0.12)",border:"1px solid rgba(59,158,255,0.4)",borderRadius:10,padding:"6px 14px",display:"flex",alignItems:"center",gap:6,transition:"all .2s"}}>
                 <span style={{fontSize:14}}>💊</span>
                 <span style={{fontFamily:"DM Sans",fontWeight:600,fontSize:12,color:T.blue}}>Medication Reference</span>
               </div>
-            </a>
+            </button>
           </div>
           <h1 className="shimmer-text" style={{fontFamily:"Playfair Display",fontSize:"clamp(26px,5vw,44px)",fontWeight:900,letterSpacing:-1,lineHeight:1.1}}>
             Pediatric Emergency Hub

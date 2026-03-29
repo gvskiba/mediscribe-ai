@@ -686,11 +686,34 @@ const DATA = {
   },
 };
 
+// ── Weight Dose Calculator Helper ────────────────────────────────
+function calcWeightDoses(doseStr, weightKg) {
+  if (!weightKg || weightKg <= 0 || !doseStr) return [];
+  const results = [];
+  // Match patterns like: 1.5 mg/kg, 0.1–0.5 mg/kg, 10–15 mg/kg, 1.5 mL/kg, etc.
+  const re = /([\d.]+)(?:\s*[–\-]\s*([\d.]+))?\s*(mg|mcg|g|mL|units?)\/kg/gi;
+  let m;
+  const seen = new Set();
+  while ((m = re.exec(doseStr)) !== null) {
+    const lo = parseFloat(m[1]);
+    const hi = m[2] ? parseFloat(m[2]) : null;
+    const unit = m[3];
+    const key = `${lo}-${hi}-${unit}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const loD = (lo * weightKg).toFixed(lo < 1 ? 2 : 1);
+    const hiD = hi ? (hi * weightKg).toFixed(hi < 1 ? 2 : 1) : null;
+    results.push({ label: hiD ? `${lo}–${hi} ${unit}/kg` : `${lo} ${unit}/kg`, calc: hiD ? `${loD}–${hiD} ${unit}` : `${loD} ${unit}` });
+  }
+  return results;
+}
+
 // ── DrugRow Component ──────────────────────────────────────────────
-function DrugRow({ d, color, idx }) {
+function DrugRow({ d, color, idx, weightKg }) {
   const [open, setOpen] = useState(null);
   const catColors = { "🅐":T.coral, "🅑":T.blue, "🅒":T.teal };
   const cc = catColors[d.cat[0]] || color;
+  const weightDoses = calcWeightDoses(d.dose, weightKg);
   const panels = [
     { id:0, icon:"📋", label:"Details", content: <><b style={{color:T.txt2}}>Dose: </b>{d.dose}<br/><br/><b style={{color:T.txt2}}>Route: </b>{d.ivpo}<br/><br/><b style={{color:T.txt2}}>Renal: </b>{d.renal}</> },
     { id:1, icon:"🔧", label:"Alt / Setup", content: <><b style={{color:T.txt2}}>Step-Down / Alt: </b>{d.deesc}{d.note ? <><br/><br/><b style={{color:T.txt2}}>Clinical Note: </b>{d.note}</> : null}</> },
@@ -701,7 +724,14 @@ function DrugRow({ d, color, idx }) {
       <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",background:open!==null?`linear-gradient(90deg,${cc}18,transparent)`:"transparent"}}>
         <span style={{fontFamily:"JetBrains Mono",fontSize:11,color:cc,background:`${cc}22`,padding:"2px 8px",borderRadius:4,whiteSpace:"nowrap"}}>{d.cat}</span>
         <span style={{fontFamily:"DM Sans",fontWeight:600,color:T.txt,flex:1,fontSize:14}}>{d.drug}</span>
-        <span style={{fontFamily:"JetBrains Mono",fontSize:11,color:T.txt3}}>{d.ivpo}</span>
+        {weightDoses.length > 0 && (
+          <div style={{display:"flex",gap:5,flexWrap:"wrap",justifyContent:"flex-end"}}>
+            {weightDoses.map((wd,i) => (
+              <span key={i} style={{fontFamily:"JetBrains Mono",fontSize:11,color:T.gold,background:"rgba(245,200,66,0.15)",border:"1px solid rgba(245,200,66,0.4)",padding:"2px 8px",borderRadius:6,whiteSpace:"nowrap"}}>⚖️ {wd.calc}</span>
+            ))}
+          </div>
+        )}
+        <span style={{fontFamily:"JetBrains Mono",fontSize:11,color:T.txt3,flexShrink:0}}>{d.ivpo}</span>
       </div>
       <div style={{padding:"4px 16px 10px",display:"flex",gap:8,flexWrap:"wrap"}}>
         {panels.map(p=>(
@@ -757,11 +787,11 @@ function WorkupTab({ wk }) {
   );
 }
 
-function ProtocolTab({ tx, color }) {
+function ProtocolTab({ tx, color, weightKg }) {
   return (
     <div className="fade-in">
       <div style={{fontFamily:"JetBrains Mono",fontSize:11,color:T.orange,textTransform:"uppercase",letterSpacing:2,marginBottom:14}}>TREATMENT PROTOCOL</div>
-      {tx.map((d,i)=><DrugRow key={i} d={d} color={color} idx={i}/>)}
+      {tx.map((d,i)=><DrugRow key={i} d={d} color={color} idx={i} weightKg={weightKg}/>)}
     </div>
   );
 }
@@ -786,6 +816,9 @@ export default function ToxHub() {
   const [sel, setSel] = useState("opioid");
   const [tab, setTab] = useState("overview");
   const [filter, setFilter] = useState("All");
+  const [weightVal, setWeightVal] = useState("");
+  const [weightUnit, setWeightUnit] = useState("kg");
+  const weightKg = weightVal ? (weightUnit === "lbs" ? parseFloat(weightVal) * 0.453592 : parseFloat(weightVal)) : 0;
   const cond = CONDITIONS.find(c=>c.id===sel) || CONDITIONS[0];
   const data = DATA[sel] || DATA[CONDITIONS[0].id];
   const cats = ["All","Toxidrome","Overdose"];
@@ -898,11 +931,30 @@ export default function ToxHub() {
               ))}
             </div>
 
+            {/* Weight Calculator Widget — shown on Protocol tab */}
+            {tab==="protocol" && (
+              <div style={{...glassCard,padding:"10px 16px",marginBottom:10,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",borderColor:"rgba(245,200,66,0.35)",background:"rgba(245,200,66,0.05)"}}>
+                <span style={{fontFamily:"JetBrains Mono",fontSize:11,color:T.gold,letterSpacing:1,whiteSpace:"nowrap"}}>⚖️ WEIGHT-BASED CALC</span>
+                <input
+                  type="number" min="0" placeholder="Patient weight…" value={weightVal}
+                  onChange={e=>setWeightVal(e.target.value)}
+                  style={{fontFamily:"JetBrains Mono",fontSize:13,width:140,padding:"6px 10px",borderRadius:8,border:"1px solid rgba(245,200,66,0.4)",background:"rgba(14,37,68,0.8)",color:T.txt,outline:"none"}}
+                />
+                <div style={{display:"flex",borderRadius:8,overflow:"hidden",border:"1px solid rgba(42,79,122,0.6)"}}>
+                  {["kg","lbs"].map(u=>(
+                    <button key={u} onClick={()=>setWeightUnit(u)} style={{padding:"6px 14px",border:"none",cursor:"pointer",fontFamily:"DM Sans",fontWeight:700,fontSize:12,background:weightUnit===u?"rgba(245,200,66,0.25)":"rgba(14,37,68,0.8)",color:weightUnit===u?T.gold:T.txt3,transition:"all .15s"}}>{u}</button>
+                  ))}
+                </div>
+                {weightKg > 0 && <span style={{fontFamily:"JetBrains Mono",fontSize:11,color:T.txt3}}>= {weightKg.toFixed(1)} kg — doses shown in <span style={{color:T.gold}}>gold</span> on each drug</span>}
+                {!weightKg && <span style={{fontFamily:"DM Sans",fontSize:12,color:T.txt4}}>Enter weight to auto-calculate mg/kg doses</span>}
+              </div>
+            )}
+
             {/* Tab Content */}
             <div style={{...glassCard,padding:"20px",minHeight:400,overflow:"auto",maxHeight:"calc(100vh - 400px)"}}>
               {tab==="overview" && <OverviewTab ov={data.overview}/>}
               {tab==="workup"   && <WorkupTab wk={data.workup}/>}
-              {tab==="protocol" && <ProtocolTab tx={data.treatment} color={cond.color}/>}
+              {tab==="protocol" && <ProtocolTab tx={data.treatment} color={cond.color} weightKg={weightKg}/>}
               {tab==="followup" && <FollowupTab fu={data.followup}/>}
             </div>
           </div>

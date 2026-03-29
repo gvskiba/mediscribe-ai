@@ -68,6 +68,8 @@ const CONDITIONS = [
   { id:"betablocker",     icon:"💙", title:"Beta-Blocker OD",          sub:"Bradycardia · Hypotension · Hypoglycemia", cat:"Overdose", color:T.blue,   gl:"rgba(59,158,255,0.1)",   br:"rgba(59,158,255,0.4)"  },
   { id:"ccb",             icon:"🫀", title:"Calcium Channel Blocker OD",sub:"Bradycardia · Vasodilation · High-Dose Insulin", cat:"Overdose", color:T.coral, gl:"rgba(255,107,107,0.1)",  br:"rgba(255,107,107,0.4)" },
   { id:"co",              icon:"💨", title:"Carbon Monoxide",           sub:"Tissue Hypoxia · Headache · COHb",  cat:"Toxidrome", color:T.orange, gl:"rgba(255,159,67,0.1)",   br:"rgba(255,159,67,0.4)"  },
+  { id:"etoh_intox",      icon:"🍺", title:"Alcohol Intoxication",      sub:"Acute EtOH · Wernicke · Aspiration", cat:"Toxidrome", color:T.gold,   gl:"rgba(245,200,66,0.1)",   br:"rgba(245,200,66,0.4)"  },
+  { id:"etoh_withdrawal", icon:"🥴", title:"Alcohol Withdrawal",         sub:"AWS · DTs · CIWA · Banana Bag",      cat:"Toxidrome", color:T.orange, gl:"rgba(255,159,67,0.1)",   br:"rgba(255,159,67,0.4)"  },
   { id:"alcohols",        icon:"🧪", title:"Toxic Alcohols",            sub:"Methanol · Ethylene Glycol · Osmol Gap", cat:"Overdose", color:T.green,  gl:"rgba(61,255,160,0.1)",   br:"rgba(61,255,160,0.4)"  },
 ];
 
@@ -225,6 +227,83 @@ const DATA = {
       "Mandatory household CO detector installation — discuss at discharge",
       "Cognitive follow-up at 4–6 weeks: formal neuropsychiatric testing for persistent deficits",
       "Pregnancy: neonatal monitoring at delivery; obstetrics consult regardless of COHb level",
+    ]
+  },
+  etoh_intox: {
+    overview: {
+      def: "Acute alcohol (ethanol) intoxication is the most common toxicological presentation in emergency departments. EtOH is a GABA-A agonist and NMDA antagonist causing dose-dependent CNS depression. Intoxication alone is rarely fatal; danger lies in airway compromise, aspiration, hypothermia, hypoglycemia, and co-ingestions. A critical pitfall: altered mental status attributed to 'just alcohol' may conceal head trauma, hypoglycemia, hyponatremia (MDMA), or Wernicke's encephalopathy.",
+      bullets: [
+        "EtOH level correlates loosely with symptoms — tolerance dramatically shifts the relationship (alcoholic may appear sober at 300 mg/dL)",
+        "Airway protection is the primary concern — aspiration pneumonia risk is significant with vomiting + CNS depression",
+        "Hypoglycemia: EtOH inhibits gluconeogenesis — check POC glucose immediately; treat empirically if borderline",
+        "Hypothermia: peripheral vasodilation causes rapid heat loss — rectal temp mandatory; rewarm actively",
+        "Wernicke's triad: encephalopathy + ophthalmoplegia + ataxia — present in <20%; any suspicion = thiamine IV FIRST",
+        "ALWAYS rule out co-ingestion, head trauma (CT if focal neuro, ETOH level disproportionate to GCS), and metabolic causes",
+        "NEVER give glucose before thiamine in at-risk patients — precipitates Wernicke's encephalopathy",
+      ]
+    },
+    workup: [
+      { icon:"🧪", label:"Serum EtOH Level", detail:"Blood alcohol concentration (BAC/EtOH level). Confirms exposure. Tolerance = unreliable clinical correlation. EtOH falls ~15–25 mg/dL/hr in chronic users (faster). Critical threshold: >300 mg/dL = high aspiration risk; >400 mg/dL = respiratory depression risk." },
+      { icon:"💉", label:"POC Blood Glucose — STAT", detail:"EtOH inhibits hepatic gluconeogenesis → hypoglycemia (especially fasting, chronic use, pediatric). Check immediately. Treat BG <70 with D50W 25g IV. Thiamine BEFORE glucose in malnourished/chronic alcoholics." },
+      { icon:"🌡️", label:"Core Temperature (Rectal)", detail:"EtOH causes peripheral vasodilation → rapid heat loss. Hypothermia impairs drug metabolism (prolongs intoxication) and causes cardiac arrhythmias. Rectal temp mandatory. Active warming for <35°C." },
+      { icon:"🧠", label:"Neurological Assessment + CT Head", detail:"GCS, focal deficits, pupillary exam. CT head if: focal deficits, GCS disproportionate to EtOH level, head trauma signs, failure to improve with expected EtOH metabolism, anticoagulant use." },
+      { icon:"🔬", label:"BMP + Osmol Gap", detail:"Hyponatremia (beer potomania, SIADH), hypocalcemia, hypomagnesemia. Osmol gap screens for toxic alcohol co-ingestion (methanol/EG). Metabolic acidosis from EtOH ketoacidosis (AKA) — HAGMA with low/normal glucose." },
+      { icon:"🫀", label:"ECG", detail:"Holiday heart syndrome: atrial fibrillation from acute binge. QTc prolongation. Assess for co-ingestion-related dysrhythmia. Troponin if chest pain." },
+    ],
+    treatment: [
+      { cat:"🅐 Airway", drug:"Positioning + Airway Management", dose:"Recovery position (lateral decubitus) for all obtunded, non-intubated patients. Airway adjuncts (NPA) if tolerated. RSI if: GCS ≤8 with aspiration risk, respiratory rate <10, SpO₂ <90% despite O₂, inadequate protective reflexes", renal:"N/A", ivpo:"Procedural", deesc:"Reassess airway q15–30 min. Avoid unnecessary intubation — most patients recover with positioning and supportive care. Nasopharyngeal airway (NPA) well tolerated in intoxicated patients.", note:"Lateral decubitus position is the single most effective intervention to reduce aspiration risk in acute intoxication. Do NOT leave patient supine and unmonitored.", ref:"ACEP / Goldfrank's" },
+      { cat:"🅐 Thiamine (FIRST)", drug:"Thiamine (Vitamin B1)", dose:"Wernicke's prevention/treatment: 500 mg IV over 30 min q8h × 3 doses (first 24h); THEN 250 mg IV/IM daily × 3–5 days. Routine prophylaxis in at-risk patients: 100 mg IV/IM × 1 before glucose", renal:"No adjustment", ivpo:"IV (preferred — superior bioavailability vs IM vs PO)", deesc:"Wernicke's is a clinical diagnosis — do NOT wait for classic triad (only 16% present with all three features). Ophthalmoplegia responds rapidly to thiamine (hours). Ataxia/encephalopathy may take days to weeks.", note:"GIVE THIAMINE BEFORE GLUCOSE in at-risk patients. Glucose metabolism depletes remaining thiamine → precipitates acute Wernicke's. Thiamine is safe and cheap — no reason to withhold.", ref:"Royal College of Physicians / UpToDate" },
+      { cat:"🅑 Nutrition", drug:"Banana Bag (Multivitamin Infusion)", dose:"Standard banana bag: Thiamine 100 mg + Folate 1 mg + MVI (multivitamin) 1 vial in 1L NS or D5W over 1h. Modified: add Magnesium sulfate 2 g if hypomagnesemic. Note: thiamine ONLY if at-risk — standard MVI alone insufficient for Wernicke's", renal:"No dose adjustment for standard components", ivpo:"IV (1L bag over 1–2h)", deesc:"'Banana bag' is a colloquial term for multivitamin repletion IV — named for the yellow color from riboflavin (B2). For Wernicke's risk: use HIGH-DOSE thiamine (500 mg IV q8h) — NOT standard 100 mg banana bag alone.", note:"Common misconception: banana bag thiamine dose (100 mg) is INSUFFICIENT for Wernicke's treatment or prevention in high-risk cases. High-dose thiamine 500 mg IV q8h is required. Banana bag is adjunct nutrition support.", ref:"Goldfrank's / BMJ" },
+      { cat:"🅑 Nutrition", drug:"Folic Acid (Folate)", dose:"1 mg PO or IV daily. In alcoholic nutritional deficiency: 1 mg/day × 4 months minimum. In pregnancy with EtOH use: 4–5 mg/day (neural tube defect prevention)", renal:"No adjustment", ivpo:"PO preferred for non-acute; IV acceptable", deesc:"Folate deficiency from poor nutrition + EtOH-induced folate malabsorption. Megaloblastic anemia if chronic deficiency. Replace routinely in chronic alcohol use disorder.", note:"Folic acid (synthetic) vs folinic acid (leucovorin): for EtOH deficiency, folic acid is correct. Folinic acid is used in methanol poisoning (different metabolic role).", ref:"Nutritional Guidelines" },
+      { cat:"🅒 Glucose", drug:"Dextrose D50W", dose:"BG <70 mg/dL: 25g D50W IV (1 amp) — give AFTER thiamine in malnourished patients. Maintenance: D5NS or D10W infusion if prolonged monitoring", renal:"Caution with renal failure fluid overload", ivpo:"IV", deesc:"Avoid hypotonic fluids (D5W alone) in EtOH patients — risk of hyponatremia. Use D5NS or normal saline with glucose supplements.", note:"Check glucose q1h during monitoring. EtOH-induced hypoglycemia may recur as liver glucose stores remain depleted.", ref:"Supportive Care" },
+    ],
+    followup: [
+      "Discharge only when alert, ambulatory, able to protect airway, and blood glucose stable",
+      "Minimum observation: sober to GCS 15, tolerating PO, stable vitals — typically 4–8h depending on initial presentation",
+      "AUDIT-C screening: 3+ (men) or 2+ (women) = positive screen for hazardous drinking — brief intervention and referral",
+      "Thiamine PO at discharge: 100 mg TID for all at-risk patients; folate 1 mg/day",
+      "Wernicke's diagnosed or suspected: inpatient admission, ophthalmology consult, MRI brain (mammillary body enhancement)",
+      "Head trauma CT results before discharge if any mechanism or concerning exam",
+      "Addiction medicine / social work referral; SAMHSA National Helpline: 1-800-662-4357",
+    ]
+  },
+  etoh_withdrawal: {
+    overview: {
+      def: "Alcohol withdrawal syndrome (AWS) results from abrupt cessation or reduction of ethanol after chronic heavy use. Chronic EtOH upregulates NMDA receptors and downregulates GABA-A receptors — abrupt cessation creates CNS hyperexcitability. Spectrum: autonomic hyperactivity (tremor, diaphoresis, tachycardia) → withdrawal seizures (12–48h) → delirium tremens (DTs, 48–96h post last drink). DTs carry 5–15% mortality untreated; <1% with treatment. CIWA-Ar protocol guides symptom-triggered therapy.",
+      bullets: [
+        "Timeline: tremor/anxiety 6–24h → hallucinosis 12–48h → seizures 12–48h → DTs 48–96h post last drink",
+        "CIWA-Ar ≥10 = moderate/severe — initiate pharmacotherapy; ≥15 = aggressive BZD therapy",
+        "Delirium tremens (DTs): triad of confusion + autonomic hyperactivity + fever — ICU admission mandatory",
+        "Seizures are generalized tonic-clonic; focal seizures suggest structural pathology — CT head required",
+        "Wernicke's encephalopathy: concurrent risk — high-dose IV thiamine in ALL admitted AWS patients",
+        "BZDs are first-line (cross-reactive with GABA-A) — long-acting preferred (diazepam, chlordiazepoxide)",
+        "Phenobarbital: adjunct or alternative for refractory AWS; synergistic with BZDs; emerging as first-line at many centers",
+      ]
+    },
+    workup: [
+      { icon:"📋", label:"CIWA-Ar Score (q1–4h)", detail:"10 items: nausea/vomiting, tremor, diaphoresis, anxiety, agitation, headache, perceptual disturbances, paresthesias, auditory/visual disturbances, orientation. Score 0–67. <10 = mild; 10–18 = moderate; >18 = severe. Triggers medication dosing in symptom-triggered protocols." },
+      { icon:"💉", label:"BMP + Magnesium + Phosphate", detail:"Hypomagnesemia lowers seizure threshold — replace empirically (Mg <2.0 → 2–4g IV). Hypophosphatemia (refeeding risk). Hypokalemia from vomiting. Hyponatremia from beer potomania or SIADH." },
+      { icon:"🧠", label:"CT Head (Seizure or Focal Deficits)", detail:"First-time seizure in AWS context: CT to rule out subdural hematoma (fall risk), intracranial hemorrhage, or structural lesion. Focal deficits = mandatory CT regardless of ETOH history." },
+      { icon:"🔬", label:"LFTs + Coagulation (PT/INR)", detail:"Hepatic function guides BZD choice — avoid long-acting BZDs (diazepam, chlordiazepoxide) in severe hepatic failure (accumulate). Use lorazepam or oxazepam (safer in liver failure — no active metabolites)." },
+      { icon:"🌡️", label:"Vitals q1h (HR, BP, Temp, RR)", detail:"Autonomic instability is the hallmark of DTs. HR >120, SBP >160, or temp >38.5°C = severe AWS. Trends matter — rapidly escalating vitals despite treatment = impending DTs." },
+      { icon:"🧪", label:"Blood Cultures + Infectious Workup", detail:"DTs fever vs infection: cannot be distinguished clinically. LP if meningismus. Blood/urine cultures in febrile DTs patients. Aspiration pneumonia common. Lower threshold for broad-spectrum antibiotics." },
+    ],
+    treatment: [
+      { cat:"🅐 Thiamine — FIRST", drug:"Thiamine (Vitamin B1) HIGH DOSE", dose:"Wernicke's prevention: 500 mg IV over 30 min q8h × 3 doses (first 24h); THEN 250 mg IV/IM daily × 3–5 days. Minimum: 100 mg IV before any glucose. PO supplementation at discharge: 100 mg TID", renal:"No adjustment", ivpo:"IV preferred (PO absorption unreliable in alcoholics due to GI malabsorption and thiamine transporter saturation)", deesc:"Give HIGH-DOSE IV thiamine in ALL admitted AWS patients. Standard 100 mg banana bag dose is insufficient for Wernicke's prevention/treatment in high-risk cases. Thiamine is safe and cheap — no reason to use low dose.", note:"IV > IM > PO for bioavailability in active drinkers. Wernicke's is underdiagnosed at autopsy — erring toward high-dose IV thiamine is strongly recommended by all major guidelines.", ref:"Royal College of Physicians 2014 / EFNS" },
+      { cat:"🅐 First-Line Sedation", drug:"Diazepam (Valium) — Symptom-Triggered", dose:"Mild-moderate (CIWA 10–18): 5–10 mg PO/IV q1–4h PRN. Severe/DTs (CIWA >18): 10–20 mg IV q5–10 min until calm; front-loading: 10 mg q1h × 3–4 doses then PRN. Lorazepam 1–2 mg IV q30 min: safer in hepatic failure", renal:"No adjustment", ivpo:"IV (severe) / PO (mild-moderate)", deesc:"Long-acting BZDs (diazepam, chlordiazepoxide) preferred — self-tapering via active metabolites. Short-acting (lorazepam, oxazepam) for liver failure or elderly. Symptom-triggered therapy superior to fixed-schedule.", note:"Front-loading diazepam for severe AWS: give 10 mg IV q1h until CIWA <10 — reduces total drug needed and DT incidence. Goal: calm, not sedated (RASS 0 to -1).", ref:"NEJM AWS Review / Goldfrank's" },
+      { cat:"🅐 Adjunct", drug:"Phenobarbital", dose:"Adjunct to BZDs: 260 mg IV over 30 min × 1 (can repeat q3–4h, max 3 doses for severe). Monotherapy loading: 10–15 mg/kg IV at ≤100 mg/min. Maintenance: 30–60 mg PO TID-QID tapering", renal:"Reduce in renal failure", ivpo:"IV (acute) / PO (maintenance/taper)", deesc:"GABA-B + NMDA modulator — different mechanism than BZDs, synergistic. Increasingly used as first-line or BZD adjunct for refractory/severe AWS. Reduces ICU admission vs BZD alone (Ibarra et al. 2020).", note:"Phenobarbital + BZD: enhanced sedation — monitor respiratory status closely. Phenobarbital monotherapy: favored at some centers for reliable absorption and long half-life (~100h). Less euphoric than BZDs — lower misuse potential.", ref:"Annals EM / Phenobarbital for AWS" },
+      { cat:"🅑 Banana Bag", drug:"IV Multivitamin Repletion ('Banana Bag')", dose:"Standard: Thiamine 100 mg + Folic acid 1 mg + MVI (multivitamin) 1 vial in 1L NS over 1–2h. Add: Magnesium sulfate 2 g IV if Mg <2.0. Repeat daily during admission. HIGH-RISK: replace thiamine 100 mg with 500 mg per dose", renal:"Standard; adjust Mg repletion in AKI", ivpo:"IV", deesc:"Banana bag name = yellow color from riboflavin (B2) in MVI. Routine in all admitted AWS patients. Key limitation: standard 100 mg thiamine is insufficient for Wernicke's — must use high-dose regimen separately.", note:"Order banana bag as supplemental nutrition support. Order HIGH-DOSE thiamine protocol SEPARATELY as the actual Wernicke's prevention/treatment. Do not conflate the two.", ref:"Clinical Standard of Care" },
+      { cat:"🅑 Micronutrients", drug:"Folic Acid + Magnesium + Multivitamin", dose:"Folic acid: 1 mg IV/PO daily. Magnesium: if Mg <2.0 → 2–4 g IV over 2–4h; if Mg <1.5 → 4–8 g IV. Potassium: replace per sliding scale. Zinc 220 mg PO daily. MVI 1 vial daily IV.", renal:"Adjust Mg, K+ for renal function", ivpo:"IV (acute); PO (maintenance/discharge)", deesc:"Magnesium replacement reduces seizure threshold. Hypomagnesemia refractory to replacement until K+ also repleted (renal K+ wasting linked). Zinc deficiency: impairs hepatic alcohol metabolism, worsens cognitive recovery.", note:"Discharge: thiamine 100 mg PO TID + folate 1 mg/day + MVI + abstinence counseling. PO thiamine absorption is reduced in active alcoholics — IV/IM preferred during admission.", ref:"Nutritional Guidelines" },
+      { cat:"🅒 Seizure", drug:"Lorazepam + Phenobarbital (Seizure)", dose:"Active seizure: lorazepam 4 mg IV → repeat 4 mg if no cessation in 5 min. Status epilepticus: phenobarbital 20 mg/kg IV at ≤100 mg/min. Prophylaxis: NOT recommended routinely (BZD titration is preventive)", renal:"Adjust phenobarbital in renal failure", ivpo:"IV", deesc:"AWS seizures respond well to BZDs — first-line. Phenytoin/fosphenytoin NOT effective for AWS seizures (NMDA-mediated, not sodium-channel). Post-seizure: escalate BZD therapy urgently.", note:"First AWS seizure: CT head mandatory. AWS seizures rarely need EEG unless focal features, prolonged postictal, or suspected non-convulsive status epilepticus. Do NOT use phenytoin for AWS seizure prophylaxis.", ref:"AES / Goldfrank's" },
+    ],
+    followup: [
+      "CIWA-Ar q4h × 48–72h post last drink or until <10 for 24h — then safe to taper",
+      "Discharge oral thiamine 100 mg TID + folate 1 mg/day + MVI — minimum 3–6 months",
+      "Outpatient BZD taper for mild AWS: chlordiazepoxide 25 mg QID tapering over 5–7 days (or diazepam equivalent)",
+      "Medically assisted treatment (MAT): naltrexone 50 mg/day PO or acamprosate 666 mg TID — start after detox complete",
+      "Wernicke-Korsakoff syndrome: if Korsakoff's psychosis develops (confabulation, anterograde amnesia) — likely permanent; chronic care planning",
+      "Addiction medicine / alcohol use disorder program referral before discharge",
+      "AUDIT-C, PHQ-9 (comorbid depression), and safety plan for suicidal ideation (AUD + depression is high-risk)",
     ]
   },
   alcohols: {

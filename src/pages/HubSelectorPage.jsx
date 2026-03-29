@@ -68,7 +68,7 @@ const HUBS = [
     accent: "#ffb76b",
     category: "Critical Care",
     stats: ["ATLS Protocol", "Damage Control", "Transfusion"],
-    badge: "ATLS 10th Ed",
+    badge: "ATLS 11th Ed",
     priority: 4,
   },
   {

@@ -36,7 +36,14 @@ function calculateSIRS(vitals, labs) {
 function assessSepsisRisk(patient) {
   const vitals = patient.vital_signs || {};
   const labs = patient.lab_findings || [];
-  
+
+  // Normalize temperature to Fahrenheit for SIRS thresholds
+  const rawTemp = vitals.temperature?.value;
+  const tempUnit = vitals.temperature?.unit || "F";
+  const tempF = rawTemp != null
+    ? (tempUnit === "C" ? rawTemp * 9/5 + 32 : rawTemp)
+    : null;
+
   const qsofa = calculateQSOFA({
     rr: vitals.respiratory_rate?.value,
     sbp: vitals.blood_pressure?.systolic,
@@ -44,7 +51,7 @@ function assessSepsisRisk(patient) {
   });
 
   const sirs = calculateSIRS({
-    temp: vitals.temperature?.value,
+    temp: tempF,
     hr: vitals.heart_rate?.value,
     rr: vitals.respiratory_rate?.value,
   }, labs);

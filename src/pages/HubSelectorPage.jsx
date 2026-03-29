@@ -214,7 +214,7 @@ const CATEGORIES = ["All", "Critical Care", "Specialty", "Procedures", "Tools"];
 // Routes that are actually implemented in App.jsx
 const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
-  "/airway-hub", "/StrokeAssessment", "/Calculators",
+  "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
 ]);
 
 function Background() {

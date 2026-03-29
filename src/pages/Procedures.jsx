@@ -726,14 +726,14 @@ function EDNotesPanel({ color }) {
     <div style={{display:"flex",flexDirection:"column",gap:12,height:"100%"}}>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:8}}>
         {ED_NOTES.map(n=>(
-          <div key={n.id} onClick={()=>{setSel(n);setFields({});setNote("");}}
-            style={{...glass({borderRadius:12,background:sel?.id===n.id?`linear-gradient(135deg,${n.color}22,rgba(8,22,40,0.85))`:"rgba(8,22,40,0.75)",borderColor:sel?.id===n.id?n.color+"66":"rgba(30,58,95,0.55)"}),padding:"14px 16px",cursor:"pointer",transition:"all .18s"}}
+          <button key={n.id} onClick={()=>{setSel(n);setFields({});setNote("");}} type="button"
+            style={{...glass({borderRadius:12}),padding:"14px 16px",cursor:"pointer",transition:"all .18s",textAlign:"left",width:"100%",background:sel?.id===n.id?`linear-gradient(135deg,${n.color}22,rgba(8,22,40,0.85))`:`rgba(8,22,40,0.75)`,border:`1px solid ${sel?.id===n.id?n.color+"66":"rgba(30,58,95,0.55)"}`}}
             onMouseEnter={e=>{ if(sel?.id!==n.id) e.currentTarget.style.borderColor=n.color+"44"; }}
             onMouseLeave={e=>{ if(sel?.id!==n.id) e.currentTarget.style.borderColor="rgba(30,58,95,0.55)"; }}>
             <div style={{fontSize:24,marginBottom:6}}>{n.icon}</div>
             <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:13,color:T.bright,marginBottom:3}}>{n.label}</div>
             <div style={{fontFamily:"DM Sans",fontSize:11,color:T.dim,lineHeight:1.4}}>{n.description}</div>
-          </div>
+          </button>
         ))}
       </div>
       {sel && (

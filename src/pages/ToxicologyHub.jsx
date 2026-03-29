@@ -425,12 +425,12 @@ function DrugRow({ d, color, idx }) {
   const cc = catColors[d.cat[0]] || color;
   const panels = [
     { id:0, icon:"📋", label:"Details", content: <><b style={{color:T.txt2}}>Dose: </b>{d.dose}<br/><br/><b style={{color:T.txt2}}>Route: </b>{d.ivpo}<br/><br/><b style={{color:T.txt2}}>Renal: </b>{d.renal}</> },
-    { id:1, icon:"🔧", label:"Alt / Setup", content: <><b style={{color:T.txt2}}>Step-Down / Alt: </b>{d.deesc}<br/><br/><b style={{color:T.txt2}}>Clinical Note: </b>{d.note}</> },
+    { id:1, icon:"🔧", label:"Alt / Setup", content: <><b style={{color:T.txt2}}>Step-Down / Alt: </b>{d.deesc}{d.note ? <><br/><br/><b style={{color:T.txt2}}>Clinical Note: </b>{d.note}</> : null}</> },
     { id:2, icon:"📉", label:"Monitoring / Ref", content: <><b style={{color:T.txt2}}>Monitoring: </b>Serial ECG, vitals q15–30 min, labs per protocol<br/><br/><b style={{color:T.txt2}}>Reference: </b>{d.ref}</> },
   ];
   return (
     <div className="drug-row" style={{marginBottom:10,borderRadius:12,overflow:"hidden",border:`1px solid ${open!==null?cc+"66":"rgba(42,79,122,0.3)"}`,background:"rgba(8,22,40,0.6)",transition:"border-color .2s"}}>
-      <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",cursor:"pointer",background:open!==null?`linear-gradient(90deg,${cc}18,transparent)`:"transparent"}} onClick={()=>setOpen(null)}>
+      <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",background:open!==null?`linear-gradient(90deg,${cc}18,transparent)`:"transparent"}}>
         <span style={{fontFamily:"JetBrains Mono",fontSize:11,color:cc,background:`${cc}22`,padding:"2px 8px",borderRadius:4,whiteSpace:"nowrap"}}>{d.cat}</span>
         <span style={{fontFamily:"DM Sans",fontWeight:600,color:T.txt,flex:1,fontSize:14}}>{d.drug}</span>
         <span style={{fontFamily:"JetBrains Mono",fontSize:11,color:T.txt3}}>{d.ivpo}</span>
@@ -517,8 +517,8 @@ export default function ToxHub() {
   const [sel, setSel] = useState("opioid");
   const [tab, setTab] = useState("overview");
   const [filter, setFilter] = useState("All");
-  const cond = CONDITIONS.find(c=>c.id===sel);
-  const data = DATA[sel];
+  const cond = CONDITIONS.find(c=>c.id===sel) || CONDITIONS[0];
+  const data = DATA[sel] || DATA[CONDITIONS[0].id];
   const cats = ["All","Toxidrome","Overdose"];
   const filtered = filter==="All"?CONDITIONS:CONDITIONS.filter(c=>c.cat===filter);
   const tabs = [

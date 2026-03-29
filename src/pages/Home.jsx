@@ -69,12 +69,15 @@ const APP_PAGES = [
 ];
 
 // ── Vital flag helper ──────────────────────────────────────────────
-function vitalColor(key, val) {
+function vitalColor(key, val, unit) {
   if (!val) return C.dim;
   if (key==="hr")  return (val>100||val<60) ? C.amber : C.green;
   if (key==="sbp") return (val<90||val>180) ? C.red   : val<100 ? C.amber : C.green;
   if (key==="spo2")return val<94 ? C.red : val<97 ? C.amber : C.green;
-  if (key==="temp")return val>100.4 ? C.amber : C.green;
+  if (key==="temp") {
+    const tempF = unit === "C" ? val * 9/5 + 32 : val;
+    return tempF > 100.4 ? C.amber : C.green;
+  }
   return C.green;
 }
 
@@ -174,10 +177,11 @@ export default function Home() {
     los: "—",
     noteId: n.id,
     vitals: {
-      hr:   n.vital_signs?.heart_rate?.value ?? null,
-      sbp:  n.vital_signs?.blood_pressure?.systolic ?? null,
-      spo2: n.vital_signs?.oxygen_saturation?.value ?? null,
-      temp: n.vital_signs?.temperature?.value ?? null,
+      hr:        n.vital_signs?.heart_rate?.value ?? null,
+      sbp:       n.vital_signs?.blood_pressure?.systolic ?? null,
+      spo2:      n.vital_signs?.oxygen_saturation?.value ?? null,
+      temp:      n.vital_signs?.temperature?.value ?? null,
+      temp_unit: n.vital_signs?.temperature?.unit ?? "F",
     },
     flags: [],
   }));

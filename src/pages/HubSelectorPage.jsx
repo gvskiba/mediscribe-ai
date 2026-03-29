@@ -211,6 +211,12 @@ const HUBS = [
 
 const CATEGORIES = ["All", "Critical Care", "Specialty", "Procedures", "Tools"];
 
+// Routes that are actually implemented in App.jsx
+const LIVE_ROUTES = new Set([
+  "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
+  "/airway-hub", "/StrokeAssessment", "/Calculators",
+]);
+
 function Background() {
   return (
     <div style={{ position: "fixed", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}>
@@ -254,17 +260,19 @@ function Background() {
 function HubCard({ hub, onNavigate, index, size = "normal" }) {
   const [hov, setHov] = useState(false);
   const isLarge = size === "large";
+  const isLive = LIVE_ROUTES.has(hub.route);
 
   return (
     <div
-      onClick={() => onNavigate(hub.route)}
+      onClick={() => isLive && onNavigate(hub.route)}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
         position: "relative",
         borderRadius: 20,
         padding: isLarge ? "26px 24px 22px" : "20px 20px 16px",
-        cursor: "pointer",
+        cursor: isLive ? "pointer" : "default",
+        opacity: isLive ? 1 : 0.55,
         overflow: "hidden",
         transition: "all 0.32s cubic-bezier(0.34,1.56,0.64,1)",
         transform: hov ? "translateY(-7px) scale(1.025)" : "translateY(0) scale(1)",
@@ -288,8 +296,8 @@ function HubCard({ hub, onNavigate, index, size = "normal" }) {
         <div style={{ width: isLarge ? 56 : 48, height: isLarge ? 56 : 48, borderRadius: isLarge ? 16 : 13, flexShrink: 0, background: `linear-gradient(135deg, ${hub.glass.replace("0.07","0.3")}, ${hub.glass})`, border: `1px solid ${hub.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: isLarge ? 26 : 22, boxShadow: hov ? `0 0 22px ${hub.glow.replace("0.4","0.3")}` : "none", transition: "box-shadow 0.3s" }}>
           {hub.icon}
         </div>
-        <span style={{ fontSize: 9, fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, padding: "3px 8px", borderRadius: 20, background: hub.glass.replace("0.07","0.2"), border: `1px solid ${hub.border}`, color: hub.color, letterSpacing: ".05em", backdropFilter: "blur(6px)", whiteSpace: "nowrap" }}>
-          {hub.badge}
+        <span style={{ fontSize: 9, fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, padding: "3px 8px", borderRadius: 20, background: hub.glass.replace("0.07","0.2"), border: `1px solid ${hub.border}`, color: isLive ? hub.color : "#4a6a8a", letterSpacing: ".05em", backdropFilter: "blur(6px)", whiteSpace: "nowrap" }}>
+          {isLive ? hub.badge : "Coming Soon"}
         </span>
       </div>
 
@@ -366,6 +374,7 @@ export default function HubSelectorPage() {
   });
 
   const handleNavigate = (route) => {
+    if (!LIVE_ROUTES.has(route)) return; // silently ignore unimplemented hubs
     const hub = HUBS.find(h => h.route === route);
     if (hub) {
       const updated = [hub.id, ...recents.map(r => r.id).filter(id => id !== hub.id)].slice(0, 4);

@@ -63,6 +63,11 @@ const CONDITIONS = [
   { id:"apap",           icon:"🟡", title:"Acetaminophen OD",       sub:"Hepatotoxicity · NAC Protocol", cat:"Overdose",  color:T.green,  gl:"rgba(61,255,160,0.1)",   br:"rgba(61,255,160,0.4)"  },
   { id:"salicylate",     icon:"🔵", title:"Salicylate OD",          sub:"Mixed Acid-Base · Tinnitus",    cat:"Overdose",  color:T.cyan,   gl:"rgba(0,212,255,0.1)",    br:"rgba(0,212,255,0.4)"   },
   { id:"digoxin",        icon:"💜", title:"Digoxin Toxicity",       sub:"AV Block · Bidirectional VT",   cat:"Overdose",  color:T.purple, gl:"rgba(155,109,255,0.1)",  br:"rgba(155,109,255,0.4)" },
+  { id:"diphenhydramine", icon:"🟣", title:"Diphenhydramine OD",       sub:"Benadryl · Anticholinergic + Na-block", cat:"Overdose",  color:T.purple, gl:"rgba(155,109,255,0.1)",  br:"rgba(155,109,255,0.4)" },
+  { id:"betablocker",     icon:"💙", title:"Beta-Blocker OD",          sub:"Bradycardia · Hypotension · Hypoglycemia", cat:"Overdose", color:T.blue,   gl:"rgba(59,158,255,0.1)",   br:"rgba(59,158,255,0.4)"  },
+  { id:"ccb",             icon:"🫀", title:"Calcium Channel Blocker OD",sub:"Bradycardia · Vasodilation · High-Dose Insulin", cat:"Overdose", color:T.coral, gl:"rgba(255,107,107,0.1)",  br:"rgba(255,107,107,0.4)" },
+  { id:"co",              icon:"💨", title:"Carbon Monoxide",           sub:"Tissue Hypoxia · Headache · COHb",  cat:"Toxidrome", color:T.orange, gl:"rgba(255,159,67,0.1)",   br:"rgba(255,159,67,0.4)"  },
+  { id:"alcohols",        icon:"🧪", title:"Toxic Alcohols",            sub:"Methanol · Ethylene Glycol · Osmol Gap", cat:"Overdose", color:T.green,  gl:"rgba(61,255,160,0.1)",   br:"rgba(61,255,160,0.4)"  },
 ];
 
 const BANNER = [
@@ -74,6 +79,189 @@ const BANNER = [
 
 // ── Clinical Data ──────────────────────────────────────────────────
 const DATA = {
+  diphenhydramine: {
+    overview: {
+      def: "Diphenhydramine (Benadryl) overdose produces a DUAL toxidrome: (1) classic anticholinergic syndrome from H1/muscarinic blockade ('Mad as a hatter, dry as a bone, red as a beet, hot as a hare, blind as a bat, full as a flask') AND (2) potentially lethal sodium channel blockade at toxic doses causing QRS widening and ventricular dysrhythmias (identical mechanism to TCA toxicity). This combination makes diphenhydramine OD far more dangerous than pure anticholinergic agents.",
+      bullets: [
+        "Anticholinergic: mydriasis, tachycardia, dry flushed skin, urinary retention, hyperthermia, delirium, hallucinations",
+        "QRS widening at toxic doses (>1 g adults) — Na-channel block identical to TCA toxicity mechanism",
+        "R wave in aVR > 3 mm and QRS > 100 ms predict dysrhythmia risk — serial ECGs mandatory",
+        "Seizures common — further worsen acidosis and Na-channel block in a dangerous feedback loop",
+        "Physostigmine reverses anticholinergic delirium ONLY if QRS normal (contraindicated if QRS widened)",
+        "NaHCO₃ is antidotal for QRS widening (same mechanism/treatment as TCA OD)",
+        "Standard UDS diphenhydramine assays may cross-react with methadone — verify with clinical picture",
+      ]
+    },
+    workup: [
+      { icon:"🫀", label:"Serial ECGs (q30 min × 3, then q1h)", detail:"QRS duration (goal <100 ms), QTc, R wave in aVR (>3 mm = high risk), terminal rightward axis deviation. Bicarb decision driven by QRS. Most important monitoring parameter." },
+      { icon:"🌡️", label:"Core Temperature (Rectal)", detail:"Anhidrosis prevents heat dissipation — temperature rises silently. Rectal preferred for accuracy. Hyperthermia >39°C requires active cooling." },
+      { icon:"🔬", label:"Serum Diphenhydramine Level + TCA Screen", detail:"Quantitative diphenhydramine if available. TCA screen — cross-reactivity may give false positive. Clinical picture guides management." },
+      { icon:"🧠", label:"Seizure Monitoring + Continuous EEG (if altered)", detail:"Seizures acidify blood → worsens Na-channel block → more QRS widening → more dysrhythmia. Rapid seizure termination is critical. EEG if postictal and unclear if ongoing activity." },
+      { icon:"🫁", label:"Bladder Scan", detail:"Urinary retention is near-universal in significant DPH OD. Retention causes agitation which worsens hyperthermia. Catheterize early — behavioral improvement is dramatic." },
+      { icon:"💉", label:"BMP + ABG", detail:"Acidosis worsens Na-channel block (pH-dependent). Metabolic acidosis from seizures/hyperthermia. ABG guides bicarb therapy target (pH 7.45–7.55)." },
+    ],
+    treatment: [
+      { cat:"🅐 Antidote", drug:"Sodium Bicarbonate (QRS >100 ms)", dose:"1–2 mEq/kg IV bolus; repeat q5 min until QRS <100 ms; maintain pH 7.45–7.55 with infusion (150 mEq in 1L D5W at 200–250 mL/hr)", renal:"Monitor Na+ closely; reduce in hypernatremia", ivpo:"IV bolus + infusion", deesc:"Continue infusion 12–24h minimum when QRS widened. Wean when QRS <100 ms stable >6h AND hemodynamically stable. STOP at pH >7.55 or Na >155.", note:"SAME mechanism and treatment as TCA — Na loading overcomes Na-channel block; alkalosis reduces drug binding affinity. Do NOT wait for QRS to deteriorate further.", ref:"AHA / Goldfrank's" },
+      { cat:"🅐 Antidote", drug:"Physostigmine (QRS NORMAL only)", dose:"1–2 mg IV over 5 min SLOWLY; may repeat 1 mg q10–20 min; max 4 mg initial session", renal:"No adjustment", ivpo:"IV (slow push — fast infusion causes bradycardia/seizures)", deesc:"CONTRAINDICATED if QRS >100 ms (may worsen conduction). Reverses anticholinergic delirium effectively. Duration 30–60 min; repeat PRN. Have atropine 0.5 mg at bedside.", note:"Most effective antidote for delirium when QRS normal. Underused — dramatically improves behavioral control and prevents hyperthermia-driven deterioration.", ref:"Goldfrank's" },
+      { cat:"🅑 Sedation", drug:"Lorazepam", dose:"2–4 mg IV q5–10 min for agitation/seizures; aggressive dosing for seizure control", renal:"No adjustment", ivpo:"IV / IM", deesc:"First-line for seizures and agitation. Controls seizure-driven acidosis (reduces worsening Na-channel block). AVOID haloperidol — lowers seizure threshold, impairs heat dissipation.", note:"Seizure control is critical — each seizure worsens acidosis which worsens QRS widening. Aggressive BZD dosing is appropriate.", ref:"Toxicology" },
+      { cat:"🅒 Supportive", drug:"Cooling + Foley Catheter", dose:"Tepid water + fan evaporative cooling (preferred over ice bath — peripheral vasoconstriction worsens heat retention in anhidrotic patient). Foley: insert early for urinary retention.", renal:"N/A", ivpo:"External", deesc:"Urinary catheterization often dramatically improves agitation (retention is a major driver of behavioral symptoms). Target temp <38.5°C.", note:"Avoid ice baths — anhidrosis + vasoconstriction impairs heat loss. Evaporative cooling (wet towels + fan) is more effective in anticholinergic hyperthermia.", ref:"Supportive" },
+    ],
+    followup: [
+      "ICU admission for ANY ECG changes (QRS >100 ms, QTc prolongation, R in aVR >3 mm) or seizures",
+      "Monitor ECG until QRS <100 ms without sodium bicarbonate for minimum 24 consecutive hours",
+      "Mandatory psychiatric evaluation — diphenhydramine OD is frequently intentional",
+      "Review ALL home medications for anticholinergic burden (Beers Criteria — DPH is a common OTC medication)",
+      "Patient education: diphenhydramine is not a safe sleep aid and has narrow therapeutic-to-toxic ratio",
+      "Confirm urinary voiding before discharge — retention may persist hours after resolution of other symptoms",
+    ]
+  },
+  betablocker: {
+    overview: {
+      def: "Beta-blocker (BB) overdose causes bradycardia, hypotension, and conduction defects via competitive antagonism of beta-1 (cardiac) and beta-2 (pulmonary, vascular) adrenergic receptors. Propranolol is the most dangerous — non-selective, highly lipophilic (CNS effects), and has Na-channel blocking properties at high doses. Toxicity ranges from asymptomatic bradycardia to refractory cardiogenic shock and cardiac arrest within hours.",
+      bullets: [
+        "Bradycardia + hypotension = hallmarks; propranolol also causes QRS widening (Na-channel block)",
+        "CNS toxicity: seizures and altered mental status (propranolol, metoprolol — lipophilic BBs cross BBB)",
+        "Bronchospasm: from beta-2 blockade — especially problematic in asthma/COPD patients",
+        "Hypoglycemia: blocks glycogenolysis — more common in children and diabetics",
+        "Glucagon is unique antidote — activates cAMP independent of beta-receptors",
+        "High-Dose Insulin (HDI) therapy is cornerstone of severe BB toxicity management",
+        "ECMO: early consultation in refractory hemodynamic compromise (bridging therapy)",
+      ]
+    },
+    workup: [
+      { icon:"🫀", label:"Continuous ECG + 12-lead", detail:"HR, PR interval, QRS width (propranolol Na-channel block), QTc. Telemetry mandatory for minimum 6h post-ingestion. AV block grade and progression." },
+      { icon:"🧪", label:"Blood Glucose (POC) q1h", detail:"Hypoglycemia common — BB blocks glycogenolysis and glucagon release. Check BG immediately and q1h. Treat with D50W + glucagon." },
+      { icon:"💉", label:"BMP + Lactate", detail:"Metabolic acidosis from poor perfusion. Rising lactate = inadequate tissue oxygen delivery = shock. BG, potassium (HDI causes hypokalemia)." },
+      { icon:"📊", label:"Bedside ECHO / Cardiac Output", detail:"Assess LV function, contractility, filling. Guides HDI dosing and vasopressor need. Transesophageal if poor windows." },
+      { icon:"🫁", label:"SpO₂ + Bronchospasm Assessment", detail:"Beta-2 blockade → bronchospasm in reactive airway disease. Auscultation, peak flow if applicable. Albuterol may be paradoxically less effective." },
+      { icon:"🧠", label:"Neurological Assessment", detail:"Lipophilic BBs (propranolol, metoprolol) cross BBB → confusion, seizures, coma. GCS and focal neurological exam." },
+    ],
+    treatment: [
+      { cat:"🅐 Antidote", drug:"Glucagon", dose:"3–10 mg IV bolus over 3–5 min (adult); then 3–5 mg/hr infusion; children: 0.05–0.1 mg/kg bolus then 0.07 mg/kg/hr", renal:"No adjustment", ivpo:"IV", deesc:"Activates myocardial adenylyl cyclase directly (bypasses beta-receptor) → ↑ cAMP → inotropy and chronotropy. Nausea/vomiting common — premedicate with antiemetic. Effectiveness variable and often limited.", note:"First antidote to use. Positive chronotropic and inotropic effects independent of beta-receptor status. Mix in NS or D5W (NOT PROVIDED DILUENT — contains phenol).", ref:"Goldfrank's" },
+      { cat:"🅐 Antidote", drug:"High-Dose Insulin (HDI) Therapy", dose:"Bolus: Regular insulin 1 unit/kg IV + D50W 25g IV simultaneously; Infusion: insulin 0.5–2 units/kg/hr + dextrose 0.5 g/kg/hr (titrate to BG 100–250)", renal:"Monitor K+ closely — insulin drives K+ intracellularly", ivpo:"IV continuous", deesc:"Titrate insulin to hemodynamic response (HR, MAP, cardiac output). Monitor BG q15–30 min initially. Monitor K+ q1–2h. Typical effective dose: 1 unit/kg/hr.", note:"CORNERSTONE of therapy for severe BB and CCB toxicity. Improves myocardial metabolic efficiency — heart preferentially uses glucose in poisoning states. Onset 20–30 min; full effect 45–60 min. Do NOT give insulin without dextrose co-infusion.", ref:"Engebretsen 2011 / Toxicology" },
+      { cat:"🅑 Vasopressor", drug:"Norepinephrine / Epinephrine", dose:"NE: 0.1–3 mcg/kg/min IV; Epinephrine: 0.05–2 mcg/kg/min IV for refractory shock", renal:"No adjustment", ivpo:"IV infusion", deesc:"Epinephrine preferred for beta-2 mediated bronchospasm co-occurring with shock. Titrate to MAP >65 mmHg. Vasopressin as adjunct if catecholamine-refractory.", note:"Catecholamines may have reduced effect due to receptor blockade — use HDI as primary hemodynamic support and vasopressors as bridge.", ref:"Critical Care" },
+      { cat:"🅒 QRS Widening", drug:"Sodium Bicarbonate (Propranolol)", dose:"1–2 mEq/kg IV bolus for QRS >100 ms (propranolol's Na-channel block); target pH 7.45–7.55", renal:"Monitor Na+", ivpo:"IV bolus + infusion", deesc:"Same treatment as TCA/DPH Na-channel block. Specific to propranolol (other BBs do not significantly block Na channels). Maintain bicarb infusion until QRS <100 ms.", note:"Propranolol is unique among BBs in causing significant Na-channel block. Atenolol, metoprolol do not. Check QRS on each ECG.", ref:"Toxicology" },
+      { cat:"🅒 Rescue", drug:"Lipid Emulsion 20% (ILE)", dose:"1.5 mL/kg IV bolus over 1 min; then 0.25 mL/kg/min × 30–60 min (for lipophilic BBs: propranolol, metoprolol)", renal:"No adjustment", ivpo:"IV", deesc:"Consider for refractory cardiac arrest from lipophilic BB toxicity. ECMO consultation simultaneously. 'Lipid sink' sequesters propranolol.", note:"Reserve for cardiac arrest or refractory hemodynamic instability not responding to glucagon/HDI/vasopressors. ECMO is preferred rescue if available.", ref:"Toxicology / ILE" },
+    ],
+    followup: [
+      "ICU admission for all symptomatic BB OD — minimum 6h monitoring even if initially asymptomatic",
+      "HDI therapy: continue at least 6h after hemodynamic stability — premature wean causes rebound",
+      "Monitor BG q30–60 min and K+ q1–2h during HDI infusion",
+      "Mandatory psychiatric evaluation if intentional ingestion",
+      "ECMO consultation should be initiated EARLY in refractory shock — do not wait for arrest",
+      "Extended-release formulations: 12–24h observation mandatory (atenolol XL, metoprolol succinate)",
+    ]
+  },
+  ccb: {
+    overview: {
+      def: "Calcium channel blocker (CCB) overdose is one of the most lethal cardiovascular drug toxicities. L-type calcium channel blockade in myocardium and vascular smooth muscle causes bradycardia, AV block, vasodilation, and negative inotropy. Non-dihydropyridines (verapamil, diltiazem) cause more cardiac effects; dihydropyridines (amlodipine, nifedipine) cause predominant vasodilation. High-Dose Insulin (HDI) is the cornerstone of treatment, bypassing the blocked calcium channels to restore metabolic efficiency.",
+      bullets: [
+        "Dihydropyridines (amlodipine, nifedipine): REFLEX TACHYCARDIA + vasodilation — not bradycardia",
+        "Non-dihydropyridines (verapamil, diltiazem): bradycardia + AV block + myocardial depression",
+        "Hyperglycemia paradox: CCBs block insulin secretion from pancreatic beta cells — hyperglycemia = poor prognostic sign",
+        "HDI is superior to calcium, glucagon, and vasopressors for cardiogenic shock in CCB OD",
+        "Calcium salts provide immediate (but transient) hemodynamic benefit — bridge to HDI",
+        "Extended-release formulations: onset of toxicity delayed 6–12h — mandatory prolonged monitoring",
+        "ECMO: early consultation for refractory hemodynamic failure (best outcomes with early use)",
+      ]
+    },
+    workup: [
+      { icon:"🫀", label:"Continuous ECG + Serial 12-leads", detail:"PR interval prolongation, AV block grade, QRS widening (verapamil Na-channel at high doses). Telemetry minimum 6h; 24h for extended-release formulations." },
+      { icon:"🧪", label:"Blood Glucose q1–2h", detail:"Hyperglycemia from pancreatic beta-cell calcium channel blockade (inhibits insulin secretion). BG >150 mg/dL in CCB OD = poor prognosis marker. Paradoxically treated with insulin HDI." },
+      { icon:"💉", label:"BMP + Lactate q2–4h", detail:"Rising lactate = cardiogenic shock. Hypokalemia during HDI therapy. Hyperglycemia as severity marker. Acidosis worsens prognosis." },
+      { icon:"📊", label:"Bedside ECHO", detail:"LV/RV function, contractility, cardiac output. Essential for guiding HDI dosing and vasopressor selection. Pulmonary artery catheter if ECHO inadequate." },
+      { icon:"🔬", label:"CCB Level (if available)", detail:"Quantitative verapamil/diltiazem levels if available. Do NOT wait for levels before initiating treatment. Clinical picture guides management." },
+      { icon:"🏥", label:"ECMO Team Notification (Early)", detail:"Early consultation for any hemodynamic instability. Pre-cannulation while still responsive is preferable to emergent post-arrest ECMO. Verapamil/diltiazem OD: contact ECMO team at presentation." },
+    ],
+    treatment: [
+      { cat:"🅐 Antidote", drug:"High-Dose Insulin (HDI) Therapy", dose:"Bolus: Regular insulin 1 unit/kg IV + D50W 25g; Infusion: 1–2 units/kg/hr + dextrose 0.5 g/kg/hr (titrate to BG 100–250 mg/dL)", renal:"Monitor K+ aggressively — HDI causes hypokalemia", ivpo:"IV continuous", deesc:"CORNERSTONE of CCB toxicity management. Onset 20–30 min; full effect 45–60 min. Improve metabolic substrate for myocardium (glucose utilization). Titrate to HR, MAP, and cardiac output. Do NOT give insulin without dextrose.", note:"HDI improves contractility via enhanced myocardial glucose metabolism — independent of calcium channels. Superior to all other pharmacological interventions for hemodynamic compromise in CCB OD.", ref:"Engebretsen 2011 / ACMT" },
+      { cat:"🅐 Antidote", drug:"Calcium Gluconate / Calcium Chloride", dose:"Calcium gluconate: 3 g IV (30 mL of 10%) over 10–20 min; may repeat q20 min ×3; Calcium chloride: 1 g IV (10 mL of 10%) over 5 min", renal:"No adjustment", ivpo:"IV (calcium chloride: central line preferred)", deesc:"Provides immediate but transient hemodynamic benefit (30–60 min). Bridge to HDI and ECMO. Do NOT use alone — repeat calcium without HDI is insufficient. Ionized calcium 2× normal is target.", note:"3× more elemental calcium in calcium chloride vs gluconate per mL — preferred for cardiac arrest. Calcium gluconate safer peripherally. Both are temporary bridges.", ref:"Toxicology" },
+      { cat:"🅑 Vasopressor", drug:"Norepinephrine + Vasopressin", dose:"NE: 0.1–3 mcg/kg/min; Vasopressin: 0.03–0.04 units/min as adjunct; Epinephrine: 0.05–2 mcg/kg/min for severe shock", renal:"No adjustment", ivpo:"IV continuous", deesc:"Primarily for vascular component (dihydropyridines). Vasopressors alone insufficient for myocardial depression component — HDI is more effective for inotropy.", note:"Non-dihydropyridine OD (verapamil/diltiazem): use vasopressors as BRIDGE while HDI/ECMO initiated. Target MAP >65 mmHg.", ref:"Critical Care" },
+      { cat:"🅒 GI", drug:"Whole Bowel Irrigation (Extended-Release)", dose:"Polyethylene glycol-electrolyte solution (GoLYTELY) 1–2 L/hr PO/NG until rectal effluent clear", renal:"N/A", ivpo:"PO / NG", deesc:"For extended-release CCB if airway protected and presentation <6–8h. Do NOT give charcoal without WBI — limited adsorption of most CCBs.", note:"Extended-release verapamil and diltiazem can significantly benefit from WBI given slow GI transit time. Activated charcoal: limited role but may help within 1h.", ref:"ACMT / Toxicology" },
+      { cat:"🅒 Rescue", drug:"Lipid Emulsion 20% (ILE)", dose:"1.5 mL/kg IV bolus; then 0.25 mL/kg/min × 30 min (for amlodipine — highly lipophilic)", renal:"No adjustment", ivpo:"IV", deesc:"Most evidence for amlodipine (highly lipophilic CCB). ECMO preferred if available. Consider ILE after failure of HDI + calcium + vasopressors.", note:"Amlodipine OD: high protein binding and lipophilicity make it amenable to lipid sequestration. Case reports of dramatic response.", ref:"Toxicology / ILE" },
+    ],
+    followup: [
+      "ICU admission for ALL hemodynamically significant CCB OD — no exceptions",
+      "Extended-release formulations: minimum 24h continuous monitoring even if initially asymptomatic",
+      "HDI: continue minimum 6h after hemodynamic stability — abrupt wean causes rebound hemodynamic deterioration",
+      "ECMO: do not delay cannulation — pre-arrest ECMO has far better outcomes than post-arrest",
+      "Mandatory psychiatric evaluation for intentional overdose",
+      "Cardiac catheterization: if coronary vasospasm or MI suspected from underlying ischemia vs toxicity",
+    ]
+  },
+  co: {
+    overview: {
+      def: "Carbon monoxide (CO) poisoning is the leading cause of accidental poisoning death in the US. CO has 200–250× higher affinity for hemoglobin than oxygen → carboxyhemoglobin (COHb) → impairs O₂ delivery. Also directly binds cytochrome c oxidase → mitochondrial respiratory chain inhibition → cellular hypoxia independent of hemoglobin. Delayed neurological sequelae (DNS) occur 2–40 days post-exposure in up to 30% of cases.",
+      bullets: [
+        "SpO₂ pulse oximetry is FALSELY NORMAL — cannot detect COHb; only CO-oximetry (ABG co-oximeter) is diagnostic",
+        "Symptoms: headache (most common), dizziness, nausea, confusion — progress to coma, seizures, cardiac arrest",
+        "Classic 'cherry red skin' is a late and unreliable finding — do NOT rely on it",
+        "COHb >25% = severe poisoning; >50% = typically fatal without treatment",
+        "Hyperbaric oxygen (HBO): reduces CO half-life from ~5h (room air) to 23 min; reduces DNS incidence",
+        "ALWAYS screen household members and check for CO source (generators, fires, faulty heaters)",
+        "Pregnancy: fetal Hgb has higher CO affinity — treat mother aggressively; HBO strongly preferred",
+      ]
+    },
+    workup: [
+      { icon:"🩸", label:"CO-Oximetry (ABG co-oximeter) — STAT", detail:"ONLY accurate way to measure COHb. Standard pulse oximetry reads COHb as oxyHgb — gives falsely normal SpO₂. Venous COHb is acceptable if ABG not tolerated. Target COHb <5% (nonsmoker) or <10% (smoker)." },
+      { icon:"🫀", label:"ECG + Troponin", detail:"CO-induced myocardial injury: ST changes, arrhythmias, ACS. Troponin elevation = significant myocardial injury. COHb >15% with cardiac symptoms → HBO strongly indicated." },
+      { icon:"🧠", label:"Neurological Assessment + CT Head", detail:"Cognitive testing (Mini-Cog, orientation). Head CT to rule out structural pathology. Globus pallidus lucencies on CT = severe CO injury (bilateral hypodensities). MRI more sensitive for white matter changes." },
+      { icon:"💉", label:"Lactate + BMP", detail:"Elevated lactate indicates significant cellular hypoxia (cytochrome c oxidase inhibition). Metabolic acidosis severity correlates with poisoning severity." },
+      { icon:"👨‍👩‍👧", label:"Screen ALL Household Members", detail:"CO poisoning is typically a household event. ALL members must be evaluated. CO levels will differ based on activity level and location. Identify CO source (generator, fire, furnace)." },
+      { icon:"🫀", label:"Echo (if COHb >25% or cardiac symptoms)", detail:"Stress cardiomyopathy (Takotsubo) and CO-induced myocardial depression. Guide resuscitation. RV dysfunction from pulmonary vasoconstriction." },
+    ],
+    treatment: [
+      { cat:"🅐 Antidote", drug:"100% O₂ via NRB (First-Line)", dose:"100% O₂ via Non-Rebreather Mask at 15 L/min — start IMMEDIATELY upon suspicion; continue until COHb <5%; O₂ half-life: ~5h room air → ~90 min on 100% O₂", renal:"N/A", ivpo:"Inhalation", deesc:"Start 100% O₂ BEFORE labs — do NOT delay. O₂ displaces CO from hemoglobin competitively. Continue until COHb <5% AND symptoms resolved. Intubate and ventilate on FiO₂ 1.0 if unable to cooperate.", note:"Do NOT use Venturi mask or low-flow O₂ — need maximum possible FiO₂. Half-life of CO: room air 4–6h → 100% NRB ~90 min → HBO ~23 min.", ref:"CDC / UpToDate 2024" },
+      { cat:"🅐 Antidote", drug:"Hyperbaric Oxygen (HBO)", dose:"2.5–3 ATA × 60–90 min (HBOT chamber)", renal:"N/A", ivpo:"Hyperbaric chamber", deesc:"Reduces CO half-life to ~23 min. Dissolves O₂ physically in plasma independent of hemoglobin. Reduces delayed neurological sequelae (DNS) incidence. Arrange transfer if HBO not available locally.", note:"HBO INDICATIONS: COHb >25%, any LOC, seizure, cardiac arrhythmia, ischemic ECG changes, neurological symptoms, pregnancy (any COHb), very young/elderly. Transport on 100% O₂ while arranging HBO.", ref:"Thom et al. / Weaver NEJM 2002" },
+      { cat:"🅑 Seizures", drug:"Lorazepam + Levetiracetam", dose:"Lorazepam 0.1 mg/kg IV q5–10 min (first-line). Levetiracetam 60 mg/kg IV loading (second-line)", renal:"Adjust LEV for CrCl <60", ivpo:"IV", deesc:"Seizures from cerebral hypoxia and direct cytotoxicity. Phenytoin/fosphenytoin — relatively ineffective for hypoxic-metabolic seizures. Treat rapidly.", note:"If seizures refractory — consider propofol infusion. Maintain adequate oxygenation throughout. Correct metabolic acidosis.", ref:"Toxicology / AES" },
+      { cat:"🅒 Supportive", drug:"Cardiac Monitoring + Resuscitation", dose:"IV fluid bolus 500 mL NS if hemodynamically unstable. Vasopressors (norepinephrine) if fluid-refractory shock. Targeted temperature management post-arrest.", renal:"N/A", ivpo:"IV", deesc:"CO-induced myocardial depression responds to supportive care and O₂ in most cases. True cardiogenic shock rare but may require dobutamine or mechanical support.", note:"Most hemodynamic instability resolves with 100% O₂ therapy. Persistent shock suggests significant myocardial injury — echo-guided management.", ref:"ACLS 2023" },
+    ],
+    followup: [
+      "Discharge only when COHb <5%, all symptoms resolved, and home environment confirmed safe (CO source identified and corrected)",
+      "Delayed neurological sequelae (DNS): warn all patients of memory loss, personality change, parkinsonism 2–40 days post-exposure",
+      "HBO therapy reduces DNS from ~30% to ~18% — document discussion and rationale for HBO decision",
+      "Report CO source to local fire department/gas utility for investigation",
+      "Mandatory household CO detector installation — discuss at discharge",
+      "Cognitive follow-up at 4–6 weeks: formal neuropsychiatric testing for persistent deficits",
+      "Pregnancy: neonatal monitoring at delivery; obstetrics consult regardless of COHb level",
+    ]
+  },
+  alcohols: {
+    overview: {
+      def: "Toxic alcohol poisoning from methanol or ethylene glycol. Both are odorless, colorless liquids. Ethanol (EtOH) is intentionally consumed; methanol (windshield fluid, bootleg alcohol) and ethylene glycol (antifreeze) are toxic via their metabolites, not the parent compound. KEY CONCEPT: both cause an osmol gap early and anion-gap metabolic acidosis late, as alcohol is metabolized to toxic acids. Fomepizole (4-MP) inhibits alcohol dehydrogenase, blocking formation of toxic metabolites.",
+      bullets: [
+        "Osmol gap = measured osmolality − (2[Na] + [BUN/2.8] + [glucose/18]) — normal <10; elevated = unmetabolized alcohol present",
+        "Methanol metabolites: formic acid → retinal/optic nerve toxicity (blindness) + severe HAGMA",
+        "Ethylene glycol metabolites: oxalic acid → calcium oxalate crystals → AKI + hypocalcemia",
+        "EARLY: osmol gap elevated, anion gap normal (parent alcohol not yet metabolized)",
+        "LATE: osmol gap falls, anion gap rises (parent metabolized to toxic acids)",
+        "Both can present with EtOH-like inebriation — clinical diagnosis requires osmol gap calculation",
+        "Fomepizole is preferred antidote — safe, effective, no sedation (vs EtOH infusion which is still used as alternative)",
+      ]
+    },
+    workup: [
+      { icon:"🧪", label:"Serum Osmolality + Calculated Osmolality → Osmol Gap", detail:"Osmol gap = measured − calculated. Gap >10 = unmetabolized alcohol. Measure STAT and calculate. Falling gap + rising anion gap = metabolism occurring = worsening prognosis if untreated. Methanol and EG have different specific contributions per mM." },
+      { icon:"💉", label:"ABG + Electrolytes (Anion Gap)", detail:"HAGMA (high anion gap metabolic acidosis): AG = Na − (Cl + HCO₃). pH <7.3 with HAGMA = metabolite accumulation = urgent fomepizole + possibly dialysis. Most important prognostic indicator." },
+      { icon:"🔬", label:"Specific Toxic Alcohol Levels", detail:"Methanol and ethylene glycol quantitative levels if available. NOT universally available — do NOT wait for levels to treat if clinical picture and osmol gap support diagnosis. Methanol level >20 mg/dL = hemodialysis indication." },
+      { icon:"👁️", label:"Visual Acuity + Fundoscopy (Methanol)", detail:"Methanol: papilledema, optic disc hyperemia, visual field defects. Any visual complaint in suspected methanol poisoning requires urgent ophthalmology consult. Visual loss can be rapid and irreversible." },
+      { icon:"🫀", label:"Calcium (Ethylene Glycol)", detail:"EG metabolism produces oxalate → chelates calcium → hypocalcemia → tetany, seizures, cardiac dysfunction. Calcium is NOT just a monitoring parameter — symptomatic hypocalcemia requires IV calcium replacement." },
+      { icon:"🔬", label:"Urinalysis (Ethylene Glycol)", detail:"Calcium oxalate crystals (envelope-shaped monohydrate) in urine = pathognomonic for ethylene glycol ingestion. Wood's lamp fluorescence: antifreeze contains fluorescein — urine may fluoresce (unreliable)." },
+    ],
+    treatment: [
+      { cat:"🅐 Antidote", drug:"Fomepizole (4-MP, Antizol)", dose:"Loading: 15 mg/kg IV over 30 min; then 10 mg/kg IV q12h × 4 doses; then 15 mg/kg IV q12h until levels undetectable", renal:"Dose interval q4h during hemodialysis (fomepizole is dialyzed)", ivpo:"IV", deesc:"Inhibits alcohol dehydrogenase (ADH) → blocks conversion of methanol to formic acid and EG to glycolic/oxalic acid. PREFERRED over EtOH (no sedation, safer, reliable). Continue until toxic alcohol levels <20 mg/dL AND pH normal AND no metabolic acidosis.", note:"Start fomepizole immediately on clinical suspicion — do NOT wait for confirmatory levels. EtOH alternative: load to EtOH level 100–150 mg/dL via IV or PO (used if fomepizole unavailable).", ref:"Brent NEJM 2009 / ACMT" },
+      { cat:"🅐 Antidote", drug:"Hemodialysis (HD)", dose:"Emergent HD: methanol level >25 mg/dL, or EG level >50 mg/dL, or severe HAGMA (pH <7.25), or AKI, or visual symptoms (methanol)", renal:"INDICATED for AKI from EG", ivpo:"Procedural", deesc:"HD removes toxic alcohols AND their toxic metabolites (formate, glycolate, oxalate). Also corrects metabolic acidosis. Increase fomepizole to q4h interval during HD (dialyzed). Continue HD until pH normal, gap closed, level <20 mg/dL.", note:"Both fomepizole AND HD simultaneously for severe cases — fomepizole prevents further metabolite formation while HD removes existing metabolites and parent alcohol.", ref:"EXTRIP Guidelines" },
+      { cat:"🅑 Correction", drug:"Sodium Bicarbonate (Metabolic Acidosis)", dose:"1–2 mEq/kg IV bolus for severe acidosis (pH <7.2); infusion to target pH >7.3", renal:"Monitor Na+ and pH", ivpo:"IV", deesc:"Alkalinization helps trap ionized formate in circulation (reduces CNS penetration in methanol toxicity). Supportive measure — does NOT treat underlying cause. Primary treatment is fomepizole + HD.", note:"Bicarb is a BRIDGE — do not delay HD for bicarb correction. Maintain urine alkalinization (pH >7.0) to reduce renal oxalate precipitation in EG poisoning.", ref:"Toxicology" },
+      { cat:"🅒 Cofactors", drug:"Folinic Acid (Methanol) / Thiamine + Pyridoxine (EG)", dose:"Methanol: Folinic acid 50 mg IV q6h (enhances formate metabolism to CO₂). EG: Thiamine 100 mg IV + Pyridoxine 50 mg IV q6h (redirect oxalate pathway)", renal:"No adjustment", ivpo:"IV", deesc:"Methanol: folinic acid (NOT folic acid) accelerates formate elimination via tetrahydrofolate pathway. EG: thiamine and pyridoxine redirect oxalate metabolism to less toxic products (glycine).", note:"Low risk, potential benefit — give empirically in all confirmed or suspected cases. Folinic acid (leucovorin) NOT folic acid — different metabolic role.", ref:"Goldfrank's / Toxicology" },
+    ],
+    followup: [
+      "Ophthalmology consult for ALL methanol poisoning — even mildly symptomatic patients may develop delayed visual loss",
+      "Serial ABG and osmol gap q4–6h until both normalized and fomepizole therapy complete",
+      "Hemodialysis: continue until toxic alcohol level <20 mg/dL, pH >7.3, anion gap closed",
+      "Nephrology follow-up: AKI from ethylene glycol may require dialysis for days-weeks",
+      "Investigate source: methanol exposure may indicate attempted poisoning, industrial exposure, or contaminated bootleg alcohol (public health reporting)",
+      "Substance use counseling and addiction medicine referral if exposure related to substance use disorder",
+    ]
+  },
   opioid: {
     overview: {
       def: "Opioid toxidrome results from mu, kappa, and delta receptor agonism causing CNS and respiratory depression. Classic triad: miosis, decreased consciousness, and respiratory depression. Fatal apnea can occur within minutes of high-dose exposure. Fentanyl analogues and synthetic opioids may require repeat or high-dose naloxone.",

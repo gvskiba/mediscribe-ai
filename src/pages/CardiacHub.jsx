@@ -517,7 +517,7 @@ export default function NotryaApp(){
     <div className={`n-scrim${aiOpen?" open":""}`} onClick={toggleAI}/>
     <div className={`n-overlay${aiOpen?" open":""}`}>
       <div className="n-hdr">
-        <div className="n-hdr-top"><div className="n-avatar">🤖</div><div className="n-hdr-info"><div className="n-hdr-name">Notrya AI</div><div className="n-hdr-sub"><span className="dot"/> claude-sonnet-4 · online</div></div><button className="n-close" onClick={toggleAI}>✕</button></div>
+        <div className="n-hdr-top"><div className="n-avatar">🤖</div><div className="n-hdr-info"><div className="n-hdr-name">Notrya AI</div><div className="n-hdr-sub"><span className="dot"/> Notrya AI · online</div></div><button className="n-close" onClick={toggleAI}>✕</button></div>
         <div className="n-quick">{QUICK_ACTIONS.map(q=><button key={q.label} className="n-qbtn" onClick={()=>sendMessage(q.prompt)} disabled={aiLoading}>{q.icon} {q.label}</button>)}</div>
       </div>
       <div className="n-msgs" ref={msgsRef}>{aiMsgs.map((m,i)=><div key={i} className={`n-msg ${m.role}`} dangerouslySetInnerHTML={{__html:renderMsg(m.text)}}/>) }{aiLoading&&<div className="n-dots"><span/><span/><span/></div>}</div>

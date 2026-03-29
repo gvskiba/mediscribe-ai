@@ -662,12 +662,13 @@ export default function AirwayHub() {
 
   if (selected) {
     const cond = CONDITIONS.find(c=>c.id===selected);
-    if (!cond) { return null; }
-    return (
+    if (cond) return (
       <div style={{height:"100vh",background:T.bg,color:T.txt,fontFamily:"'DM Sans',sans-serif",display:"flex",flexDirection:"column",overflow:"hidden"}}>
         <ConditionPage cond={cond} onBack={()=>setSelected(null)} />
       </div>
     );
+    // If somehow id is invalid, fall through to main view
+    // (This also resets the selection implicitly on next render)
   }
 
   return (

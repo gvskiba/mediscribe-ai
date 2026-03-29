@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { usePatientData } from "@/lib/PatientDataContext";
 import EMCalculator from "@/components/procedures/EMCalculator";
 
 const T = {
@@ -68,6 +69,7 @@ function PatientBillingContext({ patientData }) {
 }
 
 export default function ProviderBilling() {
+  const { patientData: patientDataContext } = usePatientData();
   const [patientData, setPatientData] = useState({
     patient_name: "",
     patient_id: "",
@@ -75,6 +77,19 @@ export default function ProviderBilling() {
     date_of_birth: "",
     date_of_visit: new Date().toISOString().split("T")[0],
   });
+
+  useEffect(() => {
+    if (patientDataContext) {
+      setPatientData(prev => ({
+        ...prev,
+        patient_name: patientDataContext.patient_name || prev.patient_name,
+        patient_id: patientDataContext.patient_id || prev.patient_id,
+        patient_age: patientDataContext.patient_age || prev.patient_age,
+        date_of_birth: patientDataContext.date_of_birth || prev.date_of_birth,
+        date_of_visit: patientDataContext.date_of_visit || prev.date_of_visit,
+      }));
+    }
+  }, [patientDataContext]);
 
   const handlePatientDataUpdate = (field, value) => {
     setPatientData(prev => ({ ...prev, [field]: value }));
@@ -158,7 +173,7 @@ export default function ProviderBilling() {
             </h2>
           </div>
           <div style={{ ...glass(), padding: "16px 18px" }}>
-            <EMCalculator />
+            <EMCalculator noteData={patientDataContext} />
           </div>
         </div>
 

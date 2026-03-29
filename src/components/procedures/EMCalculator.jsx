@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import React from "react";
 
 const T = {
   navy: "#050f1e", slate: "#0b1d35", panel: "#0e2340", edge: "#162d4f",
@@ -110,7 +111,7 @@ function calculateEMCode(complexity) {
   return EM_CODES_ED[0]; // Default to 99281
 }
 
-export default function EMCalculator() {
+export default function EMCalculator({ noteData: incomingNoteData }) {
   const [noteData, setNoteData] = useState({
     history_of_present_illness: "",
     review_of_systems: "",
@@ -120,6 +121,22 @@ export default function EMCalculator() {
     patient_name: "",
     date_of_visit: new Date().toISOString().split("T")[0],
   });
+
+  // Auto-fill from incoming note data
+  React.useEffect(() => {
+    if (incomingNoteData) {
+      setNoteData(prev => ({
+        ...prev,
+        history_of_present_illness: incomingNoteData.history_of_present_illness || prev.history_of_present_illness,
+        review_of_systems: incomingNoteData.review_of_systems || prev.review_of_systems,
+        physical_exam: incomingNoteData.physical_exam || prev.physical_exam,
+        assessment: incomingNoteData.assessment || prev.assessment,
+        plan: incomingNoteData.plan || prev.plan,
+        patient_name: incomingNoteData.patient_name || prev.patient_name,
+        date_of_visit: incomingNoteData.date_of_visit || prev.date_of_visit,
+      }));
+    }
+  }, [incomingNoteData]);
 
   const [showBreakdown, setShowBreakdown] = useState(false);
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 /* ═══ TOKENS ═══════════════════════════════════════════════════════ */
 const T = {
@@ -383,7 +384,7 @@ function ROXCalc() {
   const [fio2, setFio2] = useState("");
   const [rr, setRr] = useState("");
   const rox = (parseFloat(spo2) && parseFloat(fio2) && parseFloat(rr))
-    ? ((parseFloat(spo2)/parseFloat(fio2))/parseFloat(rr)).toFixed(2)
+    ? ((parseFloat(spo2)/(parseFloat(fio2)/100))/parseFloat(rr)).toFixed(2)
     : null;
   const risk = rox !== null
     ? parseFloat(rox) < 2.85 ? {label:"HIGH FAILURE RISK", color:T.coral}
@@ -503,8 +504,8 @@ function DrugRow({ rx }) {
         {rx.note && <div style={{fontSize:10,color:T.txt3,marginTop:4,lineHeight:1.45}}>{rx.note}</div>}
       </div>
       <div style={{display:"flex",borderTop:`1px solid ${T.b}`,background:"rgba(5,15,30,0.4)"}}>
-        {panels.filter(p=>rx[p.k]).map((p,i)=>(
-          <button key={p.k} onClick={()=>setOpen(open===p.k?null:p.k)} style={{flex:1,padding:"6px 4px",border:"none",borderRight:i<2?`1px solid ${T.b}`:"none",background:open===p.k?`${p.color}12`:"transparent",color:open===p.k?p.color:T.txt4,fontSize:10,fontWeight:open===p.k?700:500,cursor:"pointer",transition:"all .18s",fontFamily:"sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+        {panels.filter(p=>rx[p.k]).map((p,i,arr)=>(
+          <button key={p.k} onClick={()=>setOpen(open===p.k?null:p.k)} style={{flex:1,padding:"6px 4px",border:"none",borderRight:i<arr.length-1?`1px solid ${T.b}`:`none`,background:open===p.k?`${p.color}12`:"transparent",color:open===p.k?p.color:T.txt4,fontSize:10,fontWeight:open===p.k?700:500,cursor:"pointer",transition:"all .18s",fontFamily:"sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
             <span>{p.icon}</span>{p.label}
           </button>
         ))}
@@ -652,6 +653,7 @@ function AirwayBanner() {
 
 /* ═══ MAIN HUB ══════════════════════════════════════════════════════ */
 export default function AirwayHub() {
+  const navigate = useNavigate();
   const [activeCat, setActiveCat] = useState("All");
   const [selected, setSelected] = useState(null);
 
@@ -660,6 +662,7 @@ export default function AirwayHub() {
 
   if (selected) {
     const cond = CONDITIONS.find(c=>c.id===selected);
+    if (!cond) { setSelected(null); return null; }
     return (
       <div style={{height:"100vh",background:T.bg,color:T.txt,fontFamily:"'DM Sans',sans-serif",display:"flex",flexDirection:"column",overflow:"hidden"}}>
         <ConditionPage cond={cond} onBack={()=>setSelected(null)} />
@@ -673,6 +676,7 @@ export default function AirwayHub() {
 
       <div style={{background:T.panel,borderBottom:`1px solid ${T.b}`,padding:"14px 20px",flexShrink:0}}>
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+          <button onClick={()=>navigate("/hub")} style={{display:"flex",alignItems:"center",gap:6,background:"rgba(8,22,40,0.7)",border:"1px solid rgba(59,158,255,0.3)",borderRadius:8,padding:"5px 12px",color:T.blue,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>← Hub</button>
           <div style={{width:40,height:40,borderRadius:11,background:"rgba(59,158,255,0.12)",border:"1px solid rgba(59,158,255,0.35)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>🌬️</div>
           <div>
             <div style={{fontSize:18,fontWeight:700,color:T.txt,fontFamily:"'Playfair Display',serif",lineHeight:1.2}}>Airway Hub</div>

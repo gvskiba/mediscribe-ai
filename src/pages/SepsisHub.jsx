@@ -444,8 +444,8 @@ function DrugRow({ rx }) {
         <div style={{fontSize:12,color:T.txt2,fontFamily:"monospace",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{rx.dose}</div>
       </div>
       <div style={{display:"flex",borderTop:`1px solid ${T.b}`,background:"rgba(5,15,30,0.4)"}}>
-        {panels.filter(p=>rx[p.k]).map((p,i)=>(
-          <button key={p.k} onClick={()=>setOpen(open===p.k?null:p.k)} style={{flex:1,padding:"6px 4px",border:"none",borderRight:i<2?`1px solid ${T.b}`:"none",background:open===p.k?`${p.color}12`:"transparent",color:open===p.k?p.color:T.txt4,fontSize:10,fontWeight:open===p.k?700:500,cursor:"pointer",transition:"all .18s",fontFamily:"sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+        {panels.filter(p=>rx[p.k]).map((p,i,arr)=>(
+          <button key={p.k} onClick={()=>setOpen(open===p.k?null:p.k)} style={{flex:1,padding:"6px 4px",border:"none",borderRight:i<arr.length-1?`1px solid ${T.b}`:`none`,background:open===p.k?`${p.color}12`:"transparent",color:open===p.k?p.color:T.txt4,fontSize:10,fontWeight:open===p.k?700:500,cursor:"pointer",transition:"all .18s",fontFamily:"sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
             <span>{p.icon}</span>{p.label}
           </button>
         ))}
@@ -762,6 +762,7 @@ export default function SepsisHub() {
 
   if (selected) {
     const cond = CONDITIONS.find(c=>c.id===selected);
+    if (!cond) { setSelected(null); return null; }
     return (
       <div style={{height:"100vh",background:T.bg,color:T.txt,fontFamily:"'DM Sans',sans-serif",display:"flex",flexDirection:"column",overflow:"hidden"}}>
         <ConditionPage cond={cond} onBack={()=>setSelected(null)} />
@@ -828,13 +829,7 @@ export default function SepsisHub() {
                 </div>
                 <span style={{fontSize:9,fontFamily:"monospace",padding:"2px 7px",borderRadius:20,background:c.gl,border:`1px solid ${c.br}`,color:c.color,fontWeight:700,flexShrink:0}}>{c.cat}</span>
               </div>
-              <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                <span style={{fontSize:9,color:T.txt4,fontFamily:"monospace"}}>📖 {c.acog}</span>
-                <span style={{fontSize:9,color:T.txt4,fontFamily:"monospace"}}>· {c.incidence}</span>
-              </div>
-              <div style={{marginTop:8,padding:"6px 10px",background:"rgba(5,15,30,0.4)",borderRadius:7,fontSize:10,color:T.txt3}}>
-                ⚠ {c.severity}
-              </div>
+
               <div style={{display:"flex",gap:8,marginTop:10,fontSize:9,color:T.txt3}}>
                 {ABX[c.id]?.length>0 && <span style={{padding:"2px 7px",borderRadius:20,background:"rgba(0,229,192,0.08)",border:"1px solid rgba(0,229,192,0.2)",color:T.teal}}>💊 {ABX[c.id].length} ABX tiers</span>}
                 {WORKUP[c.id]?.length>0 && <span style={{padding:"2px 7px",borderRadius:20,background:"rgba(59,158,255,0.08)",border:"1px solid rgba(59,158,255,0.2)",color:T.blue}}>✅ {WORKUP[c.id].length} workup items</span>}

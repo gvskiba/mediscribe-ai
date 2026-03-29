@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 // ── Design Tokens ──────────────────────────────────────────────────
 const T = {
@@ -702,6 +703,7 @@ function FollowupTab({ fu }) {
 
 // ── Main Hub ───────────────────────────────────────────────────────
 export default function ToxHub() {
+  const navigate = useNavigate();
   const [sel, setSel] = useState("opioid");
   const [tab, setTab] = useState("overview");
   const [filter, setFilter] = useState("All");
@@ -731,6 +733,10 @@ export default function ToxHub() {
         {/* Header */}
         <div style={{padding:"24px 0 16px"}}>
           <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:6}}>
+            <button onClick={()=>navigate("/hub")} style={{fontFamily:"DM Sans",fontSize:12,fontWeight:600,padding:"6px 14px",borderRadius:10,border:"1px solid rgba(59,158,255,0.4)",background:"rgba(59,158,255,0.1)",color:T.blue,cursor:"pointer",display:"flex",alignItems:"center",gap:6,transition:"all .15s",flexShrink:0}}
+              onMouseEnter={e=>{e.currentTarget.style.background="rgba(59,158,255,0.2)"}}
+              onMouseLeave={e=>{e.currentTarget.style.background="rgba(59,158,255,0.1)"}}
+            >← Hub</button>
             <div style={{...deepGlass,borderRadius:12,padding:"6px 14px",display:"flex",alignItems:"center",gap:8}}>
               <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.teal,letterSpacing:3,textTransform:"uppercase"}}>NOTRYA</span>
               <span style={{color:T.txt4,fontFamily:"JetBrains Mono",fontSize:10}}>/</span>

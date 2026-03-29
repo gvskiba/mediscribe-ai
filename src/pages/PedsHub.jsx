@@ -742,6 +742,7 @@ export default function PedsHub() {
         {/* Header */}
         <div style={{padding:"22px 0 14px"}}>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+            <button onClick={()=>navigate("/hub")} style={{fontFamily:"DM Sans",fontSize:12,fontWeight:600,padding:"6px 14px",borderRadius:10,border:"1px solid rgba(185,155,255,0.4)",background:"rgba(185,155,255,0.1)",color:"#b99bff",cursor:"pointer",display:"flex",alignItems:"center",gap:6,flexShrink:0}}>← Hub</button>
             <div style={{backdropFilter:"blur(40px)",WebkitBackdropFilter:"blur(40px)",background:"rgba(5,15,30,0.85)",border:"1px solid rgba(26,53,85,0.6)",borderRadius:10,padding:"5px 12px",display:"flex",alignItems:"center",gap:8}}>
               <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.teal,letterSpacing:3}}>NOTRYA</span>
               <span style={{color:T.txt4,fontFamily:"JetBrains Mono",fontSize:10}}>/</span>

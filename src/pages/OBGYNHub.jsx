@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 
@@ -408,7 +408,13 @@ function DrugRow({rx}){
 function ConditionPage({emergency,onBack,contentMap}){
   const[activeTab,setActiveTab]=useState("overview");
   const[checked,setChecked]=useState({});
-  const data=contentMap?.[emergency.id] || CLINICAL_DATA[emergency.id];
+  const data={...( CLINICAL_DATA[emergency.id]||{}), ...(contentMap?.[emergency.id]||{})};
+  if(!data.definition) return(
+    <div style={{padding:40,textAlign:"center",color:T.txt3}}>
+      <button onClick={onBack} style={{background:"rgba(14,37,68,0.5)",border:"1px solid rgba(26,53,85,0.7)",borderRadius:7,padding:"5px 12px",color:T.txt3,fontSize:11,cursor:"pointer",fontFamily:"sans-serif",marginBottom:20}}>← Back</button>
+      <div style={{fontSize:14}}>Content not available for this emergency.</div>
+    </div>
+  );
   const TABS=[{id:"overview",label:"Overview",icon:"📋"},{id:"workup",label:"Workup",icon:"✅"},{id:"treatment",label:"Treatment",icon:"💊"},{id:"followup",label:"Follow-up",icon:"📅"}];
 
   return(
@@ -489,7 +495,7 @@ function ConditionPage({emergency,onBack,contentMap}){
         {activeTab==="workup"&&(
           <div>
             <SectionHeader icon="✅" title="Workup Checklist" sub="Click to mark items complete · ACOG-based diagnostic approach" accentColor={emergency.color}/>
-            {data.workup.map((item,i)=>(
+            {(data.workup||[]).map((item,i)=>(
               <WorkupItem key={i} item={item} checked={!!checked[`w${i}`]} onToggle={()=>setChecked(p=>({...p,[`w${i}`]:!p[`w${i}`]}))}/>
             ))}
           </div>
@@ -506,7 +512,7 @@ function ConditionPage({emergency,onBack,contentMap}){
                 </div>
               ))}
             </div>
-            {data.treatment.map((rx,i)=><DrugRow key={i} rx={rx}/>)}
+            {(data.treatment||[]).map((rx,i)=><DrugRow key={i} rx={rx}/>)}
           </div>
         )}
 
@@ -514,7 +520,7 @@ function ConditionPage({emergency,onBack,contentMap}){
           <div>
             <SectionHeader icon="📅" title="Follow-up & Discharge Planning" sub="Post-acute care, counselling & future pregnancy guidance" accentColor={emergency.color}/>
             <div style={{display:"flex",flexDirection:"column",gap:7}}>
-              {data.followup.map((f,i)=>(
+              {(data.followup||[]).map((f,i)=>(
                 <div key={i} style={{display:"flex",alignItems:"flex-start",gap:10,background:"rgba(14,37,68,0.45)",border:"1px solid rgba(26,53,85,0.7)",borderRadius:9,padding:"10px 13px",backdropFilter:"blur(8px)"}}>
                   <div style={{width:26,height:26,borderRadius:7,background:emergency.glass.replace("0.07","0.22"),border:`1px solid ${emergency.border}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:12,color:emergency.color,fontWeight:700}}>{i+1}</div>
                   <div style={{fontSize:12,color:T.txt2,lineHeight:1.5}}>{f}</div>

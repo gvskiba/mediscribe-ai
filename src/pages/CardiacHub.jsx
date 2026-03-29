@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { base44 } from "@/api/base44Client";
 
 // ════════════════════════════════════════════════════════════
 //  ACS HOME PAGE — GLASSMORPHISM HUB
@@ -463,15 +464,16 @@ export default function NotryaApp(){
   const sendMessage=useCallback(async text=>{
     if(!text.trim()||aiLoading)return;
     setAiMsgs(m=>[...m,{role:"user",text:text.trim()}]);setAiInput("");setAiLoading(true);
-    const ctx=`=== PAGE CONTEXT ===\nActive: ${currentItem?.label||"Unknown"}\nGroup: ${activeGroup}\n====================`;
-    const newHistory=[...history,{role:"user",content:ctx+"\n\n"+text.trim()}];setHistory(newHistory);
-    try{const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,system:SYSTEM_PROMPT,messages:newHistory})});
-      const data=await res.json();const reply=data.content?.[0]?.text||"No response received.";
-      setHistory(h=>[...h,{role:"assistant",content:reply}]);setAiMsgs(m=>[...m,{role:"bot",text:reply}]);
+    const ctx=`Active section: ${currentItem?.label||"Unknown"} | Group: ${activeGroup}`;
+    try{
+      const reply = await base44.integrations.Core.InvokeLLM({
+        prompt: `${SYSTEM_PROMPT}\n\n${ctx}\n\nUser: ${text.trim()}`,
+      });
+      setAiMsgs(m=>[...m,{role:"bot",text:typeof reply==="string"?reply:JSON.stringify(reply)}]);
       setAiOpen(open=>{if(!open)setUnread(u=>u+1);return open;});
     }catch{setAiMsgs(m=>[...m,{role:"sys",text:"⚠ Connection error — please try again."}]);}
     finally{setAiLoading(false);}
-  },[aiLoading,history,currentItem,activeGroup]);
+  },[aiLoading,currentItem,activeGroup]);
   const handleAIKey=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage(aiInput);}};
   const renderMsg=text=>text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>").replace(/\*\*(.*?)\*\*/g,'<strong style="color:#00e5c0">$1</strong>');
   const subItems=NAV_DATA[activeGroup]||[];

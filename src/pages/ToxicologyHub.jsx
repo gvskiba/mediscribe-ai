@@ -1,478 +1,643 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
-/* ═══ TOKENS ═══════════════════════════════════════════════════════ */
+// ── Design Tokens ──────────────────────────────────────────────────
 const T = {
-  bg:"#050f1e",panel:"#081628",card:"#0b1e36",up:"#0e2544",
-  b:"rgba(26,53,85,0.8)",bhi:"rgba(42,79,122,0.9)",
-  txt:"#e8f0fe",txt2:"#8aaccc",txt3:"#4a6a8a",txt4:"#2e4a6a",
-  coral:"#ff6b6b",gold:"#f5c842",teal:"#00e5c0",blue:"#3b9eff",
-  orange:"#ff9f43",purple:"#9b6dff",green:"#3dffa0",cyan:"#00d4ff",
+  bg:"#050f1e", panel:"#081628", card:"#0b1e36", up:"#0e2544",
+  b:"rgba(26,53,85,0.8)", bhi:"rgba(42,79,122,0.9)",
+  txt:"#e8f0fe", txt2:"#8aaccc", txt3:"#4a6a8a", txt4:"#2e4a6a",
+  coral:"#ff6b6b", gold:"#f5c842", teal:"#00e5c0", blue:"#3b9eff",
+  orange:"#ff9f43", purple:"#9b6dff", green:"#3dffa0", cyan:"#00d4ff",
 };
 
-/* ═══ CONDITIONS ════════════════════════════════════════════════════ */
+// ── Font + Style Injection ─────────────────────────────────────────
+(() => {
+  if (document.getElementById("ntrya-fonts")) return;
+  const l = document.createElement("link"); l.id="ntrya-fonts";
+  l.rel="stylesheet";
+  l.href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
+  document.head.appendChild(l);
+  const s = document.createElement("style"); s.id="ntrya-css";
+  s.textContent = `
+    *{box-sizing:border-box;margin:0;padding:0;}
+    ::-webkit-scrollbar{width:3px;height:3px;}
+    ::-webkit-scrollbar-track{background:transparent;}
+    ::-webkit-scrollbar-thumb{background:rgba(42,79,122,0.5);border-radius:2px;}
+    .glass{backdrop-filter:blur(24px) saturate(200%);-webkit-backdrop-filter:blur(24px) saturate(200%);}
+    .glass-deep{backdrop-filter:blur(40px) saturate(220%);-webkit-backdrop-filter:blur(40px) saturate(220%);}
+    @keyframes fadeSlide{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+    @keyframes pulseRing{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:.8;transform:scale(1.02)}}
+    @keyframes glow{0%,100%{box-shadow:0 0 8px var(--gc,#ff6b6b)}50%{box-shadow:0 0 20px var(--gc,#ff6b6b)}}
+    .fade-in{animation:fadeSlide .35s ease forwards;}
+    .cond-item{transition:all .2s ease;cursor:pointer;}
+    .cond-item:hover{transform:translateX(3px);}
+    .tab-pill{transition:all .2s ease;cursor:pointer;}
+    .tab-pill:hover{opacity:.9;}
+    .drug-acc{transition:max-height .3s cubic-bezier(.4,0,.2,1),opacity .3s ease;}
+    .banner-item{animation:pulseRing 4s ease infinite;}
+    .shimmer-text{
+      background:linear-gradient(90deg,#e8f0fe 0%,#ffffff 40%,#8aaccc 60%,#e8f0fe 100%);
+      background-size:200% auto;
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      background-clip:text;
+      animation:shimmer 4s linear infinite;
+    }
+    .cond-active::before{
+      content:'';position:absolute;left:0;top:10%;height:80%;width:2px;
+      background:var(--cc,#ff6b6b);border-radius:2px;
+      box-shadow:0 0 8px var(--cc,#ff6b6b);
+    }
+  `;
+  document.head.appendChild(s);
+})();
+
+// ── Conditions ─────────────────────────────────────────────────────
 const CONDITIONS = [
-  { id:"opioid",   icon:"💊", title:"Opioid Toxidrome",         sub:"Heroin · Fentanyl · Oxycodone · Naloxone Protocol",         cat:"Toxidromes",     color:"#ff6b6b", gl:"rgba(255,107,107,0.07)",  br:"rgba(255,107,107,0.28)"  },
-  { id:"stimulant",icon:"⚡", title:"Stimulant Toxidrome",       sub:"Cocaine · Amphetamines · MDMA · Sympathomimetic Crisis",    cat:"Toxidromes",     color:"#f5c842", gl:"rgba(245,200,66,0.07)",  br:"rgba(245,200,66,0.28)"   },
-  { id:"cholinerg",icon:"🫧", title:"Cholinergic Toxidrome",     sub:"Organophosphates · Carbamates · SLUDGE/DUMBELS",           cat:"Toxidromes",     color:"#3dffa0", gl:"rgba(61,255,160,0.07)",  br:"rgba(61,255,160,0.28)"   },
-  { id:"anticholinerg",icon:"🌡️",title:"Anticholinergic Toxidrome",sub:"TCAs · Antihistamines · Atropine · Dry Flushed",        cat:"Toxidromes",     color:"#ff9f43", gl:"rgba(255,159,67,0.07)",  br:"rgba(255,159,67,0.28)"   },
-  { id:"serotonin",icon:"🧠", title:"Serotonin Syndrome",        sub:"SSRIs · MAOIs · Hunter Criteria · Cyproheptadine",         cat:"Toxidromes",     color:"#9b6dff", gl:"rgba(155,109,255,0.07)", br:"rgba(155,109,255,0.28)"  },
-  { id:"acetaminophen",icon:"⚗️",title:"Acetaminophen OD",       sub:"Rumack-Matthew Nomogram · NAC Protocol · Hepatotoxicity",  cat:"Antidotes",      color:"#00d4ff", gl:"rgba(0,212,255,0.07)",   br:"rgba(0,212,255,0.28)"    },
-  { id:"salicylate",icon:"🌡",  title:"Salicylate Toxicity",     sub:"ASA · Oil of Wintergreen · Alkalinisation · HD Criteria",  cat:"Antidotes",      color:"#3b9eff", gl:"rgba(59,158,255,0.07)",  br:"rgba(59,158,255,0.28)"   },
-  { id:"tca",      icon:"⚠️", title:"TCA Overdose",              sub:"QRS Widening · Bicarb · ACLS Modifications",               cat:"Antidotes",      color:"#ff6b6b", gl:"rgba(255,107,107,0.07)",  br:"rgba(255,107,107,0.28)"  },
-  { id:"methanol", icon:"🧪", title:"Toxic Alcohols",            sub:"Methanol · Ethylene Glycol · Fomepizole · HD",             cat:"Antidotes",      color:"#f5c842", gl:"rgba(245,200,66,0.07)",  br:"rgba(245,200,66,0.28)"   },
-  { id:"co",       icon:"💨", title:"Carbon Monoxide Poisoning", sub:"HBO Indications · Carboxyhemoglobin · Pulse Ox Pitfall",   cat:"Environmental",  color:"#00e5c0", gl:"rgba(0,229,192,0.07)",   br:"rgba(0,229,192,0.28)"    },
-  { id:"snake",    icon:"🐍", title:"Envenomation",              sub:"Crotalidae · Elapidae · Antivenom · CroFab",               cat:"Environmental",  color:"#3dffa0", gl:"rgba(61,255,160,0.07)",  br:"rgba(61,255,160,0.28)"   },
-  { id:"beta",     icon:"❤️", title:"Beta-Blocker / CCB OD",     sub:"High-Dose Insulin · Lipid Emulsion · Calcium · Atropine",  cat:"Antidotes",      color:"#ff6b9d", gl:"rgba(255,107,157,0.07)", br:"rgba(255,107,157,0.28)"  },
+  { id:"opioid",         icon:"💊", title:"Opioid Toxidrome",      sub:"Resp. Depression · Miosis",     cat:"Toxidrome", color:T.coral,  gl:"rgba(255,107,107,0.1)",  br:"rgba(255,107,107,0.4)" },
+  { id:"sympatho",       icon:"⚡", title:"Sympathomimetic",        sub:"HTN · Agitation · Hyperthermia",cat:"Toxidrome", color:T.orange, gl:"rgba(255,159,67,0.1)",   br:"rgba(255,159,67,0.4)"  },
+  { id:"cholinergic",    icon:"🧪", title:"Cholinergic (SLUDGE)",   sub:"OP · Nerve Agent · SLUDGE-M",   cat:"Toxidrome", color:T.teal,   gl:"rgba(0,229,192,0.1)",    br:"rgba(0,229,192,0.4)"   },
+  { id:"anticholinergic",icon:"🌡️", title:"Anticholinergic",        sub:"Mad Hatter · Mydriasis",        cat:"Toxidrome", color:T.purple, gl:"rgba(155,109,255,0.1)",  br:"rgba(155,109,255,0.4)" },
+  { id:"sedative",       icon:"😴", title:"Sedative-Hypnotic",      sub:"CNS Depression · BZD/GHB",      cat:"Toxidrome", color:T.blue,   gl:"rgba(59,158,255,0.1)",   br:"rgba(59,158,255,0.4)"  },
+  { id:"serotonin",      icon:"🔥", title:"Serotonin Syndrome",     sub:"Clonus · Hyperthermia",         cat:"Toxidrome", color:T.gold,   gl:"rgba(245,200,66,0.1)",   br:"rgba(245,200,66,0.4)"  },
+  { id:"tca",            icon:"❤️", title:"TCA Overdose",           sub:"QRS Widening · Dysrhythmia",    cat:"Overdose",  color:T.coral,  gl:"rgba(255,107,107,0.1)",  br:"rgba(255,107,107,0.4)" },
+  { id:"apap",           icon:"🟡", title:"Acetaminophen OD",       sub:"Hepatotoxicity · NAC Protocol", cat:"Overdose",  color:T.green,  gl:"rgba(61,255,160,0.1)",   br:"rgba(61,255,160,0.4)"  },
+  { id:"salicylate",     icon:"🔵", title:"Salicylate OD",          sub:"Mixed Acid-Base · Tinnitus",    cat:"Overdose",  color:T.cyan,   gl:"rgba(0,212,255,0.1)",    br:"rgba(0,212,255,0.4)"   },
+  { id:"digoxin",        icon:"💜", title:"Digoxin Toxicity",       sub:"AV Block · Bidirectional VT",   cat:"Overdose",  color:T.purple, gl:"rgba(155,109,255,0.1)",  br:"rgba(155,109,255,0.4)" },
 ];
 
-const CATS = ["Toxidromes","Antidotes","Environmental"];
+const BANNER = [
+  { label:"Antidote Window", value:"0–2 hrs", sub:"Most time-critical reversal", color:T.coral },
+  { label:"Naloxone Repeat", value:"q 2–3 min", sub:"Titrate RR > 12 & SpO₂ > 95%", color:T.orange },
+  { label:"NAC Best Efficacy", value:"< 8 hours", sub:"Post-APAP ingestion", color:T.green },
+  { label:"TCA Bicarb pH", value:"7.45–7.55", sub:"Target to narrow QRS < 100 ms", color:T.blue },
+];
 
-/* ═══ OVERVIEW ══════════════════════════════════════════════════════ */
-const OVERVIEW = {
-  opioid:{
-    def:"Opioid toxidrome is characterized by the classic triad of miosis (pinpoint pupils), CNS depression, and respiratory depression. Fentanyl and synthetic opioids may require multiple or high-dose naloxone. Buprenorphine overdose is partial — full naloxone reversal may be incomplete. Always consider co-ingestants.",
-    bullets:["Classic triad: Miosis + CNS depression + Respiratory depression (RR <12)","Naloxone 0.4–2 mg IV/IM/IN — titrate to respiratory rate, NOT full reversal (avoids precipitated withdrawal)","Fentanyl & analogues: may need higher naloxone doses (4–10 mg) or continuous infusion","Naloxone infusion: 2/3 of reversal dose/hour IV (e.g., if 2 mg reversed → infuse 1.3 mg/h)","Duration of naloxone (30–90 min) often shorter than opioid — ICU admission for extended-release or fentanyl patches","Never discharge without ≥6h observation after naloxone use"],
+// ── Clinical Data ──────────────────────────────────────────────────
+const DATA = {
+  opioid: {
+    overview: {
+      def: "Opioid toxidrome results from mu, kappa, and delta receptor agonism causing CNS and respiratory depression. Classic triad: miosis, decreased consciousness, and respiratory depression. Fatal apnea can occur within minutes of high-dose exposure. Fentanyl analogues and synthetic opioids may require repeat or high-dose naloxone.",
+      bullets: [
+        "Classic triad: miosis + altered mental status + respiratory depression",
+        "RR < 12/min or SpO₂ < 90% requires immediate naloxone administration",
+        "Non-cardiogenic pulmonary edema — especially common with heroin",
+        "Fentanyl analogues often NOT detected by standard UDS — clinical diagnosis paramount",
+        "Duration varies: heroin 4–6h; methadone 24–72h; buprenorphine partial naloxone response",
+        "Naloxone half-life 30–90 min — watch for recurrence after dose wears off",
+      ]
+    },
+    workup: [
+      { icon:"🩺", label:"Vitals + SpO₂ Q15min", detail:"RR, depth of breathing, pulse oximetry trending — most critical monitoring parameters. Waveform capnography (ETCO₂) is gold standard if available." },
+      { icon:"🔬", label:"Urine Drug Screen", detail:"Immunoassay detects morphine/codeine; fentanyl analogues frequently NOT detected. UDS negative does not rule out opioid toxicity." },
+      { icon:"💉", label:"BMP + Lactate", detail:"Metabolic acidosis from hypoxia. Lactate elevated with significant respiratory compromise or shock." },
+      { icon:"🫀", label:"ECG 12-lead", detail:"Rule out co-ingestion (TCA, QTc-prolonging agents). Some synthetic opioids cause QTc prolongation." },
+      { icon:"🧠", label:"POC Blood Glucose", detail:"Always check — hypoglycemia mimics and co-occurs with opioid toxicity. Treat empirically if borderline." },
+      { icon:"🫁", label:"Chest X-ray", detail:"Non-cardiogenic pulmonary edema in severe cases. Aspiration pneumonia after loss of airway protective reflexes." },
+      { icon:"🧪", label:"Serum APAP + EtOH Level", detail:"Poly-drug co-ingestion is common. Check even without clear history — impacts management and disposition." },
+    ],
+    treatment: [
+      { cat:"🅐 Antidote", drug:"Naloxone (Narcan)", dose:"0.4–2 mg IV/IM/IN q2–3 min; titrate to RR > 12 and SpO₂ > 95%; up to 10 mg if no response", renal:"No dose adjustment", ivpo:"IV / IM / SQ / IN", deesc:"Infuse 2/3 of effective reversal dose per hour if recurrent toxicity. Observe 4–6h after last dose for short-acting opioids.", note:"Start 0.04–0.1 mg in opioid-dependent patients to avoid precipitated withdrawal. IN route less reliable in profound shock.", ref:"Goldfrank's Toxicology" },
+      { cat:"🅐 Antidote", drug:"Naloxone Infusion", dose:"Mix 2/3 of effective bolus dose in 250 mL NS/hr; titrate q30min; max 10 mg/hr continuous", renal:"No adjustment", ivpo:"IV infusion", deesc:"Wean by 25% q1–2h when stable. For methadone/extended-release opioids — run infusion 12–24h minimum.", note:"Infusion required for long-acting opioids (methadone, extended-release morphine). Monitor closely for re-sedation.", ref:"UpToDate" },
+      { cat:"🅑 Airway", drug:"BVM + Airway Adjuncts", dose:"NPA 6–8 cm; OPA for unconscious. BVM ventilation 10–12 breaths/min if apneic; avoid hyperventilation", renal:"N/A", ivpo:"Procedural", deesc:"RSI if no naloxone response or aspiration suspected. Ketamine 1–2 mg/kg if hemodynamically stable. Avoid hyperventilation.", note:"Prioritize oxygenation. Bag-mask ventilation while awaiting naloxone effect. Suction secretions aggressively.", ref:"ACLS 2023" },
+      { cat:"🅒 Supportive", drug:"0.9% NS Fluid Bolus", dose:"500 mL IV bolus if hypotensive (MAP < 65); repeat q30 min; target MAP > 65 mmHg", renal:"Caution in AKI or pulmonary edema", ivpo:"IV", deesc:"Restrict fluids if pulmonary edema present. Consider CPAP/BiPAP for oxygenation in edema. Vasopressors rarely needed.", note:"Pulmonary edema: restrict to minimum fluid, elevate HOB 30–45°, consider CPAP.", ref:"Supportive Care" },
+    ],
+    followup: [
+      "Observe minimum 4 hours post-naloxone for short-acting opioids; 12–24 hours for methadone or extended-release formulations",
+      "Addiction medicine consult or warm handoff to recovery services before discharge",
+      "Prescribe naloxone kit (4 mg IN, Narcan) to patient AND household members at discharge — document",
+      "Distribute fentanyl test strip information and harm reduction resources",
+      "Screen with AUDIT-C and DAST-10; apply SBIRT framework",
+      "Follow-up with primary care or substance use program within 72 hours — arrange before discharge",
+      "Safe messaging: avoid shame-based language; use 'substance use disorder' not 'addict'",
+    ]
   },
-  stimulant:{
-    def:"Stimulant toxidrome (sympathomimetic) presents with hyperadrenergic features. Cocaine additionally causes sodium channel blockade (QRS widening risk). MDMA causes serotonin release. Key risks include hyperthermia (>40°C = emergency), hypertensive emergency, and coronary vasospasm.",
-    bullets:["Symptoms: hyperthermia, tachycardia, hypertension, mydriasis, diaphoresis, agitation","Hyperthermia >40°C: most lethal complication — aggressive cooling + sedation with benzos IMMEDIATELY","Benzodiazepines: first-line for agitation AND hypertension in stimulant toxicity","AVOID beta-blockers without alpha-coverage (paradoxical hypertension via unopposed alpha)","Cocaine chest pain: treat as ACS — CCB (diltiazem) preferred over beta-blockers; aspirin for thrombosis","MDMA + hyponatremia: SIADH pattern — fluid restriction, not aggressive free water; risk of cerebral edema"],
+  sympatho: {
+    overview: {
+      def: "Sympathomimetic toxidrome from cocaine, amphetamines, methamphetamine, MDMA, cathinones ('bath salts'), or synthetic cannabinoids. Excess catecholamine release and/or reuptake inhibition causes hypertensive crisis, tachycardia, hyperthermia, and agitation. Beta-blockers are CONTRAINDICATED (unopposed alpha → paradoxical vasospasm).",
+      bullets: [
+        "Classic: hypertension + tachycardia + hyperthermia + agitation/psychosis + mydriasis + diaphoresis",
+        "Cocaine: coronary vasospasm → acute MI even with angiographically normal coronaries",
+        "MDMA: hyponatremia from SIADH + excessive water intake — seizure risk even with low total dose",
+        "Beta-blockers CONTRAINDICATED — unopposed alpha → severe vasospasm and HTN crisis",
+        "Hyperthermia > 39°C is a critical emergency — aggressive cooling is life-saving",
+        "Excited delirium syndrome: extreme agitation + hyperthermia + strength = high mortality risk",
+      ]
+    },
+    workup: [
+      { icon:"🫀", label:"ECG 12-lead", detail:"Cocaine MI (STEMI/NSTEMI), QTc prolongation (cathinones/MDMA), wide-complex tachycardia (cocaine Na-channel block at toxic doses)." },
+      { icon:"🌡️", label:"Core Temperature (Rectal)", detail:"Rectal or esophageal preferred. Hyperthermia drives mortality. > 40°C = critical threshold requiring aggressive intervention." },
+      { icon:"🔬", label:"CK + Urinalysis (myoglobinuria)", detail:"Rhabdomyolysis from hyperthermia and agitation. CK, myoglobin, UA dipstick (blood positive without RBCs)." },
+      { icon:"🧂", label:"Electrolytes + Serum Na", detail:"Hyponatremia in MDMA toxicity (dilutional + SIADH). Hypernatremia possible with severe hyperthermia and diaphoresis." },
+      { icon:"💉", label:"Troponin I/T (0h, 3h)", detail:"Cocaine-associated chest pain — rule out STEMI and NSTEMI. Troponin may rise from direct cardiotoxicity independent of ischemia." },
+      { icon:"🧠", label:"Head CT (if focal sx)", detail:"Intracerebral hemorrhage with severe hypertension. Cocaine vasculitis. Subarachnoid hemorrhage from sympathetic surge." },
+    ],
+    treatment: [
+      { cat:"🅐 Sedation", drug:"Lorazepam (Ativan)", dose:"2–4 mg IV q5–10 min; titrate to calm; 2–4 mg IM if no IV access; higher doses may be needed in stimulant-driven agitation", renal:"No adjustment", ivpo:"IV / IM", deesc:"Benzodiazepines are the cornerstone — treating agitation directly reduces sympathetic drive, HR, and heat generation.", note:"Haloperidol second-line only (lowers seizure threshold, interferes with heat dissipation). BZDs first-line always.", ref:"Goldfrank's" },
+      { cat:"🅐 Sedation", drug:"Diazepam (Valium)", dose:"5–10 mg IV q5 min; 10–20 mg IM alternative; superior long half-life provides sustained sedation", renal:"No adjustment", ivpo:"IV / IM", deesc:"Long half-life provides sustained effect. Some toxicologists prefer for excited delirium due to duration. Less titratable than lorazepam.", note:"Consider in cases where repeated lorazepam doses have not achieved adequate sedation.", ref:"Toxicology" },
+      { cat:"🅑 HTN Crisis", drug:"Phentolamine", dose:"2.5–5 mg IV bolus for cocaine-induced HTN crisis; infusion 0.2–0.5 mg/min if sustained", renal:"No adjustment", ivpo:"IV", deesc:"Alpha-1 blocker — preferred over labetalol for cocaine-induced HTN (avoids unopposed-alpha concern). Titrate every 5 min.", note:"Labetalol is controversial in cocaine (not absolutely contraindicated per some evidence, but avoid per most guidelines).", ref:"UpToDate" },
+      { cat:"🅑 HTN Crisis", drug:"Nitroglycerin IV", dose:"10–20 mcg/min IV; titrate q5 min by 5–10 mcg/min; target SBP < 160 mmHg", renal:"No adjustment", ivpo:"IV infusion", deesc:"Preferred for cocaine-associated chest pain + HTN (vasodilates coronary arteries directly). SL NTG 0.4 mg acceptable first step.", note:"Combination of BZD + NTG is preferred regimen for cocaine chest pain with HTN.", ref:"AHA Guidelines" },
+      { cat:"🅒 Hyperthermia", drug:"Active Cooling Protocol", dose:"Ice water immersion preferred (fastest). Evaporative (wet + fan) second. Cold IV NS 1–2 L as adjunct. Target core temp < 38.5°C within 30 min", renal:"N/A", ivpo:"External", deesc:"Stop active cooling at 38.5°C to prevent overshoot hypothermia. Monitor temp q5–10 min.", note:"Antipyretics (acetaminophen, ibuprofen) are INEFFECTIVE for drug-induced hyperthermia — temperature set point is not elevated.", ref:"Toxicology" },
+      { cat:"🅒 Hyperthermia", drug:"Dantrolene", dose:"2.5 mg/kg IV over 15 min; may repeat q5–10 min; max 10 mg/kg/day", renal:"No adjustment", ivpo:"IV", deesc:"Consider for refractory hyperthermia with significant muscle rigidity. Reduces skeletal muscle heat production.", note:"Dissolve in sterile water (not NS). Reserved for severe, cooling-refractory cases.", ref:"Toxicology" },
+    ],
+    followup: [
+      "Cardiac monitoring minimum 6 hours; 12 hours if troponin elevated or ECG changes",
+      "Cocaine-associated STEMI/NSTEMI: ACS protocol — avoid beta-blockers; prefer NTG + BZD + aspirin + heparin",
+      "Psychiatric evaluation for stimulant use disorder before discharge",
+      "Return precautions: chest pain, seizure, severe headache — provide written instructions",
+      "Methamphetamine-associated psychosis may persist days — bridging antipsychotic after medical clearance",
+      "Outpatient substance use counseling referral; SAMHSA helpline",
+    ]
   },
-  cholinerg:{
-    def:"Cholinergic toxidrome results from inhibition of acetylcholinesterase (organophosphates, nerve agents) or direct muscarinic agonism. SLUDGE/DUMBELS mnemonics capture muscarinic features. Nicotinic effects include muscle fasciculations → paralysis. Life-threatening: bronchospasm, excessive secretions, respiratory failure.",
-    bullets:["SLUDGE: Salivation, Lacrimation, Urination, Defecation, GI distress, Emesis","DUMBELS: Diarrhea, Urination, Miosis, Bradycardia/Bronchospasm, Emesis, Lacrimation, Salivation","Atropine: 2–4 mg IV q5–10 min until secretions dry (NOT HR/pupils as endpoint) — may need hundreds of mg","Pralidoxime (2-PAM): 1–2 g IV over 15–30 min — for organophosphate only, before 'aging' (<24–48h)","Seizures: benzodiazepines first-line (atropine does NOT treat seizures in organophosphate toxicity)","Decontamination: remove clothing, irrigate skin — provider PPE critical before contact"],
+  cholinergic: {
+    overview: {
+      def: "Cholinergic toxidrome from organophosphate or carbamate pesticides, nerve agents (VX, sarin, novichok), or muscarinic mushrooms (Inocybe/Clitocybe). Irreversible AChE inhibition causes ACh accumulation at muscarinic AND nicotinic receptors. Respiratory failure is the #1 cause of death from bronchospasm + bronchorrhea + paralysis.",
+      bullets: [
+        "SLUDGE-M: Salivation, Lacrimation, Urination, Defecation, GI distress, Emesis, Miosis",
+        "Nicotinic: fasciculations → weakness → paralysis; tachycardia (counterintuitive — nicotinic effect)",
+        "Respiratory failure = #1 cause of death (bronchospasm + bronchorrhea + diaphragm paralysis)",
+        "Nerve agents: onset within seconds (vapor) to minutes (skin contact) — seconds to crisis",
+        "Succinylcholine is CONTRAINDICATED — hydrolysis prolonged → persistent paralysis",
+        "Intermediate syndrome: delayed proximal muscle weakness 24–96h after apparent recovery",
+      ]
+    },
+    workup: [
+      { icon:"🔬", label:"RBC Cholinesterase", detail:"Best marker of OP toxicity. > 50% suppression = significant exposure. Slow to return (weeks). Order stat and repeat q4–6h." },
+      { icon:"🔬", label:"Plasma Pseudocholinesterase", detail:"Faster to obtain, less specific. Suppressed in liver disease. Useful for initial assessment when RBC ChE pending." },
+      { icon:"🫁", label:"Auscultation + SpO₂", detail:"Bronchospasm and bronchorrhea — progressive wheeze and wet crackles. Continuous SpO₂; waveform capnography." },
+      { icon:"🫀", label:"Continuous ECG", detail:"Bradycardia, AV heart block, QTc prolongation, ventricular fibrillation in severe cases." },
+      { icon:"💪", label:"Serial Muscle Strength", detail:"Grip strength, respiratory effort (FVC, NIF), swallowing — track for intermediate syndrome at 24–96h." },
+      { icon:"🧠", label:"Seizure Monitoring", detail:"Seizures occur with CNS penetrating agents. EEG if altered and unclear seizure activity. Status epilepticus possible." },
+    ],
+    treatment: [
+      { cat:"🅐 Antidote", drug:"Atropine", dose:"ADULTS: 2–4 mg IV q5–10 min until secretions dry. CHILDREN: 0.02–0.05 mg/kg. NO MAXIMUM DOSE — titrate to secretions, NOT heart rate. Severe cases may require 100s of mg.", renal:"No adjustment", ivpo:"IV / IM (auto-injector)", deesc:"Endpoint: dry secretions and resolution of bronchospasm. Continue infusion 0.02–0.08 mg/kg/hr if needed. Maintain for 12–24h in severe cases.", note:"CRITICAL: Tachycardia is from nicotinic stimulation — do NOT stop atropine for tachycardia. Mydriasis signals adequate atropinization.", ref:"Goldfrank's / WHO" },
+      { cat:"🅐 Antidote", drug:"Pralidoxime (2-PAM)", dose:"1–2 g IV over 15–30 min LOADING; then infusion 500 mg/hr (max 12 g/day); IM auto-injector: 600 mg if IV unavailable", renal:"Reduce infusion rate CrCl < 30 mL/min", ivpo:"IV / IM (auto-injector)", deesc:"Must give within 24–48h BEFORE irreversible aging occurs. Reactivates AChE. Continue 24–48h post-exposure minimum.", note:"Less effective (and controversial) for carbamate poisoning — use atropine as primary for carbamates. Carbamate toxicity is self-limited.", ref:"WHO / Toxicology" },
+      { cat:"🅐 Antidote", drug:"Diazepam (Seizure Prophylaxis)", dose:"5–10 mg IV q10–15 min for seizures. 0.1–0.3 mg/kg IM if no IV. Military auto-injectors contain 10 mg IM.", renal:"No adjustment", ivpo:"IV / IM", deesc:"Benzodiazepines are FIRST-LINE for OP seizures. Phenytoin/fosphenytoin ineffective for this mechanism.", note:"Pre-treat with diazepam in severe exposure for seizure prophylaxis. Continuous infusion for status epilepticus.", ref:"Toxicology / Military" },
+      { cat:"🅑 Airway", drug:"RSI (Rocuronium)", dose:"Rocuronium 1.2 mg/kg IV for RSI. Ketamine 1–2 mg/kg induction. AVOID succinylcholine (unpredictable prolonged paralysis)", renal:"Standard dosing", ivpo:"Procedural", deesc:"Early intubation before respiratory failure. Succinylcholine hydrolyzed by AChE — duration wildly unpredictable. Sugammadex available to reverse rocuronium.", note:"Bronchorrhea rapidly fills airway — suction aggressively before and after intubation. Have large-bore suction immediately available.", ref:"Airway Management" },
+      { cat:"🅒 Decontamination", drug:"Skin + GI Decontamination", dose:"SKIN: Remove all clothing (reduces exposure 80%). Copious soap and water irrigation x 10–15 min. GI: Activated charcoal 1 g/kg PO (max 50g) if < 1h post-ingestion AND airway protected", renal:"N/A", ivpo:"External / PO", deesc:"Do NOT induce emesis. PPE Level B for healthcare providers — secondary contamination is a real documented risk.", note:"Organophosphates are highly lipophilic and absorb dermally. Decontamination is a priority, not afterthought.", ref:"CHEMM / CDC" },
+    ],
+    followup: [
+      "Observe minimum 24 hours after clinical recovery for intermediate syndrome (proximal weakness at 24–96h)",
+      "Serial respiratory assessment — FVC, NIF q4–6h; pulse oximetry continuously",
+      "Occupational health and industrial hygiene referral for pesticide exposure (worker safety evaluation)",
+      "Baseline and follow-up RBC cholinesterase levels (recovery takes weeks to months)",
+      "Psychiatric support — organophosphate exposure associated with long-term neurocognitive effects and depression",
+      "Mandatory reporting: occupational exposure to state public health authority",
+    ]
   },
-  anticholinerg:{
-    def:"Anticholinergic toxidrome results from muscarinic receptor blockade. Classic mnemonic: 'Blind as a bat (mydriasis), Mad as a hatter (delirium), Red as a beet (flushing), Hot as a hare (hyperthermia), Dry as a bone (anhidrosis/urinary retention)'. TCAs, diphenhydramine, jimsonweed, and atropine are common causes.",
-    bullets:["Classic features: mydriasis, tachycardia, hyperthermia, flushing, dry skin, urinary retention, ileus, altered mental status","TCA specifically: QRS widening (>100ms = severe), QTc prolongation, R wave in aVR >3mm","Physostigmine: antidote for pure anticholinergic toxicity (NOT TCAs — risk of asystole)","NaHCO₃ for TCAs: if QRS >100ms or hemodynamic instability — give 1–2 mEq/kg IV bolus","Benzodiazepines: for agitation and seizures. AVOID physostigmine if TCA suspected.","Hyperthermia: aggressive external cooling — risk of rhabdomyolysis and renal failure"],
+  anticholinergic: {
+    overview: {
+      def: "Anticholinergic toxidrome from atropine, diphenhydramine, TCAs, antipsychotics, scopolamine, jimsonweed (Datura), or belladonna alkaloids. Central and peripheral muscarinic receptor blockade. Mnemonic: 'Hot as a hare, dry as a bone, blind as a bat, red as a beet, mad as a hatter, full as a flask, the heart runs alone.'",
+      bullets: [
+        "Peripheral: mydriasis, tachycardia, dry flushed skin, urinary retention, decreased bowel sounds, ileus",
+        "Central: agitation, delirium, hallucinations (picking at objects), seizures, hyperthermia",
+        "Diphenhydramine: QRS widening (Na-channel block at OD doses) + QTc prolongation",
+        "Physostigmine reverses BOTH central and peripheral effects — most effective antidote",
+        "Temperature can rise rapidly — anhidrosis prevents heat dissipation",
+        "Delirium may persist 12–24 hours — prolonged observation required",
+      ]
+    },
+    workup: [
+      { icon:"🫀", label:"ECG Serial", detail:"Diphenhydramine: QRS > 120 ms (Na-channel block). QTc prolongation from multiple agents. Monitor q1–2h." },
+      { icon:"👁️", label:"Pupillary Exam", detail:"Fixed, dilated pupils (mydriasis) — bedside diagnosis. Document baseline size and reactivity. Serial re-assessment." },
+      { icon:"🔬", label:"UDS + Serum TCA Level", detail:"Confirm anticholinergic vs other cause of delirium. TCA level if suspected co-ingestion — guides bicarb therapy." },
+      { icon:"🌡️", label:"Core Temperature", detail:"Anhidrosis prevents heat dissipation — temperature rises without obvious diaphoresis. Rectal temp preferred." },
+      { icon:"🫁", label:"Bladder Scan", detail:"Urinary retention common — urinary agitation is a significant contributor to behavioral symptoms. Catheterize if retention." },
+      { icon:"🧠", label:"Head CT if focal sx", detail:"Rule out structural intracranial pathology when focal neurological deficits accompany altered mental status." },
+    ],
+    treatment: [
+      { cat:"🅐 Antidote", drug:"Physostigmine", dose:"1–2 mg IV over 2–5 min SLOWLY (fast infusion → bradycardia/seizures); may repeat 1 mg q10–20 min; max 4 mg initial session", renal:"No adjustment", ivpo:"IV (slow push)", deesc:"Reversal of delirium lasts 30–60 min; repeat dosing every 30–60 min as needed. HAVE atropine 0.5 mg/vial at bedside (reversal if cholinergic excess).", note:"AVOID if QRS > 120 ms, reactive airway disease, AV block, known TCA co-ingestion. Underused — most effective antidote for pure anticholinergic delirium.", ref:"Goldfrank's" },
+      { cat:"🅑 Sedation", drug:"Lorazepam", dose:"1–2 mg IV q5–10 min for agitation; titrate to calm without respiratory compromise", renal:"No adjustment", ivpo:"IV / IM", deesc:"Second-line after physostigmine or when physostigmine is contraindicated (QRS widening, TCA co-ingestion).", note:"AVOID haloperidol and phenothiazines — lower seizure threshold, worsen anticholinergic syndrome, impair heat dissipation.", ref:"Toxicology" },
+      { cat:"🅒 QRS Widening", drug:"Sodium Bicarbonate", dose:"1–2 mEq/kg IV bolus for QRS > 120 ms (diphenhydramine OD); repeat q5 min; target serum pH 7.45–7.55", renal:"Caution in fluid overload", ivpo:"IV", deesc:"Maintain with bicarb infusion (150 mEq/L in D5W at 200–250 mL/hr). Stop at pH > 7.55 or Na > 155 mEq/L.", note:"Same mechanism as TCA protocol — Na loading overcomes Na-channel block. Monitor serum Na and pH hourly.", ref:"AHA / Toxicology" },
+      { cat:"🅒 Supportive", drug:"Foley Catheter + Cooling", dose:"Catheterize if urinary retention. Cooling: tepid water + fan (avoid ice bath — vasoconstricts in anhidrotic patient)", renal:"N/A", ivpo:"Procedural", deesc:"Urinary retention → agitation → worsening hyperthermia. Catheterization often dramatically improves patient behavior.", note:"Cooling: avoid ice bath in anhidrotic patient (vasoconstriction impairs heat loss). Evaporative cooling preferred.", ref:"Supportive" },
+    ],
+    followup: [
+      "Minimum 6-hour observation; 12–24 hours if severe delirium or cardiovascular effects present",
+      "Review ALL home medications for anticholinergic burden (Beers Criteria agents — diphenhydramine, oxybutynin, etc.)",
+      "Jimsonweed/Datura plant exposure: Poison Control consult; patient education on plant identification",
+      "Ophthalmology follow-up if prolonged mydriasis (rare angle-closure glaucoma precipitation risk)",
+      "Confirm voiding before discharge; return precautions for inability to urinate",
+    ]
   },
-  serotonin:{
-    def:"Serotonin syndrome results from excess serotonergic activity, classically via combination of serotonergic agents (SSRIs + MAOIs, SSRIs + triptans, linezolid + SSRIs). Distinguished from NMS by: rapid onset (<24h), hyperreflexia/clonus (vs rigidity in NMS), and presence of serotonergic drug. Hunter Criteria are more sensitive than Sternbach.",
-    bullets:["Hunter Criteria (≥1 required): Clonus (inducible/spontaneous/ocular) + serotonergic agent exposure","Triad: altered mental status + neuromuscular findings (clonus/hyperreflexia) + autonomic instability","Mild: tachycardia, diaphoresis, tremor, myoclonus — stop offending agent, BZDs, supportive","Severe: hyperthermia >41°C, severe agitation, rigidity → ICU + cyproheptadine 12 mg PO/NG loading","Cyproheptadine: 5-HT2A antagonist — 12 mg load then 2 mg q2h (max 32 mg/day)","NMS vs SS: NMS is slower onset (days), LEAD-PIPE rigidity, extrapyramidal signs, responds to bromocriptine/dantrolene"],
+  sedative: {
+    overview: {
+      def: "Sedative-hypnotic toxidrome from benzodiazepines, barbiturates, GHB, carisoprodol, zolpidem/Z-drugs, or meprobamate. GABA-A receptor potentiation causing CNS and respiratory depression. Generally less lethal when taken alone, but highly dangerous combined with opioids or alcohol. GHB has especially rapid onset/offset.",
+      bullets: [
+        "Pure BZD: rarely fatal alone; combined with opioids/EtOH is highly dangerous",
+        "GHB: rapid onset and offset (1–4h); abrupt awakening; severe withdrawal if chronic use",
+        "Barbiturates: deeper CNS depression than BZDs; more likely to cause fatal OD alone",
+        "Flumazenil: rarely indicated in ED — risk of precipitating refractory seizures in BZD-dependent patients",
+        "Hypothermia impairs drug metabolism — active rewarming accelerates recovery",
+        "GHB withdrawal: severe (similar to alcohol withdrawal) — phenobarbital ± BZD",
+      ]
+    },
+    workup: [
+      { icon:"💉", label:"Serum Barbiturate Level", detail:"Quantitative phenobarbital/phenytoin if suspected. Guides hemodialysis decision. Level > 100 mg/L → consider HD." },
+      { icon:"🔬", label:"UDS (with limitations)", detail:"Immunoassay positive for BZDs. GHB NOT detected on standard UDS (short half-life). Z-drugs not detected. Clinical diagnosis." },
+      { icon:"🫁", label:"Serial Respiratory Assessment", detail:"RR, SpO₂, ETCO₂ — respiratory depression is the primary life threat. Consider intubation early if declining." },
+      { icon:"🧪", label:"Serum EtOH Level", detail:"Co-ingestion extremely common and pharmacodynamically synergistic. Markedly worsens prognosis." },
+      { icon:"🌡️", label:"Core Temperature", detail:"Hypothermia common — passive and active rewarming. Impairs CYP450 drug metabolism, prolonging toxicity." },
+    ],
+    treatment: [
+      { cat:"🅐 Antidote", drug:"Flumazenil (Rarely Indicated)", dose:"0.2 mg IV over 30 sec; repeat 0.2 mg q1 min up to 1 mg total; infusion 0.1–0.4 mg/hr if resedation occurs", renal:"No adjustment", ivpo:"IV", deesc:"RARELY indicated in ED. Consider ONLY for isolated, iatrogenic BZD in opioid-naive, BZD-naive patient.", note:"CONTRAINDICATED: chronic BZD use, BZD dependence, TCA co-ingestion, known seizure disorder. Short half-life (30–60 min) → resedation is common. Prepare for seizures.", ref:"Goldfrank's" },
+      { cat:"🅑 Airway", drug:"RSI / Endotracheal Intubation", dose:"Etomidate 0.3 mg/kg + succinylcholine 1.5 mg/kg; OR ketamine 1–2 mg/kg + rocuronium 1.2 mg/kg for RSI", renal:"Standard dosing", ivpo:"Procedural", deesc:"Intubate for GCS < 8 or progressive respiratory failure. Phenobarbital may need 24–48h ventilatory support for drug metabolism.", note:"HEMODIALYSIS for severe phenobarbital toxicity (level > 100 mg/L) or refractory supportive care. Multi-dose activated charcoal enhances phenobarbital elimination.", ref:"Critical Care" },
+      { cat:"🅒 Supportive", drug:"Fluid + Thermoregulation", dose:"Warm 0.9% NS 250–500 mL bolus if hypotensive. Bair Hugger/forced air warming for hypothermia. Target temp > 36°C", renal:"Adjust rate in AKI", ivpo:"IV + External", deesc:"Gradual rewarming improves drug metabolism and recovery. Avoid vasopressors if possible — tend to be hemodynamically stable after warming.", note:"Recovery position if protecting airway without intubation. Warming most overlooked intervention — dramatically speeds recovery.", ref:"Supportive Care" },
+    ],
+    followup: [
+      "GHB: discharge after 4–6h when fully awake; counsel chronic users on severe withdrawal syndrome risk",
+      "BZD intentional OD: mandatory psychiatric evaluation before discharge",
+      "Phenobarbital OD: ICU admission; consider multi-dose activated charcoal",
+      "Screen for poly-substance use; addiction medicine referral",
+      "Address underlying psychiatric condition if intentional ingestion — safety planning",
+    ]
   },
-  acetaminophen:{
-    def:"Acetaminophen (APAP) overdose is the most common cause of acute liver failure in the US. Toxicity results from saturation of glucuronidation/sulfation pathways → NAPQI accumulation → hepatocellular necrosis. Rumack-Matthew nomogram guides NAC therapy decision based on APAP level at 4+ hours post-ingestion.",
-    bullets:["Phase 1 (0–24h): nausea/vomiting — AST/ALT may be normal; get level at 4h post-ingestion","Phase 2 (24–72h): RUQ pain, transaminase rise","Phase 3 (72–96h): fulminant hepatic failure — peak transaminases, coagulopathy, encephalopathy","Rumack-Matthew: plot APAP level vs time post-ingestion — treat if at or above treatment line","NAC: 150 mg/kg IV over 1h → 50 mg/kg over 4h → 100 mg/kg over 16h (21h protocol); oral NAC also effective","NAC criteria: APAP level on nomogram, unknown time, ingestion >150 mg/kg or >7.5g, any hepatotoxicity signs"],
+  serotonin: {
+    overview: {
+      def: "Serotonin syndrome from excess 5-HT activity — single agent overdose (SSRI), dangerous combination (SSRI + tramadol, linezolid, methylene blue, triptans, MDMA, meperidine), or MAOI interactions. Hunter Criteria is most sensitive/specific: clonus (spontaneous/inducible/ocular) + agitation or diaphoresis + tremor or hyperreflexia.",
+      bullets: [
+        "Hunter Criteria: clonus (spontaneous/inducible/ocular) is pathognomonic for serotonin syndrome",
+        "Clinical triad: cognitive changes + neuromuscular abnormalities + autonomic instability",
+        "Differentiate from NMS: SS = acute onset hours; NMS = gradual days-weeks; bradykinesia predominates in NMS",
+        "Hyperthermia driven by muscle activity — not hypothalamic set point change",
+        "Temperature > 41°C = SEVERE — intubation + neuromuscular paralysis required",
+        "MAOi interactions most severe — avoid all serotonergic drugs 14 days before/after MAOi",
+      ]
+    },
+    workup: [
+      { icon:"🔬", label:"CK + Metabolic Panel", detail:"Rhabdomyolysis from hyperthermia and rigidity. Renal function critical — rhabdo-induced AKI common in severe cases." },
+      { icon:"🌡️", label:"Core Temperature (Rectal)", detail:"Drives severity classification. > 41°C = life-threatening → immediate paralysis and cooling required." },
+      { icon:"💊", label:"Complete Medication Review", detail:"Serotonergic agents: SSRIs, SNRIs, MAOIs, tramadol, linezolid, triptans, dextromethorphan, fentanyl (mild), lithium, methylene blue, MDMA." },
+      { icon:"🫀", label:"ECG 12-lead", detail:"QTc prolongation from underlying agents (citalopram, escitalopram). Sinus tachycardia expected — not specific." },
+      { icon:"🧠", label:"Clonus Assessment", detail:"Ankle/patellar clonus (≥ 3 beats = inducible clonus). Ocular clonus (rhythmic oscillating eye movements) = pathognomonic." },
+    ],
+    treatment: [
+      { cat:"🅐 Antidote", drug:"Cyproheptadine", dose:"12 mg PO/NG loading dose; then 2 mg q2h for persistent symptoms; max 32 mg/day", renal:"No adjustment", ivpo:"PO / NG tube", deesc:"5-HT2A antagonist. Improvement expected within 1–2h of loading dose. Taper over 24h after symptom resolution.", note:"Only available oral — give via NG if cannot swallow. Crush tablets in water. Adjunct to supportive care, not standalone treatment.", ref:"Goldfrank's / Hunter" },
+      { cat:"🅑 Sedation", drug:"Lorazepam", dose:"2–4 mg IV q5–10 min for agitation/seizures; aggressive dosing to reduce muscle activity and heat generation", renal:"No adjustment", ivpo:"IV", deesc:"Cornerstone of management — reduces autonomic instability, controls clonus-associated muscle activity. Undertreated agitation worsens hyperthermia.", note:"Aggressive benzodiazepine therapy is key. Haloperidol AVOID (lowers seizure threshold, may worsen). BZDs directly reduce serotonergic neurotransmission.", ref:"Hunter Criteria" },
+      { cat:"🅒 Hyperthermia", drug:"Cooling + NMB Paralysis", dose:"Ice packs groin/axilla/neck; cold IVF 1–2 L. T > 41°C: RSI + rocuronium 1.2 mg/kg (STOPS muscle heat generation immediately)", renal:"Standard dosing", ivpo:"External / IV", deesc:"Neuromuscular paralysis is most effective intervention for severe hyperthermia — immediately halts skeletal muscle heat production.", note:"Antipyretics are INEFFECTIVE. Temperature from muscle activity (not set-point elevation). Intubation required with paralysis — monitor EEG for ongoing seizures.", ref:"Toxicology" },
+    ],
+    followup: [
+      "Discontinue all offending serotonergic agents — most cases resolve within 24 hours after cessation",
+      "Temperature normalization and resolution of clonus required before discharge",
+      "Review ALL serotonergic medications with patient; detailed drug interaction counseling",
+      "Notify prescribing physician of serotonin syndrome diagnosis for medication reconciliation",
+      "If MAOI involved: strict 14-day washout before initiating any new serotonergic agent",
+      "Outpatient psychiatry follow-up for medication management within 1 week",
+    ]
   },
-  salicylate:{
-    def:"Salicylate (aspirin) toxicity causes a mixed acid-base disorder: initial respiratory alkalosis (direct CNS stimulation of respiratory center), then metabolic acidosis (uncouples oxidative phosphorylation). Toxicity severity correlates poorly with serum level alone — clinical assessment is paramount. Severe toxicity includes cerebral edema and pulmonary edema.",
-    bullets:["Triad: tinnitus + tachypnea + altered mental status","Classic labs: respiratory alkalosis + anion gap metabolic acidosis (double gap)","Serum salicylate: toxic >30 mg/dL (mild), >50 mg/dL (moderate), >80–100 mg/dL (severe)","Urine alkalinization: NaHCO₃ to target urine pH 7.5–8.0 — enhances renal elimination (ion trapping)","Avoid intubation if possible — if required, hyperventilate aggressively to match pre-intubation compensation","HD criteria: level >100 mg/dL, renal failure, pulmonary edema, CNS changes, deteriorating despite treatment"],
+  tca: {
+    overview: {
+      def: "Tricyclic antidepressant toxicity is a rapid-onset, life-threatening emergency. TCAs block fast sodium channels (QRS widening → VT), alpha-1 receptors (hypotension), muscarinic receptors (anticholinergic), potassium channels (QTc prolongation), and inhibit NE/5-HT reuptake. A patient can transition from 'talking and stable' to cardiac arrest in under 60 minutes.",
+      bullets: [
+        "QRS > 100 ms: 33% risk of seizures; QRS > 160 ms: 50% risk of ventricular tachycardia",
+        "R wave in aVR > 3 mm or R/S ratio > 0.7 in aVR predicts severe toxicity",
+        "Terminal 40ms rightward axis deviation (right axis): very sensitive marker",
+        "Rapid deterioration: alert → cardiac arrest in < 60 minutes is documented",
+        "Physostigmine CONTRAINDICATED in TCA OD — precipitates refractory bradycardia/asystole",
+        "Sodium bicarbonate is antidotal, not just supportive — initiate with QRS > 100 ms",
+      ]
+    },
+    workup: [
+      { icon:"🫀", label:"Serial ECGs q30 min", detail:"QRS duration, QTc, R in aVR, terminal 40ms axis. Most important monitoring tool. Rapid progression possible." },
+      { icon:"💊", label:"Serum TCA Level", detail:"Levels > 1000 ng/mL associated with severe toxicity. Correlates poorly — clinical picture supersedes lab value." },
+      { icon:"🔬", label:"ABG + Electrolytes", detail:"Metabolic acidosis dramatically worsens Na-channel block (pH-dependent binding). Treat acidosis aggressively." },
+      { icon:"🧠", label:"Continuous Seizure Watch", detail:"Neurological monitoring continuous. EEG if postictal or unclear if ongoing seizure. Seizures precipitate acidosis → more drug binding." },
+      { icon:"💉", label:"BMP + LFTs", detail:"Baseline liver function (TCA is hepatically metabolized). Monitor serum Na during bicarb therapy." },
+    ],
+    treatment: [
+      { cat:"🅐 Antidote", drug:"Sodium Bicarbonate", dose:"1–2 mEq/kg IV bolus IMMEDIATELY for QRS > 100 ms; repeat q5 min until QRS < 100 ms; maintain pH 7.45–7.55 with infusion (150 mEq in 1L D5W at 200–250 mL/hr)", renal:"Monitor Na closely; reduce in hypernatremia", ivpo:"IV bolus + infusion", deesc:"Continue infusion 12–24h minimum. Wean when QRS < 100 ms AND hemodynamically stable for 6 h. STOP at pH > 7.55 or Na+ > 155 mEq/L.", note:"Dual mechanism: (1) alkalemia reduces drug-protein binding affinity; (2) Na loading overcomes channel block. MOST important intervention — do not delay.", ref:"Goldfrank's / AHA" },
+      { cat:"🅑 Seizures", drug:"Lorazepam", dose:"0.1 mg/kg IV (typically 4–8 mg adults) for seizures; repeat doses as needed; phenobarbital 15–20 mg/kg if refractory", renal:"No adjustment", ivpo:"IV", deesc:"BZDs first-line for TCA seizures. AVOID phenytoin/fosphenytoin — ineffective for Na-channel mechanism and worsens cardiac toxicity.", note:"Refractory seizures: phenobarbital 15–20 mg/kg; propofol infusion for status epilepticus; will require intubation.", ref:"Neurology / Toxicology" },
+      { cat:"🅒 Dysrhythmia", drug:"Lipid Emulsion (ILE) 20%", dose:"1.5 mL/kg IV bolus over 1 min; then infusion 0.25 mL/kg/min × 30–60 min; may repeat bolus x1; max 10 mL/kg", renal:"No adjustment", ivpo:"IV", deesc:"Rescue therapy for refractory cardiac arrest or VT not responding to bicarb + ACLS. 'Lipid sink' sequesters lipophilic drug.", note:"Use in cardiac arrest from TCA after standard ACLS + sodium bicarb has failed. ECMO consultation if available.", ref:"Toxicology / ILE" },
+      { cat:"🅒 Hypotension", drug:"Norepinephrine", dose:"0.1–0.5 mcg/kg/min IV; titrate to MAP > 65 mmHg. Preferred vasopressor in TCA-induced hypotension", renal:"No adjustment", ivpo:"IV infusion", deesc:"Dopamine less effective (NE reuptake inhibition by TCA depletes stores). Avoid epinephrine if possible (dysrhythmia risk).", note:"500 mL NS bolus first. Vasopressor for fluid-unresponsive hypotension. Central access preferred for norepinephrine.", ref:"Critical Care" },
+    ],
+    followup: [
+      "ICU admission for ALL symptomatic TCA overdoses — no exceptions",
+      "Monitor ECG until QRS < 100 ms without sodium bicarbonate for minimum 24 consecutive hours",
+      "Mandatory psychiatric evaluation — TCA overdose is almost always intentional",
+      "Reassess antidepressant choice with psychiatry — safer alternatives (SSRIs, SNRIs) are equally effective",
+      "Family education on medication safety, storage, and recognizing recurrence",
+    ]
   },
-  tca:{
-    def:"Tricyclic antidepressant (TCA) overdose is a true emergency — rapid progression from alert to comatose with seizures and cardiac arrest possible within 1 hour. Mechanism: sodium channel blockade (QRS widening, hypotension), alpha-blockade (vasodilation), and anticholinergic effects. QRS >100ms or QTc prolongation = high risk.",
-    bullets:["Red flags: QRS >100ms, R-wave in aVR >3mm, right axis deviation","NaHCO₃ FIRST: 1–2 mEq/kg IV bolus if QRS >100ms, dysrhythmia, or hemodynamic compromise — target serum pH 7.50–7.55","Continuous bicarb infusion: 3 amps NaHCO₃ in D5W at 2× maintenance rate","Seizures: benzodiazepines first-line. AVOID physostigmine (asystole risk).","Refractory hypotension: norepinephrine preferred over dopamine. Lipid emulsion rescue if refractory.","Avoid: flumazenil (lowers seizure threshold), type 1A/1C antiarrhythmics, amiodarone, beta-blockers"],
+  apap: {
+    overview: {
+      def: "Acetaminophen (paracetamol) overdose is the leading cause of acute liver failure in the United States. Toxic metabolite NAPQI accumulates via CYP2E1 when hepatic glutathione is depleted. N-acetylcysteine replenishes glutathione and prevents hepatotoxicity when given early. The Rumack-Matthew nomogram at ≥ 4 hours post-ingestion guides NAC initiation.",
+      bullets: [
+        "4 phases: Phase I (0–24h) N/V/malaise; Phase II (24–72h) RUQ pain + rising LFTs; Phase III (72–96h) peak hepatotoxicity; Phase IV recovery or ALF",
+        "Toxic: > 150 mg/kg or > 7.5 g adults (reduce threshold in fasting, chronic alcohol, malnutrition)",
+        "Nomogram treatment line: 4h level ≥ 150 mcg/mL on Rumack-Matthew nomogram",
+        "King's College Criteria: pH < 7.3 OR creatinine > 3.4 + INR > 6.5 + encephalopathy = transplant",
+        "Extended-release formulations: levels may peak later — recheck at 8h if initial level below treatment line",
+        "NAC anaphylactoid reaction in ~15%: slow infusion, antihistamine, temporary hold — do not discontinue",
+      ]
+    },
+    workup: [
+      { icon:"🧪", label:"APAP Level at ≥ 4h", detail:"Plot on Rumack-Matthew nomogram. Level ≥ 150 mcg/mL at 4h = initiate NAC. If < 4h post-ingestion, repeat at 4h." },
+      { icon:"🔬", label:"LFTs + PT/INR q6–8h", detail:"Baseline then serial. AST/ALT rise = hepatocyte damage. INR reflects synthetic function — most important prognostic marker." },
+      { icon:"💉", label:"BMP + Creatinine", detail:"Renal toxicity occurs independently in 25% of severe cases. AKI worsens prognosis significantly." },
+      { icon:"🧠", label:"Mental Status + Encephalopathy Grade", detail:"Late sign — indicates severe hepatic failure. Grade I–IV encephalopathy grading critical for transplant decision." },
+      { icon:"🫀", label:"Lactic Acid", detail:"King's College criteria surrogate. Elevated in severe hepatic dysfunction. pH < 7.3 despite resuscitation = transplant." },
+    ],
+    treatment: [
+      { cat:"🅐 Antidote", drug:"N-Acetylcysteine IV — 21h Protocol", dose:"BAG 1: 150 mg/kg in 200 mL D5W over 60 min. BAG 2: 50 mg/kg in 500 mL D5W over 4h. BAG 3: 100 mg/kg in 1000 mL D5W over 16h", renal:"No dose adjustment; monitor fluid balance; use 100 mL bags in fluid-restricted patients", ivpo:"IV", deesc:"Start within 8h for maximum benefit (> 95% hepatoprotection). Still beneficial up to 24h+. Extend protocol if LFTs rising or INR > 2.", note:"Most common ADR: anaphylactoid reaction (flushing, rash, bronchospasm) ~15% — slow infusion rate, diphenhydramine 50 mg IV, temporary hold, then restart. NAC is antidote AND hepatoprotective even AFTER LFT elevation.", ref:"Prescott Protocol" },
+      { cat:"🅐 Antidote", drug:"N-Acetylcysteine PO — 72h Protocol", dose:"140 mg/kg PO loading; then 70 mg/kg q4h × 17 doses (total 72h course)", renal:"No adjustment", ivpo:"PO / NG tube", deesc:"Equally effective as IV if tolerated. High nausea rate limits use. Can switch between IV ↔ PO protocols.", note:"Mix in juice or soda to mask sulfur taste. If vomited within 1h — repeat dose. Preferred by some centers for non-vomiting patients.", ref:"Rumack Protocol" },
+      { cat:"🅑 GI Decon", drug:"Activated Charcoal", dose:"1 g/kg PO (max 50g) within 1–2h of ingestion if airway protected and no contraindications", renal:"N/A", ivpo:"PO / NG", deesc:"Do NOT delay NAC for charcoal — give charcoal then start NAC concurrently. Consider up to 4h for extended-release (Tylenol ER).", note:"Less effective > 2h. Contraindications: altered mental status (aspiration risk), GI obstruction, absent bowel sounds." },
+      { cat:"🅒 ALF Management", drug:"Vitamin K1 (Phytonadione)", dose:"10 mg IV/SQ if INR rising; may repeat daily. Give IV SLOWLY over 30 min (rare anaphylaxis risk)", renal:"No adjustment", ivpo:"IV / SQ (avoid IM in coagulopathy)", deesc:"Replenishes vitamin K-dependent clotting factors. Not substitute for FFP in active bleeding. Adjunct to monitor synthetic function improvement.", note:"Monitor INR 6h after each dose. If INR not improving with Vitamin K = depleted synthetic capacity = worse prognosis.", ref:"Hepatology" },
+    ],
+    followup: [
+      "Hepatology consult if AST/ALT > 1000, INR > 2, or rising creatinine",
+      "Liver transplant evaluation immediately if King's College criteria met",
+      "Continue extended NAC protocol until LFTs trending down AND INR < 2",
+      "Mandatory psychiatric evaluation for intentional ingestions (majority of adult APAP ODs)",
+      "Discharge education: strict 4 g/day maximum APAP; read ALL OTC labels; avoid with alcohol",
+      "Follow-up LFTs at 24–48h if borderline nomogram presentation or delayed presentation",
+    ]
   },
-  methanol:{
-    def:"Toxic alcohols (methanol, ethylene glycol) cause profound elevated anion gap metabolic acidosis via toxic metabolites: methanol → formaldehyde → formic acid (causes blindness, brain injury); ethylene glycol → oxalic acid (calcium oxalate crystals → renal failure). Elevated osmol gap precedes elevated anion gap in early toxicity.",
-    bullets:["Osmol gap = measured Osm − calculated Osm (>10–20 = suspicious; may be normal in late toxicity)","Anion gap metabolic acidosis + high osmol gap → toxic alcohol until proven otherwise","Methanol features: visual disturbances ('snowstorm vision'), optic disc hyperemia","Ethylene glycol features: calcium oxalate crystals in urine, flank pain, hypocalcemia, renal failure","Fomepizole (4-MP): 15 mg/kg IV load — blocks alcohol dehydrogenase (ADH). First-line over ethanol.","HD indications: methanol/EG level >50 mg/dL, pH <7.20, renal failure, visual changes, deterioration despite fomepizole"],
+  salicylate: {
+    overview: {
+      def: "Salicylate (aspirin/salicylic acid) toxicity produces a unique mixed acid-base picture: primary respiratory alkalosis (direct medullary stimulation) + primary high anion-gap metabolic acidosis (mitochondrial uncoupling of oxidative phosphorylation). Acidemia is catastrophic — drives ionized salicylate across blood-brain barrier.",
+      bullets: [
+        "Classic triad: tinnitus + tachypnea + nausea/vomiting/GI pain",
+        "Mixed acid-base: respiratory alkalosis + high anion-gap metabolic acidosis",
+        "Acidemia is FATAL — pH < 7.4 drives salicylate into CNS causing cerebral edema",
+        "Toxic: > 150 mg/kg; severe: > 300 mg/kg; level > 60 mg/dL requires HD consideration",
+        "Enteric-coated: delayed, erratic, prolonged absorption — serial levels mandatory",
+        "HD indications: level > 100 mg/dL, AKI, pulmonary edema, altered mental status, refractory acidosis",
+      ]
+    },
+    workup: [
+      { icon:"🧪", label:"Serial Salicylate Levels q2–4h", detail:"Until levels clearly declining. Done nomogram (acute ingestion only). Rising levels despite treatment = bezoar/enteric-coated." },
+      { icon:"💉", label:"ABG + Electrolytes", detail:"Document mixed acid-base. Calculate anion gap. Bicarbonate level critical for alkalinization dosing. pH < 7.4 = emergency." },
+      { icon:"🔬", label:"BMP + Serum Glucose", detail:"Hypoglycemia despite normal serum glucose — CNS glucose depleted. Glucose monitoring Q1h; treat empirically with D50W." },
+      { icon:"🫁", label:"CXR + SpO₂", detail:"Non-cardiogenic pulmonary edema — precludes aggressive fluid loading. Avoid over-hydration." },
+      { icon:"🧠", label:"Mental Status", detail:"Altered consciousness = CNS salicylate toxicity = severe; do NOT intubate unless absolutely necessary (loses hyperventilatory compensation)." },
+    ],
+    treatment: [
+      { cat:"🅐 Alkalinization", drug:"Sodium Bicarbonate — Urinary Alkalinization", dose:"150 mEq NaHCO₃ in 1L D5W at 150–200 mL/hr; target urine pH 7.5–8.0 and serum pH 7.45–7.55", renal:"Caution AKI — may need early HD; monitor fluid balance", ivpo:"IV infusion", deesc:"Add 20–40 mEq KCl/L to infusion (hypokalemia blocks urinary alkalinization). Check urine pH q1h with dipstick.", note:"NEVER allow serum pH < 7.4 — drives salicylate into CNS. Hypokalemia must be corrected or alkalinization will fail (K+ shifts to urine instead of H+).", ref:"Prescott / Toxicology" },
+      { cat:"🅑 Glucose", drug:"Dextrose D50W", dose:"25g (1 amp D50W) IV for ANY neurological symptoms regardless of serum glucose level; maintain serum BG 100–200 mg/dL", renal:"No adjustment", ivpo:"IV", deesc:"CNS glucose depletion despite normal serum levels. Empiric dextrose is safe and potentially life-saving. Add dextrose to bicarb infusion if BG < 150.", note:"Neuroglycopenia mechanism: salicylate uncouples glucose metabolism in CNS while serum glucose appears normal. Do NOT withhold.", ref:"Goldfrank's" },
+      { cat:"🅒 Hemodialysis", drug:"Emergent Hemodialysis", dose:"Indications: level > 100 mg/dL; AKI; cerebral edema; pulmonary edema; refractory metabolic acidosis; level > 60 mg/dL with any clinical deterioration", renal:"Indicated FOR renal failure", ivpo:"Procedural", deesc:"Most effective elimination method — reduces level rapidly. Continue HD until < 30 mg/dL and clinical improvement. Consult nephrology at presentation for all moderate-severe cases.", note:"AVOID intubation if possible — loss of hyperventilatory compensation → acute acidemia → rapid CNS decompensation. If must intubate: hyperventilate to match patient's pre-intubation RR.", ref:"EXTRIP Guidelines" },
+    ],
+    followup: [
+      "Observe minimum 6h for immediate-release ASA; 12–24h for enteric-coated formulations",
+      "Serial levels until clearly downtrending — do NOT discharge with rising or plateau levels",
+      "Mandatory psychiatric evaluation if intentional",
+      "Educate on chronic salicylate toxicity risk — may be toxic at lower levels with chronic high-dose use",
+      "Nephrology follow-up if transient AKI occurred",
+    ]
   },
-  co:{
-    def:"Carbon monoxide (CO) poisoning is the most common cause of fatal poisoning in the US. CO binds hemoglobin with 240× greater affinity than O₂ → carboxyhemoglobin (COHb). Pulse oximetry is UNRELIABLE (reads COHb as oxyhemoglobin). Co-oximetry on ABG is required. Delayed neuropsychiatric sequelae (DNS) occur in 10–30% of significant exposures.",
-    bullets:["Pulse oximetry FALSELY NORMAL in CO poisoning — requires co-oximetry (ABG/VBG) for COHb level","Symptoms: headache ('flu without fever'), nausea, confusion, syncope — suspect in multiple household members","100% NRB O₂: reduces CO half-life from 5h → 60–90 min; standard initial treatment","Hyperbaric oxygen (HBO) indications: COHb >25%, LOC, neurological symptoms, cardiac involvement, pregnancy, COHb >15% in children","HBO reduces DNS from ~30% → <5% (Weaver et al.)","Cyanide co-poisoning: consider in fire victims with unexplained severe lactic acidosis + hypotension despite 100% O₂"],
-  },
-  snake:{
-    def:"North American snake envenomation: Crotalidae (pit vipers — rattlesnake, copperhead, cottonmouth) cause local tissue effects, hematotoxicity, and coagulopathy. Elapidae (coral snakes — 'Red on yellow kills a fellow') cause neurotoxicity with delayed onset. CroFab is the antivenom for Crotalidae. Antivenom decision is based on clinical severity, not bite location.",
-    bullets:["Crotalidae: local pain/edema/ecchymosis, VICC (venom-induced consumptive coagulopathy), thrombocytopenia","Elapidae (coral): minimal local effects, delayed (hours) ascending flaccid paralysis — if respiratory failure, antivenom early","Dry bite (no venom): 20–30% of pit viper bites — 4–6h observation minimum","CroFab: 4–6 vials IV over 1h for moderate-severe; repeat 2-vial doses at 6, 12, 18h if recurrence","Labs: CBC, coags (PT/INR, fibrinogen), BMP, LFTs, UA, type & screen — repeat q4–6h","AVOID: incision/suction devices, tourniquets, electric shock, ice — worsens outcomes"],
-  },
-  beta:{
-    def:"Beta-blocker and calcium channel blocker (CCB) overdoses both cause bradycardia and hypotension but via different mechanisms. CCBs affect both cardiac (heart block) and peripheral vasodilation (dihydropyridines). High-dose insulin euglycemia (HDIE) therapy dramatically shifts myocardial metabolism and has become first-line for severe toxicity. Lipid emulsion rescue is a last resort.",
-    bullets:["Beta-blocker: bradycardia, hypotension, bronchospasm; glucagon 3–10 mg IV bolus (cAMP pathway)","CCB: profound bradycardia/heart block (non-DHP) or vasodilation (DHP — amlodipine, nifedipine)","High-Dose Insulin (HDIE): 1 unit/kg IV bolus → 0.5–1 unit/kg/h infusion. D50 1–2 amps pre-bolus. Monitor glucose q30 min.","Calcium: CaCl₂ 1g (or Ca-gluconate 3g) IV — may temporarily improve heart rate/BP; repeat q10–20min","Lipid emulsion (Intralipid 20%): 1.5 mL/kg IV bolus → 0.25 mL/kg/min infusion — lipid sink mechanism; last resort","ECMO: if refractory to all pharmacologic measures — early referral to ECMO center"],
+  digoxin: {
+    overview: {
+      def: "Digoxin toxicity from acute overdose or chronic accumulation (often from AKI, hypokalemia, drug interactions). Inhibits myocardial Na/K-ATPase pump → increased intracellular calcium → bradycardia, conduction block, and ventricular dysrhythmias. Bidirectional VT is near-pathognomonic. Digoxin immune Fab fragments (DigiFab) are life-saving.",
+      bullets: [
+        "Acute vs chronic: acute = hyperkalemia + more severe; chronic = hypokalemia facilitates toxicity",
+        "ECG hallmarks: bradycardia, PAT with block, bidirectional VT, AV block, scooped ST (dig effect ≠ tox)",
+        "Bidirectional VT is pathognomonic — immediate DigiFab required",
+        "Hyperkalemia (K+ > 5 in acute OD) = poor prognostic marker; treat with DigiFab, NOT calcium",
+        "Therapeutic: 0.5–2 ng/mL; toxic: > 2 ng/mL (chronic may be toxic at 1.5)",
+        "Digoxin level unreliable in first 6h post-ingestion — must wait for distribution",
+      ]
+    },
+    workup: [
+      { icon:"🫀", label:"Continuous ECG Monitoring", detail:"PAT with block, bidirectional VT, VF, 2°/3° AV block, atrial fibrillation with slow ventricular response. Serial 12-leads q1h." },
+      { icon:"🧪", label:"Digoxin Level (≥ 6h)", detail:"Must be at least 6h post-ingestion for distribution phase. Early levels unreliable. Repeat q4–6h. Clinical picture > lab value." },
+      { icon:"💉", label:"Electrolytes (K+, Mg²⁺, Ca²⁺)", detail:"Hypokalemia/hypomagnesemia potentiate toxicity. Hyperkalemia in acute OD = severity marker. Correct K+ cautiously post-Fab (intracellular shift)." },
+      { icon:"🔬", label:"Renal Function (BMP)", detail:"Digoxin is renally cleared. AKI dramatically worsens and prolongs toxicity. Guides DigiFab dosing calculation." },
+      { icon:"🌡️", label:"Volume Status Assessment", detail:"Many digoxin-toxic patients have heart failure — complex hemodynamics. Avoid aggressive fluid loading." },
+    ],
+    treatment: [
+      { cat:"🅐 Antidote", drug:"Digoxin Immune Fab (DigiFab)", dose:"EMPIRIC (unstable/arrest): 10–20 vials IV over 30 min. CALCULATED: vials = (serum level [ng/mL] × weight [kg]) ÷ 100. CHRONIC empiric: 3–6 vials", renal:"No dose reduction for AKI (Fab-dig complex excreted renally but Fab still binds free digoxin)", ivpo:"IV infusion (bolus in arrest)", deesc:"Heart rate and conduction normalize in 20–60 min. Total digoxin level RISES post-Fab (bound complex measured). Reassay FREE digoxin at 12h post-last Fab.", note:"One vial (38 mg) binds 0.5 mg digoxin. Anticipate hypokalemia post-Fab (K+ shifts intracellularly). Monitor K+ closely. Order early — procurement may take time.", ref:"DigiFab Prescribing Info" },
+      { cat:"🅑 Dysrhythmia", drug:"Atropine", dose:"0.5–1 mg IV for symptomatic bradycardia; max 3 mg total; bridge to DigiFab effect", renal:"No adjustment", ivpo:"IV", deesc:"Temporizing measure only. Bridge to Fab or pacing. May be ineffective in complete AV block.", note:"External pacing if atropine fails and Fab not yet effective. Transvenous pacing carries risk of VF in digoxin-toxic myocardium — use cautiously.", ref:"ACLS 2023" },
+      { cat:"🅒 Hyperkalemia", drug:"Sodium Bicarbonate", dose:"50–100 mEq IV for K+ > 6.0 in acute digoxin OD; insulin/dextrose second choice; AVOID calcium (theoretical 'stone heart')", renal:"Monitor Na+", ivpo:"IV", deesc:"Bicarb shifts K+ intracellularly. Traditional teaching: avoid IV calcium — 'stone heart' theoretical concern (mixed evidence). DigiFab is definitive — temporize.", note:"Some modern toxicologists use calcium for life-threatening hyperkalemia while awaiting Fab. Discuss with Poison Control. 1–800–222–1222.", ref:"Goldfrank's" },
+      { cat:"🅒 Ventricular Dysrhythmia", drug:"Magnesium Sulfate", dose:"2 g IV over 10–20 min; may repeat once; for ventricular dysrhythmias as bridge to DigiFab", renal:"Reduce in severe AKI (CrCl < 30)", ivpo:"IV", deesc:"Stabilizes myocardial membranes. Useful for bidirectional VT as bridge. AVOID lidocaine, Class IA/IC agents (worsen conduction).", note:"Amiodarone relatively contraindicated. Phenytoin historically used — now avoided. Electrical cardioversion generally avoided (may precipitate refractory VF).", ref:"Toxicology" },
+    ],
+    followup: [
+      "Monitor K+ and ECG q1–2h for 4–6h post-DigiFab (hypokalemia from K+ shift back intracellularly)",
+      "Rebound toxicity in renal failure (Fab complex releases digoxin) — reassay free digoxin level at 12h and 24h",
+      "Reassess necessity of digoxin — many current heart failure and AF indications no longer evidence-based",
+      "If continuing: dose adjustment for renal function; drug interaction review (amiodarone, verapamil, macrolides double levels)",
+      "Cardiology follow-up within 1 week with repeat level at steady state",
+      "Mandatory psychiatric evaluation if intentional overdose",
+    ]
   },
 };
 
-/* ═══ WORKUP ════════════════════════════════════════════════════════ */
-const WORKUP = {
-  opioid:[
-    {icon:"🫁",label:"Respiratory Rate + SpO₂",detail:"RR <12 and SpO₂ <94% = definitive indication for naloxone. Continuous monitoring mandatory after naloxone — duration of naloxone (30–90 min) often shorter than opioid effect."},
-    {icon:"👁️",label:"Pupil Exam",detail:"Miosis (pinpoint pupils) is the classic opioid sign. Bilateral fixed dilation suggests hypoxic brain injury or mixed ingestion. Asymmetric pupils → consider intracranial pathology."},
-    {icon:"🧪",label:"Urine Drug Screen",detail:"Standard UDS may not detect fentanyl/analogues. Serum fentanyl levels not clinically available in real-time. UDS guides suspicion but does NOT replace clinical assessment."},
-    {icon:"📊",label:"ECG",detail:"Methadone: QTc prolongation, risk of torsades. Check QTc for all methadone overdoses. Propoxyphene (withdrawn but occasionally encountered): sodium channel blockade similar to TCA."},
-    {icon:"🩸",label:"BMP / ABG",detail:"ABG for respiratory failure assessment (pH, pCO₂, pO₂). BMP for electrolytes, renal function (important for dosing, complications). Check glucose — altered MS may also be hypoglycemia."},
-  ],
-  stimulant:[
-    {icon:"🌡️",label:"Core Temperature",detail:"Rectal temp mandatory — hyperthermia >40°C is the most dangerous complication. External temperature will underestimate core temp in severe toxicity. Continuous monitoring."},
-    {icon:"❤️",label:"ECG + Continuous Cardiac Monitoring",detail:"Cocaine: QRS widening (sodium channel blockade), QTc prolongation, ST changes (vasospasm vs infarction). ST elevation in cocaine chest pain may represent vasospasm — not necessarily STEMI."},
-    {icon:"🧪",label:"Troponin + CK",detail:"Cocaine-associated chest pain: troponin for myocardial injury. CK for rhabdomyolysis (common with hyperthermia + agitation). CK-MB may be elevated from skeletal muscle without true MI."},
-    {icon:"🩸",label:"BMP + Glucose",detail:"Hyponatremia in MDMA toxicity (SIADH). Hyperglycemia in stimulant crisis. Metabolic acidosis with lactic acidosis from seizures or hyperthermia."},
-    {icon:"🧠",label:"CT Head (if AMS)",detail:"Cocaine: risk of hemorrhagic stroke (HTN-mediated), ischemic stroke (vasospasm), or subarachnoid hemorrhage. CT head if new focal deficits or altered consciousness."},
-  ],
-  cholinerg:[
-    {icon:"🧫",label:"RBC Cholinesterase + Plasma ChE",detail:"RBC acetylcholinesterase is the gold standard but slow. Plasma pseudocholinesterase is rapid but less specific. >50% decrease from baseline = significant exposure. Baseline rarely known."},
-    {icon:"🌡️",label:"Vitals + SLUDGE Assessment",detail:"Systematic SLUDGE exam: secretions (lungs/nose/mouth), lacrimation, bowel sounds, urination. HR may be bradycardic (muscarinic) or tachycardic (nicotinic) — variable."},
-    {icon:"💊",label:"Atropine Titration Monitor",detail:"Atropine endpoint = DRY SECRETIONS (lungs clear on auscultation). NOT heart rate. NOT pupil size. Massive doses (hundreds of mg) may be required in severe organophosphate toxicity."},
-    {icon:"🧪",label:"BMP + ABG",detail:"Metabolic acidosis from seizures or hypoxia. Electrolytes — hypokalemia from vomiting/diarrhea. ABG for respiratory failure assessment (bronchospasm + secretions are primary killers)."},
-    {icon:"📊",label:"ECG",detail:"Prolonged QTc (common in OP toxicity). AV block. Torsades de pointes — QTc >500ms requires treatment. Bradycardia from muscarinic overstimulation."},
-  ],
-  anticholinerg:[
-    {icon:"📊",label:"ECG — QRS + QTc",detail:"TCA specifically: QRS >100ms = high risk for arrhythmia/seizures. QRS >160ms = risk of VT/VF. R-wave in aVR >3mm, right axis deviation. Continuous monitoring until QRS normal for 6+ hours."},
-    {icon:"🌡️",label:"Core Temperature",detail:"Anhidrosis prevents heat dissipation — hyperthermia can be severe. Rectal temperature mandatory. Cooling measures: ice packs, cool mist, benzodiazepines for agitation."},
-    {icon:"🧪",label:"TCA Screen + APAP + ASA Levels",detail:"Always check co-ingestants in any OD: APAP and ASA levels. TCA immunoassay has false positives (diphenhydramine, carbamazepine, quetiapine can cross-react)."},
-    {icon:"🩸",label:"BMP + ABG",detail:"Metabolic acidosis from seizures. Hyperkalemia from rhabdomyolysis. ABG: pH monitoring for TCA (target 7.50–7.55 with bicarb therapy)."},
-    {icon:"🔬",label:"Urinalysis",detail:"Urinary retention is common — bedside bladder scan. Myoglobinuria if rhabdomyolysis (dipstick positive blood, no RBCs on micro). CK if rhabdomyolysis suspected."},
-  ],
-  serotonin:[
-    {icon:"🧠",label:"Hunter Criteria Assessment",detail:"Hunter: (1) Spontaneous clonus, OR (2) Inducible clonus + agitation/diaphoresis, OR (3) Ocular clonus + agitation/diaphoresis, OR (4) Tremor + hyperreflexia, OR (5) Hypertonia + temp >38°C + ocular/inducible clonus — any one criterion = SS."},
-    {icon:"🌡️",label:"Core Temperature",detail:"Temperature >41°C = life-threatening — requires immediate aggressive management. Unlike NMS, SS can progress to fulminant hyperthermia within hours. External cooling + heavy sedation + ICU."},
-    {icon:"📊",label:"ECG + Continuous Monitoring",detail:"Tachycardia universal. QTc prolongation risk from causative agents. Dysrhythmias in severe toxicity."},
-    {icon:"🧪",label:"CK + BMP",detail:"Rhabdomyolysis from hyperthermia + muscle rigidity. CK may be severely elevated. Renal failure risk. Electrolytes — hypokalemia from vomiting, metabolic alkalosis from hyperventilation."},
-    {icon:"📋",label:"Medication Reconciliation",detail:"Complete list of all serotonergic agents: SSRIs, SNRIs, MAOIs, TCAs, triptans, tramadol, fentanyl (high doses), linezolid, dextromethorphan, lithium, St John's Wort."},
-  ],
-  acetaminophen:[
-    {icon:"⏱️",label:"Time of Ingestion (Critical)",detail:"Must establish time of ingestion to use Rumack-Matthew nomogram. If time unknown or unreliable → treat as if on nomogram treatment line. APAP level before 4h may underestimate peak."},
-    {icon:"🧪",label:"APAP Level at 4h Post-Ingestion",detail:"Draw at exactly 4h (or later) after ingestion. Plot on Rumack-Matthew nomogram. Level above treatment line = NAC indicated. All significant ingestions deserve APAP level check even if asymptomatic."},
-    {icon:"🩸",label:"LFTs (AST/ALT) + INR + Bilirubin",detail:"Baseline and serial q12–24h. Transaminase rise begins at 24–36h. Peak at 72–96h. INR elevation indicates hepatic dysfunction. INR >2 at 48h = King's College Criteria consideration."},
-    {icon:"🔬",label:"Renal Function (BMP)",detail:"Direct renal tubular toxicity can occur even without hepatotoxicity ('renal APAP toxicity'). Creatinine rise at 24–48h. Also check glucose (hepatic failure → hypoglycemia)."},
-    {icon:"📊",label:"Phosphate Level",detail:"Hypophosphatemia is a poor prognostic sign in APAP-induced hepatic failure (King's College Criteria includes phosphate >3.75 mg/dL at 48–96h as high-risk marker for mortality without transplant)."},
-  ],
-  salicylate:[
-    {icon:"🩸",label:"Serum Salicylate Level",detail:"q2–4h until declining. Level >30 mg/dL = toxic. >50 = moderate. >80–100 = severe. Note: Done nomogram NOT reliable — clinical severity correlates better than isolated level."},
-    {icon:"🫁",label:"ABG — pH + pCO₂",detail:"Classic: respiratory alkalosis followed by anion gap metabolic acidosis. If pH <7.35 without corresponding hyperventilation → severe toxicity. Maintain patient's spontaneous hyperventilation — intubation is high risk."},
-    {icon:"🧪",label:"BMP — Anion Gap + K⁺",detail:"Elevated anion gap metabolic acidosis. Hypokalemia (mandatory to correct — potassium depletion impairs urinary alkalinization). Serum glucose (cerebral glucose may be low even with normal serum glucose)."},
-    {icon:"🌡️",label:"Temperature",detail:"Hyperthermia from uncoupled oxidative phosphorylation — marker of severe toxicity. Active cooling if >39°C. Hyperthermia correlates with poor prognosis."},
-    {icon:"📊",label:"Renal Function + Urine pH",detail:"Urine pH monitoring during alkalinization (target 7.5–8.0). Renal failure impairs salicylate elimination — HD criteria. Foley catheter for accurate urine output monitoring during bicarb therapy."},
-  ],
-  tca:[
-    {icon:"📊",label:"12-Lead ECG — QRS + aVR",detail:"QRS >100ms = high risk. QRS >160ms = VT/VF risk. R-wave in aVR >3mm = specific for TCA. Rightward terminal QRS axis (S wave in I + aVL, R wave in aVR). Serial ECGs q1–2h."},
-    {icon:"🩸",label:"TCA Level + Co-ingestant Screen",detail:"TCA level >1000 ng/mL = severe toxicity. However, clinical signs (QRS, BP) more important than level. Always check APAP and ASA — common co-ingestants."},
-    {icon:"📋",label:"pH Monitoring (Blood Gas)",detail:"Target pH 7.50–7.55 during sodium bicarbonate therapy. Alkalosis reduces TCA binding to sodium channels. Monitor pH q1–2h during bicarb infusion."},
-    {icon:"🌡️",label:"Vital Signs + GCS",detail:"Rapid deterioration can occur — patient may be awake, then comatose within 60 minutes. Q15-minute vital sign and GCS checks. Early ICU admission for any significant ingestion."},
-    {icon:"🩺",label:"Seizure Assessment",detail:"Seizures worsen acidosis → worsens sodium channel blockade (vicious cycle). Benzodiazepines first-line. If seizures persist → propofol or barbiturate (NOT phenytoin — worsens sodium channel toxicity)."},
-  ],
-  methanol:[
-    {icon:"🧪",label:"Serum Methanol/Ethylene Glycol Level",detail:"Methanol: toxic >20 mg/dL; severe >50 mg/dL. Ethylene glycol: toxic >20 mg/dL. Levels guide fomepizole continuation and HD decisions. May not be immediately available — treat empirically based on clinical presentation."},
-    {icon:"🩸",label:"ABG + Anion Gap + Osmol Gap",detail:"Elevated osmol gap (>10–20) + elevated anion gap = toxic alcohol until proven otherwise. Early: osmol gap high, anion gap normal. Late: osmol gap normalizing, anion gap rising (as metabolites accumulate)."},
-    {icon:"👁️",label:"Visual Acuity + Fundoscopy",detail:"Methanol specifically: visual symptoms (blurred vision, 'snowstorm') = formate toxicity to optic nerve. Fundoscopy: optic disc hyperemia → papilledema. Visual changes = severe toxicity, HD urgently indicated."},
-    {icon:"🔬",label:"Urinalysis — Calcium Oxalate Crystals",detail:"Ethylene glycol specifically: calcium oxalate monohydrate (needle-shaped) or dihydrate (envelope-shaped) crystals in urine. Pathognomonic if present. Wood's lamp: EG fluoresces (antifreeze contains fluorescein)."},
-    {icon:"🩺",label:"Renal Function + Calcium",detail:"EG: hypocalcemia (oxalate chelates calcium) — tetany, QTc prolongation. Acute renal failure from calcium oxalate crystal deposition. Methanol: renal failure from severe acidosis + shock."},
-  ],
-  co:[
-    {icon:"🩸",label:"Co-oximetry ABG/VBG — COHb Level",detail:"ONLY co-oximetry accurately measures COHb. Standard pulse ox is UNRELIABLE (reads COHb as oxyHb). Venous COHb is acceptable surrogate. COHb >25% = severe, >35% = critical, >50% = potentially fatal."},
-    {icon:"🧪",label:"Lactate Level",detail:"Lactic acidosis in CO poisoning = tissue hypoxia. Elevated lactate + severe CO toxicity → consider concomitant cyanide poisoning (fire victims). Lactate >10 mmol/L despite O₂ → hydroxocobalamin empirically."},
-    {icon:"📊",label:"ECG + Troponin",detail:"CO-induced cardiac toxicity: ST depression/elevation, dysrhythmias. Troponin elevation correlates with delayed neuropsychiatric sequelae and worse outcomes. Continuous monitoring."},
-    {icon:"🧠",label:"Neuropsychiatric Assessment",detail:"Cognitive tests (Orientation, Digit Span, Similarities) — baseline document. DNS occurs in 10–30% of significant exposures, weeks after apparent recovery. HBO may reduce DNS risk."},
-    {icon:"🤰",label:"Pregnancy Test + Fetal Assessment",detail:"CO crosses placenta — fetal COHb higher than maternal. Lower threshold for HBO in pregnancy (COHb >15%). Fetal assessment: cardiotocography, obstetric consultation even with mild maternal symptoms."},
-  ],
-  snake:[
-    {icon:"📸",label:"Wound Measurement",detail:"Mark advancing edge of edema/erythema with skin marker q15–30 min. Documenting progression rate critical for antivenom decision and grading severity. Photography with timestamps."},
-    {icon:"🩸",label:"CBC + Coags + BMP (Baseline + q4–6h)",detail:"Crotalidae VICC: fibrinogen <150, D-dimer elevated, platelet count falling, PT/INR prolonged. Serial labs q4–6h — coagulopathy can appear/worsen hours after antivenom. Check fibrinogen specifically (most sensitive)."},
-    {icon:"🏥",label:"Poison Control (1-800-222-1222)",detail:"Call Poison Control for all envenomations — real-time guidance, antivenom availability, regional snake identification. 24/7 toxicologist consultation. Do NOT delay antivenom waiting for species ID."},
-    {icon:"🔬",label:"Urinalysis + CK",detail:"Myoglobinuria from rhabdomyolysis (some snake venoms are directly myotoxic). Hemoglobinuria from hemolysis. CK for muscle damage. Renal function — hemolysis and myoglobin are nephrotoxic."},
-    {icon:"📋",label:"Antivenom Readiness + Premedication",detail:"CroFab: hypersensitivity reactions in ~14%. Pre-mix in 250 mL NS. Epinephrine, diphenhydramine, corticosteroids at bedside. Do NOT skin test — not predictive and delays treatment."},
-  ],
-  beta:[
-    {icon:"📊",label:"ECG — HR, PR, QRS, QTc",detail:"Bradycardia, first/second/third degree AV block, wide complex rhythm. CCB: profound bradycardia or vasodilation depending on class. Serial ECGs with every intervention. Continuous telemetry."},
-    {icon:"🩸",label:"BMP + Glucose",detail:"Glucose: hyperglycemia in CCB (inhibits pancreatic insulin release) is a DIAGNOSTIC CLUE. Lactate for cardiogenic shock. K⁺ (calcium therapy causes shift). Monitor q30 min during HDIE insulin therapy."},
-    {icon:"🏥",label:"Drug Level (if available)",detail:"Not routinely available real-time but confirms diagnosis. Clinical presentation (degree of block, BP) is more important for management decisions than level."},
-    {icon:"💊",label:"Medication Bottle + Pill Count",detail:"Identify exact agent and formulation. Extended-release formulations (amlodipine, diltiazem ER, metoprolol succinate): delayed and prolonged toxicity — 24h+ observation, WBCT if <2h post-ingestion."},
-    {icon:"🫀",label:"Bedside Echo / POCUS",detail:"LV function — cardiogenic shock assessment. Pericardial effusion (rare). Guides vasopressor selection. Serial assessment during resuscitation. Diltiazem: negative inotropy + chronotropy; amlodipine: primarily vasodilation."},
-  ],
-};
-
-/* ═══ TREATMENT ═════════════════════════════════════════════════════ */
-const TREATMENT = {
-  opioid:[
-    {cat:"First-Line Reversal",drug:"Naloxone (Narcan)",dose:"IV/IO: 0.4–2 mg; repeat q2–3 min\nIN: 4 mg per nostril (8 mg total available)\nIM: 0.4–2 mg deltoid or anterolateral thigh\nETT: 2–4 mg diluted in 10 mL NS\nGoal: RR >12, not full reversal",renal:"No dose adjustment. Renally cleared metabolites are inactive.",ivpo:"Buprenorphine OD: may need 4–10 mg or more naloxone. Partial response expected.\nMethadone OD: prolonged duration — infusion preferred.",deesc:"Naloxone infusion: 2/3 of reversal dose/hour. E.g., if 2 mg reversed → 1.3 mg/h. Titrate by RR.",note:"Duration 30–90 min — shorter than most opioids. Observe ≥6h after reversal. ICU for extended-release or fentanyl patch OD.",ref:"ToxBase 2024"},
-    {cat:"Supportive",drug:"BVM / Supplemental O₂",dose:"If apnoeic or RR <8: BVM ventilation before naloxone\nNasal cannula 2–4 L/min for mild hypoventilation\nIntubation if: unresponsive to naloxone, aspiration, airway compromise",renal:"N/A",ivpo:"Avoid intubation if naloxone likely to work — post-intubation care is resource-intensive.",deesc:"Remove O₂ supplementation as naloxone reverses respiratory depression. Reassess q15 min.",note:"Aspiration is a key complication — place lateral decubitus position. Do not delay airway management for blood glucose check.",ref:""},
-  ],
-  stimulant:[
-    {cat:"Agitation / Hyperthermia (First-Line)",drug:"Benzodiazepines",dose:"Lorazepam: 2–4 mg IV q5 min\nDiazepam: 5–10 mg IV q5 min\nMidazolam: 5–10 mg IM (fastest onset IM)\nTitrate to calm — large doses may be required",renal:"Lorazepam: no adjustment. Midazolam: active metabolite accumulates in renal failure — use lorazepam.",ivpo:"Droperidol 5–10 mg IM if benzos insufficient. Ketamine 4–5 mg/kg IM for violent agitation (caution: increases HR/BP).",deesc:"Cooling measures: remove clothes, ice packs to axilla/groin/neck, mist fans, cold IV fluids. Target temp <38.5°C.",note:"BZDs treat BOTH agitation AND hypertension in stimulant toxicity. Avoid antipsychotics that lower seizure threshold.",ref:"UpToDate 2024"},
-    {cat:"Cocaine Chest Pain",drug:"Aspirin + Nitrates + CCBs",dose:"Aspirin 325 mg PO (antiplatelet for thrombosis)\nNitroglycerin 0.4 mg SL q5 min (vasospasm)\nDiltiazem 0.25 mg/kg IV (coronary vasospasm, rate control)\nHeparin if NSTEMI criteria met",renal:"NTG: no adjustment. Diltiazem: dose reduction in severe renal failure.",ivpo:"Phentolamine 1–2.5 mg IV if refractory hypertension with cocaine — alpha-blocker.",deesc:"Avoid: propranolol / metoprolol (unopposed alpha → paradoxical HTN). Labetalol has some alpha-blockade — use cautiously.",note:"NTG + benzodiazepines resolve majority of cocaine chest pain without cardiac catheterisation.",ref:"AHA 2023"},
-  ],
-  cholinerg:[
-    {cat:"Muscarinic Reversal (First-Line)",drug:"Atropine",dose:"Initial: 2–4 mg IV q5–10 min\nSevere: 10–20 mg IV as initial dose\nTotal: may require 50–200 mg or more\nEndpoint: DRY SECRETIONS (lung fields clear)\nNOT heart rate, NOT pupil size",renal:"No adjustment. Large doses stored for anticipated ongoing use.",ivpo:"Glycopyrrolate (0.1–0.2 mg/kg): peripheral muscarinic blockade only — does not cross BBB. Adjunct if CNS effects manageable.",deesc:"Titrate atropine down once secretions controlled. Re-escalate if secretions recur. Long-acting OPs may require days of treatment.",note:"CRITICAL: Endpoint is SECRETION CONTROL not pupil size or heart rate. Under-treating leads to death from bronchospasm.",ref:"WHO OP Poisoning Guidelines"},
-    {cat:"ADH Inhibitor",drug:"Pralidoxime (2-PAM)",dose:"1–2 g IV over 15–30 min (dilute in 100 mL NS)\nThen 250–500 mg/h infusion\nMaximum benefit: within 24–48h of exposure\nFor organophosphates ONLY (not carbamates)",renal:"Renally cleared — reduce infusion rate in significant renal failure.",ivpo:"If IV unavailable: autoinjector (600 mg IM) × 3 in severe exposure.",deesc:"Controversy exists around 2-PAM benefit in some settings. Atropine remains primary treatment — 2-PAM is adjunct.",note:"2-PAM prevents 'aging' (irreversible OP-enzyme bond). Ineffective once aging complete (>24–48h depending on agent).",ref:"WHO Guidelines"},
-  ],
-  anticholinerg:[
-    {cat:"TCA — Sodium Bicarbonate (First-Line)",drug:"NaHCO₃ 8.4% (1 mEq/mL)",dose:"Bolus: 1–2 mEq/kg IV over 1–2 min\nRepeat boluses for persistent QRS widening or dysrhythmia\nInfusion: 3 amps NaHCO₃ in 1L D5W\nTarget: serum pH 7.50–7.55, QRS <100 ms",renal:"Caution: sodium load in renal failure. Adjust infusion rate. Monitor electrolytes.",ivpo:"Hyperventilation: adjunct for rapid alkalinization in intubated patients — target pCO₂ 25–30 mmHg.",deesc:"Once QRS normalizes and patient stable: wean bicarb infusion over 6–12h. Maintain pH monitoring q2–4h.",note:"Sodium bicarbonate works by: (1) sodium current reversal at blocked channels, (2) alkalosis reduces TCA-channel binding.",ref:"UpToDate 2024"},
-    {cat:"Pure Anticholinergic — Antidote",drug:"Physostigmine",dose:"Adults: 1–2 mg slow IV over 5 min\nChildren: 0.02 mg/kg slow IV\nOnset: 5–15 min\nRepeat 1–2 mg in 10–30 min if needed",renal:"No dose adjustment. Duration 30–60 min — repeat dosing often required.",ivpo:"CONTRAINDICATIONS: TCA overdose (can cause asystole), asthma, COPD, GI obstruction, intestinal ileus.",deesc:"Benzodiazepines for agitation as alternative — safer when TCA cannot be excluded.",note:"ONLY use physostigmine if TCA overdose is definitively excluded. Diagnostic tool AND antidote for pure anticholinergic toxicity.",ref:""},
-  ],
-  serotonin:[
-    {cat:"Sedation / Seizure Control",drug:"Benzodiazepines",dose:"Diazepam 5–10 mg IV q5–10 min (titrate)\nLorazepam 2–4 mg IV q5 min\nFor hyperthermia: BZDs reduce agitation and muscle activity → reduce heat production",renal:"Lorazepam preferred in renal failure (no active metabolites).",ivpo:"Propofol: for severe cases requiring intubation and NMB for temperature control.",deesc:"For mild-moderate SS: stop offending agent + BZDs. For severe: ICU + cyproheptadine + aggressive cooling.",note:"Stop ALL serotonergic medications immediately. If MAOI interaction: avoid foods/drugs for 2 weeks after discontinuation.",ref:""},
-    {cat:"5-HT Antagonist",drug:"Cyproheptadine",dose:"Loading: 12 mg PO or crushed via NG tube\nMaintenance: 2 mg q2h (reassess q8h)\nMaximum: 32 mg/day\nClinical response: symptom improvement in 1–2h",renal:"No specific dose adjustment. Hepatic metabolism.",ivpo:"Chlorpromazine 50–100 mg IM/IV: alternative 5-HT2A antagonist. Caution: hypotension.",deesc:"Continue until symptoms resolve. Taper over 24–48h once clonus/agitation controlled.",note:"No IV formulation available — must use oral/NG route. Antihistamine effect may cause sedation (beneficial).",ref:"Boyer & Shannon NEJM 2005"},
-  ],
-  acetaminophen:[
-    {cat:"First-Line Antidote",drug:"N-Acetylcysteine (NAC) — IV Protocol",dose:"Load: 150 mg/kg in 200 mL D5W over 60 min\nMaintenance 1: 50 mg/kg in 500 mL D5W over 4h\nMaintenance 2: 100 mg/kg in 1000 mL D5W over 16h\nTotal: 21h IV protocol",renal:"No dose adjustment. Safe in renal failure.",ivpo:"Oral NAC: 140 mg/kg load, then 70 mg/kg q4h × 17 doses — equivalent efficacy but poor tolerance (GI).",deesc:"Extended NAC indications: hepatotoxicity developing (rising AST), ingestion >24h prior, unknown time.",note:"NAC replenishes glutathione stores — critical to give early (<8h post-ingestion for best outcomes). Does not require diagnosis confirmation to start.",ref:"Rumack-Matthew / Acetylcysteine SPC"},
-    {cat:"Decontamination",drug:"Activated Charcoal (AC)",dose:"1 g/kg PO (max 50 g) if within 2–4h of ingestion\nWill reduce absorption — benefit decreases after 2h\nDo NOT give if: altered consciousness, ileus, caustic ingestion",renal:"No adjustment. GI elimination.",ivpo:"WBCT (whole bowel irrigation) with GoLYTELY 2 L/h adult: for extended-release formulations.",deesc:"Consider charcoal if <2h post-ingestion, intact airway, able to cooperate.",note:"APAP is rapidly absorbed — charcoal benefit limited beyond 2h. Never delay NAC for charcoal administration.",ref:""},
-  ],
-  salicylate:[
-    {cat:"Alkalinization",drug:"Sodium Bicarbonate Infusion",dose:"Bolus: 1–2 mEq/kg IV (correct pH <7.35)\nInfusion: 150 mEq NaHCO₃ (3 amps) in 1L D5W\nAdd 40 mEq KCl to infusion\nTarget: urine pH 7.5–8.0, serum pH 7.45–7.55\nRate: 1.5–2× maintenance",renal:"Caution: fluid overload in renal failure — HD may be required concurrently.",ivpo:"Correct potassium FIRST (hypokalaemia prevents urinary alkalinization). Cannot alkalinize urine without adequate K⁺.",deesc:"Monitor urine pH q2h. Serum electrolytes and pH q4h. Wean when salicylate level declining and clinical improvement.",note:"CRITICAL: maintain patient's spontaneous hyperventilation — DO NOT sedate unless intubating. If intubating: hyperventilate to match pre-intubation pCO₂.",ref:"Flomenbaum et al."},
-    {cat:"HD Criteria",drug:"Hemodialysis Indications",dose:"ANY of the following:\n• Salicylate >100 mg/dL\n• pH <7.20 refractory to bicarb\n• Pulmonary edema\n• AKI (impairs elimination)\n• CNS changes (cerebral edema)\n• Clinical deterioration despite therapy",renal:"HD is both supportive (fluid removal) and eliminative (salicylate clearance) in renal failure.",ivpo:"CVVHD less effective than HD for salicylate removal — prefer intermittent HD if hemodynamically stable.",deesc:"Early nephrology consult for all moderate-severe salicylate poisoning.",note:"Salicylate poisoning: better to err towards early HD than wait for full deterioration.",ref:""},
-  ],
-  tca:[
-    {cat:"Sodium Bicarbonate",drug:"NaHCO₃ — TCA Cardiac Protocol",dose:"Bolus: 1–2 mEq/kg IV over 1–2 min\nRepeat q5–10 min for dysrhythmia or QRS >100ms\nInfusion: 3 amps NaHCO₃ in D5W at 2× maintenance\nTarget: pH 7.50–7.55, serum Na 150–155 mEq/L",renal:"Monitor electrolytes closely. Sodium load significant in renal failure.",ivpo:"Hypertonic saline (3%): if bicarb fails and QRS persistently wide — 1–2 mL/kg IV.",deesc:"Wean bicarb when QRS <100ms stable for 6h. Taper gradually — abrupt stop can cause QRS re-widening.",note:"Dual mechanism: (1) sodium reverses channel blockade, (2) alkalosis reduces TCA binding affinity to Na channels.",ref:"UpToDate 2024"},
-    {cat:"Seizure Management",drug:"Benzodiazepines",dose:"Lorazepam 2–4 mg IV\nDiazepam 5–10 mg IV\nRepeat q5 min PRN\nIf refractory: propofol or barbiturate coma",renal:"Lorazepam preferred in renal failure.",ivpo:"AVOID: phenytoin (worsens sodium channel toxicity), physostigmine (asystole), antipsychotics (lower seizure threshold).",deesc:"If 2+ seizures despite BZDs: intubation + propofol infusion. Continue bicarb. Re-check APAP (common co-ingestant).",note:"Seizures → lactic acidosis → worsens sodium channel toxicity (vicious cycle). Aggressive BZD use is critical.",ref:""},
-  ],
-  methanol:[
-    {cat:"ADH Inhibitor (First-Line)",drug:"Fomepizole (4-Methylpyrazole)",dose:"Loading: 15 mg/kg IV over 30 min\nMaintenance: 10 mg/kg q12h × 4 doses\nThen: 15 mg/kg q12h (enzyme induction)\nDuring HD: 1–1.5 mg/kg/h infusion or dose q4h",renal:"Continue fomepizole during HD — cleared by dialysis, so supplemental dosing required.",ivpo:"Ethanol (EtOH): if fomepizole unavailable — target blood EtOH 100–150 mg/dL. Oral or IV route.",deesc:"Continue until methanol/EG undetectable, pH normalized, osmol gap normal.",note:"Fomepizole is expensive but far preferable to ethanol — no CNS depression, easier to dose, no monitoring of EtOH levels needed.",ref:"Barceloux et al. 2002"},
-    {cat:"HD Criteria",drug:"Hemodialysis Indications",dose:"ANY of the following:\n• Methanol >50 mg/dL\n• Ethylene glycol >50 mg/dL\n• pH <7.25–7.30\n• Visual changes (methanol)\n• Renal failure\n• Deterioration despite fomepizole\nHD also removes toxic metabolites (formate, oxalate)",renal:"HD corrects metabolic acidosis AND removes parent compound and toxic metabolites.",ivpo:"CVVHD as bridge if HD not immediately available — less effective but better than nothing.",deesc:"Continue fomepizole during HD (supplement dosing). Stop when level <20 mg/dL and pH normalized.",note:"Early nephrology consult in all significant toxic alcohol exposures. Do NOT wait for visual symptoms in methanol.",ref:""},
-    {cat:"Supportive",drug:"Folic Acid (Methanol) / Thiamine + Pyridoxine (EG)",dose:"Methanol: Folic acid 50 mg IV q4–6h (enhances formate metabolism)\nEthylene Glycol: Thiamine 100 mg IV q6h + Pyridoxine 50 mg IV q6h (shift oxalate away from toxic pathway)\nMagnesium: 2 g IV if deficient (cofactor for oxalate metabolism)",renal:"No significant adjustment.",ivpo:"Leucovorin (folinic acid) 1–2 mg/kg IV: preferred over folic acid for methanol (active form).",deesc:"Continue cofactors until levels undetectable. Inexpensive, safe — no reason to withhold.",note:"Cofactor therapy is adjunct — fomepizole + HD are the definitive treatments.",ref:""},
-  ],
-  co:[
-    {cat:"First-Line O₂ Therapy",drug:"100% Non-Rebreather Mask",dose:"15 L/min O₂ via tight-fitting NRB immediately\nHalf-life of CO:\n  Room air: ~4–5 hours\n  100% O₂: ~60–90 min\n  HBO: ~20–30 min\nContinue until COHb <5%",renal:"No adjustment.",ivpo:"Intubation + 100% FiO₂: if unconscious or cannot protect airway. Same principle, more reliable delivery.",deesc:"Wean O₂ when COHb <5% and symptomatic improvement. Check COHb level at 2h and 4h.",note:"Source identification is critical — evacuate building, prevent re-exposure. Other household members/coworkers may also be poisoned.",ref:"Weaver et al. NEJM 2002"},
-    {cat:"Hyperbaric O₂ (HBO)",drug:"HBO — Indications & Protocol",dose:"Indications (any one):\n• COHb >25%\n• LOC at any time\n• Neurological symptoms (confusion, ataxia, vision changes)\n• Cardiac involvement (ECG changes, troponin)\n• Pregnancy + COHb >15%\n• Age <36 months + COHb >15%\nProtocol: 100% O₂ at 2.4–3 ATA × 90–120 min",renal:"No adjustment.",ivpo:"If HBO unavailable: normobaric 100% O₂ × 4–6h. Transfer to HBO centre if meets criteria and transfer feasible.",deesc:"3 HBO sessions in 24h (Weaver protocol) reduced delayed neuropsychiatric sequelae from 30% to <5%.",note:"HBO reduces DNS from 30% → <5%. Transfer for HBO should not delay stabilisation — stabilise first, then transfer.",ref:"Weaver NEJM 2002"},
-    {cat:"Cyanide Co-poisoning (Fire Victims)",drug:"Hydroxocobalamin (Cyanokit)",dose:"5 g IV over 15 min (adult)\n70 mg/kg IV (pediatric)\nRepeat 5 g if inadequate response\nMaximum: 15 g total",renal:"No dose adjustment.",ivpo:"Sodium thiosulfate 12.5 g IV: alternative if hydroxocobalamin unavailable. Slower onset.",deesc:"Consider empirically in fire victims with: unexplained lactic acidosis, hemodynamic collapse, coma.",note:"Hydroxocobalamin colours skin/urine dark red — transient and harmless. Will interfere with co-oximetry for several hours.",ref:""},
-  ],
-  snake:[
-    {cat:"Antivenom — CroFab (Crotalidae)",drug:"Crotalidae Polyvalent Immune Fab",dose:"Moderate-Severe: 4–6 vials IV in 250 mL NS over 1h\nMild with progressing: 4–6 vials\nMaintenance: 2 vials q6h × 3 doses if initial control\nRepeat initial dose if: uncontrolled swelling, coagulopathy recurs, hemodynamic compromise",renal:"No dose adjustment. Protein — not renally cleared.",ivpo:"Anavip (F(ab')₂): alternative with longer half-life, potentially fewer recurrence episodes.",deesc:"Recurrence coagulopathy at 2–14 days after antivenom: treat with additional antivenom. Serial labs q4–6h × 18h.",note:"Early antivenom prevents tissue destruction — do not wait for 'severe' features. Allergic reactions in ~14% — premedicate.",ref:"Poison Control / ToxBase"},
-    {cat:"Supportive Care",drug:"Wound + Supportive Management",dose:"IV access × 2 large bore\nIV fluids: LR or NS for hypotension / bleeding\nElevate extremity ABOVE heart level\nAnalgesia: opioids PRN (pain is severe)\nTetanus prophylaxis",renal:"Fluid resuscitation as needed — renal protection in hemolysis/rhabdomyolysis.",ivpo:"FFP/cryoprecipitate: for VICC only if life-threatening bleeding — antivenom is preferred over blood products.",deesc:"Remove all rings/jewellery from bitten extremity early — swelling may prevent later removal.",note:"Avoid: incision/suction, electric shock, ice, tourniquets, epinephrine at wound site — all worsen outcomes.",ref:""},
-  ],
-  beta:[
-    {cat:"Calcium",drug:"Calcium Chloride / Calcium Gluconate",dose:"CaCl₂: 1g (10 mL of 10%) IV over 5–10 min via central line\nCa-Gluconate: 3g (30 mL of 10%) IV via peripheral\nRepeat q10–20 min × 3–4 doses\nThen infusion: CaCl₂ 0.2–0.4 mEq/kg/h",renal:"Monitor ionized Ca²⁺ — target 1.5–2× upper normal.",ivpo:"CaCl₂ preferred (3× more bioavailable than Ca-gluconate) but requires central line (tissue necrosis if extravasation).",deesc:"Calcium temporarily improves conduction — provides time for HDIE to work. Do not stop calcium abruptly.",note:"CCB toxicity is the primary indication. Beta-blocker: calcium less effective (different mechanism) but reasonable to try.",ref:""},
-    {cat:"High-Dose Insulin Euglycemia (HDIE)",drug:"Insulin + Dextrose",dose:"Bolus: 1 unit/kg regular insulin IV\nPre-bolus: D50 50 mL (25g) IV unless glucose >250\nInfusion: 0.5–1 unit/kg/h (titrate up to 10 units/kg/h)\nD10W infusion: 0.5–1 g/kg/h to maintain glucose 100–200\nMonitor glucose q30 min until stable",renal:"Hypoglycemia risk increased in renal failure — glucose infusion required.",ivpo:"Add potassium: hypokalaemia common during HDIE — replace aggressively.",deesc:"Onset of hemodynamic effect: 20–40 min. May take 60–120 min for full benefit. Do NOT stop early.",note:"HDIE is now FIRST-LINE for significant CCB/BB toxicity. Shifts myocardial metabolism from fat→glucose oxidation. Dramatically improves contractility.",ref:"Holger & Engebretsen 2011"},
-    {cat:"Lipid Emulsion Rescue",drug:"Intralipid 20%",dose:"Bolus: 1.5 mL/kg IV over 1 min\nRepeat bolus × 2 q5 min if no response\nThen: 0.25 mL/kg/min infusion × 30–60 min\nMaximum: 12 mL/kg total",renal:"No specific adjustment. Monitor triglycerides.",ivpo:"Glucagon 3–10 mg IV bolus (BB toxicity): cAMP pathway. Less effective for CCB.",deesc:"Lipid emulsion reserved for: refractory shock despite HDIE + calcium + vasopressors + glucagon.",note:"Mechanism: lipid sink — sequesters lipophilic drug in plasma. Most effective for lipophilic agents (verapamil, propranolol, amlodipine).",ref:"ACMT Position Statement 2016"},
-  ],
-};
-
-const FOLLOWUP = {
-  opioid:["Observe ≥6h after naloxone administration","ICU admission for: extended-release opioids, fentanyl patch, clinical deterioration","Harm reduction counselling + naloxone prescription for patient and household contacts","Addiction medicine/social work consultation before discharge","Consider buprenorphine initiation in ED if appropriate"],
-  stimulant:["Temperature normalizes before discharge","ECG: QTc <450ms before discharge after cocaine","12–24h observation for cocaine chest pain + troponin trend","Substance use disorder counseling referral","Cardiovascular follow-up for cocaine-associated chest pain"],
-  cholinerg:["ICU admission for all significant OP poisoning","Atropine weaning over 24–72h as tolerated — secretion reassessment q2–4h","Intermediate syndrome: proximal muscle weakness 24–96h post-acute phase — can occur even after apparent recovery","Occupational Health referral for pesticide workers","Decontamination of patient belongings and environment"],
-  anticholinerg:["TCA: continuous cardiac monitoring ≥6h after QRS normalizes","Psychiatric evaluation before discharge for intentional overdose","Bicarb infusion: wean when QRS <100ms stable for 6h","Re-check APAP level at 4h if co-ingestion possible","Advise patient and family on TCA toxicity risks"],
-  serotonin:["ICU for severe SS (hyperthermia >41°C, rigidity, altered mental status)","Stop all serotonergic medications immediately","Medication reconciliation with prescribing physician","If MAOIs involved: 14-day washout before resuming any serotonergic agent","Neuropsychiatric follow-up in 2–4 weeks"],
-  acetaminophen:["NAC continued until APAP <10 mcg/mL AND LFTs improving","King's College Criteria: INR >6.5, creatinine >3.4, pH <7.30, age <10 or >40, jaundice to encephalopathy >7 days → transplant evaluation","Hepatology consultation for any hepatotoxicity","Daily LFTs until trending down","Psychiatric evaluation before discharge (intentional OD)"],
-  salicylate:["Serial salicylate levels q2–4h until clearly declining","Nephrology for any moderate-severe poisoning — HD decision","Maintain urine alkalinization until levels <30 mg/dL and asymptomatic","Bicarb wean gradually — abrupt stop can cause rebound acidosis","Psychiatric consultation for intentional ingestion"],
-  tca:["ICU admission for all significant TCA overdose","Cardiac monitoring ≥24h after QRS normalizes","Bicarb wean: gradual over 6–12h when QRS stable","Psychiatric evaluation before discharge","Prescriber notification — consider alternative antidepressant"],
-  methanol:["Ophthalmology consultation for any visual symptoms","HD: coordinate with nephrology early","Continue fomepizole until level <20 mg/dL and pH normalized","Source identification — methanol in illicit alcohol, windscreen washer fluid","Report to public health if cluster (illicit alcohol supply)"],
-  co:["COHb recheck at 2h and 4h after initiating 100% O₂","HBO: 3 sessions in 24h if criteria met (Weaver protocol)","Carbon monoxide detector in home — ensure functioning before return","Delayed neuropsychiatric sequelae follow-up at 4 weeks (cognitive testing)","Other household occupants evaluated","Source identification: heating system, vehicle, generator"],
-  snake:["Hematology follow-up at 48–72h post-antivenom (recurrence coagulopathy)","24–48h admission after CroFab","Outpatient lab recheck at 2–3 days","Wound care: edema and skin necrosis management","Physiotherapy if significant limb involvement"],
-  beta:["ICU mandatory for all significant CCB/BB toxicity","Continuous cardiac monitoring","Glucose monitoring q30min during HDIE, then q1–2h","Calcium and potassium replacement ongoing","Toxicology consultation","Consider ECMO early if progressive deterioration — activate team before arrest"],
-};
-
-const REFS = {
-  opioid:"ToxBase 2024; Goldfrank's Toxicology 10th Ed; WHO Opioid OD Guidelines 2014",
-  stimulant:"Hoffman RS. Cocaine. Up-to-date 2024; AHA Cocaine-Associated CV Emergencies 2023",
-  cholinerg:"WHO OP Poisoning Management 2013; Eddleston et al. Lancet 2008",
-  anticholinerg:"Flomenbaum et al. Goldfrank's 10th Ed; Dawson & Buckley. Br J Anaesth 2016",
-  serotonin:"Boyer & Shannon. NEJM 2005; Hunter Criteria. QJM 2003",
-  acetaminophen:"Rumack-Matthew Nomogram 1975; NAC Protocol — Prescott et al; King's College Criteria 1989",
-  salicylate:"Flomenbaum et al. Goldfrank's; Dargan & Jones. Postgrad Med J 2002",
-  tca:"Woolf et al. Am J Emerg Med 1989; Harrigan & Brady. J Emerg Med 1999; UpToDate 2024",
-  methanol:"Barceloux et al. J Toxicol Clin Toxicol 2002; Zakharov et al. Ann Emerg Med 2014",
-  co:"Weaver SC et al. NEJM 2002; Hampson et al. JAMA 1995",
-  snake:"CroFab PI; Boyer et al. AJEM 2001; Poison Control",
-  beta:"Holger & Engebretsen. Clin Toxicol 2011; ACMT Lipid Emulsion Position 2016; St-Onge et al. Clin Toxicol 2017",
-};
-
-/* ═══ DRUG ROW ══════════════════════════════════════════════════════ */
-function DrugRow({ rx }) {
+// ── DrugRow Component ──────────────────────────────────────────────
+function DrugRow({ d, color, idx }) {
   const [open, setOpen] = useState(null);
+  const catColors = { "🅐":T.coral, "🅑":T.blue, "🅒":T.teal };
+  const cc = catColors[d.cat[0]] || color;
   const panels = [
-    {k:"renal", icon:"📋", label:"Renal / Detail",    color:T.blue},
-    {k:"ivpo",  icon:"🔧", label:"Alternative / Tips", color:T.teal},
-    {k:"deesc", icon:"📉", label:"Wean / Monitor",    color:T.green},
+    { id:0, icon:"📋", label:"Details", content: <><b style={{color:T.txt2}}>Dose: </b>{d.dose}<br/><br/><b style={{color:T.txt2}}>Route: </b>{d.ivpo}<br/><br/><b style={{color:T.txt2}}>Renal: </b>{d.renal}</> },
+    { id:1, icon:"🔧", label:"Alt / Setup", content: <><b style={{color:T.txt2}}>Step-Down / Alt: </b>{d.deesc}<br/><br/><b style={{color:T.txt2}}>Clinical Note: </b>{d.note}</> },
+    { id:2, icon:"📉", label:"Monitoring / Ref", content: <><b style={{color:T.txt2}}>Monitoring: </b>Serial ECG, vitals q15–30 min, labs per protocol<br/><br/><b style={{color:T.txt2}}>Reference: </b>{d.ref}</> },
   ];
-  const refBadge = (ref) => {
-    if (!ref) return {bg:"rgba(155,109,255,0.1)",border:"1px solid rgba(155,109,255,0.3)",color:T.purple};
-    if (ref.includes("NEJM")) return {bg:"rgba(0,229,192,0.1)",border:"1px solid rgba(0,229,192,0.4)",color:T.teal};
-    return {bg:"rgba(155,109,255,0.1)",border:"1px solid rgba(155,109,255,0.3)",color:T.purple};
-  };
-  const rs = refBadge(rx.ref);
   return (
-    <div style={{background:"rgba(14,37,68,0.45)",border:`1px solid ${T.b}`,borderRadius:10,marginBottom:8,overflow:"hidden"}}>
-      <div style={{padding:"11px 14px"}}>
-        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8,marginBottom:4}}>
-          <div>
-            <div style={{fontSize:12,fontWeight:700,color:T.txt}}>{rx.drug}</div>
-            {rx.cat && <div style={{fontSize:10,color:T.txt3,marginTop:1}}>{rx.cat}</div>}
-          </div>
-          {rx.ref && <span style={{fontSize:9,fontFamily:"monospace",fontWeight:700,padding:"2px 7px",borderRadius:20,flexShrink:0,...rs}}>{rx.ref}</span>}
-        </div>
-        <div style={{fontSize:12,color:T.txt2,fontFamily:"monospace",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{rx.dose}</div>
-        {rx.note && <div style={{fontSize:10,color:T.txt3,marginTop:4,lineHeight:1.45}}>{rx.note}</div>}
+    <div className="drug-row" style={{marginBottom:10,borderRadius:12,overflow:"hidden",border:`1px solid ${open!==null?cc+"66":"rgba(42,79,122,0.3)"}`,background:"rgba(8,22,40,0.6)",transition:"border-color .2s"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",cursor:"pointer",background:open!==null?`linear-gradient(90deg,${cc}18,transparent)`:"transparent"}} onClick={()=>setOpen(null)}>
+        <span style={{fontFamily:"JetBrains Mono",fontSize:11,color:cc,background:`${cc}22`,padding:"2px 8px",borderRadius:4,whiteSpace:"nowrap"}}>{d.cat}</span>
+        <span style={{fontFamily:"DM Sans",fontWeight:600,color:T.txt,flex:1,fontSize:14}}>{d.drug}</span>
+        <span style={{fontFamily:"JetBrains Mono",fontSize:11,color:T.txt3}}>{d.ivpo}</span>
       </div>
-      <div style={{display:"flex",borderTop:`1px solid ${T.b}`,background:"rgba(5,15,30,0.4)"}}>
-        {panels.filter(p=>rx[p.k]).map((p,i,arr)=>(
-          <button key={p.k} onClick={()=>setOpen(open===p.k?null:p.k)} style={{flex:1,padding:"6px 4px",border:"none",borderRight:i<arr.length-1?`1px solid ${T.b}`:"none",background:open===p.k?`${p.color}12`:"transparent",color:open===p.k?p.color:T.txt4,fontSize:10,fontWeight:open===p.k?700:500,cursor:"pointer",fontFamily:"sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-            <span>{p.icon}</span>{p.label}
+      <div style={{padding:"4px 16px 10px",display:"flex",gap:8,flexWrap:"wrap"}}>
+        {panels.map(p=>(
+          <button key={p.id} onClick={()=>setOpen(open===p.id?null:p.id)} style={{fontFamily:"DM Sans",fontSize:12,padding:"5px 12px",borderRadius:6,border:`1px solid ${open===p.id?cc+"99":"rgba(42,79,122,0.4)"}`,background:open===p.id?`${cc}22`:"rgba(14,37,68,0.8)",color:open===p.id?cc:T.txt2,cursor:"pointer",fontWeight:open===p.id?600:400,transition:"all .15s"}}>
+            {p.icon} {p.label}
           </button>
         ))}
       </div>
-      {open && rx[open] && (
-        <div style={{padding:"10px 14px",background:`${panels.find(p=>p.k===open)?.color}08`,borderTop:`1px solid ${panels.find(p=>p.k===open)?.color}25`,fontSize:11,color:T.txt2,lineHeight:1.65,whiteSpace:"pre-wrap"}}>
-          <span style={{color:panels.find(p=>p.k===open)?.color,fontWeight:700,marginRight:6}}>{panels.find(p=>p.k===open)?.icon}</span>{rx[open]}
+      {open!==null && (
+        <div className="fade-in" style={{margin:"0 16px 14px",padding:14,background:"rgba(5,15,30,0.7)",borderRadius:10,border:`1px solid ${cc}33`,fontFamily:"DM Sans",fontSize:13,color:T.txt2,lineHeight:1.7}}>
+          {panels[open].content}
         </div>
       )}
     </div>
   );
 }
 
-/* ═══ CONDITION PAGE ════════════════════════════════════════════════ */
-function ConditionPage({ cond, onBack }) {
-  const [tab, setTab] = useState("overview");
-  const [checked, setChecked] = useState({});
-  const ov = OVERVIEW[cond.id] || {};
-  const rx = TREATMENT[cond.id] || [];
-  const wu = WORKUP[cond.id] || [];
-  const fu = FOLLOWUP[cond.id] || [];
-  const tabs = [
-    {id:"overview",  label:"Overview",  icon:"📋"},
-    {id:"workup",    label:"Workup",    icon:"✅"},
-    {id:"treatment", label:"Treatment", icon:"⚗️"},
-    {id:"followup",  label:"Follow-up", icon:"📅"},
-  ];
+// ── Tab Components ─────────────────────────────────────────────────
+function OverviewTab({ ov }) {
   return (
-    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
-      <div style={{padding:"14px 20px 0",flexShrink:0}}>
-        <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:6,background:"rgba(14,37,68,0.5)",border:`1px solid ${T.b}`,borderRadius:7,padding:"5px 12px",color:T.txt3,fontSize:11,cursor:"pointer",fontFamily:"sans-serif",marginBottom:12}}>← Back</button>
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
-          <div style={{width:44,height:44,borderRadius:12,background:cond.gl,border:`1px solid ${cond.br}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{cond.icon}</div>
-          <div>
-            <div style={{fontSize:16,fontWeight:700,color:T.txt,fontFamily:"'Playfair Display',serif"}}>{cond.title}</div>
-            <div style={{fontSize:11,color:T.txt3}}>{cond.sub}</div>
-          </div>
-          <span style={{marginLeft:"auto",fontSize:9,fontFamily:"monospace",padding:"2px 8px",borderRadius:20,background:cond.gl,border:`1px solid ${cond.br}`,color:cond.color,fontWeight:700}}>{cond.cat.toUpperCase()}</span>
-        </div>
-        <div style={{display:"flex",gap:4,borderBottom:`1px solid ${T.b}`}}>
-          {tabs.map(t=>(
-            <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"6px 14px",border:"none",borderBottom:tab===t.id?`2px solid ${cond.color}`:"2px solid transparent",background:"transparent",color:tab===t.id?T.txt:T.txt3,fontSize:11,fontWeight:tab===t.id?700:400,cursor:"pointer",fontFamily:"sans-serif",display:"flex",alignItems:"center",gap:5,marginBottom:-1}}>
-              <span>{t.icon}</span>{t.label}
-            </button>
-          ))}
-        </div>
+    <div className="fade-in">
+      <div style={{background:"rgba(14,37,68,0.5)",border:"1px solid rgba(42,79,122,0.3)",borderRadius:14,padding:"20px 22px",marginBottom:16}}>
+        <div style={{fontFamily:"JetBrains Mono",fontSize:11,color:T.teal,textTransform:"uppercase",letterSpacing:2,marginBottom:10}}>DEFINITION</div>
+        <p style={{fontFamily:"DM Sans",fontSize:14,color:T.txt,lineHeight:1.8}}>{ov.def}</p>
       </div>
-      <div style={{flex:1,overflowY:"auto",padding:"16px 20px 24px"}}>
-        {tab==="overview" && (
-          <div>
-            <div style={{background:"rgba(14,37,68,0.5)",border:`1px solid ${cond.br}`,borderLeft:`3px solid ${cond.color}`,borderRadius:8,padding:"12px 14px",marginBottom:14,fontSize:12,color:T.txt2,lineHeight:1.7}}>{ov.def}</div>
-            {ov.bullets?.map((b,i)=>(
-              <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"7px 0",borderBottom:i<ov.bullets.length-1?`1px solid rgba(26,53,85,0.4)`:"none"}}>
-                <div style={{width:16,height:16,borderRadius:4,background:cond.gl,border:`1px solid ${cond.br}`,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:cond.color,marginTop:1}}>▪</div>
-                <div style={{fontSize:12,color:T.txt2,lineHeight:1.55}}>{b}</div>
-              </div>
-            ))}
+      <div style={{background:"rgba(14,37,68,0.5)",border:"1px solid rgba(42,79,122,0.3)",borderRadius:14,padding:"20px 22px"}}>
+        <div style={{fontFamily:"JetBrains Mono",fontSize:11,color:T.teal,textTransform:"uppercase",letterSpacing:2,marginBottom:14}}>KEY CLINICAL PEARLS</div>
+        {ov.bullets.map((b,i)=>(
+          <div key={i} style={{display:"flex",gap:12,marginBottom:12,alignItems:"flex-start"}}>
+            <span style={{color:T.teal,fontFamily:"JetBrains Mono",fontSize:13,minWidth:18}}>▸</span>
+            <span style={{fontFamily:"DM Sans",fontSize:13.5,color:T.txt2,lineHeight:1.65}}>{b}</span>
           </div>
-        )}
-        {tab==="workup" && (
-          <div>
-            {wu.map((item,i)=>(
-              <div key={i} onClick={()=>setChecked(p=>({...p,[i]:!p[i]}))} style={{display:"flex",gap:12,alignItems:"flex-start",background:checked[i]?"rgba(0,229,192,0.07)":"rgba(14,37,68,0.4)",border:`1px solid ${checked[i]?"rgba(0,229,192,0.3)":T.b}`,borderRadius:9,padding:"11px 14px",marginBottom:8,cursor:"pointer"}}>
-                <div style={{width:32,height:32,borderRadius:8,background:checked[i]?"rgba(0,229,192,0.15)":"rgba(14,37,68,0.6)",border:`1px solid ${checked[i]?"rgba(0,229,192,0.5)":T.b}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{checked[i]?"✓":item.icon}</div>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:12,fontWeight:600,color:checked[i]?T.teal:T.txt,marginBottom:3}}>{item.label}</div>
-                  <div style={{fontSize:11,color:T.txt3,lineHeight:1.55}}>{item.detail}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        {tab==="treatment" && (
-          <div>
-            {rx.length>0 ? rx.map((r,i)=><DrugRow key={i} rx={r} />) : <div style={{fontSize:12,color:T.txt3,textAlign:"center",padding:"32px 0"}}>No protocol data available</div>}
-          </div>
-        )}
-        {tab==="followup" && (
-          <div>
-            {fu.map((item,i)=>(
-              <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"9px 12px",background:"rgba(14,37,68,0.4)",border:`1px solid ${T.b}`,borderRadius:8,marginBottom:6}}>
-                <div style={{width:22,height:22,borderRadius:6,background:"rgba(0,229,192,0.1)",border:"1px solid rgba(0,229,192,0.25)",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:T.teal,fontWeight:700,marginTop:1}}>{i+1}</div>
-                <div style={{fontSize:12,color:T.txt2,lineHeight:1.6}}>{item}</div>
-              </div>
-            ))}
-            {REFS[cond.id] && (
-              <div style={{marginTop:14,padding:"10px 14px",background:"rgba(155,109,255,0.06)",border:"1px solid rgba(155,109,255,0.2)",borderRadius:8,fontSize:10,color:T.txt3,lineHeight:1.65}}>
-                <span style={{color:T.purple,fontWeight:700,marginRight:6}}>📚</span>{REFS[cond.id]}
-              </div>
-            )}
-          </div>
-        )}
+        ))}
       </div>
     </div>
   );
 }
 
-/* ═══ MAIN HUB ══════════════════════════════════════════════════════ */
-export default function ToxicologyHub() {
-  const navigate = useNavigate();
-  const [activeCat, setActiveCat] = useState("All");
-  const [selected, setSelected] = useState(null);
+function WorkupTab({ wk }) {
+  return (
+    <div className="fade-in">
+      <div style={{fontFamily:"JetBrains Mono",fontSize:11,color:T.gold,textTransform:"uppercase",letterSpacing:2,marginBottom:14}}>DIAGNOSTIC WORKUP CHECKLIST</div>
+      {wk.map((item,i)=>(
+        <div key={i} style={{display:"flex",gap:12,padding:"13px 16px",background:"rgba(14,37,68,0.5)",border:"1px solid rgba(42,79,122,0.25)",borderRadius:12,marginBottom:8,alignItems:"flex-start"}}>
+          <span style={{fontSize:18,minWidth:28}}>{item.icon}</span>
+          <div style={{flex:1}}>
+            <div style={{fontFamily:"DM Sans",fontWeight:600,color:T.txt,fontSize:14,marginBottom:4}}>{item.label}</div>
+            <div style={{fontFamily:"DM Sans",fontSize:13,color:T.txt2,lineHeight:1.6}}>{item.detail}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
-  const filtered = activeCat==="All" ? CONDITIONS : CONDITIONS.filter(c=>c.cat===activeCat);
-  const catCounts = CATS.reduce((a,c)=>({...a,[c]:CONDITIONS.filter(x=>x.cat===c).length}),{});
+function ProtocolTab({ tx, color }) {
+  return (
+    <div className="fade-in">
+      <div style={{fontFamily:"JetBrains Mono",fontSize:11,color:T.orange,textTransform:"uppercase",letterSpacing:2,marginBottom:14}}>TREATMENT PROTOCOL</div>
+      {tx.map((d,i)=><DrugRow key={i} d={d} color={color} idx={i}/>)}
+    </div>
+  );
+}
 
-  if (selected) {
-    const cond = CONDITIONS.find(c=>c.id===selected);
-    if (cond) return (
-      <div style={{height:"100vh",background:T.bg,color:T.txt,fontFamily:"'DM Sans',sans-serif",display:"flex",flexDirection:"column",overflow:"hidden"}}>
-        <ConditionPage cond={cond} onBack={()=>setSelected(null)} />
-      </div>
-    );
-  }
+function FollowupTab({ fu }) {
+  return (
+    <div className="fade-in">
+      <div style={{fontFamily:"JetBrains Mono",fontSize:11,color:T.purple,textTransform:"uppercase",letterSpacing:2,marginBottom:14}}>DISCHARGE & FOLLOW-UP</div>
+      {fu.map((item,i)=>(
+        <div key={i} style={{display:"flex",gap:14,padding:"12px 16px",background:"rgba(14,37,68,0.5)",border:"1px solid rgba(42,79,122,0.25)",borderRadius:12,marginBottom:8}}>
+          <span style={{fontFamily:"JetBrains Mono",fontSize:12,color:T.purple,minWidth:24}}>{String(i+1).padStart(2,"0")}</span>
+          <span style={{fontFamily:"DM Sans",fontSize:13.5,color:T.txt2,lineHeight:1.65}}>{item}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Main Hub ───────────────────────────────────────────────────────
+export default function ToxHub() {
+  const [sel, setSel] = useState("opioid");
+  const [tab, setTab] = useState("overview");
+  const [filter, setFilter] = useState("All");
+  const cond = CONDITIONS.find(c=>c.id===sel);
+  const data = DATA[sel];
+  const cats = ["All","Toxidrome","Overdose"];
+  const filtered = filter==="All"?CONDITIONS:CONDITIONS.filter(c=>c.cat===filter);
+  const tabs = [
+    { id:"overview", label:"Overview", icon:"📖" },
+    { id:"workup",   label:"Workup",   icon:"🔬" },
+    { id:"protocol", label:"Protocol", icon:"💉" },
+    { id:"followup", label:"Follow-up",icon:"📋" },
+  ];
+  const glassCard = { backdropFilter:"blur(24px) saturate(200%)", WebkitBackdropFilter:"blur(24px) saturate(200%)", background:"rgba(8,22,40,0.75)", border:"1px solid rgba(42,79,122,0.35)", borderRadius:16 };
+  const deepGlass = { backdropFilter:"blur(40px) saturate(220%)", WebkitBackdropFilter:"blur(40px) saturate(220%)", background:"rgba(5,15,30,0.85)", border:"1px solid rgba(26,53,85,0.6)" };
 
   return (
-    <div style={{height:"100vh",background:T.bg,color:T.txt,fontFamily:"'DM Sans',sans-serif",display:"flex",flexDirection:"column",overflow:"hidden"}}>
-      <style>{`*{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(26,53,85,0.9);border-radius:2px}input,button{font-family:inherit}`}</style>
-
-      {/* Header */}
-      <div style={{background:T.panel,borderBottom:`1px solid ${T.b}`,padding:"14px 20px",flexShrink:0}}>
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
-          <button onClick={()=>navigate("/hub")} style={{display:"flex",alignItems:"center",gap:6,background:"rgba(8,22,40,0.7)",border:"1px solid rgba(61,255,160,0.3)",borderRadius:8,padding:"5px 12px",color:T.green,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>← Hub</button>
-          <div style={{width:40,height:40,borderRadius:11,background:"rgba(61,255,160,0.12)",border:"1px solid rgba(61,255,160,0.35)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>☠️</div>
-          <div>
-            <div style={{fontSize:18,fontWeight:700,color:T.txt,fontFamily:"'Playfair Display',serif",lineHeight:1.2}}>Toxicology Hub</div>
-            <div style={{fontSize:10,color:T.txt3}}>Toxidromes · Antidotes · Environmental · Overdose Protocols</div>
-          </div>
-          <div style={{marginLeft:"auto",display:"flex",gap:6,flexShrink:0}}>
-            {["Goldfrank's 10th","ToxBase 2024","Poison Control"].map(b=>(
-              <span key={b} style={{fontSize:9,fontFamily:"monospace",fontWeight:700,padding:"3px 9px",borderRadius:20,background:"rgba(61,255,160,0.1)",border:"1px solid rgba(61,255,160,0.3)",color:T.green}}>{b}</span>
-            ))}
-          </div>
-        </div>
-        {/* Category filter */}
-        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          {["All",...CATS].map(c=>(
-            <button key={c} onClick={()=>setActiveCat(c)} style={{padding:"5px 13px",borderRadius:20,border:`1px solid ${activeCat===c?"rgba(61,255,160,0.45)":T.b}`,background:activeCat===c?"rgba(61,255,160,0.12)":"transparent",color:activeCat===c?T.green:T.txt3,fontSize:11,fontWeight:activeCat===c?700:400,cursor:"pointer",fontFamily:"sans-serif",display:"flex",alignItems:"center",gap:5}}>
-              {c} {c!=="All" && <span style={{fontSize:9,fontFamily:"monospace",color:activeCat===c?T.green:T.txt4}}>({catCounts[c]})</span>}
-            </button>
-          ))}
-        </div>
+    <div style={{ fontFamily:"DM Sans",background:T.bg,minHeight:"100vh",position:"relative",overflow:"hidden" }}>
+      {/* Ambient BG */}
+      <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0}}>
+        <div style={{position:"absolute",top:"-20%",left:"-10%",width:"60%",height:"60%",background:`radial-gradient(circle,${cond.color}18 0%,transparent 70%)`,transition:"background 1s ease"}}/>
+        <div style={{position:"absolute",bottom:"-20%",right:"-10%",width:"50%",height:"50%",background:"radial-gradient(circle,rgba(59,158,255,0.12) 0%,transparent 70%)"}}/>
+        <div style={{position:"absolute",top:"40%",left:"50%",width:"40%",height:"40%",background:"radial-gradient(circle,rgba(0,229,192,0.06) 0%,transparent 70%)"}}/>
       </div>
+      <div style={{position:"relative",zIndex:1,maxWidth:1200,margin:"0 auto",padding:"0 16px"}}>
 
-      {/* Grid */}
-      <div style={{flex:1,overflowY:"auto",padding:"16px 20px 24px"}}>
-        {/* Quick reference banner */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:16}}>
-          {[
-            {icon:"📞",label:"Poison Control",val:"1-800-222-1222",color:T.green},
-            {icon:"⏱",label:"Naloxone onset",val:"2–5 min IV",color:T.orange},
-            {icon:"🧪",label:"NAC window",val:"Best <8h post-APAP",color:T.teal},
-            {icon:"📺",label:"CO pulse ox",val:"Falsely NORMAL",color:T.coral},
-          ].map((s,i)=>(
-            <div key={i} style={{background:"rgba(14,37,68,0.5)",border:`1px solid ${s.color}30`,borderRadius:10,padding:"10px 12px",textAlign:"center"}}>
-              <div style={{fontSize:18,marginBottom:4}}>{s.icon}</div>
-              <div style={{fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:".06em",marginBottom:2}}>{s.label}</div>
-              <div style={{fontSize:11,fontWeight:700,color:s.color,fontFamily:"monospace"}}>{s.val}</div>
+        {/* Header */}
+        <div style={{padding:"24px 0 16px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:6}}>
+            <div style={{...deepGlass,borderRadius:12,padding:"6px 14px",display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.teal,letterSpacing:3,textTransform:"uppercase"}}>NOTRYA</span>
+              <span style={{color:T.txt4,fontFamily:"JetBrains Mono",fontSize:10}}>/</span>
+              <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.txt3,letterSpacing:2}}>TOX</span>
+            </div>
+            <div style={{height:1,flex:1,background:"linear-gradient(90deg,rgba(42,79,122,0.6),transparent)"}}/>
+          </div>
+          <h1 className="shimmer-text" style={{fontFamily:"Playfair Display",fontSize:"clamp(28px,5vw,46px)",fontWeight:900,letterSpacing:-1,lineHeight:1.1}}>
+            Toxicology Hub
+          </h1>
+          <p style={{fontFamily:"DM Sans",fontSize:14,color:T.txt3,marginTop:6,letterSpacing:.3}}>Emergency Antidotes · Toxidromes · Overdose Protocols</p>
+        </div>
+
+        {/* Banner Targets */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:10,marginBottom:20}}>
+          {BANNER.map((b,i)=>(
+            <div key={i} className="banner-item" style={{...glassCard,padding:"14px 18px",borderLeft:`3px solid ${b.color}`,background:`linear-gradient(135deg,${b.color}14,rgba(8,22,40,0.8))`}}>
+              <div style={{fontFamily:"JetBrains Mono",fontSize:20,fontWeight:700,color:b.color}}>{b.value}</div>
+              <div style={{fontFamily:"DM Sans",fontWeight:600,color:T.txt,fontSize:13,margin:"2px 0"}}>{b.label}</div>
+              <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt3}}>{b.sub}</div>
             </div>
           ))}
         </div>
 
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
-          {filtered.map(c=>(
-            <div key={c.id} onClick={()=>setSelected(c.id)}
-              style={{background:c.gl,border:`1px solid ${c.br}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",transition:"all .2s",position:"relative",overflow:"hidden"}}
-              onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 8px 24px ${c.color}20`}}
-              onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="none"}}>
-              <div style={{position:"absolute",top:-20,right:-20,width:80,height:80,borderRadius:"50%",background:c.gl,opacity:.5}} />
-              <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:10}}>
-                <div style={{width:40,height:40,borderRadius:10,background:c.gl,border:`1px solid ${c.br}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{c.icon}</div>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:13,fontWeight:700,color:T.txt}}>{c.title}</div>
-                  <div style={{fontSize:10,color:T.txt3,marginTop:1}}>{c.sub}</div>
+        {/* Main Layout */}
+        <div style={{display:"flex",gap:14,flexWrap:"wrap"}}>
+
+          {/* Sidebar */}
+          <div style={{width:260,flexShrink:0}}>
+            {/* Filter */}
+            <div style={{...glassCard,padding:"10px",marginBottom:10,display:"flex",gap:6}}>
+              {cats.map(c=>(
+                <button key={c} onClick={()=>setFilter(c)} style={{flex:1,fontFamily:"DM Sans",fontWeight:600,fontSize:11,padding:"6px",borderRadius:8,border:`1px solid ${filter===c?"rgba(42,79,122,0.8)":"transparent"}`,background:filter===c?"rgba(14,37,68,0.9)":"transparent",color:filter===c?T.txt:T.txt3,cursor:"pointer",transition:"all .15s"}}>
+                  {c}
+                </button>
+              ))}
+            </div>
+            {/* Condition List */}
+            <div style={{...glassCard,padding:8,overflow:"auto",maxHeight:"calc(100vh - 280px)"}}>
+              {filtered.map(c=>(
+                <div key={c.id} className={`cond-item${sel===c.id?" cond-active":""}`} onClick={()=>{setSel(c.id);setTab("overview")}}
+                  style={{"--cc":c.color,position:"relative",padding:"10px 14px",borderRadius:10,marginBottom:4,background:sel===c.id?`linear-gradient(90deg,${c.gl},rgba(14,37,68,0.6))`:"transparent",border:`1px solid ${sel===c.id?c.br:"transparent"}`,transition:"all .2s"}}>
+                  <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                    <span style={{fontSize:18}}>{c.icon}</span>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontFamily:"DM Sans",fontWeight:600,fontSize:13,color:sel===c.id?T.txt:T.txt2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.title}</div>
+                      <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.sub}</div>
+                    </div>
+                    <span style={{fontFamily:"JetBrains Mono",fontSize:9,color:c.color,background:`${c.color}22`,padding:"2px 6px",borderRadius:4,whiteSpace:"nowrap"}}>{c.cat}</span>
+                  </div>
                 </div>
-                <span style={{fontSize:9,fontFamily:"monospace",padding:"2px 7px",borderRadius:20,background:c.gl,border:`1px solid ${c.br}`,color:c.color,fontWeight:700,flexShrink:0}}>{c.cat}</span>
-              </div>
-              <div style={{display:"flex",gap:8,marginTop:10,fontSize:9,color:T.txt3,flexWrap:"wrap"}}>
-                {TREATMENT[c.id]?.length>0 && <span style={{padding:"2px 7px",borderRadius:20,background:"rgba(0,229,192,0.08)",border:"1px solid rgba(0,229,192,0.2)",color:T.teal}}>⚗️ {TREATMENT[c.id].length} antidotes</span>}
-                {WORKUP[c.id]?.length>0 && <span style={{padding:"2px 7px",borderRadius:20,background:"rgba(59,158,255,0.08)",border:"1px solid rgba(59,158,255,0.2)",color:T.blue}}>✅ {WORKUP[c.id].length} workup items</span>}
+              ))}
+            </div>
+          </div>
+
+          {/* Content Panel */}
+          <div style={{flex:1,minWidth:0}}>
+            {/* Condition Header */}
+            <div style={{...glassCard,padding:"18px 22px",marginBottom:12,background:`linear-gradient(135deg,${cond.gl},rgba(8,22,40,0.85))`,borderColor:cond.br,position:"relative",overflow:"hidden"}}>
+              <div style={{position:"absolute",top:-30,right:-30,fontSize:120,opacity:.06}}>{cond.icon}</div>
+              <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
+                <span style={{fontSize:36}}>{cond.icon}</span>
+                <div style={{flex:1}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+                    <h2 style={{fontFamily:"Playfair Display",fontSize:"clamp(18px,3vw,26px)",fontWeight:700,color:T.txt}}>{cond.title}</h2>
+                    <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:cond.color,background:`${cond.color}22`,padding:"2px 8px",borderRadius:4,border:`1px solid ${cond.color}44`}}>{cond.cat}</span>
+                  </div>
+                  <div style={{fontFamily:"DM Sans",fontSize:13,color:T.txt2}}>{cond.sub}</div>
+                </div>
               </div>
             </div>
-          ))}
+
+            {/* Tabs */}
+            <div style={{...glassCard,padding:"8px",display:"flex",gap:6,marginBottom:14}}>
+              {tabs.map(t=>(
+                <button key={t.id} className="tab-pill" onClick={()=>setTab(t.id)}
+                  style={{flex:1,fontFamily:"DM Sans",fontWeight:600,fontSize:12,padding:"9px 6px",borderRadius:10,border:`1px solid ${tab===t.id?cond.color+"66":"transparent"}`,background:tab===t.id?`linear-gradient(135deg,${cond.color}22,${cond.color}11)`:"transparent",color:tab===t.id?cond.color:T.txt3,cursor:"pointer",textAlign:"center",whiteSpace:"nowrap"}}>
+                  <span style={{marginRight:4}}>{t.icon}</span>{t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab Content */}
+            <div style={{...glassCard,padding:"20px",minHeight:400,overflow:"auto",maxHeight:"calc(100vh - 400px)"}}>
+              {tab==="overview" && <OverviewTab ov={data.overview}/>}
+              {tab==="workup"   && <WorkupTab wk={data.workup}/>}
+              {tab==="protocol" && <ProtocolTab tx={data.treatment} color={cond.color}/>}
+              {tab==="followup" && <FollowupTab fu={data.followup}/>}
+            </div>
+          </div>
         </div>
 
-        <div style={{marginTop:20,padding:"12px 16px",background:"rgba(14,37,68,0.4)",border:`1px solid ${T.b}`,borderRadius:10,display:"flex",gap:16,flexWrap:"wrap",alignItems:"center"}}>
-          <span style={{fontSize:9,fontWeight:700,color:T.txt4,textTransform:"uppercase",letterSpacing:".07em",flexShrink:0}}>Evidence Base</span>
-          {["Goldfrank's Toxicology 10th Ed","ToxBase 2024","WHO Poisoning Guidelines","Weaver NEJM 2002 (CO)","Boyer & Shannon NEJM 2005 (SS)","Rumack-Matthew Nomogram","ACMT Position Statements"].map(e=>(
-            <span key={e} style={{fontSize:9,color:T.txt4,fontFamily:"monospace"}}>{e}</span>
-          ))}
+        {/* Footer */}
+        <div style={{textAlign:"center",padding:"16px 0 24px"}}>
+          <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.txt4,letterSpacing:2}}>NOTRYA TOXICOLOGY HUB · FOR CLINICAL REFERENCE ONLY · ALWAYS CONSULT POISON CONTROL 1-800-222-1222</span>
         </div>
       </div>
     </div>

@@ -158,7 +158,7 @@ const HUBS = [
   },
   {
     id: "procedures",
-    route: "/procedures-hub",
+    route: "/Procedures",
     icon: "✂️",
     abbr: "PROC",
     title: "Procedures",
@@ -215,7 +215,7 @@ const CATEGORIES = ["All", "Critical Care", "Specialty", "Procedures", "Tools"];
 const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
-  "/peds-hub",
+  "/peds-hub", "/Procedures",
 ]);
 
 function Background() {

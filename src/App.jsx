@@ -29,6 +29,7 @@ import OBGYNHub from '@/pages/OBGYNHub';
 import SepsisHub from '@/pages/SepsisHub';
 import AirwayHub from '@/pages/AirwayHub';
 import ToxicologyHub from '@/pages/ToxicologyHub';
+import PedsHub from '@/pages/PedsHub';
 
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -107,6 +108,7 @@ const AuthenticatedApp = () => {
       <Route path="/sepsis-hub" element={<SepsisHub />} />
       <Route path="/airway-hub" element={<AirwayHub />} />
       <Route path="/tox-hub" element={<ToxicologyHub />} />
+      <Route path="/peds-hub" element={<PedsHub />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

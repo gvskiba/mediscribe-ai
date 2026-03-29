@@ -408,7 +408,9 @@ function DrugRow({rx}){
 function ConditionPage({emergency,onBack,contentMap}){
   const[activeTab,setActiveTab]=useState("overview");
   const[checked,setChecked]=useState({});
-  const data={...( CLINICAL_DATA[emergency.id]||{}), ...(contentMap?.[emergency.id]||{})};
+  const remote = contentMap?.[emergency.id] || {};
+  const safeRemote = Object.fromEntries(Object.entries(remote).filter(([,v]) => v != null));
+  const data = { ...(CLINICAL_DATA[emergency.id] || {}), ...safeRemote };
   if(!data.definition) return(
     <div style={{padding:40,textAlign:"center",color:T.txt3}}>
       <button onClick={onBack} style={{background:"rgba(14,37,68,0.5)",border:"1px solid rgba(26,53,85,0.7)",borderRadius:7,padding:"5px 12px",color:T.txt3,fontSize:11,cursor:"pointer",fontFamily:"sans-serif",marginBottom:20}}>← Back</button>
@@ -626,7 +628,7 @@ export default function OBGYNHub() {
               </p>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,flexShrink:0}}>
-              {[{v:"ACOG",l:"Guideline Source",c:OB},{v:"10",l:"Emergencies",c:"#9b6dff"},{v:"24/7",l:"Critical Tool",c:T.gold},{v:"2024",l:"Updated",c:T.teal}].map((s,i)=>(
+              {[{v:"ACOG",l:"Guideline Source",c:OB},{v:EMERGENCIES.length,l:"Emergencies",c:"#9b6dff"},{v:"24/7",l:"Critical Tool",c:T.gold},{v:"2024",l:"Updated",c:T.teal}].map((s,i)=>(
                 <div key={i} style={{textAlign:"center",background:"rgba(14,37,68,0.7)",borderRadius:10,padding:"8px 12px",border:"1px solid rgba(26,53,85,0.8)"}}>
                   <div style={{fontSize:14,fontWeight:700,color:[OB,"#9b6dff",T.gold,T.teal][i],fontFamily:"'JetBrains Mono',monospace",lineHeight:1}}>{s.v}</div>
                   <div style={{fontSize:9,color:T.txt4,marginTop:3,textTransform:"uppercase",letterSpacing:".06em"}}>{s.l}</div>

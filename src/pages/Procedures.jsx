@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ProcedureTemplateManager from "../components/procedures/ProcedureTemplateManager";
 import BillingModule from "../components/billing/BillingModule";
+import EMCalculator from "../components/procedures/EMCalculator";
 
 (() => {
   if (document.getElementById("proc-fonts")) return;
@@ -43,6 +44,7 @@ const T = {
 const SECTIONS = [
   { id:"proc-notes",  icon:"📋", label:"Procedure Notes",  sub:"AI-drafted templates",  color:T.amber,  gl:"rgba(245,166,35,0.12)",  br:"rgba(245,166,35,0.4)"  },
   { id:"ed-notes",    icon:"📝", label:"ED Notes",         sub:"Critical care, AMA…",   color:T.rose,   gl:"rgba(244,114,182,0.12)", br:"rgba(244,114,182,0.4)" },
+  { id:"em-calc",     icon:"🧮", label:"E&M Calculator",   sub:"Auto-calculate E/M codes", color:T.teal,   gl:"rgba(0,212,188,0.12)",   br:"rgba(0,212,188,0.4)"   },
   { id:"cpt-search",  icon:"🔍", label:"CPT Code Search",  sub:"Find & copy CPT codes", color:T.teal,   gl:"rgba(0,212,188,0.12)",   br:"rgba(0,212,188,0.4)"   },
   { id:"proc-log",    icon:"📊", label:"Procedure Log",    sub:"Credentialing tracker",  color:T.green,  gl:"rgba(46,204,113,0.12)",  br:"rgba(46,204,113,0.4)"  },
   { id:"billing",     icon:"💳", label:"Billing",          sub:"E&M coding",             color:T.purple, gl:"rgba(155,109,255,0.12)", br:"rgba(155,109,255,0.4)" },
@@ -968,6 +970,7 @@ export default function Procedures() {
     switch(activeId) {
       case "proc-notes": return <ProcNotesPanel color={active.color}/>;
       case "ed-notes":   return <EDNotesPanel color={active.color}/>;
+      case "em-calc":    return <EMCalculator/>;
       case "cpt-search": return <CPTSearchPanel color={active.color}/>;
       case "proc-log":   return <ProcLogPanel color={active.color}/>;
       case "billing":    return <div style={{height:"100%",overflowY:"auto"}}><BillingModule/></div>;

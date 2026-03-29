@@ -1,8 +1,6 @@
-import { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import EMCalculator from "@/components/procedures/EMCalculator";
-import BillingModule from "@/components/billing/BillingModule";
 
 const T = {
   navy: "#050f1e", slate: "#0b1d35", panel: "#0e2340", edge: "#162d4f",
@@ -164,18 +162,7 @@ export default function ProviderBilling() {
           </div>
         </div>
 
-        {/* Billing Module Section */}
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <span style={{ fontSize: 18 }}>💳</span>
-            <h2 style={{ fontFamily: "Playfair Display", fontWeight: 700, fontSize: 18, color: T.bright, margin: 0 }}>
-              Invoice Management
-            </h2>
-          </div>
-          <div style={{ ...glass(), padding: "16px 18px" }}>
-            <BillingModule />
-          </div>
-        </div>
+
       </div>
 
       {/* Footer */}

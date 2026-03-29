@@ -1,0 +1,103 @@
+{
+  "name": "ProtocolContent",
+  "type": "object",
+  "properties": {
+    "hub_id": {
+      "type": "string",
+      "description": "Which hub this belongs to (e.g. trauma, cardiac, ob, sepsis)"
+    },
+    "condition_id": {
+      "type": "string",
+      "description": "Matches the condition id in the hub registry (e.g. primary_survey, mtp, uro, pna)"
+    },
+    "definition": {
+      "type": "string",
+      "description": "Clinical definition / overview paragraph"
+    },
+    "keyCriteria": {
+      "type": "array",
+      "description": "Bullet list of key diagnostic/management criteria",
+      "items": {
+        "type": "string"
+      }
+    },
+    "workup": {
+      "type": "array",
+      "description": "Workup checklist items",
+      "items": {
+        "type": "object",
+        "properties": {
+          "icon": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "treatment": {
+      "type": "array",
+      "description": "Treatment protocol rows \u2014 supports both general and antibiotic-specific fields",
+      "items": {
+        "type": "object",
+        "properties": {
+          "cat": {
+            "type": "string",
+            "description": "Drug category or tier label"
+          },
+          "drug": {
+            "type": "string",
+            "description": "Drug name"
+          },
+          "dose": {
+            "type": "string",
+            "description": "Dosing regimen (may use \\n for multi-line)"
+          },
+          "note": {
+            "type": "string",
+            "description": "Clinical notes / trial evidence"
+          },
+          "ref": {
+            "type": "string",
+            "description": "Evidence level or guideline reference (e.g. Level A, SSC 2021)"
+          },
+          "renal": {
+            "type": "string",
+            "description": "Renal dose adjustments by CrCl / HD (multi-line)"
+          },
+          "ivpo": {
+            "type": "string",
+            "description": "IV-to-PO switch options and oral equivalents (multi-line)"
+          },
+          "deesc": {
+            "type": "string",
+            "description": "De-escalation strategy, duration targets, stewardship notes"
+          }
+        }
+      }
+    },
+    "followup": {
+      "type": "array",
+      "description": "Follow-up and disposition bullet points",
+      "items": {
+        "type": "string"
+      }
+    },
+    "reference": {
+      "type": "string",
+      "description": "Primary evidence reference string"
+    },
+    "version_notes": {
+      "type": "string",
+      "description": "Notes about the last content update (e.g. Updated to ATLS 11th Ed, SSC 2021)"
+    }
+  },
+  "required": [
+    "hub_id",
+    "condition_id"
+  ]
+}

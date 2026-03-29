@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 /* ═══ TOKENS ═══════════════════════════════════════════════════════ */
 const T = {
@@ -752,6 +753,7 @@ function TimeBanner() {
 
 /* ═══ MAIN HUB ══════════════════════════════════════════════════════ */
 export default function SepsisHub() {
+  const navigate = useNavigate();
   const [activeCat, setActiveCat] = useState("All");
   const [selected, setSelected] = useState(null);
 
@@ -780,6 +782,13 @@ export default function SepsisHub() {
 
       {/* Header */}
       <div style={{background:T.panel,borderBottom:`1px solid ${T.b}`,padding:"14px 20px",flexShrink:0}}>
+        <div style={{marginBottom:10}}>
+          <button onClick={()=>navigate("/hub")} style={{display:"flex",alignItems:"center",gap:6,background:"rgba(8,22,40,0.8)",border:"1px solid rgba(245,200,66,0.3)",borderRadius:9,padding:"6px 14px",color:T.gold,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"sans-serif",transition:"all .2s"}}
+            onMouseEnter={e=>{e.currentTarget.style.background="rgba(245,200,66,0.1)";e.currentTarget.style.transform="translateX(-2px)";}}
+            onMouseLeave={e=>{e.currentTarget.style.background="rgba(8,22,40,0.8)";e.currentTarget.style.transform="translateX(0)";}}>
+            ← Back to Hub
+          </button>
+        </div>
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
           <div style={{width:40,height:40,borderRadius:11,background:"rgba(245,200,66,0.12)",border:"1px solid rgba(245,200,66,0.35)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>🦠</div>
           <div>

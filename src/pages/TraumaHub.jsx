@@ -894,7 +894,7 @@ function SectionHeader({ icon, title, sub }) {
 }
 
 function ConditionPage({ condition, onBack, contentMap }) {
-  const data = contentMap?.[condition.id] || CLINICAL_DATA[condition.id] || {};
+  const data = { ...(CLINICAL_DATA[condition.id] || {}), ...(contentMap?.[condition.id] || {}) };
   const [tab, setTab] = useState("overview");
   const [checked, setChecked] = useState({});
 

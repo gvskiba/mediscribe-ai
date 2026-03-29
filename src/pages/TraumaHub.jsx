@@ -894,7 +894,9 @@ function SectionHeader({ icon, title, sub }) {
 }
 
 function ConditionPage({ condition, onBack, contentMap }) {
-  const data = { ...(CLINICAL_DATA[condition.id] || {}), ...(contentMap?.[condition.id] || {}) };
+  const remote = contentMap?.[condition.id] || {};
+  const safeRemote = Object.fromEntries(Object.entries(remote).filter(([,v]) => v != null));
+  const data = { ...(CLINICAL_DATA[condition.id] || {}), ...safeRemote };
   const [tab, setTab] = useState("overview");
   const [checked, setChecked] = useState({});
 

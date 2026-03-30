@@ -59,6 +59,7 @@ const CHART_GROUPS = [
     label: 'Documentation',
     groupIcon: '🩺',
     items: [
+      { icon: '📝', label: 'HPI',             page: '/hpi' },
       { icon: '💊', label: 'Meds & PMH',         page: '/NewPatientInput?tab=meds' },
       { icon: '🔍', label: 'Review of Systems',  page: '/NewPatientInput?tab=ros' },
       { icon: '🩺', label: 'Physical Exam',      page: '/NewPatientInput?tab=pe' },

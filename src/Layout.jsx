@@ -36,6 +36,7 @@ const APP_ICONS = [
   { icon: '📝', label: 'New Note',  page: '/NewNote' },
   { icon: '👥', label: 'Patients',  page: '/PatientDashboard' },
   { icon: '🔄', label: 'Shift',     page: '/Shift' },
+  { icon: '📋', label: 'Orders',    page: '/NewPatientInput?tab=orders' },
   { icon: '💊', label: 'Drugs',     page: '/DrugsBugs' },
   { icon: '🧮', label: 'Calc',      page: '/Calculators' },
   { icon: '🏥', label: 'Hub',       page: '/hub' },

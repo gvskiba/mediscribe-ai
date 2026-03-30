@@ -1,0 +1,52 @@
+{
+  "name": "Medication",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier (e.g., amox, albuterol)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Drug name"
+    },
+    "brand": {
+      "type": "string",
+      "description": "Brand name(s)"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["antibiotic", "bronchodilator", "antiemetic", "antidiabetic", "antihypertensive", "statin", "anti-inflammatory", "anxiolytic", "stimulant", "opioid", "sedative", "other"],
+      "description": "Drug category"
+    },
+    "forms": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Available forms (e.g., ['250mg tablet', '500mg tablet'])"
+    },
+    "sigs": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Common SIGs (e.g., ['PO BID', 'PO TID'])"
+    },
+    "controlled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Is a controlled substance"
+    },
+    "schedule": {
+      "type": "string",
+      "enum": ["I", "II", "III", "IV", "V"],
+      "description": "DEA schedule if controlled"
+    },
+    "pediatricDose": {
+      "type": "string",
+      "description": "Pediatric dosing guidance (e.g., '10-15 mg/kg')"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Clinical notes or warnings"
+    }
+  },
+  "required": ["id", "name"]
+}

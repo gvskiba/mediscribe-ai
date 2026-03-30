@@ -1,0 +1,84 @@
+{
+  "name": "ERxDrug",
+  "type": "object",
+  "properties": {
+    "drug_id": {
+      "type": "string",
+      "description": "Unique identifier (e.g., amox, albuterol)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Drug generic name"
+    },
+    "brand": {
+      "type": "string",
+      "description": "Brand name(s)"
+    },
+    "cls": {
+      "type": "string",
+      "description": "Drug class (e.g., Antibiotic, Cardiovascular)"
+    },
+    "sub": {
+      "type": "string",
+      "description": "Drug subclass (e.g., Penicillin, ACE Inhibitor)"
+    },
+    "forms": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Available formulations and strengths"
+    },
+    "sigs": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Common SIG options"
+    },
+    "controlled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Is a controlled substance"
+    },
+    "sch": {
+      "type": "string",
+      "description": "DEA schedule (II, III, IV, V) if controlled"
+    },
+    "renal": {
+      "type": "string",
+      "description": "Renal dosing adjustments"
+    },
+    "hepatic": {
+      "type": "string",
+      "description": "Hepatic dosing adjustments"
+    },
+    "peds": {
+      "type": "string",
+      "description": "Pediatric dosing guidance"
+    },
+    "interactions": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Known drug interactions"
+    },
+    "allergyFlags": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Allergy warnings and contraindications"
+    },
+    "maxDose": {
+      "type": "string",
+      "description": "Maximum dose"
+    },
+    "cost": {
+      "type": "string",
+      "description": "Cost tier ($, $$, $$$)"
+    },
+    "formulary": {
+      "type": "string",
+      "description": "Formulary tier (Tier 1, Tier 2, Prior Auth, etc.)"
+    },
+    "note": {
+      "type": "string",
+      "description": "Clinical notes and prescribing pearls"
+    }
+  },
+  "required": ["drug_id", "name"]
+}

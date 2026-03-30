@@ -1,4 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 import PDMPQueryPanel from "@/components/erx/PDMPQueryPanel";
 
 // ── Font + CSS Injection ───────────────────────────────────────────
@@ -54,196 +56,8 @@ const deep   = (x={}) => ({backdropFilter:"blur(40px) saturate(220%)",WebkitBack
 const inp    = (focus) => ({width:"100%",background:"rgba(14,37,68,0.8)",border:`1px solid ${focus?"rgba(59,158,255,0.6)":"rgba(26,53,85,0.55)"}`,borderRadius:9,padding:"9px 13px",color:T.txt,fontFamily:"DM Sans",fontSize:13,outline:"none",boxSizing:"border-box",transition:"border-color .15s"});
 
 // ── Drug Database ──────────────────────────────────────────────────
-const DRUGS = [
-  // Antibiotics
-  {id:"amox",name:"Amoxicillin",brand:"Amoxil",cls:"Antibiotic",sub:"Penicillin",sch:null,controlled:false,
-    forms:["Capsule 250mg","Capsule 500mg","Tablet 875mg","Suspension 125mg/5mL","Suspension 250mg/5mL"],
-    sigs:["500mg PO TID × 7–10 days","875mg PO BID × 7–10 days","500mg PO BID × 5–7 days"],
-    renal:"CrCl 10–30: q12h; CrCl <10: q24h; HD: dose after HD",
-    hepatic:"No adjustment for mild-mod",
-    peds:"25–45 mg/kg/day ÷ BID–TID; max 90 mg/kg/day (AOM)",
-    interactions:["Warfarin — increased INR","Methotrexate — increased toxicity","Allopurinol — rash risk"],
-    allergyFlags:["Penicillin allergy — CONTRAINDICATED","Cephalosporin cross-reactivity (~1%)"],
-    maxDose:"3g/day adults",cost:"$",formulary:"Tier 1",note:"First-line for community sinusitis, AOM, mild CAP"},
-  {id:"augmentin",name:"Amoxicillin-Clavulanate",brand:"Augmentin",cls:"Antibiotic",sub:"Penicillin + β-Lactamase Inhibitor",sch:null,controlled:false,
-    forms:["Tablet 875/125mg","Tablet 500/125mg","ES-600 suspension","XR 2000/125mg"],
-    sigs:["875/125mg PO BID × 5–7 days","500/125mg PO TID × 7–10 days"],
-    renal:"CrCl <30: avoid 875mg tabs — use 500mg q12h; HD: supplemental dose post-HD",
-    hepatic:"Use with caution in hepatic disease — risk of hepatotoxicity (rare)",
-    peds:"45mg/kg/day (amox component) ÷ BID × 10 days for AOM",
-    interactions:["Warfarin — bleeding risk","Methotrexate — toxicity","Allopurinol — rash"],
-    allergyFlags:["Penicillin allergy — CONTRAINDICATED"],
-    maxDose:"2g amox component/day",cost:"$$",formulary:"Tier 2",note:"Beta-lactamase coverage; preferred for bite wounds, sinusitis ≥10 days"},
-  {id:"azithro",name:"Azithromycin",brand:"Zithromax / Z-Pak",cls:"Antibiotic",sub:"Macrolide",sch:null,controlled:false,
-    forms:["Tablet 250mg","Tablet 500mg","Z-Pak (6-pack)","Suspension 100mg/5mL","Suspension 200mg/5mL","IV 500mg"],
-    sigs:["Z-Pak: 500mg day 1, then 250mg days 2–5","500mg PO daily × 3 days (sinusitis/CAP)","500mg PO/IV daily × 5 days (CAP)"],
-    renal:"No dose adjustment required",
-    hepatic:"Avoid in severe hepatic disease (hepatically metabolized)",
-    peds:"10mg/kg day 1 (max 500mg), then 5mg/kg days 2–5 (max 250mg)",
-    interactions:["QTc-prolonging agents — additive risk","Warfarin — increased INR","Antacids — separate by 2h"],
-    allergyFlags:["Macrolide allergy — avoid","Clarithromycin allergy — potential cross-reactivity"],
-    maxDose:"2g/course standard courses",cost:"$",formulary:"Tier 1",note:"High macrolide resistance in Streptococcus pneumoniae in many regions — verify local antibiogram"},
-  {id:"doxy",name:"Doxycycline",brand:"Vibramycin",cls:"Antibiotic",sub:"Tetracycline",sch:null,controlled:false,
-    forms:["Capsule 100mg","Tablet 100mg","Tablet 50mg","IV 100mg"],
-    sigs:["100mg PO BID × 7 days (CAP, LYME, skin)","100mg PO BID × 14 days (Lyme disease)","100mg PO BID × 10 days (sinusitis)"],
-    renal:"No dose adjustment — not renally cleared (preferred in AKI)",
-    hepatic:"Reduce dose in severe hepatic disease",
-    peds:"≥8 yr: 2.2mg/kg BID (max 100mg/dose); AVOID < 8 yr — tooth staining",
-    interactions:["Antacids/Ca/Mg/Fe — separate by 2–4h (decreased absorption)","Warfarin — increased INR","Isotretinoin — pseudotumor cerebri"],
-    allergyFlags:["Tetracycline class allergy"],
-    maxDose:"200mg/day",cost:"$",formulary:"Tier 1",note:"Preferred in renal failure; take with full glass of water; avoid lying down ×30 min (esophagitis)"},
-  {id:"tmpsmx",name:"Trimethoprim-Sulfamethoxazole",brand:"Bactrim DS",cls:"Antibiotic",sub:"Sulfonamide",sch:null,controlled:false,
-    forms:["DS Tablet (800/160mg)","SS Tablet (400/80mg)","Suspension 40/8mg/mL"],
-    sigs:["1 DS tab PO BID × 3 days (uncomplicated UTI)","1 DS tab PO BID × 5–7 days (CA-MRSA)","2 DS tabs PO BID × 14 days (PCP)"],
-    renal:"CrCl 15–30: reduce dose 50%; CrCl <15: AVOID (hyperkalemia, crystalluria risk)",
-    hepatic:"Use with caution — hepatically metabolized",
-    peds:"8–12mg/kg/day (TMP component) ÷ BID; avoid neonates < 2 mo",
-    interactions:["Warfarin — markedly increased INR (MAJOR)","ACE/ARB — severe hyperkalemia","Methotrexate — toxicity","Phenytoin — elevated levels"],
-    allergyFlags:["Sulfa allergy — CONTRAINDICATED","G6PD deficiency — hemolytic anemia risk"],
-    maxDose:"2 DS tabs BID",cost:"$",formulary:"Tier 1",note:"AVOID in CrCl <15; check local MRSA susceptibility rates; can falsely elevate creatinine (blocks tubular secretion)"},
-  {id:"cipro",name:"Ciprofloxacin",brand:"Cipro",cls:"Antibiotic",sub:"Fluoroquinolone",sch:null,controlled:false,
-    forms:["Tablet 250mg","Tablet 500mg","Tablet 750mg","IV 200mg","IV 400mg","Extended-Release 500mg"],
-    sigs:["500mg PO BID × 3–5 days (uncomplicated UTI)","500mg PO BID × 5–7 days (pyelonephritis)","750mg PO BID × 7 days (complicated UTI/pyelonephritis)"],
-    renal:"CrCl 30–50: max 500mg BID; CrCl <30: 250–500mg q18–24h; HD: 250–500mg q24h (after HD)",
-    hepatic:"Reduce in severe hepatic failure",
-    peds:"AVOID < 18 yr (cartilage toxicity) — exception: UTI, anthrax, cystic fibrosis (pulm)",
-    interactions:["Antacids/Fe/Ca — separate by 2h","Warfarin — major bleeding risk","NSAIDs — seizure risk","Tizanidine — CONTRAINDICATED","QTc agents — additive"],
-    allergyFlags:["Fluoroquinolone allergy","Tendon rupture risk — especially ≥ 60 yr, corticosteroid use, renal disease"],
-    maxDose:"750mg BID (oral); 400mg q8h (IV)",cost:"$",formulary:"Tier 1",note:"FDA black box: tendon rupture, peripheral neuropathy, CNS effects, aortic dissection. Use only when alternatives inadequate. High E. coli resistance (>20% many US regions)"},
-  // Analgesics
-  {id:"tramadol",name:"Tramadol",brand:"Ultram",cls:"Analgesic",sub:"Opioid-like (SNRI mechanism)",sch:"IV",controlled:true,
-    forms:["Tablet 50mg","Extended-Release 100mg/200mg/300mg"],
-    sigs:["50–100mg PO q4–6h PRN (max 400mg/day)","50mg PO q6h PRN (elderly/renal — max 200mg/day)"],
-    renal:"CrCl <30: max 200mg/day, q12h interval; avoid ER formulation",
-    hepatic:"Severe: max 50mg q12h",
-    peds:"NOT recommended < 12 yr; AVOID in adenotonsillectomy patients (ultra-rapid CYP2D6 metabolizers — fatality risk)",
-    interactions:["SSRIs/SNRIs — serotonin syndrome MAJOR","MAOIs — CONTRAINDICATED","TCAs — seizures + serotonin syndrome","Opioids — additive CNS/respiratory depression","CYP2D6 inhibitors — increased effect"],
-    allergyFlags:["Opioid allergy — cross-reactivity possible","Seizure disorder — lowers seizure threshold"],
-    maxDose:"400mg/day; 200mg/day in elderly/renal disease",cost:"$",formulary:"Tier 2",sch:"IV",note:"Schedule IV; lower abuse potential than traditional opioids but NOT opioid-free; serotonin syndrome risk is clinically significant"},
-  {id:"oxycodone",name:"Oxycodone",brand:"OxyContin / Percocet",cls:"Analgesic",sub:"Opioid — Mu agonist",sch:"II",controlled:true,
-    forms:["Tablet 5mg","Tablet 10mg","Tablet 15mg","Tablet 20mg","ER 10mg","ER 20mg","Oxycodone/APAP 5/325mg"],
-    sigs:["5–10mg PO q4–6h PRN severe pain","5mg PO q6h PRN (opioid-naive)","Percocet 1–2 tabs PO q4–6h PRN (max APAP 4g/day)"],
-    renal:"Reduce initial dose 33–50% in CrCl <60; avoid if CrCl <30 (active metabolite accumulation)",
-    hepatic:"Reduce dose 50%; titrate carefully",
-    peds:"0.05–0.1mg/kg PO q4–6h (max 5mg/dose) — specialist guidance required",
-    interactions:["CNS depressants — respiratory depression (MAJOR)","Benzodiazepines — FDA black box: fatal respiratory depression","MAOIs — AVOID","CYP3A4 inhibitors — increased oxycodone levels","Naltrexone — precipitates withdrawal"],
-    allergyFlags:["Opioid allergy","Respiratory depression — contraindicated","History of opioid use disorder — discuss risks"],
-    maxDose:"Start low; no ceiling for cancer pain — titrate to effect",cost:"$$",formulary:"Prior Auth",sch:"II",note:"⚠ SCHEDULE II — PDMP check required; FDA REMS; check morphine milligram equivalents; prescribe naloxone co-prescription for high-dose opioid therapy"},
-  {id:"ketorolac",name:"Ketorolac",brand:"Toradol",cls:"Analgesic",sub:"NSAID",sch:null,controlled:false,
-    forms:["Tablet 10mg","IM/IV 15mg/mL","IM/IV 30mg/mL","Nasal spray 15.75mg/spray"],
-    sigs:["15–30mg IM/IV q6h PRN (max 5 days)","10mg PO q4–6h PRN (max 40mg/day PO — not for IM-to-PO transition)"],
-    renal:"CrCl <50: reduce dose 50%; AVOID if CrCl <30 or acute kidney injury",
-    hepatic:"Use with caution; reduce dose",
-    peds:"0.4–1mg/kg IM (max 30mg/dose); IV: 0.2–0.5mg/kg q6h; AVOID < 2 yr",
-    interactions:["ACE inhibitors — hyperkalemia + AKI","Other NSAIDs — avoid combination","Anticoagulants — GI bleeding risk","Lithium — elevated levels","Diuretics — reduced efficacy"],
-    allergyFlags:["NSAID/ASA allergy — cross-reactivity","PUD/GI bleed — relative contraindication","CKD — significant risk"],
-    maxDose:"120mg/day parenteral; 40mg/day oral; max 5 days total (parenteral + oral combined)",cost:"$",formulary:"Tier 1",note:"Maximum 5-day total course (parenteral + oral); NSAID with potency approaching parenteral opioids; high GI/renal risk with prolonged use"},
-  // Cardiovascular
-  {id:"lisinopril",name:"Lisinopril",brand:"Prinivil / Zestril",cls:"Cardiovascular",sub:"ACE Inhibitor",sch:null,controlled:false,
-    forms:["Tablet 2.5mg","Tablet 5mg","Tablet 10mg","Tablet 20mg","Tablet 40mg","Solution 1mg/mL"],
-    sigs:["2.5–5mg PO daily (HTN start)","10–40mg PO daily (HTN maintenance)","2.5–5mg PO daily (HFrEF start — titrate to 20–40mg)","5mg PO daily within 24h of STEMI"],
-    renal:"CrCl 10–30: start 2.5mg; CrCl <10/HD: start 2.5mg with careful monitoring",
-    hepatic:"No adjustment — not hepatically metabolized",
-    peds:"0.07mg/kg once daily (max 5mg/dose) for HTN ≥6 yr",
-    interactions:["NSAIDs — reduced efficacy + AKI","Potassium supplements/sparing diuretics — hyperkalemia","Aliskiren — AVOID in DM/CKD","ARBs — avoid combination (dual RAAS)","Lithium — elevated levels"],
-    allergyFlags:["ACE inhibitor allergy","Angioedema history — CONTRAINDICATED","Pregnancy (2nd/3rd trimester) — CONTRAINDICATED (fetal toxicity)","Hereditary angioedema"],
-    maxDose:"80mg/day",cost:"$",formulary:"Tier 1",note:"Monitor K+ and Cr within 1–2 weeks of initiation; dry cough in 5–20% (switch to ARB); hold if Cr rises >30% from baseline"},
-  {id:"metop_succ",name:"Metoprolol Succinate",brand:"Toprol-XL",cls:"Cardiovascular",sub:"Beta-Blocker (β1-selective)",sch:null,controlled:false,
-    forms:["Tablet ER 25mg","Tablet ER 50mg","Tablet ER 100mg","Tablet ER 200mg"],
-    sigs:["25–50mg PO daily (HTN start)","100–200mg PO daily (HTN maintenance)","12.5–25mg PO daily (HFrEF — titrate slowly)"],
-    renal:"No adjustment required",
-    hepatic:"Reduce dose in significant hepatic disease (extensive first-pass)",
-    peds:"1mg/kg/day ÷ daily–BID (max 200mg/day) — specialist guidance",
-    interactions:["Verapamil/Diltiazem — bradycardia/AV block MAJOR","Clonidine — rebound HTN if BB stopped first","CYP2D6 inhibitors (fluoxetine) — markedly elevated levels","Insulin/hypoglycemics — masks hypoglycemia symptoms"],
-    allergyFlags:["Beta-blocker allergy","Acute decompensated HF — avoid initiation","2°/3° AV block without pacemaker — CONTRAINDICATED","Severe asthma — use with caution (β1-selective but not β1-exclusive at high doses)"],
-    maxDose:"400mg/day",cost:"$",formulary:"Tier 1",note:"Succinate (ER) is preferred over tartrate for HFrEF (mortality benefit); do NOT abruptly discontinue — taper over 1–2 weeks; metoprolol tartrate tabs are IR and different product"},
-  {id:"atorva",name:"Atorvastatin",brand:"Lipitor",cls:"Cardiovascular",sub:"HMG-CoA Reductase Inhibitor (Statin)",sch:null,controlled:false,
-    forms:["Tablet 10mg","Tablet 20mg","Tablet 40mg","Tablet 80mg"],
-    sigs:["10–20mg PO nightly (low-intensity)","40mg PO nightly (moderate-intensity — standard)","80mg PO nightly (high-intensity — post-ACS, DM with ASCVD)"],
-    renal:"No dose adjustment (hepatically metabolized)",
-    hepatic:"CONTRAINDICATED in active liver disease or unexplained LFT elevations",
-    peds:"10–17 yr with familial hypercholesterolemia: 10mg daily — specialist",
-    interactions:["Clarithromycin/Erythromycin — increased statin + myopathy risk (CYP3A4)","Cyclosporine — AVOID combination","HIV protease inhibitors — dose limit atorvastatin to 20mg","Niacin (high dose) — myopathy risk","Gemfibrozil — myopathy risk"],
-    allergyFlags:["Statin allergy/myopathy history","Active liver disease — CONTRAINDICATED","Unexplained LFT elevation — CONTRAINDICATED","Pregnancy — CONTRAINDICATED"],
-    maxDose:"80mg/day",cost:"$",formulary:"Tier 1",note:"Take at any time of day (unlike simvastatin — evening preferred); most potent generic statin; check baseline CK + LFTs; myalgia in 5–10%"},
-  // Respiratory
-  {id:"albuterol",name:"Albuterol",brand:"ProAir / Ventolin / Proventil",cls:"Respiratory",sub:"SABA — Short-Acting Beta-2 Agonist",sch:null,controlled:false,
-    forms:["MDI 90mcg/actuation","Nebulization solution 2.5mg/3mL","Nebulization solution 0.083% (2.5mg/3mL)","Syrup 2mg/5mL","Tablet 2mg","Tablet 4mg"],
-    sigs:["1–2 puffs MDI q4–6h PRN (acute bronchospasm)","2–4 puffs MDI q20 min × 3 PRN (acute asthma)","2.5mg neb q20 min × 3 doses PRN (acute asthma — ED)"],
-    renal:"No dose adjustment",
-    hepatic:"No dose adjustment",
-    peds:"MDI: 1–2 puffs q4–6h PRN; Neb: 0.15mg/kg (min 2.5mg) q20min × 3 (acute)",
-    interactions:["Non-selective beta-blockers — antagonism","MAOIs/TCAs — increased pressor response","Digoxin — possible decreased levels","Loop diuretics — hypokalemia potentiation"],
-    allergyFlags:["Albuterol/levalbuterol allergy"],
-    maxDose:"No strict ceiling in acute severe asthma — continuous neb possible",cost:"$$",formulary:"Tier 1",note:"Use spacer/valved holding chamber with MDI; tachycardia and hypokalemia common at high doses; levalbuterol (Xopenex) has no proven clinical advantage"},
-  {id:"pred_resp",name:"Prednisone",brand:"Deltasone",cls:"Respiratory / Anti-inflammatory",sub:"Systemic Corticosteroid",sch:null,controlled:false,
-    forms:["Tablet 1mg","Tablet 2.5mg","Tablet 5mg","Tablet 10mg","Tablet 20mg","Tablet 50mg","Solution 1mg/mL","Solution 5mg/mL"],
-    sigs:["40mg PO daily × 5 days (COPD exacerbation — REDUCE Trial)","40–60mg PO daily × 5 days (asthma exacerbation — no taper if < 7 days)","1mg/kg PO daily (max 60mg) × 3–5 days (pediatric asthma)","0.6mg/kg PO × 1 dose (croup — Bjornson 2004)"],
-    renal:"No dose adjustment",
-    hepatic:"Use prednisolone instead of prednisone in severe hepatic disease (impaired conversion)",
-    peds:"Asthma: 1mg/kg/day (max 60mg) × 3–5 days; Croup: 0.6mg/kg × 1 dose (max 16mg)",
-    interactions:["Fluoroquinolones — tendon rupture risk","NSAIDs — GI ulcer risk (additive)","Antidiabetics — hyperglycemia","CYP3A4 inducers (rifampin) — reduced effect","Live vaccines — AVOID"],
-    allergyFlags:["Corticosteroid allergy","DM — significant hyperglycemia","Active infections — relative CI"],
-    maxDose:"Context-dependent; immunosuppression doses up to 2mg/kg/day",cost:"$",formulary:"Tier 1",note:"Dexamethasone 0.6mg/kg (max 16mg) × 2 days non-inferior for asthma (better adherence). No taper needed for courses < 7 days. Monitor glucose in diabetics."},
-  // Psychiatric
-  {id:"sertraline",name:"Sertraline",brand:"Zoloft",cls:"Psychiatric",sub:"SSRI",sch:null,controlled:false,
-    forms:["Tablet 25mg","Tablet 50mg","Tablet 100mg","Solution 20mg/mL"],
-    sigs:["25mg PO daily × 1 week, then 50mg PO daily (MDD)","50mg PO daily (panic disorder — start 25mg if anxious)","50–200mg PO daily (maintenance)"],
-    renal:"No dose adjustment required",
-    hepatic:"Reduce dose 50% or extend interval in significant hepatic disease",
-    peds:"OCD ≥ 6 yr: 25mg daily (start 12.5mg if anxious); MDD ≥ 6 yr off-label",
-    interactions:["MAOIs — CONTRAINDICATED; fatal serotonin syndrome (14-day washout)","Linezolid — serotonin syndrome","Tramadol — serotonin syndrome","Warfarin — increased bleeding","Tamoxifen — reduced efficacy (CYP2D6 inhibition)","Triptans — serotonin syndrome (monitor)"],
-    allergyFlags:["SSRI class allergy","Hyponatremia history — SIADH risk"],
-    maxDose:"200mg/day",cost:"$",formulary:"Tier 1",note:"4–6 weeks for therapeutic effect; taper over ≥ 4 weeks when discontinuing to avoid discontinuation syndrome; weight-neutral compared to other SSRIs; preferred in cardiac patients"},
-  {id:"lorazepam",name:"Lorazepam",brand:"Ativan",cls:"Psychiatric",sub:"Benzodiazepine",sch:"IV",controlled:true,
-    forms:["Tablet 0.5mg","Tablet 1mg","Tablet 2mg","Solution 2mg/mL","Injection 2mg/mL","Injection 4mg/mL"],
-    sigs:["0.5–1mg PO BID–TID PRN anxiety","1–2mg IV/IM q4–6h PRN (acute agitation — hospital)","4mg IV q10–15 min × 2 (status epilepticus — FIRST LINE)"],
-    renal:"No dose adjustment (hepatically metabolized)",
-    hepatic:"Reduce dose; glucuronidation largely preserved unlike other BZDs",
-    peds:"0.05–0.1mg/kg IV/IM (max 4mg/dose) for status epilepticus; 0.025–0.05mg/kg PO for anxiety",
-    interactions:["CNS depressants — respiratory depression","Opioids — FDA black box: fatal respiratory depression","Valproic acid — increased lorazepam levels","Clozapine — respiratory arrest (avoid IV combination)"],
-    allergyFlags:["Benzodiazepine allergy","Respiratory depression — absolute CI","History of BZD dependence — risk counseling"],
-    maxDose:"10mg/day (outpatient anxiety); higher doses in acute seizures/agitation (monitor respiration)",cost:"$",formulary:"Tier 2",sch:"IV",note:"Schedule IV; no active metabolites (preferred in hepatic disease vs diazepam); sublingual route effective; falls risk in elderly (Beers Criteria)"},
-  // GI
-  {id:"pantoprazole",name:"Pantoprazole",brand:"Protonix",cls:"GI",sub:"Proton Pump Inhibitor",sch:null,controlled:false,
-    forms:["Tablet 20mg","Tablet 40mg","IV 40mg","Granules 40mg (enteric coated — NG use)"],
-    sigs:["40mg PO daily before breakfast (GERD/peptic ulcer)","40mg PO BID × 14 days (H. pylori — part of triple therapy)","40mg IV q12h (upper GI bleed — post-endoscopy high-dose)","40mg PO daily × 4–8 weeks (erosive esophagitis)"],
-    renal:"No dose adjustment",
-    hepatic:"Max 40mg/day in severe hepatic disease",
-    peds:"≥5 yr: 20mg PO daily (15–39kg); 40mg PO daily (≥40kg) — GERD",
-    interactions:["Methotrexate — increased toxicity","Clopidogrel — reduced efficacy (less than omeprazole)","Posaconazole/itraconazole — reduced antifungal absorption","Atazanavir — reduced absorption (AVOID PPI combination)","Mycophenolate — reduced levels"],
-    allergyFlags:["PPI class allergy (rare)","Hypomagnesemia — monitor with long-term use"],
-    maxDose:"80mg/day (standard); 160mg/day high-dose GI bleed protocol",cost:"$",formulary:"Tier 1",note:"Take 30–60 min before first meal for maximum efficacy; C. diff risk with long-term use; reassess need at ≥ 8 weeks; preferred over omeprazole with clopidogrel (less CYP2C19 inhibition)"},
-  {id:"ondansetron",name:"Ondansetron",brand:"Zofran",cls:"GI",sub:"5-HT3 Antagonist (Antiemetic)",sch:null,controlled:false,
-    forms:["Tablet 4mg","Tablet 8mg","ODT 4mg","ODT 8mg","Solution 4mg/5mL","IV 2mg/mL"],
-    sigs:["4mg PO/ODT/IV q8h PRN nausea","8mg PO/ODT/IV q8h × 1–2 days (CINV)","0.15mg/kg IV q4h × 3 doses (CINV — weight-based)"],
-    renal:"No dose adjustment",
-    hepatic:"Severe hepatic disease: max 8mg/day",
-    peds:"≥4 yr: 0.15mg/kg IV (max 4mg) or 4mg ODT q8h PRN",
-    interactions:["QTc-prolonging agents — additive (significant with high IV doses)","Apomorphine — severe hypotension (CONTRAINDICATED)","Tramadol — serotonin syndrome","SSRIs — serotonin syndrome (rare)"],
-    allergyFlags:["5-HT3 antagonist allergy","Congenital long QT — monitor ECG"],
-    maxDose:"24–32mg/day",cost:"$",formulary:"Tier 1",note:"ODT formulation does not require water — ideal for vomiting patients; do NOT give 32mg IV single dose (QTc risk — FDA warning removed this dosing); IV > PO for peak effect; constipation common with repeated dosing"},
-  // Endocrine
-  {id:"metformin",name:"Metformin",brand:"Glucophage",cls:"Endocrine",sub:"Biguanide",sch:null,controlled:false,
-    forms:["Tablet 500mg","Tablet 850mg","Tablet 1000mg","ER Tablet 500mg","ER Tablet 750mg","ER Tablet 1000mg","Solution 500mg/5mL"],
-    sigs:["500mg PO BID with meals (start — reduce GI side effects)","500mg PO TID with meals","1000mg PO BID with meals (standard maintenance)","1500–2000mg/day ÷ BID–TID (therapeutic range)"],
-    renal:"CrCl 30–45: continue with caution (no new starts); CrCl <30: CONTRAINDICATED (lactic acidosis); eGFR < 45 restart: contraindicated for new starts",
-    hepatic:"AVOID — impaired lactate clearance, lactic acidosis risk",
-    peds:"10–17 yr: 500mg PO BID, titrate to 2000mg/day (FDA approved for Type 2 DM)",
-    interactions:["IV contrast — hold 48h post-contrast in at-risk patients (eGFR <60)","Alcohol — increased lactic acidosis risk","Cimetidine — increased metformin levels","Carbonic anhydrase inhibitors — lactic acidosis"],
-    allergyFlags:["Metformin allergy (rare)","eGFR <30 — CONTRAINDICATED","IV contrast — hold per protocol","Hepatic disease — AVOID"],
-    maxDose:"2550mg/day (standard max); ER formulation preferred for GI tolerability",cost:"$",formulary:"Tier 1",note:"Take with meals to minimize GI effects; hold day of and 48h after IV contrast if eGFR <60; B12 deficiency with long-term use — monitor annually; weight-neutral to modest weight loss"},
-  // Neuro
-  {id:"sumatriptan",name:"Sumatriptan",brand:"Imitrex",cls:"Neurology",sub:"Triptan (5-HT1B/1D Agonist)",sch:null,controlled:false,
-    forms:["Tablet 25mg","Tablet 50mg","Tablet 100mg","Nasal spray 5mg","Nasal spray 20mg","SC injection 4mg","SC injection 6mg"],
-    sigs:["50–100mg PO at headache onset; may repeat × 1 in 2h (max 200mg/day)","20mg intranasal at onset; may repeat × 1 in 2h","6mg SC at onset; may repeat × 1 in 1h (max 12mg/day)"],
-    renal:"No dose adjustment",
-    hepatic:"Avoid in severe hepatic disease; max 50mg oral dose (mild-mod)",
-    peds:"≥ 12 yr: nasal spray 5–20mg (adolescent migraine); oral data limited",
-    interactions:["MAOIs — CONTRAINDICATED (14-day washout)","Ergotamines — vasoconstriction AVOID (24h separation)","SSRIs/SNRIs — serotonin syndrome (weak interaction — monitor)","Linezolid — serotonin syndrome","St. John's Wort — serotonin syndrome"],
-    allergyFlags:["Triptan allergy","Coronary artery disease — CONTRAINDICATED","Uncontrolled HTN — CONTRAINDICATED","Hemiplegic/basilar migraine — CONTRAINDICATED","Stroke history — CONTRAINDICATED"],
-    maxDose:"200mg/day (oral); 12mg/day (SC); 40mg/day (nasal)",cost:"$$",formulary:"Tier 2",note:"Treat at migraine onset — most effective early; SC route fastest onset; do NOT use > 10 days/month (medication overuse headache); verify no cardiovascular risk before prescribing"},
-];
+// DRUGS array kept as fallback if DB is empty
+const DRUGS_FALLBACK = [];
 
 // ── Pediatric Dosing Configurations ────────────────────────────────
 // Structured per-drug peds data: indications, mg/kg dosing, available
@@ -1020,22 +834,22 @@ function Select({ value, onChange, options, placeholder }) {
 }
 
 // ── Drug Search Panel ──────────────────────────────────────────────
-function DrugSearchPanel({ onSelect, selected, favorites, onToggleFav, patientAllergies, activeRx }) {
+function DrugSearchPanel({ onSelect, selected, favorites, onToggleFav, patientAllergies, activeRx, drugs }) {
   const [query, setQuery] = useState("");
   const [cls, setCls] = useState("All");
   const [view, setView] = useState("search"); // search | condition | favorites
 
-  const classes = ["All",...[...new Set(DRUGS.map(d=>d.cls))]];
+  const classes = ["All",...[...new Set(drugs.map(d=>d.cls))]].filter(Boolean);
 
   const filtered = useMemo(() => {
-    if (view === "favorites") return DRUGS.filter(d=>favorites.includes(d.id));
+    if (view === "favorites") return drugs.filter(d=>favorites.includes(d.id));
     const q = query.toLowerCase().trim();
-    return DRUGS.filter(d => {
+    return drugs.filter(d => {
       const matchCls = cls === "All" || d.cls === cls;
-      const matchQ   = !q || d.name.toLowerCase().includes(q) || d.brand.toLowerCase().includes(q) || d.sub.toLowerCase().includes(q) || d.cls.toLowerCase().includes(q);
+      const matchQ   = !q || d.name.toLowerCase().includes(q) || (d.brand||'').toLowerCase().includes(q) || (d.sub||'').toLowerCase().includes(q) || (d.cls||'').toLowerCase().includes(q);
       return matchCls && matchQ;
     });
-  },[query, cls, view, favorites]);
+  },[query, cls, view, favorites, drugs]);
 
   const allergyAlert = (drug) => {
     for (const [allergyClass, drugIds] of Object.entries(ALLERGY_CLASSES)) {
@@ -1077,7 +891,7 @@ function DrugSearchPanel({ onSelect, selected, favorites, onToggleFav, patientAl
               <div style={{ fontFamily:"DM Sans",fontSize:10.5,color:T.txt3,marginBottom:8,lineHeight:1.5 }}>{cs.note}</div>
               <div style={{ display:"flex",flexWrap:"wrap",gap:5 }}>
                 {cs.drugs.map(did => {
-                  const d = DRUGS.find(x=>x.id===did);
+                           const d = drugs.find(x=>x.id===did);
                   if (!d) return null;
                   const isActive = selected?.id === d.id;
                   const hasAllergy = allergyAlert(d);
@@ -1495,6 +1309,19 @@ export default function ERxHub() {
   const [newAllergy, setNewAllergy] = useState("");
   const [showSuccess, setShowSuccess] = useState(null);
 
+  // Load drugs from database
+  const { data: dbDrugs = [], isLoading: drugsLoading } = useQuery({
+    queryKey: ["ERxDrug"],
+    queryFn: () => base44.entities.ERxDrug.list("name", 200),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Map DB records: data lives in record.data, id from drug_id
+  const DRUGS = useMemo(() => {
+    if (!dbDrugs.length) return DRUGS_FALLBACK;
+    return dbDrugs.map(r => ({ ...r.data, id: r.data.drug_id }));
+  }, [dbDrugs]);
+
   const sec = SECTIONS.find(s=>s.id===activeSection);
   const activeRxIds = signedRx.map(p=>p.id);
 
@@ -1620,17 +1447,20 @@ export default function ERxHub() {
           <div style={{ flex:1 }}/>
           <div style={{ ...deep({borderRadius:10}),padding:"10px 12px",marginTop:8 }}>
             <div style={{ fontFamily:"JetBrains Mono",fontSize:8,color:T.txt4,textTransform:"uppercase",letterSpacing:1,marginBottom:8 }}>DRUG DATABASE</div>
-            {[{l:"Total Drugs",v:DRUGS.length},{l:"Controlled",v:DRUGS.filter(d=>d.controlled).length},{l:"Favorites",v:favorites.length}].map((r,i)=>(
+            {drugsLoading ? (
+              <div style={{ fontFamily:"DM Sans",fontSize:11,color:T.txt4 }}>Loading…</div>
+            ) : [{l:"Total Drugs",v:DRUGS.length},{l:"Controlled",v:DRUGS.filter(d=>d.controlled).length},{l:"Favorites",v:favorites.length}].map((r,i)=>(
               <div key={i} style={{ display:"flex",justifyContent:"space-between",padding:"3px 0",borderBottom:i<2?"1px solid rgba(26,53,85,0.3)":"none" }}>
                 <span style={{ fontFamily:"DM Sans",fontSize:10,color:T.txt3 }}>{r.l}</span>
                 <span style={{ fontFamily:"JetBrains Mono",fontSize:10,fontWeight:700,color:T.teal }}>{r.v}</span>
               </div>
             ))}
-          </div>
-        </div>
+            }
+            </div>
+            </div>
 
-        {/* Main content */}
-        <div style={{ flex:1,minWidth:0,display:"flex",flexDirection:"column",overflow:"hidden" }}>
+            {/* Main content */}
+            <div style={{ flex:1,minWidth:0,display:"flex",flexDirection:"column",overflow:"hidden" }}>
           {/* Section header */}
           <div style={{ ...glass({borderRadius:0,background:`linear-gradient(135deg,${sec.color}12,rgba(8,22,40,0.9))`,borderColor:sec.color+"33",borderLeft:"none",borderRight:"none",borderTop:"none"}),padding:"12px 24px",flexShrink:0,overflow:"hidden",position:"relative" }}>
             <div style={{ position:"absolute",top:-20,right:-10,fontSize:90,opacity:.05 }}>{sec.icon}</div>
@@ -1658,6 +1488,7 @@ export default function ERxHub() {
                     onToggleFav={handleToggleFav}
                     patientAllergies={patientAllergies}
                     activeRx={activeRxIds}
+                    drugs={DRUGS}
                   />
                 </div>
                 {/* Rx Builder column */}
@@ -1681,7 +1512,7 @@ export default function ERxHub() {
                       </div>
                       {/* Compact quick-select */}
                       <div style={{ display:"flex",flexWrap:"wrap",gap:6,marginTop:8,justifyContent:"center",maxWidth:400 }}>
-                        {DRUGS.filter(d=>favorites.includes(d.id)).slice(0,6).map(d=>(
+                          {DRUGS.filter(d=>favorites.includes(d.id)).slice(0,6).map(d=>(
                           <button key={d.id} onClick={()=>setSelectedDrug(d)}
                             style={{ padding:"6px 14px",borderRadius:20,background:"rgba(0,229,192,0.08)",border:"1px solid rgba(0,229,192,0.25)",color:T.teal,fontFamily:"DM Sans",fontWeight:600,fontSize:12,cursor:"pointer" }}>
                             ⭐ {d.name}
@@ -1733,7 +1564,7 @@ export default function ERxHub() {
                       <div style={{ fontFamily:"DM Sans",fontSize:11,color:T.txt4 }}>{rx.date}</div>
                     </div>
                     {rx.status==="Active" && (
-                      <button onClick={()=>{ const d=DRUGS.find(x=>rx.name.toLowerCase().includes(x.name.toLowerCase())); if(d){setSelectedDrug(d);setActiveSection("prescribe");} }}
+                      <button onClick={()=>{ const d=DRUGS.find(x=>rx.name.toLowerCase().includes(x.name.toLowerCase().trim())); if(d){setSelectedDrug(d);setActiveSection("prescribe");} }}
                         style={{ padding:"5px 12px",borderRadius:7,background:"rgba(0,229,192,0.1)",border:"1px solid rgba(0,229,192,0.25)",color:T.teal,fontFamily:"DM Sans",fontWeight:600,fontSize:11,cursor:"pointer" }}>
                         Renew
                       </button>
@@ -1845,7 +1676,7 @@ export default function ERxHub() {
       {/* Footer */}
       <div style={{ textAlign:"center",padding:"6px",borderTop:"1px solid rgba(26,53,85,0.3)",position:"relative",zIndex:2 }}>
         <span style={{ fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,letterSpacing:2 }}>
-          NOTRYA eRx · {DRUGS.length} DRUGS · PDMP ENFORCED · DDI CHECKING · FOR CLINICAL USE — VERIFY ALL PRESCRIPTIONS
+          NOTRYA eRx · {drugsLoading ? "…" : DRUGS.length} DRUGS · PDMP ENFORCED · DDI CHECKING · FOR CLINICAL USE — VERIFY ALL PRESCRIPTIONS
         </span>
       </div>
     </div>

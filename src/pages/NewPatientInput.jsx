@@ -295,31 +295,6 @@ export default function NewPatientInput() {
     <>
       <style>{CSS}</style>
 
-      {/* ═══ LEFT SIDEBAR ═══ */}
-      <aside className="npi-csb">
-        <div className="npi-csb-pt-card">
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--npi-txt)' }}>{patientName}</div>
-          <div style={{ fontSize: 10, color: 'var(--npi-txt3)', marginTop: 4 }}>NPI Chart</div>
-        </div>
-        {Object.entries(NAV_DATA).map(([groupKey, items]) => (
-          <div key={groupKey}>
-            {groupKey !== 'intake' && <div className="npi-csb-div" />}
-            <div className="npi-csb-group">{GROUP_META.find(m => m.key === groupKey)?.label}</div>
-            {items.map(item => (
-              <div
-                key={item.section}
-                className={`npi-csb-item${currentTab === item.section ? ' active' : ''}`}
-                onClick={() => selectSection(item.section)}
-              >
-                <span className="npi-csb-icon">{item.icon}</span>
-                <span style={{ flex: 1 }}>{item.label}</span>
-                <span className={`npi-csb-dot ${navDots[item.section]}`} />
-              </div>
-            ))}
-          </div>
-        ))}
-      </aside>
-
       {/* ═══ ICON SIDEBAR ═══ */}
       <aside className="npi-isb">
         <div className="npi-isb-logo">
@@ -565,23 +540,7 @@ const CSS = `
 .npi-btn-coral:hover{background:rgba(255,107,107,.25)}
 
 /* MAIN CONTENT */
-/* CHART SECTION SIDEBAR */
-.npi-csb{position:fixed;top:var(--npi-top);left:var(--npi-isb);bottom:var(--npi-bot);width:180px;background:var(--npi-panel);border-right:1px solid var(--npi-bd);overflow-y:auto;padding:10px 8px;display:flex;flex-direction:column;gap:1px;z-index:100}
-.npi-csb::-webkit-scrollbar{width:4px}.npi-csb::-webkit-scrollbar-thumb{background:var(--npi-bd);border-radius:2px}
-.npi-csb-pt-card{background:var(--npi-card);border:1px solid var(--npi-bd);border-radius:8px;padding:12px;margin-bottom:6px}
-.npi-csb-group{font-size:9px;color:var(--npi-txt4);text-transform:uppercase;letter-spacing:.08em;padding:10px 8px 4px;font-weight:600}
-.npi-csb-group:first-of-type{padding-top:4px}
-.npi-csb-item{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:6px;cursor:pointer;transition:all .15s;border:1px solid transparent;font-size:12px;color:var(--npi-txt2);user-select:none}
-.npi-csb-item:hover{background:var(--npi-up);border-color:var(--npi-bd);color:var(--npi-txt)}
-.npi-csb-item.active{background:rgba(59,158,255,.1);border-color:rgba(59,158,255,.3);color:var(--npi-blue)}
-.npi-csb-icon{font-size:13px;width:18px;text-align:center;flex-shrink:0}
-.npi-csb-dot{width:6px;height:6px;border-radius:50%;margin-left:auto;flex-shrink:0;background:var(--npi-bd)}
-.npi-csb-dot.done{background:var(--npi-teal);box-shadow:0 0 5px rgba(0,229,192,.5)}
-.npi-csb-dot.partial{background:var(--npi-orange);box-shadow:0 0 5px rgba(255,159,67,.5)}
-.npi-csb-div{height:1px;background:var(--npi-bd);margin:6px 4px}
-
-/* MAIN CONTENT */
-.npi-main-wrap{position:fixed;top:var(--npi-top);left:calc(var(--npi-isb) + 180px);right:0;bottom:var(--npi-bot);display:flex;background:var(--npi-bg)}
+.npi-main-wrap{position:fixed;top:var(--npi-top);left:var(--npi-isb);right:0;bottom:var(--npi-bot);display:flex;background:var(--npi-bg)}
 .npi-content{flex:1;overflow-y:auto;padding:18px 28px 24px;display:flex;flex-direction:column;gap:18px;min-height:0}
 
 /* BOTTOM NAV */

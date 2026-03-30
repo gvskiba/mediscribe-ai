@@ -969,7 +969,7 @@ export default function ProviderBilling() {
   };
 
   return (
-    <div style={{background:T.bg,minHeight:"100vh",fontFamily:"DM Sans,sans-serif",display:"flex",flexDirection:"column",position:"relative",overflow:"hidden"}}>
+    <div style={{background:T.bg,minHeight:"100vh",fontFamily:"DM Sans,sans-serif",display:"flex",flexDirection:"column",position:"relative",overflow:"hidden",paddingTop:80}}>
       {/* Ambient glow */}
       <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0}}>
         <div style={{position:"absolute",top:"-15%",left:"-5%",width:"55%",height:"55%",background:`radial-gradient(circle,${active.color}16 0%,transparent 70%)`,transition:"background 1.2s ease"}}/>

@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 
 // ── Font + CSS Injection ───────────────────────────────────────────
@@ -1129,17 +1130,7 @@ const SECTIONS = [
 ];
 
 export default function ERxHub() {
-  const [activeSection, setActiveSection] = useState("prescribe");
-  const [selectedDrug, setSelectedDrug] = useState(null);
-  const [signedRx, setSignedRx] = useState([]);
-  const [favorites, setFavorites] = useState(["amox","albuterol","ondansetron","metformin"]);
-  const [patientWeight, setPatientWeight] = useState("");
-  const [patientAgeMonths, setPatientAgeMonths] = useState("");
-  const [patientAllergies, setPatientAllergies] = useState(["penicillin"]);
-  const [newAllergy, setNewAllergy] = useState("");
-  const [showSuccess, setShowSuccess] = useState(null);
-  const [transmitToast, setTransmitToast] = useState(false);
-  const [drugs, setDrugs] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loadDrugs = async () => {
@@ -1207,6 +1198,7 @@ export default function ERxHub() {
           <div style={{ height:1,flex:1,background:"linear-gradient(90deg,rgba(42,77,114,0.5),transparent)" }}/>
           <h1 className="erx-shimmer" style={{ fontFamily:"Playfair Display",fontSize:"clamp(18px,2.5vw,28px)",fontWeight:900,letterSpacing:-.5 }}>Electronic Prescribing</h1>
           <div style={{ height:1,width:24,background:"linear-gradient(90deg,transparent,rgba(42,77,114,0.5))" }}/>
+          <button onClick={()=>navigate('/hub')} style={{ display:"flex",alignItems:"center",gap:6,padding:"5px 14px",borderRadius:8,background:"rgba(14,37,68,0.8)",border:"1px solid rgba(42,77,114,0.5)",color:T.txt2,fontFamily:"DM Sans",fontSize:12,fontWeight:600,cursor:"pointer",flexShrink:0,transition:"all .15s" }} onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(0,229,192,0.4)";e.currentTarget.style.color=T.teal;}} onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(42,77,114,0.5)";e.currentTarget.style.color=T.txt2;}}>← Hub</button>
 
           {/* Patient context */}
           <div style={{ display:"flex",gap:8,alignItems:"center",flexWrap:"wrap" }}>

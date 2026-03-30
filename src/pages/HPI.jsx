@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import CreateTemplateModal from "@/components/hpi/CreateTemplateModal";
 
 // ── Font + CSS Injection ────────────────────────────────────────────
 (() => {
@@ -1000,13 +1001,14 @@ export default function HPIPage() {
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
+  const [showCreateTemplate, setShowCreateTemplate] = useState(false);
   const [clinicalSummary, setClinicalSummary] = useState("");
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [summaryCopied, setSummaryCopied] = useState(false);
 
   // Load templates from DB on mount
-  useEffect(() => {
+  const loadTemplates = useCallback(() => {
     base44.entities.HPITemplate.list("order", 100).then(rows => {
       setQuickTemplates(rows.map(r => ({
         id: r.id,
@@ -1017,6 +1019,10 @@ export default function HPIPage() {
       })));
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    loadTemplates();
+  }, [loadTemplates]);
 
   const cc = ccId ? CC_DATA[ccId] : null;
   const activeColor = cc?.color || T.teal;
@@ -1175,6 +1181,12 @@ export default function HPIPage() {
 
           <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
             <AudioRecorder onTranscript={handleTranscript} accentColor={activeColor} />
+            {ccId && (
+              <button onClick={() => setShowCreateTemplate(true)}
+                style={{ padding: "9px 16px", borderRadius: 10, background: "rgba(59,158,255,0.12)", border: "1px solid rgba(59,158,255,0.4)", color: "#3b9eff", fontFamily: "DM Sans", fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>
+                ⭐ Save Template
+              </button>
+            )}
             <button onClick={handleSave}
               style={{ padding: "9px 20px", borderRadius: 10, background: saved ? `linear-gradient(135deg,${T.green},#27ae60)` : `linear-gradient(135deg,${activeColor},${activeColor}bb)`, border: "none", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "DM Sans", transition: "all .3s" }}>
               {saved ? "✓ Saved!" : "💾 Save HPI"}
@@ -1304,6 +1316,15 @@ export default function HPIPage() {
       <div style={{ position: "relative", zIndex: 5, marginTop: 14 }}>
         <TemplateStrip onApply={applyTemplate} currentCC={ccId} templates={quickTemplates} />
       </div>
+
+      {showCreateTemplate && (
+        <CreateTemplateModal
+          onClose={() => setShowCreateTemplate(false)}
+          onSaved={loadTemplates}
+          currentCC={ccId}
+          currentFields={fields}
+        />
+      )}
 
       {/* Footer */}
       <div style={{ textAlign: "center", padding: "7px", borderTop: "1px solid rgba(26,53,85,0.3)", position: "relative", zIndex: 2 }}>

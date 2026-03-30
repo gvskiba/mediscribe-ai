@@ -36,7 +36,6 @@ const APP_ICONS = [
   { icon: '📝', label: 'New Note',  page: '/NewNote' },
   { icon: '👥', label: 'Patients',  page: '/PatientDashboard' },
   { icon: '🔄', label: 'Shift',     page: '/Shift' },
-  { icon: '📋', label: 'Orders',    page: '/NewPatientInput?tab=orders' },
   { icon: '💊', label: 'Drugs',     page: '/DrugsBugs' },
   { icon: '🧮', label: 'Calc',      page: '/Calculators' },
   { icon: '🏥', label: 'Hub',       page: '/hub' },
@@ -62,6 +61,7 @@ const CHART_GROUPS = [
     items: [
       { icon: '📝', label: 'HPI',             page: '/hpi' },
       { icon: '💊', label: 'Meds & PMH',         page: '/NewPatientInput?tab=meds' },
+      { icon: '📋', label: 'Orders',            page: '/NewPatientInput?tab=orders' },
       { icon: '🔍', label: 'Review of Systems',  page: '/NewPatientInput?tab=ros' },
       { icon: '🩺', label: 'Physical Exam',      page: '/NewPatientInput?tab=pe' },
       { icon: '⚖️', label: 'MDM',               page: '/NewPatientInput?tab=mdm' },

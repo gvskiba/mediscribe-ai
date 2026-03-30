@@ -1,0 +1,36 @@
+{
+  "name": "HPITemplate",
+  "type": "object",
+  "properties": {
+    "label": {
+      "type": "string",
+      "description": "Display name of the template"
+    },
+    "icon": {
+      "type": "string",
+      "description": "Emoji icon"
+    },
+    "cc": {
+      "type": "string",
+      "description": "Chief complaint ID key (e.g. chest_pain, dyspnea)"
+    },
+    "hpi_fields": {
+      "type": "object",
+      "description": "OPQRST field values: onset, quality, location, severity, radiation, duration, timing, worse, better, assoc, neg"
+    },
+    "is_system": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this is a built-in system template"
+    },
+    "order": {
+      "type": "number",
+      "default": 0,
+      "description": "Display order"
+    }
+  },
+  "required": [
+    "label",
+    "cc"
+  ]
+}

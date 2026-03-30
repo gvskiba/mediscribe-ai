@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useCallback } from "react";
+import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 
 // ── Font + CSS Injection ────────────────────────────────────────────
@@ -270,60 +270,6 @@ const CC_DATA = {
 };
 
 const CC_LIST = Object.entries(CC_DATA).map(([id, d]) => ({ id, ...d }));
-
-// ── Quick Templates ──────────────────────────────────────────────────
-const QUICK_TEMPLATES = [
-  { id:"stemi", label:"STEMI Presentation", icon:"❤️‍🔥", cc:"chest_pain",
-    fields:{ onset:"sudden", quality:["crushing","pressure"], location:"substernal", severity:9, radiation:"left arm", duration:"30 min–2 hrs", timing:"constant", worse:["exertion"], better:["nitroglycerin"], assoc:["diaphoresis","dyspnea","nausea"], neg:["no fever","no trauma"] } },
-  { id:"pe",    label:"PE Presentation",    icon:"🫁",     cc:"dyspnea",
-    fields:{ onset:"sudden", quality:["air hunger","unable to catch breath"], location:"at rest", severity:8, duration:"1–6 hrs", timing:"constant", worse:["exertion","lying flat"], better:["sitting upright"], assoc:["chest pain","palpitations","leg swelling"], neg:["no fever","no cough","no wheezing"] } },
-  { id:"appy",  label:"Appendicitis",       icon:"🫃",     cc:"abd_pain",
-    fields:{ onset:"gradual", quality:["sharp","constant"], location:"RLQ migrating from periumbilical", severity:7, radiation:"non-radiating", duration:"6–24 hrs", timing:"constant", worse:["movement","palpation","breathing"], better:["lying still"], assoc:["nausea","vomiting","fever","anorexia"], neg:["no diarrhea","no dysuria","no hematuria"] } },
-  { id:"sah",   label:"SAH / Thunderclap",  icon:"⚡",     cc:"headache",
-    fields:{ onset:"sudden thunderclap", quality:["splitting","worst headache of life"], location:"occipital", severity:10, radiation:"neck", duration:"constant", timing:"constant", worse:["movement","Valsalva"], better:["lying still"], assoc:["neck stiffness","nausea","vomiting","photophobia"], neg:["no focal neuro deficit","no prior episodes"] } },
-  { id:"renal", label:"Renal Colic",        icon:"💧",     cc:"abd_pain",
-    fields:{ onset:"sudden", quality:["colicky","sharp"], location:"flank", severity:9, radiation:"groin", duration:"2–6 hrs", timing:"intermittent", worse:["movement"], better:["NSAIDs","position change"], assoc:["nausea","vomiting","hematuria"], neg:["no fever","no diarrhea"] } },
-  { id:"stroke",label:"Stroke Presentation",icon:"🧠",     cc:"ams",
-    fields:{ onset:"sudden", quality:["confusion","focal neuro deficit"], location:"N/A — global", severity:null, duration:"hours", timing:"constant", worse:[""], better:[""], assoc:["focal neuro deficit","facial droop","speech difficulty","arm weakness","headache"], neg:["no fever","no trauma","no seizure"] } },
-  { id:"migraine",label:"Migraine",          icon:"💊",     cc:"headache",
-    fields:{ onset:"gradual", quality:["throbbing","pulsating"], location:"unilateral left", severity:8, radiation:"eye", duration:"4–72 hrs", timing:"constant", worse:["light (photophobia)","sound (phonophobia)","movement"], better:["dark room","quiet","triptans"], assoc:["nausea","vomiting","photophobia","phonophobia","visual aura"], neg:["no fever","no neck stiffness","no focal neuro deficit"] } },
-  { id:"gerd",  label:"GERD / ACS Mimic",   icon:"🔥",     cc:"chest_pain",
-    fields:{ onset:"gradual", quality:["burning","aching"], location:"epigastric", severity:5, radiation:"non-radiating", duration:"30 min–2 hrs", timing:"postprandial", worse:["eating","lying flat"], better:["antacids","sitting upright"], assoc:["nausea","sour taste","belching"], neg:["no diaphoresis","no dyspnea","no syncope","no exertional component"] } },
-
-  // ── Additional ED Quick Templates ──────────────────────────────────
-  { id:"nstemi",  label:"NSTEMI / UA",          icon:"💔",     cc:"chest_pain",
-    fields:{ onset:"gradual", quality:["pressure","squeezing"], location:"substernal", severity:7, radiation:"left arm", duration:"2–6 hrs", timing:"crescendo", worse:["exertion","stress"], better:["rest","nitroglycerin"], assoc:["dyspnea","diaphoresis","nausea"], neg:["no tearing quality","no fever","no pleuritic component"] } },
-  { id:"aortic_dissection", label:"Aortic Dissection", icon:"🩸", cc:"chest_pain",
-    fields:{ onset:"sudden", quality:["tearing","sharp"], location:"midsternal", severity:10, radiation:"back", duration:"6–24 hrs", timing:"constant", worse:["movement"], better:["nothing relieves"], assoc:["diaphoresis","syncope","leg swelling"], neg:["no fever","no cough","no trauma"] } },
-  { id:"copd_exac", label:"COPD Exacerbation",   icon:"😮‍💨",   cc:"dyspnea",
-    fields:{ onset:"gradual", quality:["air hunger","wheezing","unable to catch breath"], location:"with exertion", severity:7, duration:"days", timing:"progressive", worse:["exertion","cold air"], better:["bronchodilators","sitting upright"], assoc:["cough","wheezing","sputum production","fever"], neg:["no chest pain","no hemoptysis","no leg swelling"] } },
-  { id:"chf_exac",  label:"CHF Exacerbation",   icon:"💧",     cc:"dyspnea",
-    fields:{ onset:"gradual", quality:["air hunger","cannot complete sentences"], location:"lying flat", severity:8, duration:"days", timing:"progressive", worse:["lying flat","exertion","physical activity"], better:["sitting upright","supplemental O₂"], assoc:["orthopnea","PND","leg swelling","palpitations"], neg:["no fever","no hemoptysis","no chest pain"] } },
-  { id:"afib_rvr",  label:"A-Fib with RVR",     icon:"💓",     cc:"palpitations",
-    fields:{ onset:"sudden", quality:["irregular","racing","pounding"], location:"N/A — cardiac", severity:7, duration:"1–6 hrs", timing:"constant", worse:["exertion","caffeine","alcohol"], better:["rest","vagal maneuvers"], assoc:["dyspnea","chest pain","near-syncope","diaphoresis"], neg:["no prior episodes","no syncope","no drug use"] } },
-  { id:"htn_urg",   label:"Hypertensive Urgency",icon:"📈",    cc:"headache",
-    fields:{ onset:"gradual", quality:["throbbing","pressure","dull"], location:"occipital", severity:7, radiation:"neck", duration:"hours", timing:"constant", worse:["exertion","stress","bending forward"], better:["antihypertensives","rest"], assoc:["nausea","vomiting","visual aura","photophobia"], neg:["no focal neuro deficit","no altered consciousness","no chest pain"] } },
-  { id:"pancreatitis", label:"Pancreatitis",     icon:"🔥",     cc:"abd_pain",
-    fields:{ onset:"sudden", quality:["sharp","knife-like","burning"], location:"epigastric", severity:9, radiation:"back", duration:"6–24 hrs", timing:"constant", worse:["eating","lying flat","fatty foods"], better:["leaning forward","NPO","position change"], assoc:["nausea","vomiting","fever","anorexia"], neg:["no diarrhea","no hematuria","no hematochezia"] } },
-  { id:"diverticulitis", label:"Diverticulitis", icon:"🫃",    cc:"abd_pain",
-    fields:{ onset:"gradual", quality:["sharp","constant","aching"], location:"LLQ", severity:7, radiation:"non-radiating", duration:"days", timing:"constant", worse:["palpation","movement","eating"], better:["NPO","NSAIDs","lying still"], assoc:["fever","nausea","constipation","anorexia"], neg:["no hematochezia","no hematuria","no jaundice"] } },
-  { id:"uti_pyelo",  label:"UTI / Pyelonephritis",icon:"🧫",  cc:"fever",
-    fields:{ onset:"gradual", quality:["measured fever","rigors/chills"], location:"+ localizing symptoms below", severity:7, duration:"days", timing:"constant", worse:["nighttime"], better:["antipyretics","antibiotics (started)","rest"], assoc:["dysuria","abdominal pain","headache","nausea"], neg:["no neck stiffness","no rash","no respiratory symptoms","no travel history"] } },
-  { id:"anaphylaxis", label:"Anaphylaxis",       icon:"🚨",    cc:"dyspnea",
-    fields:{ onset:"sudden", quality:["air hunger","unable to catch breath","tightness"], location:"at rest", severity:9, duration:"< 1 hr", timing:"progressive", worse:["allergen exposure","standing"], better:["epinephrine","supplemental O₂","lying flat"], assoc:["chest pain","wheezing","fever","palpitations"], neg:["no prior episode","no cough before onset"] } },
-  { id:"seizure",   label:"Post-Seizure / AMS",  icon:"⚡",    cc:"ams",
-    fields:{ onset:"sudden", quality:["confusion","lethargy","disorientation"], location:"N/A — global", severity:null, duration:"hours", timing:"fluctuating", worse:["pain","unfamiliar environment","urinary retention"], better:["reorientation","quiet environment","pain control"], assoc:["seizure","incontinence","fever","recent fall","headache"], neg:["no fever","no neck stiffness","no focal neuro deficit","no trauma"] } },
-  { id:"hypoglycemia", label:"Hypoglycemia",     icon:"🍬",    cc:"ams",
-    fields:{ onset:"sudden", quality:["confusion","agitation","diaphoresis"], location:"N/A — global", severity:null, duration:"hours", timing:"fluctuating", worse:["fasting","insulin","medication change"], better:["dextrose","oral glucose","familiar persons"], assoc:["diaphoresis","seizure","headache","nausea","metabolic derangement"], neg:["no fever","no focal neuro deficit","no head trauma","no neck stiffness"] } },
-  { id:"dvt",       label:"DVT / Leg Swelling",  icon:"🦵",    cc:"extremity",
-    fields:{ onset:"gradual", quality:["swelling","aching","warmth"], location:"right knee", severity:5, radiation:"distal", duration:"days", timing:"constant", worse:["weight-bearing","movement","palpation"], better:["elevation","rest","NSAIDs"], assoc:["swelling","erythema","warmth","restricted ROM"], neg:["no deformity","no neurovascular deficit","no fever","no skin breakdown"] } },
-  { id:"cellulitis", label:"Cellulitis / SSTi",  icon:"🔴",    cc:"extremity",
-    fields:{ onset:"gradual", quality:["erythema","warmth","swelling","aching"], location:"right ankle", severity:5, radiation:"proximal", duration:"days", timing:"progressive", worse:["weight-bearing","palpation","cold"], better:["elevation","rest","ice","antibiotics"], assoc:["erythema","warmth","swelling","fever","skin changes"], neg:["no deformity","no neurovascular deficit","no abscess"] } },
-  { id:"vertigo_bppv", label:"BPPV / Vertigo",  icon:"💫",    cc:"dizziness",
-    fields:{ onset:"with position change", quality:["true vertigo — room spinning","spinning sensation"], location:"N/A", severity:7, duration:"seconds", timing:"positional", worse:["head movement","rolling in bed","Dix-Hallpike"], better:["lying still","closing eyes","certain positions"], assoc:["nausea","vomiting","falls"], neg:["no focal neuro deficit","no headache","no hearing loss","no tinnitus","no diplopia","no dysarthria"] } },
-  { id:"syncope_vasovagal", label:"Vasovagal Syncope", icon:"😵", cc:"syncope",
-    fields:{ onset:"preceded by prodrome", quality:["near-syncope","presyncope","complete LOC"], location:"standing", severity:null, duration:"< 30 sec", timing:"single episode", worse:["prolonged standing","pain/fear","dehydration","heat"], better:["lying supine","fluids","cool environment"], assoc:["diaphoresis","pallor","nausea","prodrome"], neg:["no chest pain","no palpitations prior","no tongue bite","no post-ictal state","no incontinence"] } },
-];
 
 // ── Narrative Builder ────────────────────────────────────────────────
 function buildNarrative(ccId, fields, customText, patientName) {
@@ -739,9 +685,9 @@ function NarrativePanel({ narrative, ccId, fields, color, onAIEnhance, aiLoading
 // ═══════════════════════════════════════════════════════════════════
 // TEMPLATE STRIP
 // ═══════════════════════════════════════════════════════════════════
-function TemplateStrip({ onApply, currentCC }) {
+function TemplateStrip({ onApply, currentCC, templates = [] }) {
   const [open, setOpen] = useState(false);
-  const visible = currentCC ? QUICK_TEMPLATES.filter(t => t.cc === currentCC) : QUICK_TEMPLATES;
+  const visible = currentCC ? templates.filter(t => t.cc === currentCC) : templates;
 
   return (
     <div style={{ ...deepGlass({ borderRadius: 0, borderTop: "1px solid rgba(26,53,85,0.6)", borderBottom: "none", borderLeft: "none", borderRight: "none" }), padding: "0" }}>
@@ -778,6 +724,7 @@ const EMPTY_FIELDS = {
 };
 
 export default function HPIPage() {
+  const [quickTemplates, setQuickTemplates] = useState([]);
   const [ccId, setCCId] = useState(null);
   const [fields, setFields] = useState(EMPTY_FIELDS);
   const [customText, setCustomText] = useState("");
@@ -790,6 +737,19 @@ export default function HPIPage() {
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
+
+  // Load templates from DB on mount
+  useEffect(() => {
+    base44.entities.HPITemplate.list("order", 100).then(rows => {
+      setQuickTemplates(rows.map(r => ({
+        id: r.id,
+        label: r.label,
+        icon: r.icon || "📋",
+        cc: r.cc,
+        fields: r.hpi_fields || {},
+      })));
+    }).catch(() => {});
+  }, []);
 
   const cc = ccId ? CC_DATA[ccId] : null;
   const activeColor = cc?.color || T.teal;
@@ -831,7 +791,7 @@ export default function HPIPage() {
   // Apply template
   const applyTemplate = (t) => {
     setCCId(t.cc);
-    setFields({ ...EMPTY_FIELDS, ...t.fields });
+    setFields({ ...EMPTY_FIELDS, ...(t.fields || t.hpi_fields || {}) });
     setEditMode(false);
     setFinalNarrative(null); // Fix 2: clear committed edit on template apply
   };
@@ -1052,7 +1012,7 @@ export default function HPIPage() {
 
       {/* Template strip */}
       <div style={{ position: "relative", zIndex: 5, marginTop: 14 }}>
-        <TemplateStrip onApply={applyTemplate} currentCC={ccId} />
+        <TemplateStrip onApply={applyTemplate} currentCC={ccId} templates={quickTemplates} />
       </div>
 
       {/* Footer */}

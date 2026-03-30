@@ -41,10 +41,10 @@ const NAV_DATA = {
     { section: "orders",     icon: "📋", label: "Orders",              abbr: "Or", dot: "empty" },
     { section: "discharge",  icon: "🚪", label: "Discharge",           abbr: "Dc", dot: "empty" },
     { section: "erplan",     icon: "🗺️", label: "ER Plan Builder",     abbr: "Ep", dot: "empty" },
+    { section: "erx",        icon: "💉", label: "eRx",                 abbr: "Ex", dot: "empty" },
   ],
   tools: [
     { section: "autocoder",  icon: "🤖", label: "AutoCoder",           abbr: "Ac", dot: "empty" },
-    { section: "erx",        icon: "💉", label: "eRx",                 abbr: "Ex", dot: "empty" },
     { section: "procedures", icon: "✂️", label: "Procedures",          abbr: "Pr", dot: "empty" },
     { section: "medref",     icon: "🧬", label: "ED Med Ref",          abbr: "Mr", dot: "empty" },
     { section: "cardiac-hub", icon: "🏥", label: "Cardiac Hub",        abbr: "Ch", dot: "empty" },
@@ -278,7 +278,7 @@ export default function NewPatientInput() {
       case "mdm":  return <MedicalDecisionMaking embedded patientName={patientName} chiefComplaint={cc.text} />;
       case "chart":    return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto" }}><NotryaApp embedded={true} /></div>;
       case "discharge": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><DischargePlanning embedded /></div>;
-      case "erx": return <div style={{ display: "flex", gap: "16px", margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><div style={{ flex: 1, overflow: "hidden" }}><ERPlanBuilder embedded /></div><div style={{ flex: 1, overflow: "auto", paddingRight: "8px" }}><ERxHub /></div></div>;
+      case "erx": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", paddingBottom: "24px" }}><ERxHub /></div>;
       case "orders":   return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><EDOrders embedded /></div>;
       case "autocoder": return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} />;
       case "procedures": return <EDProcedureNotes embedded patientName={patientName} patientAllergies={allergies.join(", ")} physicianName="" />;

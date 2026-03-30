@@ -881,7 +881,7 @@ export default function AutocoderHub() {
       </nav>
 
       {/* ── MAIN CONTENT ── */}
-      <main style={{ flex:1, padding:"80px 36px 50px", overflowY:"auto", position:"relative", zIndex:1 }}>
+      <main style={{ flex:1, padding:"30px 36px 50px", overflowY:"auto", position:"relative", zIndex:1 }}>
         {/* Section label strip (from template) */}
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
           <div style={{ height:1, width:20, background:`${activeNav?.accent||AC}50`, borderRadius:1 }}/>

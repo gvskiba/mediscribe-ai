@@ -212,7 +212,6 @@ const deepGlass = (extra = {}) => ({
 
 // ── CMS Conversion Factor 2026 ───────────────────────────────────────
 const CF_2026 = 33.40;
-const CF_2025 = 32.35;
 
 // ═══════════════════════════════════════════════════════════════════
 // E&M CALCULATOR PANEL
@@ -620,11 +619,7 @@ function ShiftRVUPanel({ color }) {
   const estMedicare = (totalRVU * 1.35 * CF_2026).toFixed(2);
   const avgRVU = encounters.length ? (totalRVU / encounters.length).toFixed(2) : "0.00";
 
-  const levelCounts = useMemo(()=>{
-    const c = {};
-    encounters.forEach(e=>{ c[e.code]=(c[e.code]||0)+1; });
-    return c;
-  },[encounters]);
+
 
   return (
     <div className="bill-fade" style={{display:"flex",gap:14}}>
@@ -839,7 +834,7 @@ function ProcRVUPanel({ color }) {
       <div style={{...glass({borderRadius:12}),overflow:"hidden"}}>
         <div style={{display:"grid",gridTemplateColumns:"90px 1fr 90px 80px 80px",borderBottom:"1px solid rgba(26,53,85,0.4)"}}>
           {["CPT Code","Procedure Name","Category","wRVU","Est. Medicare '26"].map(h=>(
-            <th key={h} style={{padding:"10px 12px",fontSize:10,fontWeight:700,color:T.txt3,textTransform:"uppercase",letterSpacing:".06em",display:"block"}}>{h}</th>
+            <div key={h} style={{padding:"10px 12px",fontSize:10,fontWeight:700,color:T.txt3,textTransform:"uppercase",letterSpacing:".06em"}}>{h}</div>
           ))}
         </div>
         {filtered.map((p,i)=>{

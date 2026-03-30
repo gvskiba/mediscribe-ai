@@ -1,714 +1,915 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
-import ClaimValidationPanel from '../components/autocoder/ClaimValidationPanel';
-import { runValidation } from '../components/autocoder/claimValidation';
-import ClinicalTabBar from '../components/shared/ClinicalTabBar';
+import { useState, useEffect, useCallback } from "react";
 
-const TABS = ['note', 'icd', 'cpt', 'billing'];
+// ════════════════════════════════════════════════════════════
+//  FONT INJECTION  (idempotent — runs once at module load)
+// ════════════════════════════════════════════════════════════
+(() => {
+  if (document.getElementById("notrya-ac-fonts")) return;
+  const l = document.createElement("link");
+  l.id = "notrya-ac-fonts";
+  l.rel = "stylesheet";
+  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600&display=swap";
+  document.head.appendChild(l);
+})();
 
-const SAMPLE_NOTE = `CHIEF COMPLAINT: Chest pain, shortness of breath.
+// ════════════════════════════════════════════════════════════
+//  HUB IDENTITY
+// ════════════════════════════════════════════════════════════
+const AC = "#9b6dff"; // purple — AI / coding theme
 
-HPI: Mr. James Hartwell is a 67-year-old male with a history of hypertension and type 2 diabetes presenting with 2 days of substernal chest pressure radiating to the left arm, rated 6/10, associated with mild dyspnea on exertion and mild diaphoresis. Denies syncope, nausea, vomiting.
+// ── Design tokens (identical to template) ───────────────────
+const T = {
+  bg:"#050f1e", txt:"#e8f0fe", txt2:"#8aaccc", txt3:"#4a6a8a", txt4:"#2e4a6a",
+  border:"rgba(26,53,85,0.8)", borderHi:"rgba(42,79,122,0.9)",
+  coral:"#ff6b6b", gold:"#f5c842", teal:"#00e5c0", blue:"#3b9eff",
+  orange:"#ff9f43", purple:"#9b6dff", green:"#3dffa0",
+};
 
-PMH:
-- Hypertension — on lisinopril 10mg daily, poorly controlled
-- Type 2 diabetes mellitus — last A1c 8.4%
-- Hyperlipidemia — on atorvastatin 20mg
-- GERD
+// ════════════════════════════════════════════════════════════
+//  ICD-10 DATABASE
+// ════════════════════════════════════════════════════════════
+const ICD10_DB = [
+  { code:"R07.9",   desc:"Chest pain, unspecified",                             cat:"Cardiovascular" },
+  { code:"R07.1",   desc:"Chest pain on breathing",                             cat:"Cardiovascular" },
+  { code:"I21.9",   desc:"Acute myocardial infarction, unspecified",            cat:"Cardiovascular" },
+  { code:"I21.01",  desc:"STEMI involving left anterior descending artery",     cat:"Cardiovascular" },
+  { code:"I20.9",   desc:"Angina pectoris, unspecified",                        cat:"Cardiovascular" },
+  { code:"I10",     desc:"Essential (primary) hypertension",                    cat:"Cardiovascular" },
+  { code:"I16.0",   desc:"Hypertensive urgency",                                cat:"Cardiovascular" },
+  { code:"I16.1",   desc:"Hypertensive emergency",                              cat:"Cardiovascular" },
+  { code:"I48.91",  desc:"Unspecified atrial fibrillation",                     cat:"Cardiovascular" },
+  { code:"I47.2",   desc:"Ventricular tachycardia",                             cat:"Cardiovascular" },
+  { code:"I46.9",   desc:"Cardiac arrest, cause unspecified",                   cat:"Cardiovascular" },
+  { code:"R00.1",   desc:"Bradycardia, unspecified",                            cat:"Cardiovascular" },
+  { code:"I63.9",   desc:"Cerebral infarction, unspecified (CVA/Stroke)",       cat:"Neurological" },
+  { code:"G45.9",   desc:"Transient ischemic attack (TIA), unspecified",        cat:"Neurological" },
+  { code:"R51.9",   desc:"Headache, unspecified",                               cat:"Neurological" },
+  { code:"G43.909", desc:"Migraine, unspecified, not intractable",              cat:"Neurological" },
+  { code:"R55",     desc:"Syncope and collapse",                                cat:"Neurological" },
+  { code:"R56.9",   desc:"Unspecified convulsions",                             cat:"Neurological" },
+  { code:"G40.909", desc:"Epilepsy, unspecified, not intractable",              cat:"Neurological" },
+  { code:"R42",     desc:"Dizziness and giddiness",                             cat:"Neurological" },
+  { code:"H81.10",  desc:"Benign paroxysmal vertigo, unspecified ear",          cat:"Neurological" },
+  { code:"S06.0X0A",desc:"Concussion without loss of consciousness, initial",   cat:"Neurological" },
+  { code:"S09.90XA",desc:"Unspecified injury of head, initial encounter",       cat:"Neurological" },
+  { code:"R06.00",  desc:"Dyspnea, unspecified",                                cat:"Respiratory" },
+  { code:"J18.9",   desc:"Pneumonia, unspecified organism",                     cat:"Respiratory" },
+  { code:"J44.1",   desc:"COPD with acute exacerbation",                        cat:"Respiratory" },
+  { code:"J45.901", desc:"Unspecified asthma, uncomplicated",                   cat:"Respiratory" },
+  { code:"J96.00",  desc:"Acute respiratory failure, unspecified hypoxia",      cat:"Respiratory" },
+  { code:"J96.01",  desc:"Acute respiratory failure with hypoxia",              cat:"Respiratory" },
+  { code:"R05.9",   desc:"Cough, unspecified",                                  cat:"Respiratory" },
+  { code:"R10.9",   desc:"Unspecified abdominal pain",                          cat:"GI" },
+  { code:"R10.0",   desc:"Acute abdomen",                                       cat:"GI" },
+  { code:"K35.80",  desc:"Acute appendicitis without abscess",                  cat:"GI" },
+  { code:"K80.10",  desc:"Calculus of gallbladder with acute cholecystitis",    cat:"GI" },
+  { code:"K57.32",  desc:"Diverticulitis of large intestine without abscess",   cat:"GI" },
+  { code:"K92.1",   desc:"Melena",                                              cat:"GI" },
+  { code:"K92.0",   desc:"Hematemesis",                                         cat:"GI" },
+  { code:"A09",     desc:"Infectious gastroenteritis and colitis, unspecified", cat:"GI" },
+  { code:"N23",     desc:"Unspecified renal colic",                             cat:"GU" },
+  { code:"N10",     desc:"Acute pyelonephritis",                                cat:"GU" },
+  { code:"N39.0",   desc:"Urinary tract infection, site not specified",         cat:"GU" },
+  { code:"R31.9",   desc:"Hematuria, unspecified",                              cat:"GU" },
+  { code:"M54.50",  desc:"Low back pain, unspecified",                          cat:"MSK" },
+  { code:"M25.511", desc:"Pain in right shoulder",                              cat:"MSK" },
+  { code:"M17.11",  desc:"Primary osteoarthritis, right knee",                  cat:"MSK" },
+  { code:"S93.401A",desc:"Sprain of right ankle ligament, initial encounter",   cat:"Trauma" },
+  { code:"S72.001A",desc:"Fracture of femoral neck, unspecified, initial",      cat:"Trauma" },
+  { code:"S52.501A",desc:"Unspecified fracture lower end of radius, initial",   cat:"Trauma" },
+  { code:"S01.00XA",desc:"Unspecified open wound of scalp, initial encounter",  cat:"Trauma" },
+  { code:"T14.90",  desc:"Injury, unspecified",                                 cat:"Trauma" },
+  { code:"L03.90",  desc:"Cellulitis, unspecified",                             cat:"Derm" },
+  { code:"R21",     desc:"Rash and other nonspecific skin eruption",            cat:"Derm" },
+  { code:"T78.2XXA",desc:"Anaphylactic shock, unspecified, initial encounter",  cat:"Allergy" },
+  { code:"R50.9",   desc:"Fever, unspecified",                                  cat:"Infectious" },
+  { code:"A41.9",   desc:"Sepsis, unspecified organism",                        cat:"Infectious" },
+  { code:"A41.01",  desc:"Sepsis due to Methicillin-resistant Staphylococcus",  cat:"Infectious" },
+  { code:"E11.65",  desc:"Type 2 diabetes mellitus with hyperglycemia",         cat:"Endocrine" },
+  { code:"E16.0",   desc:"Drug-induced hypoglycemia without coma",              cat:"Endocrine" },
+  { code:"E11.641", desc:"Type 2 DM with hypoglycemia with coma",               cat:"Endocrine" },
+  { code:"R73.09",  desc:"Other abnormal glucose",                              cat:"Endocrine" },
+  { code:"F10.20",  desc:"Alcohol use disorder, moderate, uncomplicated",       cat:"Tox" },
+  { code:"T51.0X1A",desc:"Toxic effects of ethanol, accidental, initial",       cat:"Tox" },
+  { code:"R57.9",   desc:"Shock, unspecified",                                  cat:"Critical" },
+  { code:"R57.1",   desc:"Hypovolemic shock",                                   cat:"Critical" },
+];
 
-MEDICATIONS: Lisinopril 10mg, atorvastatin 20mg, metformin 1000mg BID, pantoprazole 40mg, aspirin 81mg (started today).
+// ════════════════════════════════════════════════════════════
+//  CPT DATABASE
+// ════════════════════════════════════════════════════════════
+const CPT_DB = [
+  { code:"99281", desc:"ED visit — minimal severity, self-limited",              cat:"ED E&M",    rvu:0.80 },
+  { code:"99282", desc:"ED visit — low to moderate severity",                    cat:"ED E&M",    rvu:1.48 },
+  { code:"99283", desc:"ED visit — moderate severity",                           cat:"ED E&M",    rvu:2.60 },
+  { code:"99284", desc:"ED visit — high severity, urgent evaluation required",   cat:"ED E&M",    rvu:4.00 },
+  { code:"99285", desc:"ED visit — high severity, high complexity MDM",          cat:"ED E&M",    rvu:5.28 },
+  { code:"99202", desc:"Office/outpatient, new pt — straightforward MDM",        cat:"Office",    rvu:1.60 },
+  { code:"99203", desc:"Office/outpatient, new pt — low complexity MDM",         cat:"Office",    rvu:2.60 },
+  { code:"99204", desc:"Office/outpatient, new pt — moderate complexity MDM",    cat:"Office",    rvu:3.82 },
+  { code:"99205", desc:"Office/outpatient, new pt — high complexity MDM",        cat:"Office",    rvu:4.87 },
+  { code:"99212", desc:"Office/outpatient, est pt — straightforward MDM",        cat:"Office",    rvu:1.30 },
+  { code:"99213", desc:"Office/outpatient, est pt — low complexity MDM",         cat:"Office",    rvu:1.92 },
+  { code:"99214", desc:"Office/outpatient, est pt — moderate complexity MDM",    cat:"Office",    rvu:2.92 },
+  { code:"99215", desc:"Office/outpatient, est pt — high complexity MDM",        cat:"Office",    rvu:3.85 },
+  { code:"99221", desc:"Initial hospital care — low complexity MDM",             cat:"Inpatient", rvu:2.65 },
+  { code:"99222", desc:"Initial hospital care — moderate complexity MDM",        cat:"Inpatient", rvu:3.83 },
+  { code:"99223", desc:"Initial hospital care — high complexity MDM",            cat:"Inpatient", rvu:5.25 },
+  { code:"99231", desc:"Subsequent hospital care — low complexity MDM",          cat:"Inpatient", rvu:1.40 },
+  { code:"99232", desc:"Subsequent hospital care — moderate complexity MDM",     cat:"Inpatient", rvu:2.26 },
+  { code:"99233", desc:"Subsequent hospital care — high complexity MDM",         cat:"Inpatient", rvu:3.18 },
+  { code:"10060", desc:"Incision & drainage of abscess, simple",                 cat:"Procedure", rvu:1.69 },
+  { code:"10061", desc:"Incision & drainage of abscess, complicated",            cat:"Procedure", rvu:3.18 },
+  { code:"12001", desc:"Simple repair of laceration ≤ 2.5 cm",                  cat:"Procedure", rvu:1.79 },
+  { code:"12002", desc:"Simple repair of laceration 2.6–7.5 cm",                cat:"Procedure", rvu:2.09 },
+  { code:"12011", desc:"Simple repair of face/ear/eyelid ≤ 2.5 cm",             cat:"Procedure", rvu:2.08 },
+  { code:"20610", desc:"Arthrocentesis — large joint",                           cat:"Procedure", rvu:1.44 },
+  { code:"29515", desc:"Application of short leg splint (static)",               cat:"Procedure", rvu:1.76 },
+  { code:"29125", desc:"Application of short arm splint (static)",               cat:"Procedure", rvu:1.47 },
+  { code:"36415", desc:"Collection of venous blood by venipuncture",             cat:"Procedure", rvu:0.17 },
+  { code:"31500", desc:"Intubation, endotracheal, emergency procedure",          cat:"Procedure", rvu:2.91 },
+  { code:"92950", desc:"Cardiopulmonary resuscitation (CPR)",                    cat:"Procedure", rvu:4.32 },
+  { code:"71046", desc:"Radiologic exam, chest — 2 views",                       cat:"Imaging",   rvu:0.22 },
+  { code:"70450", desc:"CT head/brain without contrast",                         cat:"Imaging",   rvu:0.87 },
+  { code:"70553", desc:"MRI brain without contrast then with contrast",          cat:"Imaging",   rvu:1.52 },
+  { code:"74177", desc:"CT abdomen and pelvis with contrast",                    cat:"Imaging",   rvu:1.29 },
+  { code:"74178", desc:"CT abdomen and pelvis without then with contrast",       cat:"Imaging",   rvu:1.63 },
+  { code:"73721", desc:"MRI joint lower extremity without contrast",             cat:"Imaging",   rvu:1.50 },
+  { code:"93010", desc:"ECG, routine, 12+ leads — with interpretation",          cat:"Cardiac",   rvu:0.25 },
+  { code:"93005", desc:"ECG, routine — tracing only, no interpretation",         cat:"Cardiac",   rvu:0.17 },
+  { code:"94640", desc:"Pressurized or nonpressurized inhalation treatment",     cat:"Respiratory",rvu:0.35 },
+  { code:"94002", desc:"Ventilator management, hospital inpatient, initiation",  cat:"Respiratory",rvu:0.97 },
+];
 
-ALLERGIES: Penicillin (rash), sulfa drugs.
+// ════════════════════════════════════════════════════════════
+//  E&M TABLE DATA
+// ════════════════════════════════════════════════════════════
+const EM_GROUPS = [
+  { label:"Emergency Department",         accent:T.coral,    levels:[
+    { code:"99281", lvl:"1", severity:"Minimal / self-limited",          mdm:"Straightforward",    time:"—" },
+    { code:"99282", lvl:"2", severity:"Low to moderate",                  mdm:"Straightforward",    time:"—" },
+    { code:"99283", lvl:"3", severity:"Moderate",                         mdm:"Low complexity",     time:"—" },
+    { code:"99284", lvl:"4", severity:"High — urgent evaluation",         mdm:"Moderate complexity",time:"—" },
+    { code:"99285", lvl:"5", severity:"High — threat to life/function",   mdm:"High complexity",    time:"—" },
+  ]},
+  { label:"Office — New Patient",         accent:T.teal,    levels:[
+    { code:"99202", lvl:"2", severity:"Low",      mdm:"Straightforward",    time:"15–29 min" },
+    { code:"99203", lvl:"3", severity:"Low",      mdm:"Low complexity",     time:"30–44 min" },
+    { code:"99204", lvl:"4", severity:"Moderate", mdm:"Moderate complexity",time:"45–59 min" },
+    { code:"99205", lvl:"5", severity:"High",     mdm:"High complexity",    time:"60–74 min" },
+  ]},
+  { label:"Office — Established Patient", accent:T.gold,    levels:[
+    { code:"99211", lvl:"1", severity:"Minimal",  mdm:"N/A (nurse only)",   time:"≤ 10 min" },
+    { code:"99212", lvl:"2", severity:"Low",      mdm:"Straightforward",    time:"10–19 min" },
+    { code:"99213", lvl:"3", severity:"Low",      mdm:"Low complexity",     time:"20–29 min" },
+    { code:"99214", lvl:"4", severity:"Moderate", mdm:"Moderate complexity",time:"30–39 min" },
+    { code:"99215", lvl:"5", severity:"High",     mdm:"High complexity",    time:"40–54 min" },
+  ]},
+  { label:"Inpatient — Initial",           accent:T.blue,   levels:[
+    { code:"99221", lvl:"1", severity:"Low",      mdm:"Straightforward / Low", time:"—" },
+    { code:"99222", lvl:"2", severity:"Moderate", mdm:"Moderate complexity",   time:"—" },
+    { code:"99223", lvl:"3", severity:"High",     mdm:"High complexity",        time:"—" },
+  ]},
+  { label:"Inpatient — Subsequent",        accent:"#b99bff", levels:[
+    { code:"99231", lvl:"1", severity:"Stable / recovering",        mdm:"Straightforward / Low", time:"—" },
+    { code:"99232", lvl:"2", severity:"Inadequate response",         mdm:"Moderate complexity",   time:"—" },
+    { code:"99233", lvl:"3", severity:"Unstable / significant new",  mdm:"High complexity",        time:"—" },
+  ]},
+];
 
-PHYSICAL EXAM:
-- BP 158/96 mmHg, HR 88, RR 16, SpO2 96% on RA, Temp 98.8°F
-- General: Alert and oriented, mild distress
-- Cardiovascular: Regular rate and rhythm, no murmurs
-- Pulmonary: Clear to auscultation bilaterally
-
-DIAGNOSTIC STUDIES:
-- 12-lead EKG: Performed in office — non-specific ST changes in V4-V6
-- Troponin I, BMP, CBC, lipid panel: ordered and pending
-
-ASSESSMENT:
-1. Unstable angina — rule out NSTEMI, EKG changes noted
-2. Hypertension, stage 2 — suboptimal control on current regimen
-3. Type 2 diabetes mellitus, uncontrolled — A1c 8.4%
-4. Hyperlipidemia — continue statin
-
-PLAN:
-- Emergent cardiology referral placed (Dr. Chen)
-- Aspirin 81mg daily initiated
-- Increase lisinopril to 20mg daily for hypertension
-- Refer to diabetes education for glycemic control
-- Patient counseled extensively on symptoms, when to call 911
-- Total face-to-face time: 40 minutes, more than 50% spent counseling
-
-MDM: High complexity — new presenting problem with uncertain prognosis, ordering labs/imaging, prescription drug management, referral to specialist.`;
-
-function confClass(n) { return n >= 85 ? 'high' : n >= 65 ? 'med' : 'low'; }
-
-const RVU_MAP = { '99211': 1.3, '99212': 2.6, '99213': 3.9, '99214': 5.2, '99215': 7.2, '93000': 1.0, '71046': 1.5, '80053': 0.8, '85025': 0.7, '84484': 0.5 };
-
-export default function AutoCoder({ patientName = '', patientMrn = '', patientDob = '', patientAge = '', patientGender = '', chiefComplaint = '', vitals = {}, medications = [], allergies = [], pmhSelected = {} }) {
-  const [tab, setTab] = useState('note');
-  
-  // Build note from NPI context if available
-  const buildContextNote = () => {
-    if (!patientName && !chiefComplaint) return SAMPLE_NOTE;
-    let note = '';
-    if (patientName || patientAge || patientGender) note += `${patientName || 'Patient'} is a ${patientAge}-year-old ${patientGender || 'unknown'}\n\n`;
-    if (chiefComplaint) note += `CHIEF COMPLAINT: ${chiefComplaint}\n\n`;
-    if (Object.keys(vitals).length) {
-      note += `VITALS:\n`;
-      Object.entries(vitals).forEach(([k, v]) => { if (v) note += `- ${k.toUpperCase()}: ${v}\n`; });
-      note += '\n';
-    }
-    if (medications.length) note += `MEDICATIONS: ${medications.join(', ')}\n\n`;
-    if (allergies.length) note += `ALLERGIES: ${allergies.join(', ')}\n\n`;
-    if (Object.keys(pmhSelected).length) note += `PAST MEDICAL HISTORY: ${Object.keys(pmhSelected).filter(k => pmhSelected[k] > 0).join(', ')}\n\n`;
-    return note || SAMPLE_NOTE;
-  };
-  
-  const [noteText, setNoteText] = useState(() => buildContextNote());
-  const [icdCodes, setIcdCodes] = useState([]);
-  const [cptCodes, setCptCodes] = useState([]);
-  const [aiRationale, setAiRationale] = useState('');
-  const [aiPanel, setAiPanel] = useState(null); // { principalDx, emLevel, icdRows, cptRows, rationale }
-  const [aiMessages, setAiMessages] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [extractDone, setExtractDone] = useState(false);
-  const [extractSummary, setExtractSummary] = useState('');
-  const [icdManualCode, setIcdManualCode] = useState('');
-  const [icdManualDesc, setIcdManualDesc] = useState('');
-  const [cptManualCode, setCptManualCode] = useState('');
-  const [cptManualDesc, setCptManualDesc] = useState('');
-  const [toast, setToast] = useState(false);
-  const aiBodyRef = useRef(null);
-
-  const selIcd = icdCodes.filter(c => c.selected);
-  const selCpt = cptCodes.filter(c => c.selected);
-
-  const switchTab = (t) => setTab(t);
-  const navNext = () => { const i = TABS.indexOf(tab); if (i < TABS.length - 1) setTab(TABS[i + 1]); };
-  const navBack = () => { const i = TABS.indexOf(tab); if (i > 0) setTab(TABS[i - 1]); };
-
-  const showToast = () => { setToast(true); setTimeout(() => setToast(false), 2200); };
-
-  const runExtraction = async () => {
-    if (!noteText.trim()) return;
-    setLoading(true);
-    setAiMessages([{ type: 'thinking' }]);
-    try {
-      const prompt = `You are an expert medical coder (CPC certified) with deep knowledge of ICD-10-CM and CPT coding guidelines.
-
-Analyze this clinical note and extract the most appropriate codes. Return ONLY valid JSON in exactly this format (no markdown, no explanation outside the JSON):
-
-{
-  "icd10": [
-    {
-      "code": "I20.0",
-      "description": "Unstable angina",
-      "category": "Primary Dx",
-      "confidence": 95,
-      "rationale": "Patient presents with classic unstable angina symptoms"
-    }
-  ],
-  "cpt": [
-    {
-      "code": "99215",
-      "description": "Office or other outpatient visit, high complexity MDM",
-      "category": "E&M",
-      "confidence": 90,
-      "modifier": "",
-      "rationale": "High complexity MDM, 40 minutes face-to-face with >50% counseling"
-    }
-  ],
-  "summary": "Brief 2-3 sentence coding rationale explaining the principal diagnosis, any comorbidities captured, and E&M level justification.",
-  "em_level": "99215",
-  "principal_dx": "I20.0"
+// ════════════════════════════════════════════════════════════
+//  SHARED COMPONENTS  (from template)
+// ════════════════════════════════════════════════════════════
+function GlassBg() {
+  const orbs = [
+    { x:"9%",  y:"16%", r:300, c:`${AC}09` },
+    { x:"87%", y:"11%", r:250, c:"rgba(155,109,255,0.05)" },
+    { x:"79%", y:"79%", r:330, c:`${AC}07` },
+    { x:"17%", y:"83%", r:210, c:"rgba(245,200,66,0.04)" },
+    { x:"50%", y:"46%", r:390, c:"rgba(59,158,255,0.03)" },
+  ];
+  return (
+    <div style={{ position:"fixed", inset:0, overflow:"hidden", pointerEvents:"none", zIndex:0 }}>
+      {orbs.map((o, i) => (
+        <div key={i} style={{
+          position:"absolute", left:o.x, top:o.y, width:o.r*2, height:o.r*2,
+          borderRadius:"50%", background:`radial-gradient(circle,${o.c} 0%,transparent 68%)`,
+          transform:"translate(-50%,-50%)", animation:`hto${i%3} ${8+i*1.3}s ease-in-out infinite`,
+        }}/>
+      ))}
+      <svg width="100%" height="100%" style={{ position:"absolute", inset:0, opacity:0.036 }}>
+        <defs><pattern id="htg" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M40 0L0 0 0 40" fill="none" stroke={AC} strokeWidth="0.5"/>
+        </pattern></defs>
+        <rect width="100%" height="100%" fill="url(#htg)"/>
+      </svg>
+      <style>{`
+        @keyframes hto0{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.12)}}
+        @keyframes hto1{0%,100%{transform:translate(-50%,-50%) scale(1.08)}50%{transform:translate(-50%,-50%) scale(0.9)}}
+        @keyframes hto2{0%,100%{transform:translate(-50%,-50%) scale(0.95)}50%{transform:translate(-50%,-50%) scale(1.1)}}
+        @keyframes htpulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(155,109,255,.4)}50%{opacity:.8;box-shadow:0 0 0 6px rgba(155,109,255,0)}}
+        @keyframes ac-fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        *{box-sizing:border-box}
+        input::placeholder,textarea::placeholder{color:#2e4a6a}
+        button{outline:none}
+        ::-webkit-scrollbar{width:4px}
+        ::-webkit-scrollbar-track{background:transparent}
+        ::-webkit-scrollbar-thumb{background:#1a3555;border-radius:3px}
+        ::-webkit-scrollbar-thumb:hover{background:#2a4f7a}
+      `}</style>
+    </div>
+  );
 }
 
-Guidelines:
-- ICD-10: Include principal diagnosis first, then comorbidities actively managed, then relevant secondary diagnoses. Use most specific code.
-- CPT: Include E&M code based on documented MDM or time, plus any procedures performed.
-- Confidence: 90-99 high (clear documentation), 70-89 medium (implied), 50-69 low (uncertain)
-- Category for ICD: "Primary Dx", "Comorbidity", "Secondary Dx"
-- Category for CPT: "E&M", "Procedure", "Diagnostic"
+function GBox({ children, style = {}, glow = null }) {
+  return (
+    <div style={{
+      background:"rgba(8,22,40,0.7)", backdropFilter:"blur(22px)", WebkitBackdropFilter:"blur(22px)",
+      border:`1px solid ${glow ? `${glow}30` : T.border}`, borderRadius:16,
+      boxShadow: glow
+        ? `0 4px 24px rgba(0,0,0,0.4),0 0 22px ${glow}14`
+        : "0 4px 20px rgba(0,0,0,0.38),inset 0 1px 0 rgba(255,255,255,0.025)",
+      ...style,
+    }}>
+      {children}
+    </div>
+  );
+}
 
-Clinical Note:
-${noteText}`;
+function EvidenceBadge({ label, color }) {
+  const presets = {
+    "Level A":{ bg:"rgba(0,229,192,0.12)",  br:"rgba(0,229,192,0.4)",  c:"#00e5c0" },
+    "Level B":{ bg:"rgba(59,158,255,0.12)", br:"rgba(59,158,255,0.4)", c:"#3b9eff" },
+    "Level C":{ bg:"rgba(245,200,66,0.1)",  br:"rgba(245,200,66,0.4)", c:"#f5c842" },
+  };
+  const s = presets[label] || { bg:`${color||AC}18`, br:`${color||AC}45`, c:color||AC };
+  return (
+    <span style={{
+      fontSize:9, fontFamily:"'JetBrains Mono',monospace", fontWeight:700,
+      padding:"2px 7px", borderRadius:20,
+      background:s.bg, border:`1px solid ${s.br}`, color:s.c, whiteSpace:"nowrap",
+    }}>{label}</span>
+  );
+}
 
-      const result = await base44.integrations.Core.InvokeLLM({ prompt, model: 'claude_sonnet_4_6' });
-      let parsed;
-      try {
-        const clean = (typeof result === 'string' ? result : JSON.stringify(result)).replace(/```json|```/g, '').trim();
-        parsed = JSON.parse(clean);
-      } catch (e) {
-        throw new Error('Could not parse AI response. Please try again.');
-      }
+function SectionHeader({ icon, title, sub, badge }) {
+  return (
+    <div style={{
+      display:"flex", alignItems:"center", gap:10,
+      marginBottom:16, paddingBottom:12, borderBottom:`1px solid ${T.border}`,
+    }}>
+      <span style={{ fontSize:18 }}>{icon}</span>
+      <div style={{ flex:1 }}>
+        <div style={{ fontSize:14, fontWeight:700, color:T.txt }}>{title}</div>
+        {sub && <div style={{ fontSize:11, color:T.txt3, marginTop:1 }}>{sub}</div>}
+      </div>
+      <span style={{
+        fontSize:9, fontFamily:"'JetBrains Mono',monospace", fontWeight:700,
+        padding:"3px 10px", borderRadius:20, background:`${AC}12`, border:`1px solid ${AC}30`, color:AC,
+      }}>{badge || "Guideline-Based"}</span>
+    </div>
+  );
+}
 
-      const ts = Date.now();
-      setIcdCodes((parsed.icd10 || []).map((c, i) => ({ ...c, selected: true, id: 'icd-' + ts + '-' + i })));
-      setCptCodes((parsed.cpt || []).map((c, i) => ({ ...c, selected: true, id: 'cpt-' + ts + '-' + i, modifier: c.modifier || '' })));
-      setAiRationale(parsed.summary || '');
-      setAiPanel(parsed);
-      setAiMessages([{ type: 'result', data: parsed }]);
-      setExtractDone(true);
-      const total = (parsed.icd10 || []).length + (parsed.cpt || []).length;
-      setExtractSummary(`Extracted ${(parsed.icd10 || []).length} ICD-10 and ${(parsed.cpt || []).length} CPT codes. Principal Dx: ${parsed.principal_dx || '—'} | E&M: ${parsed.em_level || '—'}`);
-    } catch (err) {
-      setAiMessages([{ type: 'error', text: err.message }]);
-    }
-    setLoading(false);
+function CodeRow({ item, accent, showRvu, onAdd }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{
+        background: hov ? `${accent}08` : "rgba(14,37,68,0.5)",
+        border:`1px solid ${hov ? `${accent}30` : T.border}`,
+        borderRadius:9, padding:"9px 13px", marginBottom:5,
+        backdropFilter:"blur(8px)", transition:"all .18s",
+        display:"flex", alignItems:"center", gap:10,
+      }}>
+      <span style={{ fontSize:13, fontWeight:700, color:accent, fontFamily:"'JetBrains Mono',monospace", minWidth:74, flexShrink:0 }}>
+        {item.code}
+      </span>
+      <span style={{ fontSize:12, color:T.txt2, flex:1, lineHeight:1.35 }}>{item.desc}</span>
+      <div style={{ display:"flex", gap:5, alignItems:"center", flexShrink:0 }}>
+        {item.cat && <EvidenceBadge label={item.cat} color={accent}/>}
+        {showRvu && item.rvu && <EvidenceBadge label={`${item.rvu} RVU`} color={T.purple}/>}
+      </div>
+      <button onClick={() => onAdd(item)}
+        style={{
+          background: hov ? `${accent}20` : `${accent}10`,
+          border:`1px solid ${accent}30`, borderRadius:7,
+          color:accent, padding:"4px 13px", cursor:"pointer",
+          fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700,
+          flexShrink:0, transition:"background .15s",
+        }}>+ Add</button>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+//  MODULE-LEVEL UI PRIMITIVES
+//  Must live outside AutocoderHub — inline definitions cause
+//  React to remount (and inputs to lose focus) on every render.
+// ════════════════════════════════════════════════════════════
+function SearchInput({ value, onChange, placeholder, onKeyDown, accent }) {
+  return (
+    <div style={{ position:"relative", flex:1 }}>
+      <span style={{ position:"absolute", left:13, top:"50%", transform:"translateY(-50%)", fontSize:13, opacity:0.3 }}>🔍</span>
+      <input value={value} onChange={onChange} onKeyDown={onKeyDown} placeholder={placeholder}
+        style={{
+          width:"100%", background:"rgba(8,22,40,0.8)", border:`1px solid ${T.borderHi}`,
+          borderRadius:11, padding:"10px 14px 10px 38px", color:T.txt,
+          fontFamily:"'DM Sans',sans-serif", fontSize:13, outline:"none",
+          backdropFilter:"blur(14px)", transition:"border-color .2s",
+        }}
+        onFocus={e => e.target.style.borderColor=`${accent||AC}55`}
+        onBlur={e  => e.target.style.borderColor=T.borderHi}/>
+    </div>
+  );
+}
+
+function FilterSelect({ value, onChange, options }) {
+  return (
+    <select value={value} onChange={e => onChange(e.target.value)}
+      style={{
+        background:"rgba(8,22,40,0.85)", border:`1px solid ${T.borderHi}`, borderRadius:10,
+        padding:"10px 13px", color:T.txt3, fontFamily:"'DM Sans',sans-serif",
+        fontSize:12, cursor:"pointer", outline:"none",
+      }}>
+      {options.map(o => <option key={o} value={o}>{o}</option>)}
+    </select>
+  );
+}
+
+function FilterPill({ label, active, accent, onClick }) {
+  return (
+    <button onClick={onClick} style={{
+      padding:"7px 15px", borderRadius:24, fontSize:12, fontWeight:600,
+      fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all .2s",
+      background: active ? `${accent}16` : "rgba(8,22,40,0.75)",
+      border:`1px solid ${active ? `${accent}45` : "rgba(42,79,122,0.5)"}`,
+      color: active ? accent : T.txt3, backdropFilter:"blur(12px)",
+      boxShadow: active ? `0 0 12px ${accent}18` : "none",
+    }}>{label}</button>
+  );
+}
+
+function EmptyState({ icon, msg }) {
+  return (
+    <div style={{ textAlign:"center", padding:"32px 20px" }}>
+      <div style={{ fontSize:28, marginBottom:10 }}>{icon}</div>
+      <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.txt3 }}>{msg}</div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+//  MAIN COMPONENT
+// ════════════════════════════════════════════════════════════
+export default function AutocoderHub() {
+  const [nav, setNav]             = useState("icd10");
+  const [toasts, setToasts]       = useState([]);
+  const [cart, setCart]           = useState([]);
+  const [icdQ, setIcdQ]           = useState("");
+  const [icdCat, setIcdCat]       = useState("All");
+  const [icdHits, setIcdHits]     = useState([]);
+  const [aiCond, setAiCond]       = useState("");
+  const [aiIcdBusy, setAiIcdBusy] = useState(false);
+  const [aiIcdRecs, setAiIcdRecs] = useState([]);
+  const [cptQ, setCptQ]           = useState("");
+  const [cptCat, setCptCat]       = useState("All");
+  const [cptHits, setCptHits]     = useState([]);
+  const [emFilter, setEmFilter]   = useState("All");
+  const [noteText, setNoteText]   = useState("");
+  const [acBusy, setAcBusy]       = useState(false);
+  const [acResult, setAcResult]   = useState(null);
+
+  const toast = useCallback((msg, type = "info") => {
+    const id = Date.now() + Math.random();
+    setToasts(p => [...p, { id, msg, type }]);
+    setTimeout(() => setToasts(p => p.filter(t => t.id !== id)), 3400);
+  }, []);
+
+  useEffect(() => {
+    if (!icdQ.trim()) { setIcdHits([]); return; }
+    const q = icdQ.toLowerCase();
+    setIcdHits(ICD10_DB.filter(r =>
+      (r.code.toLowerCase().includes(q) || r.desc.toLowerCase().includes(q) || r.cat.toLowerCase().includes(q)) &&
+      (icdCat === "All" || r.cat === icdCat)
+    ).slice(0, 16));
+  }, [icdQ, icdCat]);
+
+  useEffect(() => {
+    if (!cptQ.trim()) { setCptHits([]); return; }
+    const q = cptQ.toLowerCase();
+    setCptHits(CPT_DB.filter(r =>
+      (r.code.toLowerCase().includes(q) || r.desc.toLowerCase().includes(q) || r.cat.toLowerCase().includes(q)) &&
+      (cptCat === "All" || r.cat === cptCat)
+    ).slice(0, 16));
+  }, [cptQ, cptCat]);
+
+  const addToCart = useCallback((item, type) => {
+    if (cart.find(c => c.code === item.code)) { toast(`${item.code} already in cart`, "warn"); return; }
+    setCart(p => [...p, { ...item, type }]);
+    toast(`Added ${item.code}`, "success");
+  }, [cart, toast]);
+
+  const removeFromCart = (code) => setCart(p => p.filter(c => c.code !== code));
+
+  const runAiIcd = async () => {
+    if (!aiCond.trim() || aiIcdBusy) return;
+    setAiIcdBusy(true); setAiIcdRecs([]);
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          model:"claude-sonnet-4-20250514", max_tokens:1000,
+          system:`You are a board-certified clinical documentation specialist. Return the 5 most appropriate ICD-10 codes for the described condition. Respond ONLY with a valid JSON array, no markdown. Format: [{"code":"I21.9","desc":"Acute myocardial infarction, unspecified","specificity":"Medium","rationale":"Use when type/location not further specified"}]`,
+          messages:[{ role:"user", content:`Clinical condition: ${aiCond}\nReturn top 5 ICD-10 codes as JSON array.` }]
+        })
+      });
+      const data = await res.json();
+      const raw = (data.content?.[0]?.text || "[]").replace(/```json|```/g,"").trim();
+      setAiIcdRecs(JSON.parse(raw));
+      toast("AI recommendations ready", "success");
+    } catch { toast("AI query failed — check connection", "error"); }
+    setAiIcdBusy(false);
   };
 
-  const toggleCode = (type, id, checked) => {
-    if (type === 'icd') setIcdCodes(prev => prev.map(c => c.id === id ? { ...c, selected: checked } : c));
-    else setCptCodes(prev => prev.map(c => c.id === id ? { ...c, selected: checked } : c));
-  };
-  const removeCode = (type, id) => {
-    if (type === 'icd') setIcdCodes(prev => prev.filter(c => c.id !== id));
-    else setCptCodes(prev => prev.filter(c => c.id !== id));
-  };
-  const editCode = (type, id) => {
-    const arr = type === 'icd' ? icdCodes : cptCodes;
-    const c = arr.find(x => x.id === id);
-    if (!c) return;
-    const newCode = prompt('Edit code:', c.code);
-    if (newCode === null) return;
-    const newDesc = prompt('Edit description:', c.description);
-    if (newDesc === null) return;
-    const update = arr.map(x => x.id === id ? { ...x, code: newCode.trim().toUpperCase(), description: newDesc.trim() } : x);
-    if (type === 'icd') setIcdCodes(update);
-    else setCptCodes(update);
-  };
-  const selectAll = (type) => {
-    if (type === 'icd') setIcdCodes(prev => prev.map(c => ({ ...c, selected: true })));
-    else setCptCodes(prev => prev.map(c => ({ ...c, selected: true })));
-  };
-  const clearAll = (type) => {
-    if (type === 'icd') setIcdCodes(prev => prev.map(c => ({ ...c, selected: false })));
-    else setCptCodes(prev => prev.map(c => ({ ...c, selected: false })));
-  };
-  const addManual = (type) => {
-    const code = (type === 'icd' ? icdManualCode : cptManualCode).trim().toUpperCase();
-    const desc = (type === 'icd' ? icdManualDesc : cptManualDesc).trim() || '(description pending)';
-    if (!code) return;
-    const obj = { code, description: desc, category: type === 'icd' ? 'Secondary Dx' : 'Procedure', confidence: 80, rationale: 'Manually added', selected: true, modifier: '', id: type + '-manual-' + Date.now() };
-    if (type === 'icd') { setIcdCodes(prev => [...prev, obj]); setIcdManualCode(''); setIcdManualDesc(''); }
-    else { setCptCodes(prev => [...prev, obj]); setCptManualCode(''); setCptManualDesc(''); }
+  const runAutocoder = async () => {
+    if (!noteText.trim() || acBusy) return;
+    setAcBusy(true); setAcResult(null);
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          model:"claude-sonnet-4-20250514", max_tokens:1800,
+          system:`You are an expert emergency medicine clinical coder (CPC-certified). Analyze the note and extract all billable codes. Respond ONLY with valid JSON, no markdown. Format:
+{"summary":"One-sentence encounter summary","icd10":[{"code":"I21.9","desc":"Acute MI, unspecified","role":"principal"}],"cpt":[{"code":"99285","desc":"ED visit, high complexity","cat":"E&M"}],"em_level":{"code":"99285","level":"5","rationale":"High complexity MDM: multiple chronic conditions, urgent new problem"},"coding_notes":"Any important coding flags or guidance"}`,
+          messages:[{ role:"user", content:`Clinical Note:\n${noteText}` }]
+        })
+      });
+      const data = await res.json();
+      const raw = (data.content?.[0]?.text || "{}").replace(/```json|```/g,"").trim();
+      setAcResult(JSON.parse(raw));
+      toast("Autocoding complete", "success");
+    } catch { toast("Autocoder failed — check note format", "error"); }
+    setAcBusy(false);
   };
 
-  const copyBilling = () => {
-    let txt = `BILLING SUMMARY — Notrya\nDate: ${new Date().toLocaleDateString()}\n\nICD-10 CODES:\n`;
-    selIcd.forEach(c => { txt += `  ${c.code}  ${c.description}\n`; });
-    txt += `\nCPT CODES:\n`;
-    selCpt.forEach(c => { txt += `  ${c.code}  ${c.description}${c.modifier ? ' (' + c.modifier + ')' : ''}\n`; });
-    txt += `\nRATIONALE:\n${aiRationale}`;
-    navigator.clipboard.writeText(txt).then(showToast);
+  const importAcToCart = () => {
+    if (!acResult) return;
+    const toAdd = [];
+    (acResult.icd10||[]).forEach(r => {
+      if (!cart.find(c => c.code === r.code) && !toAdd.find(c => c.code === r.code))
+        toAdd.push({ ...r, type:"ICD-10" });
+    });
+    (acResult.cpt||[]).forEach(r => {
+      if (!cart.find(c => c.code === r.code) && !toAdd.find(c => c.code === r.code))
+        toAdd.push({ ...r, type:"CPT" });
+    });
+    if (toAdd.length > 0) setCart(p => [...p, ...toAdd]);
+    toast(`Imported ${toAdd.length} code${toAdd.length !== 1 ? "s" : ""} to cart`, "success");
   };
 
-  const exportCSV = () => {
-    let csv = 'Type,Code,Description,Category,Confidence,Modifier\n';
-    selIcd.forEach(c => { csv += `ICD-10,${c.code},"${c.description}",${c.category},${c.confidence}%,\n`; });
-    selCpt.forEach(c => { csv += `CPT,${c.code},"${c.description}",${c.category},${c.confidence}%,${c.modifier || ''}\n`; });
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `notrya-codes-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-  };
+  const icdCats = ["All", ...new Set(ICD10_DB.map(r => r.cat))];
+  const cptCats = ["All", ...new Set(CPT_DB.map(r => r.cat))];
+  const emLabels = ["All", ...EM_GROUPS.map(g => g.label)];
 
-  // Run validation for badge counts
-  const { denialCount, warningCount } = useMemo(() => {
-    if (selIcd.length + selCpt.length === 0) return { denialCount: 0, warningCount: 0 };
-    const findings = runValidation(selIcd, selCpt);
-    return {
-      denialCount: findings.filter(f => f.type === 'denial').length,
-      warningCount: findings.filter(f => f.type === 'warning').length,
-    };
-  }, [selIcd, selCpt]);
-
-  const avgConf = selIcd.length + selCpt.length > 0
-    ? Math.round([...selIcd, ...selCpt].reduce((a, c) => a + c.confidence, 0) / (selIcd.length + selCpt.length))
-    : null;
-  const totalRVU = selCpt.reduce((a, c) => a + (RVU_MAP[c.code] || 2.0), 0);
-
-  const CSS = `
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap');
-    :root {
-      --bg:#050f1e; --bg2:#0a1929; --bg3:#0f2237; --bg4:#132840;
-      --border:#1a3550; --border2:#1f4060;
-      --text:#e8f0f8; --text2:#8fadc8; --text3:#4d7a9e;
-      --accent:#00c6ff; --accent2:#0096d6;
-      --green:#00e5a0; --green2:#00b880; --amber:#f5a623; --red:#ff4757; --purple:#a855f7;
-      --mono:'JetBrains Mono',monospace; --serif:'Playfair Display',Georgia,serif; --sans:'DM Sans',sans-serif;
-    }
-    .ac-root { background:var(--bg); color:var(--text); font-family:var(--sans); font-size:14px; height:100vh; overflow:hidden; display:flex; flex-direction:column; }
-    .ac-navbar { height:50px; background:var(--bg2); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 16px; gap:12px; flex-shrink:0; }
-    .ac-logo { font-family:var(--serif); font-size:20px; font-weight:700; background:linear-gradient(135deg,var(--accent),var(--green)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-    .ac-divider { width:1px; height:24px; background:var(--border2); }
-    .ac-page-title { font-family:var(--serif); font-size:15px; color:var(--text2); font-weight:400; }
-    .ac-pill { font-family:var(--mono); font-size:11px; padding:3px 10px; border-radius:20px; border:1px solid var(--border2); color:var(--text3); background:var(--bg3); }
-    .ac-pill.live { border-color:var(--green); color:var(--green); }
-    .ac-vitals { height:38px; background:var(--bg3); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 16px; gap:20px; font-family:var(--mono); font-size:11px; flex-shrink:0; }
-    .ac-layout { display:grid; grid-template-columns:220px 1fr 295px; flex:1; overflow:hidden; }
-    .ac-sidebar { background:var(--bg2); border-right:1px solid var(--border); overflow-y:auto; padding:12px 0; display:flex; flex-direction:column; gap:2px; }
-    .ac-sidebar::-webkit-scrollbar { width:4px; } .ac-sidebar::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
-    .sb-sec { padding:6px 14px 4px; font-size:10px; font-weight:600; color:var(--text3); letter-spacing:.1em; text-transform:uppercase; }
-    .sb-item { display:flex; align-items:center; gap:9px; padding:8px 14px; cursor:pointer; border-left:2px solid transparent; transition:.15s; color:var(--text2); font-size:13px; }
-    .sb-item:hover { background:var(--bg3); color:var(--text); }
-    .sb-item.on { background:var(--bg3); color:var(--accent); border-left-color:var(--accent); }
-    .sb-badge { margin-left:auto; font-family:var(--mono); font-size:10px; padding:1px 6px; border-radius:10px; min-width:20px; text-align:center; }
-    .sb-badge.n { background:var(--bg4); color:var(--text3); }
-    .sb-badge.info { background:rgba(0,198,255,.12); color:var(--accent); }
-    .sb-badge.alert { background:rgba(255,71,87,.18); color:var(--red); }
-    .sb-badge.ok { background:rgba(0,229,160,.12); color:var(--green); }
-    .ac-main { overflow-y:auto; background:var(--bg); }
-    .ac-main::-webkit-scrollbar { width:5px; } .ac-main::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
-    .ac-ai { background:var(--bg2); border-left:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
-    .ac-ai-hdr { padding:12px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; flex-shrink:0; }
-    .ai-dot { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); animation:pulse-g 2s infinite; }
-    @keyframes pulse-g { 0%,100%{box-shadow:0 0 4px var(--green2);}50%{box-shadow:0 0 12px var(--green),0 0 20px rgba(0,229,160,.3);} }
-    .ai-body { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px; }
-    .ai-body::-webkit-scrollbar { width:3px; } .ai-body::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
-    .ai-msg { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:12px; font-size:12px; color:var(--text2); line-height:1.65; animation:fadeUp .3s ease; }
-    @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
-    .ai-sec { color:var(--text); font-weight:600; font-size:11px; margin:8px 0 4px; text-transform:uppercase; letter-spacing:.06em; }
-    .ai-code { font-family:var(--mono); font-size:11px; color:var(--accent); background:var(--bg4); border-radius:4px; padding:1px 5px; }
-    .ai-row { display:flex; justify-content:space-between; align-items:baseline; padding:4px 0; border-bottom:1px solid var(--border); font-size:11px; }
-    .ai-row:last-child { border-bottom:none; }
-    .ac-bottom { height:50px; background:var(--bg2); border-top:1px solid var(--border); display:flex; align-items:center; flex-shrink:0; padding:0 16px; gap:12px; }
-    .btabs { display:flex; align-items:center; gap:2px; }
-    .btab { padding:0 12px; height:50px; display:flex; align-items:center; gap:6px; cursor:pointer; border-bottom:2px solid transparent; color:var(--text3); font-size:12px; font-weight:500; background:transparent; border-top:none; border-left:none; border-right:none; transition:.15s; white-space:nowrap; font-family:var(--sans); }
-    .btab:hover { color:var(--text2); }
-    .btab.on { color:var(--accent); border-bottom-color:var(--accent); }
-    .tab-cnt { font-family:var(--mono); font-size:10px; padding:1px 5px; border-radius:8px; background:var(--bg4); color:var(--text3); }
-    .btab.on .tab-cnt { background:rgba(0,198,255,.15); color:var(--accent); }
-    .bnav2 { display:flex; align-items:center; gap:8px; margin-left:auto; }
-    .nbtn { padding:4px 14px; border-radius:5px; font-size:12px; font-weight:500; cursor:pointer; transition:.15s; border:1px solid var(--border2); background:transparent; color:var(--text2); font-family:var(--sans); }
-    .nbtn:hover { background:var(--bg3); color:var(--text); }
-    .nbtn.primary { background:var(--accent2); color:#fff; border-color:var(--accent2); }
-    .nbtn.primary:hover { background:var(--accent); border-color:var(--accent); }
-    .nbtn.success { background:rgba(0,229,160,.12); color:var(--green); border-color:var(--green2); }
-    .panel { display:none; flex:1; flex-direction:column; padding:20px; gap:16px; }
-    .panel.on { display:flex; }
-    .sec-title { font-family:var(--serif); font-size:22px; font-weight:600; color:var(--text); }
-    .sec-sub { font-size:12px; color:var(--text3); margin-top:4px; }
-    .card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
-    .card-hdr { padding:10px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
-    .card-title { font-size:12px; font-weight:600; color:var(--text); letter-spacing:.04em; }
-    .card-body { padding:14px; }
-    .note-area { width:100%; min-height:200px; background:var(--bg3); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--sans); font-size:13px; line-height:1.7; padding:14px; resize:vertical; transition:.2s; outline:none; }
-    .note-area:focus { border-color:var(--accent2); box-shadow:0 0 0 2px rgba(0,150,214,.15); }
-    .note-area::placeholder { color:var(--text3); }
-    .tip-bar { background:rgba(0,198,255,.07); border:1px solid rgba(0,198,255,.2); border-radius:8px; padding:10px 14px; font-size:12px; color:var(--text2); display:flex; align-items:flex-start; gap:8px; line-height:1.6; }
-    .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:48px; text-align:center; color:var(--text3); border:1px dashed var(--border); border-radius:10px; }
-    .code-row { display:flex; align-items:flex-start; gap:10px; padding:12px; border-radius:8px; border:1px solid var(--border); background:var(--bg3); transition:.2s; animation:fadeUp .3s ease; }
-    .code-row:hover { border-color:var(--border2); }
-    .code-row.sel { border-color:var(--accent2); background:rgba(0,150,214,.06); }
-    .code-chk { width:16px; height:16px; border-radius:4px; border:1px solid var(--border2); background:transparent; cursor:pointer; flex-shrink:0; margin-top:2px; accent-color:var(--accent2); }
-    .code-num { font-family:var(--mono); font-size:14px; font-weight:600; color:var(--accent); letter-spacing:.05em; margin-right:8px; }
-    .code-desc { font-size:13px; color:var(--text); line-height:1.45; }
-    .code-meta { display:flex; align-items:center; gap:8px; margin-top:5px; flex-wrap:wrap; }
-    .cat { font-size:10px; padding:2px 7px; border-radius:10px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; }
-    .cat-dx { background:rgba(168,85,247,.18); color:var(--purple); border:1px solid rgba(168,85,247,.3); }
-    .cat-proc { background:rgba(0,198,255,.12); color:var(--accent); border:1px solid rgba(0,198,255,.25); }
-    .conf-bar { width:50px; height:3px; background:var(--border); border-radius:2px; overflow:hidden; display:inline-block; vertical-align:middle; }
-    .conf-fill { height:100%; border-radius:2px; }
-    .conf-fill.high { background:var(--green); } .conf-fill.med { background:var(--amber); } .conf-fill.low { background:var(--red); }
-    .code-act-btn { padding:3px 8px; border-radius:4px; font-size:11px; cursor:pointer; border:1px solid var(--border2); background:transparent; color:var(--text3); font-family:var(--sans); transition:.15s; }
-    .code-act-btn:hover { background:var(--bg4); color:var(--text); }
-    .code-act-btn.danger:hover { background:rgba(255,71,87,.1); color:var(--red); border-color:var(--red); }
-    .sum-grid { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px; }
-    .sum-card { background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:12px; }
-    .sum-label { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:.06em; }
-    .sum-val { font-family:var(--mono); font-size:20px; font-weight:600; color:var(--text); margin-top:4px; }
-    .billing-table { width:100%; border-collapse:collapse; }
-    .billing-table th { text-align:left; font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; padding:6px 10px; border-bottom:1px solid var(--border); }
-    .billing-table td { padding:10px; font-size:12px; color:var(--text2); border-bottom:1px solid var(--border); }
-    .billing-table tr:last-child td { border-bottom:none; }
-    .billing-table tr:hover td { background:var(--bg3); }
-    .add-row { display:flex; gap:8px; align-items:center; }
-    .code-input { background:var(--bg3); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:var(--mono); font-size:13px; padding:6px 10px; outline:none; transition:.15s; width:130px; }
-    .code-input:focus { border-color:var(--accent2); }
-    .desc-input { flex:1; background:var(--bg3); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:var(--sans); font-size:13px; padding:6px 10px; outline:none; transition:.15s; }
-    .desc-input:focus { border-color:var(--accent2); }
-    .dots span { display:inline-block; width:5px; height:5px; border-radius:50%; background:var(--accent); margin:0 2px; animation:blink 1.2s infinite; }
-    .dots span:nth-child(2){animation-delay:.2s;} .dots span:nth-child(3){animation-delay:.4s;}
-    @keyframes blink { 0%,80%,100%{opacity:.2} 40%{opacity:1} }
-    .spin { width:16px; height:16px; border-radius:50%; border:2px solid var(--border2); border-top-color:var(--accent); animation:spin .8s linear infinite; }
-    @keyframes spin { to{transform:rotate(360deg)} }
-    .copy-toast { position:fixed; bottom:90px; right:20px; background:var(--green2); color:#fff; padding:8px 16px; border-radius:6px; font-size:12px; font-weight:600; opacity:0; transform:translateY(10px); transition:.3s; pointer-events:none; z-index:200; }
-    .copy-toast.show { opacity:1; transform:none; }
-    .abn { color:var(--red); animation:glow-red 1.8s ease-in-out infinite; }
-    @keyframes glow-red { 0%,100%{text-shadow:0 0 4px rgba(255,71,87,.4);}50%{text-shadow:0 0 12px rgba(255,71,87,.9);} }
-  `;
-
-  const CodeRow = ({ code, type }) => {
-    const cc = confClass(code.confidence);
-    const catCls = code.category?.includes('Primary') ? 'cat-dx' : 'cat-proc';
-    return (
-      <div className={`code-row${code.selected ? ' sel' : ''}`}>
-        <input type="checkbox" className="code-chk" checked={code.selected} onChange={e => toggleCode(type, code.id, e.target.checked)} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <span className="code-num">{code.code}</span>
-          <span className="code-desc">{code.description}</span>
-          <div className="code-meta">
-            <span className={`cat ${catCls}`}>{code.category}</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <div className="conf-bar"><div className={`conf-fill ${cc}`} style={{ width: code.confidence + '%' }} /></div>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--text3)' }}>{code.confidence}%</span>
-            </div>
-            {code.rationale && <span style={{ fontSize: 11, color: 'var(--text3)', fontStyle: 'italic' }}>{code.rationale}</span>}
-          </div>
+  // ════════════════════════════════════════════════════════════
+  //  SECTION RENDERERS
+  // ════════════════════════════════════════════════════════════
+  const renderICD10 = () => (
+    <div style={{ display:"flex", flexDirection:"column", gap:14, animation:"ac-fade .35s ease" }}>
+      <GBox style={{ padding:"20px 22px" }}>
+        <SectionHeader icon="🧬" title="ICD-10 Code Search" sub={`${ICD10_DB.length} codes — search by condition, symptom, or code`} badge="ICD-10-CM"/>
+        <div style={{ display:"flex", gap:10, marginBottom:14 }}>
+          <SearchInput value={icdQ} onChange={e => setIcdQ(e.target.value)} placeholder="Search conditions, symptoms, or code…" accent={T.teal}/>
+          <FilterSelect value={icdCat} onChange={setIcdCat} options={icdCats}/>
         </div>
-        <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-          <button className="code-act-btn" onClick={() => editCode(type, code.id)}>Edit</button>
-          <button className="code-act-btn danger" onClick={() => removeCode(type, code.id)}>✕</button>
+        <div style={{ maxHeight:340, overflowY:"auto" }}>
+          {icdHits.length > 0 ? icdHits.map(r => (
+            <CodeRow key={r.code} item={r} accent={T.teal} onAdd={i => addToCart(i,"ICD-10")}/>
+          )) : icdQ
+            ? <EmptyState icon="🔍" msg={`No ICD-10 codes matched "${icdQ}"`}/>
+            : <EmptyState icon="🧬" msg="Type a condition, symptom, or ICD-10 code above to search"/>}
+        </div>
+      </GBox>
+
+      <GBox style={{ padding:"20px 22px" }} glow={T.teal}>
+        <SectionHeader icon="✨" title="AI ICD-10 Recommender" sub="Describe the presentation in plain language — AI returns top 5 codes ranked by specificity" badge="AI-POWERED"/>
+        <div style={{ display:"flex", gap:10, marginBottom:14 }}>
+          <SearchInput value={aiCond} onChange={e => setAiCond(e.target.value)}
+            onKeyDown={e => e.key==="Enter" && runAiIcd()}
+            placeholder="e.g. crushing substernal chest pain with diaphoresis radiating to left arm…" accent={T.teal}/>
+          <button onClick={runAiIcd} disabled={aiIcdBusy||!aiCond.trim()}
+            style={{
+              background: aiIcdBusy ? "rgba(14,37,68,0.5)" : `linear-gradient(135deg,${T.teal},#0bb98e)`,
+              border:`1px solid ${T.teal}40`, borderRadius:10,
+              color: aiIcdBusy ? T.txt3 : "#050f1e", padding:"10px 18px",
+              cursor: aiIcdBusy ? "not-allowed" : "pointer",
+              fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:700,
+              whiteSpace:"nowrap", flexShrink:0,
+            }}>
+            {aiIcdBusy ? "⏳ Querying…" : "✨ Recommend"}
+          </button>
+        </div>
+        {aiIcdRecs.length > 0 && aiIcdRecs.map((r, i) => (
+          <div key={i} style={{
+            background:`${T.teal}08`, border:`1px solid ${T.teal}25`, borderLeft:`3px solid ${T.teal}`,
+            borderRadius:9, padding:"10px 13px", marginBottom:6, backdropFilter:"blur(8px)",
+            animation:`ac-fade .3s ease ${i*0.05}s both`,
+          }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:r.rationale?4:0 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:13, fontWeight:700, color:T.teal }}>{r.code}</span>
+                <span style={{ fontSize:12, color:T.txt2 }}>{r.desc}</span>
+                {r.specificity && <EvidenceBadge label={r.specificity} color={r.specificity==="High"?T.green:r.specificity==="Medium"?T.gold:T.txt3}/>}
+              </div>
+              <button onClick={() => addToCart(r,"ICD-10")} style={{
+                background:`${T.teal}12`, border:`1px solid ${T.teal}35`, borderRadius:7,
+                color:T.teal, padding:"3px 12px", cursor:"pointer",
+                fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, flexShrink:0, marginLeft:10,
+              }}>+ Add</button>
+            </div>
+            {r.rationale && <div style={{ fontSize:10, color:T.txt4, fontStyle:"italic", lineHeight:1.4 }}>{r.rationale}</div>}
+          </div>
+        ))}
+      </GBox>
+    </div>
+  );
+
+  const renderCPT = () => (
+    <div style={{ animation:"ac-fade .35s ease" }}>
+      <GBox style={{ padding:"20px 22px" }}>
+        <SectionHeader icon="🏥" title="CPT Code Search" sub={`${CPT_DB.length} codes — procedures, imaging, E&M with RVU values`} badge="CPT-4"/>
+        <div style={{ display:"flex", gap:10, marginBottom:14 }}>
+          <SearchInput value={cptQ} onChange={e => setCptQ(e.target.value)} placeholder="Search procedures, imaging, or CPT code…" accent={T.gold}/>
+          <FilterSelect value={cptCat} onChange={setCptCat} options={cptCats}/>
+        </div>
+        <div style={{ maxHeight:460, overflowY:"auto" }}>
+          {cptHits.length > 0 ? cptHits.map(r => (
+            <CodeRow key={r.code} item={r} accent={T.gold} onAdd={i => addToCart(i,"CPT")} showRvu/>
+          )) : cptQ ? (
+            <EmptyState icon="🔍" msg={`No CPT codes matched "${cptQ}"`}/>
+          ) : (
+            <div style={{ padding:"20px 0" }}>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt3, textAlign:"center", marginBottom:16 }}>
+                Type a procedure name, or click a category to browse
+              </div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:7, justifyContent:"center" }}>
+                {cptCats.filter(c => c!=="All").map(cat => (
+                  <FilterPill key={cat} label={cat} active={false} accent={T.gold}
+                    onClick={() => { setCptQ(cat); setCptCat(cat); }}/>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </GBox>
+    </div>
+  );
+
+  const renderEM = () => {
+    const visible = emFilter==="All" ? EM_GROUPS : EM_GROUPS.filter(g => g.label===emFilter);
+    return (
+      <div style={{ animation:"ac-fade .35s ease" }}>
+        <div style={{ display:"flex", gap:6, marginBottom:16, flexWrap:"wrap" }}>
+          {emLabels.map(lab => {
+            const grp = EM_GROUPS.find(g => g.label===lab);
+            return <FilterPill key={lab} label={lab==="All"?"All Categories":lab.split("—")[1]?.trim()||lab}
+              active={emFilter===lab} accent={grp?.accent||AC} onClick={() => setEmFilter(lab)}/>;
+          })}
+        </div>
+        {visible.map(grp => (
+          <GBox key={grp.label} style={{ padding:"18px 20px", marginBottom:12, borderLeft:`3px solid ${grp.accent}` }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
+              <span style={{ fontFamily:"'Playfair Display',serif", fontSize:14, fontWeight:700, color:grp.accent }}>{grp.label}</span>
+              <EvidenceBadge label={`${grp.levels.length} LEVELS`} color={grp.accent}/>
+            </div>
+            <div style={{ overflowX:"auto" }}>
+              <table style={{ width:"100%", borderCollapse:"collapse", fontFamily:"'DM Sans',sans-serif", fontSize:12 }}>
+                <thead>
+                  <tr style={{ borderBottom:`1px solid ${T.border}` }}>
+                    {["Code","Level","Problem Severity","Medical Decision Making","Typical Time"].map(h => (
+                      <th key={h} style={{ padding:"7px 10px", textAlign:"left", color:T.txt3, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:".05em", whiteSpace:"nowrap" }}>{h}</th>
+                    ))}
+                    <th style={{ width:50 }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {grp.levels.map((lv, i) => (
+                    <tr key={lv.code}
+                      style={{ borderBottom:i<grp.levels.length-1?`1px solid ${T.border}`:"none", transition:"background .15s" }}
+                      onMouseEnter={e => e.currentTarget.style.background=`${grp.accent}06`}
+                      onMouseLeave={e => e.currentTarget.style.background="transparent"}>
+                      <td style={{ padding:"10px 10px" }}>
+                        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:13, fontWeight:700, color:grp.accent }}>{lv.code}</span>
+                      </td>
+                      <td style={{ padding:"10px 10px" }}>
+                        <EvidenceBadge label={`Lv ${lv.lvl}`} color={grp.accent}/>
+                      </td>
+                      <td style={{ padding:"10px 10px", color:T.txt, fontSize:12 }}>{lv.severity}</td>
+                      <td style={{ padding:"10px 10px", color:T.txt2, fontSize:11 }}>{lv.mdm}</td>
+                      <td style={{ padding:"10px 10px", color:T.txt3, fontSize:11, fontFamily:"'JetBrains Mono',monospace" }}>{lv.time}</td>
+                      <td style={{ padding:"10px 10px" }}>
+                        <button onClick={() => addToCart({code:lv.code,desc:`${grp.label} — Level ${lv.lvl} (${lv.severity})`,cat:"E&M"},"CPT")}
+                          style={{ background:`${grp.accent}10`, border:`1px solid ${grp.accent}30`, borderRadius:6, color:grp.accent, padding:"3px 11px", cursor:"pointer", fontSize:11, fontWeight:700 }}>+</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </GBox>
+        ))}
+        <div style={{ marginTop:4, fontSize:10, color:T.txt4, fontFamily:"'JetBrains Mono',monospace", lineHeight:1.7, padding:"10px 14px", background:"rgba(5,15,30,0.55)", borderRadius:8, border:`1px solid ${T.border}` }}>
+          ⚕ 2021 AMA MDM-based guidelines · Time-based billing requires total time documentation
         </div>
       </div>
     );
   };
 
-  return (
-    <div className="ac-root">
-      <style>{CSS}</style>
+  const renderAutocoder = () => (
+    <div style={{ display:"flex", flexDirection:"column", gap:14, animation:"ac-fade .35s ease" }}>
+      <GBox style={{ padding:"20px 22px" }} glow={T.purple}>
+        <SectionHeader icon="🤖" title="AI Autocoder" sub="Paste a clinical note — AI extracts all ICD-10 diagnoses, CPT procedures, and the correct E&M level" badge="AI-POWERED"/>
+        <textarea value={noteText} onChange={e => setNoteText(e.target.value)}
+          placeholder="Paste clinical note, HPI, assessment & plan, or procedure documentation here…" rows={8}
+          style={{
+            width:"100%", background:"rgba(5,15,30,0.75)", border:`1px solid ${T.purple}30`,
+            borderRadius:10, padding:"13px 15px", color:T.txt,
+            fontFamily:"'DM Sans',sans-serif", fontSize:13, lineHeight:1.65,
+            resize:"vertical", outline:"none", boxSizing:"border-box", transition:"border-color .2s",
+          }}
+          onFocus={e => e.target.style.borderColor=`${T.purple}55`}
+          onBlur={e  => e.target.style.borderColor=`${T.purple}30`}/>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:10 }}>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:T.txt4 }}>
+            {noteText.length > 0 ? `${noteText.length} chars · ${noteText.trim().split(/\s+/).length} words` : "Paste note to begin"}
+          </span>
+          <div style={{ display:"flex", gap:8 }}>
+            <button onClick={() => { setNoteText(""); setAcResult(null); }}
+              style={{ background:"rgba(14,37,68,0.6)", border:`1px solid ${T.border}`, borderRadius:9, color:T.txt3, padding:"8px 16px", cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontSize:12 }}
+              onMouseEnter={e => e.currentTarget.style.borderColor=T.borderHi}
+              onMouseLeave={e => e.currentTarget.style.borderColor=T.border}>
+              Clear
+            </button>
+            <button onClick={runAutocoder} disabled={acBusy||!noteText.trim()}
+              style={{
+                background: acBusy ? "rgba(14,37,68,0.5)" : `linear-gradient(135deg,${T.purple},#7c3aed)`,
+                border:`1px solid ${T.purple}40`, borderRadius:9,
+                color: acBusy ? T.txt3 : T.txt, padding:"8px 22px",
+                cursor: acBusy ? "not-allowed" : "pointer",
+                fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:700,
+              }}>
+              {acBusy ? "⏳ Autocoding…" : "🤖 Run Autocoder"}
+            </button>
+          </div>
+        </div>
+      </GBox>
 
-      {/* Navbar */}
-      <nav className="ac-navbar">
-        <span className="ac-logo">Notrya</span>
-        <div className="ac-divider" />
-        <span className="ac-page-title">ICD-10 / CPT Auto-Coder</span>
-        <div style={{ flex: 1 }} />
-        <span className="ac-pill">Encounter: {new Date().toISOString().slice(0, 10)}</span>
-        <span className="ac-pill live">● AI Ready</span>
-      </nav>
-
-      {/* Vitals Bar */}
-      <div className="ac-vitals">
-        <span style={{ fontFamily: 'var(--serif)', fontSize: 13, color: 'var(--text)', marginRight: 8 }}>{patientName || 'Patient'}</span>
-        <span style={{ color: 'var(--border2)' }}>|</span>
-        {patientMrn && <><span style={{ color: 'var(--text3)' }}>MRN</span><span>{patientMrn}</span></>}
-        {patientDob && <><span style={{ color: 'var(--text3)' }}>DOB</span><span>{patientDob}</span></>}
-        {patientAge && <><span style={{ color: 'var(--text3)' }}>Age</span><span>{patientAge}</span></>}
-        {vitals.bp && <><span style={{ color: 'var(--text3)' }}>BP</span><span className={vitals.bp.includes('/158') ? 'abn' : ''}>{vitals.bp}</span></>}
-        {vitals.hr && <><span style={{ color: 'var(--text3)' }}>HR</span><span>{vitals.hr}</span></>}
-        {vitals.spo2 && <><span style={{ color: 'var(--text3)' }}>SpO₂</span><span>{vitals.spo2}%</span></>}
-        {vitals.temp && <><span style={{ color: 'var(--text3)' }}>Temp</span><span>{vitals.temp}°C</span></>}
-      </div>
-
-      {/* Layout */}
-      <div className="ac-layout">
-
-        {/* Sidebar */}
-        <aside className="ac-sidebar">
-          <div className="sb-sec">Coding</div>
-          {[
-            { id: 'note', icon: '📋', label: 'Note Input', badge: noteText ? '✓' : '—', bc: 'n' },
-            { id: 'icd', icon: '🏥', label: 'ICD-10 Codes', badge: icdCodes.length, bc: 'info' },
-            { id: 'cpt', icon: '⚕️', label: 'CPT Codes', badge: cptCodes.length, bc: 'info' },
-            { id: 'billing', icon: '💳', label: 'Billing Summary', badge: denialCount > 0 ? `⚠ ${denialCount}` : selIcd.length + selCpt.length || '—', bc: denialCount > 0 ? 'alert' : selIcd.length + selCpt.length > 0 ? 'ok' : 'n' },
-          ].map(s => (
-            <div key={s.id} className={`sb-item${tab === s.id ? ' on' : ''}`} onClick={() => switchTab(s.id)}>
-              <span style={{ fontSize: 14 }}>{s.icon}</span>{s.label}
-              <span className={`sb-badge ${s.bc}`}>{s.badge}</span>
+      {acResult && (
+        <GBox style={{ padding:"20px 22px", animation:"ac-fade .4s ease" }}>
+          {acResult.summary && (
+            <div style={{ background:`${T.purple}0a`, border:`1px solid ${T.purple}25`, borderLeft:`3px solid ${T.purple}`, borderRadius:9, padding:"10px 14px", marginBottom:16 }}>
+              <span style={{ fontSize:10, color:T.txt3 }}>Summary: </span>
+              <span style={{ fontSize:13, color:T.txt2, lineHeight:1.5 }}>{acResult.summary}</span>
             </div>
-          ))}
-          <div className="sb-sec" style={{ marginTop: 12 }}>Patient</div>
-          {[['👤','Demographics'],['💊','Medications',medications.length.toString(),'n'],['⚠️','Allergies',allergies.length.toString(),allergies.length > 0 ? 'alert' : 'n'],['📁','Past Encounters','14','n']].map(([icon,label,badge,bc]) => (
-            <div key={label} className="sb-item"><span style={{fontSize:14}}>{icon}</span>{label}{badge && <span className={`sb-badge ${bc||'n'}`}>{badge}</span>}</div>
-          ))}
-          <div className="sb-sec" style={{ marginTop: 12 }}>Tools</div>
-          {[['🧬','DDx Engine'],['📝','Clinical Note'],['📨','Referral Letter'],['🤝','SBAR Handoff']].map(([icon,label]) => (
-            <div key={label} className="sb-item"><span style={{fontSize:14}}>{icon}</span>{label}</div>
-          ))}
-        </aside>
-
-        {/* Main */}
-        <main className="ac-main">
-
-          {/* Note Input */}
-          <div className={`panel${tab === 'note' ? ' on' : ''}`}>
+          )}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:14 }}>
             <div>
-              <div className="sec-title">Clinical Note Input</div>
-              <div className="sec-sub">Paste or type the encounter note — AI will extract diagnosis and procedure codes</div>
-            </div>
-            <div className="tip-bar">
-              <span style={{ fontSize: 14 }}>💡</span>
-              <span>Include the HPI, assessment, plan, and any procedures performed. The more detail provided, the more accurate the code suggestions. Supports SOAP, H&P, discharge summaries, and procedure notes.</span>
-            </div>
-            <div className="card">
-              <div className="card-hdr">
-                <span className="card-title">ENCOUNTER NOTE</span>
-                <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
-                  <button className="nbtn" onClick={() => setNoteText(SAMPLE_NOTE)}>Load Sample Note</button>
-                  <button className="nbtn" onClick={() => setNoteText('')}>Clear</button>
-                </div>
+              <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:10 }}>
+                <span style={{ fontFamily:"'Playfair Display',serif", fontSize:14, fontWeight:700, color:T.teal }}>ICD-10 Diagnoses</span>
+                <EvidenceBadge label={`${(acResult.icd10||[]).length}`} color={T.teal}/>
               </div>
-              <div className="card-body">
-                <textarea className="note-area" rows={14} placeholder="Paste clinical note here…" value={noteText} onChange={e => setNoteText(e.target.value)} />
-              </div>
+              {(acResult.icd10||[]).map((r, i) => (
+                <div key={i} style={{ background:"rgba(14,37,68,0.5)", border:`1px solid ${T.teal}22`, borderLeft:`2px solid ${T.teal}`, borderRadius:8, padding:"9px 12px", marginBottom:6, backdropFilter:"blur(8px)" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:3 }}>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12, fontWeight:700, color:T.teal }}>{r.code}</span>
+                    {r.role==="principal" && <EvidenceBadge label="Principal" color={T.coral}/>}
+                    {r.role==="secondary" && <EvidenceBadge label="Secondary" color={T.txt3}/>}
+                  </div>
+                  <div style={{ fontSize:12, color:T.txt2, lineHeight:1.35 }}>{r.desc}</div>
+                </div>
+              ))}
             </div>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-              {!loading && (
-                <button className="nbtn primary" onClick={runExtraction}>✦ Extract ICD-10 &amp; CPT Codes</button>
-              )}
-              {loading && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--text3)', fontSize: 13 }}>
-                  <div className="spin" /><span>AI is analyzing the clinical note…</span>
+            <div>
+              <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:10 }}>
+                <span style={{ fontFamily:"'Playfair Display',serif", fontSize:14, fontWeight:700, color:T.gold }}>CPT / E&M Codes</span>
+                <EvidenceBadge label={`${(acResult.cpt||[]).length}`} color={T.gold}/>
+              </div>
+              {(acResult.cpt||[]).map((r, i) => (
+                <div key={i} style={{ background:"rgba(14,37,68,0.5)", border:`1px solid ${T.gold}22`, borderLeft:`2px solid ${T.gold}`, borderRadius:8, padding:"9px 12px", marginBottom:6, backdropFilter:"blur(8px)" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:3 }}>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12, fontWeight:700, color:T.gold }}>{r.code}</span>
+                    {r.cat && <EvidenceBadge label={r.cat} color={T.gold}/>}
+                  </div>
+                  <div style={{ fontSize:12, color:T.txt2, lineHeight:1.35 }}>{r.desc}</div>
+                </div>
+              ))}
+              {acResult.em_level && (
+                <div style={{ background:`${T.purple}0e`, border:`1px solid ${T.purple}30`, borderRadius:9, padding:"11px 13px", marginTop:8 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:14, fontWeight:700, color:T.purple }}>{acResult.em_level.code}</span>
+                    {acResult.em_level.level && <EvidenceBadge label={`Level ${acResult.em_level.level}`} color={T.purple}/>}
+                  </div>
+                  {acResult.em_level.rationale && <div style={{ fontSize:11, color:T.txt3, fontStyle:"italic", lineHeight:1.4 }}>{acResult.em_level.rationale}</div>}
                 </div>
               )}
-              {extractDone && !loading && (
-                <button className="nbtn" onClick={() => switchTab('icd')}>View Codes →</button>
-              )}
             </div>
-            {extractDone && !loading && (
-              <div className="tip-bar" style={{ background: 'rgba(0,229,160,.07)', borderColor: 'rgba(0,229,160,.3)' }}>
-                <span>✅</span>
-                <span>{extractSummary}</span>
-                <div style={{ marginLeft: 'auto' }}>
-                  <button className="nbtn success" onClick={() => switchTab('icd')}>View ICD-10 →</button>
-                </div>
-              </div>
-            )}
           </div>
-
-          {/* ICD-10 */}
-          <div className={`panel${tab === 'icd' ? ' on' : ''}`}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <div><div className="sec-title">ICD-10 Diagnosis Codes</div><div className="sec-sub">AI-suggested codes — review, edit, and confirm</div></div>
-              <div style={{ flex: 1 }} />
-              <button className="nbtn" onClick={() => selectAll('icd')}>Select All</button>
-              <button className="nbtn" onClick={() => clearAll('icd')}>Clear All</button>
+          {acResult.coding_notes && (
+            <div style={{ background:`${T.gold}09`, border:`1px solid ${T.gold}25`, borderLeft:`2px solid ${T.gold}`, borderRadius:8, padding:"9px 13px", marginBottom:14 }}>
+              <span style={{ fontSize:10, color:T.gold, fontWeight:700, marginRight:7 }}>⚠ Coding Note:</span>
+              <span style={{ fontSize:12, color:T.txt3 }}>{acResult.coding_notes}</span>
             </div>
-            {icdCodes.length === 0 ? (
-              <div className="empty-state">
-                <div style={{ fontSize: 36, opacity: .3 }}>🏥</div>
-                <div style={{ fontSize: 14, color: 'var(--text2)', fontWeight: 500 }}>No ICD-10 codes yet</div>
-                <div style={{ fontSize: 12, maxWidth: 280, lineHeight: 1.6 }}>Enter a clinical note and run the AI extractor to generate diagnosis codes</div>
-                <button className="nbtn primary" onClick={() => switchTab('note')}>← Go to Note Input</button>
-              </div>
-            ) : (
-              <>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {icdCodes.map(c => <CodeRow key={c.id} code={c} type="icd" />)}
-                </div>
-                <div className="card">
-                  <div className="card-hdr"><span className="card-title">ADD ICD-10 CODE MANUALLY</span></div>
-                  <div className="card-body">
-                    <div className="add-row">
-                      <input className="code-input" placeholder="e.g. I10" value={icdManualCode} onChange={e => setIcdManualCode(e.target.value)} />
-                      <input className="desc-input" placeholder="Description (optional)" value={icdManualDesc} onChange={e => setIcdManualDesc(e.target.value)} />
-                      <button className="nbtn primary" onClick={() => addManual('icd')}>Add</button>
+          )}
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <span style={{ fontSize:10, color:T.txt4, fontFamily:"'JetBrains Mono',monospace" }}>
+              ⚕ Clinical decision support only — final decisions rest with the treating physician
+            </span>
+            <button onClick={importAcToCart}
+              style={{ background:`linear-gradient(135deg,${T.purple},#7c3aed)`, border:`1px solid ${T.purple}40`, borderRadius:10, color:T.txt, padding:"9px 22px", cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:700 }}>
+              📦 Import All to Cart
+            </button>
+          </div>
+        </GBox>
+      )}
+    </div>
+  );
+
+  const renderCart = () => (
+    <div style={{ animation:"ac-fade .35s ease" }}>
+      {cart.length===0 ? (
+        <GBox style={{ padding:"60px 40px", textAlign:"center" }}>
+          <div style={{ fontSize:44, marginBottom:14 }}>🛒</div>
+          <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, color:T.txt2, marginBottom:6 }}>Your cart is empty</div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.txt3 }}>Search ICD-10 or CPT codes, browse E&M levels, or run the AI Autocoder</div>
+        </GBox>
+      ) : (
+        <div>
+          <GBox style={{ padding:"20px 22px", marginBottom:10 }}>
+            <SectionHeader icon="📦" title="Code Cart" sub="Review collected codes for claim submission" badge={`${cart.length} CODES`}/>
+            {["ICD-10","CPT"].map(type => {
+              const items = cart.filter(c => c.type===type);
+              if (!items.length) return null;
+              const accent = type==="ICD-10" ? T.teal : T.gold;
+              return (
+                <div key={type} style={{ marginBottom:18 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                    <span style={{ fontFamily:"'Playfair Display',serif", fontSize:13, fontWeight:700, color:accent }}>{type} Codes</span>
+                    <EvidenceBadge label={`${items.length}`} color={accent}/>
+                  </div>
+                  {items.map(item => (
+                    <div key={item.code} style={{ background:"rgba(14,37,68,0.5)", border:`1px solid ${T.border}`, borderRadius:9, padding:"9px 13px", marginBottom:5, backdropFilter:"blur(8px)", display:"flex", alignItems:"center", gap:10 }}>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:13, fontWeight:700, color:accent, minWidth:74 }}>{item.code}</span>
+                      <span style={{ fontSize:12, color:T.txt2, flex:1 }}>{item.desc}</span>
+                      {item.cat && <EvidenceBadge label={item.cat} color={accent}/>}
+                      {item.rvu && <EvidenceBadge label={`${item.rvu} RVU`} color={T.purple}/>}
+                      <button onClick={() => removeFromCart(item.code)}
+                        style={{ background:`${T.coral}0e`, border:`1px solid ${T.coral}30`, borderRadius:6, color:T.coral, padding:"3px 10px", cursor:"pointer", fontSize:11, fontWeight:700 }}
+                        onMouseEnter={e => e.currentTarget.style.background=`${T.coral}1a`}
+                        onMouseLeave={e => e.currentTarget.style.background=`${T.coral}0e`}>✕</button>
                     </div>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* CPT */}
-          <div className={`panel${tab === 'cpt' ? ' on' : ''}`}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <div><div className="sec-title">CPT Procedure Codes</div><div className="sec-sub">AI-suggested procedure and E&amp;M codes — review, edit, and confirm</div></div>
-              <div style={{ flex: 1 }} />
-              <button className="nbtn" onClick={() => selectAll('cpt')}>Select All</button>
-              <button className="nbtn" onClick={() => clearAll('cpt')}>Clear All</button>
-            </div>
-            {cptCodes.length === 0 ? (
-              <div className="empty-state">
-                <div style={{ fontSize: 36, opacity: .3 }}>⚕️</div>
-                <div style={{ fontSize: 14, color: 'var(--text2)', fontWeight: 500 }}>No CPT codes yet</div>
-                <div style={{ fontSize: 12, maxWidth: 280, lineHeight: 1.6 }}>Run the AI extractor on a clinical note to generate procedure and E&M codes</div>
-                <button className="nbtn primary" onClick={() => switchTab('note')}>← Go to Note Input</button>
-              </div>
-            ) : (
-              <>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {cptCodes.map(c => <CodeRow key={c.id} code={c} type="cpt" />)}
-                </div>
-                <div className="card">
-                  <div className="card-hdr"><span className="card-title">ADD CPT CODE MANUALLY</span></div>
-                  <div className="card-body">
-                    <div className="add-row">
-                      <input className="code-input" placeholder="e.g. 99214" style={{ width: 110 }} value={cptManualCode} onChange={e => setCptManualCode(e.target.value)} />
-                      <input className="desc-input" placeholder="Description" value={cptManualDesc} onChange={e => setCptManualDesc(e.target.value)} />
-                      <button className="nbtn primary" onClick={() => addManual('cpt')}>Add</button>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Billing */}
-          <div className={`panel${tab === 'billing' ? ' on' : ''}`}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <div><div className="sec-title">Billing Summary</div><div className="sec-sub">Final code set for claim submission — selected codes only</div></div>
-              <div style={{ flex: 1 }} />
-              <button className="nbtn" onClick={copyBilling}>📋 Copy</button>
-              <button className="nbtn success" onClick={exportCSV}>↓ Export</button>
-            </div>
-
-            {/* Validation Engine */}
-            {(selIcd.length + selCpt.length > 0) && (
-              <div className="card">
-                <div className="card-hdr">
-                  <span style={{ fontSize: 14 }}>🛡️</span>
-                  <span className="card-title">CLAIM VALIDATION — NCCI EDITS &amp; LCD CHECKS</span>
-                </div>
-                <div className="card-body">
-                  <ClaimValidationPanel selIcd={selIcd} selCpt={selCpt} />
-                </div>
-              </div>
-            )}
-
-            <div className="sum-grid">
-              <div className="sum-card"><div className="sum-label">ICD-10 Codes</div><div className="sum-val" style={{ color: 'var(--accent)' }}>{selIcd.length}</div></div>
-              <div className="sum-card"><div className="sum-label">CPT Codes</div><div className="sum-val" style={{ color: 'var(--accent)' }}>{selCpt.length}</div></div>
-              <div className="sum-card"><div className="sum-label">Avg Confidence</div><div className="sum-val" style={{ color: 'var(--green)' }}>{avgConf !== null ? avgConf + '%' : '—'}</div></div>
-              <div className="sum-card"><div className="sum-label">Est. RVU</div><div className="sum-val" style={{ color: 'var(--amber)' }}>{selCpt.length ? totalRVU.toFixed(1) : '—'}</div></div>
-            </div>
-            {selIcd.length + selCpt.length === 0 ? (
-              <div className="empty-state">
-                <div style={{ fontSize: 36, opacity: .3 }}>💳</div>
-                <div style={{ fontSize: 14, color: 'var(--text2)', fontWeight: 500 }}>No codes selected</div>
-                <div style={{ fontSize: 12, maxWidth: 280, lineHeight: 1.6 }}>Select codes in the ICD-10 and CPT tabs to populate the billing summary</div>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div className="card">
-                  <div className="card-hdr"><span className="card-title">DIAGNOSIS CODES (ICD-10)</span></div>
-                  <div style={{ padding: 0 }}>
-                    <table className="billing-table">
-                      <thead><tr><th>Code</th><th>Description</th><th>Type</th><th>Conf.</th></tr></thead>
-                      <tbody>{selIcd.map(c => (
-                        <tr key={c.id}>
-                          <td style={{ fontFamily: 'var(--mono)', color: 'var(--accent)', fontSize: 13 }}>{c.code}</td>
-                          <td>{c.description}</td>
-                          <td><span className="cat cat-dx" style={{ fontSize: 10 }}>{c.category}</span></td>
-                          <td style={{ fontFamily: 'var(--mono)', fontSize: 11 }}>{c.confidence}%</td>
-                        </tr>
-                      ))}</tbody>
-                    </table>
-                  </div>
-                </div>
-                <div className="card">
-                  <div className="card-hdr"><span className="card-title">PROCEDURE &amp; E&amp;M CODES (CPT)</span></div>
-                  <div style={{ padding: 0 }}>
-                    <table className="billing-table">
-                      <thead><tr><th>Code</th><th>Description</th><th>Type</th><th>Modifier</th><th>Conf.</th></tr></thead>
-                      <tbody>{selCpt.map(c => (
-                        <tr key={c.id}>
-                          <td style={{ fontFamily: 'var(--mono)', color: 'var(--accent)', fontSize: 13 }}>{c.code}</td>
-                          <td>{c.description}</td>
-                          <td><span className="cat cat-proc" style={{ fontSize: 10 }}>{c.category}</span></td>
-                          <td style={{ fontFamily: 'var(--mono)', fontSize: 12 }}>{c.modifier || '—'}</td>
-                          <td style={{ fontFamily: 'var(--mono)', fontSize: 11 }}>{c.confidence}%</td>
-                        </tr>
-                      ))}</tbody>
-                    </table>
-                  </div>
-                </div>
-                {aiRationale && (
-                  <div className="card">
-                    <div className="card-hdr"><span className="card-title">AI CODING RATIONALE</span></div>
-                    <div className="card-body" style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.7 }}>{aiRationale}</div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-        </main>
-
-        {/* AI Panel */}
-        <aside className="ac-ai">
-          <div className="ac-ai-hdr">
-            <div className="ai-dot" />
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', letterSpacing: '.04em' }}>AI CODING ASSISTANT</span>
-            <div style={{ marginLeft: 'auto', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--text3)' }}>claude-sonnet</div>
-          </div>
-          <div className="ai-body" ref={aiBodyRef}>
-            {aiMessages.length === 0 && (
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--text3)', textAlign: 'center', padding: 20 }}>
-                <div style={{ fontSize: 32, opacity: .4 }}>🤖</div>
-                <div style={{ fontSize: 12, lineHeight: 1.6 }}>Enter a clinical note and click <strong style={{ color: 'var(--accent)' }}>Extract Codes</strong> to run AI analysis.</div>
-              </div>
-            )}
-            {aiMessages.map((msg, i) => {
-              if (msg.type === 'thinking') return (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text3)', fontSize: 12 }}>
-                  <div className="dots"><span /><span /><span /></div>Parsing clinical note…
+                  ))}
                 </div>
               );
-              if (msg.type === 'error') return <div key={i} className="ai-msg" style={{ color: 'var(--red)' }}>{msg.text}</div>;
-              if (msg.type === 'result') {
-                const p = msg.data;
-                return (
-                  <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <div className="ai-msg">
-                      <div className="ai-sec">Principal Dx</div>
-                      <span className="ai-code" style={{ fontSize: 14 }}>{p.principal_dx || '—'}</span>
-                      <span style={{ color: 'var(--text2)', fontSize: 12, marginLeft: 6 }}>{(p.icd10 || [])[0]?.description || ''}</span>
-                      <div className="ai-sec" style={{ marginTop: 10 }}>E&amp;M Level</div>
-                      <span className="ai-code" style={{ fontSize: 14 }}>{p.em_level || '—'}</span>
-                    </div>
-                    <div className="ai-msg">
-                      <div className="ai-sec">ICD-10 Summary</div>
-                      {(p.icd10 || []).map((c, j) => (
-                        <div key={j} className="ai-row">
-                          <span><span className="ai-code">{c.code}</span> <span style={{ fontSize: 11, color: 'var(--text2)' }}>{c.description}</span></span>
-                          <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text3)' }}>{c.confidence}%</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="ai-msg">
-                      <div className="ai-sec">CPT Summary</div>
-                      {(p.cpt || []).map((c, j) => (
-                        <div key={j} className="ai-row">
-                          <span><span className="ai-code">{c.code}</span> <span style={{ fontSize: 11, color: 'var(--text2)' }}>{c.category}</span></span>
-                          <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text3)' }}>{c.confidence}%</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="ai-msg">
-                      <div className="ai-sec">Rationale</div>
-                      <span style={{ fontSize: 12, lineHeight: 1.65 }}>{p.summary || ''}</span>
-                    </div>
-                  </div>
-                );
-              }
-              return null;
             })}
-          </div>
-        </aside>
-      </div>
-
-      {/* Bottom Nav */}
-      <div className="ac-bottom">
-        <div className="btabs">
-          {[['note','📋 Note Input'],['icd','🏥 ICD-10'],['cpt','⚕️ CPT'],['billing','💳 Billing Summary']].map(([id, label]) => (
-            <button key={id} className={`btab${tab === id ? ' on' : ''}`} onClick={() => switchTab(id)}>
-              {label}
-              <span className="tab-cnt">
-                {id === 'icd' ? icdCodes.length : id === 'cpt' ? cptCodes.length : id === 'billing' ? selIcd.length + selCpt.length : ''}
+          </GBox>
+          {cart.some(c => c.rvu) && (
+            <div style={{ background:"rgba(8,22,40,0.7)", border:`1px solid ${T.border}`, borderRadius:10, padding:"11px 18px", marginBottom:10, display:"flex", alignItems:"center", gap:12, backdropFilter:"blur(12px)" }}>
+              <span style={{ fontSize:11, color:T.txt3 }}>Total wRVU (CPT)</span>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:20, fontWeight:700, color:T.purple }}>
+                {cart.filter(c=>c.rvu).reduce((s,c)=>s+(c.rvu||0),0).toFixed(2)}
               </span>
-            </button>
-          ))}
+              <span style={{ fontSize:10, color:T.txt4 }}>work RVUs</span>
+            </div>
+          )}
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:T.txt4 }}>{cart.length} code{cart.length!==1?"s":""} collected</span>
+            <div style={{ display:"flex", gap:8 }}>
+              <button onClick={() => { navigator.clipboard?.writeText(cart.map(c=>`${c.code}  ${c.desc}`).join("\n")); toast("Copied to clipboard","success"); }}
+                style={{ background:"rgba(14,37,68,0.6)", border:`1px solid ${T.borderHi}`, borderRadius:9, color:T.txt2, padding:"8px 16px", cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontSize:12 }}
+                onMouseEnter={e => { e.currentTarget.style.background=`${AC}12`; e.currentTarget.style.color=AC; }}
+                onMouseLeave={e => { e.currentTarget.style.background="rgba(14,37,68,0.6)"; e.currentTarget.style.color=T.txt2; }}>
+                📋 Copy All
+              </button>
+              <button onClick={() => { setCart([]); toast("Cart cleared","info"); }}
+                style={{ background:`${T.coral}0e`, border:`1px solid ${T.coral}35`, borderRadius:9, color:T.coral, padding:"8px 16px", cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontSize:12 }}
+                onMouseEnter={e => e.currentTarget.style.background=`${T.coral}1a`}
+                onMouseLeave={e => e.currentTarget.style.background=`${T.coral}0e`}>
+                🗑 Clear Cart
+              </button>
+            </div>
+          </div>
         </div>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text3)' }}>Step {TABS.indexOf(tab) + 1} of 4</span>
-        <div className="bnav2">
-          <button className="nbtn" onClick={navBack} style={{ opacity: tab === 'note' ? .4 : 1, pointerEvents: tab === 'note' ? 'none' : 'auto' }}>← Back</button>
-          <button className="nbtn primary" onClick={navNext} style={{ opacity: tab === 'billing' ? .4 : 1, pointerEvents: tab === 'billing' ? 'none' : 'auto' }}>Next →</button>
-        </div>
-      </div>
+      )}
+    </div>
+  );
 
-      <div className={`copy-toast${toast ? ' show' : ''}`}>Copied to clipboard!</div>
-      
-      <ClinicalTabBar currentPage="AutoCoder" />
+  // ════════════════════════════════════════════════════════════
+  //  NAV + RENDER
+  // ════════════════════════════════════════════════════════════
+  const NAV = [
+    { id:"icd10",     icon:"🧬", label:"ICD-10",       accent:T.teal    },
+    { id:"cpt",       icon:"🏥", label:"CPT Codes",    accent:T.gold    },
+    { id:"em",        icon:"📋", label:"E&M Levels",   accent:T.blue    },
+    { id:"autocoder", icon:"🤖", label:"AI Autocoder", accent:T.purple  },
+    { id:"cart",      icon:"📦", label:"Code Cart",    accent:T.coral,  badge:cart.length||null },
+  ];
+  const SECTIONS = { icd10:renderICD10, cpt:renderCPT, em:renderEM, autocoder:renderAutocoder, cart:renderCart };
+  const activeNav = NAV.find(n => n.id===nav);
+
+  return (
+    <div style={{ display:"flex", minHeight:"100vh", background:T.bg, fontFamily:"'DM Sans',sans-serif", position:"relative" }}>
+      <GlassBg/>
+
+      {/* ── SIDEBAR ── */}
+      <nav style={{
+        width:220, minHeight:"100vh", position:"relative", zIndex:10, flexShrink:0,
+        background:"rgba(5,15,30,0.92)", backdropFilter:"blur(24px)", WebkitBackdropFilter:"blur(24px)",
+        borderRight:`1px solid ${T.border}`,
+        display:"flex", flexDirection:"column", padding:"24px 14px", gap:3,
+        boxShadow:`4px 0 28px rgba(0,0,0,0.4),inset -1px 0 0 ${T.borderHi}`,
+      }}>
+        {/* Wordmark */}
+        <div style={{ marginBottom:26, paddingLeft:6 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:3 }}>
+            <span style={{ fontSize:21 }}>⚕️</span>
+            <span style={{ fontFamily:"'Playfair Display',serif", fontSize:19, fontWeight:700, color:T.txt, letterSpacing:"-0.3px" }}>Notrya</span>
+          </div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:AC, letterSpacing:".16em", textTransform:"uppercase", paddingLeft:31 }}>Autocoder Hub</div>
+        </div>
+
+        {NAV.map(item => {
+          const active = nav===item.id;
+          return (
+            <button key={item.id} onClick={() => setNav(item.id)}
+              style={{
+                display:"flex", alignItems:"center", gap:9, padding:"10px 12px", borderRadius:10,
+                border:"none", width:"100%", cursor:"pointer", textAlign:"left",
+                fontFamily:"'DM Sans',sans-serif", fontSize:13,
+                fontWeight:active?600:400, transition:"all .2s", position:"relative",
+                background:active?`${item.accent}16`:"transparent",
+                color:active?item.accent:T.txt3,
+              }}
+              onMouseEnter={e => { if (!active) { e.currentTarget.style.background="rgba(26,53,85,0.45)"; e.currentTarget.style.color=T.txt2; }}}
+              onMouseLeave={e => { if (!active) { e.currentTarget.style.background="transparent"; e.currentTarget.style.color=T.txt3; }}}>
+              {active && <div style={{ position:"absolute", left:0, top:"50%", transform:"translateY(-50%)", width:2.5, height:20, background:item.accent, borderRadius:"0 3px 3px 0" }}/>}
+              <span style={{ fontSize:15, flexShrink:0 }}>{item.icon}</span>
+              <span style={{ flex:1 }}>{item.label}</span>
+              {item.badge > 0 && (
+                <span style={{ background:item.accent, color:T.bg, borderRadius:10, minWidth:18, height:18, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, padding:"0 5px" }}>
+                  {item.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+
+        <div style={{ flex:1 }}/>
+
+        {/* Cart tile */}
+        <div style={{ padding:"12px 13px", borderRadius:10, background:"rgba(14,37,68,0.6)", border:`1px solid ${T.border}`, marginBottom:6 }}>
+          <div style={{ fontSize:9, fontFamily:"'JetBrains Mono',monospace", color:T.txt4, textTransform:"uppercase", letterSpacing:".1em", marginBottom:4 }}>Cart</div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:22, fontWeight:700, color:T.coral, lineHeight:1 }}>{cart.length}</div>
+          <div style={{ fontSize:10, color:T.txt4, marginTop:3 }}>code{cart.length!==1?"s":""} selected</div>
+        </div>
+
+        {/* AI status */}
+        <div style={{ display:"flex", alignItems:"center", gap:7, padding:"8px 11px", borderRadius:8, background:"rgba(0,229,192,0.04)", border:`1px solid rgba(0,229,192,0.12)` }}>
+          <div style={{ width:6, height:6, borderRadius:"50%", background:T.teal, animation:"htpulse 2s ease-in-out infinite" }}/>
+          <span style={{ fontSize:10, color:T.txt4, fontFamily:"'JetBrains Mono',monospace" }}>AI Ready</span>
+        </div>
+      </nav>
+
+      {/* ── MAIN CONTENT ── */}
+      <main style={{ flex:1, padding:"30px 36px 50px", overflowY:"auto", position:"relative", zIndex:1 }}>
+        {/* Section label strip (from template) */}
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
+          <div style={{ height:1, width:20, background:`${activeNav?.accent||AC}50`, borderRadius:1 }}/>
+          <span style={{ fontSize:10, fontFamily:"'JetBrains Mono',monospace", color:activeNav?.accent||AC, textTransform:"uppercase", letterSpacing:".12em", fontWeight:700 }}>
+            {activeNav?.label}
+          </span>
+          <div style={{ flex:1, height:1, background:`linear-gradient(90deg,${activeNav?.accent||AC}28,transparent)` }}/>
+          <span style={{ fontSize:10, color:T.txt4, fontFamily:"'JetBrains Mono',monospace" }}>Notrya · Clinical Coding</span>
+        </div>
+
+        {(SECTIONS[nav]||(() => null))()}
+      </main>
+
+      {/* ── TOASTS ── */}
+      <div style={{ position:"fixed", bottom:22, right:22, display:"flex", flexDirection:"column", gap:7, zIndex:200 }}>
+        {toasts.map(t => {
+          const color = t.type==="success"?T.green:t.type==="error"?T.coral:t.type==="warn"?T.gold:T.blue;
+          return (
+            <div key={t.id} style={{
+              padding:"10px 18px", borderRadius:10,
+              background:"rgba(5,15,30,0.92)", border:`1px solid ${color}40`,
+              color, fontFamily:"'DM Sans',sans-serif", fontSize:13,
+              backdropFilter:"blur(18px)", boxShadow:`0 4px 20px rgba(0,0,0,0.5),0 0 12px ${color}18`,
+              animation:"ac-fade .25s ease", whiteSpace:"nowrap",
+            }}>{t.msg}</div>
+          );
+        })}
+      </div>
     </div>
   );
 }

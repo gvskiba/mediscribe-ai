@@ -1009,7 +1009,7 @@ export default function HPIPage() {
 
   // Load templates from DB on mount
   const loadTemplates = useCallback(() => {
-    base44.entities.HPITemplate.list('order', 100).then(rows => {
+    base44.entities.HPITemplate.list().then(rows => {
       setQuickTemplates(rows.map(r => ({
         id: r.id,
         label: r.data.label,

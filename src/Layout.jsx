@@ -61,7 +61,6 @@ const CHART_GROUPS = [
     items: [
       { icon: '📝', label: 'HPI',             page: '/hpi' },
       { icon: '💊', label: 'Meds & PMH',         page: '/NewPatientInput?tab=meds' },
-      { icon: '📋', label: 'Orders',            page: '/NewPatientInput?tab=orders' },
       { icon: '🔍', label: 'Review of Systems',  page: '/NewPatientInput?tab=ros' },
       { icon: '🩺', label: 'Physical Exam',      page: '/NewPatientInput?tab=pe' },
       { icon: '⚖️', label: 'MDM',               page: '/NewPatientInput?tab=mdm' },

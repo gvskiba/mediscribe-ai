@@ -363,6 +363,134 @@ const CC_DATA = {
     neg:       ["no abdominal pain","no syncope","no prior episodes","no anticoagulant use","no NSAID use","no known liver disease"],
     riskFlags: { qual:["hematemesis (bright red)","melena (black tarry stool)"], msg:"⚠ Acute upper GI bleed — IV access, type & screen, GI consult" },
   },
+  sore_throat: {
+    icon:"🥾", label:"Sore Throat / Pharyngitis", color:"#f97316",
+    gl:"rgba(249,115,22,0.12)", cat:"ENT",
+    onset:     ["sudden","gradual","acute","subacute","progressive"],
+    quality:   ["sore throat","odynophagia","dysphagia","throat tightness","muffled voice","hot-potato voice","drooling","trismus"],
+    location:  ["bilateral tonsils","right tonsil","left tonsil","posterior pharynx","peritonsillar","diffuse"],
+    severity:  null,
+    radiation: ["non-radiating","ear","jaw","neck"],
+    duration:  ["hours","1–2 days","days","weeks","recurrent"],
+    timing:    ["constant","worse with swallowing","progressive"],
+    worse:     ["swallowing","eating","drinking","speaking","opening mouth"],
+    better:    ["analgesics","salt water gargle","antibiotics (started)","cold liquids","steroids"],
+    assoc:     ["fever","drooling","trismus","uvular deviation","cervical lymphadenopathy","rash","cough","runny nose","headache","stridor"],
+    neg:       ["no stridor","no drooling","no trismus","no uvular deviation","no rash","no difficulty breathing"],
+    riskFlags: { qual:["hot-potato voice","trismus","drooling"], msg:"⚠ Peritonsillar abscess or epiglottitis — airway evaluation urgent" },
+  },
+  ear_pain: {
+    icon:"👂", label:"Ear Pain / Hearing Loss", color:"#a78bfa",
+    gl:"rgba(167,139,250,0.12)", cat:"ENT",
+    onset:     ["sudden","gradual","after swimming","after air travel","after trauma","with URI"],
+    quality:   ["otalgia (ear pain)","hearing loss","tinnitus","ear fullness","discharge","itching","vertigo associated","popping sensation"],
+    location:  ["right ear","left ear","bilateral","external canal","middle ear"],
+    severity:  null,
+    radiation: ["non-radiating","jaw","neck","temporal","teeth"],
+    duration:  ["hours","days","weeks","chronic"],
+    timing:    ["constant","intermittent","with swallowing","with chewing"],
+    worse:     ["chewing","pulling on ear","lying on affected side","swallowing","air travel"],
+    better:    ["analgesics","antibiotic drops","warm compress","upright position"],
+    assoc:     ["fever","hearing loss","tinnitus","vertigo","discharge","URI symptoms","jaw pain","headache"],
+    neg:       ["no fever","no discharge","no hearing loss","no vertigo","no facial droop","no trauma"],
+    riskFlags: { assoc:["facial droop"], msg:"⚠ Facial nerve involvement — consider Ramsay Hunt syndrome or malignant otitis externa" },
+  },
+  epistaxis: {
+    icon:"🩸", label:"Epistaxis (Nosebleed)", color:"#fb7185",
+    gl:"rgba(251,113,133,0.12)", cat:"ENT",
+    onset:     ["sudden","spontaneous","after trauma","after nose blowing","recurrent"],
+    quality:   ["anterior bleed","posterior bleed","bilateral","unilateral right","unilateral left","heavy / soaking gauze","mild / self-limited"],
+    location:  ["right nostril","left nostril","bilateral","posterior nasopharynx"],
+    severity:  null,
+    radiation: ["N/A"],
+    duration:  ["< 10 min","10–30 min","> 30 min","hours","recurrent"],
+    timing:    ["intermittent","constant","recurrent"],
+    worse:     ["anticoagulants","aspirin","NSAIDs","hypertension","dry air","nose blowing"],
+    better:    ["direct pressure","nasal packing","cauterization","sitting forward"],
+    assoc:     ["hypertension","anticoagulant use","trauma","blood thinners","liver disease","hematemesis"],
+    neg:       ["no anticoagulant use","no trauma","no posterior bleeding","no hemoptysis","no prior episodes"],
+    riskFlags: { qual:["posterior bleed"], msg:"⚠ Posterior epistaxis — ENT consult, posterior packing or balloon tamponade" },
+  },
+  rash: {
+    icon:"🦱", label:"Rash / Skin Complaint", color:"#4ade80",
+    gl:"rgba(74,222,128,0.12)", cat:"Derm",
+    onset:     ["sudden","gradual","after new medication","after allergen exposure","after outdoor exposure","insidious"],
+    quality:   ["macular","papular","vesicular / blistering","urticarial (hives)","petechial / purpuric","erythematous","target lesions","diffuse","confluent","pruritic","painful","burning","crusting","desquamating"],
+    location:  ["face","trunk","extremities","generalized / diffuse","palms and soles","intertriginous areas","dermatomal distribution","mucosal involvement"],
+    severity:  null,
+    radiation: ["non-spreading","spreading","dermatomal","proximal to distal"],
+    duration:  ["hours","days","weeks","chronic / recurrent"],
+    timing:    ["constant","intermittent","progressive","waxing and waning"],
+    worse:     ["heat","scratching","sunlight","contact with irritant","sweating"],
+    better:    ["antihistamines","topical steroids","cool compress","avoiding trigger"],
+    assoc:     ["fever","pruritus","joint pain","mucosal lesions","lymphadenopathy","recent illness","new medication","travel history","tick exposure","sick contacts"],
+    neg:       ["no fever","no mucosal involvement","no joint pain","no lymphadenopathy","no new medications","no sick contacts","no travel"],
+    riskFlags: { qual:["petechial / purpuric"], msg:"⚠ Petechiae / purpura — R/O meningococcemia, TTP, vasculitis — urgent workup" },
+  },
+  dvt_leg: {
+    icon:"🦵", label:"Leg Swelling / DVT Concern", color:"#60a5fa",
+    gl:"rgba(96,165,250,0.12)", cat:"Vascular",
+    onset:     ["sudden","gradual","progressive","after prolonged immobility","after flight / travel","after surgery","insidious"],
+    quality:   ["unilateral swelling","bilateral swelling","pitting edema","non-pitting","erythema","warmth","tenderness","cord palpable","heaviness"],
+    location:  ["right calf","left calf","right thigh","left thigh","bilateral lower extremities","right foot/ankle","left foot/ankle"],
+    severity:  null,
+    radiation: ["non-radiating","groin","thigh","knee"],
+    duration:  ["hours","days","weeks","chronic"],
+    timing:    ["constant","worse end of day","progressive"],
+    worse:     ["standing","walking","heat","prolonged sitting"],
+    better:    ["elevation","compression","anticoagulation (if DVT confirmed)","rest"],
+    assoc:     ["dyspnea","chest pain","tachycardia","fever","erythema","warmth","recent immobility","recent surgery","oral contraceptive use","malignancy history"],
+    neg:       ["no dyspnea","no chest pain","no fever","no erythema","no prior DVT","no recent travel","no malignancy"],
+    riskFlags: { assoc:["dyspnea","chest pain"], msg:"⚠ DVT + dyspnea/chest pain — evaluate for pulmonary embolism" },
+  },
+  dental: {
+    icon:"🦷", label:"Dental / Jaw Pain", color:"#e2e8f0",
+    gl:"rgba(226,232,240,0.08)", cat:"Dental",
+    onset:     ["sudden","gradual","after eating","spontaneous","progressive","after dental procedure"],
+    quality:   ["toothache","throbbing","sharp","dull aching","jaw pain","facial swelling","trismus","gum pain","abscess","sensitivity to hot/cold"],
+    location:  ["upper jaw (maxillary)","lower jaw (mandibular)","right-sided","left-sided","bilateral","tooth #_","TMJ"],
+    severity:  null,
+    radiation: ["non-radiating","ear","neck","temporal","eye"],
+    duration:  ["hours","days","weeks","chronic / recurrent"],
+    timing:    ["constant","intermittent","with eating","spontaneous","worse at night"],
+    worse:     ["eating","hot foods","cold foods","biting","pressure","lying flat"],
+    better:    ["analgesics","NSAIDs","antibiotics (started)","cold compress","dental procedure"],
+    assoc:     ["fever","facial swelling","trismus","dysphagia","neck swelling","cervical lymphadenopathy"],
+    neg:       ["no fever","no facial swelling","no trismus","no dysphagia","no neck swelling"],
+    riskFlags: { assoc:["trismus","dysphagia","neck swelling"], msg:"⚠ Ludwig's angina or deep space neck infection — airway and surgical evaluation urgent" },
+  },
+  psychiatric: {
+    icon:"💭", label:"Psychiatric / Behavioral", color:"#c084fc",
+    gl:"rgba(192,132,252,0.12)", cat:"Psychiatric",
+    onset:     ["sudden","gradual","acute decompensation","subacute","chronic with acute exacerbation","first episode"],
+    quality:   ["suicidal ideation","homicidal ideation","self-harm","agitation","psychosis","hallucinations","paranoia","mania","severe depression","acute anxiety / panic","dissociation","substance intoxication","substance withdrawal"],
+    location:  ["N/A"],
+    severity:  null,
+    radiation: ["N/A"],
+    duration:  ["hours","days","weeks","chronic","first episode"],
+    timing:    ["constant","intermittent","progressive","episodic","acute on chronic"],
+    worse:     ["substance use","medication non-compliance","stressors","sleep deprivation","isolation"],
+    better:    ["medications","de-escalation","safe environment","social support","psychiatric hold"],
+    assoc:     ["substance use","medication non-compliance","recent trauma","prior psychiatric history","prior hospitalizations","command hallucinations","access to means","prior suicide attempts","homelessness"],
+    neg:       ["no command hallucinations","no access to means","no prior suicide attempts","no substance use","no homicidal ideation","no prior psychiatric hospitalizations"],
+    riskFlags: { qual:["suicidal ideation","homicidal ideation"], msg:"⚠ SI/HI present — safety assessment, remove means, psychiatric consultation" },
+  },
+  wound: {
+    icon:"🩹", label:"Wound / Laceration", color:"#fbbf24",
+    gl:"rgba(251,191,36,0.12)", cat:"Wound Care",
+    onset:     ["acute injury","MVA","fall","assault","self-inflicted","work injury","bite (human)","bite (animal)","puncture wound"],
+    quality:   ["laceration","puncture","avulsion","crush injury","bite wound","burn","abrasion","degloving"],
+    location:  ["scalp","face","forehead","chin","hand","arm","leg","foot","trunk","neck","finger"],
+    severity:  null,
+    radiation: ["N/A"],
+    duration:  ["< 1 hr ago","1–6 hrs ago","6–12 hrs ago","> 12 hrs ago"],
+    timing:    ["single event"],
+    worse:     ["movement","contamination","delay in care"],
+    better:    ["direct pressure","irrigation","closure","analgesia"],
+    assoc:     ["neurovascular deficit","tendon involvement","foreign body","contamination","bone exposed","active bleeding","signs of infection","tetanus status unknown"],
+    neg:       ["no neurovascular deficit","no tendon involvement","no foreign body","no active bleeding","no infection signs","tetanus up to date"],
+    riskFlags: { assoc:["bone exposed","tendon involvement"], msg:"⚠ Deep structure involvement — orthopedic or hand surgery evaluation" },
+  },
 };
 
 const CC_LIST = Object.entries(CC_DATA).map(([id, d]) => ({ id, ...d }));
@@ -624,22 +752,51 @@ function AudioRecorder({ onTranscript, accentColor }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// CC GRID — initial chief complaint selector
+// CC GRID — initial chief complaint selector with category filter
 // ═══════════════════════════════════════════════════════════════════
+const CC_CATEGORIES = ["All", ...Array.from(new Set(CC_LIST.map(cc => cc.cat)))];
+
 function CCGrid({ onSelect }) {
+  const [activeCat, setActiveCat] = useState("All");
+  const filtered = activeCat === "All" ? CC_LIST : CC_LIST.filter(cc => cc.cat === activeCat);
+
   return (
     <div className="hpi-in">
-      <div style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 3, marginBottom: 14 }}>SELECT CHIEF COMPLAINT</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))", gap: 10 }}>
-        {CC_LIST.map((cc, i) => (
+      <div style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 3, marginBottom: 10 }}>SELECT CHIEF COMPLAINT</div>
+
+      {/* Category filter strip */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
+        {CC_CATEGORIES.map(cat => {
+          const isActive = activeCat === cat;
+          const ccForCat = cat === "All" ? CC_LIST : CC_LIST.filter(c => c.cat === cat);
+          const accentColor = cat === "All" ? T.teal : (ccForCat[0]?.color || T.teal);
+          return (
+            <button key={cat} onClick={() => setActiveCat(cat)}
+              style={{
+                padding: "5px 13px", borderRadius: 20, border: `1px solid ${isActive ? accentColor + "88" : "rgba(42,79,122,0.35)"}`,
+                background: isActive ? `${accentColor}22` : "rgba(14,37,68,0.6)",
+                color: isActive ? accentColor : T.txt3,
+                fontFamily: "DM Sans", fontSize: 11, fontWeight: isActive ? 700 : 400,
+                cursor: "pointer", whiteSpace: "nowrap",
+                boxShadow: isActive ? `0 0 8px ${accentColor}33` : "none",
+                transition: "all .15s",
+              }}>
+              {cat}{cat !== "All" && <span style={{ marginLeft: 5, fontFamily: "JetBrains Mono", fontSize: 9, opacity: 0.6 }}>({ccForCat.length})</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
+        {filtered.map((cc, i) => (
           <div key={cc.id} className="cc-card hpi-in" onClick={() => onSelect(cc.id)}
             style={{
               ...glass({ borderRadius: 12, background: `linear-gradient(135deg,${cc.gl},rgba(8,22,40,0.8))`, borderColor: cc.gl }),
               padding: "14px 14px", cursor: "pointer",
               animationDelay: `${i * 0.03}s`,
             }}>
-            <div style={{ fontSize: 24, marginBottom: 6 }}>{cc.icon}</div>
-            <div style={{ fontFamily: "DM Sans", fontWeight: 700, fontSize: 13, color: T.txt, marginBottom: 2 }}>{cc.label}</div>
+            <div style={{ fontSize: 22, marginBottom: 6 }}>{cc.icon}</div>
+            <div style={{ fontFamily: "DM Sans", fontWeight: 700, fontSize: 12.5, color: T.txt, marginBottom: 2 }}>{cc.label}</div>
             <div style={{ fontFamily: "JetBrains Mono", fontSize: 9, color: cc.color, textTransform: "uppercase", letterSpacing: 1 }}>{cc.cat}</div>
           </div>
         ))}

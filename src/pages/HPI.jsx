@@ -754,7 +754,7 @@ function AudioRecorder({ onTranscript, accentColor }) {
 // ═══════════════════════════════════════════════════════════════════
 // CC GRID — initial chief complaint selector with category filter
 // ═══════════════════════════════════════════════════════════════════
-const CC_CATEGORIES = ["All", ...Array.from(new Set(CC_LIST.map(cc => cc.cat)))];
+const CC_CATEGORIES = ["All", ...Array.from(new Set(CC_LIST.map(cc => cc.cat))).sort()];
 
 function CCGrid({ onSelect }) {
   const [activeCat, setActiveCat] = useState("All");

@@ -512,7 +512,7 @@ export default function HubSelectorPage() {
       <div style={{ position: "relative", zIndex: 1, padding: "32px 36px 48px", maxWidth: 1300, margin: "0 auto", flex: 1 }}>
 
         {/* Hero Header */}
-        <div style={{ borderRadius: 22, padding: "28px 32px 24px", background: "rgba(5,15,30,0.82)", backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)", border: "1px solid rgba(42,79,122,0.5)", marginBottom: 24, position: "relative", overflow: "hidden", animation: "hub-appear 0.5s ease both", boxShadow: "0 8px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)" }}>
+        <div style={{ borderRadius: 22, padding: "28px 32px 24px", background: "rgba(5,15,30,0.82)", backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)", border: "1px solid rgba(42,79,122,0.5)", marginBottom: 48, position: "relative", overflow: "hidden", animation: "hub-appear 0.5s ease both", boxShadow: "0 8px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)" }}>
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2.5, borderRadius: "22px 22px 0 0", background: "linear-gradient(90deg,#ff6b6b,#ff9f43,#f5c842,#00e5c0,#3b9eff,#9b6dff,#ff6b9d)" }} />
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(108deg, rgba(0,229,192,0.04) 0%, transparent 55%, rgba(155,109,255,0.04) 100%)", pointerEvents: "none" }} />
 

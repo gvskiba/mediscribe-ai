@@ -399,11 +399,100 @@ export default function HubSelectorPage() {
   const featured = filtered.slice(0, 3);
   const rest = filtered.slice(3);
 
+  const sidebarItems = [
+    { icon: "🏠", label: "Home", to: "/" },
+    { icon: "📊", label: "Dash", to: "/Dashboard" },
+    { icon: "👥", label: "Patients", to: "/PatientDashboard" },
+    { icon: "🔄", label: "Shift", to: "/Shift" },
+    { icon: "💊", label: "Drugs", to: "/DrugsBugs" },
+    { icon: "🧮", label: "Calc", to: "/Calculators" },
+    { icon: "🏥", label: "Hub", to: "/hub" },
+  ];
+
   return (
-    <div style={{ minHeight: "100vh", background: "#050f1e", fontFamily: "'DM Sans',sans-serif", position: "relative" }}>
+    <div style={{ minHeight: "100vh", background: "#050f1e", fontFamily: "'DM Sans',sans-serif", position: "relative", display: "flex" }}>
+      {/* Left Sidebar */}
+      <div style={{ width: 80, flexShrink: 0, background: "#040d19", borderRight: "1px solid rgba(26,53,85,0.6)", display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 0", gap: 2 }}>
+        {sidebarItems.map(item => {
+          const isActive = window.location.pathname === item.to;
+          return (
+            <button
+              key={item.to}
+              onClick={() => navigate(item.to)}
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 12,
+                border: isActive ? "1px solid rgba(0,229,192,0.4)" : "1px solid transparent",
+                background: isActive ? "rgba(0,229,192,0.1)" : "transparent",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 4,
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                color: isActive ? "#00e5c0" : "#4a6a8a",
+              }}
+              onMouseEnter={e => {
+                if (!isActive) {
+                  e.currentTarget.style.background = "rgba(14,37,68,0.5)";
+                  e.currentTarget.style.borderColor = "rgba(26,53,85,0.8)";
+                  e.currentTarget.style.color = "#8aaccc";
+                }
+              }}
+              onMouseLeave={e => {
+                if (!isActive) {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.borderColor = "transparent";
+                  e.currentTarget.style.color = "#4a6a8a";
+                }
+              }}
+              title={item.label}
+            >
+              <span style={{ fontSize: 24 }}>{item.icon}</span>
+              <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: ".05em" }}>{item.label}</span>
+            </button>
+          );
+        })}
+        <div style={{ flex: 1 }} />
+        <button
+          onClick={() => navigate("/AppSettings")}
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 12,
+            border: "1px solid transparent",
+            background: "transparent",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 4,
+            cursor: "pointer",
+            transition: "all 0.2s ease",
+            color: "#4a6a8a",
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = "rgba(14,37,68,0.5)";
+            e.currentTarget.style.borderColor = "rgba(26,53,85,0.8)";
+            e.currentTarget.style.color = "#8aaccc";
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.borderColor = "transparent";
+            e.currentTarget.style.color = "#4a6a8a";
+          }}
+          title="Settings"
+        >
+          <span style={{ fontSize: 24 }}>⚙️</span>
+          <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: ".05em" }}>Settings</span>
+        </button>
+      </div>
+
       <Background />
 
-      <div style={{ position: "relative", zIndex: 1, padding: "32px 36px 48px", maxWidth: 1300, margin: "0 auto" }}>
+      <div style={{ position: "relative", zIndex: 1, padding: "32px 36px 48px", maxWidth: 1300, margin: "0 auto", flex: 1 }}>
 
         {/* Hero Header */}
         <div style={{ borderRadius: 22, padding: "28px 32px 24px", background: "rgba(5,15,30,0.82)", backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)", border: "1px solid rgba(42,79,122,0.5)", marginBottom: 24, position: "relative", overflow: "hidden", animation: "hub-appear 0.5s ease both", boxShadow: "0 8px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)" }}>

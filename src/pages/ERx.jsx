@@ -525,4 +525,78 @@ function PedsDoseCalculator({ drug, defaultWeight, defaultAgeMonths, onUseDose }
   );
 }
 
-export default PedsDoseCalculator;
+// ── Main ERx Component ────────────────────────────────────────────
+export default function ERx() {
+  const [selectedDrugId, setSelectedDrugId] = useState(null);
+  const [searchQ, setSearchQ] = useState("");
+
+  const { data: drugsFromDb, isLoading } = useQuery({
+    queryKey: ["medications"],
+    queryFn: async () => {
+      try {
+        const rows = await base44.entities.Medication.list("-created_date", 100);
+        return rows.map(r => ({ id: r.med_id || r.id, name: r.name, brand: r.brand || "", category: r.category }));
+      } catch (e) {
+        console.error("[ERx] Error loading drugs:", e);
+        return DRUGS_FALLBACK;
+      }
+    },
+  });
+
+  const drugs = drugsFromDb || DRUGS_FALLBACK;
+  const filtered = drugs.filter(d => d.name.toLowerCase().includes(searchQ.toLowerCase()) || d.category?.toLowerCase().includes(searchQ.toLowerCase()));
+  const selectedDrug = drugs.find(d => d.id === selectedDrugId);
+
+  return (
+    <div style={{ background: T.bg, minHeight: "100vh", display: "flex", color: T.txt, fontFamily: "DM Sans" }}>
+      {/* Sidebar */}
+      <div style={{ flex: "0 0 320px", background: T.panel, borderRight: `1px solid ${T.b}`, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ padding: "18px", borderBottom: `1px solid ${T.b}` }}>
+          <div style={{ fontFamily: "Playfair Display", fontSize: 20, fontWeight: 700, marginBottom: 10 }}>eRx</div>
+          <input placeholder="Search drugs..." value={searchQ} onChange={e => setSearchQ(e.target.value)}
+            style={{ width: "100%", padding: "8px 12px", borderRadius: 8, background: T.card, border: "none", color: T.txt, fontSize: 13, outline: "none" }} />
+        </div>
+        <div style={{ flex: 1, overflowY: "auto", padding: "10px" }}>
+          {isLoading ? (
+            <div style={{ padding: "20px", textAlign: "center", color: T.txt3 }}>Loading...</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {filtered.map(d => (
+                <button key={d.id} onClick={() => setSelectedDrugId(d.id)}
+                  style={{ padding: "10px 14px", borderRadius: 8, textAlign: "left", background: selectedDrugId === d.id ? T.up : "transparent", border: `1px solid ${selectedDrugId === d.id ? T.blue : "transparent"}`, color: T.txt, fontSize: 12.5, cursor: "pointer", transition: "all .15s" }}>
+                  <strong>{d.name}</strong>
+                  <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>{d.category}</div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        {!selectedDrug ? (
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
+            <div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>💊</div>
+              <div style={{ fontSize: 16, color: T.txt2, marginBottom: 8 }}>Select a medication to begin</div>
+              <div style={{ fontSize: 12, color: T.txt3 }}>Search by drug name or category above</div>
+            </div>
+          </div>
+        ) : (
+          <div style={{ flex: 1, overflowY: "auto", padding: "24px" }}>
+            <div style={{ maxWidth: 900 }}>
+              <button onClick={() => setSelectedDrugId(null)} style={{ marginBottom: 16, padding: "6px 12px", borderRadius: 6, background: "transparent", border: `1px solid ${T.b}`, color: T.txt2, fontSize: 12, cursor: "pointer" }}>
+                ← Back to list
+              </button>
+              <PedsDoseCalculator drug={selectedDrug} />
+              <div style={{ marginTop: 40, padding: "20px", background: T.card, borderRadius: 14, border: `1px solid ${T.b}` }}>
+                <PDMPQueryPanel />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

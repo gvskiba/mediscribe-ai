@@ -976,7 +976,7 @@ export default function Procedures() {
   };
 
   return (
-    <div style={{ background:T.navy, minHeight:"100vh", fontFamily:"DM Sans,sans-serif", display:"flex", flexDirection:"column", position:"relative", overflow:"hidden" }}>
+    <div style={{ background:T.navy, minHeight:"100vh", fontFamily:"DM Sans,sans-serif", display:"flex", flexDirection:"column", position:"relative", overflow:"hidden", paddingTop:80 }}>
       <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0}}>
         <div style={{position:"absolute",top:"-20%",left:"-5%",width:"50%",height:"50%",background:`radial-gradient(circle,${active.color}18 0%,transparent 70%)`,transition:"background 1s ease"}}/>
         <div style={{position:"absolute",bottom:"-15%",right:"0",width:"40%",height:"40%",background:"radial-gradient(circle,rgba(0,212,188,0.08) 0%,transparent 70%)"}}/>

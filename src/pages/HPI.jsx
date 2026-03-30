@@ -765,7 +765,7 @@ function CCGrid({ onSelect }) {
       <div style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 3, marginBottom: 10 }}>SELECT CHIEF COMPLAINT</div>
 
       {/* Category filter strip */}
-      <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 18, background: "rgba(8,22,40,0.8)", border: "1px solid rgba(26,53,85,0.6)", borderRadius: 12, padding: 4, overflowX: "auto", flexShrink: 0 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 18 }}>
         {CC_CATEGORIES.map(cat => {
           const isActive = activeCat === cat;
           const ccForCat = cat === "All" ? CC_LIST : CC_LIST.filter(c => c.cat === cat);
@@ -773,13 +773,13 @@ function CCGrid({ onSelect }) {
           return (
             <button key={cat} onClick={() => setActiveCat(cat)}
               style={{
-                padding: "7px 14px", borderRadius: 9, border: "none",
-                background: isActive ? `${accentColor}28` : "transparent",
+                padding: "6px 14px", borderRadius: 8,
+                border: `1px solid ${isActive ? accentColor + "66" : "rgba(26,53,85,0.5)"}`,
+                background: isActive ? `${accentColor}22` : "rgba(8,22,40,0.6)",
                 color: isActive ? accentColor : T.txt3,
                 fontFamily: "DM Sans", fontSize: 12, fontWeight: isActive ? 700 : 400,
-                cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+                cursor: "pointer", whiteSpace: "nowrap",
                 transition: "all .15s",
-                boxShadow: isActive ? `inset 0 0 0 1px ${accentColor}55` : "none",
                 display: "flex", alignItems: "center", gap: 5,
               }}>
               {cat !== "All" && <span style={{ width: 6, height: 6, borderRadius: "50%", background: isActive ? accentColor : T.txt4, display: "inline-block", flexShrink: 0 }} />}

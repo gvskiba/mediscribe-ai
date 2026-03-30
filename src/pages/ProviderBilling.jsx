@@ -423,8 +423,38 @@ function EMCalcPanel({ color }) {
 // ═══════════════════════════════════════════════════════════════════
 function CriticalCarePanel({ color }) {
   const [minutes, setMinutes] = useState("");
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes] = useState({});
   const [copied, setCopied] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedNote, setGeneratedNote] = useState("");
+
+  const generateNote = async () => {
+    setIsGenerating(true);
+    try {
+      const min = parseInt(minutes) || 0;
+      const result = await (await import("@/api/base44Client")).base44.integrations.Core.InvokeLLM({
+        prompt: `You are Notrya AI. Write a complete, medicolegally compliant Critical Care note for billing purposes (CPT 99291/99292). Use the following information:
+
+Critical Condition: ${notes.condition || "(not specified)"}
+Activities Performed: ${notes.activities || "(not specified)"}
+Medications Given: ${notes.meds || "(not specified)"}
+Patient Response: ${notes.response || "(not specified)"}
+Plan/Disposition: ${notes.disposition || "(not specified)"}
+Total Critical Care Time: ${min} minutes
+
+Generate a professional, structured critical care note that:
+1. Clearly documents the critical illness requiring high-intensity care
+2. Lists all critical care activities performed (exclude any separately billed procedure time)
+3. States the total critical care time explicitly
+4. Uses appropriate medical language
+5. Ends with a billing attestation statement
+
+Format as a complete note ready to paste into the medical record.`,
+      });
+      setGeneratedNote(typeof result === "string" ? result : result?.data || "");
+    } catch(e) { console.error(e); }
+    finally { setIsGenerating(false); }
+  };
 
   const min = parseInt(minutes) || 0;
   const qualifies = min >= 30;
@@ -548,13 +578,36 @@ function CriticalCarePanel({ color }) {
           )}
         </div>
 
-        {/* Notes field */}
+        {/* Documentation Template */}
         <div style={{...glass({borderRadius:12}),padding:"14px 16px"}}>
-          <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt3,textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>CRITICAL CARE DOCUMENTATION NOTE</div>
-          <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={4}
-            placeholder="e.g. Provided direct critical care management for this patient with septic shock from pneumonia. Activities included: review of labs, imaging, and culture data; bedside assessment; ventilator management; consultation with nephrology; documentation. Total time: 52 minutes."
-            style={{width:"100%",background:"rgba(14,37,68,0.8)",border:"1px solid rgba(26,53,85,0.5)",borderRadius:10,padding:"10px 14px",color:T.txt,fontFamily:"DM Sans",fontSize:13,resize:"vertical",outline:"none",boxSizing:"border-box",lineHeight:1.6}}/>
-          <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt3,marginTop:6}}>Document total time spent and specific activities. Procedure time (if separately billed) must be excluded.</div>
+          <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.coral,textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>CRITICAL CARE NOTE TEMPLATE</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+            {[
+              {k:"condition",label:"Critical Condition",placeholder:"e.g., septic shock from pneumonia",span:2},
+              {k:"activities",label:"Care Activities Performed",placeholder:"e.g., bedside assessment, ventilator management, review of labs/imaging, nephrology consult",span:2},
+              {k:"meds",label:"Vasoactive / Critical Medications",placeholder:"e.g., norepinephrine 0.1 mcg/kg/min, vancomycin 25 mg/kg IV",span:2},
+              {k:"response",label:"Patient Response / Status",placeholder:"e.g., hemodynamically stabilizing, SpO2 improving on PEEP 8",span:1},
+              {k:"disposition",label:"Plan / Disposition",placeholder:"e.g., ICU admission, continuous monitoring",span:1},
+            ].map(f=>(
+              <div key={f.k} style={{gridColumn:`span ${f.span}`}}>
+                <label style={{display:"block",fontFamily:"DM Sans",fontSize:10,fontWeight:600,color:T.txt3,textTransform:"uppercase",letterSpacing:".05em",marginBottom:4}}>{f.label}</label>
+                <textarea value={notes[f.k]||""} onChange={e=>setNotes(p=>({...p,[f.k]:e.target.value}))} placeholder={f.placeholder} rows={2}
+                  style={{width:"100%",background:"rgba(14,37,68,0.8)",border:"1px solid rgba(26,53,85,0.5)",borderRadius:8,padding:"8px 12px",color:T.txt,fontFamily:"DM Sans",fontSize:12,resize:"vertical",outline:"none",boxSizing:"border-box",lineHeight:1.6}}/>
+              </div>
+            ))}
+          </div>
+          <div style={{display:"flex",gap:8,marginBottom:generatedNote?12:0}}>
+            <button onClick={generateNote} disabled={isGenerating}
+              style={{flex:1,padding:"10px",borderRadius:9,background:isGenerating?"rgba(255,107,107,0.15)":`linear-gradient(135deg,${T.coral},${T.coral}aa)`,border:`1px solid ${T.coral}55`,color:isGenerating?T.coral:"#fff",fontWeight:700,fontSize:13,cursor:isGenerating?"not-allowed":"pointer",fontFamily:"DM Sans"}}>
+              {isGenerating?"✨ Generating…":"✨ Generate Critical Care Note"}
+            </button>
+            {generatedNote && <button onClick={()=>navigator.clipboard.writeText(generatedNote)} style={{padding:"10px 14px",borderRadius:9,background:"rgba(0,229,192,0.12)",border:"1px solid rgba(0,229,192,0.4)",color:T.teal,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"DM Sans"}}>📋 Copy</button>}
+          </div>
+          {generatedNote && (
+            <div style={{padding:"12px 14px",background:"rgba(5,15,30,0.6)",border:"1px solid rgba(26,53,85,0.5)",borderRadius:10,fontFamily:"DM Sans",fontSize:13,color:T.txt,lineHeight:1.8,whiteSpace:"pre-wrap"}}>
+              {generatedNote}
+            </div>
+          )}
         </div>
       </div>
 

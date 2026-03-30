@@ -1312,11 +1312,6 @@ export default function HPIPage() {
         </div>
       </div>
 
-      {/* Template strip */}
-      <div style={{ position: "relative", zIndex: 5, marginTop: 14 }}>
-        <TemplateStrip onApply={applyTemplate} currentCC={ccId} templates={quickTemplates} />
-      </div>
-
       {showCreateTemplate && (
         <CreateTemplateModal
           onClose={() => setShowCreateTemplate(false)}

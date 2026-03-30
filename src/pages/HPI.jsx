@@ -1,378 +1,1039 @@
-import { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { useState, useRef, useMemo, useCallback } from "react";
 
+// ── Font + CSS Injection ────────────────────────────────────────────
 (() => {
   if (document.getElementById("hpi-fonts")) return;
   const l = document.createElement("link"); l.id = "hpi-fonts";
   l.rel = "stylesheet";
-  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
+  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
   document.head.appendChild(l);
   const s = document.createElement("style"); s.id = "hpi-css";
   s.textContent = `
-    @keyframes hpi-fade { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-    .hpi-fade { animation: hpi-fade .3s ease forwards; }
-    .hpi-field:focus { border-color: #00d4bc !important; }
-    select option { background: #0e2340; color: #c8ddf0; }
-    ::-webkit-scrollbar { width: 3px; }
-    ::-webkit-scrollbar-thumb { background: rgba(42,77,114,0.5); border-radius: 2px; }
+    @keyframes hpi-in    { from{opacity:0;transform:translateY(6px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+    @keyframes hpi-chip  { from{opacity:0;transform:scale(.88)} to{opacity:1;transform:scale(1)} }
+    @keyframes hpi-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(255,107,107,0.4)} 50%{box-shadow:0 0 0 10px rgba(255,107,107,0)} }
+    @keyframes hpi-type  { from{opacity:0;transform:translateX(-4px)} to{opacity:1;transform:translateX(0)} }
+    @keyframes hpi-wave  { 0%,100%{height:6px} 50%{height:20px} }
+    @keyframes hpi-spin  { to{transform:rotate(360deg)} }
+    @keyframes hpi-shimmer { 0%{background-position:-200% center} 100%{background-position:200% center} }
+    @keyframes hpi-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .hpi-in    { animation: hpi-in .32s cubic-bezier(.34,1.56,.64,1) forwards; }
+    .hpi-chip  { animation: hpi-chip .2s cubic-bezier(.34,1.56,.64,1) forwards; }
+    .hpi-type  { animation: hpi-type .25s ease forwards; }
+    .chip-btn  { transition: all .15s ease; cursor: pointer; }
+    .chip-btn:hover { transform: translateY(-2px) scale(1.04); }
+    .chip-btn:active { transform: scale(.95); }
+    .cc-card   { transition: all .18s ease; cursor: pointer; }
+    .cc-card:hover { transform: translateY(-3px); }
+    .hpi-shimmer {
+      background: linear-gradient(90deg,#e8f0fe 0%,#fff 30%,#00e5c0 55%,#e8f0fe 100%);
+      background-size:250% auto; -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent; background-clip:text;
+      animation: hpi-shimmer 5s linear infinite;
+    }
+    .slot-active { animation: hpi-blink 1s ease infinite; }
+    ::-webkit-scrollbar{width:3px;height:3px;}
+    ::-webkit-scrollbar-track{background:transparent;}
+    ::-webkit-scrollbar-thumb{background:rgba(42,79,122,0.5);border-radius:2px;}
+    select option { background:#0e2340; color:#c8ddf0; }
   `;
   document.head.appendChild(s);
 })();
 
+// ── Design Tokens ───────────────────────────────────────────────────
 const T = {
-  navy: "#050f1e", panel: "#081628", card: "#0b1e36",
-  border: "rgba(26,53,85,0.6)", borderHi: "rgba(42,79,122,0.9)",
-  teal: "#00d4bc", amber: "#f5a623", blue: "#3b9eff",
-  txt: "#e8f0fe", txt2: "#8aaccc", txt3: "#4a6a8a", txt4: "#2e4a6a",
-  red: "#ff5c6c", green: "#2ecc71", purple: "#9b6dff",
+  bg:"#050f1e", panel:"#081628", card:"#0b1e36", up:"#0e2544",
+  b:"rgba(26,53,85,0.8)", bhi:"rgba(42,79,122,0.9)",
+  txt:"#e8f0fe", txt2:"#8aaccc", txt3:"#4a6a8a", txt4:"#2e4a6a",
+  coral:"#ff6b6b", gold:"#f5c842", teal:"#00e5c0", blue:"#3b9eff",
+  orange:"#ff9f43", purple:"#9b6dff", green:"#3dffa0", cyan:"#00d4ff",
+  rose:"#f472b6",
 };
 
-const glass = (extra = {}) => ({
-  backdropFilter: "blur(24px) saturate(200%)",
-  WebkitBackdropFilter: "blur(24px) saturate(200%)",
-  background: "rgba(8,22,40,0.75)",
-  border: "1px solid rgba(26,53,85,0.55)",
-  borderRadius: 14,
-  ...extra,
-});
+// ── Glass Helpers ────────────────────────────────────────────────────
+const glass = (x={}) => ({ backdropFilter:"blur(24px) saturate(200%)", WebkitBackdropFilter:"blur(24px) saturate(200%)", background:"rgba(8,22,40,0.75)", border:"1px solid rgba(26,53,85,0.45)", borderRadius:14, ...x });
+const deepGlass = (x={}) => ({ backdropFilter:"blur(40px) saturate(220%)", WebkitBackdropFilter:"blur(40px) saturate(220%)", background:"rgba(5,15,30,0.88)", border:"1px solid rgba(26,53,85,0.7)", ...x });
 
-const deepGlass = (extra = {}) => ({
-  backdropFilter: "blur(40px) saturate(220%)",
-  WebkitBackdropFilter: "blur(40px) saturate(220%)",
-  background: "rgba(5,15,30,0.88)",
-  border: "1px solid rgba(26,53,85,0.7)",
-  ...extra,
-});
+// ═══════════════════════════════════════════════════════════════════
+// CHIEF COMPLAINT DATA — Contextual OPQRST chips per CC
+// ═══════════════════════════════════════════════════════════════════
+const CC_DATA = {
+  chest_pain: {
+    icon:"❤️", label:"Chest Pain", color:T.coral,
+    gl:"rgba(255,107,107,0.12)", cat:"Cardiac",
+    onset:     ["sudden","gradual","acute on chronic","insidious","exertional"],
+    quality:   ["pressure","crushing","squeezing","sharp","burning","tearing","pleuritic","dull","aching"],
+    location:  ["substernal","left-sided","right-sided","diffuse","epigastric","precordial","midsternal"],
+    severity:  null, // uses NRS slider
+    radiation: ["non-radiating","left arm","jaw","right arm","back","bilateral shoulders","shoulder","neck"],
+    duration:  ["< 5 min","5–30 min","30 min–2 hrs","2–6 hrs","6–24 hrs","days","weeks","intermittent × days"],
+    timing:    ["constant","intermittent","episodic","progressive","waxing and waning","crescendo"],
+    worse:     ["exertion","inspiration","lying flat","palpation","eating","cold air","stress","movement"],
+    better:    ["rest","nitroglycerin","position change","antacids","leaning forward","oxygen"],
+    assoc:     ["dyspnea","diaphoresis","nausea","vomiting","palpitations","syncope","near-syncope","fever","cough","leg swelling","orthopnea","PND"],
+    neg:       ["no diaphoresis","no syncope","no dyspnea","no palpitations","no fever","no trauma","no leg swelling","no cough"],
+    riskFlags: { onset:"sudden", qual:["tearing","ripping"], msg:"⚠ Consider aortic dissection workup" },
+  },
+  dyspnea: {
+    icon:"🫁", label:"Shortness of Breath", color:T.blue,
+    gl:"rgba(59,158,255,0.12)", cat:"Pulmonary",
+    onset:     ["sudden","gradual","acute","subacute","insidious","acute on chronic"],
+    quality:   ["air hunger","unable to catch breath","cannot complete sentences","labored","wheezing","tightness","smothering"],
+    location:  ["at rest","with exertion","lying flat","with activity","at night"],
+    severity:  null,
+    radiation: ["non-specific"],
+    duration:  ["minutes","< 1 hr","1–6 hrs","6–24 hrs","days","weeks","progressive"],
+    timing:    ["constant","intermittent","episodic","progressive","nocturnal","positional"],
+    worse:     ["exertion","lying flat","allergen exposure","cold air","stress","eating","physical activity"],
+    better:    ["sitting upright","supplemental O₂","bronchodilators","position change","rest"],
+    assoc:     ["chest pain","cough","wheezing","fever","leg swelling","palpitations","hemoptysis","orthopnea","PND","sputum production"],
+    neg:       ["no chest pain","no fever","no leg swelling","no hemoptysis","no wheezing","no cough"],
+    riskFlags: { onset:"sudden", qual:["air hunger"], msg:"⚠ Evaluate for PE/pneumothorax" },
+  },
+  abd_pain: {
+    icon:"🫃", label:"Abdominal Pain", color:T.orange,
+    gl:"rgba(255,159,67,0.12)", cat:"GI / GU",
+    onset:     ["sudden","gradual","crampy","acute","colicky","insidious","acute on chronic"],
+    quality:   ["sharp","crampy","dull","aching","colicky","burning","pressure","constant","knife-like"],
+    location:  ["RUQ","LUQ","RLQ","LLQ","periumbilical","diffuse","epigastric","suprapubic","flank","RLQ migrating from periumbilical"],
+    severity:  null,
+    radiation: ["non-radiating","back","shoulder","groin","pelvis","right shoulder","bilateral flank"],
+    duration:  ["< 30 min","30 min–2 hrs","2–6 hrs","6–24 hrs","days","weeks"],
+    timing:    ["constant","intermittent","episodic","postprandial","nocturnal","progressive"],
+    worse:     ["eating","movement","palpation","breathing","defecation","urination","fatty foods","lying flat"],
+    better:    ["NPO","antacids","NSAIDs","defecation","urination","position change","heat"],
+    assoc:     ["nausea","vomiting","fever","diarrhea","constipation","hematuria","dysuria","vaginal discharge","anorexia","jaundice","hematemesis","melena","hematochezia"],
+    neg:       ["no fever","no nausea","no vomiting","no diarrhea","no hematuria","no hematochezia","no jaundice"],
+    riskFlags: { onset:"sudden", loc:"periumbilical", msg:"⚠ R/O appendicitis — assess migration pattern" },
+  },
+  headache: {
+    icon:"🧠", label:"Headache", color:T.purple,
+    gl:"rgba(155,109,255,0.12)", cat:"Neuro",
+    onset:     ["sudden thunderclap","gradual","acute","subacute","insidious","worst headache of life","upon waking"],
+    quality:   ["throbbing","pulsating","pressure","tight band-like","stabbing","sharp","dull","constant","drilling","splitting"],
+    location:  ["bilateral","unilateral left","unilateral right","frontal","occipital","temporal","parietal","vertex","periorbital","retroorbital"],
+    severity:  null,
+    radiation: ["non-radiating","neck","jaw","eye","facial","shoulder"],
+    duration:  ["< 1 hr","1–4 hrs","4–72 hrs","days","weeks","progressive"],
+    timing:    ["constant","intermittent","progressive","episodic","nocturnal","on awakening"],
+    worse:     ["light (photophobia)","sound (phonophobia)","movement","Valsalva","bending forward","exertion","lying flat","bright lights","odors"],
+    better:    ["dark room","quiet","analgesics","triptans","rest","sleep","cold compress","caffeine"],
+    assoc:     ["nausea","vomiting","photophobia","phonophobia","visual aura","neck stiffness","fever","altered consciousness","focal neuro deficit","lacrimation","rhinorrhea","diplopia"],
+    neg:       ["no fever","no neck stiffness","no focal neuro deficit","no visual changes","no vomiting","no aura","no altered consciousness"],
+    riskFlags: { onset:"sudden thunderclap", msg:"⚠ CRITICAL: Thunderclap onset — R/O SAH urgently" },
+  },
+  back_pain: {
+    icon:"🦴", label:"Back Pain", color:T.gold,
+    gl:"rgba(245,200,66,0.12)", cat:"MSK",
+    onset:     ["sudden","gradual","after lifting","after twisting","acute on chronic","traumatic","insidious"],
+    quality:   ["sharp","dull","aching","crampy","burning","shooting","electric","stiffness","radiating"],
+    location:  ["lumbar","thoracic","cervical","lumbosacral","right paravertebral","left paravertebral","bilateral","midline","sacral"],
+    severity:  null,
+    radiation: ["non-radiating","right leg","left leg","bilateral legs","groin","hip","buttock","to toe","perineum"],
+    duration:  ["hours","days","weeks","months","acute on chronic"],
+    timing:    ["constant","intermittent","worse AM","worse end of day","episodic","progressive"],
+    worse:     ["forward flexion","extension","sitting","standing","walking","lifting","lying flat","Valsalva"],
+    better:    ["rest","walking","NSAIDs","position change","heat","stretching","lying down"],
+    assoc:     ["leg weakness","numbness/tingling","bowel changes","bladder changes","saddle anesthesia","fever","weight loss","trauma","fall"],
+    neg:       ["no saddle anesthesia","no bowel/bladder dysfunction","no leg weakness","no fever","no weight loss","no trauma"],
+    riskFlags: { assoc:["saddle anesthesia","bowel changes","bladder changes"], msg:"⚠ Cauda equina: STAT MRI indicated" },
+  },
+  syncope: {
+    icon:"😵", label:"Syncope / Near-Syncope", color:T.cyan,
+    gl:"rgba(0,212,255,0.12)", cat:"Cardiac/Neuro",
+    onset:     ["sudden","preceded by prodrome","upon standing","during exertion","during Valsalva","emotional trigger"],
+    quality:   ["complete LOC","near-syncope","presyncope","witnessed by others","unwitnessed","recurrent","first episode"],
+    location:  ["standing","sitting","lying to standing","exertional","toileting","coughing","supine"],
+    severity:  null,
+    radiation: ["N/A"],
+    duration:  ["< 30 sec","30 sec–2 min","2–5 min","prolonged > 5 min","unknown"],
+    timing:    ["single episode","recurrent","progressive frequency"],
+    worse:     ["standing","dehydration","heat","exertion","Valsalva","pain/fear","prolonged standing"],
+    better:    ["lying supine","fluids","cool environment"],
+    assoc:     ["diaphoresis","pallor","palpitations","chest pain","dyspnea","incontinence","convulsive movements","confusion","tongue bite","prodrome","nausea"],
+    neg:       ["no chest pain","no palpitations prior","no tongue bite","no post-ictal state","no incontinence","no trauma","no prior episodes"],
+    riskFlags: { onset:"during exertion", msg:"⚠ Exertional syncope — high risk; cardiac evaluation urgent" },
+  },
+  ams: {
+    icon:"🌀", label:"Altered Mental Status", color:T.rose,
+    gl:"rgba(244,114,182,0.12)", cat:"Neuro",
+    onset:     ["sudden","acute","gradual","subacute","unknown","fluctuating","waxing and waning"],
+    quality:   ["confusion","agitation","lethargy","obtundation","stupor","combativeness","disorientation","hallucinations","bizarre behavior"],
+    location:  ["N/A — global"],
+    severity:  null,
+    radiation: ["N/A"],
+    duration:  ["hours","days","weeks","unknown","progressive"],
+    timing:    ["fluctuating","progressive","constant","intermittent","worse at night (sundowning)"],
+    worse:     ["nighttime","unfamiliar environment","pain","urinary retention","medication change"],
+    better:    ["familiar persons","reorientation","pain control","quiet environment"],
+    assoc:     ["fever","headache","neck stiffness","focal neuro deficit","seizure","incontinence","recent fall","medication change","polysubstance use","metabolic derangement"],
+    neg:       ["no fever","no focal neuro deficit","no headache","no neck stiffness","no seizure","no trauma","no recent medication change"],
+    riskFlags: { onset:"sudden", msg:"⚠ Sudden AMS — R/O stroke, ICH, metabolic emergency" },
+  },
+  extremity: {
+    icon:"💪", label:"Extremity / Joint Pain", color:T.teal,
+    gl:"rgba(0,229,192,0.12)", cat:"MSK / Ortho",
+    onset:     ["sudden","after trauma","gradual","after activity","acute on chronic","spontaneous","after fall","overuse"],
+    quality:   ["sharp","dull","throbbing","aching","stiffness","swelling","warmth","limited ROM","locking","giving way"],
+    location:  ["right shoulder","left shoulder","right elbow","left elbow","right wrist","left wrist","right hand","left hand","right hip","left hip","right knee","left knee","right ankle","left ankle","right foot","left foot"],
+    severity:  null,
+    radiation: ["non-radiating","distal","proximal","along nerve distribution"],
+    duration:  ["hours","days","weeks","chronic","acute on chronic"],
+    timing:    ["constant","intermittent","with movement","AM stiffness","after activity","weight-bearing"],
+    worse:     ["weight-bearing","movement","palpation","passive ROM","active ROM","cold","rest"],
+    better:    ["elevation","rest","ice","NSAIDs","heat","immobilization"],
+    assoc:     ["swelling","erythema","warmth","restricted ROM","numbness","tingling","weakness","deformity","skin changes","fever","rash"],
+    neg:       ["no deformity","no swelling","no erythema","no neurovascular deficit","no fever","no skin breakdown"],
+    riskFlags: { assoc:["fever"], loc:["right knee","left knee","right ankle"], msg:"⚠ Septic joint must be ruled out" },
+  },
+  fever: {
+    icon:"🌡️", label:"Fever / Infection", color:"#ff7043",
+    gl:"rgba(255,112,67,0.12)", cat:"Infectious",
+    onset:     ["sudden","gradual","acute","subacute","low-grade for days","high-grade acute"],
+    quality:   ["subjective fever","measured fever","rigors/chills","night sweats","drenching sweats","intermittent","continuous"],
+    location:  ["N/A — systemic","+ localizing symptoms below"],
+    severity:  null,
+    radiation: ["N/A"],
+    duration:  ["hours","days","1–2 weeks","> 2 weeks","recurrent"],
+    timing:    ["constant","intermittent","quotidian","tertian","nocturnal"],
+    worse:     ["nighttime","exertion"],
+    better:    ["antipyretics","antibiotics (started)","rest"],
+    assoc:     ["cough","dysuria","neck stiffness","headache","rash","joint pain","diarrhea","abdominal pain","sore throat","ear pain","localized pain","altered mental status","photophobia"],
+    neg:       ["no neck stiffness","no rash","no localizing symptoms","no urinary symptoms","no respiratory symptoms","no travel history","no animal exposure"],
+    riskFlags: { temp:">40°C", msg:"⚠ Hyperpyrexia — consider CNS infection, sepsis, drug reaction" },
+  },
+  nv: {
+    icon:"🤢", label:"Nausea / Vomiting", color:T.green,
+    gl:"rgba(61,255,160,0.12)", cat:"GI",
+    onset:     ["sudden","gradual","after eating","morning","after medication","acute","insidious"],
+    quality:   ["nausea alone","nausea + vomiting","bilious","bloody","coffee-ground","food contents","projectile","dry heaves"],
+    location:  ["N/A — GI"],
+    severity:  null,
+    radiation: ["N/A"],
+    duration:  ["hours","< 1 day","1–3 days","days","weeks"],
+    timing:    ["constant","intermittent","postprandial","morning","with movement"],
+    worse:     ["eating","movement","odors","medications","standing","motion"],
+    better:    ["NPO","antiemetics","lying still","clear liquids"],
+    assoc:     ["abdominal pain","diarrhea","fever","headache","vertigo","blood in emesis","weight loss","jaundice","last oral intake"],
+    neg:       ["no blood in emesis","no abdominal pain","no fever","no diarrhea","no blood in stool"],
+    riskFlags: { qual:["bloody","coffee-ground"], msg:"⚠ GI bleed — STAT assessment required" },
+  },
+  palpitations: {
+    icon:"💓", label:"Palpitations", color:T.coral,
+    gl:"rgba(255,107,107,0.12)", cat:"Cardiac",
+    onset:     ["sudden","gradual","upon exertion","at rest","nocturnal","after caffeine/stimulants","after alcohol"],
+    quality:   ["racing","fluttering","pounding","skipping beats","irregular","regular","single beats","sustained"],
+    location:  ["N/A — cardiac"],
+    severity:  null,
+    radiation: ["N/A"],
+    duration:  ["seconds","< 5 min","5–30 min","hours","ongoing"],
+    timing:    ["constant","paroxysmal","episodic","recurrent","new onset"],
+    worse:     ["exertion","caffeine","alcohol","stress","lying on left side","positional"],
+    better:    ["Valsalva","vagal maneuvers","rest","stopping activity"],
+    assoc:     ["chest pain","dyspnea","syncope","near-syncope","diaphoresis","anxiety","fever","palpable thyroid"],
+    neg:       ["no chest pain","no syncope","no dyspnea","no prior episodes","no cardiac history","no drug use"],
+    riskFlags: { assoc:["syncope","chest pain"], msg:"⚠ Syncope + palpitations — high-risk dysrhythmia suspected" },
+  },
+  dizziness: {
+    icon:"💫", label:"Dizziness / Vertigo", color:T.blue,
+    gl:"rgba(59,158,255,0.12)", cat:"Neuro / ENT",
+    onset:     ["sudden","with position change","upon standing","gradual","episodic","recurrent"],
+    quality:   ["true vertigo — room spinning","lightheadedness","presyncope","imbalance","dysequilibrium","spinning sensation","rocking"],
+    location:  ["N/A"],
+    severity:  null,
+    radiation: ["N/A"],
+    duration:  ["seconds","< 1 min","1–20 min","hours","days","constant"],
+    timing:    ["constant","intermittent","positional","episodic","progressive"],
+    worse:     ["head movement","rolling in bed","standing","Dix-Hallpike","visual stimulation"],
+    better:    ["lying still","closing eyes","certain positions","antihistamines"],
+    assoc:     ["nausea","vomiting","tinnitus","hearing loss","headache","facial droop","diplopia","dysarthria","ataxia","falls","ear pain"],
+    neg:       ["no focal neuro deficit","no headache","no hearing loss","no tinnitus","no diplopia","no dysarthria","no facial droop"],
+    riskFlags: { assoc:["diplopia","dysarthria","facial droop","ataxia"], msg:"⚠ Central vertigo signs — STAT MRI for posterior fossa pathology" },
+  },
+  trauma: {
+    icon:"🦺", label:"Trauma / Injury", color:T.orange,
+    gl:"rgba(255,159,67,0.12)", cat:"Trauma",
+    onset:     ["MVA","fall","assault","sports injury","work injury","recreational injury","self-inflicted","unknown mechanism"],
+    quality:   ["blunt","penetrating","crush","blast","burn","high-energy","low-energy"],
+    location:  ["head","neck","chest","abdomen","pelvis","spine","upper extremity","lower extremity","face","multiple regions"],
+    severity:  null,
+    radiation: ["N/A"],
+    duration:  ["< 1 hr ago","1–6 hrs ago","6–24 hrs ago","> 24 hrs ago"],
+    timing:    ["single event","repetitive","ongoing"],
+    worse:     ["movement","palpation","weight-bearing"],
+    better:    ["immobilization","ice","analgesia"],
+    assoc:     ["LOC","amnesia","headache","neck pain","chest pain","abdominal pain","extremity deformity","open wound","diaphoresis","blood at urethral meatus","pelvic instability"],
+    neg:       ["no LOC","no amnesia","no neck pain","no abdominal pain","no extremity deformity","no diaphoresis"],
+    riskFlags: { mech:"MVA", msg:"⚠ High-energy mechanism — activate trauma protocol" },
+  },
+};
 
-const OLDCARTS = [
-  {
-    id: "onset", label: "Onset", icon: "⏱️", color: T.teal,
-    placeholder: "When did it start? Sudden or gradual?",
-    hint: "e.g., 3 days ago, sudden onset while at rest",
-  },
-  {
-    id: "location", label: "Location", icon: "📍", color: T.blue,
-    placeholder: "Where is the symptom located? Does it radiate?",
-    hint: "e.g., substernal chest, radiates to left arm and jaw",
-  },
-  {
-    id: "duration", label: "Duration", icon: "⌛", color: T.amber,
-    placeholder: "How long does it last? Constant or intermittent?",
-    hint: "e.g., constant for 2 hours, intermittent episodes lasting 5–10 min",
-  },
-  {
-    id: "character", label: "Character", icon: "🔍", color: T.purple,
-    placeholder: "Describe the quality/character of the symptom",
-    hint: "e.g., pressure-like, sharp, burning, dull, throbbing",
-  },
-  {
-    id: "aggravating", label: "Aggravating Factors", icon: "⬆️", color: T.red,
-    placeholder: "What makes it worse?",
-    hint: "e.g., exertion, deep breathing, eating, movement",
-  },
-  {
-    id: "relieving", label: "Relieving Factors", icon: "⬇️", color: T.green,
-    placeholder: "What makes it better?",
-    hint: "e.g., rest, antacids, sitting forward, nitroglycerin",
-  },
-  {
-    id: "timing", label: "Timing / Pattern", icon: "📅", color: T.teal,
-    placeholder: "Any pattern? Getting better or worse?",
-    hint: "e.g., worse at night, progressive over 3 days, episodic",
-  },
-  {
-    id: "severity", label: "Severity", icon: "📊", color: T.amber,
-    placeholder: "Rate pain/symptom severity 0–10",
-    hint: "e.g., 8/10 at worst, currently 5/10",
-  },
+const CC_LIST = Object.entries(CC_DATA).map(([id, d]) => ({ id, ...d }));
+
+// ── Quick Templates ──────────────────────────────────────────────────
+const QUICK_TEMPLATES = [
+  { id:"stemi", label:"STEMI Presentation", icon:"❤️‍🔥", cc:"chest_pain",
+    fields:{ onset:"sudden", quality:["crushing","pressure"], location:"substernal", severity:9, radiation:"left arm", duration:"30 min–2 hrs", timing:"constant", worse:["exertion"], better:["nitroglycerin"], assoc:["diaphoresis","dyspnea","nausea"], neg:["no fever","no trauma"] } },
+  { id:"pe",    label:"PE Presentation",    icon:"🫁",     cc:"dyspnea",
+    fields:{ onset:"sudden", quality:["air hunger","unable to catch breath"], location:"at rest", severity:8, duration:"1–6 hrs", timing:"constant", worse:["exertion","lying flat"], better:["sitting upright"], assoc:["chest pain","palpitations","leg swelling"], neg:["no fever","no cough","no wheezing"] } },
+  { id:"appy",  label:"Appendicitis",       icon:"🫃",     cc:"abd_pain",
+    fields:{ onset:"gradual", quality:["sharp","constant"], location:"RLQ migrating from periumbilical", severity:7, radiation:"non-radiating", duration:"6–24 hrs", timing:"constant", worse:["movement","palpation","breathing"], better:["lying still"], assoc:["nausea","vomiting","fever","anorexia"], neg:["no diarrhea","no dysuria","no hematuria"] } },
+  { id:"sah",   label:"SAH / Thunderclap",  icon:"⚡",     cc:"headache",
+    fields:{ onset:"sudden thunderclap", quality:["splitting","worst headache of life"], location:"occipital", severity:10, radiation:"neck", duration:"constant", timing:"constant", worse:["movement","Valsalva"], better:["lying still"], assoc:["neck stiffness","nausea","vomiting","photophobia"], neg:["no focal neuro deficit","no prior episodes"] } },
+  { id:"renal", label:"Renal Colic",        icon:"💧",     cc:"abd_pain",
+    fields:{ onset:"sudden", quality:["colicky","sharp"], location:"flank", severity:9, radiation:"groin", duration:"2–6 hrs", timing:"intermittent", worse:["movement"], better:["NSAIDs","position change"], assoc:["nausea","vomiting","hematuria"], neg:["no fever","no diarrhea"] } },
+  { id:"stroke",label:"Stroke Presentation",icon:"🧠",     cc:"ams",
+    fields:{ onset:"sudden", quality:["confusion","focal neuro deficit"], location:"N/A — global", severity:null, duration:"hours", timing:"constant", worse:[""], better:[""], assoc:["focal neuro deficit","facial droop","speech difficulty","arm weakness","headache"], neg:["no fever","no trauma","no seizure"] } },
+  { id:"migraine",label:"Migraine",          icon:"💊",     cc:"headache",
+    fields:{ onset:"gradual", quality:["throbbing","pulsating"], location:"unilateral left", severity:8, radiation:"eye", duration:"4–72 hrs", timing:"constant", worse:["light (photophobia)","sound (phonophobia)","movement"], better:["dark room","quiet","triptans"], assoc:["nausea","vomiting","photophobia","phonophobia","visual aura"], neg:["no fever","no neck stiffness","no focal neuro deficit"] } },
+  { id:"gerd",  label:"GERD / ACS Mimic",   icon:"🔥",     cc:"chest_pain",
+    fields:{ onset:"gradual", quality:["burning","aching"], location:"epigastric", severity:5, radiation:"non-radiating", duration:"30 min–2 hrs", timing:"postprandial", worse:["eating","lying flat"], better:["antacids","sitting upright"], assoc:["nausea","sour taste","belching"], neg:["no diaphoresis","no dyspnea","no syncope","no exertional component"] } },
 ];
 
-const ASSOCIATED = [
-  "Nausea / Vomiting", "Diaphoresis", "Shortness of Breath", "Fever / Chills",
-  "Dizziness / Syncope", "Palpitations", "Headache", "Vision Changes",
-  "Weakness / Numbness", "Cough", "Diarrhea / Constipation", "Hematuria",
-  "Hemoptysis", "Melena / Hematochezia", "Rash", "Edema",
-  "Weight Loss", "Fatigue", "Anorexia", "Night Sweats",
-];
+// ── Narrative Builder ────────────────────────────────────────────────
+function buildNarrative(ccId, fields, customText, patientName) {
+  if (!ccId) return "";
+  const cc = CC_DATA[ccId];
+  if (!cc) return customText || "";
+  const name = patientName || "The patient";
+  const parts = [];
 
-export default function HPI() {
-  const [chiefComplaint, setChiefComplaint] = useState("");
-  const [fields, setFields] = useState({});
-  const [associated, setAssociated] = useState([]);
-  const [pertinentNeg, setPertinentNeg] = useState([]);
-  const [additionalContext, setAdditionalContext] = useState("");
-  const [generatedHPI, setGeneratedHPI] = useState("");
-  const [generating, setGenerating] = useState(false);
-  const [copied, setCopied] = useState(false);
+  // Opener
+  let opener = `${name} presents`;
+  if (fields.onset) opener += ` with ${fields.onset} onset`;
+  const qText = fields.quality?.length ? fields.quality.join(", ") + " " : "";
+  opener += ` with ${qText}${cc.label.toLowerCase()}`;
+  if (fields.location && fields.location !== "N/A — global" && fields.location !== "N/A") {
+    const locText = fields.location.startsWith("N/A") ? "" : ` — ${fields.location}`;
+    opener += locText;
+  }
+  parts.push(opener);
 
-  const toggleAssociated = (sym) => {
-    setAssociated(prev =>
-      prev.includes(sym) ? prev.filter(s => s !== sym) : [...prev, sym]
-    );
+  // Severity + Duration + Timing
+  const detail = [];
+  if (fields.severity !== null && fields.severity !== undefined) detail.push(`${fields.severity}/10 severity`);
+  if (fields.duration) detail.push(`${fields.duration} duration`);
+  if (fields.timing) detail.push(fields.timing);
+  if (detail.length) parts.push(detail.join(", "));
+
+  // Radiation
+  if (fields.radiation && fields.radiation !== "N/A" && fields.radiation !== "non-radiating") {
+    parts.push(`Radiating to the ${fields.radiation}`);
+  } else if (fields.radiation === "non-radiating") {
+    parts.push("Pain is non-radiating");
+  }
+
+  // Modifying
+  const worse = fields.worse?.filter(Boolean) || [];
+  const better = fields.better?.filter(Boolean) || [];
+  if (worse.length || better.length) {
+    let mod = "Symptoms are";
+    if (worse.length) mod += ` aggravated by ${worse.join(" and ")}`;
+    if (better.length) mod += `${worse.length ? " and" : ""} relieved by ${better.join(" and ")}`;
+    parts.push(mod);
+  }
+
+  // Associated
+  if (fields.assoc?.length) {
+    parts.push(`Associated symptoms include ${fields.assoc.join(", ")}`);
+  }
+
+  // Pertinent negatives
+  if (fields.neg?.length) {
+    parts.push(`The patient denies ${fields.neg.join(", ")}`);
+  }
+
+  // Custom text
+  if (customText?.trim()) parts.push(customText.trim());
+
+  return parts.filter(Boolean).join(". ") + (parts.length ? "." : "");
+}
+
+// ── Completion Score ────────────────────────────────────────────────
+function getCompletion(fields) {  // Fix 8: removed unused ccId param
+  const checks = [
+    !!fields.onset, !!fields.quality?.length, !!fields.location,
+    fields.severity !== null && fields.severity !== undefined,
+    !!fields.duration, !!fields.timing, !!fields.radiation,
+    !!(fields.worse?.length || fields.better?.length),
+    !!fields.assoc?.length,
+  ];
+  return { score: checks.filter(Boolean).length, total: checks.length };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CHIP COMPONENT
+// ═══════════════════════════════════════════════════════════════════
+function Chip({ label, selected, onClick, color = T.teal }) {  // Fix 7: removed unused `multi` prop
+  const sel = selected;
+  return (
+    <button className="chip-btn hpi-chip"
+      onClick={onClick}
+      style={{
+        padding: "6px 14px", borderRadius: 20, border: `1px solid ${sel ? color+"88" : "rgba(42,79,122,0.4)"}`,
+        background: sel ? `${color}22` : "rgba(14,37,68,0.7)",
+        color: sel ? color : T.txt2,
+        fontFamily: "DM Sans", fontSize: 12.5, fontWeight: sel ? 700 : 400,
+        display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap",
+        boxShadow: sel ? `0 0 8px ${color}44` : "none",
+      }}>
+      {sel && <span style={{ fontSize: 10 }}>✓</span>}
+      {label}
+    </button>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// NRS SEVERITY SLIDER
+// ═══════════════════════════════════════════════════════════════════
+function SeveritySelector({ value, onChange, color }) {
+  const levels = [0,1,2,3,4,5,6,7,8,9,10];
+  const getColor = (n) => {
+    if (n === null) return T.txt4;
+    if (n <= 2) return T.teal;
+    if (n <= 4) return T.green;
+    if (n <= 6) return T.gold;
+    if (n <= 8) return T.orange;
+    return T.coral;
   };
+  return (
+    <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+      {levels.map(n => (
+        <button key={n} className="chip-btn" onClick={() => onChange(value === n ? null : n)}
+          style={{
+            width: 38, height: 38, borderRadius: 10,
+            background: value === n ? `${getColor(n)}25` : "rgba(14,37,68,0.7)",
+            border: `1.5px solid ${value === n ? getColor(n) : "rgba(42,79,122,0.3)"}`,
+            color: value === n ? getColor(n) : T.txt3,
+            fontFamily: "JetBrains Mono", fontWeight: 700, fontSize: 13,
+            boxShadow: value === n ? `0 0 10px ${getColor(n)}55` : "none",
+          }}>
+          {n}
+        </button>
+      ))}
+    </div>
+  );
+}
 
-  const toggleNeg = (sym) => {
-    setPertinentNeg(prev =>
-      prev.includes(sym) ? prev.filter(s => s !== sym) : [...prev, sym]
-    );
-  };
+// ═══════════════════════════════════════════════════════════════════
+// CHIP ROW — collapsible OPQRST section
+// ═══════════════════════════════════════════════════════════════════
+function ChipSection({ title, icon, items, selected, multi, onChange, color, type }) {
+  const [expanded, setExpanded] = useState(true);
+  const isSelected = multi ? (selected?.length > 0) : selected !== null && selected !== undefined;
 
-  const generate = async () => {
-    setGenerating(true);
-    try {
-      const oldcartsText = OLDCARTS.map(f =>
-        `${f.label}: ${fields[f.id] || "(not provided)"}`
-      ).join("\n");
-
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are Notrya AI, an expert emergency medicine documentation assistant. Generate a professional, detailed, medicolegally sound History of Present Illness (HPI) using the OLDCARTS framework.
-
-Chief Complaint: ${chiefComplaint || "(not specified)"}
-
-OLDCARTS Data:
-${oldcartsText}
-
-Associated Symptoms (positive): ${associated.length > 0 ? associated.join(", ") : "None documented"}
-Pertinent Negatives: ${pertinentNeg.length > 0 ? pertinentNeg.join(", ") : "None documented"}
-
-Additional Context: ${additionalContext || "None"}
-
-Instructions:
-- Write in third person, past tense (e.g., "The patient presented with…")
-- Incorporate all OLDCARTS elements naturally and cohesively
-- Include associated symptoms and pertinent negatives in the narrative
-- Use precise, professional emergency medicine language
-- Format as a single flowing paragraph (no headers)
-- Keep it concise but thorough (4–7 sentences)
-- Do NOT include assessment or plan`,
-      });
-
-      setGeneratedHPI(typeof result === "string" ? result : result?.data || "");
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setGenerating(false);
+  const toggle = (item) => {
+    if (multi) {
+      const cur = selected || [];
+      onChange(cur.includes(item) ? cur.filter(x => x !== item) : [...cur, item]);
+    } else {
+      onChange(selected === item ? null : item);
     }
-  };
-
-  const copy = () => {
-    if (generatedHPI) {
-      navigator.clipboard.writeText(generatedHPI);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    }
-  };
-
-  const reset = () => {
-    setChiefComplaint("");
-    setFields({});
-    setAssociated([]);
-    setPertinentNeg([]);
-    setAdditionalContext("");
-    setGeneratedHPI("");
-  };
-
-  const inputStyle = {
-    width: "100%",
-    background: "rgba(14,37,68,0.8)",
-    border: "1px solid rgba(26,53,85,0.55)",
-    borderRadius: 9,
-    padding: "10px 14px",
-    color: T.txt,
-    fontFamily: "DM Sans, sans-serif",
-    fontSize: 13,
-    outline: "none",
-    boxSizing: "border-box",
-    transition: "border-color .15s",
-    resize: "vertical",
   };
 
   return (
-    <div style={{
-      background: T.navy, minHeight: "100vh", fontFamily: "DM Sans, sans-serif",
-      display: "flex", flexDirection: "column", position: "relative", overflow: "hidden", paddingTop: 80,
-    }}>
-      {/* Ambient glow */}
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
-        <div style={{ position: "absolute", top: "-20%", left: "-5%", width: "50%", height: "50%", background: "radial-gradient(circle,rgba(0,212,188,0.12) 0%,transparent 70%)" }} />
-        <div style={{ position: "absolute", bottom: "-15%", right: "0", width: "40%", height: "40%", background: "radial-gradient(circle,rgba(59,158,255,0.08) 0%,transparent 70%)" }} />
+    <div style={{ marginBottom: 10 }}>
+      <button onClick={() => setExpanded(!expanded)}
+        style={{ display: "flex", alignItems: "center", gap: 8, background: "transparent", border: "none", cursor: "pointer", padding: "4px 0", width: "100%" }}>
+        <span style={{ fontSize: 14 }}>{icon}</span>
+        <span style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: isSelected ? color : T.txt3, textTransform: "uppercase", letterSpacing: 2, fontWeight: 700 }}>
+          {title}
+        </span>
+        {isSelected && (
+          <span style={{ fontFamily: "DM Sans", fontSize: 11, color, background: `${color}22`, padding: "2px 8px", borderRadius: 20, marginLeft: 4 }}>
+            {multi ? (selected?.join(", ").substring(0, 30) + (selected?.join(", ").length > 30 ? "…" : "")) : selected}
+          </span>
+        )}
+        <span style={{ marginLeft: "auto", color: T.txt4, fontSize: 11 }}>{expanded ? "▼" : "▶"}</span>
+      </button>
+      {expanded && (
+        <div style={{ paddingLeft: 22, paddingTop: 6 }}>
+          {type === "nrs" ? (
+            <SeveritySelector value={selected} onChange={onChange} color={color} />
+          ) : (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {items.map(item => (
+                <Chip key={item} label={item}
+                  selected={multi ? (selected || []).includes(item) : selected === item}
+                  onClick={() => toggle(item)} color={color} multi={multi} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// AUDIO RECORDER
+// ═══════════════════════════════════════════════════════════════════
+function AudioRecorder({ onTranscript, accentColor }) {
+  const [recording, setRecording] = useState(false);
+  const [supported, setSupported] = useState(true);
+  const [interimText, setInterimText] = useState("");
+  const recognitionRef = useRef(null);
+
+  const start = useCallback(() => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { setSupported(false); return; }
+    const r = new SR();
+    r.continuous = true;
+    r.interimResults = true;
+    r.lang = "en-US";
+    r.onresult = (e) => {
+      let interim = "", final = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) final += e.results[i][0].transcript;
+        else interim += e.results[i][0].transcript;
+      }
+      setInterimText(interim);
+      if (final) { onTranscript(final); setInterimText(""); }
+    };
+    r.onerror = () => { setRecording(false); setInterimText(""); };
+    r.onend = () => { setRecording(false); setInterimText(""); };
+    recognitionRef.current = r;
+    r.start();
+    setRecording(true);
+  }, [onTranscript]);
+
+  const stop = useCallback(() => {
+    recognitionRef.current?.stop();
+    setRecording(false);
+    setInterimText("");
+  }, []);
+
+  if (!supported) return (
+    <div style={{ fontFamily: "DM Sans", fontSize: 11, color: T.txt3, padding: "6px 10px", background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 8 }}>
+      Voice input not supported in this browser. Use Chrome for dictation.
+    </div>
+  );
+
+  return (
+    <div>
+      <button onClick={recording ? stop : start}
+        style={{
+          display: "flex", alignItems: "center", gap: 8,
+          padding: "10px 20px", borderRadius: 50,
+          background: recording
+            ? `linear-gradient(135deg,${T.coral},#c0392b)`
+            : `linear-gradient(135deg,${accentColor},${accentColor}bb)`,
+          border: "none", cursor: "pointer",
+          color: "#fff", fontFamily: "DM Sans", fontWeight: 700, fontSize: 13,
+          boxShadow: recording ? `0 0 0 0 ${T.coral}` : `0 4px 16px ${accentColor}44`,
+          animation: recording ? "hpi-pulse 2s ease infinite" : "none",
+          transition: "all .3s",
+        }}>
+        {recording ? (
+          <>
+            <div style={{ display: "flex", gap: 2, alignItems: "flex-end", height: 20 }}>
+              {[0,1,2,3,4].map(i => (
+                <div key={i} style={{ width: 3, background: "white", borderRadius: 2, animation: `hpi-wave 1s ease ${i * 0.12}s infinite`, height: 6 }} />
+              ))}
+            </div>
+            Recording — Tap to Stop
+          </>
+        ) : (
+          <><span style={{ fontSize: 16 }}>🎙</span> Voice Dictation</>
+        )}
+      </button>
+      {interimText && (
+        <div style={{ marginTop: 8, padding: "8px 12px", background: "rgba(14,37,68,0.6)", border: "1px solid rgba(42,79,122,0.4)", borderRadius: 8, fontFamily: "DM Sans", fontSize: 12, color: T.txt2, fontStyle: "italic" }}>
+          ✍ {interimText}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CC GRID — initial chief complaint selector
+// ═══════════════════════════════════════════════════════════════════
+function CCGrid({ onSelect }) {
+  return (
+    <div className="hpi-in">
+      <div style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 3, marginBottom: 14 }}>SELECT CHIEF COMPLAINT</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))", gap: 10 }}>
+        {CC_LIST.map((cc, i) => (
+          <div key={cc.id} className="cc-card hpi-in" onClick={() => onSelect(cc.id)}
+            style={{
+              ...glass({ borderRadius: 12, background: `linear-gradient(135deg,${cc.gl},rgba(8,22,40,0.8))`, borderColor: cc.gl }),
+              padding: "14px 14px", cursor: "pointer",
+              animationDelay: `${i * 0.03}s`,
+            }}>
+            <div style={{ fontSize: 24, marginBottom: 6 }}>{cc.icon}</div>
+            <div style={{ fontFamily: "DM Sans", fontWeight: 700, fontSize: 13, color: T.txt, marginBottom: 2 }}>{cc.label}</div>
+            <div style={{ fontFamily: "JetBrains Mono", fontSize: 9, color: cc.color, textTransform: "uppercase", letterSpacing: 1 }}>{cc.cat}</div>
+          </div>
+        ))}
       </div>
+    </div>
+  );
+}
 
-      {/* Header */}
-      <div style={{ ...deepGlass({ borderRadius: 0, borderTop: "none", borderLeft: "none", borderRight: "none" }), padding: "14px 28px", zIndex: 10, position: "relative" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ ...deepGlass({ borderRadius: 8 }), padding: "5px 12px", display: "flex", gap: 8, alignItems: "center" }}>
-            <span style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.teal, letterSpacing: 3 }}>NOTRYA</span>
-            <span style={{ color: T.txt3, fontFamily: "JetBrains Mono", fontSize: 10 }}>/</span>
-            <span style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.txt3, letterSpacing: 2 }}>HPI BUILDER</span>
+// ═══════════════════════════════════════════════════════════════════
+// OPQRST BUILDER — main chip interface
+// ═══════════════════════════════════════════════════════════════════
+function OPQRSTBuilder({ ccId, fields, onChange, color }) {
+  const cc = CC_DATA[ccId];
+  if (!cc) return null;
+
+  const set = (key) => (val) => onChange({ ...fields, [key]: val });
+
+  const sections = [
+    { key: "onset",    icon: "⏱", title: "Onset",               items: cc.onset,    multi: false },
+    { key: "quality",  icon: "📝", title: "Quality / Character", items: cc.quality,  multi: true  },
+    { key: "location", icon: "📍", title: "Location",            items: cc.location, multi: false },
+    { key: "severity", icon: "🔢", title: "Severity (NRS 0–10)", items: [],          multi: false, type: "nrs" },
+    { key: "duration", icon: "⏳", title: "Duration",            items: cc.duration, multi: false },
+    { key: "radiation",icon: "↗️", title: "Radiation",           items: cc.radiation,multi: false },
+    { key: "timing",   icon: "🔄", title: "Timing",              items: cc.timing,   multi: false },
+    { key: "worse",    icon: "📈", title: "Aggravating Factors",  items: cc.worse,    multi: true  },
+    { key: "better",   icon: "📉", title: "Relieving Factors",    items: cc.better,   multi: true  },
+    { key: "assoc",    icon: "➕", title: "Associated Symptoms",  items: cc.assoc,    multi: true  },
+    { key: "neg",      icon: "➖", title: "Pertinent Negatives",  items: cc.neg,      multi: true  },
+  ];
+
+  return (
+    <div className="hpi-in" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      {sections.map(s => (
+        <ChipSection key={s.key} title={s.title} icon={s.icon}
+          items={s.items} selected={fields[s.key]} multi={s.multi}
+          onChange={set(s.key)} color={color} type={s.type} />
+      ))}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// NARRATIVE PANEL — live preview
+// ═══════════════════════════════════════════════════════════════════
+function NarrativePanel({ narrative, ccId, fields, color, onAIEnhance, aiLoading, onCopy, copied, onEdit, editMode, editValue, onEditChange }) {
+  const comp = getCompletion(fields);
+  const pct = Math.round((comp.score / comp.total) * 100);
+  const isEmpty = !narrative;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, height: "100%" }}>
+      {/* Completion indicator */}
+      {ccId && (
+        <div style={{ ...glass({ borderRadius: 12 }), padding: "10px 14px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+            <span style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 2, flex: 1 }}>HPI COMPLETENESS</span>
+            <span style={{ fontFamily: "JetBrains Mono", fontSize: 12, fontWeight: 700, color: pct === 100 ? T.green : pct >= 66 ? T.teal : T.gold }}>{pct}%</span>
           </div>
-          <div style={{ height: 1, flex: 1, background: "linear-gradient(90deg,rgba(42,77,114,0.5),transparent)" }} />
-          <h1 style={{ fontFamily: "Playfair Display", fontSize: "clamp(18px,2.5vw,26px)", fontWeight: 900, color: T.txt, letterSpacing: -0.5 }}>
-            HPI Builder
-          </h1>
-        </div>
-      </div>
-
-      {/* Body */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", position: "relative", zIndex: 1, maxWidth: 1100, width: "100%", margin: "0 auto" }}>
-
-        {/* Chief Complaint */}
-        <div style={{ ...glass({ borderRadius: 12 }), padding: "16px 20px", marginBottom: 16 }}>
-          <label style={{ display: "block", fontFamily: "JetBrains Mono", fontSize: 10, color: T.teal, textTransform: "uppercase", letterSpacing: 2, marginBottom: 8 }}>
-            Chief Complaint
-          </label>
-          <input
-            type="text"
-            value={chiefComplaint}
-            onChange={e => setChiefComplaint(e.target.value)}
-            placeholder="e.g., chest pain, shortness of breath, abdominal pain…"
-            className="hpi-field"
-            style={{ ...inputStyle, fontSize: 15, fontWeight: 600 }}
-          />
-        </div>
-
-        {/* OLDCARTS Grid */}
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 2, marginBottom: 10 }}>
-            OLDCARTS Framework
+          <div style={{ background: "rgba(26,53,85,0.5)", borderRadius: 4, height: 6, overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${pct}%`, background: pct === 100 ? T.green : pct >= 66 ? T.teal : T.gold, borderRadius: 4, transition: "width .4s ease" }} />
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 12 }}>
-            {OLDCARTS.map(f => (
-              <div key={f.id} style={{ ...glass({ borderRadius: 12, borderColor: `${f.color}30` }), padding: "14px 16px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <span style={{ fontSize: 16 }}>{f.icon}</span>
-                  <div>
-                    <div style={{ fontFamily: "DM Sans", fontWeight: 700, fontSize: 13, color: f.color }}>{f.label}</div>
-                    <div style={{ fontFamily: "DM Sans", fontSize: 10, color: T.txt3 }}>{f.hint}</div>
-                  </div>
-                </div>
-                <textarea
-                  rows={2}
-                  value={fields[f.id] || ""}
-                  onChange={e => setFields(p => ({ ...p, [f.id]: e.target.value }))}
-                  placeholder={f.placeholder}
-                  className="hpi-field"
-                  style={{ ...inputStyle }}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Associated Symptoms */}
-        <div style={{ ...glass({ borderRadius: 12 }), padding: "16px 20px", marginBottom: 16 }}>
-          <div style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 2, marginBottom: 12 }}>
-            Associated Symptoms — click to mark as POSITIVE
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {ASSOCIATED.map(sym => {
-              const isPos = associated.includes(sym);
-              const isNeg = pertinentNeg.includes(sym);
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
+            {["onset","quality","location","severity","duration","timing","radiation","modifiers","associated"].map((e, i) => {
+              const fieldKey = ["onset","quality","location","severity","duration","timing","radiation","worse","assoc"][i];
+              const done = fieldKey === "worse"
+                ? (fields.worse?.length || fields.better?.length)
+                : fieldKey === "quality" ? fields.quality?.length
+                : fieldKey === "assoc" ? fields.assoc?.length
+                : (fields[fieldKey] !== null && fields[fieldKey] !== undefined);
               return (
-                <div key={sym} style={{ display: "flex", gap: 0 }}>
-                  <button
-                    onClick={() => { toggleAssociated(sym); if (isNeg) toggleNeg(sym); }}
-                    style={{
-                      padding: "5px 12px", borderRadius: "8px 0 0 8px",
-                      background: isPos ? `${T.teal}25` : "rgba(14,37,68,0.6)",
-                      border: `1px solid ${isPos ? T.teal + "77" : "rgba(26,53,85,0.5)"}`,
-                      borderRight: "none",
-                      color: isPos ? T.teal : T.txt3, fontSize: 12, fontWeight: isPos ? 700 : 400,
-                      cursor: "pointer", fontFamily: "DM Sans", transition: "all .15s",
-                    }}>
-                    {isPos ? "✓ " : ""}{sym}
-                  </button>
-                  <button
-                    onClick={() => { toggleNeg(sym); if (isPos) toggleAssociated(sym); }}
-                    style={{
-                      padding: "5px 10px", borderRadius: "0 8px 8px 0",
-                      background: isNeg ? `${T.red}20` : "rgba(14,37,68,0.4)",
-                      border: `1px solid ${isNeg ? T.red + "66" : "rgba(26,53,85,0.4)"}`,
-                      color: isNeg ? T.red : T.txt4, fontSize: 11, fontWeight: isNeg ? 700 : 400,
-                      cursor: "pointer", fontFamily: "DM Sans", transition: "all .15s",
-                    }}>
-                    {isNeg ? "−" : "−"}
-                  </button>
-                </div>
+                <span key={e} style={{ fontFamily: "JetBrains Mono", fontSize: 9, padding: "2px 6px", borderRadius: 4, background: done ? `${color}22` : "rgba(26,53,85,0.3)", color: done ? color : T.txt4, textTransform: "uppercase", letterSpacing: 1 }}>
+                  {done ? "✓ " : ""}{e}
+                </span>
               );
             })}
           </div>
-          <div style={{ marginTop: 10, display: "flex", gap: 16, fontSize: 11, color: T.txt3, fontFamily: "DM Sans" }}>
-            <span><span style={{ color: T.teal }}>✓ teal</span> = Positive symptom</span>
-            <span><span style={{ color: T.red }}>−red</span> = Pertinent negative</span>
+        </div>
+      )}
+
+      {/* Narrative */}
+      <div style={{ ...glass({ borderRadius: 14, flex: 1, borderColor: isEmpty ? "rgba(26,53,85,0.4)" : color + "55" }), padding: "16px 18px", display: "flex", flexDirection: "column", minHeight: 200 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <span style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: isEmpty ? T.txt4 : color, textTransform: "uppercase", letterSpacing: 2, flex: 1 }}>LIVE HPI NARRATIVE</span>
+          {!isEmpty && (
+            <button onClick={() => onEdit(!editMode)}
+              style={{ padding: "3px 10px", borderRadius: 6, background: editMode ? `${color}22` : "transparent", border: `1px solid ${editMode ? color+"55" : "rgba(42,79,122,0.4)"}`, color: editMode ? color : T.txt3, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "DM Sans" }}>
+              {editMode ? "✓ Done" : "✏ Edit"}
+            </button>
+          )}
+        </div>
+
+        {isEmpty ? (
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8, color: T.txt4 }}>
+            <span style={{ fontSize: 36 }}>📄</span>
+            <span style={{ fontFamily: "DM Sans", fontSize: 13 }}>Select a chief complaint to begin</span>
           </div>
-        </div>
-
-        {/* Additional Context */}
-        <div style={{ ...glass({ borderRadius: 12 }), padding: "16px 20px", marginBottom: 16 }}>
-          <label style={{ display: "block", fontFamily: "JetBrains Mono", fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 2, marginBottom: 8 }}>
-            Additional Context (Optional)
-          </label>
-          <textarea
-            rows={3}
-            value={additionalContext}
-            onChange={e => setAdditionalContext(e.target.value)}
-            placeholder="PMH, prior episodes, relevant social history, pertinent medications, allergies, recent travel, sick contacts…"
-            className="hpi-field"
-            style={{ ...inputStyle }}
-          />
-        </div>
-
-        {/* Generate Button */}
-        <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-          <button
-            onClick={generate}
-            disabled={generating}
-            style={{
-              flex: 1, padding: "13px", borderRadius: 10,
-              background: generating ? "rgba(0,212,188,0.15)" : `linear-gradient(135deg,${T.teal},${T.teal}aa)`,
-              border: `1px solid ${T.teal}55`,
-              color: generating ? T.teal : "#051015",
-              fontWeight: 700, fontSize: 15, cursor: generating ? "not-allowed" : "pointer",
-              fontFamily: "DM Sans", transition: "all .2s",
-            }}>
-            {generating ? "✨ Generating HPI…" : "✨ Generate HPI"}
-          </button>
-          <button
-            onClick={reset}
-            style={{
-              padding: "13px 20px", borderRadius: 10,
-              background: "transparent", border: "1px solid rgba(26,53,85,0.5)",
-              color: T.txt3, fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "DM Sans",
-            }}>
-            Reset
-          </button>
-        </div>
-
-        {/* Generated HPI Output */}
-        {generatedHPI && (
-          <div className="hpi-fade" style={{ ...glass({ borderRadius: 14, background: "rgba(5,15,30,0.85)", borderColor: `${T.teal}44` }), padding: "20px 22px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-              <div style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.teal, textTransform: "uppercase", letterSpacing: 2, flex: 1 }}>
-                Generated HPI
-              </div>
-              <button
-                onClick={copy}
-                style={{
-                  padding: "6px 14px", borderRadius: 8,
-                  background: copied ? `${T.green}20` : `${T.teal}18`,
-                  border: `1px solid ${copied ? T.green + "55" : T.teal + "44"}`,
-                  color: copied ? T.green : T.teal,
-                  fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "DM Sans",
-                }}>
-                {copied ? "✓ Copied!" : "📋 Copy"}
-              </button>
-            </div>
-            <div style={{
-              fontFamily: "DM Sans", fontSize: 14, color: T.txt, lineHeight: 1.85,
-              whiteSpace: "pre-wrap",
-              borderLeft: `3px solid ${T.teal}`,
-              paddingLeft: 16,
-            }}>
-              {generatedHPI}
-            </div>
+        ) : editMode ? (
+          <textarea value={editValue} onChange={e => onEditChange(e.target.value)} rows={10}
+            style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: T.txt, fontFamily: "DM Sans", fontSize: 14, lineHeight: 1.9, resize: "none", width: "100%" }} />
+        ) : (
+          <div className="hpi-type" key={narrative.length} style={{ fontFamily: "DM Sans", fontSize: 14, color: T.txt, lineHeight: 1.9, flex: 1 }}>
+            {narrative}
           </div>
         )}
+      </div>
+
+      {/* Actions */}
+      {ccId && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button onClick={onAIEnhance} disabled={aiLoading || isEmpty}
+            style={{ flex: "1 1 auto", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 14px", borderRadius: 10, background: aiLoading ? `${color}20` : `linear-gradient(135deg,${color},${color}bb)`, border: "none", color: aiLoading ? color : "#fff", fontWeight: 700, fontSize: 12, cursor: isEmpty || aiLoading ? "not-allowed" : "pointer", fontFamily: "DM Sans" }}>
+            {aiLoading ? (
+              <><div style={{ width: 14, height: 14, border: `2px solid ${color}`, borderTopColor: "transparent", borderRadius: "50%", animation: "hpi-spin 1s linear infinite" }} /> Enhancing…</>
+            ) : "✨ AI Enhance"}
+          </button>
+          <button onClick={onCopy} disabled={isEmpty}
+            style={{ padding: "10px 16px", borderRadius: 10, background: "rgba(14,37,68,0.8)", border: `1px solid ${copied ? T.green+"66" : "rgba(42,79,122,0.4)"}`, color: copied ? T.green : T.txt2, fontWeight: 600, fontSize: 12, cursor: "pointer", fontFamily: "DM Sans", whiteSpace: "nowrap" }}>
+            {copied ? "✓ Copied!" : "📋 Copy"}
+          </button>
+          <button
+            onClick={() => {
+              // Fix 6: window.open returns null if popup is blocked — guard before use
+              const w = window.open("", "_blank");
+              if (!w) { alert("Popup blocked — please allow popups to print."); return; }
+              w.document.write(`<!DOCTYPE html><html><head><title>HPI</title><style>body{font-family:'Segoe UI',sans-serif;max-width:700px;margin:40px auto;line-height:1.8;color:#1f2937;font-size:14px;} h2{border-bottom:2px solid #1f2937;padding-bottom:8px;}</style></head><body><h2>History of Present Illness</h2><p>${(editMode ? editValue : narrative)}</p><p style="font-size:11px;color:#9ca3af;margin-top:32px">Notrya · ${new Date().toLocaleString()}</p></body></html>`);
+              w.document.close(); setTimeout(() => w.print(), 250);
+            }}
+            disabled={isEmpty}
+            style={{ padding: "10px 16px", borderRadius: 10, background: "rgba(14,37,68,0.8)", border: "1px solid rgba(42,79,122,0.4)", color: T.txt2, fontWeight: 600, fontSize: 12, cursor: "pointer", fontFamily: "DM Sans", whiteSpace: "nowrap" }}>
+            🖨 Print
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TEMPLATE STRIP
+// ═══════════════════════════════════════════════════════════════════
+function TemplateStrip({ onApply, currentCC }) {
+  const [open, setOpen] = useState(false);
+  const visible = currentCC ? QUICK_TEMPLATES.filter(t => t.cc === currentCC) : QUICK_TEMPLATES;
+
+  return (
+    <div style={{ ...deepGlass({ borderRadius: 0, borderTop: "1px solid rgba(26,53,85,0.6)", borderBottom: "none", borderLeft: "none", borderRight: "none" }), padding: "0" }}>
+      <button onClick={() => setOpen(!open)}
+        style={{ width: "100%", padding: "10px 24px", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.teal, textTransform: "uppercase", letterSpacing: 2 }}>⚡ QUICK TEMPLATES</span>
+        <span style={{ fontFamily: "DM Sans", fontSize: 11, color: T.txt4 }}>— Pre-fill complete HPI for common presentations</span>
+        <span style={{ marginLeft: "auto", fontFamily: "JetBrains Mono", fontSize: 11, color: T.txt4 }}>{open ? "▲ Close" : "▼ Show"}</span>
+      </button>
+      {open && (
+        <div style={{ padding: "0 24px 14px", display: "flex", gap: 8, overflowX: "auto", flexWrap: "nowrap" }}>
+          {visible.map(t => (
+            <button key={t.id} onClick={() => { onApply(t); setOpen(false); }}
+              style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", borderRadius: 10, background: "rgba(0,229,192,0.08)", border: "1px solid rgba(0,229,192,0.25)", color: T.teal, fontFamily: "DM Sans", fontWeight: 600, fontSize: 12, cursor: "pointer", transition: "all .15s", whiteSpace: "nowrap" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,229,192,0.15)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,229,192,0.08)"; }}>
+              <span style={{ fontSize: 16 }}>{t.icon}</span>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MAIN HPI PAGE
+// ═══════════════════════════════════════════════════════════════════
+const EMPTY_FIELDS = {
+  onset: null, quality: [], location: null, severity: null,
+  radiation: null, duration: null, timing: null,
+  worse: [], better: [], assoc: [], neg: [],
+};
+
+export default function HPIPage() {
+  const [ccId, setCCId] = useState(null);
+  const [fields, setFields] = useState(EMPTY_FIELDS);
+  const [customText, setCustomText] = useState("");
+  const [patientName, setPatientName] = useState("");
+  const [editMode, setEditMode] = useState(false);
+  const [editValue, setEditValue] = useState("");
+  // Fix 2: finalNarrative holds user-committed edits so "Done" doesn't discard changes
+  const [finalNarrative, setFinalNarrative] = useState(null);
+  const [aiLoading, setAILoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [showCustom, setShowCustom] = useState(false);
+
+  const cc = ccId ? CC_DATA[ccId] : null;
+  const activeColor = cc?.color || T.teal;
+
+  // Build narrative from chips
+  const generatedNarrative = useMemo(
+    () => buildNarrative(ccId, fields, customText, patientName),
+    [ccId, fields, customText, patientName]
+  );
+
+  // Fix 2: displayNarrative uses finalNarrative (committed edit) when available;
+  // falls back to generated. Toggling edit off commits editValue to finalNarrative.
+  const displayNarrative = editMode
+    ? editValue
+    : (finalNarrative ?? generatedNarrative);
+
+  const handleEditToggle = (on) => {
+    if (on) {
+      // Opening edit — seed with current display
+      setEditValue(displayNarrative);
+      setEditMode(true);
+    } else {
+      // Closing edit — commit the edited value so it persists
+      setFinalNarrative(editValue.trim() || null);
+      setEditMode(false);
+    }
+  };
+
+  // Select CC
+  const selectCC = (id) => {
+    setCCId(id);
+    setFields(EMPTY_FIELDS);
+    setCustomText("");
+    setEditMode(false);
+    setEditValue("");
+    setFinalNarrative(null); // Fix 2: clear committed edit on CC change
+  };
+
+  // Apply template
+  const applyTemplate = (t) => {
+    setCCId(t.cc);
+    setFields({ ...EMPTY_FIELDS, ...t.fields });
+    setEditMode(false);
+    setFinalNarrative(null); // Fix 2: clear committed edit on template apply
+  };
+
+  // Voice transcript → append to customText
+  // Fix 9: wrapped in useCallback so AudioRecorder.start dep [onTranscript] stays stable
+  const handleTranscript = useCallback((text) => {
+    setCustomText(prev => (prev ? prev + " " + text : text).trim());
+    setShowCustom(true);
+  }, []);
+
+  // AI Enhance
+  const handleAIEnhance = async () => {
+    if (!displayNarrative || aiLoading) return;
+    setAILoading(true);
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 600,
+          system: "You are Notrya AI — a clinical documentation assistant for emergency medicine. Enhance the provided HPI to be medically professional, complete, and clinically precise. Preserve ALL clinical facts exactly. Improve fluency and add transitional phrases. Keep it 3–5 sentences. Return ONLY the improved narrative, no preamble.",
+          messages: [{ role: "user", content: `Enhance this emergency medicine HPI:\n\n${displayNarrative}` }]
+        })
+      });
+      const data = await res.json();
+      const enhanced = data.content?.[0]?.text || displayNarrative;
+      setEditValue(enhanced);
+      setEditMode(true);
+    } catch (e) { console.error(e); }
+    setAILoading(false);
+  };
+
+  // Copy
+  const handleCopy = () => {
+    if (!displayNarrative) return;
+    navigator.clipboard.writeText(displayNarrative);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  // Save
+  const handleSave = () => {
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  // Clinical risk flag
+  const riskFlag = useMemo(() => {
+    if (!cc?.riskFlags) return null;
+    const rf = cc.riskFlags;
+    // Fix 4: check rf.onset
+    if (rf.onset && fields.onset === rf.onset) return rf.msg;
+    // check rf.qual
+    if (rf.qual && fields.quality?.some(q => rf.qual.includes(q))) return rf.msg;
+    // check rf.assoc
+    if (rf.assoc && fields.assoc?.some(a => rf.assoc?.includes(a))) return rf.msg;
+    // Fix 5: check rf.mech (trauma MVA — onset array used as mechanism)
+    if (rf.mech && fields.onset === rf.mech) return rf.msg;
+    // Fix 4: check rf.temp — fires when severity is 9 or 10 as proxy for hyperpyrexia
+    if (rf.temp && fields.severity !== null && fields.severity >= 9) return rf.msg;
+    return null;
+  }, [cc, fields]);
+
+  return (
+    <div style={{ background: T.bg, minHeight: "100vh", fontFamily: "DM Sans, sans-serif", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+
+      {/* Ambient glow */}
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
+        <div style={{ position: "absolute", top: "-20%", left: "-10%", width: "60%", height: "60%", background: `radial-gradient(circle,${activeColor}18 0%,transparent 70%)`, transition: "background 1.2s ease" }} />
+        <div style={{ position: "absolute", bottom: "-15%", right: "-5%", width: "50%", height: "50%", background: "radial-gradient(circle,rgba(0,212,255,0.07) 0%,transparent 70%)" }} />
+      </div>
+
+      {/* Header */}
+      <div style={{ ...deepGlass({ borderRadius: 0 }), padding: "14px 24px", flexShrink: 0, zIndex: 10, position: "relative", borderBottom: "1px solid rgba(26,53,85,0.6)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ ...deepGlass({ borderRadius: 9 }), padding: "5px 12px", display: "flex", gap: 8, alignItems: "center" }}>
+            <span style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.teal, letterSpacing: 3 }}>NOTRYA</span>
+            <span style={{ color: T.txt3, fontFamily: "JetBrains Mono", fontSize: 10 }}>/</span>
+            <span style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.txt3, letterSpacing: 2 }}>HPI</span>
+          </div>
+          <div style={{ height: 1, width: 40, background: "rgba(42,77,114,0.5)" }} />
+
+          {/* Patient name quick-input */}
+          <input
+            placeholder="Patient name (optional)…"
+            value={patientName}
+            onChange={e => setPatientName(e.target.value)}
+            style={{ background: "rgba(14,37,68,0.7)", border: "1px solid rgba(42,77,114,0.4)", borderRadius: 8, padding: "6px 12px", color: T.txt, fontFamily: "DM Sans", fontSize: 12, outline: "none", width: 180 }}
+            onFocus={e => e.target.style.borderColor = activeColor}
+            onBlur={e => e.target.style.borderColor = "rgba(42,77,114,0.4)"}
+          />
+
+          {ccId && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 20, background: `${activeColor}22`, border: `1px solid ${activeColor}44` }}>
+              <span>{cc.icon}</span>
+              <span style={{ fontFamily: "DM Sans", fontWeight: 700, fontSize: 12, color: activeColor }}>{cc.label}</span>
+              <button onClick={() => selectCC(null)} style={{ background: "transparent", border: "none", color: T.txt4, cursor: "pointer", fontSize: 12, padding: "0 0 0 4px" }}>✕</button>
+            </div>
+          )}
+
+          <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+            <AudioRecorder onTranscript={handleTranscript} accentColor={activeColor} />
+            <button onClick={handleSave}
+              style={{ padding: "9px 20px", borderRadius: 10, background: saved ? `linear-gradient(135deg,${T.green},#27ae60)` : `linear-gradient(135deg,${activeColor},${activeColor}bb)`, border: "none", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "DM Sans", transition: "all .3s" }}>
+              {saved ? "✓ Saved!" : "💾 Save HPI"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Title row */}
+      <div style={{ padding: "16px 24px 0", position: "relative", zIndex: 1 }}>
+        <h1 className="hpi-shimmer" style={{ fontFamily: "Playfair Display", fontSize: "clamp(22px,4vw,38px)", fontWeight: 900, letterSpacing: -1, lineHeight: 1.1 }}>
+          History of Present Illness
+        </h1>
+        <p style={{ fontFamily: "DM Sans", fontSize: 12, color: T.txt3, marginTop: 4 }}>
+          Tap a chief complaint → select descriptors → narrative builds in real time
+          <span style={{ color: T.txt4, marginLeft: 8 }}>— No unnecessary clicks. No forms.</span>
+        </p>
+      </div>
+
+      {/* Risk Flag */}
+      {riskFlag && (
+        <div style={{ margin: "8px 24px 0", padding: "10px 16px", background: "rgba(255,107,107,0.1)", border: "1px solid rgba(255,107,107,0.4)", borderRadius: 10, fontFamily: "DM Sans", fontSize: 12.5, color: T.coral, fontWeight: 600, position: "relative", zIndex: 1, animation: "hpi-in .3s ease" }}>
+          {riskFlag}
+        </div>
+      )}
+
+      {/* Main layout */}
+      <div style={{ display: "flex", flex: 1, gap: 14, padding: "14px 24px 0", position: "relative", zIndex: 1, minHeight: 0, overflow: "hidden" }}>
+
+        {/* LEFT — CC Grid or OPQRST Builder */}
+        <div style={{ flex: "0 0 55%", overflowY: "auto", display: "flex", flexDirection: "column", gap: 12 }}>
+
+          {!ccId ? (
+            <CCGrid onSelect={selectCC} />
+          ) : (
+            <div style={{ ...glass({ borderRadius: 14 }), padding: "16px 18px", flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                <span style={{ fontSize: 22 }}>{cc.icon}</span>
+                <div>
+                  <div style={{ fontFamily: "Playfair Display", fontSize: 16, fontWeight: 700, color: T.txt }}>{cc.label}</div>
+                  <div style={{ fontFamily: "DM Sans", fontSize: 11, color: T.txt3 }}>Tap chips to build your narrative</div>
+                </div>
+                <button onClick={() => selectCC(null)} style={{ marginLeft: "auto", padding: "4px 10px", borderRadius: 7, background: "rgba(255,107,107,0.1)", border: "1px solid rgba(255,107,107,0.25)", color: T.coral, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "DM Sans" }}>
+                  ← Change CC
+                </button>
+              </div>
+              <OPQRSTBuilder ccId={ccId} fields={fields} onChange={setFields} color={activeColor} />
+
+              {/* Custom / Free Text */}
+              <div style={{ marginTop: 14, borderTop: "1px solid rgba(26,53,85,0.4)", paddingTop: 12 }}>
+                <button onClick={() => setShowCustom(!showCustom)}
+                  style={{ background: "transparent", border: "none", cursor: "pointer", fontFamily: "JetBrains Mono", fontSize: 10, color: showCustom ? activeColor : T.txt3, textTransform: "uppercase", letterSpacing: 2, display: "flex", alignItems: "center", gap: 6 }}>
+                  ✏ {showCustom ? "▼" : "▶"} Additional Notes / Free Text
+                </button>
+                {showCustom && (
+                  <textarea value={customText} onChange={e => setCustomText(e.target.value)}
+                    placeholder="Add context, history, risk factors, medications, prior workup, or any details not captured above…"
+                    rows={4}
+                    style={{ width: "100%", marginTop: 8, background: "rgba(14,37,68,0.8)", border: `1px solid rgba(42,79,122,0.4)`, borderRadius: 10, padding: "10px 14px", color: T.txt, fontFamily: "DM Sans", fontSize: 13, resize: "vertical", outline: "none", boxSizing: "border-box", lineHeight: 1.65 }}
+                    onFocus={e => e.target.style.borderColor = activeColor}
+                    onBlur={e => e.target.style.borderColor = "rgba(42,79,122,0.4)"}
+                  />
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT — Live Narrative */}
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 12, overflowY: "auto" }}>
+          <NarrativePanel
+            narrative={generatedNarrative}
+            ccId={ccId}
+            fields={fields}
+            color={activeColor}
+            onAIEnhance={handleAIEnhance}
+            aiLoading={aiLoading}
+            onCopy={handleCopy}
+            copied={copied}
+            onEdit={handleEditToggle}
+            editMode={editMode}
+            editValue={editValue}
+            onEditChange={setEditValue}
+          />
+
+          {/* Voice transcript pending */}
+          {customText && !showCustom && (
+            <div style={{ ...glass({ borderRadius: 12, background: "rgba(0,229,192,0.06)", borderColor: "rgba(0,229,192,0.25)" }), padding: "12px 16px" }}>
+              <div style={{ fontFamily: "JetBrains Mono", fontSize: 9, color: T.teal, textTransform: "uppercase", letterSpacing: 2, marginBottom: 6 }}>🎙 DICTATED ADDITION</div>
+              <div style={{ fontFamily: "DM Sans", fontSize: 12.5, color: T.txt2, lineHeight: 1.7, fontStyle: "italic" }}>"{customText}"</div>
+              <button onClick={() => { setCustomText(""); }} style={{ marginTop: 8, padding: "3px 10px", borderRadius: 6, background: "rgba(255,107,107,0.1)", border: "1px solid rgba(255,107,107,0.25)", color: T.coral, fontSize: 10, cursor: "pointer", fontFamily: "DM Sans" }}>
+                Clear
+              </button>
+            </div>
+          )}
+
+          {/* How it compares */}
+          {!ccId && (
+            <div style={{ ...glass({ borderRadius: 14 }), padding: "20px 22px" }}>
+              <div style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.gold, textTransform: "uppercase", letterSpacing: 2, marginBottom: 14 }}>WHY THIS IS DIFFERENT</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                {[
+                  { label: "EPIC SmartPhrases", issues: ["Dot phrases require memorization", "30+ clicks for full HPI", "No live narrative preview", "Voice requires separate setup"], c: T.coral },
+                  { label: "Cerner FirstNet", issues: ["Fragmented field-by-field entry", "No contextual options per CC", "Manual typing intensive", "Poor mobile experience"], c: T.orange },
+                  { label: "Meditech Expanse", issues: ["Form-based rigid structure", "No intelligent pre-population", "Clinical context not integrated", "Template sharing is limited"], c: T.gold },
+                  { label: "Notrya HPI ✓", issues: ["Tap CC → contextual chips appear", "Live narrative builds instantly", "Voice dictation integrated", "AI enhancement in 1 click"], c: T.teal },
+                ].map((s, i) => (
+                  <div key={i} style={{ padding: "12px 14px", background: i === 3 ? "rgba(0,229,192,0.08)" : "rgba(14,37,68,0.5)", border: `1px solid ${s.c}33`, borderRadius: 10 }}>
+                    <div style={{ fontFamily: "DM Sans", fontWeight: 700, fontSize: 12, color: s.c, marginBottom: 8 }}>{s.label}</div>
+                    {s.issues.map((iss, j) => (
+                      <div key={j} style={{ display: "flex", gap: 6, marginBottom: 4, alignItems: "flex-start" }}>
+                        <span style={{ color: i === 3 ? T.teal : T.coral, fontSize: 10, marginTop: 2, flexShrink: 0 }}>{i === 3 ? "✓" : "✗"}</span>
+                        <span style={{ fontFamily: "DM Sans", fontSize: 11.5, color: T.txt2, lineHeight: 1.5 }}>{iss}</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Template strip */}
+      <div style={{ position: "relative", zIndex: 5, marginTop: 14 }}>
+        <TemplateStrip onApply={applyTemplate} currentCC={ccId} />
+      </div>
+
+      {/* Footer */}
+      <div style={{ textAlign: "center", padding: "7px", borderTop: "1px solid rgba(26,53,85,0.3)", position: "relative", zIndex: 2 }}>
+        <span style={{ fontFamily: "JetBrains Mono", fontSize: 9, color: T.txt4, letterSpacing: 2 }}>
+          NOTRYA HPI · {CC_LIST.length} CHIEF COMPLAINTS · OPQRST + PERTINENT NEGATIVES · VOICE + AI ENHANCED
+        </span>
       </div>
     </div>
   );

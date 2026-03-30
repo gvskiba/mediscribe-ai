@@ -73,7 +73,7 @@ const CHART_GROUPS = [
     groupIcon: '🚪',
     items: [
       { icon: '🚪', label: 'Discharge',         page: '/NewPatientInput?tab=discharge' },
-      { icon: '💉', label: 'eRx',               page: '/erx' },
+      { icon: '💉', label: 'eRx',               page: '/NewPatientInput?tab=erx' },
     ]
   },
   {

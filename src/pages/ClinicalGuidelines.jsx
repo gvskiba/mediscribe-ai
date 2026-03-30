@@ -826,7 +826,7 @@ export default function AutocoderHub() {
         width:220, minHeight:"100vh", position:"relative", zIndex:10, flexShrink:0,
         background:"rgba(5,15,30,0.92)", backdropFilter:"blur(24px)", WebkitBackdropFilter:"blur(24px)",
         borderRight:`1px solid ${T.border}`,
-        display:"flex", flexDirection:"column", padding:"24px 14px", gap:3,
+        display:"flex", flexDirection:"column", padding:"80px 14px 24px 14px", gap:3,
         boxShadow:`4px 0 28px rgba(0,0,0,0.4),inset -1px 0 0 ${T.borderHi}`,
       }}>
         {/* Wordmark */}

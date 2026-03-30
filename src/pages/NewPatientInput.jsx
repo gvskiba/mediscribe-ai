@@ -20,6 +20,7 @@ import ACSPage from "@/components/acs/ACSPage";
 import CardiacHub from "@/pages/CardiacHub";
 import ERPlanBuilder from "@/pages/ERPlanBuilder";
 import HPIPage from "@/pages/HPI";
+import ERxHub from "@/pages/ERx";
 
 // ─── NAV DATA ────────────────────────────────────────
 const NAV_DATA = {
@@ -284,13 +285,7 @@ export default function NewPatientInput() {
       case "cardiac-hub": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", background: "#050f1e" }}><CardiacHub /></div>;
       case "erplan": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><ERPlanBuilder embedded /></div>;
       case "hpi": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto" }}><HPIPage /></div>;
-      case "erx": return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center", justifyContent: "center", height: 300 }}>
-          <div style={{ fontSize: 32 }}>💉</div>
-          <div style={{ color: "#8aaccc" }}>eRx — Electronic Prescriptions</div>
-          <button onClick={() => navigate("/ERx")} style={{ background: "#00e5c0", color: "#050f1e", border: "none", borderRadius: 8, padding: "8px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Open eRx →</button>
-        </div>
-      );
+      case "erx": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><ERxHub /></div>;
       default: return null;
     }
   };

@@ -207,6 +207,23 @@ const HUBS = [
     badge: "AI-Powered",
     priority: 12,
   },
+  {
+    id: "guidelines",
+    route: "/guidelines",
+    icon: "📚",
+    abbr: "GUIDE",
+    title: "Medical Guidelines",
+    subtitle: "Evidence-based clinical guidelines · Best practices",
+    color: "#6b63ff",
+    glow: "rgba(107,99,255,0.4)",
+    glass: "rgba(107,99,255,0.07)",
+    border: "rgba(107,99,255,0.28)",
+    accent: "#8b83ff",
+    category: "Tools",
+    stats: ["ACC/AHA", "ACCP", "CDC"],
+    badge: "Coming Soon",
+    priority: 13,
+  },
 ];
 
 const CATEGORIES = ["All", "Critical Care", "Specialty", "Procedures", "Tools"];

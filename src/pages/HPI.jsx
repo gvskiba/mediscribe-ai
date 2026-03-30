@@ -1009,7 +1009,8 @@ export default function HPIPage() {
 
   // Load templates from DB on mount
   const loadTemplates = useCallback(() => {
-    base44.entities.HPITemplate.list("order", 100).then(rows => {
+    base44.entities.HPITemplate.list("-created_date", 100).then(rows => {
+      console.log("[HPI] Loaded templates:", rows);
       setQuickTemplates(rows.map(r => ({
         id: r.id,
         label: r.label,
@@ -1017,7 +1018,9 @@ export default function HPIPage() {
         cc: r.cc,
         fields: r.hpi_fields || {},
       })));
-    }).catch(() => {});
+    }).catch(err => {
+      console.error("[HPI] Error loading templates:", err);
+    });
   }, []);
 
   useEffect(() => {

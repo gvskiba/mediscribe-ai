@@ -1037,30 +1037,6 @@ export default function HPIPage() {
             </div>
           )}
 
-          {/* How it compares */}
-          {!ccId && (
-            <div style={{ ...glass({ borderRadius: 14 }), padding: "20px 22px" }}>
-              <div style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.gold, textTransform: "uppercase", letterSpacing: 2, marginBottom: 14 }}>WHY THIS IS DIFFERENT</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                {[
-                  { label: "EPIC SmartPhrases", issues: ["Dot phrases require memorization", "30+ clicks for full HPI", "No live narrative preview", "Voice requires separate setup"], c: T.coral },
-                  { label: "Cerner FirstNet", issues: ["Fragmented field-by-field entry", "No contextual options per CC", "Manual typing intensive", "Poor mobile experience"], c: T.orange },
-                  { label: "Meditech Expanse", issues: ["Form-based rigid structure", "No intelligent pre-population", "Clinical context not integrated", "Template sharing is limited"], c: T.gold },
-                  { label: "Notrya HPI ✓", issues: ["Tap CC → contextual chips appear", "Live narrative builds instantly", "Voice dictation integrated", "AI enhancement in 1 click"], c: T.teal },
-                ].map((s, i) => (
-                  <div key={i} style={{ padding: "12px 14px", background: i === 3 ? "rgba(0,229,192,0.08)" : "rgba(14,37,68,0.5)", border: `1px solid ${s.c}33`, borderRadius: 10 }}>
-                    <div style={{ fontFamily: "DM Sans", fontWeight: 700, fontSize: 12, color: s.c, marginBottom: 8 }}>{s.label}</div>
-                    {s.issues.map((iss, j) => (
-                      <div key={j} style={{ display: "flex", gap: 6, marginBottom: 4, alignItems: "flex-start" }}>
-                        <span style={{ color: i === 3 ? T.teal : T.coral, fontSize: 10, marginTop: 2, flexShrink: 0 }}>{i === 3 ? "✓" : "✗"}</span>
-                        <span style={{ fontFamily: "DM Sans", fontSize: 11.5, color: T.txt2, lineHeight: 1.5 }}>{iss}</span>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 

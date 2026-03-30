@@ -947,25 +947,25 @@ function NarrativePanel({ narrative, ccId, fields, color, onAIEnhance, aiLoading
 // ═══════════════════════════════════════════════════════════════════
 function TemplateStrip({ onApply, currentCC, templates = [] }) {
   const visible = currentCC ? templates.filter(t => t.cc === currentCC) : templates;
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
 
   useEffect(() => {
-    if (visible.length > 0) setOpen(true);
-    else setOpen(false);
-  }, [currentCC, visible.length]);
+    setOpen(visible.length > 0);
+  }, [currentCC, templates]);
   return (
     <div style={{ ...deepGlass({ borderRadius: 0, borderTop: "1px solid rgba(26,53,85,0.6)", borderBottom: "none", borderLeft: "none", borderRight: "none" }), padding: "0" }}>
       <button onClick={() => setOpen(!open)}
         style={{ width: "100%", padding: "10px 24px", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}>
         <span style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.teal, textTransform: "uppercase", letterSpacing: 2 }}>⚡ QUICK TEMPLATES</span>
-        <span style={{ fontFamily: "DM Sans", fontSize: 11, color: T.txt4 }}>— Pre-fill complete HPI for common presentations</span>
+        {visible.length > 0 && <span style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.teal, background: "rgba(0,229,192,0.15)", border: "1px solid rgba(0,229,192,0.3)", borderRadius: 20, padding: "2px 8px" }}>{visible.length}</span>}
+        <span style={{ fontFamily: "DM Sans", fontSize: 11, color: T.txt4 }}>{visible.length === 0 ? "— No templates for this complaint" : "— Pre-fill complete HPI for common presentations"}</span>
         <span style={{ marginLeft: "auto", fontFamily: "JetBrains Mono", fontSize: 11, color: T.txt4 }}>{open ? "▲ Close" : "▼ Show"}</span>
       </button>
-      {open && (
+      {open && visible.length > 0 && (
         <div style={{ padding: "0 24px 14px", display: "flex", gap: 8, overflowX: "auto", flexWrap: "nowrap" }}>
           {visible.map(t => (
             <button key={t.id} onClick={() => { onApply(t); setOpen(false); }}
-              style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", borderRadius: 10, background: "rgba(0,229,192,0.08)", border: "1px solid rgba(0,229,192,0.25)", color: T.teal, fontFamily: "DM Sans", fontWeight: 600, fontSize: 12, cursor: "pointer", transition: "all .15s", whiteSpace: "nowrap" }}
+              style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", borderRadius: 10, background: "rgba(0,229,192,0.08)", border: "1px solid rgba(0,229,192,0.25)", color: "#00e5c0", fontFamily: "DM Sans", fontWeight: 600, fontSize: 12, cursor: "pointer", transition: "all .15s", whiteSpace: "nowrap" }}
               onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,229,192,0.15)"; }}
               onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,229,192,0.08)"; }}>
               <span style={{ fontSize: 16 }}>{t.icon}</span>

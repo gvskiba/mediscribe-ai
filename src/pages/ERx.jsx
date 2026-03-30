@@ -467,7 +467,8 @@ function PedsDoseCalculator({ drug, defaultWeight, defaultAgeMonths, onUseDose }
         </div>
       )}
 
-      {!cfg.contraindicated && <>
+      {!cfg.contraindicated && (
+        <>
 
         {/* Eligibility warnings */}
         {(tooYoung || tooLight || tooHeavy) && (
@@ -518,8 +519,10 @@ function PedsDoseCalculator({ drug, defaultWeight, defaultAgeMonths, onUseDose }
         </div>
 
       </>
-    }
+      )}
 
     </div>
   );
 }
+
+export default PedsDoseCalculator;

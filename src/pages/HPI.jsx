@@ -1012,10 +1012,10 @@ export default function HPIPage() {
     base44.entities.HPITemplate.list(undefined, 100, {order: 1}).then(rows => {
       setQuickTemplates(rows.map(r => ({
         id: r.id,
-        label: r.label,
-        icon: r.icon || "📋",
-        cc: r.cc,
-        fields: r.hpi_fields || {},
+        label: r.data.label,
+        icon: r.data.icon || "📋",
+        cc: r.data.cc,
+        fields: r.data.hpi_fields || {},
       })));
     }).catch(() => {});
   }, []);

@@ -19,6 +19,7 @@ import MedicationReferencePage from "@/pages/MedicationReference";
 import ACSPage from "@/components/acs/ACSPage";
 import CardiacHub from "@/pages/CardiacHub";
 import ERPlanBuilder from "@/pages/ERPlanBuilder";
+import HPIPage from "@/pages/HPI";
 
 // ─── NAV DATA ────────────────────────────────────────
 const NAV_DATA = {
@@ -29,6 +30,7 @@ const NAV_DATA = {
     { section: "vit",        icon: "📈", label: "Vitals",              abbr: "Vt", dot: "empty" },
   ],
   documentation: [
+    { section: "hpi",        icon: "📝", label: "HPI",                abbr: "Hp", dot: "empty" },
     { section: "meds",       icon: "💊", label: "Meds & PMH",          abbr: "Rx", dot: "empty" },
     { section: "ros",        icon: "🔍", label: "Review of Systems",   abbr: "Rs", dot: "empty" },
     { section: "pe",         icon: "🩺", label: "Physical Exam",       abbr: "Pe", dot: "empty" },
@@ -281,6 +283,7 @@ export default function NewPatientInput() {
       case "medref": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto" }}><MedicationReferencePage embedded /></div>;
       case "cardiac-hub": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", background: "#050f1e" }}><CardiacHub /></div>;
       case "erplan": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><ERPlanBuilder embedded /></div>;
+      case "hpi": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto" }}><HPIPage /></div>;
       case "erx": return (
         <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center", justifyContent: "center", height: 300 }}>
           <div style={{ fontSize: 32 }}>💉</div>

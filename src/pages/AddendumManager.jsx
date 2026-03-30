@@ -35,12 +35,14 @@ const AUDIT_ACTIONS = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 const fmtDate = (iso) => {
+  if (!iso) return "—";
   const d = new Date(iso);
-  return d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+  return isNaN(d) ? "—" : d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
 };
 const fmtDateTime = (iso) => {
+  if (!iso) return "—";
   const d = new Date(iso);
-  return d.toLocaleString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
+  return isNaN(d) ? "—" : d.toLocaleString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
 };
 const hoursAgo = (iso) => {
   const diff = (Date.now() - new Date(iso)) / 3600000;
@@ -483,9 +485,13 @@ export default function AddendumManager() {
       section_references: n.section_references || [],
       pendingCosign: (n.section_references || []).some(a => a.status === "pending_cosign"),
     })));
+  }, [allNotes]);
+
+  useEffect(() => {
     if(allNotes.length > 0 && !selectedNote) {
       setSelectedNote(allNotes[0]);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allNotes]);
 
   const [currentUser, setCurrentUser] = useState(null);
@@ -517,8 +523,8 @@ export default function AddendumManager() {
       status: data.requireCosign ? "pending_cosign" : "signed",
       reason: data.reason,
       text: data.text,
-      lateEntry: true,
-      hoursAfter: 0.1,
+      lateEntry: selectedNote.date_of_visit ? (Date.now() - new Date(selectedNote.date_of_visit)) / 3600000 > 1 : false,
+      hoursAfter: selectedNote.date_of_visit ? Math.round((Date.now() - new Date(selectedNote.date_of_visit)) / 3600000 * 10) / 10 : 0,
       cosignRequired: data.requireCosign,
       cosignedBy: null,
       cosignRequestedFrom: data.cosignFrom || null,

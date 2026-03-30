@@ -589,7 +589,7 @@ function OPQRSTBuilder({ ccId, fields, onChange, color }) {
 // ═══════════════════════════════════════════════════════════════════
 // NARRATIVE PANEL — live preview
 // ═══════════════════════════════════════════════════════════════════
-function NarrativePanel({ narrative, ccId, fields, color, onAIEnhance, aiLoading, onCopy, copied, onEdit, editMode, editValue, onEditChange }) {
+function NarrativePanel({ narrative, ccId, fields, color, onAIEnhance, aiLoading, onCopy, copied, onEdit, editMode, editValue, onEditChange, onGenerateSummary, summaryLoading }) {
   const comp = getCompletion(fields);
   const pct = Math.round((comp.score / comp.total) * 100);
   const isEmpty = !narrative;
@@ -660,13 +660,16 @@ function NarrativePanel({ narrative, ccId, fields, color, onAIEnhance, aiLoading
               <><div style={{ width: 14, height: 14, border: `2px solid ${color}`, borderTopColor: "transparent", borderRadius: "50%", animation: "hpi-spin 1s linear infinite" }} /> Enhancing…</>
             ) : "✨ AI Enhance"}
           </button>
+          <button onClick={onGenerateSummary} disabled={isEmpty || summaryLoading}
+            style={{ padding: "10px 14px", borderRadius: 10, background: summaryLoading ? "rgba(155,109,255,0.1)" : "rgba(155,109,255,0.15)", border: `1px solid ${summaryLoading ? "rgba(155,109,255,0.3)" : "rgba(155,109,255,0.5)"}`, color: "#9b6dff", fontWeight: 700, fontSize: 12, cursor: isEmpty || summaryLoading ? "not-allowed" : "pointer", fontFamily: "DM Sans", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
+            {summaryLoading ? <><div style={{ width: 12, height: 12, border: "2px solid #9b6dff", borderTopColor: "transparent", borderRadius: "50%", animation: "hpi-spin 1s linear infinite" }} /> Drafting…</> : "🧠 Clinical Summary"}
+          </button>
           <button onClick={onCopy} disabled={isEmpty}
             style={{ padding: "10px 16px", borderRadius: 10, background: "rgba(14,37,68,0.8)", border: `1px solid ${copied ? T.green+"66" : "rgba(42,79,122,0.4)"}`, color: copied ? T.green : T.txt2, fontWeight: 600, fontSize: 12, cursor: "pointer", fontFamily: "DM Sans", whiteSpace: "nowrap" }}>
             {copied ? "✓ Copied!" : "📋 Copy"}
           </button>
           <button
             onClick={() => {
-              // Fix 6: window.open returns null if popup is blocked — guard before use
               const w = window.open("", "_blank");
               if (!w) { alert("Popup blocked — please allow popups to print."); return; }
               w.document.write(`<!DOCTYPE html><html><head><title>HPI</title><style>body{font-family:'Segoe UI',sans-serif;max-width:700px;margin:40px auto;line-height:1.8;color:#1f2937;font-size:14px;} h2{border-bottom:2px solid #1f2937;padding-bottom:8px;}</style></head><body><h2>History of Present Illness</h2><p>${(editMode ? editValue : narrative)}</p><p style="font-size:11px;color:#9ca3af;margin-top:32px">Notrya · ${new Date().toLocaleString()}</p></body></html>`);
@@ -737,6 +740,10 @@ export default function HPIPage() {
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
+  const [clinicalSummary, setClinicalSummary] = useState("");
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+  const [summaryCopied, setSummaryCopied] = useState(false);
 
   // Load templates from DB on mount
   useEffect(() => {
@@ -823,6 +830,27 @@ export default function HPIPage() {
     navigator.clipboard.writeText(displayNarrative);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  };
+
+  // Clinical Summary
+  const handleGenerateSummary = async () => {
+    if (!ccId || !displayNarrative || summaryLoading) return;
+    setSummaryLoading(true);
+    setShowSummary(true);
+    try {
+      const res = await base44.functions.invoke('generateHPISummary', {
+        ccLabel: cc?.label,
+        hpiNarrative: displayNarrative,
+        fields,
+        patientName,
+        patientAge: "",
+        patientGender: "",
+      });
+      setClinicalSummary(res.data?.summary || "");
+    } catch (e) {
+      setClinicalSummary("Error generating summary. Please try again.");
+    }
+    setSummaryLoading(false);
   };
 
   // Save
@@ -970,7 +998,33 @@ export default function HPIPage() {
             editMode={editMode}
             editValue={editValue}
             onEditChange={setEditValue}
+            onGenerateSummary={handleGenerateSummary}
+            summaryLoading={summaryLoading}
           />
+
+          {/* Clinical Summary Panel */}
+          {showSummary && ccId && (
+            <div style={{ ...glass({ borderRadius: 14, borderColor: T.purple + "55", background: "linear-gradient(135deg,rgba(155,109,255,0.08),rgba(8,22,40,0.85))" }), padding: "16px 18px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                <span style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.purple, textTransform: "uppercase", letterSpacing: 2, flex: 1 }}>🧠 CLINICAL SUMMARY</span>
+                <button onClick={() => { setSummaryCopied(true); navigator.clipboard.writeText(clinicalSummary); setTimeout(() => setSummaryCopied(false), 1500); }}
+                  disabled={!clinicalSummary || summaryLoading}
+                  style={{ padding: "3px 10px", borderRadius: 6, background: summaryCopied ? `${T.green}22` : "rgba(14,37,68,0.8)", border: `1px solid ${summaryCopied ? T.green + "66" : "rgba(42,79,122,0.4)"}`, color: summaryCopied ? T.green : T.txt2, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "DM Sans" }}>
+                  {summaryCopied ? "✓ Copied" : "📋 Copy"}
+                </button>
+                <button onClick={() => setShowSummary(false)}
+                  style={{ padding: "3px 8px", borderRadius: 6, background: "transparent", border: "1px solid rgba(42,79,122,0.3)", color: T.txt4, fontSize: 11, cursor: "pointer" }}>✕</button>
+              </div>
+              {summaryLoading ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 0", color: T.txt3, fontFamily: "DM Sans", fontSize: 13 }}>
+                  <div style={{ width: 16, height: 16, border: `2px solid ${T.purple}`, borderTopColor: "transparent", borderRadius: "50%", animation: "hpi-spin 1s linear infinite" }} />
+                  Analyzing HPI fields with GPT-4o…
+                </div>
+              ) : (
+                <p style={{ fontFamily: "DM Sans", fontSize: 13.5, color: T.txt, lineHeight: 1.85, margin: 0 }}>{clinicalSummary}</p>
+              )}
+            </div>
+          )}
 
           {/* Voice transcript pending */}
           {customText && !showCustom && (

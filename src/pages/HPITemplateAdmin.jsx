@@ -131,7 +131,7 @@ export default function HPITemplateAdmin() {
   };
 
   return (
-    <div style={{ background: T.bg, minHeight: "100vh", padding: "40px 24px", fontFamily: "DM Sans, sans-serif" }}>
+    <div style={{ background: T.bg, minHeight: "100vh", padding: "80px 24px", fontFamily: "DM Sans, sans-serif" }}>
       <div style={{ maxWidth: 1400, margin: "0 auto" }}>
         {/* Header */}
         <div style={{ marginBottom: 28 }}>

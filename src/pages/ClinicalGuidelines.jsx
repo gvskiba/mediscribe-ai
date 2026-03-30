@@ -657,7 +657,7 @@ Return 4-8 of the most relevant, current guidelines from diverse sources. Priori
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#050f1e] text-[#c8ddf0]">
+    <div className="flex flex-col h-screen bg-[#050f1e] text-[#c8ddf0] pt-[80px]">
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" />
 
       {/* Topbar */}

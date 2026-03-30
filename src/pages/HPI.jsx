@@ -1014,7 +1014,7 @@ export default function HPIPage() {
   // Load templates from DB on mount
   const loadTemplates = useCallback(() => {
     base44.entities.HPITemplate.list("-created_date", 100).then(rows => {
-      console.log("[HPI] First template raw object:", rows[0]); console.log("[HPI] Loaded templates summary:", rows.map(r => ({id: r.id, cc: r.cc, is_system: r.data?.is_system, label: r.label})));
+      console.log("[HPI] Loaded templates:", rows);
       setQuickTemplates(rows.map(r => ({
         id: r.id,
         label: r.label,

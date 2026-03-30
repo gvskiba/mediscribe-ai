@@ -175,7 +175,7 @@ const HUBS = [
   },
   {
     id: "erx",
-    route: "/erx-hub",
+    route: "/erx",
     icon: "💊",
     abbr: "eRx",
     title: "ePrescribing",
@@ -187,7 +187,7 @@ const HUBS = [
     accent: "#ffb76b",
     category: "Tools",
     stats: ["Drug DB", "Interactions", "Controlled Rx"],
-    badge: "Pharmacology",
+    badge: "Live",
     priority: 11,
   },
   {
@@ -215,7 +215,7 @@ const CATEGORIES = ["All", "Critical Care", "Specialty", "Procedures", "Tools"];
 const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
-  "/peds-hub", "/Procedures",
+  "/peds-hub", "/Procedures", "/erx",
 ]);
 
 function Background() {

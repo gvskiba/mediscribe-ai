@@ -276,7 +276,7 @@ export default function NewPatientInput() {
       case "ros":  return <ROSTab />;
       case "pe":   return <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} />;
       case "mdm":  return <MedicalDecisionMaking embedded patientName={patientName} chiefComplaint={cc.text} />;
-      case "chart":    return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto" }}><NotryaApp embedded={true} /></div>;
+      case "chart":    return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto" }}><NotryaApp embedded={true} patientName={patientName} demo={demo} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} /></div>;
       case "discharge": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><DischargePlanning embedded /></div>;
       case "erx": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", paddingBottom: "24px" }}><ERxHub /></div>;
       case "orders":   return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><EDOrders embedded /></div>;

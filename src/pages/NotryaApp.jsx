@@ -539,10 +539,51 @@ const CSS = `
 /* ═══════════════════════════════════════════════
    MAIN COMPONENT
 ═══════════════════════════════════════════════ */
-export default function NotryaApp({ embedded = false }) {
+export default function NotryaApp({ embedded = false, patientName = null, demo = null, vitals = null, medications = null, allergies = null, pmhSelected = null }) {
   const navigate = useNavigate();
+  
+  // Merge passed data with DEMO fallback
+  const mergedVitals = vitals && Object.keys(vitals).length > 0 ? {
+    bp: vitals.bp || DEMO.vitals.bp,
+    hr: vitals.hr || DEMO.vitals.hr,
+    rr: vitals.rr || DEMO.vitals.rr,
+    spo2: vitals.spo2 || DEMO.vitals.spo2,
+    temp: vitals.temp || DEMO.vitals.temp,
+    gcs: vitals.gcs || DEMO.vitals.gcs,
+    recorded: new Date(),
+  } : DEMO.vitals;
+  
+  const mergedMeds = medications && medications.length > 0 
+    ? medications.map(m => ({ name: m, dose: "—", freq: "—", route: "—", status: "home" }))
+    : DEMO.meds;
+  
+  const mergedAllergies = allergies && allergies.length > 0
+    ? allergies.map(a => ({ allergen: a, severity: "unknown", reaction: "—", confirmed: null }))
+    : DEMO.allergies;
+  
+  const mergedPatient = demo ? {
+    firstName: demo.firstName || DEMO.patient.firstName,
+    lastName: demo.lastName || DEMO.patient.lastName,
+    dob: demo.dob || DEMO.patient.dob,
+    sex: demo.sex || DEMO.patient.sex,
+    mrn: demo.mrn || DEMO.patient.mrn,
+    room: "—",
+    cc: demo.cc?.text || DEMO.patient.cc,
+    status: "MONITORING",
+    triage: "ESI-2",
+  } : DEMO.patient;
+  
   const { patient: P, vitals: V, timeline: TL, problems: PR,
-          allergies: AL, meds: ME, labs: LA, imaging: IM, note: NOTE } = DEMO;
+          allergies: AL, meds: ME, labs: LA, imaging: IM, note: NOTE } = {
+    ...DEMO,
+    patient: mergedPatient,
+    vitals: mergedVitals,
+    allergies: mergedAllergies,
+    meds: mergedMeds,
+    problems: pmhSelected && Object.keys(pmhSelected).length > 0 
+      ? Object.keys(pmhSelected).filter(k => pmhSelected[k] > 0).map(k => ({ icd: "—", name: k, status: "active", onset: new Date() }))
+      : DEMO.problems,
+  };
 
   const [clock, setClock]             = useState("");
   const [banner, setBanner]           = useState(true);

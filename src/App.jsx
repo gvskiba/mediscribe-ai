@@ -33,6 +33,7 @@ import PedsHub from '@/pages/PedsHub';
 import ProviderBilling from '@/pages/ProviderBilling';
 import HPI from '@/pages/HPI';
 import HPITemplateAdmin from '@/pages/HPITemplateAdmin';
+import ERx from '@/pages/ERx';
 
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -115,6 +116,7 @@ const AuthenticatedApp = () => {
       <Route path="/provider-billing" element={<LayoutWrapper currentPageName="ProviderBilling"><ProviderBilling /></LayoutWrapper>} />
       <Route path="/hpi" element={<LayoutWrapper currentPageName="HPI"><HPI /></LayoutWrapper>} />
       <Route path="/hpi-admin" element={<LayoutWrapper currentPageName="HPITemplateAdmin"><HPITemplateAdmin /></LayoutWrapper>} />
+      <Route path="/erx" element={<LayoutWrapper currentPageName="ERx"><ERx /></LayoutWrapper>} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

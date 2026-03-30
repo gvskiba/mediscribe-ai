@@ -548,9 +548,9 @@ export default function ERx() {
   const selectedDrug = drugs.find(d => d.id === selectedDrugId);
 
   return (
-    <div style={{ background: T.bg, minHeight: "100vh", display: "flex", color: T.txt, fontFamily: "DM Sans", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100%", gap: 0 }}>
       {/* Sidebar */}
-      <div style={{ flex: "0 0 340px", background: T.panel, borderRight: `1px solid rgba(26,53,85,0.6)`, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div style={{ flex: "0 0 340px", background: T.panel, borderRight: `1px solid rgba(26,53,85,0.6)`, display: "flex", flexDirection: "column", overflow: "hidden", color: T.txt, fontFamily: "DM Sans" }}>
         {/* Header */}
         <div style={{ padding: "24px 18px", borderBottom: `1px solid rgba(26,53,85,0.6)`, background: `linear-gradient(135deg,${T.card}99,${T.panel}99)` }}>
           <div style={{ fontFamily: "Playfair Display", fontSize: 28, fontWeight: 900, marginBottom: 14, background: "linear-gradient(135deg,#3b9eff,#00e5c0)", backgroundClip: "text", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>eRx</div>
@@ -597,7 +597,7 @@ export default function ERx() {
       </div>
 
       {/* Main content */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", background: T.bg, color: T.txt, fontFamily: "DM Sans" }}>
         {/* Ambient glow */}
         <div style={{ position: "absolute", top: "-20%", right: "-10%", width: "50%", height: "50%", background: "radial-gradient(circle,rgba(59,158,255,0.08) 0%,transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
 

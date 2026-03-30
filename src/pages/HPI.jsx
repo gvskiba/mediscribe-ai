@@ -952,7 +952,7 @@ function TemplateStrip({ onApply, currentCC, templates = [] }) {
   useEffect(() => {
     if (visible.length > 0) setOpen(true);
     else setOpen(false);
-  }, [currentCC]);
+  }, [currentCC, visible.length]);
   return (
     <div style={{ ...deepGlass({ borderRadius: 0, borderTop: "1px solid rgba(26,53,85,0.6)", borderBottom: "none", borderLeft: "none", borderRight: "none" }), padding: "0" }}>
       <button onClick={() => setOpen(!open)}

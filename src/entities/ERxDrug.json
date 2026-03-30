@@ -4,11 +4,11 @@
   "properties": {
     "drug_id": {
       "type": "string",
-      "description": "Unique identifier (e.g., amox, albuterol)"
+      "description": "Unique drug identifier (e.g., 'ibuprofen', 'amoxicillin')"
     },
     "name": {
       "type": "string",
-      "description": "Drug generic name"
+      "description": "Generic drug name"
     },
     "brand": {
       "type": "string",
@@ -16,69 +16,80 @@
     },
     "cls": {
       "type": "string",
-      "description": "Drug class (e.g., Antibiotic, Cardiovascular)"
+      "description": "Drug class (e.g., NSAID, Beta-blocker, ACE Inhibitor)"
     },
-    "sub": {
+    "emoji": {
       "type": "string",
-      "description": "Drug subclass (e.g., Penicillin, ACE Inhibitor)"
+      "description": "Emoji for UI display"
     },
     "forms": {
       "type": "array",
-      "items": {"type": "string"},
-      "description": "Available formulations and strengths"
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Available formulations (e.g., tablet, liquid, injection)"
     },
     "sigs": {
       "type": "array",
-      "items": {"type": "string"},
-      "description": "Common SIG options"
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Common SIG instructions (e.g., PO BID, IV Q6h)"
     },
     "controlled": {
       "type": "boolean",
       "default": false,
-      "description": "Is a controlled substance"
+      "description": "Whether this is a controlled substance"
     },
     "sch": {
-      "type": "string",
-      "description": "DEA schedule (II, III, IV, V) if controlled"
+      "type": "integer",
+      "description": "DEA schedule (1-5, null for non-controlled)"
     },
     "renal": {
       "type": "string",
-      "description": "Renal dosing adjustments"
+      "description": "Renal dosing adjustment guidance"
     },
     "hepatic": {
       "type": "string",
-      "description": "Hepatic dosing adjustments"
-    },
-    "peds": {
-      "type": "string",
-      "description": "Pediatric dosing guidance"
+      "description": "Hepatic dosing adjustment guidance"
     },
     "interactions": {
       "type": "array",
-      "items": {"type": "string"},
-      "description": "Known drug interactions"
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "List of drugs/classes this drug interacts with"
     },
-    "allergyFlags": {
+    "allergies": {
       "type": "array",
-      "items": {"type": "string"},
-      "description": "Allergy warnings and contraindications"
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Cross-reactivity allergy references (e.g., penicillin class)"
     },
-    "maxDose": {
-      "type": "string",
-      "description": "Maximum dose"
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Clinical warnings or contraindications"
     },
-    "cost": {
+    "category": {
       "type": "string",
-      "description": "Cost tier ($, $$, $$$)"
+      "description": "Drug category (e.g., pain, infection, cardiac)"
     },
-    "formulary": {
+    "notes": {
       "type": "string",
-      "description": "Formulary tier (Tier 1, Tier 2, Prior Auth, etc.)"
-    },
-    "note": {
-      "type": "string",
-      "description": "Clinical notes and prescribing pearls"
+      "description": "Additional clinical notes"
     }
   },
-  "required": ["drug_id", "name"]
+  "required": [
+    "drug_id",
+    "name"
+  ]
 }

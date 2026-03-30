@@ -61,19 +61,19 @@ const CHART_GROUPS = [
     items: [
       { icon: '📝', label: 'HPI',             page: '/hpi' },
       { icon: '💊', label: 'Meds & PMH',         page: '/NewPatientInput?tab=meds' },
-      { icon: '📋', label: 'Orders',            page: '/NewPatientInput?tab=orders' },
       { icon: '🔍', label: 'Review of Systems',  page: '/NewPatientInput?tab=ros' },
       { icon: '🩺', label: 'Physical Exam',      page: '/NewPatientInput?tab=pe' },
       { icon: '⚖️', label: 'MDM',               page: '/NewPatientInput?tab=mdm' },
+      { icon: '🗺️', label: 'ER Plan Builder',   page: '/NewPatientInput?tab=erplan' },
+      { icon: '📋', label: 'Orders',            page: '/NewPatientInput?tab=orders' },
     ]
   },
   {
     label: 'Disposition',
     groupIcon: '🚪',
     items: [
-      { icon: '📋', label: 'Orders',            page: '/NewPatientInput?tab=orders' },
       { icon: '🚪', label: 'Discharge',         page: '/NewPatientInput?tab=discharge' },
-      { icon: '🗺️', label: 'ER Plan Builder',   page: '/NewPatientInput?tab=erplan' },
+      { icon: '💉', label: 'eRx',               page: '/NewPatientInput?tab=erx' },
     ]
   },
   {
@@ -81,7 +81,6 @@ const CHART_GROUPS = [
     groupIcon: '🔧',
     items: [
       { icon: '🤖', label: 'AutoCoder',         page: '/NewPatientInput?tab=autocoder' },
-      { icon: '💉', label: 'eRx',               page: '/NewPatientInput?tab=erx' },
       { icon: '✂️', label: 'Procedures',        page: '/NewPatientInput?tab=procedures' },
       { icon: '🏠', label: 'Hub',                page: '/hub' },
     ]

@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo, useCallback } from "react";
+import { base44 } from "@/api/base44Client";
 
 // ── Font + CSS Injection ────────────────────────────────────────────
 (() => {
@@ -813,19 +814,10 @@ export default function HPIPage() {
     if (!displayNarrative || aiLoading) return;
     setAILoading(true);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 600,
-          system: "You are Notrya AI — a clinical documentation assistant for emergency medicine. Enhance the provided HPI to be medically professional, complete, and clinically precise. Preserve ALL clinical facts exactly. Improve fluency and add transitional phrases. Keep it 3–5 sentences. Return ONLY the improved narrative, no preamble.",
-          messages: [{ role: "user", content: `Enhance this emergency medicine HPI:\n\n${displayNarrative}` }]
-        })
+      const enhanced = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are Notrya AI — a clinical documentation assistant for emergency medicine. Enhance the following HPI to be medically professional, complete, and clinically precise. Preserve ALL clinical facts exactly. Improve fluency and add transitional phrases. Keep it 3–5 sentences. Return ONLY the improved narrative, no preamble.\n\nHPI to enhance:\n${displayNarrative}`,
       });
-      const data = await res.json();
-      const enhanced = data.content?.[0]?.text || displayNarrative;
-      setEditValue(enhanced);
+      setEditValue(typeof enhanced === "string" ? enhanced : enhanced?.data || displayNarrative);
       setEditMode(true);
     } catch (e) { console.error(e); }
     setAILoading(false);
@@ -863,7 +855,7 @@ export default function HPIPage() {
   }, [cc, fields]);
 
   return (
-    <div style={{ background: T.bg, minHeight: "100vh", fontFamily: "DM Sans, sans-serif", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+    <div style={{ background: T.bg, minHeight: "100vh", fontFamily: "DM Sans, sans-serif", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden", paddingTop: 80 }}>
 
       {/* Ambient glow */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
@@ -972,7 +964,7 @@ export default function HPIPage() {
         {/* RIGHT — Live Narrative */}
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 12, overflowY: "auto" }}>
           <NarrativePanel
-            narrative={generatedNarrative}
+            narrative={displayNarrative}
             ccId={ccId}
             fields={fields}
             color={activeColor}

@@ -945,9 +945,13 @@ function NarrativePanel({ narrative, ccId, fields, color, onAIEnhance, aiLoading
 // TEMPLATE STRIP
 // ═══════════════════════════════════════════════════════════════════
 function TemplateStrip({ onApply, currentCC, templates = [] }) {
-  const [open, setOpen] = useState(false);
   const visible = currentCC ? templates.filter(t => t.cc === currentCC) : templates;
+  const [open, setOpen] = useState(false);
 
+  useEffect(() => {
+    if (visible.length > 0) setOpen(true);
+    else setOpen(false);
+  }, [currentCC]);
   return (
     <div style={{ ...deepGlass({ borderRadius: 0, borderTop: "1px solid rgba(26,53,85,0.6)", borderBottom: "none", borderLeft: "none", borderRight: "none" }), padding: "0" }}>
       <button onClick={() => setOpen(!open)}

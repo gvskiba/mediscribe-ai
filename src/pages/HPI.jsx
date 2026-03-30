@@ -1213,6 +1213,11 @@ export default function HPIPage() {
         </div>
       )}
 
+      {/* Template strip — above main layout so it's never clipped */}
+      <div style={{ position: "relative", zIndex: 5, marginTop: 8, flexShrink: 0 }}>
+        <TemplateStrip onApply={applyTemplate} currentCC={ccId} templates={quickTemplates} />
+      </div>
+
       {/* Main layout */}
       <div style={{ display: "flex", flex: 1, gap: 14, padding: "14px 24px 0", position: "relative", zIndex: 1, minHeight: 0, overflow: "hidden" }}>
 
@@ -1312,10 +1317,7 @@ export default function HPIPage() {
         </div>
       </div>
 
-      {/* Template strip */}
-      <div style={{ position: "relative", zIndex: 5, marginTop: 14 }}>
-        <TemplateStrip onApply={applyTemplate} currentCC={ccId} templates={quickTemplates} />
-      </div>
+
 
       {showCreateTemplate && (
         <CreateTemplateModal

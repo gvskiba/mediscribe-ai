@@ -285,7 +285,7 @@ export default function NewPatientInput() {
       case "cardiac-hub": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", background: "#050f1e" }}><CardiacHub /></div>;
       case "erplan": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><ERPlanBuilder embedded /></div>;
       case "hpi": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto" }}><HPIPage /></div>;
-      case "erx": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><ERxHub /></div>;
+      case "erx": return <div style={{ margin: "-18px -28px -18px -28px", height: "calc(100% + 36px)", overflow: "hidden", paddingBottom: "24px" }}><ERxHub /></div>;
       default: return null;
     }
   };

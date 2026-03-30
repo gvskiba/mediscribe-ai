@@ -40,6 +40,7 @@ const T = {
   txt:"#e8f0fe", txt2:"#8aaccc", txt3:"#4a6a8a", txt4:"#2e4a6a",
   coral:"#ff6b6b", gold:"#f5c842", teal:"#00e5c0", blue:"#3b9eff",
   orange:"#ff9f43", purple:"#9b6dff", green:"#3dffa0", cyan:"#00d4ff",
+  rose:"#f472b6",  // Fix 2: was undefined; used in catColors
 };
 
 // ── Section Definitions ─────────────────────────────────────────────
@@ -212,6 +213,7 @@ const deepGlass = (extra = {}) => ({
 
 // ── CMS Conversion Factor 2026 ───────────────────────────────────────
 const CF_2026 = 33.40;
+// CF_2025 = 32.35 — displayed in UI but not used in calculations
 
 // ═══════════════════════════════════════════════════════════════════
 // E&M CALCULATOR PANEL
@@ -223,22 +225,27 @@ function EMCalcPanel({ color }) {
   const [copied, setCopied] = useState(false);
 
   // CMS rule: 2 of 3 elements must meet or exceed the selected level
-  const calcLevel = () => {
+  // Fix: memoized so it only recalculates when selections change
+  const result = useMemo(() => {
     if (!copa && !data && !risk) return null;
     const levels = [copa, data, risk].filter(Boolean).map(x => x.level);
     if (levels.length < 2) return null;
     const sorted = [...levels].sort((a,b)=>a-b);
-    // Need 2 of 3 to meet level — take the median of top 2
+    // 2-of-3 rule: take the minimum of the two highest-scoring elements
     const top2 = sorted.slice(-2);
-    const levelScore = Math.min(top2[0], top2[1]);
+    const levelScore = top2[0]; // lower of the two highest = the qualifying level
     if (levelScore >= 4) return LEVEL_MAP[5];
     if (levelScore === 3) return LEVEL_MAP[4];
     if (levelScore === 2) return LEVEL_MAP[3];
     return LEVEL_MAP[2];
-  };
+  }, [copa, data, risk]);
 
-  const result = calcLevel();
-  const totalRVU = result ? (MDM_LEVELS.find(m=>m.code===result.code)?.wRVU + MDM_LEVELS.find(m=>m.code===result.code)?.peRVU + MDM_LEVELS.find(m=>m.code===result.code)?.mpRVU) : 0;
+  const totalRVU = useMemo(() => {
+    if (!result) return 0;
+    const m = MDM_LEVELS.find(m => m.code === result.code);
+    return m ? m.wRVU + m.peRVU + m.mpRVU : 0;
+  }, [result]);
+
   const est2026 = result ? (totalRVU * CF_2026).toFixed(2) : null;
 
   const OptionGroup = ({ title, options, selected, onSelect, accent }) => (
@@ -424,14 +431,16 @@ function CriticalCarePanel({ color }) {
 
   const calc = useMemo(() => {
     if (!qualifies) return null;
-    if (min < 30) return null;
-    const add30min = min > 74 ? Math.floor((min - 74) / 30) : 0;
-    const extra = min > 74 ? ((min - 74) % 30 >= 15 ? 1 : 0) : 0;
-    const addCodes = add30min + extra;
+    // Fix 3: removed duplicate `if (min < 30)` check — qualifies already covers it
+    // Fix 4: removed `qualifies` from deps — it's derived from `min`
+    const remainder = min - 74;
+    const fullPeriods = remainder > 0 ? Math.floor(remainder / 30) : 0;
+    const partial = remainder > 0 ? (remainder % 30 >= 15 ? 1 : 0) : 0;
+    const addCodes = fullPeriods + partial;
     const wRVU = 4.50 + addCodes * 2.25;
     const est = (wRVU * 1.35 * CF_2026).toFixed(2);
     return { codes: addCodes, wRVU, est };
-  },[min, qualifies]);
+  },[min]);
 
   const BUNDLED = [
     "CPR (92950) — NOT separately billable during critical care time",
@@ -590,14 +599,14 @@ function CriticalCarePanel({ color }) {
 // ═══════════════════════════════════════════════════════════════════
 function ShiftRVUPanel({ color }) {
   const [encounters, setEncounters] = useState([]);
-  const [form, setForm] = useState({ code:"99284", note:"", wRVU:"" });
+  const [form, setForm] = useState({ code:"99284", note:"" }); // Fix 6: removed dead wRVU key
   const [manualRVU, setManualRVU] = useState("");
 
+  // Fix 9: use MDM_LEVELS directly instead of fragile LEVEL_MAP object-key search
   const ALL_CODES = [
     ...["99281","99282","99283","99284","99285"].map(c => {
-      const l = LEVEL_MAP[Object.keys(LEVEL_MAP).find(k=>LEVEL_MAP[k].code===c)];
-      const m = MDM_LEVELS.find(x=>x.code===c);
-      return { code:c, label:`${c} — ${l?.mdm||""}`, wRVU: m?.wRVU||0 };
+      const m = MDM_LEVELS.find(x => x.code === c);
+      return { code:c, label:`${c} — ${m?.mdm||""}`, wRVU: m?.wRVU||0 };
     }),
     { code:"99291", label:"99291 — Critical Care First 30–74 min",    wRVU:4.50 },
     { code:"99292", label:"99292 — Critical Care Add'l 30 min",       wRVU:2.25 },
@@ -605,21 +614,23 @@ function ShiftRVUPanel({ color }) {
     { code:"custom", label:"Custom / Other Code", wRVU:0 },
   ];
 
-  const selectedRVU = form.code === "custom" ? (parseFloat(manualRVU)||0) : (ALL_CODES.find(c=>c.code===form.code)?.wRVU||0);
+  // Fix 10: compute once, used in both display and add()
+  const selectedRVU = form.code === "custom"
+    ? (parseFloat(manualRVU) || 0)
+    : (ALL_CODES.find(c => c.code === form.code)?.wRVU || 0);
 
   const add = () => {
-    const rvu = form.code === "custom" ? (parseFloat(manualRVU)||0) : selectedRVU;
     if (!form.code) return;
-    setEncounters(p=>[...p,{ id:Date.now(), code:form.code==="custom"?form.note||"Custom":form.code, note:form.note, wRVU:rvu, time:new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}) }]);
-    setForm({ code:"99284", note:"", wRVU:"" }); setManualRVU("");
+    setEncounters(p=>[...p,{ id:Date.now(), code:form.code==="custom"?form.note||"Custom":form.code, note:form.note, wRVU:selectedRVU, time:new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}) }]);
+    setForm({ code:"99284", note:"" }); setManualRVU("");
   };
 
   const remove = (id) => setEncounters(p=>p.filter(e=>e.id!==id));
   const totalRVU = encounters.reduce((s,e)=>s+e.wRVU,0);
+  // Fix 11: use consistent wRVU * 1.35 * CF formula with clear label (same basis as procedure rows)
   const estMedicare = (totalRVU * 1.35 * CF_2026).toFixed(2);
   const avgRVU = encounters.length ? (totalRVU / encounters.length).toFixed(2) : "0.00";
-
-
+  // Fix 7: removed dead levelCounts useMemo — was computed but never rendered
 
   return (
     <div className="bill-fade" style={{display:"flex",gap:14}}>
@@ -805,9 +816,9 @@ function ProcRVUPanel({ color }) {
   });
 
   const catColors = {
-    "Airway":T.coral,"Vascular":T.purple,"Wound Repair":T.teal,"Cardiac":T.coral,
-    "Thoracic":T.blue,"Critical Care":T.orange,"Drainage":T.green,"Ortho":T.gold,
-    "Neuro":T.rose||"#f472b6","Sedation":T.cyan,"Diagnostic":T.txt2,
+    "Airway":T.coral, "Vascular":T.purple, "Wound Repair":T.teal, "Cardiac":T.coral,
+    "Thoracic":T.blue, "Critical Care":T.orange, "Drainage":T.green, "Ortho":T.gold,
+    "Neuro":T.rose, "Sedation":T.cyan, "Diagnostic":T.txt2, // Fix 2: T.rose now defined in T
   };
 
   return (
@@ -834,6 +845,7 @@ function ProcRVUPanel({ color }) {
       <div style={{...glass({borderRadius:12}),overflow:"hidden"}}>
         <div style={{display:"grid",gridTemplateColumns:"90px 1fr 90px 80px 80px",borderBottom:"1px solid rgba(26,53,85,0.4)"}}>
           {["CPT Code","Procedure Name","Category","wRVU","Est. Medicare '26"].map(h=>(
+            // Fix 1: was <th> inside a <div> grid — semantically invalid; use <div>
             <div key={h} style={{padding:"10px 12px",fontSize:10,fontWeight:700,color:T.txt3,textTransform:"uppercase",letterSpacing:".06em"}}>{h}</div>
           ))}
         </div>

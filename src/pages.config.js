@@ -58,7 +58,7 @@ import Calendar from './pages/Calendar';
 import CantMissDiagnoses from './pages/CantMissDiagnoses';
 import ClinicalDecisionSupport from './pages/ClinicalDecisionSupport';
 import ClinicalGuidelines from './pages/ClinicalGuidelines';
-import ClinicalNoteStudio from './pages/ClinicalNoteStudio';
+
 import CommandCenter from './pages/CommandCenter';
 import CustomTemplates from './pages/CustomTemplates';
 import Customize from './pages/Customize';
@@ -112,7 +112,7 @@ export const PAGES = {
     "CantMissDiagnoses": CantMissDiagnoses,
     "ClinicalDecisionSupport": ClinicalDecisionSupport,
     "ClinicalGuidelines": ClinicalGuidelines,
-    "ClinicalNoteStudio": ClinicalNoteStudio,
+
     "CommandCenter": CommandCenter,
     "CustomTemplates": CustomTemplates,
     "Customize": Customize,

@@ -387,7 +387,7 @@ function Select({ value, onChange, options, placeholder }) {
 }
 
 // ── Drug Search Panel ──────────────────────────────────────────────
-function DrugSearchPanel({ onSelect, selected, favorites, onToggleFav, patientAllergies, activeRx }) {
+function DrugSearchPanel({ drugs, onSelect, selected, favorites, onToggleFav, patientAllergies, activeRx }) {
   const [query, setQuery] = useState("");
   const [cls, setCls] = useState("All");
   const [view, setView] = useState("search"); // search | condition | favorites
@@ -795,7 +795,7 @@ function RxBuilder({ drug, onSign, onCancel, patientWeight, patientAgeMonths, pa
 }
 
 // ── Signed Rx Queue ────────────────────────────────────────────────
-function SignedRxQueue({ prescriptions, onRevoke, accentColor }) {
+function SignedRxQueue({ drugs, prescriptions, onRevoke, accentColor }) {
   if (prescriptions.length === 0) return (
     <div style={{ ...glass({borderRadius:14}),padding:"32px 20px",textAlign:"center",color:T.txt4 }}>
       <div style={{ fontSize:36,marginBottom:8 }}>📋</div>
@@ -1153,9 +1153,9 @@ export default function ERxHub() {
     loadDrugs();
   }, []);
 
+  const DRUGS = drugs.length > 0 ? drugs : DEFAULT_DRUGS;
   const sec = SECTIONS.find(s=>s.id===activeSection);
   const activeRxIds = signedRx.map(p=>p.id);
-  const DRUGS = drugs.length > 0 ? drugs : DEFAULT_DRUGS;
 
   const handleSign = useCallback((rxData) => {
     setSignedRx(p=>[...p,rxData]);
@@ -1381,7 +1381,7 @@ export default function ERxHub() {
                     </button>
                   )}
                 </div>
-                <SignedRxQueue prescriptions={signedRx} onRevoke={handleRevoke} accentColor={T.green} />
+                <SignedRxQueue drugs={DRUGS} prescriptions={signedRx} onRevoke={handleRevoke} accentColor={T.green} />
               </div>
             )}
 

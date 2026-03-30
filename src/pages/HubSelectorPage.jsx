@@ -541,22 +541,6 @@ export default function HubSelectorPage() {
           </div>
         </div>
 
-        {/* Search + Filter */}
-        <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 20, flexWrap: "wrap", animation: "hub-appear 0.5s ease both 0.1s" }}>
-          <SearchBar value={search} onChange={setSearch} />
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {CATEGORIES.map(cat => (
-              <button key={cat} onClick={() => setActiveCategory(cat)}
-                style={{ padding: "8px 16px", borderRadius: 24, fontSize: 12, fontWeight: 600, fontFamily: "'DM Sans',sans-serif", cursor: "pointer", transition: "all 0.2s", background: activeCategory === cat ? "rgba(0,229,192,0.15)" : "rgba(8,22,40,0.75)", border: `1px solid ${activeCategory === cat ? "rgba(0,229,192,0.45)" : "rgba(42,79,122,0.5)"}`, color: activeCategory === cat ? "#00e5c0" : "#4a6a8a", backdropFilter: "blur(12px)", boxShadow: activeCategory === cat ? "0 0 12px rgba(0,229,192,0.15)" : "none" }}>
-                {cat}
-              </button>
-            ))}
-          </div>
-          <span style={{ fontSize: 11, color: "#2e4a6a", fontFamily: "'JetBrains Mono',monospace", marginLeft: "auto" }}>
-            {filtered.length} hub{filtered.length !== 1 ? "s" : ""}
-          </span>
-        </div>
-
         {/* Recently Used */}
         <div style={{ animation: "hub-appear 0.5s ease both 0.12s" }}>
           <RecentStrip recents={recents} onNavigate={handleNavigate} />

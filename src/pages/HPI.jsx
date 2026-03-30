@@ -950,6 +950,10 @@ function TemplateStrip({ onApply, currentCC, templates = [] }) {
   const [open, setOpen] = useState(true);
 
   useEffect(() => {
+    if (currentCC) {
+      console.log(`[TemplateStrip] currentCC: "${currentCC}" | All templates:`, templates.map(t => `${t.label} (cc: "${t.cc}")`));
+      console.log(`[TemplateStrip] Matching templates:`, visible.length, visible.map(t => t.label));
+    }
     setOpen(visible.length > 0);
   }, [currentCC, templates]);
   return (

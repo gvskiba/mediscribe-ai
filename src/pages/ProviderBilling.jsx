@@ -96,7 +96,7 @@ export default function ProviderBilling() {
   };
 
   return (
-    <div style={{ background: T.navy, minHeight: "100vh", fontFamily: "DM Sans,sans-serif", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+    <div style={{ background: T.navy, minHeight: "100vh", fontFamily: "DM Sans,sans-serif", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden", paddingTop: "80px" }}>
       {/* Background effects */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
         <div style={{ position: "absolute", top: "-20%", left: "-5%", width: "50%", height: "50%", background: "radial-gradient(circle,rgba(0,212,188,0.15) 0%,transparent 70%)" }} />

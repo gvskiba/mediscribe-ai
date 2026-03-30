@@ -1322,6 +1322,7 @@ export default function ERxHub() {
                 {/* Drug search column */}
                 <div style={{ flex:"0 0 320px",display:"flex",flexDirection:"column",gap:10 }}>
                   <DrugSearchPanel
+                    drugs={DRUGS}
                     onSelect={setSelectedDrug}
                     selected={selectedDrug}
                     favorites={favorites}

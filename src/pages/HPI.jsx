@@ -1001,6 +1001,7 @@ export default function HPIPage() {
   const [editValue, setEditValue] = useState("");
   // Fix 2: finalNarrative holds user-committed edits so "Done" doesn't discard changes
   const [finalNarrative, setFinalNarrative] = useState(null);
+  const [templateSearch, setTemplateSearch] = useState("");
   const [aiLoading, setAILoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -1026,6 +1027,17 @@ export default function HPIPage() {
       console.error("[HPI] Error loading templates:", err);
     });
   }, []);
+
+  // Filter templates by search + current CC
+  const filteredTemplates = useMemo(() => {
+    let filtered = quickTemplates;
+    if (ccId) filtered = filtered.filter(t => t.cc === ccId);
+    if (templateSearch.trim()) {
+      const q = templateSearch.toLowerCase();
+      filtered = filtered.filter(t => t.label.toLowerCase().includes(q) || t.cc.toLowerCase().includes(q));
+    }
+    return filtered;
+  }, [quickTemplates, ccId, templateSearch]);
 
   useEffect(() => {
     loadTemplates();
@@ -1213,6 +1225,39 @@ export default function HPIPage() {
         </p>
       </div>
 
+      {/* Template Search Bar */}
+      {ccId && quickTemplates.length > 0 && (
+        <div style={{ padding: "12px 24px 0", position: "relative", zIndex: 1 }}>
+          <input
+            type="text"
+            placeholder="🔍 Search templates by name…"
+            value={templateSearch}
+            onChange={e => setTemplateSearch(e.target.value)}
+            style={{
+              width: "100%",
+              maxWidth: 400,
+              padding: "10px 14px",
+              borderRadius: 10,
+              background: "rgba(14,37,68,0.7)",
+              border: `1px solid ${templateSearch ? activeColor + "55" : "rgba(42,79,122,0.3)"}`,
+              color: T.txt,
+              fontFamily: "DM Sans",
+              fontSize: 13,
+              outline: "none",
+              transition: "border-color 0.2s",
+            }}
+            onFocus={e => e.target.style.borderColor = activeColor}
+            onBlur={e => e.target.style.borderColor = templateSearch ? activeColor + "55" : "rgba(42,79,122,0.3)"
+            }
+          />
+          {templateSearch && (
+            <span style={{ fontSize: 11, color: T.txt3, marginLeft: 12 }}>
+              {filteredTemplates.length} result{filteredTemplates.length !== 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Risk Flag */}
       {riskFlag && (
         <div style={{ margin: "8px 24px 0", padding: "10px 16px", background: "rgba(255,107,107,0.1)", border: "1px solid rgba(255,107,107,0.4)", borderRadius: 10, fontFamily: "DM Sans", fontSize: 12.5, color: T.coral, fontWeight: 600, position: "relative", zIndex: 1, animation: "hpi-in .3s ease" }}>
@@ -1222,7 +1267,7 @@ export default function HPIPage() {
 
       {/* Template strip */}
       <div style={{ position: "relative", zIndex: 5 }}>
-        <TemplateStrip onApply={applyTemplate} currentCC={ccId} templates={quickTemplates} />
+        <TemplateStrip onApply={applyTemplate} currentCC={ccId} templates={filteredTemplates} />
       </div>
 
       {/* Main layout */}

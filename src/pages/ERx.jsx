@@ -392,12 +392,12 @@ function DrugSearchPanel({ drugs, onSelect, selected, favorites, onToggleFav, pa
   const [cls, setCls] = useState("All");
   const [view, setView] = useState("search"); // search | condition | favorites
 
-  const classes = ["All",...[...new Set(DRUGS.map(d=>d.cls))]];
+  const classes = ["All",...[...new Set(drugs.map(d=>d.cls))]];
 
   const filtered = useMemo(() => {
-    if (view === "favorites") return DRUGS.filter(d=>favorites.includes(d.id));
+    if (view === "favorites") return drugs.filter(d=>favorites.includes(d.id));
     const q = query.toLowerCase().trim();
-    return DRUGS.filter(d => {
+    return drugs.filter(d => {
       const matchCls = cls === "All" || d.cls === cls;
       const matchQ   = !q || d.name.toLowerCase().includes(q) || d.brand.toLowerCase().includes(q) || d.sub.toLowerCase().includes(q) || d.cls.toLowerCase().includes(q);
       return matchCls && matchQ;
@@ -444,7 +444,7 @@ function DrugSearchPanel({ drugs, onSelect, selected, favorites, onToggleFav, pa
               <div style={{ fontFamily:"DM Sans",fontSize:10.5,color:T.txt3,marginBottom:8,lineHeight:1.5 }}>{cs.note}</div>
               <div style={{ display:"flex",flexWrap:"wrap",gap:5 }}>
                 {cs.drugs.map(did => {
-                  const d = DRUGS.find(x=>x.id===did);
+                   const d = drugs.find(x=>x.id===did);
                   if (!d) return null;
                   const isActive = selected?.id === d.id;
                   const hasAllergy = allergyAlert(d);

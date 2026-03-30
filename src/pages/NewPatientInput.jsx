@@ -63,6 +63,7 @@ const APP_ICONS = [
   "sep",
   { icon: "💊", label: "Drugs",    to: "/DrugsBugs" },
   { icon: "🧮", label: "Calc",     to: "/Calculators" },
+  { icon: "🏥", label: "Hub",      to: "/hub" },
 ];
 
 const ALL_SECTIONS = Object.values(NAV_DATA).flat();

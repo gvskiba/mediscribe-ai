@@ -1146,7 +1146,7 @@ export default function HPIPage() {
   }, [cc, fields]);
 
   return (
-    <div style={{ background: T.bg, minHeight: "100vh", fontFamily: "DM Sans, sans-serif", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden", paddingTop: 80 }}>
+    <div style={{ background: T.bg, minHeight: "100vh", fontFamily: "DM Sans, sans-serif", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden", paddingTop: 40 }}>
 
       {/* Ambient glow */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>

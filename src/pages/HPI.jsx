@@ -1009,7 +1009,7 @@ export default function HPIPage() {
 
   // Load templates from DB on mount
   const loadTemplates = useCallback(() => {
-    base44.entities.HPITemplate.list(undefined, 100, {order: 1}).then(rows => {
+    base44.entities.HPITemplate.list("order", 100).then(rows => {
       setQuickTemplates(rows.map(r => ({
         id: r.id,
         label: r.label,
@@ -1213,11 +1213,6 @@ export default function HPIPage() {
         </div>
       )}
 
-      {/* Template strip — above main layout so it's never clipped */}
-      <div style={{ position: "relative", zIndex: 5, marginTop: 8, flexShrink: 0 }}>
-        <TemplateStrip onApply={applyTemplate} currentCC={ccId} templates={quickTemplates} />
-      </div>
-
       {/* Main layout */}
       <div style={{ display: "flex", flex: 1, gap: 14, padding: "14px 24px 0", position: "relative", zIndex: 1, minHeight: 0, overflow: "hidden" }}>
 
@@ -1317,7 +1312,10 @@ export default function HPIPage() {
         </div>
       </div>
 
-
+      {/* Template strip */}
+      <div style={{ position: "relative", zIndex: 5, marginTop: 14 }}>
+        <TemplateStrip onApply={applyTemplate} currentCC={ccId} templates={quickTemplates} />
+      </div>
 
       {showCreateTemplate && (
         <CreateTemplateModal

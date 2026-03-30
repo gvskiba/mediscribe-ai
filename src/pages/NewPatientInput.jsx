@@ -36,11 +36,11 @@ const NAV_DATA = {
     { section: "ros",        icon: "🔍", label: "Review of Systems",   abbr: "Rs", dot: "empty" },
     { section: "pe",         icon: "🩺", label: "Physical Exam",       abbr: "Pe", dot: "empty" },
     { section: "mdm",        icon: "⚖️", label: "MDM",                abbr: "Md", dot: "empty" },
+    { section: "erplan",     icon: "🗺️", label: "ER Plan Builder",     abbr: "Ep", dot: "empty" },
     { section: "orders",     icon: "📋", label: "Orders",              abbr: "Or", dot: "empty" },
   ],
   disposition: [
     { section: "discharge",  icon: "🚪", label: "Discharge",           abbr: "Dc", dot: "empty" },
-    { section: "erplan",     icon: "🗺️", label: "ER Plan Builder",     abbr: "Ep", dot: "empty" },
     { section: "erx",        icon: "💉", label: "eRx",                 abbr: "Ex", dot: "empty" },
   ],
   tools: [

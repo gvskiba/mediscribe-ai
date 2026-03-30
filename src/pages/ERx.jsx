@@ -516,3 +516,9 @@ function PedsDoseCalculator({ drug, defaultWeight, defaultAgeMonths, onUseDose }
             ))}
             </div>
             </div>
+
+            </>
+
+            </div>
+            );
+            }

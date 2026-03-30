@@ -580,7 +580,7 @@ export default function AddendumManager() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: G.navy, fontFamily: F.body, position: "relative" }}>
+    <div style={{ minHeight: "100vh", background: G.navy, fontFamily: F.body, position: "relative", paddingTop: "80px" }}>
       <div style={{
         height: "54px", background: G.slate, borderBottom: `1px solid ${G.border}`,
         display: "flex", alignItems: "center", padding: "0 20px", gap: "14px",

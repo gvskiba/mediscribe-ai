@@ -1131,6 +1131,17 @@ const SECTIONS = [
 
 export default function ERxHub() {
   const navigate = useNavigate();
+  const [drugs, setDrugs] = useState([]);
+  const [activeSection, setActiveSection] = useState("prescribe");
+  const [selectedDrug, setSelectedDrug] = useState(null);
+  const [signedRx, setSignedRx] = useState([]);
+  const [showSuccess, setShowSuccess] = useState(null);
+  const [transmitToast, setTransmitToast] = useState(false);
+  const [favorites, setFavorites] = useState([]);
+  const [patientWeight, setPatientWeight] = useState("");
+  const [patientAgeMonths, setPatientAgeMonths] = useState("");
+  const [patientAllergies, setPatientAllergies] = useState([]);
+  const [newAllergy, setNewAllergy] = useState("");
 
   useEffect(() => {
     const loadDrugs = async () => {

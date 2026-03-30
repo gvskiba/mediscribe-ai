@@ -514,11 +514,12 @@ function PedsDoseCalculator({ drug, defaultWeight, defaultAgeMonths, onUseDose }
                 <span style={{ display:"block",fontFamily:"DM Sans",fontSize:11,color:indId===i.id?"rgba(61,255,160,0.7)":T.txt4,marginTop:2,paddingLeft:indId===i.id?14:0,lineHeight:1.4 }}>{i.note}</span>
               </button>
             ))}
-            </div>
-            </div>
+          </div>
+        </div>
 
-            </>
+      </>
+    }
 
-            </div>
-            );
-            }
+    </div>
+  );
+}

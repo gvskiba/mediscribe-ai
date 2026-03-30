@@ -1215,6 +1215,9 @@ export default function HPIPage() {
     return filtered;
   }, [quickTemplates, ccId, templateSearch]);
 
+  // Show matching templates in grid when searching, even without CC selected
+  const displayTemplates = templateSearch.trim() ? quickTemplates.filter(t => t.label.toLowerCase().includes(templateSearch.toLowerCase()) || t.cc.toLowerCase().includes(templateSearch.toLowerCase())) : [];
+
   useEffect(() => {
     loadTemplates();
   }, [loadTemplates]);
@@ -1402,7 +1405,7 @@ export default function HPIPage() {
       </div>
 
       {/* Template Search Bar */}
-      {ccId && quickTemplates.length > 0 && (
+      {quickTemplates.length > 0 && (
         <div style={{ padding: "12px 24px 0", position: "relative", zIndex: 1 }}>
           <input
             type="text"
@@ -1452,7 +1455,31 @@ export default function HPIPage() {
         {/* LEFT — CC Grid or OPQRST Builder */}
         <div style={{ flex: "0 0 55%", overflowY: "auto", display: "flex", flexDirection: "column", gap: 12 }}>
 
-          {!ccId ? (
+          {templateSearch.trim() && displayTemplates.length > 0 ? (
+            <div className="hpi-in">
+              <div style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 3, marginBottom: 10 }}>TEMPLATE SEARCH RESULTS</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
+                {displayTemplates.map((t, i) => {
+                  const cc = CC_LIST.find(c => c.id === t.cc);
+                  return (
+                    <div key={t.id} className="cc-card hpi-in" onClick={() => { applyTemplate(t); setTemplateSearch(""); }}
+                      style={{
+                        ...glass({ borderRadius: 12, background: `linear-gradient(135deg,${cc?.gl || "rgba(0,229,192,0.12)"},rgba(8,22,40,0.8))`, borderColor: cc?.color + "66" }),
+                        padding: "14px",
+                        cursor: "pointer",
+                        animationDelay: `${i * 0.03}s`,
+                        position: "relative",
+                      }}>
+                      <div style={{ fontSize: 16, marginBottom: 6 }}>{t.icon}</div>
+                      <div style={{ fontFamily: "DM Sans", fontWeight: 700, fontSize: 12, color: T.txt, marginBottom: 6 }}>{t.label}</div>
+                      <div style={{ fontFamily: "JetBrains Mono", fontSize: 9, color: cc?.color || T.teal, textTransform: "uppercase", letterSpacing: 1 }}>{t.cc}</div>
+                      <div style={{ fontFamily: "DM Sans", fontSize: 10, color: T.txt3, marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(26,53,85,0.4)" }}>Tap to use</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : !ccId ? (
             <CCGrid onSelect={selectCC} templates={quickTemplates} />
           ) : (
             <div style={{ ...glass({ borderRadius: 14 }), padding: "16px 18px", flex: 1 }}>

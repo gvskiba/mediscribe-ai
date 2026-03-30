@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
 
 // ── Font + CSS Injection ───────────────────────────────────────────
 (() => {
@@ -52,8 +53,8 @@ const glass  = (x={}) => ({backdropFilter:"blur(24px) saturate(200%)",WebkitBack
 const deep   = (x={}) => ({backdropFilter:"blur(40px) saturate(220%)",WebkitBackdropFilter:"blur(40px) saturate(220%)",background:"rgba(5,15,30,0.9)",border:"1px solid rgba(26,53,85,0.7)",...x});
 const inp    = (focus) => ({width:"100%",background:"rgba(14,37,68,0.8)",border:`1px solid ${focus?"rgba(59,158,255,0.6)":"rgba(26,53,85,0.55)"}`,borderRadius:9,padding:"9px 13px",color:T.txt,fontFamily:"DM Sans",fontSize:13,outline:"none",boxSizing:"border-box",transition:"border-color .15s"});
 
-// ── Drug Database (compact) ───────────────────────────────────────
-const DRUGS = [
+// ── Default Drug Data (seed) ─────────────────────────────────────
+const DEFAULT_DRUGS = [
   {id:"amox",name:"Amoxicillin",brand:"Amoxil",cls:"Antibiotic",sub:"Penicillin",sch:null,controlled:false,maxDose:"3g/day",cost:"$",formulary:"Tier 1",
     forms:["Capsule 250mg","Capsule 500mg","Tablet 875mg","Suspension 125mg/5mL","Suspension 250mg/5mL"],
     sigs:["500mg PO TID × 7–10 days","875mg PO BID × 7–10 days","500mg PO BID × 5–7 days"],
@@ -1138,9 +1139,23 @@ export default function ERxHub() {
   const [newAllergy, setNewAllergy] = useState("");
   const [showSuccess, setShowSuccess] = useState(null);
   const [transmitToast, setTransmitToast] = useState(false);
+  const [drugs, setDrugs] = useState([]);
+
+  useEffect(() => {
+    const loadDrugs = async () => {
+      try {
+        const dbDrugs = await base44.entities.Drug.list();
+        setDrugs(dbDrugs.length > 0 ? dbDrugs : DEFAULT_DRUGS);
+      } catch (e) {
+        setDrugs(DEFAULT_DRUGS);
+      }
+    };
+    loadDrugs();
+  }, []);
 
   const sec = SECTIONS.find(s=>s.id===activeSection);
   const activeRxIds = signedRx.map(p=>p.id);
+  const DRUGS = drugs.length > 0 ? drugs : DEFAULT_DRUGS;
 
   const handleSign = useCallback((rxData) => {
     setSignedRx(p=>[...p,rxData]);

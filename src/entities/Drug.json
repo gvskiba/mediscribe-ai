@@ -1,0 +1,83 @@
+{
+  "name": "Drug",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Drug identifier (e.g., 'amox')"
+    },
+    "name": {
+      "type": "string",
+      "description": "Drug name (e.g., 'Amoxicillin')"
+    },
+    "brand": {
+      "type": "string",
+      "description": "Brand name(s)"
+    },
+    "cls": {
+      "type": "string",
+      "description": "Drug class (e.g., 'Antibiotic')"
+    },
+    "sub": {
+      "type": "string",
+      "description": "Subclass (e.g., 'Penicillin')"
+    },
+    "schedule": {
+      "type": ["string", "null"],
+      "description": "DEA schedule (II, III, IV, V, or null)"
+    },
+    "controlled": {
+      "type": "boolean",
+      "description": "Is controlled substance"
+    },
+    "maxDose": {
+      "type": "string",
+      "description": "Maximum dose per day"
+    },
+    "cost": {
+      "type": "string",
+      "description": "Cost tier ($, $$, $$$)"
+    },
+    "formulary": {
+      "type": "string",
+      "description": "Formulary tier (Tier 1, Tier 2, Prior Auth, etc)"
+    },
+    "forms": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Available formulations"
+    },
+    "sigs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Common signature strings"
+    },
+    "renal": {
+      "type": "string",
+      "description": "Renal dosing guidance"
+    },
+    "hepatic": {
+      "type": "string",
+      "description": "Hepatic dosing guidance"
+    },
+    "peds": {
+      "type": "string",
+      "description": "Pediatric dosing"
+    },
+    "interactions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Drug interactions"
+    },
+    "allergyFlags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Allergy warnings and contraindications"
+    },
+    "note": {
+      "type": "string",
+      "description": "Clinical note"
+    }
+  },
+  "required": ["name", "cls", "forms", "sigs"]
+}

@@ -757,13 +757,56 @@ function AudioRecorder({ onTranscript, accentColor }) {
 // ═══════════════════════════════════════════════════════════════════
 const CC_CATEGORIES = ["All", ...Array.from(new Set(CC_LIST.map(cc => cc.cat))).sort()];
 
-function CCGrid({ onSelect }) {
+function CCGrid({ onSelect, templates = [] }) {
   const [activeCat, setActiveCat] = useState("All");
-  const filtered = activeCat === "All" ? CC_LIST : CC_LIST.filter(cc => cc.cat === activeCat);
+  const [ccSearch, setCCSearch] = useState("");
+  
+  const filtered = (() => {
+    let result = activeCat === "All" ? CC_LIST : CC_LIST.filter(cc => cc.cat === activeCat);
+    if (ccSearch.trim()) {
+      const q = ccSearch.toLowerCase();
+      result = result.filter(cc => cc.label.toLowerCase().includes(q));
+    }
+    return result;
+  })();
+
+  // Also show templates matching search
+  const matchingTemplates = ccSearch.trim() ? templates.filter(t => t.label.toLowerCase().includes(ccSearch.toLowerCase())) : [];
 
   return (
     <div className="hpi-in">
       <div style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 3, marginBottom: 10 }}>SELECT CHIEF COMPLAINT</div>
+
+      {/* Search Bar */}
+      <div style={{ marginBottom: 16 }}>
+        <input
+          type="text"
+          placeholder="🔍 Search chief complaints or templates…"
+          value={ccSearch}
+          onChange={e => setCCSearch(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "12px 16px",
+            borderRadius: 10,
+            background: "rgba(14,37,68,0.8)",
+            border: `1px solid ${ccSearch ? T.teal + "55" : "rgba(42,79,122,0.3)"}`,
+            color: T.txt,
+            fontFamily: "DM Sans",
+            fontSize: 13,
+            outline: "none",
+            transition: "all 0.2s",
+          }}
+          onFocus={e => e.target.style.borderColor = T.teal}
+          onBlur={e => e.target.style.borderColor = ccSearch ? T.teal + "55" : "rgba(42,79,122,0.3)"
+          }
+        />
+        {ccSearch && (
+          <div style={{ marginTop: 8, fontSize: 11, color: T.txt3 }}>
+            Found {filtered.length} chief complaint{filtered.length !== 1 ? "s" : ""}
+            {matchingTemplates.length > 0 && ` • ${matchingTemplates.length} matching template${matchingTemplates.length !== 1 ? "s" : ""}`}
+          </div>
+        )}
+      </div>
 
       {/* Category filter strip */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 18 }}>
@@ -791,6 +834,34 @@ function CCGrid({ onSelect }) {
         })}
       </div>
 
+      {/* Quick Template Results */}
+      {ccSearch.trim() && matchingTemplates.length > 0 && (
+        <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: "1px solid rgba(26,53,85,0.4)" }}>
+          <div style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.teal, textTransform: "uppercase", letterSpacing: 2, marginBottom: 10 }}>⚡ Quick Templates Matching Search</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
+            {matchingTemplates.map((t, i) => {
+              const cc = CC_LIST.find(c => c.id === t.cc);
+              return (
+                <div key={t.id} className="cc-card hpi-in" onClick={() => onSelect(t.cc)}
+                  style={{
+                    ...glass({ borderRadius: 12, background: `linear-gradient(135deg,${cc?.gl || "rgba(0,229,192,0.12)"},rgba(8,22,40,0.8))`, borderColor: cc?.color + "66" }),
+                    padding: "14px",
+                    cursor: "pointer",
+                    animationDelay: `${i * 0.03}s`,
+                    position: "relative",
+                  }}>
+                  <div style={{ fontSize: 16, marginBottom: 6 }}>{t.icon}</div>
+                  <div style={{ fontFamily: "DM Sans", fontWeight: 700, fontSize: 12, color: T.txt, marginBottom: 6 }}>{t.label}</div>
+                  <div style={{ fontFamily: "JetBrains Mono", fontSize: 9, color: cc?.color || T.teal, textTransform: "uppercase", letterSpacing: 1 }}>{t.cc}</div>
+                  <div style={{ fontFamily: "DM Sans", fontSize: 10, color: T.txt3, marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(26,53,85,0.4)" }}>Tap to open</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Chief Complaints Grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
         {filtered.map((cc, i) => (
           <div key={cc.id} className="cc-card hpi-in" onClick={() => onSelect(cc.id)}
@@ -805,6 +876,14 @@ function CCGrid({ onSelect }) {
           </div>
         ))}
       </div>
+
+      {/* No results message */}
+      {ccSearch.trim() && filtered.length === 0 && matchingTemplates.length === 0 && (
+        <div style={{ padding: "40px 20px", textAlign: "center", color: T.txt4 }}>
+          <div style={{ fontSize: 28, marginBottom: 10 }}>🔍</div>
+          <div>No chief complaints or templates matching "{ccSearch}"</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1277,7 +1356,7 @@ export default function HPIPage() {
         <div style={{ flex: "0 0 55%", overflowY: "auto", display: "flex", flexDirection: "column", gap: 12 }}>
 
           {!ccId ? (
-            <CCGrid onSelect={selectCC} />
+            <CCGrid onSelect={selectCC} templates={quickTemplates} />
           ) : (
             <div style={{ ...glass({ borderRadius: 14 }), padding: "16px 18px", flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
@@ -1291,6 +1370,25 @@ export default function HPIPage() {
                 </button>
               </div>
               <OPQRSTBuilder ccId={ccId} fields={fields} onChange={setFields} color={activeColor} />
+
+              {/* Clear Search on CC Change */}
+              {templateSearch && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(26,53,85,0.4)" }}>
+                  <button
+                    onClick={() => setTemplateSearch("")}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: 8,
+                      background: "rgba(0,229,192,0.1)",
+                      border: "1px solid rgba(0,229,192,0.3)",
+                      color: T.teal,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      fontFamily: "DM Sans",
+                    }}>Clear search</button>
+                </div>
+              )}
 
               {/* Custom / Free Text */}
               <div style={{ marginTop: 14, borderTop: "1px solid rgba(26,53,85,0.4)", paddingTop: 12 }}>

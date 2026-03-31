@@ -419,13 +419,34 @@ function PregnancyPage({onBack}){const[tab,setTab]=useState("algorithm");const[g
 //  NAV DATA
 // ════════════════════════════════════════════════════════════
 const NAV_DATA={
-  intake:[{section:"chart",abbr:"Pc",icon:"📊",label:"Patient Chart",dot:"done"},{section:"demographics",abbr:"Dm",icon:"👤",label:"Demographics",dot:"partial"},{section:"cc",abbr:"Cc",icon:"💬",label:"Chief Complaint",dot:"empty"},{section:"vitals",abbr:"Vt",icon:"📈",label:"Vitals",dot:"empty"}],
-  documentation:[{section:"meds",abbr:"Rx",icon:"💊",label:"Meds & PMH",dot:"empty"},{section:"ros",abbr:"Rs",icon:"🔍",label:"Review of Systems",dot:"empty"},{section:"exam",abbr:"Pe",icon:"🩺",label:"Physical Exam",dot:"empty"},{section:"mdm",abbr:"Md",icon:"⚖️",label:"MDM",dot:"empty"}],
-  disposition:[{section:"orders",abbr:"Or",icon:"📋",label:"Orders",dot:"empty"},{section:"discharge",abbr:"Dc",icon:"🚪",label:"Discharge",dot:"empty"},{section:"erplan",abbr:"Ep",icon:"🗺️",label:"ER Plan Builder",dot:"empty"}],
-  tools:[{section:"cardiac-home",abbr:"Ch",icon:"🏠",label:"Cardiac Hub",dot:"empty"},{section:"acs",abbr:"CS",icon:"🫀",label:"ACS Protocol",dot:"empty"},{section:"tachy",abbr:"Tc",icon:"⚡",label:"Tachycardia",dot:"empty"},{section:"brady",abbr:"Br",icon:"🔻",label:"Bradycardia",dot:"empty"},{section:"peds",abbr:"Pd",icon:"👶",label:"Pediatric ACLS",dot:"empty"},{section:"pregnancy",abbr:"Pg",icon:"🤰",label:"Arrest: Pregnancy",dot:"empty"}],
+  intake:[
+    {section:"chart",abbr:"Pc",icon:"📊",label:"Patient Chart",dot:"done",route:"/NewPatientInput?tab=chart"},
+    {section:"demographics",abbr:"Dm",icon:"👤",label:"Demographics",dot:"partial",route:"/NewPatientInput?tab=demo"},
+    {section:"cc",abbr:"Cc",icon:"💬",label:"Chief Complaint",dot:"empty",route:"/NewPatientInput?tab=cc"},
+    {section:"vitals",abbr:"Vt",icon:"📈",label:"Vitals",dot:"empty",route:"/NewPatientInput?tab=vit"},
+  ],
+  documentation:[
+    {section:"meds",abbr:"Rx",icon:"💊",label:"Meds & PMH",dot:"empty",route:"/NewPatientInput?tab=meds"},
+    {section:"ros",abbr:"Rs",icon:"🔍",label:"Review of Systems",dot:"empty",route:"/NewPatientInput?tab=ros"},
+    {section:"exam",abbr:"Pe",icon:"🩺",label:"Physical Exam",dot:"empty",route:"/NewPatientInput?tab=pe"},
+    {section:"mdm",abbr:"Md",icon:"⚖️",label:"MDM",dot:"empty",route:"/NewPatientInput?tab=mdm"},
+  ],
+  disposition:[
+    {section:"orders",abbr:"Or",icon:"📋",label:"Orders",dot:"empty",route:"/NewPatientInput?tab=orders"},
+    {section:"discharge",abbr:"Dc",icon:"🚪",label:"Discharge",dot:"empty",route:"/NewPatientInput?tab=discharge"},
+    {section:"erplan",abbr:"Ep",icon:"🗺️",label:"ER Plan Builder",dot:"empty",route:"/NewPatientInput?tab=erplan"},
+  ],
+  tools:[
+    {section:"cardiac-home",abbr:"Ch",icon:"🏠",label:"Cardiac Hub",dot:"empty"},
+    {section:"acs",abbr:"CS",icon:"🫀",label:"ACS Protocol",dot:"empty"},
+    {section:"tachy",abbr:"Tc",icon:"⚡",label:"Tachycardia",dot:"empty"},
+    {section:"brady",abbr:"Br",icon:"🔻",label:"Bradycardia",dot:"empty"},
+    {section:"peds",abbr:"Pd",icon:"👶",label:"Pediatric ACLS",dot:"empty"},
+    {section:"pregnancy",abbr:"Pg",icon:"🤰",label:"Arrest: Pregnancy",dot:"empty"},
+  ],
 };
 const GROUP_META=[{key:"intake",icon:"📋",label:"Intake"},{key:"documentation",icon:"🩺",label:"Documentation"},{key:"disposition",icon:"🚪",label:"Disposition"},{key:"tools",icon:"🔧",label:"Tools"}];
-const SIDEBAR_BTNS=[{icon:"🏠",label:"Home"},{icon:"📊",label:"Dash"},{icon:"👥",label:"Patients",active:true},{icon:"🔄",label:"Shift"},"sep",{icon:"💊",label:"Drugs"},{icon:"🧮",label:"Calc"}];
+const SIDEBAR_BTNS=[{icon:"🏠",label:"Home",route:"/"},{icon:"📊",label:"Dash",route:"/Dashboard"},{icon:"👥",label:"Patients",route:"/PatientDashboard"},{icon:"🔄",label:"Shift",route:"/Shift"},"sep",{icon:"💊",label:"Drugs",route:"/DrugsBugs"},{icon:"🧮",label:"Calc",route:"/Calculators"}];
 const QUICK_ACTIONS=[{icon:"📋",label:"Summarise",prompt:"Summarise what I have entered so far."},{icon:"🔍",label:"Check",prompt:"What am I missing? Check my entries for completeness."},{icon:"📝",label:"Draft Note",prompt:"Generate a draft note from the data entered."},{icon:"🧠",label:"DDx",prompt:"Suggest differential diagnoses based on current data."}];
 const ALL_SECTIONS=Object.values(NAV_DATA).flat();
 const SYSTEM_PROMPT="You are Notrya AI — a helpful AI assistant embedded in an emergency medicine documentation platform. Respond in 2–4 concise, actionable sentences. Be direct. Never fabricate data.";
@@ -485,8 +506,8 @@ export default function NotryaApp(){
   return(<>
     <style>{CSS}</style>
     <aside className="icon-sidebar">
-      <div className="isb-logo"><div className="isb-logo-box">{pageAbbr}</div></div>
-      <div className="isb-scroll">{SIDEBAR_BTNS.map((b,i)=>b==="sep"?<div key={i} className="isb-sep"/>:<div key={i} className={`isb-btn${b.active?" active":""}`} title={b.label}><span>{b.icon}</span><span className="isb-lbl">{b.label}</span></div>)}</div>
+      <div className="isb-logo"><div className="isb-logo-box" onClick={()=>navigate('/hub')} style={{cursor:'pointer'}}>{pageAbbr}</div></div>
+      <div className="isb-scroll">{SIDEBAR_BTNS.map((b,i)=>b==="sep"?<div key={i} className="isb-sep"/>:<div key={i} className="isb-btn" title={b.label} onClick={()=>b.route&&navigate(b.route)} style={{cursor:'pointer'}}><span>{b.icon}</span><span className="isb-lbl">{b.label}</span></div>)}</div>
       <div className="isb-bottom"><div className="isb-btn" title="Settings"><span>⚙️</span><span className="isb-lbl">Settings</span></div></div>
     </aside>
     <header className="top-bar">
@@ -502,7 +523,7 @@ export default function NotryaApp(){
         <span className="chart-badge">[CHART-ID]</span><span className="pt-name">— Patient —</span><span className="pt-meta">Age · Sex · DOB</span><span className="pt-cc">CC: —</span><div className="vb-div"/>
         {[{l:"BP",v:"—"},{l:"HR",v:"—"},{l:"RR",v:"—"},{l:"SpO₂",v:"—"},{l:"T",v:"—"},{l:"GCS",v:"—"}].map(vt=><div key={vt.l} className="vb-vital"><span className="lbl">{vt.l}</span><span className="val">{vt.v}</span></div>)}
         <div className="vb-div"/><span className="status-badge status-stable">STABLE</span><span className="status-badge status-room">Room —</span>
-        <div className="chart-actions"><button className="btn-ghost" onClick={()=>navigate('/hub')}>← Hub</button><button className="btn-ghost">📋 Orders</button><button className="btn-coral">🚪 Discharge</button><button className="btn-primary" onClick={()=>setAiMsgs(m=>[...m,{role:"sys",text:"💾 Chart saved successfully."}])}>💾 Save Chart</button></div>
+        <div className="chart-actions"><button className="btn-ghost" onClick={()=>navigate('/hub')}>← Hub</button><button className="btn-ghost" onClick={()=>navigate('/NewPatientInput?tab=orders')}>📋 Orders</button><button className="btn-coral" onClick={()=>navigate('/NewPatientInput?tab=discharge')}>🚪 Discharge</button><button className="btn-primary" onClick={()=>navigate('/NewPatientInput')}>💾 Save Chart</button></div>
       </div>
     </header>
     <div className="main-wrap">
@@ -527,7 +548,7 @@ export default function NotryaApp(){
     </div>
     <button className={`n-fab${aiOpen?" open":""}`} onClick={toggleAI}><span className="n-fab-icon">{aiOpen?"✕":"🤖"}</span><span className={`n-fab-badge${unread>0?" show":""}`}>{unread>9?"9+":unread}</span></button>
     <nav className="bottom-nav">
-      <div className="bn-sub-wrap"><div className="bn-sub-row" ref={pillsRef}>{subItems.map(item=><button key={item.section} className={`bn-sub-pill${item.section===activeSection?" active":""}`} onClick={()=>selectSection(item.section)}><span className="pill-icon">{item.icon}</span>{item.label}<span className={`pill-dot ${navDots[item.section]}`}/></button>)}</div></div>
+      <div className="bn-sub-wrap"><div className="bn-sub-row" ref={pillsRef}>{subItems.map(item=><button key={item.section} className={`bn-sub-pill${item.section===activeSection?" active":""}`} onClick={()=>item.route?navigate(item.route):selectSection(item.section)}><span className="pill-icon">{item.icon}</span>{item.label}<span className={`pill-dot ${navDots[item.section]}`}/></button>)}</div></div>
       <div className="bn-groups">{GROUP_META.map(g=><button key={g.key} className={`bn-group-tab${g.key===activeGroup?" active":""}`} onClick={()=>selectGroup(g.key)}><div className="bn-group-icon">{g.icon}<span className={`bn-group-badge ${getGroupBadge(g.key)}`}/></div><span className="bn-group-label">{g.label}</span></button>)}</div>
     </nav>
   </>);

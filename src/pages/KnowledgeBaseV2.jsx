@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import ClinicalContextPanel from "@/components/knowledgebase/ClinicalContextPanel";
 
@@ -1457,14 +1458,49 @@ const CALC_LINKS = [
   {label:'GCS Calculator', icon:'🧠', url:'https://www.mdcalc.com/calc/29/glasgow-coma-scale-score-gcs'},
 ];
 
+const APP_ICONS = [
+  { icon: '🏠', label: 'Home',      page: '/' },
+  { icon: '📊', label: 'Dashboard', page: '/Dashboard' },
+  { icon: '🆕', label: 'New PT',    page: '/NewPatientInput' },
+  { icon: '📝', label: 'New Note',  page: '/NewNote' },
+  { icon: '👥', label: 'Patients',  page: '/PatientDashboard' },
+  { icon: '🔄', label: 'Shift',     page: '/Shift' },
+  { icon: '💊', label: 'Drugs',     page: '/DrugsBugs' },
+  { icon: '🧮', label: 'Calc',      page: '/Calculators' },
+  { icon: '🏥', label: 'Hub',       page: '/hub' },
+];
+
 export default function KnowledgeBaseV2() {
   const [tab, setTab] = useState('search');
   const [user, setUser] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
   useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
 
   return (
     <div className="kb2-root">
       <style>{CSS}</style>
+      {/* App Icon Sidebar */}
+      <aside style={{position:'fixed',top:0,left:0,bottom:0,width:56,background:'#040d19',borderRight:'1px solid #1a3555',display:'flex',flexDirection:'column',alignItems:'center',zIndex:300}}>
+        <div style={{width:'100%',height:48,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',borderBottom:'1px solid #1a3555'}}>
+          <div onClick={()=>navigate('/hub')} style={{width:30,height:30,background:'#3b9eff',borderRadius:7,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Playfair Display,serif',fontSize:13,fontWeight:700,color:'white',cursor:'pointer'}}>KB</div>
+        </div>
+        <div style={{flex:1,width:'100%',display:'flex',flexDirection:'column',alignItems:'center',padding:'8px 0',gap:2,overflowY:'auto'}}>
+          {APP_ICONS.map(item=>(
+            <div key={item.page} onClick={()=>navigate(item.page)}
+              style={{width:42,height:42,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2,borderRadius:6,cursor:'pointer',transition:'all .15s',color:location.pathname===item.page?'#3b9eff':'#4a6a8a',background:location.pathname===item.page?'rgba(59,158,255,.1)':'transparent',border:`1px solid ${location.pathname===item.page?'rgba(59,158,255,.3)':'transparent'}`,fontSize:15}}
+            >
+              <span>{item.icon}</span>
+              <span style={{fontSize:8,lineHeight:1,whiteSpace:'nowrap'}}>{item.label}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{padding:'8px 0',borderTop:'1px solid #1a3555',display:'flex',flexDirection:'column',alignItems:'center',gap:2}}>
+          <div onClick={()=>navigate('/AppSettings')} style={{width:42,height:42,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2,borderRadius:6,cursor:'pointer',color:'#4a6a8a',fontSize:15}}>
+            <span>⚙️</span><span style={{fontSize:8}}>Settings</span>
+          </div>
+        </div>
+      </aside>
       <TopNavBar user={user} tab={tab} setTab={setTab} />
       <VitalsBar user={user} />
       <div className="kb2-layout">

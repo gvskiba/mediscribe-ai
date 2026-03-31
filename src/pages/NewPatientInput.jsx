@@ -273,18 +273,18 @@ export default function NewPatientInput() {
       case "cc":   return <CCTab cc={cc} setCC={setCC} selectedCC={selectedCC} setSelectedCC={setSelectedCC} />;
       case "vit":  return <VitalsTab vitals={vitals} setVitals={setVitals} avpu={avpu} setAvpu={setAvpu} o2del={o2del} setO2del={setO2del} pain={pain} setPain={setPain} triage={triage} setTriage={setTriage} />;
       case "meds": return <MedsTab medications={medications} setMedications={setMedications} allergies={allergies} setAllergies={setAllergies} pmhSelected={pmhSelected} setPmhSelected={setPmhSelected} pmhExtra={pmhExtra} setPmhExtra={setPmhExtra} surgHx={surgHx} setSurgHx={setSurgHx} famHx={famHx} setFamHx={setFamHx} socHx={socHx} setSocHx={setSocHx} pmhExpanded={pmhExpanded} setPmhExpanded={setPmhExpanded} />;
-      case "ros":  return <ROSTab />;
+      case "ros":  return <ROSTab onStateChange={setRosState} chiefComplaint={cc.text} />;
       case "pe":   return <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} />;
       case "mdm":  return <MedicalDecisionMaking embedded patientName={patientName} chiefComplaint={cc.text} />;
       case "chart":    return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto" }}><NotryaApp embedded={true} patientName={patientName} demo={demo} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} /></div>;
       case "discharge": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><DischargePlanning embedded /></div>;
       case "erx": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", paddingBottom: "24px" }}><ERxHub /></div>;
-      case "orders":   return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><EDOrders embedded /></div>;
+      case "orders":   return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><EDOrders embedded patientName={patientName} patientAllergies={allergies} chiefComplaint={cc.text} patientAge={demo.age} patientSex={demo.sex} /></div>;
       case "autocoder": return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} />;
       case "procedures": return <EDProcedureNotes embedded patientName={patientName} patientAllergies={allergies.join(", ")} physicianName="" />;
       case "medref": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto" }}><MedicationReferencePage embedded /></div>;
       case "cardiac-hub": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", background: "#050f1e" }}><CardiacHub /></div>;
-      case "erplan": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><ERPlanBuilder embedded /></div>;
+      case "erplan": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><ERPlanBuilder embedded patientName={patientName} patientAge={demo.age} patientSex={demo.sex} patientCC={cc.text} patientVitals={vitals} patientAllergies={allergies} patientMedications={medications} /></div>;
       case "hpi": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto" }}><HPIPage /></div>;
 
       default: return null;

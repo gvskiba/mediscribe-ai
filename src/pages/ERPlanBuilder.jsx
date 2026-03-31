@@ -260,7 +260,7 @@ const IVF_QUICK = [
   ['Norepinephrine (0.1 mcg/kg/min)','—','IV','Continuous drip'],
 ];
 
-export default function ERPlanBuilder({ embedded = false }) {
+export default function ERPlanBuilder({ embedded = false, patientName: propName = '', patientAge = '', patientSex = '', patientCC = '', patientVitals = {}, patientAllergies = [], patientMedications = [] }) {
   const navigate = useNavigate();
   const [esi, setEsiState] = useState(null);
   const [demo, setDemo] = useState({ name:'', demographics:'', cc:'', bp:'', hr:'', rr:'', spo2:'', temp:'', wt:'', hpi:'' });
@@ -286,6 +286,23 @@ export default function ERPlanBuilder({ embedded = false }) {
   useEffect(() => {
     if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
   }, [aiMessages, aiLoading]);
+
+  useEffect(() => {
+    if (propName || patientCC || patientVitals.bp) {
+      setDemo(p => ({
+        ...p,
+        name: propName || p.name,
+        demographics: patientAge ? `${patientAge}y ${patientSex || ''}`.trim() : p.demographics,
+        cc: patientCC || p.cc,
+        bp: patientVitals.bp || p.bp,
+        hr: patientVitals.hr || p.hr,
+        rr: patientVitals.rr || p.rr,
+        spo2: patientVitals.spo2 || p.spo2,
+        temp: patientVitals.temp || p.temp,
+        wt: patientVitals.weight || p.wt,
+      }));
+    }
+  }, [propName, patientCC, patientVitals.bp]);
 
   const appendAiMsg = (role, text) => setAiMessages(p => [...p, { role, text }]);
 

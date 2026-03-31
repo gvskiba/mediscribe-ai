@@ -83,8 +83,12 @@ const CSS = `
 .bd3{animation:bounce-dot 1.2s 0.4s ease-in-out infinite}
 `;
 
-export default function ROSTab() {
+export default function ROSTab({ onStateChange, chiefComplaint = '' }) {
   const [state, setState] = useState(initState);
+
+  useEffect(() => {
+    onStateChange && onStateChange(state);
+  }, [state]);
   const [pins, setPins] = useState(new Set(['constitutional','cardiovascular','respiratory','neuro']));
   const [aiTouched, setAiTouched] = useState(new Set());
   const [expanded, setExpanded] = useState(null);
@@ -202,7 +206,7 @@ export default function ROSTab() {
         });
         ctx += `${sys.name}: ${pos.length ? 'Positive for ' + pos.join(', ') + '. ' : ''}${neg.length ? 'Denies ' + neg.join(', ') + '.' : ''}\n`;
       });
-      const res = await base44.integrations.Core.InvokeLLM({ prompt: `You are Notrya AI, a clinical EM assistant. Context:\n${ctx}\n\nQuestion: ${question}` });
+      const res = await base44.integrations.Core.InvokeLLM({ prompt: `You are Notrya AI, a clinical EM assistant. Context:\nChief Complaint: ${chiefComplaint || 'Not specified'}\n${ctx}\n\nQuestion: ${question}` });
       setMsgs(p => [...p, { role: 'bot', text: typeof res === 'string' ? res : JSON.stringify(res) }]);
     } catch { setMsgs(p => [...p, { role: 'sys', text: '⚠ Connection error.' }]); }
     setAiLoading(false);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 
-const EDOrders = ({ embedded = false }) => {
+const EDOrders = ({ embedded = false, patientName = '', patientAllergies = [], chiefComplaint = '', patientAge = '', patientSex = '' }) => {
   /* ══════════════════════════════════════════
      DESIGN TOKENS & STYLING
   ══════════════════════════════════════════ */
@@ -318,19 +318,17 @@ input, textarea { font-family: 'DM Sans', sans-serif; }
   const runAIAnalysis = async () => {
     setAiLoading(true);
     try {
+      const allergyStr = patientAllergies.length ? patientAllergies.join(', ') : 'None known';
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `You are an emergency medicine clinical decision support AI. Analyze this patient and recommend order sets.
 
-Patient: Nakamura, Hiroshi | 67y Male | Room 4B
-Diagnosis: NSTEMI (Non-ST Elevation MI)
-Allergies: Penicillin (anaphylaxis), Iodinated Contrast (urticaria), Codeine (nausea)
-Vitals: BP 158/94, HR 108, RR 18, SpO2 93%, Temp 37.1°C
-Key findings: Troponin-I 0.84 (>20x ULN), ST depression V4-V6, K+ 5.4, Glucose 218
-Current meds: Aspirin 325mg given, Ticagrelor loaded, Heparin drip running
+Patient: ${patientName || 'Unknown'} | ${patientAge ? patientAge + 'y' : ''} ${patientSex || ''} | Room —
+Chief Complaint: ${chiefComplaint || 'Not specified'}
+Allergies: ${allergyStr}
 
 Generate 2-3 clinical order set recommendations with confidence scores. For each set include 3-5 specific orders from this list: l_trop, l_bnp, l_ckmb, l_bmp, l_cmp, l_mg, l_lac, l_a1c, l_cbc, l_coag, l_type, i_cxr, i_tte, i_ctca, i_ctpe, m_ntg_sl, m_ntg_iv, m_metop, m_amio, m_asp325, m_hep, m_ticag, m_pred, p_ecg, p_ecg_serial, p_tele, p_o2_2l, c_cards, c_pharm
 
-IMPORTANT: Do NOT recommend contrast-based imaging (i_ctca, i_ctpe) or codeine (m_codeine) due to allergies.`,
+IMPORTANT: Do NOT recommend any orders the patient is allergic to.`,
         response_json_schema: {
           type: 'object',
           properties: {

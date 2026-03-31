@@ -19,6 +19,7 @@ const HUBS = [
     stats: ["5 Protocols", "2025 ACC/AHA", "TNK Tool"],
     badge: "2025 ACC/AHA",
     priority: 1,
+    essential: true,
   },
   {
     id: "neuro",
@@ -36,6 +37,7 @@ const HUBS = [
     stats: ["AHA Stroke", "NIHSS", "tPA Tool"],
     badge: "AHA 2023",
     priority: 2,
+    essential: true,
   },
   {
     id: "trauma",
@@ -53,6 +55,7 @@ const HUBS = [
     stats: ["ATLS Protocol", "Damage Control", "Transfusion"],
     badge: "ATLS 11th Ed",
     priority: 3,
+    essential: true,
   },
   {
     id: "airway",
@@ -70,6 +73,7 @@ const HUBS = [
     stats: ["RSI Protocol", "ARDS Net", "Difficult Airway"],
     badge: "Clinical Tools",
     priority: 4,
+    essential: true,
   },
   {
     id: "autocoder",
@@ -240,10 +244,13 @@ const HUBS = [
     stats: ["Demographics", "Vitals", "Full Chart"],
     badge: "Clinical Workflow",
     priority: 14,
+    essential: true,
   },
 ];
 
-const CATEGORIES = ["All", "Critical Care", "Specialty", "Procedures", "Tools"];
+const ESSENTIAL_IDS = new Set(HUBS.filter(h => h.essential).map(h => h.id));
+
+const CATEGORIES = ["All", "Essential", "Critical Care", "Specialty", "Procedures", "Tools"];
 
 // Routes that are actually implemented in App.jsx
 const LIVE_ROUTES = new Set([
@@ -420,8 +427,13 @@ export default function HubSelectorPage() {
     navigate(route);
   };
 
+  const essentials = HUBS.filter(h => h.essential).sort((a, b) => a.priority - b.priority);
+
   const filteredBase = HUBS
-    .filter(h => activeCategory === "All" || h.category === activeCategory)
+    .filter(h => {
+      if (activeCategory === "Essential") return h.essential;
+      return activeCategory === "All" || h.category === activeCategory;
+    })
     .filter(h =>
       !search ||
       h.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -591,6 +603,21 @@ export default function HubSelectorPage() {
         <div style={{ animation: "hub-appear 0.5s ease both 0.12s" }}>
           <RecentStrip recents={recents} onNavigate={handleNavigate} />
         </div>
+
+        {/* Essential section — shown above featured when All + no search */}
+        {!search && activeCategory === "All" && (
+          <div style={{ marginBottom: 24, animation: "hub-appear 0.5s ease both 0.13s" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+              <div style={{ height: 1, width: 24, background: "rgba(245,200,66,0.5)", borderRadius: 1 }} />
+              <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: "#f5c842", textTransform: "uppercase", letterSpacing: ".12em", fontWeight: 700 }}>⭐ Essential</span>
+              <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, rgba(245,200,66,0.2), transparent)" }} />
+              <span style={{ fontSize: 10, color: "#4a6a8a", fontFamily: "'JetBrains Mono',monospace" }}>{essentials.length} hubs</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12 }}>
+              {essentials.map((hub, i) => <HubCard key={hub.id} hub={hub} onNavigate={handleNavigate} index={i} size="normal" />)}
+            </div>
+          </div>
+        )}
 
         {/* Default view: featured + rest */}
         {!search && activeCategory === "All" && (

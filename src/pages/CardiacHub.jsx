@@ -547,10 +547,6 @@ export default function NotryaApp(){
       <div className="n-input-bar"><textarea ref={inputRef} className="n-ta" rows={1} placeholder="Ask anything…" value={aiInput} onChange={e=>setAiInput(e.target.value)} onKeyDown={handleAIKey} onInput={e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,90)+"px";}} disabled={aiLoading}/><button className="n-send" onClick={()=>sendMessage(aiInput)} disabled={aiLoading||!aiInput.trim()}>↑</button></div>
     </div>
     <button className={`n-fab${aiOpen?" open":""}`} onClick={toggleAI}><span className="n-fab-icon">{aiOpen?"✕":"🤖"}</span><span className={`n-fab-badge${unread>0?" show":""}`}>{unread>9?"9+":unread}</span></button>
-    <nav className="bottom-nav">
-      <div className="bn-sub-wrap"><div className="bn-sub-row" ref={pillsRef}>{subItems.map(item=><button key={item.section} className={`bn-sub-pill${item.section===activeSection?" active":""}`} onClick={()=>item.route?navigate(item.route):selectSection(item.section)}><span className="pill-icon">{item.icon}</span>{item.label}<span className={`pill-dot ${navDots[item.section]}`}/></button>)}</div></div>
-      <div className="bn-groups">{GROUP_META.map(g=><button key={g.key} className={`bn-group-tab${g.key===activeGroup?" active":""}`} onClick={()=>selectGroup(g.key)}><div className="bn-group-icon">{g.icon}<span className={`bn-group-badge ${getGroupBadge(g.key)}`}/></div><span className="bn-group-label">{g.label}</span></button>)}</div>
-    </nav>
   </>);
 }
 

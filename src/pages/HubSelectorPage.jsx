@@ -403,6 +403,7 @@ export default function HubSelectorPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [sortBy, setSortBy] = useState("priority");
   const [recents, setRecents] = useState(() => {
     try { return JSON.parse(localStorage.getItem("notrya_recent_hubs") || "[]").slice(0, 4).map(id => HUBS.find(h => h.id === id)).filter(Boolean); }
     catch { return []; }
@@ -428,7 +429,16 @@ export default function HubSelectorPage() {
       h.abbr.toLowerCase().includes(search.toLowerCase()) ||
       h.stats.some(s => s.toLowerCase().includes(search.toLowerCase()))
     )
-    .sort((a, b) => a.priority - b.priority);
+    .sort((a, b) => {
+      if (sortBy === "alpha") return a.title.localeCompare(b.title);
+      if (sortBy === "category") return a.category.localeCompare(b.category) || a.priority - b.priority;
+      if (sortBy === "live") {
+        const aLive = LIVE_ROUTES.has(a.route) ? 0 : 1;
+        const bLive = LIVE_ROUTES.has(b.route) ? 0 : 1;
+        return aLive - bLive || a.priority - b.priority;
+      }
+      return a.priority - b.priority;
+    });
 
   const featured = filtered.slice(0, 3);
   const rest = filtered.slice(3);
@@ -569,9 +579,18 @@ export default function HubSelectorPage() {
               </button>
             ))}
           </div>
-          <span style={{ fontSize: 11, color: "#2e4a6a", fontFamily: "'JetBrains Mono',monospace", marginLeft: "auto" }}>
-            {filtered.length} hub{filtered.length !== 1 ? "s" : ""}
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto" }}>
+            <span style={{ fontSize: 10, color: "#2e4a6a", fontFamily: "'JetBrains Mono',monospace", whiteSpace: "nowrap" }}>Sort:</span>
+            {[{id:"priority",label:"Default"},{id:"alpha",label:"A–Z"},{id:"category",label:"Category"},{id:"live",label:"Live First"}].map(opt => (
+              <button key={opt.id} onClick={() => setSortBy(opt.id)}
+                style={{ padding: "6px 12px", borderRadius: 20, fontSize: 11, fontWeight: 600, fontFamily: "'DM Sans',sans-serif", cursor: "pointer", transition: "all 0.2s", background: sortBy === opt.id ? "rgba(155,109,255,0.15)" : "rgba(8,22,40,0.75)", border: `1px solid ${sortBy === opt.id ? "rgba(155,109,255,0.45)" : "rgba(42,79,122,0.5)"}`, color: sortBy === opt.id ? "#9b6dff" : "#4a6a8a", backdropFilter: "blur(12px)" }}>
+                {opt.label}
+              </button>
+            ))}
+            <span style={{ fontSize: 11, color: "#2e4a6a", fontFamily: "'JetBrains Mono',monospace", marginLeft: 6, whiteSpace: "nowrap" }}>
+              {filtered.length} hub{filtered.length !== 1 ? "s" : ""}
+            </span>
+          </div>
         </div>
 
         {/* Recently Used */}

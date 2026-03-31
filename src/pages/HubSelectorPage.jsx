@@ -73,7 +73,7 @@ const HUBS = [
   },
   {
     id: "autocoder",
-    route: "/autocoder-hub",
+    route: "/AutoCoder",
     icon: "🤖",
     abbr: "CODE",
     title: "AutoCoder",
@@ -232,7 +232,7 @@ const CATEGORIES = ["All", "Critical Care", "Specialty", "Procedures", "Tools"];
 const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
-  "/peds-hub", "/Procedures", "/erx",
+  "/peds-hub", "/Procedures", "/erx", "/AutoCoder",
 ]);
 
 function Background() {

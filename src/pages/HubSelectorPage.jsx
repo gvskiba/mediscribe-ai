@@ -129,7 +129,7 @@ const HUBS = [
   },
   {
     id: "guidelines",
-    route: "/guidelines",
+    route: "/KnowledgeBaseV2",
     icon: "📚",
     abbr: "GUIDE",
     title: "Medical Guidelines",
@@ -258,6 +258,7 @@ const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
   "/peds-hub", "/Procedures", "/erx", "/AutoCoder", "/NewPatientInput",
+  "/KnowledgeBaseV2",
 ]);
 
 function Background() {

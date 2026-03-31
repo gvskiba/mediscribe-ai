@@ -224,6 +224,23 @@ const HUBS = [
     badge: "Clinical Tools",
     priority: 13,
   },
+  {
+    id: "newpatient",
+    route: "/NewPatientInput",
+    icon: "🆕",
+    abbr: "NEW PT",
+    title: "New Patient Input",
+    subtitle: "Patient intake · Chart · Documentation · Disposition",
+    color: "#00e5c0",
+    glow: "rgba(0,229,192,0.4)",
+    glass: "rgba(0,229,192,0.07)",
+    border: "rgba(0,229,192,0.28)",
+    accent: "#33eccc",
+    category: "Tools",
+    stats: ["Demographics", "Vitals", "Full Chart"],
+    badge: "Clinical Workflow",
+    priority: 14,
+  },
 ];
 
 const CATEGORIES = ["All", "Critical Care", "Specialty", "Procedures", "Tools"];
@@ -232,7 +249,7 @@ const CATEGORIES = ["All", "Critical Care", "Specialty", "Procedures", "Tools"];
 const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
-  "/peds-hub", "/Procedures", "/erx", "/AutoCoder",
+  "/peds-hub", "/Procedures", "/erx", "/AutoCoder", "/NewPatientInput",
 ]);
 
 function Background() {

@@ -1505,6 +1505,11 @@ export default function KnowledgeBaseV2() {
       <VitalsBar user={user} />
       <div className="kb2-layout">
         <aside className="kb2-sidebar">
+          <div style={{marginBottom:10}}>
+            <button onClick={()=>navigate('/hub')} style={{width:'100%',display:'flex',alignItems:'center',gap:8,padding:'8px 12px',borderRadius:8,background:'rgba(59,158,255,0.1)',border:'1px solid rgba(59,158,255,0.3)',color:'#3b9eff',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'DM Sans,sans-serif',transition:'all .15s'}} onMouseEnter={e=>e.currentTarget.style.background='rgba(59,158,255,0.18)'} onMouseLeave={e=>e.currentTarget.style.background='rgba(59,158,255,0.1)'}>
+              <span>←</span> Back to Hub
+            </button>
+          </div>
           <div>
             <div className="kb2-sb-heading">Knowledge Base</div>
             {SIDEBAR_NAV.map(item=>(

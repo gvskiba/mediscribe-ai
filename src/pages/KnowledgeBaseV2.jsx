@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import ClinicalContextPanel from "@/components/knowledgebase/ClinicalContextPanel";
 
-// ─── DATA ────────────────────────────────────────────────────────────────────
+// ─── EXISTING DATA ────────────────────────────────────────────────────────────
 
 const SEARCH_INDEX = [
   {type:'drug',name:'Epinephrine (Adrenalin)',desc:'Vasopressor / anaphylaxis / cardiac arrest',url:'https://reference.medscape.com/drug/adrenalin-epinephrine-342432'},
@@ -97,7 +97,222 @@ const DRUGS_QR = [
   {name:'Salbutamol / Albuterol',generic:'Ventolin / ProAir',cat:'resp em',cls:'β₂ Agonist',fields:[{label:'Nebulised',val:'2.5–5mg q20min × 3'},{label:'MDI',val:'4–8 puffs (100mcg/puff)'},{label:'Continuous',val:'10–15mg/hr neb'}],links:[{label:'Medscape',url:'https://reference.medscape.com/drug/proair-ventolin-hfa-albuterol-342484'},{label:'Drugs.com',url:'https://www.drugs.com/albuterol.html'},{label:'DailyMed',url:'https://dailymed.nlm.nih.gov/dailymed/search.cfm?query=albuterol'}]},
 ];
 
-// ─── STYLES ────────────────────────────────────────────────────────────────
+// ─── NEW: RICH DETAIL + LANDMARK STUDIES ─────────────────────────────────────
+
+const STUDIES_DB = {
+  "ProCESS":        {title:"ProCESS Trial",journal:"NEJM",year:2014,finding:"Protocol-based sepsis resuscitation not superior to usual care — standard care is adequate"},
+  "SMART":          {title:"SMART Trial",journal:"NEJM",year:2018,finding:"Balanced crystalloids vs. saline: lower MAKE30 composite endpoint in ICU patients"},
+  "ADRENAL":        {title:"ADRENAL Trial",journal:"NEJM",year:2018,finding:"Hydrocortisone in septic shock: faster vasopressor weaning but no mortality benefit"},
+  "PARADIGM-HF":    {title:"PARADIGM-HF Trial",journal:"NEJM",year:2014,finding:"Sacubitril/valsartan reduced CV death by 20% vs. enalapril in HFrEF"},
+  "DAPA-HF":        {title:"DAPA-HF Trial",journal:"NEJM",year:2019,finding:"Dapagliflozin reduced worsening HF or CV death by 26% in HFrEF"},
+  "EMPEROR":        {title:"EMPEROR-Reduced",journal:"NEJM",year:2020,finding:"Empagliflozin reduced HF hospitalization + CV death by 25% in HFrEF"},
+  "EAST-AFNET4":    {title:"EAST-AFNET 4",journal:"NEJM",year:2020,finding:"Early rhythm control reduced CV outcomes by 21% vs. rate control in AF"},
+  "PLATO":          {title:"PLATO Trial",journal:"NEJM",year:2009,finding:"Ticagrelor reduced CV death/MI/stroke by 16% vs. clopidogrel in ACS"},
+  "COMPLETE":       {title:"COMPLETE Trial",journal:"NEJM",year:2019,finding:"Complete revascularization reduced CV death/MI by 26% vs. culprit-only in STEMI"},
+  "NINDS-tPA":      {title:"NINDS tPA Stroke Trial",journal:"NEJM",year:1995,finding:"IV tPA within 3h: 30% more patients with minimal/no disability at 3 months"},
+  "DAWN":           {title:"DAWN Trial",journal:"NEJM",year:2018,finding:"Thrombectomy 6–24h: 49% vs 13% functional independence"},
+  "SYGMA-1":        {title:"SYGMA 1 Trial",journal:"NEJM",year:2018,finding:"As-needed budesonide/formoterol non-inferior to daily ICS in mild asthma"},
+  "IMPACT":         {title:"IMPACT Trial",journal:"NEJM",year:2018,finding:"ICS/LABA/LAMA triple therapy reduced exacerbations by 15% vs. ICS/LABA in COPD"},
+  "EXTEND":         {title:"EXTEND CDI Trial",journal:"Lancet Infect Dis",year:2021,finding:"Fidaxomicin extended dosing reduced CDI recurrences vs. standard vancomycin"},
+  "ACCORD":         {title:"ACCORD Trial",journal:"NEJM",year:2008,finding:"Intensive glucose control (<6% A1c) increased mortality vs. standard control"},
+  "SPRINT":         {title:"SPRINT Trial",journal:"NEJM",year:2015,finding:"SBP target <120 mmHg reduced CV events and mortality vs. <140 in non-diabetic HTN"},
+  "STOP-BANG":      {title:"CPR Outcomes Registry",journal:"Circulation",year:2020,finding:"High-quality CPR (rate 100-120, depth ≥2in) independently predicts ROSC"},
+};
+
+// Keyed by title fragment for fuzzy matching against GUIDELINES_DATA titles
+const RICH_DETAIL = {
+  "Surviving Sepsis": {
+    synopsis:"International consensus guidelines covering the Hour-1 bundle, fluid resuscitation strategy, vasopressor selection, antibiotic stewardship, and adjunctive therapies for sepsis and septic shock.",
+    keyPoints:[
+      "Antibiotics within 1h for septic shock; within 3h for sepsis without shock",
+      "Balanced crystalloids (LR/PlasmaLyte) preferred over 0.9% normal saline",
+      "Norepinephrine first-line vasopressor; add vasopressin (not epinephrine) second-line",
+      "Lactate ≥4 mmol/L defines septic shock equivalent — aggressive resuscitation",
+      "Hydrocortisone 200mg/day for vasopressor-refractory septic shock",
+      "Procalcitonin-guided antibiotic de-escalation and discontinuation",
+    ],
+    recs:[
+      {cls:"Strong / High",text:"Administer IV antibiotics within 1h of septic shock recognition"},
+      {cls:"Strong / Moderate",text:"Use balanced crystalloids over normal saline as IV fluid"},
+      {cls:"Strong / Moderate",text:"Norepinephrine first-line vasopressor; target MAP ≥65 mmHg"},
+      {cls:"Weak / Moderate",text:"Hydrocortisone 200mg/day for vasopressor-refractory shock"},
+    ],
+    studies:["ProCESS","SMART","ADRENAL"],
+  },
+  "Heart Failure": {
+    synopsis:"Comprehensive update to heart failure management establishing 4-pillar GDMT for HFrEF, new SGLT2 inhibitor Class I indication, and updated HF staging/phenotyping including new HFmrEF category.",
+    keyPoints:[
+      "4-pillar GDMT for HFrEF: ACEi/ARB/ARNi + beta-blocker + MRA + SGLT2 inhibitor",
+      "SGLT2 inhibitors (dapagliflozin, empagliflozin) Class I LOE A for HFrEF",
+      "ARNi (sacubitril/valsartan) preferred over ACEi in stable symptomatic HFrEF",
+      "New HFmrEF (EF 41–49%) — consider same GDMT as HFrEF",
+      "ICD for EF ≤35% on optimal GDMT × ≥3 months (NYHA class II–III)",
+      "Loop diuretics for symptom relief; no mortality benefit",
+    ],
+    recs:[
+      {cls:"Class I / LOE A",text:"SGLT2 inhibitors reduce HF hospitalization and CV death in HFrEF"},
+      {cls:"Class I / LOE A",text:"Beta-blockers (carvedilol, bisoprolol, metoprolol succinate) reduce mortality"},
+      {cls:"Class I / LOE B-R",text:"ARNi preferred over ACEi in stable symptomatic HFrEF"},
+      {cls:"Class I / LOE A",text:"MRAs reduce mortality and HF hospitalization"},
+    ],
+    studies:["PARADIGM-HF","DAPA-HF","EMPEROR"],
+  },
+  "Atrial Fibrillation": {
+    synopsis:"Landmark AF management update incorporating EAST-AFNET4 early rhythm control evidence, updated anticoagulation guidance, and expanded catheter ablation indications as first-line therapy.",
+    keyPoints:[
+      "CHA₂DS₂-VASc ≥2 (men) / ≥3 (women): anticoagulate; DOACs preferred over warfarin",
+      "Early rhythm control (within 12 months of AF diagnosis) reduces CV outcomes",
+      "Rate control target: resting HR <80 bpm (symptomatic) or <110 bpm (others)",
+      "Catheter ablation: Class I or reasonable first-line for symptomatic paroxysmal AF",
+      "Lifestyle modification (weight loss, exercise) reduces AF burden and recurrence",
+      "Integrated multidisciplinary care pathway improves outcomes",
+    ],
+    recs:[
+      {cls:"Class I / LOE A",text:"DOACs preferred over warfarin for non-valvular AF anticoagulation"},
+      {cls:"Class I / LOE B-R",text:"Early rhythm control strategy to reduce cardiovascular events"},
+      {cls:"Class IIa / LOE B-NR",text:"Catheter ablation as first-line for symptomatic paroxysmal AF"},
+    ],
+    studies:["EAST-AFNET4"],
+  },
+  "STEMI": {
+    synopsis:"Updated STEMI management with door-to-balloon time goals, complete revascularization evidence, and optimized antiplatelet/anticoagulation strategies for primary PCI.",
+    keyPoints:[
+      "Primary PCI preferred; door-to-balloon time goal ≤90 min (system goal ≤60 min)",
+      "If PCI not available within 120 min: thrombolytics within 30 min",
+      "DAPT: aspirin 325mg + ticagrelor or prasugrel (preferred over clopidogrel) × 12 months",
+      "Complete revascularization of non-culprit lesions during index hospitalization (Class IIa)",
+      "High-intensity statin before or at discharge",
+    ],
+    recs:[
+      {cls:"Class I / LOE A",text:"Primary PCI with door-to-balloon ≤90 min; system goal ≤60 min"},
+      {cls:"Class I / LOE A",text:"Aspirin + ticagrelor or prasugrel for 12 months post-STEMI"},
+      {cls:"Class IIa / LOE B-R",text:"Complete revascularization of non-culprit lesions at index PCI"},
+    ],
+    studies:["PLATO","COMPLETE"],
+  },
+  "Community-Acquired Pneumonia": {
+    synopsis:"IDSA/ATS consensus for adult CAP establishing PSI/CURB-65 site-of-care decisions, empiric antibiotic selection by severity and risk factors, and treatment duration guidance.",
+    keyPoints:[
+      "PSI or CURB-65 guides inpatient vs outpatient; CURB-65 ≥2 → consider admission",
+      "Outpatient (no comorbidities): amoxicillin OR doxycycline",
+      "Inpatient non-ICU: beta-lactam + macrolide OR respiratory fluoroquinolone",
+      "ICU CAP: beta-lactam + azithromycin OR beta-lactam + respiratory fluoroquinolone",
+      "5-day course adequate if improving (meets clinical stability criteria)",
+      "Blood cultures before antibiotics but do NOT delay treatment",
+    ],
+    recs:[
+      {cls:"Strong / LOE I",text:"Use PSI or CURB-65 for site-of-care and severity decision"},
+      {cls:"Strong / LOE I",text:"Beta-lactam + macrolide or respiratory FQ for non-ICU inpatient CAP"},
+      {cls:"Moderate / LOE II",text:"5-day course adequate for non-severe CAP responding to treatment"},
+    ],
+    studies:[],
+  },
+  "COPD": {
+    synopsis:"Annual GOLD update with simplified ABE classification, updated inhaler selection algorithm prioritizing LAMA monotherapy, and evidence-based exacerbation management protocols.",
+    keyPoints:[
+      "Diagnosis requires post-bronchodilator FEV1/FVC <0.70 by spirometry",
+      "Use symptom burden + exacerbation history (not spirometry alone) to guide pharmacotherapy",
+      "LAMA monotherapy first-line for dyspnea without frequent exacerbations",
+      "LAMA + LABA for ongoing dyspnea on monotherapy",
+      "Add ICS only for eosinophils ≥300/μL or frequent exacerbations on LABA/LAMA",
+      "Acute exacerbation: SABA + systemic steroids 40mg × 5 days + antibiotics if purulent",
+    ],
+    recs:[
+      {cls:"Evidence A",text:"LAMA reduces exacerbations more than LABA or LABA/ICS in group B/E"},
+      {cls:"Evidence A",text:"ICS/LABA/LAMA triple therapy reduces exacerbations vs. dual therapy"},
+      {cls:"Evidence A",text:"5-day systemic corticosteroid course reduces AECOPD treatment failure"},
+    ],
+    studies:["IMPACT"],
+  },
+  "GINA": {
+    synopsis:"Major GINA update replacing SABA-only reliever therapy with ICS-containing regimens at all steps, supported by SYGMA trial evidence, and expanding biologic therapy guidance.",
+    keyPoints:[
+      "SABA-only reliever no longer recommended — replace with ICS/formoterol at all steps",
+      "As-needed low-dose ICS/formoterol is preferred reliever (reduces exacerbations vs SABA)",
+      "Step 1–2: As-needed ICS/formoterol (MART regimen)",
+      "Step 3–4: Regular ICS/LABA + as-needed ICS/formoterol",
+      "Biologics (dupilumab, mepolizumab, omalizumab) for severe uncontrolled T2-high asthma",
+    ],
+    recs:[
+      {cls:"Evidence A",text:"As-needed ICS/formoterol reduces exacerbations vs SABA in mild asthma"},
+      {cls:"Evidence A",text:"Biologics target T2-high endotypes for add-on therapy in severe asthma"},
+    ],
+    studies:["SYGMA-1"],
+  },
+  "Ischemic Stroke": {
+    synopsis:"Updated AIS guidelines expanding IV alteplase eligibility, establishing tenecteplase equivalence, and extending mechanical thrombectomy window to 24h with favorable imaging.",
+    keyPoints:[
+      "IV alteplase within 3h (Class I) and 3–4.5h (Class I for most patients) of symptom onset",
+      "Tenecteplase 0.25mg/kg (max 25mg): non-inferior to alteplase; single-bolus advantage",
+      "Mechanical thrombectomy for LVO up to 24h with favorable imaging (DAWN/DEFUSE-3)",
+      "Expanded thrombectomy: ASPECTS ≥3, larger cores now eligible (ESCAPE-NEXT criteria)",
+      "Pre-tPA BP: treat if >185/110; post-tPA: maintain <180/105 for 24h",
+    ],
+    recs:[
+      {cls:"Class I / LOE A",text:"IV alteplase within 3h for eligible patients"},
+      {cls:"Class I / LOE A",text:"Mechanical thrombectomy for LVO within 6h + favorable clinical/imaging"},
+      {cls:"Class I / LOE B-R",text:"Extend thrombectomy to 24h using DAWN or DEFUSE-3 criteria"},
+    ],
+    studies:["NINDS-tPA","DAWN"],
+  },
+  "Diabetes": {
+    synopsis:"Annual ADA update emphasizing individualized care, GLP-1 and SGLT2 inhibitor cardiovascular/renal benefits beyond glucose lowering, and continuous glucose monitoring integration.",
+    keyPoints:[
+      "A1c target individualized: <7% for most; <8% for frail/high hypoglycemia risk",
+      "GLP-1 agonists (semaglutide, liraglutide) first-line add-on for ASCVD or weight loss",
+      "SGLT2 inhibitors first-line for HFrEF or CKD regardless of glucose control",
+      "Screen for diabetic kidney disease: annual UACR + eGFR",
+      "Continuous glucose monitoring recommended for all T1DM and many T2DM on insulin",
+    ],
+    recs:[
+      {cls:"Grade A",text:"GLP-1 agonists for ASCVD risk reduction in T2DM with established CVD"},
+      {cls:"Grade A",text:"SGLT2 inhibitors for cardiorenal protection in T2DM with HF or CKD"},
+      {cls:"Grade B",text:"A1c <7% for most non-pregnant adults with T2DM"},
+    ],
+    studies:["ACCORD"],
+  },
+  "CPR": {
+    synopsis:"Comprehensive update to BLS/ACLS algorithms, post-cardiac arrest care, ROSC management, and integrated resuscitation science from the 2020 evidence review.",
+    keyPoints:[
+      "High-quality CPR: rate 100–120/min, depth ≥2 inches, full chest recoil, minimize interruptions",
+      "Epinephrine 1mg IV/IO q3–5 min for non-shockable rhythms (PEA/asystole): give early",
+      "For shockable rhythms (VF/pVT): defibrillate first, then CPR, then epinephrine after 2nd shock",
+      "Post-ROSC: targeted temperature management 32–36°C for comatose survivors",
+      "Bilaterally absent pupillary responses and absent N20 SSEP predict poor neurologic outcome",
+      "ECPR (extracorporeal CPR) for refractory cardiac arrest in appropriate candidates",
+    ],
+    recs:[
+      {cls:"Class I",text:"Immediate defibrillation for shockable rhythms; minimize pre-shock pause"},
+      {cls:"Class I",text:"Epinephrine 1mg IV/IO q3-5 min during cardiac arrest"},
+      {cls:"Class IIa",text:"Targeted temperature management (32–36°C) for post-cardiac arrest care"},
+    ],
+    studies:["STOP-BANG"],
+  },
+  "Clostridioides": {
+    synopsis:"Updated CDI guidelines establishing fidaxomicin as preferred initial therapy, bezlotoxumab for recurrence prevention, and FMT as highly effective treatment for recurrent disease.",
+    keyPoints:[
+      "Non-severe initial CDI: fidaxomicin 200mg BID × 10 days preferred over oral vancomycin",
+      "Severe CDI (WBC >15k or Cr >1.5): oral vancomycin 125mg QID × 10 days",
+      "Fulminant CDI: vancomycin 500mg QID oral/NG + metronidazole 500mg IV q8h",
+      "Bezlotoxumab adjunct for patients at high recurrence risk",
+      "FMT for recurrent CDI (≥2 episodes): cure rate >90%",
+    ],
+    recs:[
+      {cls:"Strong / High",text:"Fidaxomicin for non-severe, non-fulminant initial CDI"},
+      {cls:"Strong / Moderate",text:"FMT for recurrent CDI ≥2 episodes after standard antibiotics"},
+      {cls:"Conditional / Moderate",text:"Bezlotoxumab for high recurrence risk patients"},
+    ],
+    studies:["EXTEND"],
+  },
+};
+
+function getRichDetail(guide) {
+  const title = guide.title.toLowerCase();
+  const entry = Object.entries(RICH_DETAIL).find(([k]) => title.includes(k.toLowerCase()));
+  return entry ? entry[1] : null;
+}
+
+// ─── STYLES ──────────────────────────────────────────────────────────────────
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap');
@@ -114,12 +329,7 @@ const CSS = `
 }
 .kb2-root * { box-sizing:border-box; }
 .kb2-root a { color:inherit; text-decoration:none; }
-
-/* Top Nav Bar */
-.kb2-topnav {
-  height:44px;background:#040c18;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;margin-left:72px;
-}
+.kb2-topnav {height:44px;background:#040c18;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;margin-left:72px}
 .kb2-topnav-brand{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .kb2-topnav-logo{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--text-primary)}
 .kb2-topnav-sep{width:1px;height:18px;background:var(--border-bright)}
@@ -130,46 +340,23 @@ const CSS = `
 .kb2-topnav-btn:hover{border-color:var(--border-bright);color:var(--text-primary);background:var(--bg-card)}
 .kb2-topnav-btn.active{border-color:var(--accent-blue);background:#0a2040;color:var(--accent-blue)}
 .kb2-topnav-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#3b9eff,#9b6dff);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;cursor:pointer;border:1px solid var(--border-bright)}
-
-/* Vitals Bar */
-.kb2-vitals {
-  height:40px;background:#060f1c;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;padding:0 12px;gap:6px;overflow-x:auto;flex-shrink:0;margin-left:72px;
-}
+.kb2-vitals {height:40px;background:#060f1c;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:6px;overflow-x:auto;flex-shrink:0;margin-left:72px}
 .kb2-vitals::-webkit-scrollbar{display:none}
-.kb2-vit-item {
-  display:flex;align-items:center;gap:6px;background:var(--bg-card);
-  border:1px solid var(--border);border-radius:5px;padding:3px 9px;flex-shrink:0;
-  font-family:'JetBrains Mono',monospace;
-}
+.kb2-vit-item {display:flex;align-items:center;gap:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:5px;padding:3px 9px;flex-shrink:0;font-family:'JetBrains Mono',monospace}
 .kb2-vit-label{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
 .kb2-vit-val{font-size:12px;font-weight:600;color:var(--text-primary)}
 .kb2-vit-val.abn{color:var(--accent-coral);animation:glow-red2 2s infinite}
 @keyframes glow-red2{0%,100%{text-shadow:0 0 4px rgba(255,107,107,.4)}50%{text-shadow:0 0 10px rgba(255,107,107,.9)}}
 .kb2-vit-sep{width:1px;height:20px;background:var(--border);flex-shrink:0}
-.kb2-patient-chip {
-  display:flex;align-items:center;gap:8px;background:#0a1e35;
-  border:1px solid var(--border-bright);border-radius:5px;padding:3px 10px;font-size:11px;flex-shrink:0;
-}
+.kb2-patient-chip {display:flex;align-items:center;gap:8px;background:#0a1e35;border:1px solid var(--border-bright);border-radius:5px;padding:3px 10px;font-size:11px;flex-shrink:0}
 .kb2-patient-name{font-family:'Playfair Display',serif;font-size:12px;color:var(--text-primary)}
 .kb2-patient-mrn{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted)}
-
-/* Layout */
 .kb2-layout{display:flex;flex:1;overflow:hidden;margin-left:72px}
-
-/* Sidebar */
-.kb2-sidebar {
-  width:220px;flex-shrink:0;background:#060e1c;border-right:1px solid var(--border);
-  overflow-y:auto;padding:14px 0;
-}
+.kb2-sidebar {width:220px;flex-shrink:0;background:#060e1c;border-right:1px solid var(--border);overflow-y:auto;padding:14px 0}
 .kb2-sidebar::-webkit-scrollbar{width:4px}
 .kb2-sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 .kb2-sb-heading{font-size:9px;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-dim);padding:6px 14px 4px}
-.kb2-sb-item {
-  display:flex;align-items:center;justify-content:space-between;
-  padding:7px 14px;cursor:pointer;transition:background .15s;
-  border-left:2px solid transparent;font-size:12px;color:var(--text-secondary);
-}
+.kb2-sb-item {display:flex;align-items:center;justify-content:space-between;padding:7px 14px;cursor:pointer;transition:background .15s;border-left:2px solid transparent;font-size:12px;color:var(--text-secondary)}
 .kb2-sb-item:hover{background:var(--bg-card);color:var(--text-primary)}
 .kb2-sb-item.active{background:#0a2040;border-left-color:var(--accent-blue);color:var(--accent-blue);font-weight:500}
 .kb2-sb-icon{font-size:14px;margin-right:8px}
@@ -180,15 +367,9 @@ const CSS = `
 .kb2-badge.purple{background:#1a0d35;color:var(--accent-purple)}
 .kb2-badge.red{background:#2e0d0d;color:var(--accent-coral)}
 .kb2-badge.green{background:#0d2e20;color:var(--accent-green)}
-
-/* Main */
 .kb2-main{flex:1;overflow-y:auto;padding:20px 22px 120px;min-width:0}
-
-/* Section title */
 .kb2-section-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:600;color:var(--text-primary);margin-bottom:4px}
 .kb2-section-sub{font-size:11px;color:var(--text-muted);margin-bottom:16px}
-
-/* Cards Grid */
 .kb2-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:24px}
 .kb2-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;transition:all .2s;cursor:pointer;display:block}
 .kb2-card:hover{border-color:var(--border-bright);background:var(--bg-elevated);transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,.4)}
@@ -199,13 +380,7 @@ const CSS = `
 .kb2-card-desc{font-size:11px;color:var(--text-secondary);line-height:1.5;margin-bottom:10px}
 .kb2-card-link{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--accent-blue);font-weight:500}
 .kb2-card-link:hover{color:var(--accent-cyan)}
-
-/* Search Hero */
-.kb2-search-hero {
-  background:linear-gradient(135deg,#081628 0%,#0a1e38 50%,#060f1e 100%);
-  border:1px solid var(--border-bright);border-radius:12px;
-  padding:24px 28px 20px;margin-bottom:22px;position:relative;overflow:hidden;
-}
+.kb2-search-hero {background:linear-gradient(135deg,#081628 0%,#0a1e38 50%,#060f1e 100%);border:1px solid var(--border-bright);border-radius:12px;padding:24px 28px 20px;margin-bottom:22px;position:relative;overflow:hidden}
 .kb2-search-hero::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(59,158,255,.08) 0%,transparent 70%);pointer-events:none}
 .kb2-search-hero-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--text-primary);margin-bottom:4px}
 .kb2-search-hero-sub{font-size:12px;color:var(--text-muted);margin-bottom:16px}
@@ -232,8 +407,6 @@ const CSS = `
 .tag-disease2{background:#1a1a40;color:#9b6dff}
 .tag-guide2{background:#1a2840;color:#3b9eff}
 .tag-ed2{background:#401a1a;color:#ff6b6b}
-
-/* Drug Section */
 .kb2-drug-search-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:20px}
 .kb2-drug-search-row{display:flex;gap:8px;margin-bottom:10px}
 .kb2-drug-input{flex:1;height:38px;background:#0b1e36;border:1.5px solid var(--border);border-radius:8px;padding:0 14px;color:var(--text-primary);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s}
@@ -257,15 +430,14 @@ const CSS = `
 .kb2-drug-qr-links{display:flex;gap:8px;margin-top:8px}
 .kb2-dql{font-size:10px;color:var(--accent-blue);text-decoration:none;background:var(--bg-elevated);border:1px solid var(--border);padding:2px 8px;border-radius:4px;transition:color .15s}
 .kb2-dql:hover{color:var(--accent-cyan);border-color:var(--accent-cyan)}
-
-/* Guidelines */
 .kb2-guide-cat-header{display:flex;align-items:center;gap:10px;padding:10px 0 8px;border-bottom:1px solid var(--border);margin-bottom:12px}
 .kb2-guide-cat-icon{font-size:20px}
 .kb2-guide-cat-title{font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:var(--text-primary)}
 .kb2-guide-cat-count{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);background:var(--bg-elevated);padding:2px 7px;border-radius:10px}
-.kb2-guide-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;margin-bottom:24px}
-.kb2-guide-card{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:12px 14px;text-decoration:none;display:block;transition:all .2s}
+.kb2-guide-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-bottom:24px}
+.kb2-guide-card{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:block;transition:all .2s;cursor:pointer}
 .kb2-guide-card:hover{border-color:var(--accent-blue);background:var(--bg-elevated);transform:translateY(-1px)}
+.kb2-guide-card.selected{border-color:var(--accent-blue);background:#0a2040}
 .kb2-guide-org{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--accent-gold);font-family:'JetBrains Mono',monospace}
 .kb2-guide-title{font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:3px;line-height:1.4}
 .kb2-guide-desc{font-size:10px;color:var(--text-muted);line-height:1.5;margin-bottom:6px}
@@ -273,8 +445,6 @@ const CSS = `
 .kb2-guide-year{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim)}
 .kb2-guide-pill{font-size:9px;padding:1px 6px;border-radius:3px;font-weight:600;text-transform:uppercase}
 .kb2-guide-ext{margin-left:auto;font-size:10px;color:var(--accent-blue);display:flex;align-items:center;gap:3px}
-
-/* Diseases */
 .kb2-alpha-nav{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:14px}
 .kb2-alpha-btn{width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:var(--bg-card);border:1px solid var(--border);border-radius:5px;font-size:11px;font-weight:600;color:var(--text-muted);cursor:pointer;transition:all .15s;font-family:'JetBrains Mono',monospace}
 .kb2-alpha-btn:hover{border-color:var(--accent-purple);color:var(--accent-purple)}
@@ -297,8 +467,6 @@ const CSS = `
 .kb2-dis-link.guide:hover{background:#2e2010}
 .kb2-dis-link.pubmed{color:#3dffa0}
 .kb2-dis-link.pubmed:hover{background:#0d2e20}
-
-/* ED */
 .kb2-ed-hero{background:linear-gradient(135deg,#1a0505 0%,#2e0d0d 50%,#200505 100%);border:1px solid rgba(255,107,107,.2);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:16px}
 .kb2-ed-hero-icon{font-size:36px}
 .kb2-ed-hero-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--text-primary)}
@@ -316,8 +484,6 @@ const CSS = `
 .kb2-ed-card-desc{font-size:11px;color:var(--text-secondary);line-height:1.4;margin-bottom:6px}
 .kb2-ed-card-tags{display:flex;gap:5px;flex-wrap:wrap}
 .kb2-ed-card-tag{font-size:9px;padding:1px 6px;border-radius:3px;background:var(--bg-elevated);color:var(--text-muted);font-weight:500}
-
-/* AI Panel */
 .kb2-ai-panel{width:280px;flex-shrink:0;background:#060e1c;border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
 .kb2-ai-header{padding:12px 14px 10px;border-bottom:1px solid var(--border);background:#040d1a;flex-shrink:0}
 .kb2-ai-header-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -349,8 +515,6 @@ const CSS = `
 .kb2-ai-input::placeholder{color:var(--text-dim)}
 .kb2-ai-send-btn{width:36px;height:36px;background:#062020;border:1px solid rgba(0,229,192,.3);border-radius:8px;color:var(--accent-teal);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s}
 .kb2-ai-send-btn:hover{background:#0a3030;border-color:var(--accent-teal)}
-
-/* Bottom Nav */
 .kb2-bottom-nav{background:#040d1a;border-top:1px solid var(--border);flex-shrink:0;margin-left:72px}
 .kb2-bnav-row{display:flex;gap:2px;padding:6px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap}
 .kb2-bnav-row:last-child{border-bottom:none}
@@ -360,10 +524,15 @@ const CSS = `
 .kb2-bnav-tab.active-cyan{background:#052535;color:var(--accent-cyan);font-weight:600}
 .kb2-bnav-tab.active-purple{background:#1a0d35;color:var(--accent-purple);font-weight:600}
 .kb2-bnav-tab.active-coral{background:#2e0d0d;color:var(--accent-coral);font-weight:600}
-
 mark{background:rgba(59,158,255,.25);color:#00d4ff;border-radius:2px;padding:0 2px}
 .kb2-no-results{text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13px}
 .kb2-no-results-icon{font-size:36px;margin-bottom:8px}
+
+/* ── NEW: Detail Panel Styles ── */
+.gl-detail-panel{animation:gl-slide-in .25s ease forwards}
+@keyframes gl-slide-in{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
+.gl-tab-btn{transition:all .15s;cursor:pointer;border:none;background:transparent;font-family:'DM Sans',sans-serif}
+.gl-tab-btn:hover{color:var(--text-primary)!important}
 `;
 
 function highlight(text, q) {
@@ -372,7 +541,7 @@ function highlight(text, q) {
   return text.replace(re, '<mark>$1</mark>');
 }
 
-// ─── SUB COMPONENTS ──────────────────────────────────────────────────────────
+// ─── EXISTING SUB-COMPONENTS ──────────────────────────────────────────────────
 
 function TopNavBar({ user, tab, setTab }) {
   const initials = user?.full_name ? user.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : 'DR';
@@ -385,7 +554,7 @@ function TopNavBar({ user, tab, setTab }) {
       </div>
       <div className="kb2-topnav-spacer"/>
       <div className="kb2-topnav-btns">
-        <button className={`kb2-topnav-btn${tab==='search'||tab==='drugs'||tab==='guidelines'||tab==='diseases'||tab==='ed' ? ' active':''}`} onClick={()=>setTab('search')}>🏥 Knowledge Base</button>
+        <button className={`kb2-topnav-btn${['search','drugs','guidelines','diseases','ed'].includes(tab)?' active':''}`} onClick={()=>setTab('search')}>🏥 Knowledge Base</button>
         <a className="kb2-topnav-btn" href="/NoteEditorTabs" target="_blank" rel="noopener noreferrer">📝 Clinical Notes</a>
         <a className="kb2-topnav-btn" href="/Dashboard" target="_blank" rel="noopener noreferrer">📊 Dashboard</a>
       </div>
@@ -421,13 +590,11 @@ function SearchTab() {
   const typeIcon = {drug:'💊',disease:'🩺',guide:'📋',ed:'🚨'};
   const tagClass = {drug:'tag-drug2',disease:'tag-disease2',guide:'tag-guide2',ed:'tag-ed2'};
   const typeLabel = {drug:'Drug',disease:'Disease',guide:'Guideline',ed:'ED Resource'};
-
   const results = query.trim() ? SEARCH_INDEX.filter(item => {
     const matchType = filter === 'all' || item.type === filter;
     const q = query.toLowerCase();
     return matchType && (item.name.toLowerCase().includes(q) || item.desc.toLowerCase().includes(q));
   }) : [];
-
   const QUICK_ACCESS = [
     {icon:'📖',title:'UpToDate',abbr:'WOLTERS KLUWER',desc:'Evidence-based clinical decision support with synthesised recommendations for thousands of medical topics.',url:'https://www.uptodate.com',bg:'#0a2040',link:'Open UpToDate'},
     {icon:'🔬',title:'DynaMed',abbr:'EBSCO HEALTH',desc:'Point-of-care clinical reference tool with systematic evidence summaries and graded recommendations.',url:'https://www.dynamed.com',bg:'#052535',link:'Open DynaMed'},
@@ -436,7 +603,6 @@ function SearchTab() {
     {icon:'🌐',title:'Medscape Reference',abbr:'WEBMD HEALTH',desc:'Drug monographs, disease references, and clinical procedures with peer-reviewed content.',url:'https://reference.medscape.com',bg:'#1a1a05',link:'Open Medscape'},
     {icon:'🏆',title:'Cochrane Library',abbr:'COCHRANE COLLABORATION',desc:'Gold standard systematic reviews and meta-analyses. The highest level of evidence in clinical medicine.',url:'https://www.cochranelibrary.com',bg:'#1a0505',link:'Search Reviews'},
   ];
-
   return (
     <div>
       <div className="kb2-search-hero">
@@ -450,9 +616,7 @@ function SearchTab() {
           <button className="kb2-search-btn">Search</button>
         </div>
         <div className="kb2-filter-chips">
-          {filters.map(f=>(
-            <button key={f} className={`kb2-filter-chip${filter===f?' active':''}`} onClick={()=>setFilter(f)}>{f==='all'?'All':typeIcon[f]+' '+f.charAt(0).toUpperCase()+f.slice(1)+'s'}</button>
-          ))}
+          {filters.map(f=>(<button key={f} className={`kb2-filter-chip${filter===f?' active':''}`} onClick={()=>setFilter(f)}>{f==='all'?'All':typeIcon[f]+' '+f.charAt(0).toUpperCase()+f.slice(1)+'s'}</button>))}
         </div>
         {query.trim() && (
           <div className="kb2-search-results">
@@ -476,10 +640,7 @@ function SearchTab() {
       <div className="kb2-cards-grid">
         {QUICK_ACCESS.map((c,i)=>(
           <a key={i} className="kb2-card" href={c.url} target="_blank" rel="noopener noreferrer">
-            <div className="kb2-card-header">
-              <div className="kb2-card-icon" style={{background:c.bg}}>{c.icon}</div>
-              <div><div className="kb2-card-title">{c.title}</div><div className="kb2-card-abbr">{c.abbr}</div></div>
-            </div>
+            <div className="kb2-card-header"><div className="kb2-card-icon" style={{background:c.bg}}>{c.icon}</div><div><div className="kb2-card-title">{c.title}</div><div className="kb2-card-abbr">{c.abbr}</div></div></div>
             <div className="kb2-card-desc">{c.desc}</div>
             <div className="kb2-card-link">{c.link} ↗</div>
           </a>
@@ -493,13 +654,11 @@ function DrugsTab() {
   const [search, setSearch] = useState('');
   const [cat, setCat] = useState('all');
   const cats = ['all','cardiac','abx','analgesic','anticoag','neuro','resp','endo','em'];
-
   const filtered = DRUGS_QR.filter(d => {
     const matchCat = cat === 'all' || d.cat.includes(cat);
     const q = search.toLowerCase();
     return matchCat && (!q || d.name.toLowerCase().includes(q) || d.cls.toLowerCase().includes(q));
   });
-
   const DB_LINKS = [
     {icon:'💊',title:'Drugs.com',abbr:'LARGEST DRUG DATABASE',desc:'Consumer and professional drug information, interactions, side effects, and dosage guides.',url:'https://www.drugs.com',bg:'#052535',link:'Search Drugs.com'},
     {icon:'📱',title:'Epocrates',abbr:'athenahealth',desc:'Point-of-care drug reference with real-time drug interactions, dosing calculators, and clinical tools.',url:'https://www.epocrates.com',bg:'#0a2040',link:'Open Epocrates'},
@@ -508,7 +667,6 @@ function DrugsTab() {
     {icon:'📄',title:'DailyMed',abbr:'NLM / NIH',desc:'Official FDA labels (package inserts) with prescribing information as submitted to and approved by the FDA.',url:'https://dailymed.nlm.nih.gov',bg:'#0d2520',link:'Search DailyMed'},
     {icon:'⚠️',title:'CredibleMeds / AZCERT',abbr:'QT DRUG SAFETY',desc:'Comprehensive QT drug risk classifications and drug-induced arrhythmia risk database for clinical use.',url:'https://www.crediblemeds.org',bg:'#1a0505',link:'Check QT Risk'},
   ];
-
   return (
     <div>
       <div className="kb2-section-title">💊 Drug Information</div>
@@ -519,19 +677,14 @@ function DrugsTab() {
           <button className="kb2-drug-btn">Search Drugs</button>
         </div>
         <div className="kb2-drug-cat-row">
-          {cats.map(c=>(
-            <button key={c} className={`kb2-drug-cat${cat===c?' active':''}`} onClick={()=>setCat(c)}>{c==='all'?'All Classes':c.charAt(0).toUpperCase()+c.slice(1)}</button>
-          ))}
+          {cats.map(c=>(<button key={c} className={`kb2-drug-cat${cat===c?' active':''}`} onClick={()=>setCat(c)}>{c==='all'?'All Classes':c.charAt(0).toUpperCase()+c.slice(1)}</button>))}
         </div>
       </div>
       <div className="kb2-section-title" style={{fontSize:14,marginBottom:8}}>Drug Reference Databases</div>
       <div className="kb2-cards-grid" style={{marginBottom:20}}>
         {DB_LINKS.map((c,i)=>(
           <a key={i} className="kb2-card" href={c.url} target="_blank" rel="noopener noreferrer">
-            <div className="kb2-card-header">
-              <div className="kb2-card-icon" style={{background:c.bg}}>{c.icon}</div>
-              <div><div className="kb2-card-title">{c.title}</div><div className="kb2-card-abbr">{c.abbr}</div></div>
-            </div>
+            <div className="kb2-card-header"><div className="kb2-card-icon" style={{background:c.bg}}>{c.icon}</div><div><div className="kb2-card-title">{c.title}</div><div className="kb2-card-abbr">{c.abbr}</div></div></div>
             <div className="kb2-card-desc">{c.desc}</div>
             <div className="kb2-card-link">{c.link} ↗</div>
           </a>
@@ -547,21 +700,217 @@ function DrugsTab() {
             <span className="kb2-drug-qr-class">{d.cls}</span>
           </div>
           <div className="kb2-drug-qr-grid">
-            {d.fields.map((f,j)=>(
-              <div key={j} className="kb2-drug-qr-field"><label>{f.label}</label><span>{f.val}</span></div>
-            ))}
+            {d.fields.map((f,j)=>(<div key={j} className="kb2-drug-qr-field"><label>{f.label}</label><span>{f.val}</span></div>))}
           </div>
           <div className="kb2-drug-qr-links">
-            {d.links.map((l,j)=>(
-              <a key={j} className="kb2-dql" href={l.url} target="_blank" rel="noopener noreferrer">{l.label}</a>
-            ))}
+            {d.links.map((l,j)=>(<a key={j} className="kb2-dql" href={l.url} target="_blank" rel="noopener noreferrer">{l.label}</a>))}
           </div>
         </div>
       ))}
-      {filtered.length === 0 && <div className="kb2-no-results"><div className="kb2-no-results-icon">💊</div>No drugs match your search</div>}
+      {filtered.length===0 && <div className="kb2-no-results"><div className="kb2-no-results-icon">💊</div>No drugs match your search</div>}
     </div>
   );
 }
+
+// ─── NEW: GUIDELINE DETAIL COMPONENTS ────────────────────────────────────────
+
+function GuidelineAIPanel({ guide, rich }) {
+  const [mode, setMode] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [summary, setSummary] = useState(null);
+  const [error, setError] = useState(null);
+
+  const generate = async (m) => {
+    setMode(m); setLoading(true); setSummary(null); setError(null);
+    const contextLines = rich
+      ? `Key Points:\n${rich.keyPoints.join('\n')}\nRecommendations:\n${rich.recs.map(r=>`${r.cls}: ${r.text}`).join('\n')}`
+      : `Description: ${guide.desc}`;
+    const prompt = m === 'clinician'
+      ? `You are a senior clinician. Summarize this clinical guideline in 6 concise bullet points for clinical use. Use precise medical language. Lead each bullet with an appropriate emoji (🔴 critical, 🟡 moderate, 🟢 supportive). No markdown formatting.\n\nGuideline: "${guide.title}" (${guide.org}, ${guide.year})\n${contextLines}`
+      : `You are a patient educator. Explain this medical guideline in plain, jargon-free language a patient can understand. Write 5 short sentences. Start by explaining what the guideline is about, then what it means for patients.\n\nGuideline: "${guide.title}" (${guide.org}, ${guide.year})\n${contextLines}`;
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({ prompt, add_context_from_internet: false });
+      setSummary(typeof res === 'string' ? res : JSON.stringify(res));
+    } catch(e) {
+      setError('Summary generation failed — please try again.');
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:10}}>
+      <div style={{display:'flex',gap:8}}>
+        {[['clinician','🩺 Clinician Summary'],['patient','👤 Patient Explanation']].map(([m,label])=>(
+          <button key={m} className="gl-tab-btn" onClick={()=>generate(m)}
+            style={{flex:1,padding:'9px',borderRadius:9,border:`1px solid ${!loading&&summary&&mode===m?'rgba(0,229,192,.5)':'var(--border-bright)'}`,background:!loading&&summary&&mode===m?'rgba(0,229,192,.08)':'var(--bg-elevated)',color:loading&&mode===m?'var(--accent-purple)':!loading&&summary&&mode===m?'var(--accent-teal)':'var(--text-secondary)',fontWeight:600,fontSize:12,display:'flex',alignItems:'center',justifyContent:'center',gap:6,transition:'all .2s'}}>
+            {loading&&mode===m?<><div style={{width:11,height:11,border:'2px solid var(--accent-purple)',borderTopColor:'transparent',borderRadius:'50%',animation:'bounce2 1s linear infinite'}}/> Generating…</>:label}
+          </button>
+        ))}
+      </div>
+      {!summary&&!loading&&(
+        <div style={{padding:'24px',textAlign:'center',color:'var(--text-muted)',border:'1px dashed var(--border)',borderRadius:10,fontSize:12}}>
+          <div style={{fontSize:28,marginBottom:8}}>🤖</div>
+          <div>Select a mode above — AI will generate a tailored summary using the guideline content</div>
+          <div style={{fontSize:10,color:'var(--text-dim)',marginTop:6}}>Powered by base44 AI · {guide.org} {guide.year}</div>
+        </div>
+      )}
+      {error&&<div style={{padding:'10px 14px',background:'rgba(255,107,107,.1)',border:'1px solid rgba(255,107,107,.3)',borderRadius:8,color:'var(--accent-coral)',fontSize:12}}>{error}</div>}
+      {summary&&(
+        <div style={{background:mode==='patient'?'rgba(0,229,192,.05)':'rgba(155,109,255,.06)',border:`1px solid ${mode==='patient'?'rgba(0,229,192,.25)':'rgba(155,109,255,.3)'}`,borderRadius:10,padding:'14px 16px',animation:'fadeUp2 .3s ease'}}>
+          <div style={{fontSize:9,fontWeight:700,letterSpacing:'.8px',textTransform:'uppercase',color:mode==='patient'?'var(--accent-teal)':'var(--accent-purple)',marginBottom:8}}>
+            {mode==='patient'?'👤 PATIENT-FRIENDLY EXPLANATION':'🩺 CLINICIAN SUMMARY'} · AI Generated
+          </div>
+          <div style={{fontSize:12.5,color:'var(--text-secondary)',lineHeight:1.85,whiteSpace:'pre-line'}}>{summary}</div>
+          <div style={{marginTop:10,fontSize:10,color:'var(--text-dim)',fontStyle:'italic'}}>⚠ AI-generated for reference only — always verify against the full published guideline.</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GuidelineDetailPanel({ guide, onClose }) {
+  const [tab, setTab] = useState('overview');
+  const rich = getRichDetail(guide);
+  const tabs = rich
+    ? [{id:'overview',icon:'📋',label:'Overview'},{id:'recs',icon:'🎯',label:'Key Recs'},{id:'studies',icon:'🔬',label:'Evidence'},{id:'ai',icon:'🤖',label:'AI Summary'}]
+    : [{id:'overview',icon:'📋',label:'Overview'},{id:'ai',icon:'🤖',label:'AI Summary'},{id:'links',icon:'🔗',label:'Links & Resources'}];
+
+  return (
+    <div className="gl-detail-panel" style={{display:'flex',flexDirection:'column',height:'100%',gap:10}}>
+      {/* Header */}
+      <div style={{background:`linear-gradient(135deg,rgba(59,158,255,.1),rgba(8,22,40,.9))`,border:'1px solid rgba(59,158,255,.25)',borderRadius:10,padding:'14px 16px',position:'relative',overflow:'hidden',flexShrink:0}}>
+        <div style={{position:'absolute',top:-14,right:-8,fontSize:60,opacity:.05}}>📋</div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{display:'flex',gap:6,marginBottom:5,flexWrap:'wrap',alignItems:'center'}}>
+              <span style={{fontSize:9,fontWeight:700,color:'var(--accent-gold)',fontFamily:'JetBrains Mono,monospace',textTransform:'uppercase',letterSpacing:'.6px'}}>{guide.org}</span>
+              <span style={{fontSize:9,color:'var(--text-dim)',fontFamily:'JetBrains Mono,monospace',background:'var(--bg-elevated)',padding:'1px 6px',borderRadius:3}}>{guide.year}</span>
+              {rich && <span style={{fontSize:9,padding:'1px 6px',borderRadius:10,background:'rgba(0,229,192,.12)',border:'1px solid rgba(0,229,192,.3)',color:'var(--accent-teal)',fontWeight:600}}>✦ Rich Detail</span>}
+            </div>
+            <div style={{fontFamily:'Playfair Display,serif',fontSize:14,fontWeight:600,color:'var(--text-primary)',lineHeight:1.4}}>{guide.title}</div>
+          </div>
+          <button onClick={onClose} style={{background:'rgba(255,107,107,.1)',border:'1px solid rgba(255,107,107,.3)',color:'var(--accent-coral)',padding:'3px 9px',borderRadius:6,cursor:'pointer',fontSize:11,fontWeight:600,fontFamily:'DM Sans,sans-serif',flexShrink:0}}>✕</button>
+        </div>
+        <div style={{display:'flex',gap:4,marginTop:8,flexWrap:'wrap'}}>
+          <span style={guide.pillStyle||{background:'#0a2040',color:'var(--accent-blue)',fontSize:9,padding:'1px 7px',borderRadius:3,fontWeight:600,textTransform:'uppercase'}} className="kb2-guide-pill">{guide.pill}</span>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{display:'flex',gap:4,background:'var(--bg-elevated)',borderRadius:8,padding:'4px',flexShrink:0}}>
+        {tabs.map(t=>(
+          <button key={t.id} className="gl-tab-btn" onClick={()=>setTab(t.id)}
+            style={{flex:1,padding:'6px',borderRadius:6,border:`1px solid ${tab===t.id?'rgba(59,158,255,.5)':'transparent'}`,background:tab===t.id?'#0a2040':'transparent',color:tab===t.id?'var(--accent-blue)':'var(--text-muted)',fontSize:11,fontWeight:tab===t.id?600:400,textAlign:'center'}}>
+            {t.icon} {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',gap:10}}>
+
+        {tab==='overview' && (
+          <div style={{animation:'fadeUp2 .25s ease',display:'flex',flexDirection:'column',gap:10}}>
+            <div style={{padding:'13px 15px',background:'rgba(59,158,255,.06)',border:'1px solid rgba(59,158,255,.2)',borderRadius:9}}>
+              <div style={{fontSize:9,fontWeight:700,color:'var(--accent-blue)',textTransform:'uppercase',letterSpacing:1.5,marginBottom:7}}>SYNOPSIS</div>
+              <div style={{fontSize:13,color:'var(--text-primary)',lineHeight:1.8}}>{rich?.synopsis || guide.desc}</div>
+            </div>
+            {rich?.keyPoints && <>
+              <div style={{fontSize:9,fontWeight:700,color:'var(--accent-teal)',textTransform:'uppercase',letterSpacing:1.5}}>KEY POINTS</div>
+              {rich.keyPoints.map((pt,i)=>(
+                <div key={i} style={{display:'flex',gap:10,padding:'9px 12px',background:'var(--bg-elevated)',border:'1px solid var(--border)',borderRadius:8}}>
+                  <span style={{fontFamily:'JetBrains Mono,monospace',fontSize:9,fontWeight:700,color:'var(--accent-gold)',flexShrink:0,marginTop:2}}>{String(i+1).padStart(2,'0')}</span>
+                  <span style={{fontSize:12.5,color:'var(--text-secondary)',lineHeight:1.65}}>{pt}</span>
+                </div>
+              ))}
+            </>}
+            <a href={guide.url} target="_blank" rel="noopener noreferrer" style={{display:'flex',gap:8,padding:'10px 13px',background:'rgba(0,212,255,.05)',border:'1px solid rgba(0,212,255,.15)',borderRadius:8,alignItems:'center',textDecoration:'none'}}>
+              <span style={{color:'var(--accent-cyan)',fontSize:14}}>🔗</span>
+              <div>
+                <div style={{fontSize:11,fontWeight:600,color:'var(--accent-cyan)'}}>Open Full Guideline — {guide.org}</div>
+                <div style={{fontSize:9,color:'var(--text-dim)',fontFamily:'JetBrains Mono,monospace',marginTop:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',maxWidth:320}}>{guide.url}</div>
+              </div>
+              <span style={{marginLeft:'auto',fontSize:11,color:'var(--accent-cyan)'}}>↗</span>
+            </a>
+          </div>
+        )}
+
+        {tab==='recs' && rich?.recs && (
+          <div style={{animation:'fadeUp2 .25s ease',display:'flex',flexDirection:'column',gap:8}}>
+            <div style={{fontSize:11,color:'var(--text-muted)',marginBottom:2}}>Formal recommendations from <strong style={{color:'var(--text-primary)'}}>{guide.org}</strong>:</div>
+            {rich.recs.map((r,i)=>{
+              const isHigh = /Class I |^A$|Strong|Grade A/i.test(r.cls);
+              const isMid  = /IIa|^B|Conditional|Moderate/i.test(r.cls);
+              const c = isHigh?'var(--accent-green)':isMid?'var(--accent-gold)':'var(--accent-blue)';
+              return (
+                <div key={i} style={{padding:'12px 15px',borderRadius:10,background:isHigh?'rgba(61,255,160,.06)':isMid?'rgba(245,200,66,.06)':'rgba(59,158,255,.06)',border:`1px solid ${isHigh?'rgba(61,255,160,.2)':isMid?'rgba(245,200,66,.2)':'rgba(59,158,255,.2)'}`}}>
+                  <div style={{fontSize:9,fontWeight:700,color:c,textTransform:'uppercase',letterSpacing:1,marginBottom:6,display:'flex',alignItems:'center',gap:6}}>
+                    <span style={{padding:'1px 7px',borderRadius:10,background:`${c}18`,border:`1px solid ${c}44`}}>{r.cls}</span>
+                  </div>
+                  <div style={{fontSize:13,color:'var(--text-primary)',lineHeight:1.65,fontWeight:500}}>{r.text}</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {tab==='studies' && rich?.studies && (
+          <div style={{animation:'fadeUp2 .25s ease',display:'flex',flexDirection:'column',gap:8}}>
+            <div style={{fontSize:11,color:'var(--text-muted)',marginBottom:2}}>Landmark evidence supporting this guideline:</div>
+            {rich.studies.length === 0 && (
+              <div style={{padding:'20px',textAlign:'center',color:'var(--text-muted)',fontSize:12,border:'1px dashed var(--border)',borderRadius:8}}>No linked studies — search PubMed for supporting evidence</div>
+            )}
+            {rich.studies.map(sid=>{
+              const st = STUDIES_DB[sid];
+              if (!st) return <div key={sid} style={{padding:'8px 12px',background:'var(--bg-elevated)',border:'1px solid var(--border)',borderRadius:7,fontSize:11,color:'var(--text-muted)',fontStyle:'italic'}}>{sid}</div>;
+              return (
+                <div key={sid} style={{background:'rgba(61,255,160,.04)',border:'1px solid rgba(61,255,160,.18)',borderRadius:10,padding:'12px 14px'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:6,gap:8}}>
+                    <div style={{fontFamily:'Playfair Display,serif',fontStyle:'italic',fontSize:13,fontWeight:700,color:'var(--text-primary)',flex:1}}>{st.title}</div>
+                    <span style={{fontSize:9,color:'var(--accent-green)',background:'rgba(61,255,160,.12)',padding:'2px 7px',borderRadius:4,fontFamily:'JetBrains Mono,monospace',flexShrink:0}}>{st.journal} {st.year}</span>
+                  </div>
+                  <div style={{display:'flex',gap:6,alignItems:'flex-start'}}>
+                    <span style={{color:'var(--accent-green)',fontSize:12,flexShrink:0,marginTop:1}}>▸</span>
+                    <div style={{fontSize:12,color:'var(--text-secondary)',lineHeight:1.65}}>{st.finding}</div>
+                  </div>
+                </div>
+              );
+            })}
+            <a href={`https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(guide.title.split(':')[0])}`} target="_blank" rel="noopener noreferrer"
+              style={{display:'flex',alignItems:'center',gap:6,padding:'8px 12px',background:'rgba(61,255,160,.06)',border:'1px solid rgba(61,255,160,.2)',borderRadius:8,fontSize:11,fontWeight:600,color:'var(--accent-green)',textDecoration:'none'}}>
+              📚 Search PubMed for more evidence ↗
+            </a>
+          </div>
+        )}
+
+        {tab==='ai' && <GuidelineAIPanel guide={guide} rich={rich}/>}
+
+        {tab==='links' && (
+          <div style={{animation:'fadeUp2 .25s ease',display:'flex',flexDirection:'column',gap:8}}>
+            <div style={{fontSize:11,color:'var(--text-muted)',marginBottom:2}}>External resources for this guideline:</div>
+            {[
+              {label:`Open Full Guideline — ${guide.org}`,desc:'Official source document',url:guide.url,color:'var(--accent-blue)'},
+              {label:'Search UpToDate',desc:`${guide.title.split(':')[0]} — evidence-based review`,url:`https://www.uptodate.com/contents/search?search=${encodeURIComponent(guide.title.split(':')[0])}`,color:'var(--accent-cyan)'},
+              {label:'Search PubMed',desc:'Supporting literature and landmark trials',url:`https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(guide.title.split(':')[0])}`,color:'var(--accent-green)'},
+              {label:'Search MDCalc',desc:'Related clinical calculators and scoring tools',url:`https://www.mdcalc.com/search#?terms=${encodeURIComponent(guide.title.split(' ').slice(0,3).join(' '))}`,color:'var(--accent-purple)'},
+            ].map((l,i)=>(
+              <a key={i} href={l.url} target="_blank" rel="noopener noreferrer"
+                style={{display:'flex',gap:10,padding:'11px 14px',background:'var(--bg-elevated)',border:`1px solid ${l.color}22`,borderRadius:8,textDecoration:'none',transition:'border-color .15s'}}>
+                <span style={{color:l.color,fontSize:14,marginTop:1}}>🔗</span>
+                <div>
+                  <div style={{fontSize:12,fontWeight:600,color:l.color,marginBottom:2}}>{l.label}</div>
+                  <div style={{fontSize:10,color:'var(--text-muted)'}}>{l.desc}</div>
+                </div>
+                <span style={{marginLeft:'auto',color:l.color,alignSelf:'center'}}>↗</span>
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── GUIDELINES DATA ─────────────────────────────────────────────────────────
 
 const GUIDELINES_DATA = {
   Cardiology: {
@@ -571,12 +920,9 @@ const GUIDELINES_DATA = {
       {org:'AHA / ACC / HRS',title:'2023 ACC/AHA/ACEP Guideline: Management of Atrial Fibrillation',desc:'Updated AF management including rhythm vs rate control, anticoagulation decisions, and ablation indications.',year:'2023',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.ahajournals.org/doi/10.1161/CIR.0000000000001123'},
       {org:'ACC / AHA',title:'2022 AHA/ACC Guideline for Coronary Artery Disease',desc:'Evidence-based recommendations for stable and unstable CAD, revascularisation, and secondary prevention.',year:'2023',pill:'Focused Update',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.ahajournals.org/doi/10.1161/CIR.0000000000001063'},
       {org:'AHA / ACC / HFSA',title:'2022 AHA/ACC/HFSA Guideline for Heart Failure',desc:'Comprehensive HF management covering HFrEF, HFmrEF, HFpEF, device therapy, and hospitalisation management.',year:'2022',pill:'New',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.ahajournals.org/doi/10.1161/CIR.0000000000001172'},
+      {org:'ACC / AHA',title:'2022 AHA/ACC/HFSA Guideline for STEMI Management',desc:'Primary PCI, door-to-balloon times, antithrombotic therapy, complete revascularisation, and secondary prevention.',year:'2022',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.ahajournals.org/doi/10.1161/CIR.0000000000001115'},
       {org:'ESC',title:'ESC Clinical Practice Guidelines Hub',desc:'European Society of Cardiology guidelines library covering ACS, HF, arrhythmia, prevention, and more.',year:'2024',pill:'Active',pillStyle:{background:'#0d2520',color:'#3dffa0'},url:'https://www.escardio.org/Guidelines/Clinical-Practice-Guidelines'},
       {org:'ACC / AHA',title:'2017 ACC/AHA Guideline for High Blood Pressure',desc:'Hypertension definition, classification (≥130/80 mmHg), and treatment thresholds with cardiovascular risk stratification.',year:'2017',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.ahajournals.org/doi/10.1161/HYP.0000000000000065'},
-      {org:'ESC',title:'2022 ESC Guidelines for Ventricular Arrhythmias & SCD Prevention',desc:'Management of patients at risk of SCD including ICD indications, antiarrhythmic therapy, and genetic cardiomyopathies.',year:'2022',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.escardio.org/Guidelines/Clinical-Practice-Guidelines/Ventricular-Arrhythmias-and-the-Prevention-of-Sudden-Cardiac-Death'},
-      {org:'ACC / AHA',title:'2022 AHA/ACC Guideline on Valvular Heart Disease',desc:'Comprehensive evaluation and management of aortic, mitral, tricuspid, and pulmonic valve disease including TAVR/SAVR decision-making.',year:'2021',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.ahajournals.org/doi/10.1161/CIR.0000000000001036'},
-      {org:'ESC / EAS',title:'2019 ESC/EAS Guidelines for Dyslipidaemias',desc:'LDL targets by cardiovascular risk category, statin therapy, ezetimibe, and PCSK9 inhibitor indications.',year:'2019',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.escardio.org/Guidelines/Clinical-Practice-Guidelines/Dyslipidaemias-Management-of'},
-      {org:'ACC / AHA',title:'2023 AHA/ACC Guideline for Peripheral Artery Disease',desc:'PAD diagnosis, ankle-brachial index, revascularisation, antiplatelet therapy, and risk factor management.',year:'2024',pill:'New',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.ahajournals.org/doi/10.1161/CIR.0000000000001123'},
     ]
   },
   'Infectious Diseases': {
@@ -586,11 +932,8 @@ const GUIDELINES_DATA = {
       {org:'IDSA / ATS',title:'IDSA/ATS Community-Acquired Pneumonia Guidelines',desc:'CAP diagnosis, severity assessment (PSI/CURB-65), empiric antibiotic selection, and outpatient vs inpatient criteria.',year:'2019',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.idsociety.org/practice-guideline/community-acquired-pneumonia-cap-in-adults/'},
       {org:'IDSA',title:'IDSA Urinary Tract Infection Guidelines',desc:'Uncomplicated UTI, pyelonephritis, catheter-associated UTI, and recurrent UTI diagnosis and treatment.',year:'2022',pill:'Updated',pillStyle:{background:'#0d2520',color:'#3dffa0'},url:'https://www.idsociety.org/practice-guideline/urinary-tract-infection-uti/'},
       {org:'IDSA',title:'IDSA Skin and Soft Tissue Infections Guidelines',desc:'Cellulitis, abscess, necrotising fasciitis — classification, diagnosis, empiric treatment, and MRSA management.',year:'2014',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.idsociety.org/practice-guideline/skin-and-soft-tissue-infections/'},
-      {org:'IDSA',title:'IDSA Bacterial Meningitis Guidelines',desc:'Empiric antibiotics, dexamethasone timing, CSF interpretation, and prophylaxis for bacterial meningitis in adults and children.',year:'2004',pill:'Reference',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.idsociety.org/practice-guideline/bacterial-meningitis/'},
-      {org:'IDSA',title:'IDSA HIV Management Guidelines',desc:'Antiretroviral therapy selection, when to start, drug interactions, opportunistic infection prophylaxis, and monitoring.',year:'2024',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.idsociety.org/practice-guideline/hiv-primary-care/'},
       {org:'CDC / IDSA',title:'Clostridioides difficile Infection Guidelines',desc:'C. diff diagnosis, severity classification, fidaxomicin vs vancomycin vs metronidazole, and fecal microbiota transplantation.',year:'2021',pill:'Updated',pillStyle:{background:'#0d2520',color:'#3dffa0'},url:'https://www.idsociety.org/practice-guideline/clostridium-difficile/'},
       {org:'IDSA / ATS',title:'Hospital-Acquired & Ventilator-Associated Pneumonia',desc:'HAP/VAP diagnosis, de-escalation strategies, anti-MRSA and anti-pseudomonal coverage decisions.',year:'2016',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.idsociety.org/practice-guideline/hospital-acquired-pneumonia-ventilator-associated-pneumonia/'},
-      {org:'IDSA',title:'IDSA Infective Endocarditis Guidelines',desc:'Diagnosis (Duke criteria), surgical vs medical management, antibiotic regimens, and duration of therapy.',year:'2015',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.idsociety.org/practice-guideline/infective-endocarditis/'},
     ]
   },
   Pulmonology: {
@@ -599,20 +942,15 @@ const GUIDELINES_DATA = {
       {org:'GOLD',title:'2024 GOLD Report: COPD Diagnosis, Management & Prevention',desc:'Updated spirometric criteria, ABCD groups replaced by GOLD A-E, inhaler selection algorithm, and exacerbation management.',year:'2024',pill:'Latest',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://goldcopd.org/2024-gold-report/'},
       {org:'GINA',title:'2024 GINA Global Strategy for Asthma Management',desc:'Step-up/step-down therapy, LABA+ICS combinations, biologics for severe asthma, and acute exacerbation protocols.',year:'2024',pill:'Latest',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://ginasthma.org/2024-gina-report/'},
       {org:'ATS / ERS / ESICM',title:'Berlin Definition & ARDS Management Guidelines',desc:'ARDS diagnosis, lung protective ventilation (6 mL/kg IBW), prone positioning, PEEP strategies, and neuromuscular blockade.',year:'2017',pill:'Critical Care',pillStyle:{background:'#1a0505',color:'#ff6b6b'},url:'https://www.thoracic.org/statements/pages/mtpi/icu-guidelines.php'},
-      {org:'ESC / ERS',title:'2019 ESC/ERS Pulmonary Hypertension Guidelines',desc:'PH classification (WHO groups), right heart catheterisation, vasoreactivity testing, PAH-specific pharmacotherapy, and transplant.',year:'2022',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.escardio.org/Guidelines/Clinical-Practice-Guidelines/Pulmonary-Hypertension'},
-      {org:'ATS / ERS / JRS',title:'ATS/ERS/JRS/ALAT Idiopathic Pulmonary Fibrosis Guidelines',desc:'IPF diagnosis (UIP pattern), antifibrotic therapy (nintedanib, pirfenidone), and multidisciplinary team management.',year:'2022',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.thoracic.org/statements/ipf.php'},
       {org:'ACCP / ERS',title:'VTE and Pulmonary Embolism Diagnosis & Management',desc:'PE risk stratification (PESI), anticoagulation selection, thrombolysis indications, and duration of treatment.',year:'2021',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.chestnet.org/Guidelines-and-Resources/Guidelines-and-Consensus-Statements/Antithrombotic-Therapy'},
     ]
   },
   Endocrinology: {
-    icon:'🧬', orgs:'ADA • AACE • ENDOCRINE SOCIETY • AACE',
+    icon:'🧬', orgs:'ADA • AACE • ENDOCRINE SOCIETY',
     items: [
       {org:'ADA',title:'2024 ADA Standards of Medical Care in Diabetes',desc:'Classification, diagnosis, glucose targets, pharmacotherapy selection, cardiovascular risk reduction, and technology use in T1D/T2D.',year:'2024',pill:'Annual Update',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://diabetesjournals.org/care/issue/47/Supplement_1'},
-      {org:'ENDOCRINE SOCIETY',title:'Thyroid Nodule & Differentiated Thyroid Cancer Guidelines',desc:'US evaluation, FNA indications, risk stratification (ATA risk groups), surgical and radioiodine therapy decisions.',year:'2015',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.endocrine.org/clinical-practice-guidelines/thyroid-nodules'},
       {org:'AACE / ACE',title:'2022 AACE Clinical Practice Guideline: Obesity',desc:'Comprehensive obesity management including lifestyle, pharmacotherapy (GLP-1 agonists), and bariatric surgery criteria.',year:'2022',pill:'New',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.aace.com/disease-state-resources/metabolic/clinical-practice-guidelines'},
-      {org:'ENDOCRINE SOCIETY',title:'Adrenal Incidentaloma Clinical Practice Guideline',desc:'Evaluation of adrenal masses, biochemical screening, imaging criteria for resection, and long-term follow-up.',year:'2016',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.endocrine.org/clinical-practice-guidelines/adrenal-incidentaloma'},
       {org:'ATA',title:'American Thyroid Association Hypothyroidism Guidelines',desc:'Diagnosis, TSH targets, levothyroxine dosing, subclinical hypothyroidism management, and special populations.',year:'2014',pill:'Reference',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.thyroid.org/professionals/ata-professional-guidelines/'},
-      {org:'ENDOCRINE SOCIETY',title:'Cushing Syndrome Clinical Practice Guideline',desc:'Screening tests, confirmatory testing, imaging, and treatment of hypercortisolism from pituitary, adrenal, and ectopic sources.',year:'2015',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.endocrine.org/clinical-practice-guidelines/cushing-syndrome'},
     ]
   },
   'Emergency Medicine': {
@@ -621,8 +959,6 @@ const GUIDELINES_DATA = {
       {org:'ACEP',title:'ACEP Clinical Policies & Practice Guidelines',desc:'All ACEP evidence-based clinical policies covering ED presentations, procedures, and management decisions.',year:'2024',pill:'Hub',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.acep.org/clinical---practice-management/clinical-policies/'},
       {org:'AHA / ERC',title:'2020 AHA Guidelines for CPR and Emergency Cardiovascular Care',desc:'BLS/ACLS/PALS algorithms, post-cardiac arrest care, ROSC management, and therapeutic hypothermia.',year:'2020',pill:'Critical',pillStyle:{background:'#1a0505',color:'#ff6b6b'},url:'https://www.ahajournals.org/doi/10.1161/CIR.0000000000001122'},
       {org:'ACEP / ASA',title:'Acute Ischemic Stroke: tPA / Thrombolysis Guidelines',desc:'Inclusion/exclusion criteria for IV alteplase, time windows, BP management, and mechanical thrombectomy referral.',year:'2023',pill:'Time-Critical',pillStyle:{background:'#1a0505',color:'#ff6b6b'},url:'https://www.acep.org/globalassets/new-pdfs/clinical-policies/stroke.pdf'},
-      {org:'ACEP',title:'ACEP Guideline: Evaluation of Syncope',desc:'Risk stratification, ECG evaluation, admission criteria, and San Francisco syncope rule in ED syncope presentations.',year:'2007',pill:'Reference',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.acep.org/clinical---practice-management/clinical-policies/'},
-      {org:'ACEP / AAP',title:'Pediatric Fever Management in the ED',desc:'Febrile infant evaluation (<60 days), lumbar puncture indications, empiric antibiotics, and disposition criteria.',year:'2021',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.acep.org/clinical---practice-management/clinical-policies/'},
     ]
   },
   Neurology: {
@@ -631,21 +967,15 @@ const GUIDELINES_DATA = {
       {org:'AAN',title:'AAN Clinical Practice Guidelines Library',desc:'Comprehensive collection of neurology guidelines including epilepsy, MS, migraine, dementia, and neurocritical care.',year:'2024',pill:'Hub',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.aan.com/Guidelines/'},
       {org:'ASA / AHA',title:'2021 ASA/AHA Guideline for Stroke Prevention',desc:'Secondary stroke prevention including antiplatelet therapy, anticoagulation for AF, BP control, and lipid management.',year:'2021',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.ahajournals.org/doi/10.1161/STR.0000000000000375'},
       {org:'AAN / AES',title:'Status Epilepticus Treatment Guideline',desc:'Benzodiazepine first-line dosing, second-line AED selection (levetiracetam, fosphenytoin, valproate), and refractory SE management.',year:'2016',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.aan.com/Guidelines/'},
-      {org:'AAN',title:'AAN Epilepsy Management Guidelines',desc:'Initial antiseizure medication selection by seizure type, monotherapy vs polytherapy, drug interactions, and driving guidelines.',year:'2023',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.aan.com/Guidelines/'},
-      {org:'AAN',title:'Multiple Sclerosis Disease-Modifying Therapy',desc:'DMT initiation criteria, head-to-head comparisons of high vs low efficacy therapies, monitoring, and switch strategies.',year:'2022',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.aan.com/Guidelines/'},
       {org:'AAN / AHS',title:'Migraine Acute & Preventive Treatment Guidelines',desc:'Triptans, CGRP antagonists (gepants), preventive therapy (topiramate, propranolol, anti-CGRP mAbs), and refractory migraine.',year:'2021',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.aan.com/Guidelines/'},
-      {org:'AAN',title:'Guillain-Barré Syndrome Management',desc:'Diagnosis, IVIg vs plasmapheresis, nerve conduction studies, ICU indications (respiratory failure), and prognostication.',year:'2012',pill:'Reference',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.aan.com/Guidelines/'},
     ]
   },
   Gastroenterology: {
     icon:'🫀', orgs:'ACG • AGA • ASGE • EASL',
     items: [
       {org:'ACG',title:'ACG Clinical Guideline: Upper GI Bleeding',desc:'Risk stratification (Glasgow-Blatchford), endoscopy timing, PPI dosing, variceal vs non-variceal bleed management.',year:'2021',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://gi.org/guidelines/'},
-      {org:'AGA',title:'AGA Clinical Practice Guidelines: H. pylori',desc:'Test-and-treat strategy, eradication regimens (clarithromycin-based, bismuth quadruple, rifabutin-based), and confirmation of cure.',year:'2022',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.gastro.org/guidelines'},
-      {org:'ACG',title:'ACG Guideline: Acute Pancreatitis Management',desc:'Severity assessment (BISAP, Ranson), fluid resuscitation, nutrition (early enteral), antibiotics, and ERCP indications.',year:'2013',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://gi.org/guidelines/'},
       {org:'AASLD',title:'AASLD Cirrhosis Practice Guidance',desc:'Variceal screening, SBP prophylaxis, hepatic encephalopathy management, HRS diagnosis, and liver transplant referral.',year:'2021',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.aasld.org/practice-guidelines'},
       {org:'ACG',title:'ACG Guideline: Crohn Disease & Ulcerative Colitis',desc:'Induction and maintenance therapy, biologic selection (anti-TNF, vedolizumab, ustekinumab), and surgery criteria.',year:'2023',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://gi.org/guidelines/'},
-      {org:'ACG',title:'ACG Guideline: Colorectal Cancer Screening',desc:'Colonoscopy intervals, CT colonography, FIT/gFOBT, stool DNA testing, and high-risk group surveillance.',year:'2021',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://gi.org/guidelines/'},
     ]
   },
   Nephrology: {
@@ -653,39 +983,28 @@ const GUIDELINES_DATA = {
     items: [
       {org:'KDIGO',title:'KDIGO 2022 AKI Clinical Practice Guideline',desc:'AKI definition and staging (KDIGO), fluid management, RRT initiation criteria, contrast nephropathy prevention.',year:'2022',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://kdigo.org/guidelines/acute-kidney-injury/'},
       {org:'KDIGO',title:'KDIGO 2024 CKD Clinical Practice Guideline',desc:'GFR classification, albuminuria staging, CKD progression slowing (RAAS inhibition, SGLT2i), cardiovascular risk management.',year:'2024',pill:'Latest',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://kdigo.org/guidelines/ckd-evaluation-and-management/'},
-      {org:'KDIGO',title:'KDIGO Blood Pressure in CKD Guideline',desc:'BP targets in CKD (<120 mmHg systolic for non-dialysis CKD), antihypertensive selection, and proteinuria reduction.',year:'2021',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://kdigo.org/guidelines/blood-pressure-in-ckd/'},
-      {org:'KDIGO',title:'KDIGO Glomerulonephritis Guideline',desc:'Diagnosis and management of IgA nephropathy, membranous nephropathy, FSGS, lupus nephritis, and ANCA vasculitis.',year:'2021',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://kdigo.org/guidelines/gn/'},
-      {org:'KDOQI',title:'KDOQI Hemodialysis Adequacy Guidelines',desc:'Target Kt/V (≥1.4), access surveillance, dialysate composition, membrane selection, and intradialytic hypotension management.',year:'2015',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.kidney.org/professionals/guidelines'},
     ]
   },
   Oncology: {
     icon:'🎗️', orgs:'ASCO • NCCN • ESMO • ASTRO',
     items: [
       {org:'NCCN',title:'NCCN Clinical Practice Guidelines in Oncology',desc:'Comprehensive evidence-based cancer guidelines across 60+ tumor types, treatment algorithms, and supportive care.',year:'2024',pill:'Hub',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.nccn.org/guidelines/category_1'},
-      {org:'ASCO',title:'ASCO Guideline: Antiemesis in Cancer Patients',desc:'Serotonin antagonists, NK1 antagonists, dexamethasone, and olanzapine for CINV prophylaxis by emetogenicity category.',year:'2020',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.asco.org/research-guidelines/quality-guidelines/guidelines'},
       {org:'ESMO',title:'ESMO Febrile Neutropenia Guidelines',desc:'Risk stratification (MASCC score), oral vs IV antibiotics, G-CSF indications, and antifungal prophylaxis.',year:'2021',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.esmo.org/guidelines'},
       {org:'ASCO',title:'ASCO Guideline: VTE Prophylaxis in Cancer',desc:'Apixaban and rivaroxaban for outpatient VTE prevention, LMWH in hospitalized patients, and treatment of cancer-associated thrombosis.',year:'2023',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.asco.org/research-guidelines/quality-guidelines/guidelines'},
-      {org:'NCCN',title:'NCCN Palliative Care Guidelines',desc:'Pain management (WHO ladder), dyspnoea, delirium, existential distress, and goals-of-care communication frameworks.',year:'2024',pill:'Latest',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.nccn.org/guidelines/category_3'},
     ]
   },
   Rheumatology: {
     icon:'🦴', orgs:'ACR • EULAR • BSR',
     items: [
       {org:'ACR',title:'2021 ACR Guideline for Rheumatoid Arthritis Treatment',desc:'Treat-to-target strategy, csDMARD initiation, biologic and JAK inhibitor sequencing, and monitoring for toxicity.',year:'2021',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.rheumatology.org/Practice-Quality/Clinical-Support/Clinical-Practice-Guidelines'},
-      {org:'ACR / EULAR',title:'2019 ACR/EULAR SLE Classification Criteria',desc:'Updated SLE classification score, organ domain weighting, anti-dsDNA, complement, and immunologic criteria.',year:'2019',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.rheumatology.org/Practice-Quality/Clinical-Support/Clinical-Practice-Guidelines'},
       {org:'ACR',title:'2020 ACR Guideline for Gout Management',desc:'Urate-lowering therapy initiation, allopurinol dosing, febuxostat, acute flare prophylaxis, and dietary recommendations.',year:'2020',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.rheumatology.org/Practice-Quality/Clinical-Support/Clinical-Practice-Guidelines'},
-      {org:'ACR',title:'ACR Guideline for Osteoporosis Treatment',desc:'FRAX-based intervention thresholds, bisphosphonates, denosumab, romosozumab, and drug holiday recommendations.',year:'2022',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.rheumatology.org/Practice-Quality/Clinical-Support/Clinical-Practice-Guidelines'},
-      {org:'EULAR',title:'EULAR Recommendations for Antiphospholipid Syndrome',desc:'Anticoagulation (warfarin vs DOAC), aspirin, hydroxychloroquine, and catastrophic APS management.',year:'2019',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.eular.org/recommendations_management.cfm'},
     ]
   },
   Psychiatry: {
     icon:'🧩', orgs:'APA • NICE • CANMAT • WFSBP',
     items: [
       {org:'APA',title:'APA Practice Guideline: Major Depressive Disorder',desc:'Antidepressant selection, augmentation strategies, ECT/TMS indications, psychotherapy, and treatment-resistant depression.',year:'2023',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.psychiatry.org/psychiatrists/practice/clinical-practice-guidelines'},
-      {org:'APA',title:'APA Practice Guideline: Schizophrenia',desc:'Antipsychotic selection (FGA vs SGA), clozapine indications, metabolic monitoring, long-acting injectable formulations.',year:'2021',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.psychiatry.org/psychiatrists/practice/clinical-practice-guidelines'},
-      {org:'APA',title:'APA Practice Guideline: Bipolar Disorder',desc:'Mood stabiliser selection (lithium, valproate, lamotrigine), atypical antipsychotics, and management of acute mania vs depression.',year:'2002',pill:'Reference',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.psychiatry.org/psychiatrists/practice/clinical-practice-guidelines'},
       {org:'SAMHSA',title:'SAMHSA Opioid Use Disorder Treatment Guidelines',desc:'Buprenorphine/naloxone initiation, methadone program criteria, naltrexone extended-release, and harm reduction principles.',year:'2023',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.samhsa.gov/medication-assisted-treatment'},
-      {org:'VA / DoD',title:'VA/DoD Clinical Practice Guideline: PTSD',desc:'Trauma-focused CBT (PE, CPT), EMDR, pharmacotherapy (sertraline, paroxetine), and assessment tools (PCL-5).',year:'2023',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.healthquality.va.gov/guidelines/MH/ptsd/'},
     ]
   },
   Surgery: {
@@ -693,42 +1012,43 @@ const GUIDELINES_DATA = {
     items: [
       {org:'ACS / SAGES',title:'ACS/SAGES Acute Appendicitis Guidelines',desc:'CT vs US vs MRI diagnosis, laparoscopic vs open appendectomy, antibiotics-first for uncomplicated appendicitis.',year:'2020',pill:'Updated',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.facs.org/quality-programs/trauma/quality/clinical-resources'},
       {org:'EAST',title:'EAST Trauma Practice Management Guidelines',desc:'Hemorrhage control, damage control surgery, TBI management, splenic and liver injury grading, and REBOA.',year:'2023',pill:'Updated',pillStyle:{background:'#1a0505',color:'#ff6b6b'},url:'https://www.east.org/practice-management-guidelines'},
-      {org:'ACS',title:'ACS Surgical Site Infection Prevention Guidelines',desc:'Preoperative antibiotics timing and selection, glucose control, normothermia, and wound class-based SSI prevention.',year:'2017',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.facs.org/quality-programs/trauma/quality/clinical-resources'},
-      {org:'SAGES',title:'SAGES Laparoscopic Cholecystectomy Guidelines',desc:'Cholangiography indications, bile duct injury prevention, critical view of safety, and conversion criteria.',year:'2022',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.sages.org/publications/guidelines/'},
     ]
   },
   Pediatrics: {
     icon:'👶', orgs:'AAP • PALS • CHOP • RCPCH',
     items: [
       {org:'AAP',title:'AAP Guideline: Febrile Infant Evaluation',desc:'Rochester criteria, Step-by-Step algorithm for febrile infants <60 days, blood/urine/LP workup, and empiric antibiotics.',year:'2021',pill:'Updated',pillStyle:{background:'#052535',color:'#00d4ff'},url:'https://www.aap.org/en/patient-care/febrile-infant/'},
-      {org:'AAP',title:'AAP Clinical Practice Guideline: Bronchiolitis',desc:'RSV bronchiolitis management: no epinephrine/albuterol/steroids, oxygen thresholds (90%), and hospitalization criteria.',year:'2014',pill:'Reference',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://pediatrics.aappublications.org/content/134/5/e1474'},
-      {org:'AAP',title:'AAP Guideline: Pediatric Hypertension',desc:'BP normative values (percentile-based), screening, lifestyle modifications, and pharmacotherapy in children.',year:'2017',pill:'Current',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://www.aap.org/en/patient-care/hypertension-in-children/'},
-      {org:'AAP',title:'AAP Guideline: Acute Otitis Media',desc:'Diagnosis criteria, observation vs antibiotics, amoxicillin dosing (high-dose 80-90 mg/kg/day), and tympanostomy indications.',year:'2013',pill:'Reference',pillStyle:{background:'#0a2040',color:'#3b9eff'},url:'https://pediatrics.aappublications.org/content/131/3/e964'},
       {org:'AAP / PALS',title:'Pediatric Advanced Life Support 2020',desc:'Pediatric BLS/ACLS, fluid resuscitation in septic shock, IO access, vasopressor dosing, and post-resuscitation care.',year:'2020',pill:'Critical',pillStyle:{background:'#1a0505',color:'#ff6b6b'},url:'https://www.ahajournals.org/doi/10.1161/CIR.0000000000001039'},
     ]
   },
 };
 
 const SYSTEM_TABS = [
-  {id:'all', label:'All Systems', icon:'🏥'},
-  {id:'Cardiology', label:'Cardiology', icon:'❤️'},
-  {id:'Infectious Diseases', label:'Infectious Diseases', icon:'🦠'},
-  {id:'Pulmonology', label:'Pulmonology', icon:'🫁'},
-  {id:'Endocrinology', label:'Endocrinology', icon:'🧬'},
-  {id:'Emergency Medicine', label:'Emergency Medicine', icon:'🚨'},
-  {id:'Neurology', label:'Neurology', icon:'🧠'},
-  {id:'Gastroenterology', label:'Gastroenterology', icon:'🫀'},
-  {id:'Nephrology', label:'Nephrology', icon:'🫘'},
-  {id:'Oncology', label:'Oncology', icon:'🎗️'},
-  {id:'Rheumatology', label:'Rheumatology', icon:'🦴'},
-  {id:'Psychiatry', label:'Psychiatry', icon:'🧩'},
-  {id:'Surgery', label:'Surgery', icon:'🔪'},
-  {id:'Pediatrics', label:'Pediatrics', icon:'👶'},
+  {id:'all',label:'All Systems',icon:'🏥'},
+  {id:'Cardiology',label:'Cardiology',icon:'❤️'},
+  {id:'Infectious Diseases',label:'Infectious Diseases',icon:'🦠'},
+  {id:'Pulmonology',label:'Pulmonology',icon:'🫁'},
+  {id:'Endocrinology',label:'Endocrinology',icon:'🧬'},
+  {id:'Emergency Medicine',label:'Emergency Medicine',icon:'🚨'},
+  {id:'Neurology',label:'Neurology',icon:'🧠'},
+  {id:'Gastroenterology',label:'Gastroenterology',icon:'🫀'},
+  {id:'Nephrology',label:'Nephrology',icon:'🫘'},
+  {id:'Oncology',label:'Oncology',icon:'🎗️'},
+  {id:'Rheumatology',label:'Rheumatology',icon:'🦴'},
+  {id:'Psychiatry',label:'Psychiatry',icon:'🧩'},
+  {id:'Surgery',label:'Surgery',icon:'🔪'},
+  {id:'Pediatrics',label:'Pediatrics',icon:'👶'},
 ];
+
+// ─── ENHANCED GUIDELINES TAB ─────────────────────────────────────────────────
 
 function GuidelinesTab() {
   const [activeSystem, setActiveSystem] = useState('all');
   const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState(null);
+
+  const allItems = Object.values(GUIDELINES_DATA).flatMap(d => d.items);
+  const totalCount = allItems.length;
 
   const visibleSystems = activeSystem === 'all'
     ? Object.entries(GUIDELINES_DATA)
@@ -740,106 +1060,105 @@ function GuidelinesTab() {
     const filteredItems = data.items.filter(g =>
       g.title.toLowerCase().includes(q) || g.desc.toLowerCase().includes(q) || g.org.toLowerCase().includes(q)
     );
-    return [cat, { ...data, items: filteredItems }];
-  }).filter(([, data]) => data.items.length > 0);
+    return [cat, {...data, items:filteredItems}];
+  }).filter(([,data]) => data.items.length > 0);
 
-  const totalCount = Object.values(GUIDELINES_DATA).reduce((s, d) => s + d.items.length, 0);
+  const richCount = allItems.filter(g => getRichDetail(g)).length;
 
   return (
-    <div>
-      <div className="kb2-section-title">📋 Clinical Guidelines</div>
-      <div className="kb2-section-sub">
-        {totalCount} guidelines across {Object.keys(GUIDELINES_DATA).length} medical specialties
-      </div>
+    <div style={{display:'flex',gap:0,height:'calc(100vh - 120px)',overflow:'hidden'}}>
 
-      {/* Search */}
-      <div style={{marginBottom:14}}>
-        <div className="kb2-drug-search-wrap" style={{marginBottom:0,padding:'10px 14px'}}>
-          <div className="kb2-drug-search-row" style={{marginBottom:0}}>
-            <input
-              className="kb2-drug-input"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search guidelines: sepsis, COPD, diabetes, stroke..."
-            />
-            {search && <button className="kb2-drug-btn" onClick={() => setSearch('')} style={{whiteSpace:'nowrap'}}>Clear</button>}
+      {/* ── Left: Browse Panel ── */}
+      <div style={{flex: selected ? '0 0 44%' : '1', display:'flex',flexDirection:'column',gap:12,overflow:'hidden',paddingRight: selected ? 14 : 0, borderRight: selected ? '1px solid var(--border)' : 'none'}}>
+
+        {/* Header */}
+        <div>
+          <div className="kb2-section-title">📋 Clinical Guidelines</div>
+          <div className="kb2-section-sub">
+            {totalCount} guidelines across {Object.keys(GUIDELINES_DATA).length} specialties
+            <span style={{marginLeft:8,fontSize:10,color:'var(--accent-teal)',fontFamily:'JetBrains Mono,monospace',background:'rgba(0,229,192,.08)',padding:'1px 7px',borderRadius:10,border:'1px solid rgba(0,229,192,.2)'}}>✦ {richCount} with rich detail</span>
           </div>
+        </div>
+
+        {/* Search */}
+        <div className="kb2-drug-search-wrap" style={{padding:'10px 14px',marginBottom:0}}>
+          <div className="kb2-drug-search-row" style={{marginBottom:0}}>
+            <input className="kb2-drug-input" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search guidelines: sepsis, COPD, diabetes, stroke..."/>
+            {search && <button className="kb2-drug-btn" onClick={()=>setSearch('')} style={{whiteSpace:'nowrap'}}>Clear</button>}
+          </div>
+        </div>
+
+        {/* System tabs */}
+        <div style={{display:'flex',gap:5,overflowX:'auto',paddingBottom:4,scrollbarWidth:'none',flexShrink:0}}>
+          {SYSTEM_TABS.map(t=>(
+            <button key={t.id} onClick={()=>setActiveSystem(t.id)}
+              style={{flexShrink:0,display:'flex',alignItems:'center',gap:4,padding:'5px 12px',borderRadius:20,fontSize:11,fontWeight:activeSystem===t.id?600:400,cursor:'pointer',border:activeSystem===t.id?'1px solid var(--accent-blue)':'1px solid var(--border)',background:activeSystem===t.id?'#0a2040':'var(--bg-card)',color:activeSystem===t.id?'var(--accent-blue)':'var(--text-muted)',transition:'all .15s',fontFamily:'DM Sans,sans-serif'}}>
+              <span>{t.icon}</span><span>{selected ? t.icon : t.label}</span>
+              {t.id!=='all' && GUIDELINES_DATA[t.id] && (
+                <span style={{fontSize:9,fontFamily:'JetBrains Mono,monospace',padding:'1px 4px',borderRadius:8,background:activeSystem===t.id?'#1a3555':'var(--bg-elevated)',color:activeSystem===t.id?'var(--accent-blue)':'var(--text-dim)'}}>
+                  {GUIDELINES_DATA[t.id].items.length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Guidelines list */}
+        <div style={{flex:1,overflowY:'auto'}}>
+          {filteredSystems.length === 0 && (
+            <div className="kb2-no-results"><div className="kb2-no-results-icon">📋</div>No guidelines match "{search}"</div>
+          )}
+          {filteredSystems.map(([cat, data]) => (
+            <div key={cat}>
+              <div className="kb2-guide-cat-header">
+                <span className="kb2-guide-cat-icon">{data.icon}</span>
+                <span className="kb2-guide-cat-title">{cat}</span>
+                <span className="kb2-guide-cat-count">{data.orgs}</span>
+                <span style={{marginLeft:'auto',fontSize:10,color:'var(--text-muted)',fontFamily:'JetBrains Mono,monospace'}}>{data.items.length} guides</span>
+              </div>
+              <div className={selected ? '' : 'kb2-guide-grid'} style={selected ? {display:'flex',flexDirection:'column',gap:6,marginBottom:18} : {}}>
+                {data.items.map((g,i) => {
+                  const hasRich = !!getRichDetail(g);
+                  return (
+                    <div key={i} className={`kb2-guide-card${selected?.title===g.title?' selected':''}`} onClick={()=>setSelected(g)}>
+                      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:3}}>
+                        <div className="kb2-guide-org">{g.org}</div>
+                        {hasRich && <span style={{fontSize:8,color:'var(--accent-teal)',background:'rgba(0,229,192,.08)',padding:'1px 5px',borderRadius:8,border:'1px solid rgba(0,229,192,.2)',fontFamily:'JetBrains Mono,monospace'}}>✦ RICH</span>}
+                      </div>
+                      <div className="kb2-guide-title">{g.title}</div>
+                      {!selected && <div className="kb2-guide-desc">{g.desc}</div>}
+                      <div className="kb2-guide-footer">
+                        <span className="kb2-guide-year">{g.year}</span>
+                        <span className="kb2-guide-pill" style={g.pillStyle}>{g.pill}</span>
+                        <span className="kb2-guide-ext">{selected?.title===g.title?'◀':'▶'}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* System tabs - horizontal scroll */}
-      <div style={{
-        display:'flex',gap:6,overflowX:'auto',paddingBottom:10,marginBottom:18,
-        scrollbarWidth:'none',msOverflowStyle:'none'
-      }}>
-        {SYSTEM_TABS.map(t => (
-          <button
-            key={t.id}
-            onClick={() => setActiveSystem(t.id)}
-            style={{
-              flexShrink:0,
-              display:'flex',alignItems:'center',gap:5,
-              padding:'6px 14px',
-              borderRadius:20,
-              fontSize:11,fontWeight:activeSystem === t.id ? 600 : 400,
-              cursor:'pointer',
-              border: activeSystem === t.id ? '1px solid #3b9eff' : '1px solid #1a3555',
-              background: activeSystem === t.id ? '#0a2040' : 'var(--bg-card)',
-              color: activeSystem === t.id ? '#3b9eff' : '#4a6a8a',
-              transition:'all .15s',
-              fontFamily:'DM Sans,sans-serif',
-            }}
-          >
-            <span>{t.icon}</span><span>{t.label}</span>
-            {t.id !== 'all' && GUIDELINES_DATA[t.id] && (
-              <span style={{
-                fontSize:9,fontFamily:'JetBrains Mono,monospace',padding:'1px 5px',
-                borderRadius:8,background:activeSystem===t.id?'#1a3555':'var(--bg-elevated)',
-                color: activeSystem===t.id?'#3b9eff':'#2e4a6a'
-              }}>
-                {GUIDELINES_DATA[t.id].items.length}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Guidelines list */}
-      {filteredSystems.length === 0 && (
-        <div className="kb2-no-results">
-          <div className="kb2-no-results-icon">📋</div>
-          No guidelines match "{search}"
+      {/* ── Right: Detail Panel ── */}
+      {selected && (
+        <div style={{flex:1,minWidth:0,paddingLeft:14,overflowY:'auto',display:'flex',flexDirection:'column'}}>
+          <GuidelineDetailPanel guide={selected} onClose={()=>setSelected(null)}/>
         </div>
       )}
-      {filteredSystems.map(([cat, data]) => (
-        <div key={cat}>
-          <div className="kb2-guide-cat-header">
-            <span className="kb2-guide-cat-icon">{data.icon}</span>
-            <span className="kb2-guide-cat-title">{cat}</span>
-            <span className="kb2-guide-cat-count">{data.orgs}</span>
-            <span style={{marginLeft:'auto',fontSize:10,color:'var(--text-muted)',fontFamily:'JetBrains Mono,monospace'}}>
-              {data.items.length} guidelines
-            </span>
-          </div>
-          <div className="kb2-guide-grid">
-            {data.items.map((g, i) => (
-              <a key={i} className="kb2-guide-card" href={g.url} target="_blank" rel="noopener noreferrer">
-                <div className="kb2-guide-org">{g.org}</div>
-                <div className="kb2-guide-title">{g.title}</div>
-                <div className="kb2-guide-desc">{g.desc}</div>
-                <div className="kb2-guide-footer">
-                  <span className="kb2-guide-year">{g.year}</span>
-                  <span className="kb2-guide-pill" style={g.pillStyle}>{g.pill}</span>
-                  <span className="kb2-guide-ext">↗</span>
-                </div>
-              </a>
-            ))}
-          </div>
+
+      {/* Empty state hint when nothing selected */}
+      {!selected && filteredSystems.length > 0 && (
+        <div style={{position:'absolute',bottom:80,right:24,background:'var(--bg-elevated)',border:'1px solid var(--border)',borderRadius:8,padding:'8px 14px',fontSize:11,color:'var(--text-muted)',pointerEvents:'none',zIndex:10}}>
+          Click any guideline to open the detail panel ▶
         </div>
-      ))}
+      )}
     </div>
   );
 }
+
+// ─── EXISTING: DISEASE ITEM + DISEASES TAB ───────────────────────────────────
 
 function formatSummaryAsText(s) {
   if (!s) return '';
@@ -863,22 +1182,10 @@ function DiseaseItem({ d }) {
   const fetchSummary = async (e) => {
     e.stopPropagation();
     if (summary) { setExpanded(v => !v); return; }
-    setLoading(true);
-    setExpanded(true);
+    setLoading(true); setExpanded(true);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a clinical knowledge assistant. Return a structured JSON summary for clinicians about: "${d.name}" (also known as: ${d.aka}). Guideline: ${d.guide}.
-
-Return ONLY valid JSON (no markdown fences), with this exact schema:
-{
-  "condition": "Full condition name",
-  "guideline": "Guideline reference",
-  "diagnosis": ["criterion 1", "criterion 2", "criterion 3"],
-  "treatment": ["treatment 1", "treatment 2", "treatment 3"],
-  "pearls": ["pearl 1", "pearl 2"]
-}
-
-Be concise and clinical. No markdown, no asterisks, no bold formatting in values.`,
+        prompt: `You are a clinical knowledge assistant. Return a structured JSON summary for clinicians about: "${d.name}" (also known as: ${d.aka}). Guideline: ${d.guide}.\n\nReturn ONLY valid JSON (no markdown fences), with this exact schema:\n{\n  "condition": "Full condition name",\n  "guideline": "Guideline reference",\n  "diagnosis": ["criterion 1", "criterion 2", "criterion 3"],\n  "treatment": ["treatment 1", "treatment 2", "treatment 3"],\n  "pearls": ["pearl 1", "pearl 2"]\n}\n\nBe concise and clinical. No markdown, no asterisks, no bold formatting in values.`,
         add_context_from_internet: false,
         response_json_schema: {
           type: 'object',
@@ -892,9 +1199,7 @@ Be concise and clinical. No markdown, no asterisks, no bold formatting in values
         }
       });
       setSummary(res);
-    } catch {
-      setSummary({ error: true });
-    }
+    } catch { setSummary({ error: true }); }
     setLoading(false);
   };
 
@@ -910,9 +1215,7 @@ Be concise and clinical. No markdown, no asterisks, no bold formatting in values
       await base44.entities.ClinicalNote.update(note.id, { mdm: existing + separator + text });
       setAddedToNote(true);
       setTimeout(() => setAddedToNote(false), 3000);
-    } catch {
-      alert('Failed to add to note. Please try again.');
-    }
+    } catch { alert('Failed to add to note. Please try again.'); }
   };
 
   return (
@@ -923,18 +1226,8 @@ Be concise and clinical. No markdown, no asterisks, no bold formatting in values
           {d.aka && <div className="kb2-disease-aka">{d.aka}</div>}
         </div>
         <div style={{display:'flex',alignItems:'center',padding:'0 10px',gap:6,borderLeft:'1px solid var(--border)'}}>
-          <button
-            onClick={fetchSummary}
-            style={{
-              padding:'4px 10px',fontSize:10,fontWeight:600,cursor:'pointer',
-              background: expanded ? '#1a0d35' : 'var(--bg-elevated)',
-              border:`1px solid ${expanded ? 'var(--accent-purple)' : 'var(--border)'}`,
-              borderRadius:5,color: expanded ? 'var(--accent-purple)' : 'var(--text-muted)',
-              transition:'all .15s',fontFamily:'DM Sans,sans-serif',whiteSpace:'nowrap',
-              display:'flex',alignItems:'center',gap:4
-            }}
-          >
-            {loading ? '⏳' : '✨'} {loading ? 'Loading...' : expanded ? 'Hide AI' : 'AI Summary'}
+          <button onClick={fetchSummary} style={{padding:'4px 10px',fontSize:10,fontWeight:600,cursor:'pointer',background:expanded?'#1a0d35':'var(--bg-elevated)',border:`1px solid ${expanded?'var(--accent-purple)':'var(--border)'}`,borderRadius:5,color:expanded?'var(--accent-purple)':'var(--text-muted)',transition:'all .15s',fontFamily:'DM Sans,sans-serif',whiteSpace:'nowrap',display:'flex',alignItems:'center',gap:4}}>
+            {loading?'⏳':' ✨'} {loading?'Loading...':expanded?'Hide AI':'AI Summary'}
           </button>
         </div>
         <div className="kb2-disease-links">
@@ -944,10 +1237,7 @@ Be concise and clinical. No markdown, no asterisks, no bold formatting in values
         </div>
       </div>
       {expanded && (
-        <div style={{
-          padding:'14px 16px',borderTop:'1px solid var(--border)',
-          background:'#07122a',fontFamily:'DM Sans,sans-serif'
-        }}>
+        <div style={{padding:'14px 16px',borderTop:'1px solid var(--border)',background:'#07122a',fontFamily:'DM Sans,sans-serif'}}>
           {loading ? (
             <div style={{display:'flex',gap:6,alignItems:'center'}}>
               <div className="kb2-typing-dot"/><div className="kb2-typing-dot"/><div className="kb2-typing-dot"/>
@@ -957,41 +1247,23 @@ Be concise and clinical. No markdown, no asterisks, no bold formatting in values
             <div style={{fontSize:11,color:'var(--accent-coral)'}}>Unable to load summary. Please try again.</div>
           ) : summary ? (
             <div>
-              {/* Header */}
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
                 <div style={{display:'flex',alignItems:'center',gap:8}}>
                   <div className="kb2-ai-dot"/>
                   <span style={{fontSize:10,fontWeight:700,letterSpacing:'.6px',textTransform:'uppercase',color:'var(--accent-teal)'}}>AI Clinical Summary</span>
                   <span style={{fontSize:9,color:'var(--text-dim)',fontFamily:'JetBrains Mono,monospace',background:'var(--bg-elevated)',padding:'1px 6px',borderRadius:3}}>{summary.guideline}</span>
                 </div>
-                <button
-                  onClick={addToMDM}
-                  style={{
-                    padding:'5px 12px',fontSize:10,fontWeight:600,cursor:'pointer',
-                    background: addedToNote ? '#0d2e20' : '#0a1e35',
-                    border:`1px solid ${addedToNote ? 'var(--accent-green)' : 'rgba(59,158,255,0.4)'}`,
-                    borderRadius:5,color: addedToNote ? 'var(--accent-green)' : 'var(--accent-blue)',
-                    transition:'all .2s',fontFamily:'DM Sans,sans-serif',
-                    display:'flex',alignItems:'center',gap:5
-                  }}
-                >
-                  {addedToNote ? '✓ Added to Note' : '+ Add to MDM'}
+                <button onClick={addToMDM} style={{padding:'5px 12px',fontSize:10,fontWeight:600,cursor:'pointer',background:addedToNote?'#0d2e20':'#0a1e35',border:`1px solid ${addedToNote?'var(--accent-green)':'rgba(59,158,255,0.4)'}`,borderRadius:5,color:addedToNote?'var(--accent-green)':'var(--accent-blue)',transition:'all .2s',fontFamily:'DM Sans,sans-serif',display:'flex',alignItems:'center',gap:5}}>
+                  {addedToNote?'✓ Added to Note':'+ Add to MDM'}
                 </button>
               </div>
-
-              {/* Summary Sections */}
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12}}>
-                {[
-                  {label:'Diagnosis Criteria', items: summary.diagnosis, color:'#3b9eff', bg:'#0a1e35'},
-                  {label:'First-line Treatment', items: summary.treatment, color:'#00e5c0', bg:'#062020'},
-                  {label:'Clinical Pearls', items: summary.pearls, color:'#f5c842', bg:'#1e1505'},
-                ].map(section => (
+                {[{label:'Diagnosis Criteria',items:summary.diagnosis,color:'#3b9eff',bg:'#0a1e35'},{label:'First-line Treatment',items:summary.treatment,color:'#00e5c0',bg:'#062020'},{label:'Clinical Pearls',items:summary.pearls,color:'#f5c842',bg:'#1e1505'}].map(section=>(
                   <div key={section.label} style={{background:section.bg,border:`1px solid ${section.color}22`,borderRadius:8,padding:'10px 12px'}}>
                     <div style={{fontSize:9,fontWeight:700,letterSpacing:'.8px',textTransform:'uppercase',color:section.color,marginBottom:8}}>{section.label}</div>
-                    {section.items?.map((item, i) => (
+                    {section.items?.map((item,i)=>(
                       <div key={i} style={{display:'flex',gap:6,marginBottom:5,fontSize:11,color:'var(--text-secondary)',lineHeight:1.5}}>
-                        <span style={{color:section.color,flexShrink:0,marginTop:1}}>›</span>
-                        <span>{item}</span>
+                        <span style={{color:section.color,flexShrink:0,marginTop:1}}>›</span><span>{item}</span>
                       </div>
                     ))}
                   </div>
@@ -1008,7 +1280,6 @@ Be concise and clinical. No markdown, no asterisks, no bold formatting in values
 function DiseasesTab() {
   const [search, setSearch] = useState('');
   const [alpha, setAlpha] = useState('all');
-
   const letters = [...new Set(DISEASES.map(d => d.letter))].sort();
   const filtered = DISEASES.filter(d => {
     const matchAlpha = alpha === 'all' || d.letter === alpha;
@@ -1020,7 +1291,6 @@ function DiseasesTab() {
     if (items.length) acc[l] = items;
     return acc;
   }, {});
-
   return (
     <div>
       <div className="kb2-section-title">🩺 Diseases &amp; Conditions</div>
@@ -1033,67 +1303,49 @@ function DiseasesTab() {
       </div>
       <div className="kb2-alpha-nav">
         <button className={`kb2-alpha-btn${alpha==='all'?' active':''}`} onClick={()=>setAlpha('all')}>All</button>
-        {letters.map(l=>(
-          <button key={l} className={`kb2-alpha-btn${alpha===l?' active':''}`} onClick={()=>setAlpha(l)}>{l}</button>
-        ))}
+        {letters.map(l=>(<button key={l} className={`kb2-alpha-btn${alpha===l?' active':''}`} onClick={()=>setAlpha(l)}>{l}</button>))}
       </div>
       {Object.entries(grouped).map(([letter, items])=>(
         <div key={letter} className="kb2-disease-group">
           <div className="kb2-disease-letter">{letter}</div>
-          <div className="kb2-disease-list">
-            {items.map((d,i)=>(
-              <DiseaseItem key={i} d={d} />
-            ))}
-          </div>
+          <div className="kb2-disease-list">{items.map((d,i)=>(<DiseaseItem key={i} d={d}/>))}</div>
         </div>
       ))}
-      {Object.keys(grouped).length === 0 && <div className="kb2-no-results"><div className="kb2-no-results-icon">🩺</div>No conditions match "{search}"</div>}
+      {Object.keys(grouped).length===0 && <div className="kb2-no-results"><div className="kb2-no-results-icon">🩺</div>No conditions match "{search}"</div>}
     </div>
   );
 }
 
 function EDTab() {
   const FOAM = [
-    {icon:'🏄',name:'Life in the Fast Lane (LITFL)',type:'FOAM',desc:'Comprehensive ECG library, toxicology database, critical care compendium, and procedure guides. One of the best free EM resources available.',url:'https://litfl.com',tags:['ECG Library','Toxicology','Critical Care','Procedures']},
-    {icon:'⚡',name:'EMCrit',type:'FOAM',desc:"Scott Weingart's critical care and emergency medicine resource. Expert reviews, podcasts, and IBCC (Internet Book of Critical Care).",url:'https://emcrit.org',tags:['Critical Care','Resuscitation','Airway','Podcast']},
-    {icon:'🧪',name:'REBEL EM',type:'FOAM',desc:'Evidence-based emergency medicine. Critical appraisal of landmark trials and systematic reviews relevant to ED practice.',url:'https://www.rebelem.com',tags:['Evidence-Based','Trial Reviews','Critical Appraisal']},
-    {icon:'🎓',name:'ALiEM (Academic Life in Emergency Medicine)',type:'Education',desc:'EM education platform with clinical pearls, teaching cases, AIR series, and resources for residents and educators.',url:'https://www.aliem.com',tags:['Education','Residency','Clinical Pearls']},
-    {icon:'🎙️',name:'EM:RAP',type:'CME',desc:'Monthly audio/video CME program covering high-yield EM topics, reviewed by EM faculty. Widely used for board preparation.',url:'https://www.emrap.org',tags:['CME','Podcast','Board Prep']},
-    {icon:'📗',name:"Tintinalli's Emergency Medicine",type:'Reference',desc:'The definitive emergency medicine textbook. 9th edition with AccessEmergency Medicine for institution subscribers.',url:'https://www.tintinalliem.com',tags:['Textbook','Comprehensive','9th Ed.']},
+    {icon:'🏄',name:'Life in the Fast Lane (LITFL)',type:'FOAM',desc:'Comprehensive ECG library, toxicology database, critical care compendium, and procedure guides.',url:'https://litfl.com',tags:['ECG Library','Toxicology','Critical Care','Procedures']},
+    {icon:'⚡',name:'EMCrit',type:'FOAM',desc:"Scott Weingart's critical care and emergency medicine resource. Expert reviews, podcasts, and IBCC.",url:'https://emcrit.org',tags:['Critical Care','Resuscitation','Airway','Podcast']},
+    {icon:'🧪',name:'REBEL EM',type:'FOAM',desc:'Evidence-based emergency medicine. Critical appraisal of landmark trials and systematic reviews.',url:'https://www.rebelem.com',tags:['Evidence-Based','Trial Reviews','Critical Appraisal']},
+    {icon:'🎓',name:'ALiEM (Academic Life in Emergency Medicine)',type:'Education',desc:'EM education platform with clinical pearls, teaching cases, AIR series, and resources for residents.',url:'https://www.aliem.com',tags:['Education','Residency','Clinical Pearls']},
+    {icon:'🎙️',name:'EM:RAP',type:'CME',desc:'Monthly audio/video CME program covering high-yield EM topics, reviewed by EM faculty.',url:'https://www.emrap.org',tags:['CME','Podcast','Board Prep']},
+    {icon:'📗',name:"Tintinalli's Emergency Medicine",type:'Reference',desc:'The definitive emergency medicine textbook. 9th edition.',url:'https://www.tintinalliem.com',tags:['Textbook','Comprehensive','9th Ed.']},
   ];
   const ECG = [
-    {icon:'📊',name:'LITFL ECG Library',type:'ECG',desc:'The most comprehensive free ECG library. Thousands of annotated 12-lead examples covering every pattern from STEMI to Brugada.',url:'https://litfl.com/ecg-library/',tags:['STEMI','Arrhythmias','Blocks','Patterns'],typeStyle:{background:'#2e2010',color:'#f5c842'},borderColor:'#f5c842'},
-    {icon:'💛',name:'ECG Library (ecglibrary.com)',type:'ECG',desc:'Classic ECG reference with systematic interpretation guides, normal variants, and common pathological patterns.',url:'https://www.ecglibrary.com',tags:['Systematic Review','Normal Variants'],typeStyle:{background:'#2e2010',color:'#f5c842'},borderColor:'#f5c842'},
+    {icon:'📊',name:'LITFL ECG Library',type:'ECG',desc:'The most comprehensive free ECG library with thousands of annotated 12-lead examples.',url:'https://litfl.com/ecg-library/',tags:['STEMI','Arrhythmias','Blocks','Patterns'],typeStyle:{background:'#2e2010',color:'#f5c842'},borderColor:'#f5c842'},
+    {icon:'💛',name:'ECG Library (ecglibrary.com)',type:'ECG',desc:'Classic ECG reference with systematic interpretation guides and common pathological patterns.',url:'https://www.ecglibrary.com',tags:['Systematic Review','Normal Variants'],typeStyle:{background:'#2e2010',color:'#f5c842'},borderColor:'#f5c842'},
   ];
   const TOXICOLOGY = [
-    {icon:'🧪',name:'TOXBASE (UK National Poisons Information Service)',type:'Toxicology',desc:'Primary clinical toxicology database of NPIS. Treatment protocols for overdose, poisoning, and toxic exposures.',url:'https://www.toxbase.org',tags:['Overdose','Antidotes','UK'],typeStyle:{background:'#1a0d35',color:'#9b6dff'},borderColor:'#9b6dff'},
-    {icon:'☎️',name:'Poison Control Center (1-800-222-1222 US)',type:'Toxicology',desc:'24/7 US poison control network. Online triage tool and direct line to toxicologists for clinical guidance.',url:'https://www.poison.org',tags:['US','24/7','Phone Consult'],typeStyle:{background:'#1a0d35',color:'#9b6dff'},borderColor:'#9b6dff'},
+    {icon:'🧪',name:'TOXBASE (UK National Poisons Information Service)',type:'Toxicology',desc:'Primary clinical toxicology database of NPIS. Treatment protocols for overdose and poisoning.',url:'https://www.toxbase.org',tags:['Overdose','Antidotes','UK'],typeStyle:{background:'#1a0d35',color:'#9b6dff'},borderColor:'#9b6dff'},
+    {icon:'☎️',name:'Poison Control Center (1-800-222-1222 US)',type:'Toxicology',desc:'24/7 US poison control network with direct line to toxicologists for clinical guidance.',url:'https://www.poison.org',tags:['US','24/7','Phone Consult'],typeStyle:{background:'#1a0d35',color:'#9b6dff'},borderColor:'#9b6dff'},
   ];
-
   const renderCard = (r) => (
     <a key={r.name} className="kb2-ed-card" href={r.url} target="_blank" rel="noopener noreferrer" style={r.borderColor?{borderLeftColor:r.borderColor}:{}}>
-      <div className="kb2-ed-card-top">
-        <span className="kb2-ed-card-icon">{r.icon}</span>
-        <span className="kb2-ed-card-name">{r.name}</span>
-        <span className="kb2-ed-card-type" style={r.typeStyle||{}}>{r.type}</span>
-      </div>
+      <div className="kb2-ed-card-top"><span className="kb2-ed-card-icon">{r.icon}</span><span className="kb2-ed-card-name">{r.name}</span><span className="kb2-ed-card-type" style={r.typeStyle||{}}>{r.type}</span></div>
       <div className="kb2-ed-card-desc">{r.desc}</div>
       <div className="kb2-ed-card-tags">{r.tags.map(t=><span key={t} className="kb2-ed-card-tag">{t}</span>)}</div>
     </a>
   );
-
   return (
     <div>
       <div className="kb2-ed-hero">
         <div className="kb2-ed-hero-icon">🚨</div>
-        <div>
-          <div className="kb2-ed-hero-title">Emergency Department Resources</div>
-          <div className="kb2-ed-hero-sub">Critical references, FOAM resources, and ED-specific clinical tools</div>
-        </div>
-        <div className="kb2-ed-stats">
-          <div className="kb2-ed-stat"><span className="kb2-ed-stat-val">24</span><span className="kb2-ed-stat-lbl">Resources</span></div>
-          <div className="kb2-ed-stat"><span className="kb2-ed-stat-val">6</span><span className="kb2-ed-stat-lbl">Categories</span></div>
-        </div>
+        <div><div className="kb2-ed-hero-title">Emergency Department Resources</div><div className="kb2-ed-hero-sub">Critical references, FOAM resources, and ED-specific clinical tools</div></div>
+        <div className="kb2-ed-stats"><div className="kb2-ed-stat"><span className="kb2-ed-stat-val">24</span><span className="kb2-ed-stat-lbl">Resources</span></div><div className="kb2-ed-stat"><span className="kb2-ed-stat-val">6</span><span className="kb2-ed-stat-lbl">Categories</span></div></div>
       </div>
       <div className="kb2-section-title" style={{fontSize:14}}>📋 Major ED Guidelines</div>
       <div className="kb2-guide-grid" style={{marginBottom:20}}>
@@ -1128,9 +1380,7 @@ function AIPanel() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const chatRef = useRef(null);
-
   const QUICK = ['Summarize sepsis management guidelines','Latest ACS STEMI guidelines','2024 GOLD COPD grading','ACLS arrest algorithm steps','ADA 2024 key changes','tPA indications in acute stroke'];
-
   const sendMessage = async (q) => {
     const text = q || input.trim();
     if (!text || loading) return;
@@ -1138,45 +1388,28 @@ function AIPanel() {
     setMessages(prev => [...prev, {role:'user', content:text}]);
     setLoading(true);
     try {
-      const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are Notrya AI, a clinical knowledge assistant. Answer concisely and clinically. Question: ${text}`,
-        add_context_from_internet: true,
-      });
-      setMessages(prev => [...prev, {role:'assistant', content: typeof res === 'string' ? res : JSON.stringify(res)}]);
+      const res = await base44.integrations.Core.InvokeLLM({ prompt:`You are Notrya AI, a clinical knowledge assistant. Answer concisely and clinically. Question: ${text}`, add_context_from_internet:true });
+      setMessages(prev => [...prev, {role:'assistant', content:typeof res==='string'?res:JSON.stringify(res)}]);
     } catch {
       setMessages(prev => [...prev, {role:'assistant', content:'⚠ Unable to reach AI service. Please try again.'}]);
     }
     setLoading(false);
   };
-
-  useEffect(() => {
-    if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
-  }, [messages, loading]);
-
+  useEffect(() => { if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight; }, [messages, loading]);
   return (
     <aside className="kb2-ai-panel">
       <div className="kb2-ai-header">
-        <div className="kb2-ai-header-row">
-          <div className="kb2-ai-dot"/>
-          <div className="kb2-ai-title">Notrya AI Assistant</div>
-          <div className="kb2-ai-model">claude-sonnet-4</div>
-        </div>
-        <div className="kb2-ai-quick-btns">
-          {QUICK.map((q,i)=><button key={i} className="kb2-ai-qbtn" onClick={()=>sendMessage(q)}>{q}</button>)}
-        </div>
+        <div className="kb2-ai-header-row"><div className="kb2-ai-dot"/><div className="kb2-ai-title">Notrya AI Assistant</div><div className="kb2-ai-model">claude-sonnet-4</div></div>
+        <div className="kb2-ai-quick-btns">{QUICK.map((q,i)=><button key={i} className="kb2-ai-qbtn" onClick={()=>sendMessage(q)}>{q}</button>)}</div>
       </div>
       <div className="kb2-ai-chat" ref={chatRef}>
         {messages.map((m,i)=>(
           <div key={i} className={`kb2-ai-msg ${m.role}`}>
-            {m.role === 'assistant' && <div className="kb2-ai-label">AI</div>}
+            {m.role==='assistant'&&<div className="kb2-ai-label">AI</div>}
             {m.content}
           </div>
         ))}
-        {loading && (
-          <div className="kb2-ai-msg loading">
-            <div className="kb2-typing-dot"/><div className="kb2-typing-dot"/><div className="kb2-typing-dot"/>
-          </div>
-        )}
+        {loading && <div className="kb2-ai-msg loading"><div className="kb2-typing-dot"/><div className="kb2-typing-dot"/><div className="kb2-typing-dot"/></div>}
       </div>
       <div className="kb2-ai-input-wrap">
         <div className="kb2-ai-input-row">
@@ -1224,10 +1457,7 @@ const CALC_LINKS = [
 export default function KnowledgeBaseV2() {
   const [tab, setTab] = useState('search');
   const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
 
   return (
     <div className="kb2-root">
@@ -1235,7 +1465,6 @@ export default function KnowledgeBaseV2() {
       <TopNavBar user={user} tab={tab} setTab={setTab} />
       <VitalsBar user={user} />
       <div className="kb2-layout">
-        {/* Sidebar */}
         <aside className="kb2-sidebar">
           <div>
             <div className="kb2-sb-heading">Knowledge Base</div>
@@ -1249,43 +1478,25 @@ export default function KnowledgeBaseV2() {
           </div>
           <div style={{marginTop:12}}>
             <div className="kb2-sb-heading">Quick Access</div>
-            {QUICK_LINKS.map(l=>(
-              <div key={l.label} className="kb2-sb-item" onClick={()=>window.open(l.url,'_blank')}>
-                <span className="kb2-sb-icon">{l.icon}</span>
-                <span className="kb2-sb-label">{l.label}</span>
-              </div>
-            ))}
+            {QUICK_LINKS.map(l=>(<div key={l.label} className="kb2-sb-item" onClick={()=>window.open(l.url,'_blank')}><span className="kb2-sb-icon">{l.icon}</span><span className="kb2-sb-label">{l.label}</span></div>))}
           </div>
           <div style={{marginTop:12}}>
             <div className="kb2-sb-heading">Calculators</div>
-            {CALC_LINKS.map(l=>(
-              <div key={l.label} className="kb2-sb-item" onClick={()=>window.open(l.url,'_blank')}>
-                <span className="kb2-sb-icon">{l.icon}</span>
-                <span className="kb2-sb-label">{l.label}</span>
-              </div>
-            ))}
+            {CALC_LINKS.map(l=>(<div key={l.label} className="kb2-sb-item" onClick={()=>window.open(l.url,'_blank')}><span className="kb2-sb-icon">{l.icon}</span><span className="kb2-sb-label">{l.label}</span></div>))}
           </div>
         </aside>
-
-        {/* Main */}
         <main className="kb2-main">
-          {tab === 'search' && <SearchTab />}
-          {tab === 'drugs' && <DrugsTab />}
-          {tab === 'guidelines' && <GuidelinesTab />}
-          {tab === 'diseases' && <DiseasesTab />}
-          {tab === 'ed' && <EDTab />}
+          {tab==='search' && <SearchTab/>}
+          {tab==='drugs' && <DrugsTab/>}
+          {tab==='guidelines' && <GuidelinesTab/>}
+          {tab==='diseases' && <DiseasesTab/>}
+          {tab==='ed' && <EDTab/>}
         </main>
-
-        {/* Clinical Context Panel */}
         <ClinicalContextPanel />
       </div>
-
-      {/* Bottom Nav */}
       <nav className="kb2-bottom-nav">
         <div className="kb2-bnav-row">
-          {TABS.map(t=>(
-            <button key={t.id} className={`kb2-bnav-tab${tab===t.id?' '+t.activeCls:''}`} onClick={()=>setTab(t.id)}>{t.label}</button>
-          ))}
+          {TABS.map(t=>(<button key={t.id} className={`kb2-bnav-tab${tab===t.id?' '+t.activeCls:''}`} onClick={()=>setTab(t.id)}>{t.label}</button>))}
         </div>
         <div className="kb2-bnav-row">
           {[['🧮 MDCalc','https://www.mdcalc.com'],['📚 PubMed','https://pubmed.ncbi.nlm.nih.gov'],['📖 UpToDate','https://www.uptodate.com'],['🏆 Cochrane','https://www.cochranelibrary.com'],['🌐 Medscape','https://reference.medscape.com'],['🏄 LITFL','https://litfl.com'],['⚡ EMCrit','https://emcrit.org']].map(([label,url])=>(

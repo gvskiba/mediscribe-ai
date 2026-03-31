@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 
 // ════════════════════════════════════════════════════════════
@@ -443,6 +444,7 @@ function PlaceholderPage({section}){
 const PROTOCOL_SECTIONS=["cardiac-home","acs","tachy","brady","peds","pregnancy"];
 
 export default function NotryaApp(){
+  const navigate = useNavigate();
   const[activeGroup,setActiveGroup]=useState("tools");
   const[activeSection,setActiveSection]=useState("cardiac-home");
   const[navDots]=useState(()=>{const m={};ALL_SECTIONS.forEach(s=>(m[s.section]=s.dot));return m;});
@@ -500,7 +502,7 @@ export default function NotryaApp(){
         <span className="chart-badge">[CHART-ID]</span><span className="pt-name">— Patient —</span><span className="pt-meta">Age · Sex · DOB</span><span className="pt-cc">CC: —</span><div className="vb-div"/>
         {[{l:"BP",v:"—"},{l:"HR",v:"—"},{l:"RR",v:"—"},{l:"SpO₂",v:"—"},{l:"T",v:"—"},{l:"GCS",v:"—"}].map(vt=><div key={vt.l} className="vb-vital"><span className="lbl">{vt.l}</span><span className="val">{vt.v}</span></div>)}
         <div className="vb-div"/><span className="status-badge status-stable">STABLE</span><span className="status-badge status-room">Room —</span>
-        <div className="chart-actions"><button className="btn-ghost">📋 Orders</button><button className="btn-ghost">📝 SOAP Note</button><button className="btn-coral">🚪 Discharge</button><button className="btn-primary" onClick={()=>setAiMsgs(m=>[...m,{role:"sys",text:"💾 Chart saved successfully."}])}>💾 Save Chart</button></div>
+        <div className="chart-actions"><button className="btn-ghost" onClick={()=>navigate('/hub')}>← Hub</button><button className="btn-ghost">📋 Orders</button><button className="btn-ghost">📝 SOAP Note</button><button className="btn-coral">🚪 Discharge</button><button className="btn-primary" onClick={()=>setAiMsgs(m=>[...m,{role:"sys",text:"💾 Chart saved successfully."}])}>💾 Save Chart</button></div>
       </div>
     </header>
     <div className="main-wrap">

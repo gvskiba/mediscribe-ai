@@ -420,7 +420,7 @@ export default function HubSelectorPage() {
     navigate(route);
   };
 
-  const filtered = HUBS
+  const filteredBase = HUBS
     .filter(h => activeCategory === "All" || h.category === activeCategory)
     .filter(h =>
       !search ||
@@ -428,8 +428,9 @@ export default function HubSelectorPage() {
       h.subtitle.toLowerCase().includes(search.toLowerCase()) ||
       h.abbr.toLowerCase().includes(search.toLowerCase()) ||
       h.stats.some(s => s.toLowerCase().includes(search.toLowerCase()))
-    )
-    .sort((a, b) => {
+    );
+
+  const filtered = [...filteredBase].sort((a, b) => {
       if (sortBy === "alpha") return a.title.localeCompare(b.title);
       if (sortBy === "category") return a.category.localeCompare(b.category) || a.priority - b.priority;
       if (sortBy === "live") {
@@ -440,8 +441,10 @@ export default function HubSelectorPage() {
       return a.priority - b.priority;
     });
 
-  const featured = filtered.slice(0, 3);
-  const rest = filtered.slice(3);
+  const featuredBase = filteredBase.sort((a, b) => a.priority - b.priority).slice(0, 3);
+  const featuredIds = new Set(featuredBase.map(h => h.id));
+  const featured = featuredBase;
+  const rest = filtered.filter(h => !featuredIds.has(h.id));
 
   const sidebarItems = [
     { icon: "🏠", label: "Home", to: "/" },

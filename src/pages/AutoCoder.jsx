@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 
 // ════════════════════════════════════════════════════════════
 //  FONT INJECTION  (idempotent)
@@ -448,6 +449,7 @@ function EmptyState({ icon, msg }) {
 //  MAIN COMPONENT
 // ════════════════════════════════════════════════════════════
 export default function AutocoderHub() {
+  const navigate = useNavigate();
   const [nav, setNav]             = useState("icd10");
   const [toasts, setToasts]       = useState([]);
   const [cart, setCart]           = useState([]);
@@ -921,6 +923,20 @@ export default function AutocoderHub() {
       }}>
         {/* Top edge shine */}
         <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)", pointerEvents:"none" }}/>
+
+        {/* Back to Hub */}
+        <button onClick={() => navigate('/hub')} style={{
+          display:"flex", alignItems:"center", gap:7, padding:"9px 13px", borderRadius:10,
+          border:"1px solid rgba(167,139,250,0.25)", width:"100%", marginBottom:16,
+          background:"rgba(167,139,250,0.08)", backdropFilter:"blur(16px)",
+          cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontSize:12,
+          color:"rgba(196,181,253,0.85)", transition:"all .2s",
+          boxShadow:"0 2px 12px rgba(167,139,250,0.1), inset 0 1px 0 rgba(255,255,255,0.08)",
+        }}
+        onMouseEnter={e=>{ e.currentTarget.style.background="rgba(167,139,250,0.18)"; e.currentTarget.style.borderColor="rgba(167,139,250,0.5)"; e.currentTarget.style.color="#c4b5fd"; }}
+        onMouseLeave={e=>{ e.currentTarget.style.background="rgba(167,139,250,0.08)"; e.currentTarget.style.borderColor="rgba(167,139,250,0.25)"; e.currentTarget.style.color="rgba(196,181,253,0.85)"; }}>
+          ← Back to Hub
+        </button>
 
         {/* Wordmark */}
         <div style={{ marginBottom:28, paddingLeft:8 }}>

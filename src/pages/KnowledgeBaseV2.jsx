@@ -1047,6 +1047,9 @@ function GuidelinesTab() {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
 
+  const handleSystemChange = (id) => { setActiveSystem(id); setSelected(null); };
+  const handleSearch = (val) => { setSearch(val); setSelected(null); };
+
   const allItems = Object.values(GUIDELINES_DATA).flatMap(d => d.items);
   const totalCount = allItems.length;
 
@@ -1083,15 +1086,15 @@ function GuidelinesTab() {
         {/* Search */}
         <div className="kb2-drug-search-wrap" style={{padding:'10px 14px',marginBottom:0}}>
           <div className="kb2-drug-search-row" style={{marginBottom:0}}>
-            <input className="kb2-drug-input" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search guidelines: sepsis, COPD, diabetes, stroke..."/>
-            {search && <button className="kb2-drug-btn" onClick={()=>setSearch('')} style={{whiteSpace:'nowrap'}}>Clear</button>}
+            <input className="kb2-drug-input" value={search} onChange={e=>handleSearch(e.target.value)} placeholder="Search guidelines: sepsis, COPD, diabetes, stroke..."/>
+            {search && <button className="kb2-drug-btn" onClick={()=>handleSearch('')} style={{whiteSpace:'nowrap'}}>Clear</button>}
           </div>
         </div>
 
         {/* System tabs */}
         <div style={{display:'flex',gap:5,overflowX:'auto',paddingBottom:4,scrollbarWidth:'none',flexShrink:0}}>
           {SYSTEM_TABS.map(t=>(
-            <button key={t.id} onClick={()=>setActiveSystem(t.id)}
+            <button key={t.id} onClick={()=>handleSystemChange(t.id)}
               style={{flexShrink:0,display:'flex',alignItems:'center',gap:4,padding:'5px 12px',borderRadius:20,fontSize:11,fontWeight:activeSystem===t.id?600:400,cursor:'pointer',border:activeSystem===t.id?'1px solid var(--accent-blue)':'1px solid var(--border)',background:activeSystem===t.id?'#0a2040':'var(--bg-card)',color:activeSystem===t.id?'var(--accent-blue)':'var(--text-muted)',transition:'all .15s',fontFamily:'DM Sans,sans-serif'}}>
               <span>{t.icon}</span><span>{selected ? t.icon : t.label}</span>
               {t.id!=='all' && GUIDELINES_DATA[t.id] && (
@@ -1284,7 +1287,7 @@ function DiseasesTab() {
   const filtered = DISEASES.filter(d => {
     const matchAlpha = alpha === 'all' || d.letter === alpha;
     const q = search.toLowerCase();
-    return matchAlpha && (!q || d.name.toLowerCase().includes(q) || d.aka.toLowerCase().includes(q));
+    return matchAlpha && (!q || d.name.toLowerCase().includes(q) || (d.aka||'').toLowerCase().includes(q));
   });
   const grouped = letters.reduce((acc, l) => {
     const items = filtered.filter(d => d.letter === l);

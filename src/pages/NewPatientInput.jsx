@@ -17,7 +17,7 @@ import EDProcedureNotes from "@/pages/EDProcedureNotes";
 import EDOrders from "@/pages/EDOrders";
 import MedicationReferencePage from "@/pages/MedicationReference";
 import ACSPage from "@/components/acs/ACSPage";
-import CardiacHub from "@/pages/CardiacHub";
+
 import ERPlanBuilder from "@/pages/ERPlanBuilder";
 import HPIPage from "@/pages/HPI";
 import ERxHub from "@/pages/ERx";
@@ -47,7 +47,6 @@ const NAV_DATA = {
     { section: "autocoder",  icon: "🤖", label: "AutoCoder",           abbr: "Ac", dot: "empty" },
     { section: "procedures", icon: "✂️", label: "Procedures",          abbr: "Pr", dot: "empty" },
     { section: "medref",     icon: "🧬", label: "ED Med Ref",          abbr: "Mr", dot: "empty" },
-    { section: "cardiac-hub", icon: "🏥", label: "Cardiac Hub",        abbr: "Ch", dot: "empty" },
   ],
 };
 
@@ -283,7 +282,7 @@ export default function NewPatientInput() {
       case "autocoder": return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} />;
       case "procedures": return <EDProcedureNotes embedded patientName={patientName} patientAllergies={allergies.join(", ")} physicianName="" />;
       case "medref": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto" }}><MedicationReferencePage embedded /></div>;
-      case "cardiac-hub": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto", background: "#050f1e" }}><CardiacHub /></div>;
+
       case "erplan": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><ERPlanBuilder embedded patientName={patientName} patientAge={demo.age} patientSex={demo.sex} patientCC={cc.text} patientVitals={vitals} patientAllergies={allergies} patientMedications={medications} /></div>;
       case "hpi": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto" }}><HPIPage /></div>;
 

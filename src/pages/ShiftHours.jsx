@@ -50,7 +50,7 @@ export default function ShiftHours() {
   const hourOptions = [12, 24, 36, 48, 72];
 
   return (
-    <div style={{ minHeight: "100vh", background: T.navy, padding: "20px" }}>
+    <div style={{ minHeight: "100vh", background: T.navy, padding: "20px", paddingTop: "80px" }}>
       {/* Header */}
       <div style={{ marginBottom: "40px", display: "flex", alignItems: "center", gap: "12px" }}>
         <a href={createPageUrl("Dashboard")} style={{ cursor: "pointer" }}>

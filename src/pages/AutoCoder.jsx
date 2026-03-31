@@ -834,13 +834,27 @@ export default function AutocoderHub() {
         {/* Back to Hub */}
         <button onClick={() => navigate('/hub')}
           style={{
-            display:"flex", alignItems:"center", gap:7, padding:"8px 12px", borderRadius:9,
-            border:`1px solid ${T.border}`, background:"transparent", cursor:"pointer",
-            fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt3, marginBottom:16,
-            transition:"all .15s", width:"100%",
+            display:"flex", alignItems:"center", gap:7, padding:"9px 14px", borderRadius:10,
+            border:"1px solid rgba(155,109,255,0.25)",
+            background:"rgba(155,109,255,0.08)",
+            backdropFilter:"blur(16px)", WebkitBackdropFilter:"blur(16px)",
+            cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontSize:12,
+            color:"rgba(185,155,255,0.85)", marginBottom:16,
+            transition:"all .2s", width:"100%",
+            boxShadow:"0 2px 12px rgba(155,109,255,0.1), inset 0 1px 0 rgba(255,255,255,0.05)",
           }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor=T.borderHi; e.currentTarget.style.color=T.txt2; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor=T.border; e.currentTarget.style.color=T.txt3; }}>
+          onMouseEnter={e => {
+            e.currentTarget.style.background="rgba(155,109,255,0.18)";
+            e.currentTarget.style.borderColor="rgba(155,109,255,0.5)";
+            e.currentTarget.style.color="#b99bff";
+            e.currentTarget.style.boxShadow="0 4px 18px rgba(155,109,255,0.22), inset 0 1px 0 rgba(255,255,255,0.08)";
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background="rgba(155,109,255,0.08)";
+            e.currentTarget.style.borderColor="rgba(155,109,255,0.25)";
+            e.currentTarget.style.color="rgba(185,155,255,0.85)";
+            e.currentTarget.style.boxShadow="0 2px 12px rgba(155,109,255,0.1), inset 0 1px 0 rgba(255,255,255,0.05)";
+          }}>
           ← Back to Hub
         </button>
 

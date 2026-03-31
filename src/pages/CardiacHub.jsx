@@ -600,7 +600,7 @@ html,body,#root{height:100%;background:var(--bg);color:var(--txt);font-family:'D
 .btn-primary:hover{filter:brightness(1.15)}
 .btn-coral{background:rgba(255,107,107,.15);color:var(--coral);border:1px solid rgba(255,107,107,.3);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-family:'DM Sans',sans-serif}
 .btn-coral:hover{background:rgba(255,107,107,.25)}
-.main-wrap{position:fixed;top:var(--top-h);left:var(--icon-sb);right:0;bottom:var(--bot-h);display:flex}
+.main-wrap{position:fixed;top:var(--top-h);left:var(--icon-sb);right:0;bottom:0;display:flex}
 .content{flex:1;overflow-y:auto;padding:18px 28px 30px;display:flex;flex-direction:column;gap:18px}
 .page-header{display:flex;align-items:center;gap:10px}
 .page-header-icon{font-size:20px}

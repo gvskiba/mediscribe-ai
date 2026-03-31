@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { base44 } from "@/api/base44Client";
 
 // ─── HUB REGISTRY ─────────────────────────────────────────────────────────────
 const HUBS = [
@@ -420,10 +421,15 @@ export default function HubSelectorPage() {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [sortBy, setSortBy] = useState("priority");
-  const [userEssentials, setUserEssentials] = useState(() => {
-    try { return new Set(JSON.parse(localStorage.getItem("notrya_essentials") || "null") || HUBS.filter(h => h.essential).map(h => h.id)); }
-    catch { return new Set(HUBS.filter(h => h.essential).map(h => h.id)); }
-  });
+  const [userEssentials, setUserEssentials] = useState(new Set(HUBS.filter(h => h.essential).map(h => h.id)));
+
+  useEffect(() => {
+    base44.auth.me().then(user => {
+      if (user?.hub_essentials?.length) {
+        setUserEssentials(new Set(user.hub_essentials));
+      }
+    }).catch(() => {});
+  }, []);
   const [recents, setRecents] = useState(() => {
     try { return JSON.parse(localStorage.getItem("notrya_recent_hubs") || "[]").slice(0, 4).map(id => HUBS.find(h => h.id === id)).filter(Boolean); }
     catch { return []; }
@@ -444,7 +450,7 @@ export default function HubSelectorPage() {
     setUserEssentials(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
-      try { localStorage.setItem("notrya_essentials", JSON.stringify([...next])); } catch {}
+      base44.auth.updateMe({ hub_essentials: [...next] }).catch(() => {});
       return next;
     });
   };

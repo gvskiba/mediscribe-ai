@@ -579,18 +579,9 @@ export default function HubSelectorPage() {
               </button>
             ))}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto" }}>
-            <span style={{ fontSize: 10, color: "#2e4a6a", fontFamily: "'JetBrains Mono',monospace", whiteSpace: "nowrap" }}>Sort:</span>
-            {[{id:"priority",label:"Default"},{id:"alpha",label:"A–Z"},{id:"category",label:"Category"},{id:"live",label:"Live First"}].map(opt => (
-              <button key={opt.id} onClick={() => setSortBy(opt.id)}
-                style={{ padding: "6px 12px", borderRadius: 20, fontSize: 11, fontWeight: 600, fontFamily: "'DM Sans',sans-serif", cursor: "pointer", transition: "all 0.2s", background: sortBy === opt.id ? "rgba(155,109,255,0.15)" : "rgba(8,22,40,0.75)", border: `1px solid ${sortBy === opt.id ? "rgba(155,109,255,0.45)" : "rgba(42,79,122,0.5)"}`, color: sortBy === opt.id ? "#9b6dff" : "#4a6a8a", backdropFilter: "blur(12px)" }}>
-                {opt.label}
-              </button>
-            ))}
-            <span style={{ fontSize: 11, color: "#2e4a6a", fontFamily: "'JetBrains Mono',monospace", marginLeft: 6, whiteSpace: "nowrap" }}>
-              {filtered.length} hub{filtered.length !== 1 ? "s" : ""}
-            </span>
-          </div>
+          <span style={{ fontSize: 11, color: "#2e4a6a", fontFamily: "'JetBrains Mono',monospace", marginLeft: "auto", whiteSpace: "nowrap" }}>
+            {filtered.length} hub{filtered.length !== 1 ? "s" : ""}
+          </span>
         </div>
 
         {/* Recently Used */}
@@ -615,6 +606,15 @@ export default function HubSelectorPage() {
                   <div style={{ height: 1, width: 24, background: "rgba(42,79,122,0.6)", borderRadius: 1 }} />
                   <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: "#4a6a8a", textTransform: "uppercase", letterSpacing: ".12em", fontWeight: 700 }}>All</span>
                   <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, rgba(42,79,122,0.4), transparent)" }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    <span style={{ fontSize: 10, color: "#2e4a6a", fontFamily: "'JetBrains Mono',monospace" }}>Sort:</span>
+                    {[{id:"priority",label:"Default"},{id:"alpha",label:"A–Z"},{id:"category",label:"Category"},{id:"live",label:"Live First"}].map(opt => (
+                      <button key={opt.id} onClick={() => setSortBy(opt.id)}
+                        style={{ padding: "4px 11px", borderRadius: 20, fontSize: 11, fontWeight: 600, fontFamily: "'DM Sans',sans-serif", cursor: "pointer", transition: "all 0.2s", background: sortBy === opt.id ? "rgba(155,109,255,0.15)" : "rgba(8,22,40,0.75)", border: `1px solid ${sortBy === opt.id ? "rgba(155,109,255,0.45)" : "rgba(42,79,122,0.5)"}`, color: sortBy === opt.id ? "#9b6dff" : "#4a6a8a", backdropFilter: "blur(12px)" }}>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
                   {rest.map((hub, i) => <HubCard key={hub.id} hub={hub} onNavigate={handleNavigate} index={i + 3} size="normal" />)}

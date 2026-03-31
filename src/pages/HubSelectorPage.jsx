@@ -299,7 +299,7 @@ function Background() {
   );
 }
 
-function HubCard({ hub, onNavigate, index, size = "normal" }) {
+function HubCard({ hub, onNavigate, index, size = "normal", isEssential = false, onToggleEssential }) {
   const [hov, setHov] = useState(false);
   const isLarge = size === "large";
   const isLive = LIVE_ROUTES.has(hub.route);
@@ -353,6 +353,15 @@ function HubCard({ hub, onNavigate, index, size = "normal" }) {
         {hub.stats.map((s, i) => (
           <span key={i} style={{ fontSize: 10, fontFamily: "'DM Sans',sans-serif", padding: "2px 8px", borderRadius: 20, background: hub.glass, border: `1px solid ${hub.border.replace("0.28","0.16")}`, color: "#8aaccc" }}>{s}</span>
         ))}
+      </div>
+
+      {/* Essential toggle star */}
+      <div
+        onClick={e => { e.stopPropagation(); onToggleEssential && onToggleEssential(hub.id); }}
+        title={isEssential ? "Remove from Essential" : "Add to Essential"}
+        style={{ position: "absolute", top: 12, left: 12, width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, cursor: "pointer", opacity: hov || isEssential ? 1 : 0, transition: "all 0.2s", background: isEssential ? "rgba(245,200,66,0.15)" : "rgba(14,37,68,0.6)", border: `1px solid ${isEssential ? "rgba(245,200,66,0.4)" : "rgba(42,79,122,0.4)"}`, color: isEssential ? "#f5c842" : "#4a6a8a", zIndex: 2 }}
+      >
+        {isEssential ? "★" : "☆"}
       </div>
 
       <div style={{ position: "absolute", bottom: 16, right: 16, width: 28, height: 28, borderRadius: "50%", background: hub.glass.replace("0.07","0.18"), border: `1px solid ${hub.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: hub.color, opacity: hov ? 1 : 0, transform: hov ? "scale(1) translateX(0)" : "scale(0.6) translateX(-6px)", transition: "all 0.22s ease" }}>→</div>
@@ -411,6 +420,10 @@ export default function HubSelectorPage() {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [sortBy, setSortBy] = useState("priority");
+  const [userEssentials, setUserEssentials] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("notrya_essentials") || "null") || HUBS.filter(h => h.essential).map(h => h.id)); }
+    catch { return new Set(HUBS.filter(h => h.essential).map(h => h.id)); }
+  });
   const [recents, setRecents] = useState(() => {
     try { return JSON.parse(localStorage.getItem("notrya_recent_hubs") || "[]").slice(0, 4).map(id => HUBS.find(h => h.id === id)).filter(Boolean); }
     catch { return []; }
@@ -427,11 +440,20 @@ export default function HubSelectorPage() {
     navigate(route);
   };
 
-  const essentials = HUBS.filter(h => h.essential).sort((a, b) => a.priority - b.priority);
+  const toggleEssential = (id) => {
+    setUserEssentials(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      try { localStorage.setItem("notrya_essentials", JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
+
+  const essentials = HUBS.filter(h => userEssentials.has(h.id)).sort((a, b) => a.priority - b.priority);
 
   const filteredBase = HUBS
     .filter(h => {
-      if (activeCategory === "Essential") return h.essential;
+      if (activeCategory === "Essential") return userEssentials.has(h.id);
       return activeCategory === "All" || h.category === activeCategory;
     })
     .filter(h =>
@@ -614,7 +636,7 @@ export default function HubSelectorPage() {
               <span style={{ fontSize: 10, color: "#4a6a8a", fontFamily: "'JetBrains Mono',monospace" }}>{essentials.length} hubs</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12 }}>
-              {essentials.map((hub, i) => <HubCard key={hub.id} hub={hub} onNavigate={handleNavigate} index={i} size="normal" />)}
+              {essentials.map((hub, i) => <HubCard key={hub.id} hub={hub} onNavigate={handleNavigate} index={i} size="normal" isEssential={true} onToggleEssential={toggleEssential} />)}
             </div>
           </div>
         )}
@@ -623,12 +645,13 @@ export default function HubSelectorPage() {
         {!search && activeCategory === "All" && (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, animation: "hub-appear 0.5s ease both 0.14s" }}>
+
               <div style={{ height: 1, width: 24, background: "rgba(0,229,192,0.4)", borderRadius: 1 }} />
               <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: "#00e5c0", textTransform: "uppercase", letterSpacing: ".12em", fontWeight: 700 }}>Featured</span>
               <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, rgba(0,229,192,0.2), transparent)" }} />
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 24 }}>
-              {featured.map((hub, i) => <HubCard key={hub.id} hub={hub} onNavigate={handleNavigate} index={i} size="large" />)}
+              {featured.map((hub, i) => <HubCard key={hub.id} hub={hub} onNavigate={handleNavigate} index={i} size="large" isEssential={userEssentials.has(hub.id)} onToggleEssential={toggleEssential} />)}
             </div>
             {rest.length > 0 && (
               <>
@@ -647,7 +670,7 @@ export default function HubSelectorPage() {
                   </div>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-                  {rest.map((hub, i) => <HubCard key={hub.id} hub={hub} onNavigate={handleNavigate} index={i + 3} size="normal" />)}
+                  {rest.map((hub, i) => <HubCard key={hub.id} hub={hub} onNavigate={handleNavigate} index={i + 3} size="normal" isEssential={userEssentials.has(hub.id)} onToggleEssential={toggleEssential} />)}
                 </div>
               </>
             )}
@@ -672,7 +695,7 @@ export default function HubSelectorPage() {
               </div>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
-                {filtered.map((hub, i) => <HubCard key={hub.id} hub={hub} onNavigate={handleNavigate} index={i} size="normal" />)}
+                {filtered.map((hub, i) => <HubCard key={hub.id} hub={hub} onNavigate={handleNavigate} index={i} size="normal" isEssential={userEssentials.has(hub.id)} onToggleEssential={toggleEssential} />)}
               </div>
             )}
           </>

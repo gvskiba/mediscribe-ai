@@ -332,7 +332,7 @@ const pad = n => String(n).padStart(2, "0");
 const TODAY_DATE = `${pad(now.getMonth()+1)}/${pad(now.getDate())}/${now.getFullYear()}`;
 const TODAY_TIME = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
-export default function DischargePlanning({ embedded = false }) {
+export default function DischargePlanning({ embedded = false, patientName: propPatientName = '', patientAge = '', patientSex = '', chiefComplaint: propCC = '', vitals: propVitals = {}, medications: propMedications = [], allergies: propAllergies = [] }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [clinicalNotes, setClinicalNotes] = useState([]);
   const [selectedNoteId, setSelectedNoteId] = useState(null);
@@ -356,11 +356,11 @@ export default function DischargePlanning({ embedded = false }) {
   }, []);
 
   const note = clinicalNotes.find(n => n.id === selectedNoteId) || null;
-  const patientName = note?.patient_name || "— Patient Name —";
+  const patientName = propPatientName || note?.patient_name || "— Patient Name —";
   const patientMRN  = note?.patient_id  || "00847291";
   const patientDOB  = note?.date_of_birth || "04/22/1962";
-  const patientCC   = note?.chief_complaint || "Chest Pain";
-  const noteAllergies = note?.allergies || [];
+  const patientCC   = propCC || note?.chief_complaint || "Chest Pain";
+  const noteAllergies = propAllergies.length ? propAllergies : (note?.allergies || []);
   const attendingName = currentUser?.full_name || "Dr. Gabriel Skiba";
 
   // UI state
@@ -401,11 +401,16 @@ export default function DischargePlanning({ embedded = false }) {
   const [newFu, setNewFu] = useState("");
   const [newFuUrg, setNewFuUrg] = useState("Routine");
 
-  // Meds
-  const [dcRxList, setDcRxList] = useState([
-    { id:"r1", drug:"Aspirin 81mg", sig:"Take 1 tablet by mouth once daily", type:"CONTINUE" },
-    { id:"r2", drug:"Nitroglycerin 0.4mg SL", sig:"Place 1 tablet under tongue for chest pain. Call 911 if no relief.", type:"NEW" },
-  ]);
+  // Meds — pre-populate from patient state if available
+  const [dcRxList, setDcRxList] = useState(() => {
+    if (propMedications.length) {
+      return propMedications.slice(0, 8).map((m, i) => ({ id: 'r' + i, drug: m, sig: 'As prescribed', type: 'CONTINUE' }));
+    }
+    return [
+      { id:"r1", drug:"Aspirin 81mg", sig:"Take 1 tablet by mouth once daily", type:"CONTINUE" },
+      { id:"r2", drug:"Nitroglycerin 0.4mg SL", sig:"Place 1 tablet under tongue for chest pain. Call 911 if no relief.", type:"NEW" },
+    ];
+  });
   const [newRxDrug, setNewRxDrug] = useState("");
   const [newRxSig, setNewRxSig] = useState("");
   const [newRxType, setNewRxType] = useState("NEW");

@@ -175,13 +175,18 @@ function now() {
 }
 
 /* ─── COMPONENT ──────────────────────────────────── */
-export default function MDMTab({ patientName = 'Patient', chiefComplaint = '' }) {
+export default function MDMTab({ patientName = 'Patient', chiefComplaint = '', vitals = {}, medications = [], allergies = [], rosState = {}, peState = {} }) {
   const [labs, setLabs] = useState({});      // { id: { name, units, ref, value, flag } }
   const [imaging, setImaging] = useState([]);
   const [ekgFindings, setEkgFindings] = useState([]);
   const [ekgText, setEkgText] = useState('');
   const [timeline, setTimeline] = useState([]);
-  const [vitalsHistory, setVitalsHistory] = useState([{ time:'Arrival', bp:'158/96', hr:112, rr:18, spo2:98, temp:98.6, pain:7, gcs:15 }]);
+  const [vitalsHistory, setVitalsHistory] = useState(() => {
+    if (vitals.bp || vitals.hr) {
+      return [{ time:'Arrival', bp: vitals.bp || '—', hr: parseInt(vitals.hr) || 0, rr: parseInt(vitals.rr) || 0, spo2: parseInt(vitals.spo2) || 0, temp: parseFloat(vitals.temp) || 0, pain: parseInt(vitals.pain) || 0, gcs: parseInt(vitals.gcs) || 15 }];
+    }
+    return [{ time:'Arrival', bp:'158/96', hr:112, rr:18, spo2:98, temp:98.6, pain:7, gcs:15 }];
+  });
   const [assessment, setAssessment] = useState(null);
   const [dispo, setDispo] = useState(null);
   const [mdmLevel, setMdmLevel] = useState(3);
@@ -308,7 +313,9 @@ export default function MDMTab({ patientName = 'Patient', chiefComplaint = '' })
     const labList = Object.values(labs);
     if (!labList.length && !imaging.length && !ekgFindings.length) { showToast('⚠ Add results first'); return; }
     setAiLoading(true); setAiInterp(null);
-    let ctx = `Patient: ${patientName}, CC: ${chiefComplaint || 'Not specified'}\n`;
+    const allergyStr = allergies.length ? allergies.join(', ') : 'NKDA';
+    const medStr = medications.length ? medications.slice(0, 6).join(', ') : 'None';
+    let ctx = `Patient: ${patientName}, CC: ${chiefComplaint || 'Not specified'}, Allergies: ${allergyStr}, Current Meds: ${medStr}\n`;
     if (labList.length) ctx += 'Labs:\n' + labList.map(l => `${l.name}: ${l.value} ${l.units} (ref: ${l.ref})${l.flag ? ' ['+l.flag+']':''}`).join('\n') + '\n';
     if (imaging.length) ctx += 'Imaging:\n' + imaging.map(i => `${i.type} ${i.name}: ${i.result||'Pending'} (${i.status})`).join('\n') + '\n';
     if (ekgFindings.length) ctx += `EKG: ${ekgFindings.join(', ')}\n`;

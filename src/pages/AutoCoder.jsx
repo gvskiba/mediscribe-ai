@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 
 // ════════════════════════════════════════════════════════════
 //  FONT INJECTION  (idempotent — runs once at module load)
@@ -363,6 +364,7 @@ function EmptyState({ icon, msg }) {
 //  MAIN COMPONENT
 // ════════════════════════════════════════════════════════════
 export default function AutocoderHub() {
+  const navigate = useNavigate();
   const [nav, setNav]             = useState("icd10");
   const [toasts, setToasts]       = useState([]);
   const [cart, setCart]           = useState([]);
@@ -829,6 +831,19 @@ export default function AutocoderHub() {
         display:"flex", flexDirection:"column", padding:"24px 14px", gap:3,
         boxShadow:`4px 0 28px rgba(0,0,0,0.4),inset -1px 0 0 ${T.borderHi}`,
       }}>
+        {/* Back to Hub */}
+        <button onClick={() => navigate('/hub')}
+          style={{
+            display:"flex", alignItems:"center", gap:7, padding:"8px 12px", borderRadius:9,
+            border:`1px solid ${T.border}`, background:"transparent", cursor:"pointer",
+            fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt3, marginBottom:16,
+            transition:"all .15s", width:"100%",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor=T.borderHi; e.currentTarget.style.color=T.txt2; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor=T.border; e.currentTarget.style.color=T.txt3; }}>
+          ← Back to Hub
+        </button>
+
         {/* Wordmark */}
         <div style={{ marginBottom:26, paddingLeft:6 }}>
           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:3 }}>

@@ -230,6 +230,23 @@ const HUBS = [
     priority: 13,
   },
   {
+    id: "calendar",
+    route: "/Calendar",
+    icon: "📅",
+    abbr: "CAL",
+    title: "Provider Schedule",
+    subtitle: "Shift calendar · Day, night, on-call · Monthly tracking",
+    color: "#00e5c0",
+    glow: "rgba(0,229,192,0.4)",
+    glass: "rgba(0,229,192,0.07)",
+    border: "rgba(0,229,192,0.28)",
+    accent: "#33eccc",
+    category: "Tools",
+    stats: ["Month View", "Week View", "Shift Tracking"],
+    badge: "Live",
+    priority: 7.5,
+  },
+  {
     id: "newpatient",
     route: "/NewPatientInput",
     icon: "🆕",
@@ -258,7 +275,7 @@ const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
   "/peds-hub", "/Procedures", "/erx", "/AutoCoder", "/NewPatientInput",
-  "/KnowledgeBaseV2",
+  "/KnowledgeBaseV2", "/Calendar",
 ]);
 
 function Background() {

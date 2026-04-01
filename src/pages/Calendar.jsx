@@ -593,6 +593,23 @@ export default function CalendarPage() {
     description: JSON.stringify({ end:s.end, hours:s.hours, dept:s.dept, notes:s.notes, location:s.location }),
   });
 
+  // One-time migration from localStorage
+  useEffect(()=>{
+    (async()=>{
+      try {
+        const raw = localStorage.getItem("cal_shifts");
+        if (!raw) return;
+        const local = JSON.parse(raw);
+        if (!Array.isArray(local) || local.length === 0) { localStorage.removeItem("cal_shifts"); return; }
+        // Create each shift as a CalendarEvent
+        await Promise.all(local.map(s => base44.entities.CalendarEvent.create(toEvent(s))));
+        localStorage.removeItem("cal_shifts");
+        console.log(`Migrated ${local.length} shift(s) from localStorage to CalendarEvent.`);
+      } catch(e) { console.warn("Migration error:", e); }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Load
   useEffect(()=>{
     base44.entities.CalendarEvent.list("-date", 500)

@@ -86,7 +86,7 @@ import NursingFlowsheet from './pages/NursingFlowsheet';
 import OrderSetBuilder from './pages/OrderSetBuilder';
 import PatientDashboard from './pages/PatientDashboard';
 import PatientEducationGenerator from './pages/PatientEducationGenerator';
-import PatientHistory from './pages/PatientHistory';
+
 import PediatricDosing from './pages/PediatricDosing';
 import Procedures from './pages/Procedures';
 import Results from './pages/Results';
@@ -139,7 +139,7 @@ export const PAGES = {
     "OrderSetBuilder": OrderSetBuilder,
     "PatientDashboard": PatientDashboard,
     "PatientEducationGenerator": PatientEducationGenerator,
-    "PatientHistory": PatientHistory,
+
     "PediatricDosing": PediatricDosing,
     "Procedures": Procedures,
     "Results": Results,

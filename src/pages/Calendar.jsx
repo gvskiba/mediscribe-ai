@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { base44 } from "@/api/base44Client";
 
 /* ─── DESIGN TOKENS ─────────────────────────────────────────────── */
 const C = {
@@ -575,26 +576,46 @@ export default function CalendarPage() {
   const [shifts, setShifts] = useState([]);
   const [selectedDept, setSelectedDept] = useState("all");
   const [modal, setModal] = useState(null); // null | { shift?, dateStr }
-  const [loaded, setLoaded] = useState(false);
 
-  // Persist
+  // Helper: CalendarEvent <-> shift object
+  const toShift = ev => {
+    let extra = {};
+    try { extra = JSON.parse(ev.description||"{}")} catch{}
+    return { id:ev.id, date:ev.date, title:ev.title||"" , type:ev.color||"day",
+      start:ev.time||"", end:extra.end||"", hours:extra.hours??12,
+      dept:extra.dept||"all", notes:extra.notes||"", location:extra.location||"" };
+  };
+  const toEvent = s => ({
+    title: s.title || shiftOf(s.type).label,
+    date: s.date,
+    time: s.start || "",
+    color: s.type,
+    description: JSON.stringify({ end:s.end, hours:s.hours, dept:s.dept, notes:s.notes, location:s.location }),
+  });
+
+  // Load
   useEffect(()=>{
-    try{const r=localStorage.getItem("cal_shifts");if(r)setShifts(JSON.parse(r));}catch{}
-    setLoaded(true);
+    base44.entities.CalendarEvent.list("-date", 500)
+      .then(evs => setShifts(evs.map(toShift)))
+      .catch(()=>{});
   },[]);
-  useEffect(()=>{
-    if(!loaded) return;
-    try{localStorage.setItem("cal_shifts",JSON.stringify(shifts));}catch{}
-  },[shifts,loaded]);
 
-  const saveShift = s => {
-    setShifts(prev=>{
-      const exists = prev.find(p=>p.id===s.id);
-      return exists ? prev.map(p=>p.id===s.id?s:p) : [...prev,s];
-    });
+  const saveShift = async s => {
+    const eventData = toEvent(s);
+    if(s.id && shifts.find(p=>p.id===s.id)) {
+      await base44.entities.CalendarEvent.update(s.id, eventData);
+      setShifts(prev=>prev.map(p=>p.id===s.id?{...s}:p));
+    } else {
+      const created = await base44.entities.CalendarEvent.create(eventData);
+      setShifts(prev=>[...prev, toShift(created)]);
+    }
     setModal(null);
   };
-  const deleteShift = id => { setShifts(p=>p.filter(s=>s.id!==id)); setModal(null); };
+  const deleteShift = async id => {
+    await base44.entities.CalendarEvent.delete(id);
+    setShifts(p=>p.filter(s=>s.id!==id));
+    setModal(null);
+  };
 
   const handleShiftClick = (shift, prefilled=null, quickSave=false) => {
     if(quickSave && prefilled){ saveShift(prefilled); return; }

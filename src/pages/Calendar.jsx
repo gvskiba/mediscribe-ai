@@ -579,14 +579,12 @@ export default function CalendarPage() {
 
   // Persist
   useEffect(()=>{
-    (async()=>{
-      try{const r=await window.storage.get("cal_shifts");if(r)setShifts(JSON.parse(r.value));}catch{}
-      setLoaded(true);
-    })();
+    try{const r=localStorage.getItem("cal_shifts");if(r)setShifts(JSON.parse(r));}catch{}
+    setLoaded(true);
   },[]);
   useEffect(()=>{
     if(!loaded) return;
-    window.storage.set("cal_shifts",JSON.stringify(shifts)).catch(()=>{});
+    try{localStorage.setItem("cal_shifts",JSON.stringify(shifts));}catch{}
   },[shifts,loaded]);
 
   const saveShift = s => {

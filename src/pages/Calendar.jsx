@@ -624,7 +624,7 @@ export default function CalendarPage() {
     <div style={{
       minHeight:"100vh", background:C.bg, color:C.txt,
       fontFamily:"'DM Sans',sans-serif", display:"flex", flexDirection:"column",
-      padding:"16px", gap:14, boxSizing:"border-box",
+      padding:"80px 16px 16px", gap:14, boxSizing:"border-box",
     }}>
       <style>{`
         *{box-sizing:border-box;margin:0;padding:0}

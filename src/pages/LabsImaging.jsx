@@ -1110,7 +1110,7 @@ Format: {"clinicalSummary":"2–3 sentence narrative summary","prioritizedFindin
       </nav>
 
       {/* ── MAIN ── */}
-      <main style={{flex:1,padding:"80px 38px 52px",overflowY:"auto",position:"relative",zIndex:1}}>
+      <main style={{flex:1,padding:"130px 38px 52px",overflowY:"auto",position:"relative",zIndex:1}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:22}}>
           <div style={{height:1,width:24,background:`${activeNav?.accent||AC}60`,borderRadius:1,boxShadow:`0 0 6px ${activeNav?.accent||AC}`}}/>
           <span style={{fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:activeNav?.accent||AC,textTransform:"uppercase",letterSpacing:".14em",fontWeight:700,textShadow:`0 0 14px ${activeNav?.accent||AC}80`}}>{activeNav?.label}</span>

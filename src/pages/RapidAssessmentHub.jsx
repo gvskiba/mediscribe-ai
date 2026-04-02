@@ -1,675 +1,894 @@
-/**
- * RapidAssessmentHub.jsx — Notrya Clinical Platform
- * 10-minute workup templates by chief complaint
- */
 import { useState, useMemo } from "react";
 
+// ── Font Injection ────────────────────────────────────────────────────
 (() => {
-  const ID = "notrya-rapid-fonts";
-  if (document.getElementById(ID)) return;
+  if (document.getElementById("rapid-fonts")) return;
   const l = document.createElement("link");
-  l.id = ID; l.rel = "stylesheet";
-  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;900&family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
+  l.id = "rapid-fonts"; l.rel = "stylesheet";
+  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
   document.head.appendChild(l);
+  const s = document.createElement("style"); s.id = "rapid-css";
+  s.textContent = `
+    *{box-sizing:border-box;margin:0;padding:0;}
+    ::-webkit-scrollbar{width:3px;height:3px;}
+    ::-webkit-scrollbar-track{background:transparent;}
+    ::-webkit-scrollbar-thumb{background:rgba(42,79,122,0.5);border-radius:2px;}
+    @keyframes fadeSlide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+    @keyframes pulseAlert{0%,100%{opacity:1}50%{opacity:.55}}
+    .fade-in{animation:fadeSlide .25s ease forwards;}
+    .shimmer-text{background:linear-gradient(90deg,#e8f0fe 0%,#fff 30%,#ff6b6b 52%,#f5c842 72%,#e8f0fe 100%);background-size:250% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 5s linear infinite;}
+    .cc-row{transition:background .12s,border-color .12s;}
+    .cc-row:hover{background:rgba(14,37,68,0.85)!important;border-color:rgba(42,79,122,0.5)!important;}
+    .phase-card{transition:transform .15s;}
+    .phase-card:hover{transform:translateY(-1px);}
+  `;
+  document.head.appendChild(s);
 })();
 
-const AC = "#06b6d4";
 const T = {
-  bg:"#04080f", glass:"rgba(255,255,255,0.06)", glassD:"rgba(255,255,255,0.025)",
-  border:"rgba(255,255,255,0.08)", borderHi:"rgba(255,255,255,0.16)",
-  shine:"inset 0 1px 0 rgba(255,255,255,0.11)",
-  txt:"#f0f4ff", txt2:"#a5b8d8", txt3:"#5a7490", txt4:"#2e4060",
-  teal:"#2dd4bf", gold:"#fbbf24", coral:"#f87171",
-  blue:"#60a5fa", purple:"#a78bfa", green:"#34d399", orange:"#fb923c",
+  bg:"#050f1e", panel:"#081628", card:"#0b1e36", up:"#0e2544",
+  b:"rgba(26,53,85,0.8)", bhi:"rgba(42,79,122,0.9)",
+  txt:"#e8f0fe", txt2:"#8aaccc", txt3:"#4a6a8a", txt4:"#2e4a6a",
+  red:"#ff4444", orange:"#ff9f43", yellow:"#f5c842", green:"#3dffa0",
+  blue:"#3b9eff", purple:"#9b6dff", teal:"#00e5c0", coral:"#ff6b6b", cyan:"#00d4ff",
+};
+const glass = {backdropFilter:"blur(24px) saturate(200%)",WebkitBackdropFilter:"blur(24px) saturate(200%)",background:"rgba(8,22,40,0.75)",border:"1px solid rgba(42,79,122,0.35)",borderRadius:16};
+
+const ESI_META = {
+  1:{color:T.red,   label:"Immediate",  tc:"#fff"},
+  2:{color:T.orange,label:"Emergent",   tc:"#fff"},
+  3:{color:T.yellow,label:"Urgent",     tc:"#050f1e"},
+  4:{color:T.blue,  label:"Less Urgent",tc:"#fff"},
+  5:{color:T.green, label:"Non-Urgent", tc:"#050f1e"},
 };
 
-const Gx = {
-  panel:(a)=>({background:a?`linear-gradient(135deg,${a}0a,rgba(255,255,255,0.05))`:T.glass,backdropFilter:"blur(32px) saturate(160%)",WebkitBackdropFilter:"blur(32px) saturate(160%)",border:`1px solid ${a?a+"28":T.border}`,borderRadius:18,boxShadow:`0 8px 32px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.12)${a?`,0 0 30px ${a}12`:""}`,position:"relative",overflow:"hidden"}),
-  row:(a)=>({background:a?`${a}08`:T.glassD,border:`1px solid ${a?a+"25":T.border}`,borderRadius:11,boxShadow:T.shine}),
-  btn:(a,f)=>({background:f?`linear-gradient(135deg,${a}cc,${a}88)`:"rgba(255,255,255,0.06)",border:`1px solid ${f?a+"60":T.borderHi}`,borderRadius:10,boxShadow:f?`0 4px 18px ${a}30,inset 0 1px 0 rgba(255,255,255,0.25)`:T.shine,color:f?"#fff":T.txt2,fontFamily:"'DM Sans',sans-serif",fontWeight:600,cursor:"pointer",transition:"all .2s"}),
-  inp:()=>({background:"rgba(255,255,255,0.05)",border:`1px solid ${T.border}`,borderRadius:12,boxShadow:T.shine,color:T.txt,fontFamily:"'DM Sans',sans-serif",fontSize:13,outline:"none",transition:"border-color .2s"}),
-};
+const CATEGORIES = [
+  {id:"all",       label:"All",        color:T.txt3},
+  {id:"cardiac",   label:"Cardiac",    color:T.coral},
+  {id:"pulmonary", label:"Pulmonary",  color:T.blue},
+  {id:"neuro",     label:"Neuro",      color:T.purple},
+  {id:"gi",        label:"GI",         color:T.orange},
+  {id:"infectious",label:"Infectious", color:T.teal},
+  {id:"trauma",    label:"Trauma",     color:T.red},
+  {id:"tox",       label:"Tox",        color:T.yellow},
+  {id:"peds",      label:"Peds",       color:T.green},
+  {id:"msk",       label:"MSK",        color:T.cyan},
+  {id:"allergy",   label:"Allergy",    color:T.orange},
+];
 
-// ── Workup Template Data ─────────────────────────────────────
-const CATEGORIES = ["Cardiac","Neurological","Respiratory","Abdominal","Trauma","Infectious","Other"];
+const PHASE_META = [
+  {key:"immediate", time:"0 – 1 min",  label:"Immediate Actions", color:T.red,    icon:"⚡"},
+  {key:"history",   time:"2 – 4 min",  label:"Focused History",   color:T.orange, icon:"📋"},
+  {key:"exam",      time:"5 – 7 min",  label:"Physical Exam",     color:T.yellow, icon:"🔍"},
+  {key:"orders",    time:"7 – 10 min", label:"Initial Orders",    color:T.teal,   icon:"📝"},
+];
 
-const TEMPLATES = [
+// ── Complaint Data ───────────────────────────────────────────────────
+const COMPLAINTS = [
   {
-    id:"chest_pain", icon:"❤️", title:"Chest Pain", cat:"Cardiac", accent:"#f87171",
-    esi:[1,2], badge:"ESI 1–2", critical:"STEMI / Aortic Dissection / PE",
-    phases:[
-      {
-        phase:"0–2 min", label:"Immediate Actions", color:"#f87171",
-        steps:[
-          {action:"12-lead ECG", detail:"Interpret within 10 min of arrival. STEMI → cath lab activation immediately.", priority:"stat"},
-          {action:"IV access × 2 + cardiac monitor", detail:"Large bore antecubital. Continuous O2 sat, BP, HR monitoring.", priority:"stat"},
-          {action:"Vital signs + brief HPI", detail:"Onset, quality, radiation, severity (0-10), associated sx, prior cardiac hx.", priority:"stat"},
-          {action:"Aspirin 325 mg PO", detail:"If no allergy and ACS suspected. Chew, don't swallow whole.", priority:"stat"},
-        ]
-      },
-      {
-        phase:"2–5 min", label:"Diagnostic Workup", color:"#fb923c",
-        steps:[
-          {action:"hs-Troponin (0h)", detail:"Serial at 1–2h. Delta >5 ng/L = significant rise. HEART score ≤3 + neg = low risk.", priority:"urgent"},
-          {action:"CXR (portable if unstable)", detail:"Widened mediastinum → dissection. Pulmonary edema → CHF. PTX.", priority:"urgent"},
-          {action:"BMP + CBC + coags + BNP", detail:"Renal function for contrast/anticoagulation dosing. BNP >400 = CHF.", priority:"urgent"},
-          {action:"HEART Score calculation", detail:"History · ECG · Age · Risk factors · Troponin. ≤3 = low risk discharge pathway.", priority:"urgent"},
-        ]
-      },
-      {
-        phase:"5–10 min", label:"Risk Stratification & Plan", color:"#fbbf24",
-        steps:[
-          {action:"POCUS (subxiphoid + parasternal)", detail:"Pericardial effusion, RWMA, EF estimate. <2 min at bedside.", priority:"routine"},
-          {action:"CTA chest if dissection suspected", detail:"D-dimer <500 = low risk for PE (if Wells ≤4). Tearing/ripping pain + HTN → CTA.", priority:"routine"},
-          {action:"Classify: STEMI / NSTEMI / UA / Non-cardiac", detail:"STEMI → cath. NSTEMI/UA → admit. HEART ≤3 neg troponin → discharge pathway.", priority:"routine"},
-          {action:"Anticoagulation decision", detail:"UFH for ACS. DOAC for PE. AVOID anticoagulation if dissection not excluded.", priority:"routine"},
-        ]
-      },
+    id:"chest_pain", label:"Chest Pain", category:"cardiac", esi:2, icon:"🫀", color:T.coral,
+    tagline:"ACS, dissection, PE, PTX — rule out life threats before anchoring",
+    immediate:[
+      "12-lead ECG within 10 min — physician review immediately",
+      "IV access x2, continuous cardiac monitor, pulse ox",
+      "O2 only if SpO2 < 94% — hyperoxia harmful in ACS",
+      "ASA 325 mg PO chewed if no contraindication",
+      "Vitals q5 min; if SBP < 90 — escalate to ESI 1 now",
     ],
-    pearls:["STEMI equivalent: de Winter T-waves, Wellens, posterior (V7–V9)","Cocaine-associated CP: AVOID beta-blockers — benzodiazepines first","Women, elderly, diabetics: atypical presentations — low threshold for workup","Right-sided leads (V3R/V4R) if inferior STEMI — rule out RV infarct"],
-    dispositions:[{label:"STEMI / Unstable",action:"Cath lab activation",color:"#f87171"},{label:"NSTEMI / High HEART",action:"Admit cardiology",color:"#fb923c"},{label:"Low HEART + neg troponin",action:"Discharge + 72h cardiology f/u",color:"#34d399"}],
+    history:[
+      "OPQRST: onset (sudden vs exertional), quality (pressure, tearing, pleuritic), radiation",
+      "Diaphoresis, nausea, vomiting, dyspnea, syncope",
+      "Prior cardiac hx: PCI, CABG, stents, prior MI",
+      "Risk factors: DM, HTN, tobacco, hyperlipidemia, FHx sudden cardiac death",
+      "Tearing or ripping pain radiating to back — dissection until proven otherwise",
+      "Anticoagulants, PDE5 inhibitors (NTG contraindicated within 24–48h)",
+    ],
+    exam:[
+      "Bilateral arm BP — difference > 20 mmHg suggests aortic dissection",
+      "JVD, S3/S4, new murmur or pericardial rub",
+      "Lung fields: crackles (CHF), wheeze",
+      "Peripheral edema, distal pulses all four extremities",
+      "Diaphoresis, pallor, cyanosis — autonomic activation",
+    ],
+    orders:[
+      "Troponin at 0h and 3h (or high-sensitivity troponin per protocol)",
+      "BMP, CBC, coags, BNP if CHF concern",
+      "Portable CXR: mediastinal widening, cardiomegaly, pulmonary edema",
+      "NTG 0.4 mg SL if SBP > 90 and no recent PDE5 use",
+      "D-dimer if low-risk PE; CT angio chest if dissection concern",
+    ],
+    redFlags:[
+      "ST elevation any lead — activate STEMI alert immediately",
+      "New LBBB with symptoms — treat as STEMI equivalent",
+      "Diaphoresis + radiation = high pre-test probability for ACS",
+      "Hypotension with chest pain — cardiogenic shock or massive PE",
+      "Pulse differential or BP differential — aortic dissection",
+    ],
+    dontMiss:["STEMI","Aortic Dissection","Massive PE","Tension PTX","Esophageal Rupture"],
+    pearl:"Normal troponin at 0h does not rule out ACS — serial troponins with clinical context required. In STEMI, every 10-minute delay in reperfusion increases mortality. Door-to-balloon goal is 90 minutes.",
   },
   {
-    id:"sob", icon:"🫁", title:"Shortness of Breath", cat:"Respiratory", accent:"#60a5fa",
-    esi:[1,2,3], badge:"ESI 1–3", critical:"Tension PTX / Flash Pulmonary Edema / Status Asthmaticus",
-    phases:[
-      {
-        phase:"0–2 min", label:"Immediate Actions", color:"#f87171",
-        steps:[
-          {action:"Airway + work of breathing assessment", detail:"Tripod position, accessory muscles, unable to speak full sentences = ESI 1–2.", priority:"stat"},
-          {action:"SpO2 + supplemental O2", detail:"Target ≥94% (88–92% in COPD). NC → NRM → HFNC 40–60 L/min → BiPAP.", priority:"stat"},
-          {action:"RR + auscultation", detail:"Wheeze = bronchospasm. Silent chest = near-fatal asthma. Crackles = pulmonary edema.", priority:"stat"},
-          {action:"Albuterol 2.5 mg neb if wheeze", detail:"Add ipratropium 0.5 mg for COPD/severe asthma. Don't delay for labs.", priority:"stat"},
-        ]
-      },
-      {
-        phase:"2–5 min", label:"Diagnostic Workup", color:"#fb923c",
-        steps:[
-          {action:"Lung + cardiac POCUS", detail:"B-lines bilateral = pulmonary edema. Absent sliding = PTX. RWMA = ACS-related CHF.", priority:"urgent"},
-          {action:"CXR", detail:"PTX, pulmonary edema, consolidation, effusion. Portable if O2-dependent.", priority:"urgent"},
-          {action:"ABG/VBG + BNP + D-dimer", detail:"PaCO2 rising = respiratory failure. BNP >400 = CHF. D-dimer if Wells ≥2.", priority:"urgent"},
-          {action:"12-lead ECG", detail:"RV strain (S1Q3T3, RBBB) → PE. ST changes → ACS. Arrhythmia.", priority:"urgent"},
-        ]
-      },
-      {
-        phase:"5–10 min", label:"Diagnosis & Treatment", color:"#fbbf24",
-        steps:[
-          {action:"Classify: CHF / PE / Pneumonia / Asthma / COPD", detail:"CXR + POCUS + BNP + clinical guides diagnosis. Treat empirically while awaiting results.", priority:"routine"},
-          {action:"IV furosemide if CHF", detail:"0.5–1 mg/kg IV. BiPAP for flash pulmonary edema (CPAP 5–10, IPAP 10–15).", priority:"routine"},
-          {action:"Steroids if asthma/COPD", detail:"Methylprednisolone 125 mg IV or prednisone 40 mg PO.", priority:"routine"},
-          {action:"PE workup vs anticoagulation", detail:"CTA-PE if Wells ≥2 and D-dimer positive. Heparin if high probability while awaiting CT.", priority:"routine"},
-        ]
-      },
+    id:"dyspnea", label:"Shortness of Breath", category:"pulmonary", esi:2, icon:"🫁", color:T.blue,
+    tagline:"Silent chest in asthma is pre-arrest — assess work of breathing before anything else",
+    immediate:[
+      "Upright position, high-flow O2 via NRB if SpO2 < 90%",
+      "Pulse ox, RR, vitals continuous; cardiac monitor",
+      "IV access, 12-lead ECG",
+      "Lung POCUS: B-lines (CHF/PNA), PTX, effusion — faster than CXR",
+      "RR > 30 or SpO2 failing on NRB — prepare for RSI or BiPAP now",
     ],
-    pearls:["HFNC reduces intubation in hypoxic respiratory failure — use early","Silent chest in asthma = imminent respiratory arrest — RSI preparation","Anaphylaxis can present as SOB: check for urticaria, BP, recent exposure","ETCO2 waveform: flat = PTX/PE; shark fin = bronchospasm; normal = metabolic"],
-    dispositions:[{label:"Severe hypoxia / intubation",action:"ICU",color:"#f87171"},{label:"Moderate SOB, O2 dependent",action:"Admit telemetry",color:"#fb923c"},{label:"Resolved, SpO2 >94% on RA",action:"Discharge with PCP f/u",color:"#34d399"}],
+    history:[
+      "Onset: sudden (PE, PTX) vs gradual (CHF, PNA, malignancy)",
+      "Orthopnea, PND, bilateral lower extremity edema",
+      "Fever, cough, sputum character and color",
+      "Prior COPD, asthma, CHF, PE, malignancy",
+      "Recent travel, immobilization, surgery, oral contraceptive use — PE risk",
+      "ACEi use (angioedema), beta-blocker use (masks tachycardia in PE)",
+    ],
+    exam:[
+      "Work of breathing: accessory muscle use, tripoding, nasal flaring, retractions",
+      "Auscultation: wheeze (obstruction), crackles (CHF/PNA), absent BS (PTX/effusion)",
+      "Tracheal deviation — tension PTX until decompressed",
+      "JVD, bilateral leg edema — CHF or massive PE",
+      "Skin: diaphoresis, cyanosis, mottling — severity markers",
+    ],
+    orders:[
+      "CXR portable; ABG if SpO2 < 92% or CO2 concern (COPD)",
+      "BNP, D-dimer per pretest probability; CBC, BMP",
+      "Albuterol 2.5 mg neb + ipratropium 0.5 mg if bronchospasm",
+      "Furosemide 40–80 mg IV if fluid overload suspected",
+      "CPAP/BiPAP for hypercapnic COPD exacerbation or cardiogenic pulmonary edema",
+    ],
+    redFlags:[
+      "Silent chest in asthmatic — near-fatal asthma, prepare RSI immediately",
+      "Absent unilateral breath sounds — tension PTX, needle decompress 2nd ICS MCL",
+      "SpO2 not improving on NRB — ABG, imminent intubation",
+      "Stridor — upper airway emergency, prepare surgical airway",
+      "Rising pCO2 on serial ABG — ventilatory failure, do not delay intubation",
+    ],
+    dontMiss:["Tension PTX","Massive PE","Status Asthmaticus","Flash Pulmonary Edema","Foreign Body Airway"],
+    pearl:"Target SpO2 88–92% in COPD — over-oxygenation suppresses hypoxic drive and worsens hypercapnia. Lung POCUS diagnoses pneumothorax and B-lines faster and with greater accuracy than portable CXR.",
   },
   {
-    id:"stroke", icon:"🧠", title:"Stroke / TIA", cat:"Neurological", accent:"#a78bfa",
-    esi:[1,2], badge:"ESI 1–2", critical:"LVO / Hemorrhagic Stroke / Basilar Artery Occlusion",
-    phases:[
-      {
-        phase:"0–2 min", label:"Immediate Actions", color:"#f87171",
-        steps:[
-          {action:"Activate stroke alert", detail:"Last Known Well (LKW) time — document EXACT time. Every minute counts.", priority:"stat"},
-          {action:"NIHSS score", detail:"Rapid neurological assessment. NIHSS ≥6 = LVO likely → CTA head/neck.", priority:"stat"},
-          {action:"Fingerstick glucose STAT", detail:"Hypoglycemia mimics stroke. Treat if <60 mg/dL before CT.", priority:"stat"},
-          {action:"IV access + NPO", detail:"No IM or SC medications if tPA candidate. BP monitoring q5 min.", priority:"stat"},
-        ]
-      },
-      {
-        phase:"2–5 min", label:"Imaging", color:"#fb923c",
-        steps:[
-          {action:"CT head WITHOUT contrast", detail:"Exclude hemorrhage. ASPECTS score ≥6 = EVT candidate. Time door-to-CT <25 min.", priority:"urgent"},
-          {action:"CTA head + neck (if LVO suspected)", detail:"NIHSS ≥6, sudden severe headache, or posterior circulation sx → get CTA.", priority:"urgent"},
-          {action:"CBC + BMP + coags + INR", detail:"INR for anticoagulation decision. Platelets before tPA/EVT.", priority:"urgent"},
-          {action:"BP management", detail:"tPA candidate: keep <185/110 before and 180/105 after. No tPA: permissive HTN ≤220/120.", priority:"urgent"},
-        ]
-      },
-      {
-        phase:"5–10 min", label:"Treatment Decision", color:"#fbbf24",
-        steps:[
-          {action:"tPA eligibility checklist", detail:"0–4.5h from LKW. No hemorrhage. BP <185/110. No contraindications. Dose: 0.9 mg/kg IV max 90 mg.", priority:"routine"},
-          {action:"EVT eligibility (0–24h)", detail:"NIHSS ≥6 + LVO on CTA + ASPECTS ≥6. DAWN/DEFUSE criteria up to 24h.", priority:"routine"},
-          {action:"Admit to stroke unit / neuro-ICU", detail:"Telemetry. Head of bed flat if no airway concerns. Aspirin 325 mg at 24h post-tPA.", priority:"routine"},
-          {action:"Swallow screen before PO", detail:"Formal dysphagia screen. NPO until cleared. NG tube if needed.", priority:"routine"},
-        ]
-      },
+    id:"ams", label:"Altered Mental Status", category:"neuro", esi:2, icon:"🧠", color:T.purple,
+    tagline:"Check glucose first, always — then work through AEIOU TIPS systematically",
+    immediate:[
+      "POC glucose STAT — treat < 60 mg/dL with D50W 25g IV",
+      "Thiamine 100 mg IV BEFORE glucose if EtOH history or malnutrition risk",
+      "Naloxone 0.4–2 mg IV/IM/IN if opioid toxidrome (miosis + bradypnea)",
+      "Vitals, O2, IV access, continuous monitor",
+      "GCS assessment, pupil check; lateral decubitus if vomiting risk",
     ],
-    pearls:["Wake-up stroke: MRI DWI/FLAIR mismatch → may be tPA eligible","Basilar artery occlusion: vertical gaze palsy, locked-in syndrome → emergent EVT","Blood glucose >180 worsens outcomes — insulin infusion if needed","Telestroke: initiate early if no in-house neurology"],
-    dispositions:[{label:"tPA given / EVT candidate",action:"Neuro-ICU / Stroke unit",color:"#f87171"},{label:"TIA (ABCD2 ≥4)",action:"Admit for rapid workup",color:"#fb923c"},{label:"TIA low risk (ABCD2 ≤3)",action:"Rapid TIA clinic 24–48h",color:"#34d399"}],
+    history:[
+      "Baseline mental status from family or caregiver — critical reference point",
+      "Timeline: acute (tox, stroke, seizure) vs subacute (infection, metabolic)",
+      "All medications, OTC, herbal, substances — recent changes or new additions",
+      "Fever, headache, neck stiffness, seizure activity, incontinence",
+      "Prior psychiatric history, dementia, prior strokes",
+      "Recent falls, head trauma, anticoagulant use",
+    ],
+    exam:[
+      "GCS: Eye (1–4), Verbal (1–5), Motor (1–6) — document each component",
+      "Pupils: miosis (opioids, organophosphates) vs mydriasis (sympathomimetics, anticholinergics)",
+      "Focal neuro: facial droop, arm drift, speech, gaze deviation",
+      "Meningismus: neck flexion ROM, Kernig, Brudzinski signs",
+      "Skin: jaundice, track marks, diaphoresis, flushing, cyanosis",
+    ],
+    orders:[
+      "BMP, CBC, LFTs, ammonia, TSH, B12, folate",
+      "Serum tox (APAP, ASA, EtOH, lithium), urine tox screen",
+      "CT head w/o contrast if focal deficit, trauma, anticoagulated, or age > 60",
+      "Blood cultures x2, UA/culture if febrile",
+      "EEG if seizure concern or non-convulsive status epilepticus suspected",
+    ],
+    redFlags:[
+      "Focal deficit + AMS — stroke or ICH until imaging proves otherwise",
+      "Fever + AMS + meningismus — meningitis/encephalitis, LP after CT",
+      "GCS < 8 — airway management decision required now",
+      "Pinpoint pupils + bradypnea — opioid toxicity, naloxone",
+      "Rapid deterioration without clear cause — herniation workup stat",
+    ],
+    dontMiss:["Hypoglycemia","Stroke or ICH","Meningitis or Encephalitis","Non-Convulsive Status Epilepticus","Wernicke Encephalopathy"],
+    pearl:"Give thiamine BEFORE dextrose in any patient with EtOH history or malnutrition — glucose alone can precipitate Wernicke encephalopathy. NCSE causes AMS without visible seizure activity; EEG is required to diagnose.",
   },
   {
-    id:"sepsis", icon:"🦠", title:"Sepsis / Septic Shock", cat:"Infectious", accent:"#fbbf24",
-    esi:[1,2], badge:"ESI 1–2", critical:"Septic Shock / Meningitis / Necrotizing Fasciitis",
-    phases:[
-      {
-        phase:"0–2 min", label:"Immediate Actions", color:"#f87171",
-        steps:[
-          {action:"IV access × 2 + fluid bolus", detail:"30 mL/kg LR or NS over 3h. Assess for fluid responsiveness with POCUS.", priority:"stat"},
-          {action:"POC lactate", detail:"≥2 = sepsis. ≥4 = high-risk shock. Repeat at 2h — >10% clearance is goal.", priority:"stat"},
-          {action:"Blood cultures × 2", detail:"Before antibiotics if possible — do NOT delay abx >45 min for cultures.", priority:"stat"},
-          {action:"Sepsis screen: source identification", detail:"UA/culture, CXR, wound exam, skin for purpura/petechiae (meningococcemia).", priority:"stat"},
-        ]
-      },
-      {
-        phase:"2–5 min", label:"Diagnostic Workup", color:"#fb923c",
-        steps:[
-          {action:"CBC + BMP + LFTs + coags + procalcitonin", detail:"SOFA score: Cr, bili, platelets, PaO2/FiO2. Thrombocytopenia + DIC = severe.", priority:"urgent"},
-          {action:"Broad-spectrum antibiotics", detail:"Pip-tazo 3.375g q8h + vancomycin (MRSA coverage). Source-direct at 48–72h.", priority:"urgent"},
-          {action:"POCUS: IVC + cardiac", detail:"IVC <1cm collapsible = fluid responsive. RWMA = septic cardiomyopathy.", priority:"urgent"},
-          {action:"Urinalysis + CXR", detail:"Most common sources: UTI, pneumonia, abdominal. CT abdomen if source unclear.", priority:"urgent"},
-        ]
-      },
-      {
-        phase:"5–10 min", label:"Resuscitation Endpoints", color:"#fbbf24",
-        steps:[
-          {action:"Reassess after initial IVF", detail:"Improved HR, BP, urine output, lactate clearance = adequate response.", priority:"routine"},
-          {action:"Norepinephrine if MAP <65 despite IVF", detail:"0.1–0.3 mcg/kg/min. Add vasopressin 0.03 U/min for refractory shock.", priority:"routine"},
-          {action:"Foley catheter + urine output monitoring", detail:"Target UO >0.5 mL/kg/hr. Insert after cultures obtained.", priority:"routine"},
-          {action:"ICU consult + escalation", detail:"Septic shock → ICU. Meningitis + altered → LP (after CT if indicated) + dexamethasone.", priority:"routine"},
-        ]
-      },
+    id:"stroke", label:"Stroke / Focal Deficit", category:"neuro", esi:2, icon:"⚡", color:T.purple,
+    tagline:"Time is brain — 1.9 million neurons die every minute without treatment",
+    immediate:[
+      "Activate code stroke — get neurology to bedside or telemedicine",
+      "Last known well time — document precisely, not time of discovery",
+      "IV access, NPO, O2 if SpO2 < 94%, continuous cardiac monitor",
+      "NIHSS assessment — trained staff, document every component",
+      "CT head w/o contrast STAT — door-to-CT goal < 25 minutes",
     ],
-    pearls:["Hour-1 bundle: lactate + BCx + IVF + abx + vasopressors prn","Hydrocortisone 200 mg/day for refractory vasopressor-dependent shock","Procalcitonin guides de-escalation — recheck at 48–72h","Meningococcemia: purpura + fever + meningism → immediate penicillin/ceftriaxone"],
-    dispositions:[{label:"Septic shock / organ failure",action:"ICU admission",color:"#f87171"},{label:"Sepsis + lactate 2–4",action:"Stepdown / monitored bed",color:"#fb923c"},{label:"Source controlled, lactate <2",action:"Floor admission",color:"#34d399"}],
+    history:[
+      "Exact last known well — this sets the tPA and thrombectomy window",
+      "FAST: Face droop, Arm drift, Speech change, Time",
+      "Headache, vomiting, seizure at onset — suggests hemorrhagic",
+      "Afib, prior stroke or TIA, DM, HTN, hyperlipidemia",
+      "Anticoagulants: drug name, dose, last taken, indication",
+      "tPA contraindications: surgery < 3 months, active bleeding, INR > 1.7",
+    ],
+    exam:[
+      "Full NIHSS (0–42): LOC, gaze, visual fields, facial palsy, arm/leg motor, ataxia, sensation, language, dysarthria, neglect",
+      "Facial droop: asymmetric smile",
+      "Arm drift: 10 seconds eyes-closed, palms-up",
+      "Speech: repeat sentence, name two common objects",
+      "Bilateral BP; cardiac auscultation for murmur as cardioembolic source",
+    ],
+    orders:[
+      "CT head w/o contrast + CTA head and neck STAT",
+      "Glucose, CBC, BMP, INR, PTT — results goal < 45 minutes",
+      "12-lead ECG — new afib as cardioembolic source",
+      "Troponin; formal echo if cardioembolic workup indicated",
+      "tPA 0.9 mg/kg IV (max 90 mg) if eligible within 4.5h last known well",
+    ],
+    redFlags:[
+      "NIHSS > 6 — large vessel occlusion, thrombectomy evaluation needed",
+      "BP > 185/110 — tPA contraindicated, treat to < 185/110 before infusion",
+      "Hemorrhage on CT — reverse anticoagulation, neurosurgery consult now",
+      "Basilar artery occlusion — vertigo, ataxia, diplopia, coma",
+      "Posterior circulation: unique mimics — vertigo alone is not stroke",
+    ],
+    dontMiss:["ICH or SAH","Basilar Artery Occlusion","Todd Paralysis (post-ictal)","Hypoglycemia Mimicking Stroke","Hypertensive Encephalopathy"],
+    pearl:"Do NOT lower BP aggressively in ischemic stroke — target 140–180 unless tPA candidate (< 185/110 required before infusion). Aggressive lowering extends the ischemic penumbra and worsens outcomes.",
   },
   {
-    id:"altered", icon:"🧩", title:"Altered Mental Status", cat:"Neurological", accent:"#f87171",
-    esi:[1,2], badge:"ESI 1–2", critical:"Herniation / Status Epilepticus / Meningitis",
-    phases:[
-      {
-        phase:"0–2 min", label:"Immediate Actions", color:"#f87171",
-        steps:[
-          {action:"Airway + GCS assessment", detail:"GCS ≤8 = airway protection. Head positioning, suction, jaw thrust prn.", priority:"stat"},
-          {action:"Fingerstick glucose STAT", detail:"If <60 mg/dL: thiamine 100 mg IV → D50W 25g IV. Never skip thiamine in malnourished.", priority:"stat"},
-          {action:"Naloxone if opioid OD suspected", detail:"0.4–2 mg IV/IM/IN. Titrate to RR ≥12. Infusion for long-acting opioids.", priority:"stat"},
-          {action:"IV access + monitor + O2", detail:"Continuous pulse ox, EtCO2 waveform, BP every 5 min.", priority:"stat"},
-        ]
-      },
-      {
-        phase:"2–5 min", label:"Diagnostic Workup", color:"#fb923c",
-        steps:[
-          {action:"AEIOU-TIPS differential", detail:"Alcohol/Acidosis, Epilepsy, Insulin/glucose, Overdose/O2, Uremia/Trauma, Infection, Psychiatric/Poisoning, Structural/Stroke.", priority:"urgent"},
-          {action:"BMP + LFTs + ammonia + TSH + CBC", detail:"Hyponatremia, uremia, hepatic encephalopathy, hypothyroidism.", priority:"urgent"},
-          {action:"Tox screen + EtOH + APAP/ASA levels", detail:"Serum APAP/ASA in all intentional OD. UDS for opioids/benzos/stimulants.", priority:"urgent"},
-          {action:"CT head without contrast", detail:"Any focal deficit, new onset, head trauma, or anticoagulated patient.", priority:"urgent"},
-        ]
-      },
-      {
-        phase:"5–10 min", label:"Targeted Treatment", color:"#fbbf24",
-        steps:[
-          {action:"LP if meningitis suspected", detail:"Fever + AMS + meningism → CT first if focal deficit. Ceftriaxone + dexamethasone BEFORE LP if delay.", priority:"routine"},
-          {action:"EEG if non-convulsive status suspected", detail:"Persistent AMS after seizure or subtle motor jerking = NCSE until proven otherwise.", priority:"routine"},
-          {action:"Treat hyponatremia if <120 mEq/L", detail:"3% NaCl 100 mL IV × 3 doses. Max correction 8–10 mEq/L per day. Neuro consult.", priority:"routine"},
-          {action:"Psychiatry hold if acute psychiatric cause", detail:"After medical clearance. Document capacity assessment.", priority:"routine"},
-        ]
-      },
+    id:"syncope", label:"Syncope", category:"cardiac", esi:2, icon:"💫", color:T.coral,
+    tagline:"Risk-stratify immediately — most syncope is benign, some is imminently fatal",
+    immediate:[
+      "IV access, 12-lead ECG within 10 minutes",
+      "Continuous cardiac monitor",
+      "Orthostatic vital signs: supine, standing at 1 min and 3 min",
+      "POC glucose",
+      "If LOC is ongoing or not fully recovered — treat as AMS protocol",
     ],
-    pearls:["Wernicke's: thiamine BEFORE glucose in any malnourished/alcoholic patient","Hyperammonemia without LFT elevation: consider urea cycle disorder in young adults","Non-convulsive status epilepticus: 5% of ICU patients — EEG required to diagnose","Physostigmine for anticholinergic toxidrome: dry, flushed, delirium, tachycardia"],
-    dispositions:[{label:"GCS ≤8 / herniation signs",action:"ICU / emergent neurosurgery",color:"#f87171"},{label:"Metabolic / toxic cause identified",action:"Admit for monitoring + treatment",color:"#fb923c"},{label:"Hypoglycemia corrected, GCS baseline",action:"Observe 4–6h, discharge if stable",color:"#34d399"}],
+    history:[
+      "Prodrome: diaphoresis, tunnel vision, N/V before LOC — vasovagal",
+      "Position at onset: standing (orthostatic), exertion (structural cardiac)",
+      "Witnessed: tonic-clonic activity, tongue bite, incontinence",
+      "Prior syncope, palpitations, known arrhythmia or structural heart disease",
+      "Family hx sudden cardiac death, channelopathy, HOCM, long QT",
+      "Medications: antihypertensives, diuretics, QT-prolonging agents",
+    ],
+    exam:[
+      "Orthostatic BP: supine to standing, >20 mmHg SBP drop = orthostatic hypotension",
+      "Cardiac auscultation: crescendo-decrescendo murmur (HOCM, AS)",
+      "Focused neuro exam — focal deficit suggests seizure or stroke, not syncope",
+      "Trauma from fall: head, spine, extremities",
+      "Carotid bruit (carotid sinus syncope in elderly)",
+    ],
+    orders:[
+      "CBC, BMP, troponin if cardiac history or exertional syncope",
+      "ECG: QTc interval, delta waves (WPW), epsilon waves (ARVC), Brugada pattern, LBBB",
+      "Echo if murmur, exertional syncope, or HOCM concern",
+      "CT head only if focal deficit, new seizure, or significant head trauma",
+      "Tilt-table and cardiac event monitor — outpatient for recurrent syncope workup",
+    ],
+    redFlags:[
+      "Exertional syncope — structural cardiac cause until echo proves otherwise",
+      "No prodrome — arrhythmia until proven otherwise; admit for monitoring",
+      "ECG abnormality: prolonged QT, Brugada, delta wave, epsilon wave",
+      "Family hx sudden cardiac death — channelopathy screen (genetic cardiology)",
+      "Syncope with chest pain — ACS or aortic dissection",
+    ],
+    dontMiss:["Ventricular Arrhythmia","Aortic Stenosis","HOCM","Pulmonary Embolism","Internal Hemorrhage (AAA or Ectopic)"],
+    pearl:"San Francisco Syncope Rule — admit if any: CHF history, Hct < 30%, abnormal ECG, SOB on presentation, SBP < 90 on arrival. Any exertional syncope requires echocardiogram regardless of patient age.",
   },
   {
-    id:"abd_pain", icon:"🫃", title:"Acute Abdominal Pain", cat:"Abdominal", accent:"#fbbf24",
-    esi:[2,3], badge:"ESI 2–3", critical:"AAA Rupture / Ectopic Pregnancy / Mesenteric Ischemia",
-    phases:[
-      {
-        phase:"0–2 min", label:"Immediate Actions", color:"#f87171",
-        steps:[
-          {action:"Vital signs + hemodynamic assessment", detail:"Hypotension + abdominal pain = AAA/ectopic/perforation until proven otherwise → ESI 1.", priority:"stat"},
-          {action:"β-hCG STAT (all reproductive-age females)", detail:"Positive → POCUS for intrauterine vs ectopic. Ectopic with instability → OR emergently.", priority:"stat"},
-          {action:"Peritoneal exam", detail:"Rigidity + guarding + rebound = peritonitis → surgical emergency. NPO immediately.", priority:"stat"},
-          {action:"IV access + analgesia", detail:"Morphine 0.05–0.1 mg/kg + ketorolac 15–30 mg IV + ondansetron 4 mg. Analgesia does NOT mask diagnosis.", priority:"stat"},
-        ]
-      },
-      {
-        phase:"2–5 min", label:"Diagnostic Workup", color:"#fb923c",
-        steps:[
-          {action:"CBC + BMP + lipase + LFTs", detail:"WBC for infection/ischemia. Lipase >3× ULN = pancreatitis. LFTs for biliary.", priority:"urgent"},
-          {action:"UA + urine culture", detail:"Hematuria → nephrolithiasis. Pyuria → UTI/pyelonephritis. Urine pregnancy if serum unavailable.", priority:"urgent"},
-          {action:"Abdominal POCUS", detail:"AAA > 3cm (screen all >50yo with back/abd pain). Free fluid = hemorrhage or perforation.", priority:"urgent"},
-          {action:"Lactate if ischemia suspected", detail:"Elderly + AF + severe abd pain + elevated lactate = mesenteric ischemia until proven otherwise.", priority:"urgent"},
-        ]
-      },
-      {
-        phase:"5–10 min", label:"Imaging & Disposition", color:"#fbbf24",
-        steps:[
-          {action:"CT abdomen/pelvis with IV contrast", detail:"Gold standard. Without contrast for urolithiasis. Oral contrast rarely needed emergently.", priority:"routine"},
-          {action:"RUQ US if biliary suspected", detail:"Gallstones, CBD dilation, pericholecystic fluid, sonographic Murphy sign.", priority:"routine"},
-          {action:"Surgical consult criteria", detail:"Peritoneal signs, free air, mesenteric ischemia, ectopic, appendicitis, obstruction.", priority:"routine"},
-          {action:"Reassess after analgesia", detail:"Persistent pain after IV analgesia often indicates significant pathology. Document serial exams.", priority:"routine"},
-        ]
-      },
+    id:"sepsis", label:"Sepsis / Fever", category:"infectious", esi:2, icon:"🦠", color:T.teal,
+    tagline:"Every hour of antibiotic delay increases mortality 7% — lactate, cultures, ABX within 60 minutes",
+    immediate:[
+      "IV access x2; blood cultures x2 BEFORE antibiotics — no exceptions",
+      "Lactate level — if >= 4 mmol/L activate septic shock protocol",
+      "30 mL/kg NS or LR bolus if SBP < 90 or lactate >= 4",
+      "Broad-spectrum IV antibiotics within 60 minutes of recognition",
+      "Foley catheter — urine output goal > 0.5 mL/kg/h (adult)",
     ],
-    pearls:["Elderly patients have attenuated peritoneal findings — low threshold for CT","Obturator/psoas signs: retrocecal appendicitis. Rovsing's sign: appendicitis","Mesenteric ischemia: pain out of proportion to exam — lactate is key","Ovarian torsion: sudden onset unilateral pain, nausea → urgent GYN consult"],
-    dispositions:[{label:"Surgical emergency / unstable",action:"OR / IR suite",color:"#f87171"},{label:"Appendicitis / cholecystitis",action:"Admit surgery",color:"#fb923c"},{label:"Urolithiasis / benign cause",action:"Discharge with urology f/u",color:"#34d399"}],
+    history:[
+      "Source of infection: pulmonary, urinary, abdominal, skin, CNS, device",
+      "Immunocompromised: HIV, steroids, chemotherapy, transplant, asplenia",
+      "Recent hospitalization, procedures, indwelling lines or catheters",
+      "Fever timeline, true rigors (suggest bacteremia), chills",
+      "Medications: NSAIDs masking fever, prior antibiotics — resistance risk",
+    ],
+    exam:[
+      "Temperature — may be hypothermic in elderly or immunosuppressed",
+      "Skin: warmth, cellulitis, fluctuance, petechiae or purpura — meningococcemia",
+      "Lung exam: crackles, consolidation",
+      "Abdominal tenderness, peritoneal signs, CVA tenderness",
+      "Mental status — new confusion = SOFA criterion, organ dysfunction",
+    ],
+    orders:[
+      "Lactate (repeat 2h if elevated); blood cultures x2 before ABX",
+      "CBC, BMP, LFTs, coags, procalcitonin, D-dimer if PE concern",
+      "UA + urine culture; CXR; POCUS if source unclear",
+      "Pip-tazo 3.375g IV q6h OR meropenem 1g IV q8h if high resistance risk",
+      "Norepinephrine 0.01–0.5 mcg/kg/min if MAP < 65 after adequate fluid",
+    ],
+    redFlags:[
+      "Lactate >= 4 mmol/L — septic shock, aggressive resuscitation now",
+      "MAP < 65 after 30 mL/kg — vasopressors indicated",
+      "Purpura or petechiae with fever — meningococcemia, ceftriaxone immediately",
+      "Any fever in immunocompromised — treat as sepsis from the start",
+      "Worsening organ function: Cr rise, platelet drop, AMS",
+    ],
+    dontMiss:["Septic Shock","Necrotizing Fasciitis","Meningococcemia","Toxic Shock Syndrome","Endocarditis with Septic Emboli"],
+    pearl:"SEP-1 (CMS Core Measure): lactate + cultures x2 + broad ABX + 30 mL/kg IVF if hypotension or lactate >= 4 — all within 3 hours. Many institutions now follow the Hour-1 bundle. Procalcitonin guides antibiotic de-escalation.",
   },
   {
-    id:"headache", icon:"🤯", title:"Acute Headache", cat:"Neurological", accent:"#a78bfa",
-    esi:[2,3], badge:"ESI 2–3", critical:"SAH / Meningitis / Hypertensive Emergency",
-    phases:[
-      {
-        phase:"0–2 min", label:"Immediate Actions", color:"#f87171",
-        steps:[
-          {action:"Thunderclap headache screen", detail:"Maximal at onset (<1 min) = SAH until proven otherwise. CT head immediately.", priority:"stat"},
-          {action:"BP measurement", detail:"SBP >180 + headache + neurological sx = hypertensive emergency. Do NOT lower BP rapidly.", priority:"stat"},
-          {action:"Meningism assessment", detail:"Fever + stiff neck + photophobia = meningitis. Kernig's/Brudzinski's signs.", priority:"stat"},
-          {action:"Neurological exam", detail:"Focal deficit → CT/CTA immediately. Cranial nerve palsies = CN III aneurysm.", priority:"stat"},
-        ]
-      },
-      {
-        phase:"2–5 min", label:"Diagnostic Workup", color:"#fb923c",
-        steps:[
-          {action:"CT head WITHOUT contrast", detail:"Sensitivity 98–100% for SAH within 6h of onset. After 6h sensitivity drops — need LP.", priority:"urgent"},
-          {action:"LP if CT negative + high SAH suspicion", detail:"Xanthochromia (12h after onset) = SAH. RBC >1000 that doesn't clear = SAH.", priority:"urgent"},
-          {action:"CTA head if aneurysm suspected", detail:"NIHSS + sudden-onset + CT negative → CTA or MRA. CN III palsy → CTA emergently.", priority:"urgent"},
-          {action:"BMP + CBC + coags", detail:"Hyponatremia from SIADH in SAH. Coags for anticoagulation reversal if needed.", priority:"urgent"},
-        ]
-      },
-      {
-        phase:"5–10 min", label:"Treatment & Disposition", color:"#fbbf24",
-        steps:[
-          {action:"Nimodipine if SAH confirmed", detail:"60 mg PO q4h × 21d. Reduces vasospasm. BP management SBP 120–160.", priority:"routine"},
-          {action:"Analgesia for primary headache", detail:"Ketorolac 30 mg IV + prochlorperazine 10 mg IV + diphenhydramine 25 mg IV (migraine cocktail).", priority:"routine"},
-          {action:"Dexamethasone + antibiotics if meningitis", detail:"Dexamethasone 0.15 mg/kg IV + ceftriaxone 2g IV BEFORE LP if delay anticipated.", priority:"routine"},
-          {action:"Neurosurgery / neurology consult", detail:"SAH → neurosurgery STAT. Meningitis → neurology + ID. Hypertensive emergency → nicardipine gtt.", priority:"routine"},
-        ]
-      },
+    id:"abd_pain", label:"Abdominal Pain", category:"gi", esi:3, icon:"🫃", color:T.orange,
+    tagline:"Never withhold analgesia — evidence shows it does NOT impair diagnostic accuracy",
+    immediate:[
+      "IV access, vitals — SBP < 90 with abdominal pain = AAA protocol in > 50 yo male",
+      "POC beta-hCG in ALL females of reproductive age STAT",
+      "Peritoneal signs assessment: guarding, rigidity, rebound",
+      "Analgesia now: ketorolac 15–30 mg IV (do not withhold)",
+      "If hemodynamically unstable — 2 large-bore IVs, NS bolus, surgical consult",
     ],
-    pearls:["Ottawa Subarachnoid Hemorrhage Rule: 100% sensitive for SAH in alert patients","Sentinel headache ('warning leak'): may precede major SAH by days — take seriously","Post-LP headache (positional) ≠ SAH — improves lying flat, worsens upright","Vertebral artery dissection: neck pain + ipsilateral Horner + contralateral sensory loss"],
-    dispositions:[{label:"SAH / Meningitis / Hypertensive emergency",action:"ICU / Neurosurgery",color:"#f87171"},{label:"Thunderclap, workup pending",action:"Admit neurology",color:"#fb923c"},{label:"Primary migraine, resolved",action:"Discharge with headache f/u",color:"#34d399"}],
+    history:[
+      "OPQRST: colicky (obstruction, stone) vs constant (peritonitis, ischemia)",
+      "Relation to food, bowel movements, LMP, sexual history",
+      "Vomiting: bilious vs hematemesis, timing relative to pain onset",
+      "Prior abdominal surgeries — adhesion risk; prior identical episodes",
+      "Urinary symptoms — UTI or nephrolithiasis",
+      "Weight loss, anorexia, rectal bleeding, age > 50 — malignancy",
+    ],
+    exam:[
+      "Peritoneal signs: guarding, rigidity, rebound tenderness",
+      "Murphy sign RUQ: cholecystitis (inspire and press RUQ)",
+      "Psoas sign and obturator sign: retrocecal appendicitis",
+      "CVA tenderness: pyelonephritis",
+      "Rectal exam: blood, mass, tenderness; pelvic exam if indicated",
+    ],
+    orders:[
+      "CBC, BMP, lipase, LFTs, UA, beta-hCG",
+      "CT abd/pelvis with IV contrast — non-contrast if nephrolithiasis screen",
+      "US RUQ if Murphy positive or gallbladder/biliary concern",
+      "CXR upright if perforation concern — free air under diaphragm",
+      "Ondansetron 4 mg IV for nausea; ketorolac 15–30 mg IV for pain",
+    ],
+    redFlags:[
+      "Hypotension + abd pain in > 50 male smoker — ruptured AAA until proven otherwise",
+      "Positive beta-hCG + abdominal pain — ectopic pregnancy until US shows IUP",
+      "Rigid abdomen — perforation or peritonitis — surgical consult immediately",
+      "Pain out of proportion to exam — mesenteric ischemia, emergent workup",
+      "Fever + RLQ rebound tenderness — appendicitis, surgical consult",
+    ],
+    dontMiss:["Ruptured AAA","Ectopic Pregnancy","Mesenteric Ischemia","Perforated Viscus","Ovarian Torsion"],
+    pearl:"Analgesia does NOT mask physical findings or impair diagnostic accuracy in acute abdominal pain — multiple RCTs confirm this. Withholding pain relief is harmful and not evidence-based. Ketorolac is first-line for renal colic.",
   },
   {
-    id:"syncope", icon:"😵", title:"Syncope", cat:"Cardiac", accent:"#fb923c",
-    esi:[2,3], badge:"ESI 2–3", critical:"VT / Complete Heart Block / Pulmonary Embolism",
-    phases:[
-      {
-        phase:"0–2 min", label:"Immediate Actions", color:"#f87171",
-        steps:[
-          {action:"12-lead ECG immediately", detail:"QTc >500, Brugada, WPW, LBBB, sinus pauses, ischemic changes = high risk.", priority:"stat"},
-          {action:"Orthostatic vitals", detail:"BP/HR supine, 1 min standing, 3 min standing. Drop >20 SBP or >10 DBP = orthostatic.", priority:"stat"},
-          {action:"Canadian Syncope Risk Score", detail:"Score ≥0 = not low risk. Components: predisposition, trigger, heart disease, troponin, QRS.", priority:"stat"},
-          {action:"Fingerstick glucose", detail:"Hypoglycemia is the most common reversible syncope mimic.", priority:"stat"},
-        ]
-      },
-      {
-        phase:"2–5 min", label:"Diagnostic Workup", color:"#fb923c",
-        steps:[
-          {action:"Troponin + BMP", detail:"Troponin elevation in syncope → ACS-related. Hyponatremia/hypoglycemia as cause.", priority:"urgent"},
-          {action:"Cardiac monitor + telemetry", detail:"Continuous rhythm monitoring. Paroxysmal AF, sinus pauses, VT.", priority:"urgent"},
-          {action:"D-dimer / CT-PE if exertional syncope", detail:"Syncope with exertion + tachycardia → consider PE, HOCM, aortic stenosis.", priority:"urgent"},
-          {action:"HCT if anemia suspected", detail:"GI bleed causing syncope: melena, hematemesis, anemia on CBC.", priority:"urgent"},
-        ]
-      },
-      {
-        phase:"5–10 min", label:"Risk Stratification", color:"#fbbf24",
-        steps:[
-          {action:"Echocardiogram (urgent if structural)", detail:"HOCM, aortic stenosis, EF <35% — all high-risk structural causes of syncope.", priority:"routine"},
-          {action:"SFSR / Canadian Syncope Score", detail:"SFSR: abnormal ECG, Hgb <90, SOB, SBP <90 = high risk → admission.", priority:"routine"},
-          {action:"Neurology consult if seizure suspected", detail:"Post-ictal confusion, tongue biting, incontinence, prodrome-free = seizure.", priority:"routine"},
-          {action:"Reassurance for vasovagal if criteria met", detail:"Classic prodrome (nausea/diaphoresis/warmth), trigger, young healthy patient.", priority:"routine"},
-        ]
-      },
+    id:"gi_bleed", label:"GI Bleed", category:"gi", esi:2, icon:"🩸", color:T.red,
+    tagline:"Two large-bore IVs and type & crossmatch — establish IV access before anything else",
+    immediate:[
+      "IV access x2 (18g minimum), NS bolus if hemodynamically unstable",
+      "Type & crossmatch STAT, CBC, BMP, coags, LFTs",
+      "NPO, continuous monitoring, Foley catheter",
+      "Transfuse pRBC if Hgb < 7 (< 8 if known coronary disease)",
+      "GI consult early — endoscopy timing depends on stability",
     ],
-    pearls:["Exertional syncope = cardiac until proven otherwise — HOCM, AS, arrhythmia","Brugada syndrome: type 1 pattern provoked by fever — repeat ECG if febrile","Carotid sinus hypersensitivity: elderly + turning head/shaving → carotid massage","Vasovagal recurrence: physical counterpressure maneuvers (leg crossing, hand gripping)"],
-    dispositions:[{label:"Cardiac cause / high SFSR score",action:"Admit telemetry / cardiology",color:"#f87171"},{label:"Intermediate risk",action:"6h observation + serial ECG",color:"#fb923c"},{label:"Classic vasovagal, low risk",action:"Discharge with lifestyle counseling",color:"#34d399"}],
+    history:[
+      "Hematemesis (bright red vs coffee-ground) or melena vs hematochezia",
+      "Prior GIB, peptic ulcers, varices, cirrhosis, portal hypertension",
+      "NSAIDs, ASA, anticoagulants, steroids — current doses and duration",
+      "EtOH quantity and chronicity",
+      "Abdominal pain, weight loss, prior endoscopy — malignancy workup",
+      "Pre-syncope or syncope — indicates significant volume loss",
+    ],
+    exam:[
+      "Hemodynamic assessment — orthostatics if stable enough",
+      "Stigmata of liver disease: jaundice, spider angiomata, caput medusae, palmar erythema",
+      "Abdominal tenderness, hepatosplenomegaly",
+      "Rectal exam: hematochezia, melena, or mass",
+      "NG lavage if upper GIB suspected — helps localize source",
+    ],
+    orders:[
+      "CBC, BMP, coags (INR), LFTs; BUN:Cr ratio > 20 suggests upper GI source",
+      "Type & crossmatch — 2–4 units pRBC on hold",
+      "Octreotide 50 mcg IV bolus + 50 mcg/h infusion if variceal bleed likely",
+      "Pantoprazole 80 mg IV bolus + 8 mg/h infusion if upper GIB suspected",
+      "Reverse anticoagulation: Vit K, FFP, PCC, andexanet per agent",
+    ],
+    redFlags:[
+      "Hemodynamic instability — resuscitate and GI plus surgery consult immediately",
+      "Bright red blood per rectum + hypotension — massive upper or severe lower GIB",
+      "Variceal bleed — add ceftriaxone 1g IV for SBP prophylaxis",
+      "INR > 1.5 — correct coagulopathy before endoscopy if possible",
+      "Hgb drop > 2g without obvious source — occult internal hemorrhage",
+    ],
+    dontMiss:["Ruptured Esophageal Varices","Aortoenteric Fistula","Dieulafoy Lesion","Meckel Diverticulum","Mesenteric Ischemia"],
+    pearl:"BUN:Cr ratio > 36 is 90% specific for upper GI source (digested blood + prerenal effect). Erythromycin 250 mg IV 30–90 min before endoscopy improves gastric visualization by accelerating gastric emptying.",
   },
   {
-    id:"trauma", icon:"🤕", title:"Major Trauma", cat:"Trauma", accent:"#f87171",
-    esi:[1,2], badge:"ESI 1–2", critical:"Hemorrhagic Shock / Tension PTX / Spinal Cord Injury",
-    phases:[
-      {
-        phase:"0–2 min", label:"Primary Survey (ABCDE)", color:"#f87171",
-        steps:[
-          {action:"Airway + C-spine protection", detail:"Jaw thrust if unconscious. Video laryngoscopy RSI if GCS ≤8 or airway threatened.", priority:"stat"},
-          {action:"Breathing: PTX / hemothorax", detail:"Tension PTX: absent breath sounds + hypotension + JVD → needle decompression 2nd ICS MCL.", priority:"stat"},
-          {action:"Circulation: hemorrhage control", detail:"Direct pressure, tourniquet, pelvic binder. Two large-bore IVs. Activate MTP if criteria met.", priority:"stat"},
-          {action:"Disability: GCS + pupils", detail:"GCS <8 = severe TBI. Unequal pupils → herniation → mannitol 1 g/kg or 3% NaCl.", priority:"stat"},
-        ]
-      },
-      {
-        phase:"2–5 min", label:"Adjuncts to Primary Survey", color:"#fb923c",
-        steps:[
-          {action:"FAST exam", detail:"Free fluid: Morison's pouch, splenorenal, pelvic, pericardial. Takes <2 min.", priority:"urgent"},
-          {action:"Trauma labs: CBC + BMP + coags + lactate + T&S", detail:"MTP triggers: lactate >5, SBP <90, HR >120, Hgb <7, fibrinogen <150.", priority:"urgent"},
-          {action:"CXR + pelvis XR", detail:"Pneumothorax, hemothorax, aortic injury, pelvic fracture (retroperitoneal bleed).", priority:"urgent"},
-          {action:"TXA if <3h from injury", detail:"1g IV over 10 min → 1g IV over 8h. Reduces mortality in hemorrhagic shock.", priority:"urgent"},
-        ]
-      },
-      {
-        phase:"5–10 min", label:"Secondary Survey & Definitive Care", color:"#fbbf24",
-        steps:[
-          {action:"Head-to-toe secondary survey", detail:"Systematic exam: scalp, face, neck, chest, abdomen, pelvis, extremities, back/rectal.", priority:"routine"},
-          {action:"CT pan-scan if stable", detail:"CT head/C-spine/chest/abd/pelvis. Identifies occult injuries. Only if hemodynamically stable.", priority:"routine"},
-          {action:"Damage control vs definitive surgery", detail:"Unstable + positive FAST → OR emergently. Stable → CT then definitive plan.", priority:"routine"},
-          {action:"Transfer to Level I/II if needed", detail:"Initiate early if resources insufficient. Don't delay for full workup if unstable.", priority:"routine"},
-        ]
-      },
+    id:"headache", label:"Headache", category:"neuro", esi:3, icon:"🤕", color:T.purple,
+    tagline:"Thunderclap headache equals subarachnoid hemorrhage until LP proves otherwise",
+    immediate:[
+      "Vital signs including temperature and BP",
+      "Analgesia: ketorolac 30 mg IV + ondansetron 4 mg IV",
+      "Assess for AMS, focal deficit, meningismus, papilledema",
+      "Darkened quiet room, reduce stimuli",
+      "12-lead ECG — SAH causes diffuse ST changes and QT prolongation",
     ],
-    pearls:["Permissive hypotension SBP 80–90 until hemorrhage controlled (avoid in TBI)","Calcium 1g IV per 4U pRBC — massive transfusion depletes ionized calcium","Massive transfusion ratio 1:1:1 (pRBC:FFP:platelets) reduces coagulopathy","REBOA (Resuscitative Endovascular Balloon Occlusion of Aorta) — adjunct in selected centers"],
-    dispositions:[{label:"Hemodynamically unstable",action:"OR immediately / Level I trauma",color:"#f87171"},{label:"Stable with significant injuries",action:"ICU / trauma surgery admission",color:"#fb923c"},{label:"Minor mechanism, normal workup",action:"Discharge with f/u",color:"#34d399"}],
+    history:[
+      "Onset: thunderclap (peak < 1 minute) — SAH until LP negative",
+      "Worst headache of life — always take seriously, even in known migraine patients",
+      "Fever, neck stiffness, photophobia, phonophobia",
+      "Visual changes, diplopia, facial numbness, arm weakness",
+      "Prior migraines — is this different in quality, severity, or onset?",
+      "Valsalva-triggered: cough, exertion, straining — elevated ICP",
+    ],
+    exam:[
+      "Meningismus: passive neck flexion ROM, Kernig, Brudzinski signs",
+      "Fundoscopy: papilledema — elevated ICP, defer LP until CT",
+      "Focal CN exam: CN III palsy (posterior communicating artery aneurysm)",
+      "BP — hypertensive encephalopathy if severely elevated",
+      "Temporal artery tenderness in > 50 yo — giant cell arteritis",
+    ],
+    orders:[
+      "CT head w/o contrast — first-line for acute severe headache",
+      "LP if CT negative + thunderclap onset — xanthochromia, opening pressure, cell count",
+      "BMP, CBC if systemic symptoms or first severe headache",
+      "ESR, CRP, temporal artery biopsy if GCA concern (> 50 yo, jaw claudication)",
+      "Sumatriptan 6 mg SQ after SAH excluded; prednisone if GCA suspected",
+    ],
+    redFlags:[
+      "Thunderclap onset — SAH until LP negative for xanthochromia",
+      "Fever + headache + meningismus — bacterial meningitis, LP and ABX immediately",
+      "Focal deficit with headache — CT before LP (herniation risk)",
+      "Papilledema — elevated ICP, defer LP, urgent neurosurgery",
+      "Immunocompromised — cryptococcal meningitis, CNS lymphoma",
+    ],
+    dontMiss:["Subarachnoid Hemorrhage","Bacterial Meningitis","Cerebral Venous Sinus Thrombosis","Hypertensive Emergency","Giant Cell Arteritis"],
+    pearl:"Ottawa SAH Rule: LP may not be required if CT performed within 6h of symptom onset by experienced radiologist and is negative. Most guidelines still recommend LP if any clinical suspicion persists — xanthochromia takes 2–4 hours to develop.",
   },
   {
-    id:"anaphylaxis", icon:"💉", title:"Anaphylaxis / Allergic Reaction", cat:"Other", accent:"#34d399",
-    esi:[1,2], badge:"ESI 1–2", critical:"Anaphylactic Shock / Angioedema with Airway Compromise",
-    phases:[
-      {
-        phase:"0–2 min", label:"Immediate Actions", color:"#f87171",
-        steps:[
-          {action:"Epinephrine 0.3 mg IM (anterolateral thigh)", detail:"1:1000 concentration. Repeat q5–15 min if no improvement. Never delay for antihistamines.", priority:"stat"},
-          {action:"Airway assessment", detail:"Stridor / uvular edema / hoarse voice → imminent airway loss → early intubation. Difficulty increases rapidly.", priority:"stat"},
-          {action:"Position: supine + legs elevated", detail:"Prevents distributive shock. Sitting upright if respiratory compromise.", priority:"stat"},
-          {action:"High-flow O2 + IV access", detail:"NRM 15 L/min. Large-bore IV. Remove inciting agent (IV contrast/medication infusion).", priority:"stat"},
-        ]
-      },
-      {
-        phase:"2–5 min", label:"Secondary Medications", color:"#fb923c",
-        steps:[
-          {action:"IV fluid bolus 1–2L NS", detail:"Anaphylactic distributive shock. Repeat as needed for hypotension.", priority:"urgent"},
-          {action:"Diphenhydramine 25–50 mg IV", detail:"H1 blocker — adjunct only. Does NOT replace epinephrine. Give after epi.", priority:"urgent"},
-          {action:"Ranitidine 50 mg IV (or famotidine 20 mg IV)", detail:"H2 blocker — additional antihistamine effect. Adjunct therapy.", priority:"urgent"},
-          {action:"Methylprednisolone 125 mg IV", detail:"Prevents biphasic reaction (6–24h later). Slow onset — does NOT help acute phase.", priority:"urgent"},
-        ]
-      },
-      {
-        phase:"5–10 min", label:"Refractory Shock & Monitoring", color:"#fbbf24",
-        steps:[
-          {action:"Norepinephrine or dopamine if refractory", detail:"Epi-resistant shock (especially patients on beta-blockers). Glucagon 1–5 mg IV if BB.", priority:"routine"},
-          {action:"Epinephrine infusion if repeated epi doses needed", detail:"0.1–1 mcg/kg/min IV. ICU monitoring required.", priority:"routine"},
-          {action:"Biphasic reaction precautions", detail:"Observe 4–8h minimum. 24h if severe, recurrent, or prior biphasic reactions.", priority:"routine"},
-          {action:"Discharge with epi auto-injector + allergy referral", detail:"EpiPen prescription. Medic-alert bracelet. Allergy/immunology referral.", priority:"routine"},
-        ]
-      },
+    id:"back_pain", label:"Back Pain", category:"msk", esi:4, icon:"🦴", color:T.cyan,
+    tagline:"Screen for cauda equina and AAA first — then treat the muscle",
+    immediate:[
+      "Vital signs — hypotension in > 50 male = AAA protocol immediately",
+      "Rapid neuro screen: lower extremity strength and sensation",
+      "Bladder function: last void, difficulty voiding, retention symptoms",
+      "Analgesia: NSAIDs + methocarbamol 750 mg PO or cyclobenzaprine 10 mg PO",
+      "POCUS or US aorta if vascular risk factors or pulsatile mass",
     ],
-    pearls:["Epinephrine is the ONLY first-line drug — do NOT use antihistamines alone","Beta-blocker patients may not respond to epinephrine — try glucagon 1–5 mg IV","Refractory anaphylaxis: methylene blue 1.5–2 mg/kg IV has been used","Kounis syndrome: anaphylaxis-induced coronary spasm — ECG for all severe cases"],
-    dispositions:[{label:"Airway compromise / shock",action:"ICU",color:"#f87171"},{label:"Moderate reaction, epi given",action:"Observe 4–8h, consider admit",color:"#fb923c"},{label:"Mild, resolved, epi auto-injector given",action:"Discharge with epi Rx + allergy f/u",color:"#34d399"}],
+    history:[
+      "Mechanism: lifting (muscular), MVA (fracture), insidious (malignancy/infection)",
+      "Radiation: unilateral leg (sciatica), bilateral legs or perineum (cauda equina)",
+      "Saddle anesthesia, bowel or bladder incontinence or retention — cauda equina",
+      "Fever, night sweats, unexplained weight loss — infection or malignancy",
+      "IV drug use, recent spinal procedure — epidural abscess",
+      "Age > 50, prior malignancy, steroids > 1 month — higher risk features",
+    ],
+    exam:[
+      "Straight-leg raise — positive < 70 degrees reproduces radicular pain",
+      "Crossed SLR — high specificity for disc herniation",
+      "Lower extremity strength: L4 (knee extension), L5 (great toe dorsiflexion), S1 (plantarflexion)",
+      "Dermatomal sensation testing L4 through S1",
+      "Perianal sensation and rectal tone — cauda equina screen",
+    ],
+    orders:[
+      "MRI lumbar spine if cauda equina concern — emergent, do not delay",
+      "XR lumbar if significant trauma, age > 50, or cancer history",
+      "CT or POCUS abdomen if AAA concern (pulsatile abdominal mass, vascular risk factors)",
+      "BMP, CBC, ESR/CRP if infection or malignancy suspected",
+      "Foley and post-void residual if urinary retention present",
+    ],
+    redFlags:[
+      "Saddle anesthesia — cauda equina emergency, MRI now, surgery within 24–48h",
+      "Bowel or bladder incontinence or retention — cauda equina syndrome",
+      "Pulsatile abdominal mass + back pain — ruptured AAA",
+      "Fever + back pain + IV drug use — epidural abscess, MRI emergently",
+      "Bilateral lower extremity weakness — spinal cord compression",
+    ],
+    dontMiss:["Cauda Equina Syndrome","Ruptured or Expanding AAA","Epidural Abscess","Vertebral Osteomyelitis","Malignant Cord Compression"],
+    pearl:"Cauda equina syndrome is a surgical emergency — decompression delayed beyond 48h causes permanent bowel, bladder, and motor deficits. MRI first, then immediate neurosurgical consult. Do not wait for symptom progression.",
+  },
+  {
+    id:"trauma", label:"Trauma / MVC", category:"trauma", esi:1, icon:"🚨", color:T.red,
+    tagline:"Primary survey ABCDE — identify and treat life threats in order, every time",
+    immediate:[
+      "Activate trauma team per institutional protocol",
+      "C-spine immobilization until radiographically cleared",
+      "Primary survey: Airway — Breathing — Circulation — Disability — Exposure",
+      "FAST exam: pericardial, hepatorenal, splenorenal, pelvic windows",
+      "IV access x2 large bore, type & crossmatch, MTP if massive hemorrhage",
+    ],
+    history:[
+      "Mechanism: speed, restraint use, airbag deployment, ejection from vehicle",
+      "LOC: duration and quality of recovery",
+      "GCS at scene vs on arrival — trend predicts trajectory",
+      "Complaint location: chest, abdomen, pelvis, spine, extremities",
+      "Medical hx, anticoagulants — warfarin and DOACs increase hemorrhage risk",
+      "Tetanus status and last immunization date",
+    ],
+    exam:[
+      "Head: scalp lac, Battle sign (mastoid), raccoon eyes (basilar skull Fx), hemotympanum",
+      "Neck: tracheal deviation, JVD, C-spine midline tenderness",
+      "Chest: paradoxical motion, crepitus, bilateral breath sounds, rib tenderness",
+      "Abdomen: FAST findings, tenderness, pelvic stability (compress once only)",
+      "Extremities: deformity, neurovascular exam distal to each injury",
+    ],
+    orders:[
+      "Trauma series: FAST + portable CXR + AP pelvis XR",
+      "CBC, BMP, coags, type & cross, lactate, EtOH, tox screen",
+      "CT pan-scan per mechanism: head, C-spine, chest, abd/pelvis with IV contrast",
+      "MTP 1:1:1 ratio (pRBC:FFP:Platelets) for massive hemorrhage",
+      "TXA 1g IV over 10 min if < 3h from injury onset with hemorrhagic shock",
+    ],
+    redFlags:[
+      "Penetrating torso trauma — immediate surgical evaluation, do not delay for workup",
+      "Hemodynamic instability — damage control resuscitation, OR over CT scanner",
+      "Pelvic fracture — apply pelvic binder immediately, do not compress pelvis repeatedly",
+      "Absent unilateral breath sounds — tension PTX, needle decompress 2nd ICS MCL",
+      "Open fractures — IV cefazolin 2g within 1 hour of injury",
+    ],
+    dontMiss:["Tension PTX","Cardiac Tamponade","Traumatic Aortic Injury","Solid Organ Laceration","Pelvic Ring Fracture with Hemorrhage"],
+    pearl:"The lethal triad — hypothermia, acidosis, coagulopathy — drives trauma mortality. Damage control resuscitation (1:1:1) and permissive hypotension (SBP 80–90) in penetrating trauma reduce re-bleeding before surgical hemorrhage control.",
+  },
+  {
+    id:"overdose", label:"Overdose / Toxicology", category:"tox", esi:2, icon:"💊", color:T.yellow,
+    tagline:"Identify the toxidrome first — the syndrome drives the antidote and treatment",
+    immediate:[
+      "IV access, O2, continuous monitor, POC glucose STAT",
+      "Naloxone 0.4–2 mg IV/IM/IN if opioid toxidrome (miosis + bradypnea + AMS)",
+      "Thiamine 100 mg IV if EtOH history or malnutrition",
+      "Activated charcoal 1 g/kg PO if alert, airway protected, < 1h from ingestion",
+      "Poison Control: 1-800-222-1222 — call for all significant exposures",
+    ],
+    history:[
+      "What was ingested, how much, what time, by what route",
+      "Suicidal intent vs accidental vs recreational — affects safe disposition",
+      "Access to other medications — APAP present in hundreds of OTC products",
+      "Prior overdoses, psychiatric history, substance use disorder",
+      "Onset and progression — improving or deteriorating since ingestion",
+      "Co-ingestion with EtOH is extremely common and alters clinical picture",
+    ],
+    exam:[
+      "Toxidrome ID: opioid (miosis, bradypnea) vs anticholinergic (mydriasis, dry, hyperthermic) vs cholinergic (SLUDGE: Salivation, Lacrimation, Urination, Defecation, GI distress, Emesis) vs sympathomimetic (mydriasis, diaphoresis, tachycardia)",
+      "Pupils: miosis (opioid, organophosphate) vs mydriasis",
+      "Skin: diaphoresis (cholinergic) vs dry and flushed (anticholinergic)",
+      "Temperature: hyperthermia in serotonin syndrome, NMS, stimulants",
+      "Muscle tone: clonus and hyperreflexia indicate serotonin syndrome",
+    ],
+    orders:[
+      "APAP level in ALL overdoses regardless of stated ingestion — critical",
+      "Serum EtOH, ASA level, lithium if applicable",
+      "BMP: anion gap (toxic alcohols, salicylates); osmol gap (toxic alcohols)",
+      "ECG: QRS > 120 ms (TCA — give sodium bicarb); QTc > 500 ms (mag 2g IV)",
+      "NAC if APAP above Rumack-Matthew nomogram — most effective within 8–10h",
+    ],
+    redFlags:[
+      "QRS > 120 ms — TCA toxicity, sodium bicarb 1–2 mEq/kg IV bolus",
+      "QTc > 500 ms — torsades risk, magnesium 2g IV over 10 min",
+      "Serotonin syndrome: AMS + clonus/hyperreflexia + hyperthermia — cyproheptadine",
+      "Temperature > 106F — ice packs, benzos, paralytics if refractory",
+      "Elevated anion gap acidosis — toxic alcohol, fomepizole + consider dialysis",
+    ],
+    dontMiss:["Acetaminophen Toxicity (asymptomatic early)","Tricyclic Antidepressant Toxicity","Serotonin Syndrome","Methanol or Ethylene Glycol","Carbon Monoxide Poisoning"],
+    pearl:"APAP toxicity is completely asymptomatic in the first 24h — check a level in EVERY overdose, every time. In TCA toxicity, sodium bicarb is both diagnostic (QRS narrows) and therapeutic. Target serum pH 7.45–7.55.",
+  },
+  {
+    id:"anaphylaxis", label:"Anaphylaxis", category:"allergy", esi:1, icon:"⚠️", color:T.orange,
+    tagline:"Epinephrine first — always — there are no absolute contraindications in true anaphylaxis",
+    immediate:[
+      "Epinephrine 0.3 mg IM (1:1000) anterolateral thigh — do not delay for IV access",
+      "Supine with legs elevated unless respiratory distress",
+      "O2 15 L/min via NRB, assess upper airway patency immediately",
+      "IV access, continuous monitor, BP every 5 minutes",
+      "Second IM epinephrine in 5–15 min if no improvement — do not hesitate",
+    ],
+    history:[
+      "Trigger: food (peanut, shellfish), medication (NSAIDs, ABX, contrast), insect sting, latex",
+      "Prior anaphylaxis — severity, treatment needed, outcome",
+      "Time from exposure to symptom onset — shorter interval = more severe",
+      "Organs involved: skin, respiratory, GI, cardiovascular",
+      "Beta-blocker use — impairs epinephrine response, may need glucagon",
+      "Epi-pen prescribed? Was it used before arrival?",
+    ],
+    exam:[
+      "Skin: urticaria, angioedema, flushing — absent in up to 20% of cases",
+      "Upper airway: stridor, hoarseness, uvular or tongue swelling",
+      "Lower airway: wheeze, work of breathing, silent chest",
+      "Hemodynamics: distributive shock pattern (warm, vasodilated, tachycardic)",
+      "GI: abdominal cramping, vomiting, diarrhea — supports the diagnosis",
+    ],
+    orders:[
+      "Epinephrine 0.3 mg IM q5–15 min prn — adjuncts come second",
+      "Diphenhydramine 50 mg IV — adjunct, does NOT replace epinephrine",
+      "Methylprednisolone 125 mg IV — adjunct, prevents biphasic reaction",
+      "NS 1–2L IV bolus if hypotensive after epinephrine",
+      "Observation minimum 4–6h after last epinephrine — biphasic reaction risk",
+    ],
+    redFlags:[
+      "No response to x2 IM epinephrine — refractory anaphylaxis, epinephrine drip",
+      "Stridor or progressive angioedema — prepare surgical airway now",
+      "Beta-blocker patient, refractory hypotension — glucagon 1–5 mg IV",
+      "Biphasic reaction occurs 4–12h after initial recovery — observe at least 6h",
+      "Vasodepressor anaphylaxis: no skin findings, sudden cardiovascular collapse",
+    ],
+    dontMiss:["Refractory Anaphylactic Shock","ACEi-Induced Angioedema","Airway Compromise from Angioedema","Biphasic Anaphylaxis","Vasovagal vs True Anaphylaxis"],
+    pearl:"ACEi-induced angioedema is bradykinin-mediated (NOT IgE-mediated) — epinephrine, antihistamines, and steroids are less effective. Consider icatibant 30 mg SQ (bradykinin B2 antagonist) or FFP as antidote.",
+  },
+  {
+    id:"peds_fever", label:"Pediatric Fever", category:"peds", esi:2, icon:"👶", color:T.green,
+    tagline:"Age is the most critical variable — neonates have no immune reserve and can deteriorate suddenly",
+    immediate:[
+      "Rectal temp preferred < 2 yo (axillary only for screening)",
+      "Pediatric Assessment Triangle: Appearance (tone, gaze, consolability), Work of Breathing, Circulation to skin",
+      "IV access if ill-appearing, sepsis concern, or fever < 28 days old",
+      "Antipyretics: APAP 15 mg/kg PO/PR OR ibuprofen 10 mg/kg (> 6 months only)",
+      "Blood cultures x2 + IV antibiotics < 60 min if toxic-appearing at any age",
+    ],
+    history:[
+      "Age — most critical risk stratifier for workup intensity and admission decision",
+      "Immunization history: Hib, PCV13, MCV4 — reduces occult bacteremia risk",
+      "Duration, URI symptoms, GI symptoms, rash, behavior change",
+      "Feeding, wet diapers in last 12h, last void",
+      "Sick contacts, daycare, recent travel",
+      "Immunocompromised: steroids, sickle cell, asplenia, malignancy",
+    ],
+    exam:[
+      "Fontanelle: bulging (elevated ICP, meningitis) vs sunken (dehydration)",
+      "Meningismus — unreliable under 18 months, still assess",
+      "Rash: petechiae or purpura = meningococcemia until proven otherwise",
+      "Source identification: ears, throat, lungs, abdomen, skin, joints, bones",
+      "Hydration: mucous membranes, skin turgor, capillary refill, sunken eyes",
+    ],
+    orders:[
+      "< 28 days: CBC, BC x2, UA/UC, LP CSF, CXR, ceftriaxone + ampicillin + acyclovir",
+      "29–90 days: risk-stratify per Rochester or Step-by-Step criteria; LP often indicated",
+      "91 days to 3 yr: source-directed; UA most common source; CBC + CRP assist risk strat",
+      "Procalcitonin and CRP help risk-stratify febrile infants without identifiable source",
+      "Viral testing (RSV, flu, COVID) may reduce unnecessary antibiotic use",
+    ],
+    redFlags:[
+      "Any fever < 28 days — full sepsis workup + admission, no exceptions",
+      "Petechiae or purpura with fever — meningococcemia, ceftriaxone immediately",
+      "Toxic appearance at any age — immediate resuscitation and empiric antibiotics",
+      "Bulging fontanelle — elevated ICP, do NOT perform LP until imaging done",
+      "Fever > 5 days — Kawasaki disease workup (echo, CBC, ESR, CRP, echo)",
+    ],
+    dontMiss:["Bacterial Meningitis","Meningococcemia","Occult Bacteremia in Young Infants","UTI (most common source < 2 yo)","Kawasaki Disease"],
+    pearl:"Fever < 28 days = admit, full workup, empiric antibiotics — no exceptions regardless of well appearance. Kawasaki disease is the leading cause of acquired pediatric heart disease in the US; suspect if fever > 5 days plus any classic criterion.",
   },
 ];
 
-const PRIORITY_COLORS = { stat:"#f87171", urgent:"#fb923c", routine:"#34d399" };
-
-// ── Primitives ───────────────────────────────────────────────
+// ── Module-scope Primitives ───────────────────────────────────────────
 function AmbientBg() {
   return (
-    <div style={{position:"fixed",inset:0,overflow:"hidden",pointerEvents:"none",zIndex:0}}>
-      <div style={{position:"absolute",top:"-10%",left:"5%",width:700,height:700,borderRadius:"50%",background:`radial-gradient(circle,${AC}12 0%,transparent 65%)`,animation:"r0 14s ease-in-out infinite"}}/>
-      <div style={{position:"absolute",top:"40%",right:"-8%",width:600,height:600,borderRadius:"50%",background:"radial-gradient(circle,rgba(167,139,250,0.09) 0%,transparent 65%)",animation:"r1 16s ease-in-out infinite"}}/>
-      <div style={{position:"absolute",bottom:"-5%",left:"30%",width:500,height:500,borderRadius:"50%",background:"radial-gradient(circle,rgba(52,211,153,0.07) 0%,transparent 65%)",animation:"r2 12s ease-in-out infinite"}}/>
-      <style>{`
-        @keyframes r0{0%,100%{transform:scale(1) translate(0,0)}50%{transform:scale(1.12) translate(2%,3%)}}
-        @keyframes r1{0%,100%{transform:scale(1.06)}50%{transform:scale(0.92) translate(-2%,2%)}}
-        @keyframes r2{0%,100%{transform:scale(0.96)}50%{transform:scale(1.1) translate(2%,-2%)}}
-        @keyframes raIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes pDot{0%,100%{opacity:1}50%{opacity:.3}}
-        *{box-sizing:border-box} input::placeholder{color:rgba(255,255,255,0.2)}
-        button{outline:none} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-track{background:transparent}
-        ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:4px}
-      `}</style>
+    <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0}}>
+      <div style={{position:"absolute",top:"-15%",left:"-10%",width:"55%",height:"55%",background:"radial-gradient(circle,rgba(255,107,107,0.09) 0%,transparent 70%)"}}/>
+      <div style={{position:"absolute",bottom:"-10%",right:"-5%",width:"50%",height:"50%",background:"radial-gradient(circle,rgba(59,158,255,0.07) 0%,transparent 70%)"}}/>
+      <div style={{position:"absolute",top:"45%",right:"25%",width:"35%",height:"35%",background:"radial-gradient(circle,rgba(155,109,255,0.06) 0%,transparent 70%)"}}/>
     </div>
   );
 }
 
-function GPanel({ children, style={}, accent=null }) {
+function ESIBadge({ level }) {
+  const e = ESI_META[level] || ESI_META[3];
   return (
-    <div style={{...Gx.panel(accent),...style}}>
-      <div style={{position:"absolute",top:0,left:"8%",right:"8%",height:1,background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.16),transparent)",pointerEvents:"none"}}/>
-      {children}
-    </div>
-  );
-}
-
-function Chip({ label, color }) {
-  const c = color||AC;
-  return <span style={{fontSize:9,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,padding:"2px 8px",borderRadius:20,background:`${c}18`,border:`1px solid ${c}35`,color:c,whiteSpace:"nowrap"}}>{label}</span>;
-}
-
-function GPill({ label, active, accent, onClick }) {
-  const c = accent||AC;
-  return <button onClick={onClick} style={{padding:"6px 15px",borderRadius:24,fontSize:12,fontWeight:active?600:400,fontFamily:"'DM Sans',sans-serif",cursor:"pointer",transition:"all .2s",background:active?`${c}18`:"rgba(255,255,255,0.04)",border:`1px solid ${active?c+"45":"rgba(255,255,255,0.09)"}`,color:active?c:T.txt3}}>{label}</button>;
-}
-
-function GInput({ value, onChange, placeholder, accent }) {
-  return <input value={value} onChange={onChange} placeholder={placeholder}
-    style={{...Gx.inp(),padding:"10px 14px",width:"100%"}}
-    onFocus={e=>{e.target.style.borderColor=`${accent||AC}55`;}}
-    onBlur={e=>{e.target.style.borderColor=T.border;}}/>;
-}
-
-// ── Template Detail View ─────────────────────────────────────
-function TemplateDetail({ tpl, onBack }) {
-  const [phaseExpanded, setPhaseExpanded] = useState(null);
-
-  const storageKey = `notrya_rapid_${tpl.id}_${new Date().toISOString().slice(0,10)}`;
-  const [completed, setCompleted] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(storageKey) || "{}"); } catch { return {}; }
-  });
-
-  const persistCompleted = (next) => {
-    setCompleted(next);
-    try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch {}
-  };
-
-  const toggleStep = (phaseIdx, stepIdx) => {
-    const key = `${phaseIdx}-${stepIdx}`;
-    const next = {...completed, [key]: !completed[key]};
-    persistCompleted(next);
-  };
-  const phaseComplete = (phaseIdx) => tpl.phases[phaseIdx].steps.every((_,si)=>completed[`${phaseIdx}-${si}`]);
-
-  return (
-    <div style={{display:"flex",flexDirection:"column",gap:14,animation:"raIn .35s ease"}}>
-      {/* Header */}
-      <GPanel style={{padding:"20px 24px"}} accent={tpl.accent}>
-        <div style={{position:"absolute",top:0,left:0,right:0,height:3,borderRadius:"18px 18px 0 0",background:`linear-gradient(90deg,transparent,${tpl.accent}80,transparent)`}}/>
-        <div style={{display:"flex",alignItems:"center",gap:14}}>
-          <button onClick={onBack} style={{...Gx.btn(T.txt3,false),padding:"6px 14px",fontSize:12,flexShrink:0}}>← Back</button>
-          <div style={{width:50,height:50,borderRadius:13,background:`${tpl.accent}20`,border:`1px solid ${tpl.accent}35`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{tpl.icon}</div>
-          <div style={{flex:1}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:3}}>
-              <span style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:T.txt}}>{tpl.title}</span>
-              <Chip label={tpl.badge} color={tpl.accent}/>
-              <Chip label={tpl.cat} color={T.txt3}/>
-            </div>
-            <div style={{fontSize:11,color:T.coral,fontFamily:"'JetBrains Mono',monospace",fontWeight:600}}>⚠ Critical: {tpl.critical}</div>
-          </div>
-          <div style={{textAlign:"center",padding:"8px 16px",background:`${tpl.accent}12`,border:`1px solid ${tpl.accent}30`,borderRadius:12,flexShrink:0}}>
-            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:22,fontWeight:700,color:tpl.accent}}>10</div>
-            <div style={{fontSize:10,color:T.txt3}}>min workup</div>
-          </div>
-        </div>
-      </GPanel>
-
-      {/* Progress indicator */}
-      <div style={{display:"flex",gap:4}}>
-        {tpl.phases.map((ph,i)=>(
-          <div key={i} style={{flex:1,height:4,borderRadius:4,background:phaseComplete(i)?tpl.accent:`${tpl.accent}25`,transition:"background .3s"}}/>
-        ))}
+    <div style={{display:"flex",alignItems:"center",gap:6}}>
+      <div style={{width:26,height:26,borderRadius:6,background:e.color,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 0 10px ${e.color}55`}}>
+        <span style={{fontFamily:"JetBrains Mono",fontSize:12,fontWeight:700,color:e.tc}}>{level}</span>
       </div>
-
-      {/* Phase Cards */}
-      {tpl.phases.map((phase,phaseIdx)=>(
-        <GPanel key={phaseIdx} style={{padding:"0"}} accent={phaseComplete(phaseIdx)?tpl.accent:null}>
-          <div onClick={()=>setPhaseExpanded(p=>p===phaseIdx?null:phaseIdx)}
-            style={{display:"flex",alignItems:"center",gap:12,padding:"16px 20px",cursor:"pointer"}}>
-            <div style={{width:52,height:52,borderRadius:12,background:`${phase.color}20`,border:`1px solid ${phase.color}40`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:phase.color,fontWeight:700,lineHeight:1}}>PHASE</div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:phase.color,lineHeight:1}}>{phaseIdx+1}</div>
-            </div>
-            <div style={{flex:1}}>
-              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:phase.color,fontWeight:700,letterSpacing:".08em"}}>{phase.phase}</div>
-              <div style={{fontSize:14,fontWeight:700,color:T.txt}}>{phase.label}</div>
-              <div style={{fontSize:11,color:T.txt3,marginTop:2}}>
-                {phase.steps.filter((_,si)=>completed[`${phaseIdx}-${si}`]).length}/{phase.steps.length} steps complete
-              </div>
-            </div>
-            {phaseComplete(phaseIdx)&&<span style={{fontSize:18}}>✅</span>}
-            <span style={{color:T.txt4,fontSize:13}}>{phaseExpanded===phaseIdx?"▲":"▼"}</span>
-          </div>
-          {(phaseExpanded===phaseIdx||phaseExpanded===null)&&(
-            <div style={{padding:"0 20px 16px",borderTop:`1px solid ${T.border}`}}>
-              {phase.steps.map((step,stepIdx)=>{
-                const key = `${phaseIdx}-${stepIdx}`;
-                const done = !!completed[key];
-                const pc = PRIORITY_COLORS[step.priority]||T.txt3;
-                return (
-                  <div key={stepIdx} onClick={()=>toggleStep(phaseIdx,stepIdx)}
-                    style={{...Gx.row(done?tpl.accent:null),display:"flex",gap:10,padding:"12px 14px",marginBottom:6,cursor:"pointer",opacity:done?0.7:1,transition:"all .2s"}}
-                    onMouseEnter={e=>e.currentTarget.style.background=`${tpl.accent}08`}
-                    onMouseLeave={e=>e.currentTarget.style.background=done?`${tpl.accent}08`:T.glassD}>
-                    <div style={{width:22,height:22,borderRadius:6,border:`2px solid ${done?tpl.accent:pc+"60"}`,background:done?tpl.accent:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1,transition:"all .2s"}}>
-                      {done&&<span style={{fontSize:11,color:"#fff",fontWeight:700}}>✓</span>}
-                    </div>
-                    <div style={{flex:1}}>
-                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3,flexWrap:"wrap"}}>
-                        <span style={{fontSize:13,fontWeight:700,color:done?T.txt3:T.txt,textDecoration:done?"line-through":"none"}}>{step.action}</span>
-                        <span style={{fontSize:9,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,padding:"1px 7px",borderRadius:20,background:`${pc}18`,border:`1px solid ${pc}35`,color:pc,textTransform:"uppercase"}}>{step.priority}</span>
-                      </div>
-                      <div style={{fontSize:11,color:T.txt3,lineHeight:1.5}}>{step.detail}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </GPanel>
-      ))}
-
-      {/* Pearls */}
-      <GPanel style={{padding:"18px 22px"}} accent={T.gold}>
-        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-          <span style={{fontSize:20}}>💎</span>
-          <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:T.gold}}>Clinical Pearls</span>
-        </div>
-        {tpl.pearls.map((p,i)=>(
-          <div key={i} style={{display:"flex",gap:8,marginBottom:6}}>
-            <span style={{color:T.gold,fontSize:11,flexShrink:0,marginTop:1}}>▸</span>
-            <span style={{fontSize:12,color:T.txt2,lineHeight:1.55}}>{p}</span>
-          </div>
-        ))}
-      </GPanel>
-
-      {/* Disposition */}
-      <GPanel style={{padding:"18px 22px"}}>
-        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-          <span style={{fontSize:18}}>🚪</span>
-          <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:T.teal}}>Disposition Pathways</span>
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:7}}>
-          {tpl.dispositions.map((d,i)=>(
-            <div key={i} style={{...Gx.row(d.color),display:"flex",alignItems:"center",gap:12,padding:"11px 14px",borderLeft:`3px solid ${d.color}60`}}>
-              <div style={{flex:1,fontSize:12,color:T.txt2}}>{d.label}</div>
-              <div style={{fontSize:12,fontWeight:700,color:d.color,fontFamily:"'JetBrains Mono',monospace",flexShrink:0}}>→ {d.action}</div>
-            </div>
-          ))}
-        </div>
-      </GPanel>
-
-      <div style={{fontSize:10,color:T.txt4,fontFamily:"'JetBrains Mono',monospace",padding:"10px 14px",background:T.glassD,borderRadius:9,border:`1px solid ${T.border}`}}>
-        ⚕ Clinical decision support only — adapt to patient-specific context and institutional protocols
+      <div>
+        <div style={{fontFamily:"JetBrains Mono",fontSize:9,fontWeight:700,color:e.color,lineHeight:1}}>ESI {level}</div>
+        <div style={{fontFamily:"DM Sans",fontSize:9,color:T.txt4,lineHeight:1,marginTop:2}}>{e.label}</div>
       </div>
     </div>
   );
 }
 
-// ── Main Page ────────────────────────────────────────────────
+function CatChip({ cat, active, onClick }) {
+  return (
+    <button onClick={onClick} style={{fontFamily:"DM Sans",fontWeight:600,fontSize:10,padding:"4px 10px",borderRadius:20,border:`1px solid ${active ? cat.color : "rgba(42,79,122,0.4)"}`,background:active ? `${cat.color}22` : "transparent",color:active ? cat.color : T.txt4,cursor:"pointer",whiteSpace:"nowrap",transition:"all .12s",flexShrink:0}}>
+      {cat.label}
+    </button>
+  );
+}
+
+function ComplaintRow({ complaint, active, onClick }) {
+  const e = ESI_META[complaint.esi];
+  return (
+    <div className="cc-row" onClick={onClick} style={{display:"flex",alignItems:"center",gap:9,padding:"8px 11px",borderRadius:10,background:active ? `${complaint.color}18` : "transparent",border:`1px solid ${active ? complaint.color+"44" : "transparent"}`,cursor:"pointer"}}>
+      <span style={{fontSize:17,flexShrink:0}}>{complaint.icon}</span>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontFamily:"DM Sans",fontWeight:600,fontSize:12,color:active ? complaint.color : T.txt,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{complaint.label}</div>
+        <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:.5}}>{complaint.category}</div>
+      </div>
+      <div style={{width:20,height:20,borderRadius:5,background:e?.color || T.txt4,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+        <span style={{fontFamily:"JetBrains Mono",fontSize:10,fontWeight:700,color:e?.tc || "#fff"}}>{complaint.esi}</span>
+      </div>
+    </div>
+  );
+}
+
+function PhaseCard({ meta, items }) {
+  return (
+    <div className="phase-card" style={{...glass,padding:"15px 17px",borderLeft:`3px solid ${meta.color}`,background:`linear-gradient(135deg,${meta.color}10,rgba(8,22,40,0.8))`}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:11}}>
+        <span style={{fontSize:15}}>{meta.icon}</span>
+        <div style={{flex:1}}>
+          <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:12,color:meta.color}}>{meta.label}</div>
+          <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4}}>{meta.time}</div>
+        </div>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:5}}>
+        {(items||[]).map((item,i) => (
+          <div key={i} style={{display:"flex",gap:7,alignItems:"flex-start"}}>
+            <span style={{color:meta.color,fontSize:9,marginTop:3,flexShrink:0}}>▸</span>
+            <span style={{fontFamily:"DM Sans",fontSize:12,color:T.txt2,lineHeight:1.5}}>{item}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RedFlagRow({ text }) {
+  return (
+    <div style={{display:"flex",gap:8,alignItems:"flex-start",padding:"7px 10px",background:"rgba(255,68,68,0.07)",border:"1px solid rgba(255,68,68,0.18)",borderRadius:8,marginBottom:5}}>
+      <span style={{color:T.red,fontSize:10,marginTop:2,flexShrink:0}}>⚠</span>
+      <span style={{fontFamily:"DM Sans",fontSize:12,color:T.txt2,lineHeight:1.4}}>{text}</span>
+    </div>
+  );
+}
+
+function DDxPill({ label, color }) {
+  return (
+    <span style={{display:"inline-flex",alignItems:"center",gap:5,padding:"4px 11px",borderRadius:20,background:`${color}18`,border:`1px solid ${color}40`,margin:"0 5px 5px 0"}}>
+      <span style={{width:5,height:5,borderRadius:"50%",background:color,flexShrink:0,display:"inline-block"}}/>
+      <span style={{fontFamily:"DM Sans",fontSize:11,fontWeight:600,color:color}}>{label}</span>
+    </span>
+  );
+}
+
+// ── Main Component ────────────────────────────────────────────────────
 export default function RapidAssessmentHub() {
-  const [selected, setSelected] = useState(null);
+  const [selected, setSelected] = useState(COMPLAINTS[0].id);
+  const [catFilter, setCatFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [catFilter, setCatFilter] = useState("All");
 
-  const filtered = useMemo(()=>
-    TEMPLATES.filter(t=>catFilter==="All"||t.cat===catFilter)
-      .filter(t=>!search||t.title.toLowerCase().includes(search.toLowerCase())||t.critical.toLowerCase().includes(search.toLowerCase()))
-  ,[search,catFilter]);
+  const filtered = useMemo(() =>
+    COMPLAINTS.filter(c =>
+      (catFilter === "all" || c.category === catFilter) &&
+      c.label.toLowerCase().includes(search.toLowerCase())
+    ), [catFilter, search]);
 
-  if (selected) {
-    const tpl = TEMPLATES.find(t=>t.id===selected);
-    return (
-      <div style={{display:"flex",minHeight:"100vh",background:`linear-gradient(135deg,#04080f 0%,#070f1e 100%)`,fontFamily:"'DM Sans',sans-serif",position:"relative"}}>
-        <AmbientBg/>
-        <main style={{flex:1,padding:"30px 38px 52px",overflowY:"auto",position:"relative",zIndex:1}}>
-          <TemplateDetail tpl={tpl} onBack={()=>setSelected(null)}/>
-        </main>
-      </div>
-    );
-  }
+  const current = COMPLAINTS.find(c => c.id === selected) || COMPLAINTS[0];
 
   return (
-    <div style={{display:"flex",minHeight:"100vh",background:`linear-gradient(135deg,#04080f 0%,#070f1e 100%)`,fontFamily:"'DM Sans',sans-serif",position:"relative"}}>
-      <AmbientBg/>
-      <main style={{flex:1,padding:"30px 38px 52px",overflowY:"auto",position:"relative",zIndex:1}}>
+    <div style={{fontFamily:"DM Sans",background:T.bg,minHeight:"100vh",position:"relative",overflow:"hidden"}}>
+      <AmbientBg />
+      <div style={{position:"relative",zIndex:1,maxWidth:1440,margin:"0 auto",padding:"0 16px",display:"flex",flexDirection:"column",height:"100vh"}}>
 
         {/* Header */}
-        <div style={{marginBottom:28,animation:"raIn .4s ease"}}>
+        <div style={{padding:"16px 0 12px",flexShrink:0}}>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-            <div style={{height:1,width:24,background:`${AC}60`,borderRadius:1}}/>
-            <span style={{fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:AC,textTransform:"uppercase",letterSpacing:".14em",fontWeight:700}}>Rapid Assessment Hub</span>
-            <div style={{flex:1,height:1,background:`linear-gradient(90deg,${AC}30,transparent)`}}/>
-            <Chip label={`${TEMPLATES.length} Templates`} color={AC}/>
+            <div style={{backdropFilter:"blur(40px)",WebkitBackdropFilter:"blur(40px)",background:"rgba(5,15,30,0.85)",border:"1px solid rgba(26,53,85,0.6)",borderRadius:10,padding:"5px 12px",display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.teal,letterSpacing:3}}>NOTRYA</span>
+              <span style={{color:T.txt4,fontFamily:"JetBrains Mono",fontSize:10}}>/</span>
+              <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.txt3,letterSpacing:2}}>RAPID ASSESS</span>
+            </div>
+            <div style={{height:1,flex:1,background:"linear-gradient(90deg,rgba(42,79,122,0.6),transparent)"}}/>
+            <span style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,letterSpacing:1}}>10-MIN TEMPLATES</span>
           </div>
-          <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(26px,4vw,40px)",fontWeight:900,color:T.txt,margin:"0 0 6px",lineHeight:1.1}}>10-Minute Workup Templates</h1>
-          <p style={{fontSize:13,color:T.txt3,margin:0}}>Structured, time-phased assessment guides for the most critical ED chief complaints</p>
+          <h1 className="shimmer-text" style={{fontFamily:"Playfair Display",fontSize:"clamp(22px,3.5vw,38px)",fontWeight:900,letterSpacing:-1,lineHeight:1.1}}>
+            Rapid Assessment Hub
+          </h1>
+          <p style={{fontFamily:"DM Sans",fontSize:12,color:T.txt3,marginTop:3}}>
+            10-minute workup templates · {COMPLAINTS.length} chief complaints · Immediate actions through initial orders
+          </p>
         </div>
 
-        {/* Search + Filter */}
-        <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:20,flexWrap:"wrap",animation:"raIn .45s ease"}}>
-          <GInput value={search} onChange={e=>setSearch(e.target.value)} accent={AC} placeholder={`Search ${TEMPLATES.length} templates…`}/>
-          <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-            {["All",...CATEGORIES].map(cat=><GPill key={cat} label={cat} active={catFilter===cat} accent={AC} onClick={()=>setCatFilter(cat)}/>)}
+        {/* Body */}
+        <div style={{display:"flex",gap:14,flex:1,overflow:"hidden",paddingBottom:14}}>
+
+          {/* Left Pane */}
+          <div style={{width:248,flexShrink:0,display:"flex",flexDirection:"column",gap:8,overflow:"hidden"}}>
+            <input
+              type="text" value={search} onChange={e=>setSearch(e.target.value)}
+              placeholder="Search complaints..."
+              style={{width:"100%",background:"rgba(14,37,68,0.8)",border:"1px solid rgba(42,79,122,0.4)",borderRadius:10,padding:"8px 13px",color:T.txt,fontFamily:"DM Sans",fontSize:13,outline:"none",flexShrink:0,transition:"border-color .15s"}}
+              onFocus={e=>e.target.style.borderColor="rgba(59,158,255,0.5)"}
+              onBlur={e=>e.target.style.borderColor="rgba(42,79,122,0.4)"}
+            />
+            <div style={{display:"flex",gap:4,overflowX:"auto",flexShrink:0,paddingBottom:2}}>
+              {CATEGORIES.map(cat=>(
+                <CatChip key={cat.id} cat={cat} active={catFilter===cat.id}
+                  onClick={()=>setCatFilter(cat.id)}/>
+              ))}
+            </div>
+            <div style={{overflowY:"auto",flex:1,display:"flex",flexDirection:"column",gap:2}}>
+              {filtered.length === 0 && (
+                <div style={{textAlign:"center",padding:20,fontFamily:"DM Sans",fontSize:12,color:T.txt4}}>No matches</div>
+              )}
+              {filtered.map(c=>(
+                <ComplaintRow key={c.id} complaint={c} active={selected===c.id}
+                  onClick={()=>setSelected(c.id)}/>
+              ))}
+            </div>
+            <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,textAlign:"center",flexShrink:0}}>
+              {filtered.length}/{COMPLAINTS.length} protocols
+            </div>
           </div>
-        </div>
 
-        {/* Legend */}
-        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:20,padding:"10px 16px",...Gx.row(null)}}>
-          <span style={{fontSize:11,color:T.txt3,marginRight:4}}>Priority:</span>
-          {[["STAT","#f87171"],["URGENT","#fb923c"],["ROUTINE","#34d399"]].map(([l,c])=>(
-            <span key={l} style={{fontSize:10,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,padding:"2px 8px",borderRadius:20,background:`${c}18`,border:`1px solid ${c}35`,color:c}}>{l}</span>
-          ))}
-          <span style={{fontSize:11,color:T.txt3,marginLeft:8}}>Click steps to track completion</span>
-        </div>
+          {/* Right Pane */}
+          <div className="fade-in" key={current.id} style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:10}}>
 
-        {/* Template Grid */}
-        {filtered.length===0 ? (
-          <GPanel style={{padding:"50px 40px",textAlign:"center"}}>
-            <div style={{fontSize:36,marginBottom:10,opacity:.3}}>🔍</div>
-            <p style={{fontFamily:"'Playfair Display',serif",fontSize:16,color:T.txt2,margin:0}}>No templates found</p>
-          </GPanel>
-        ) : (
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))",gap:14}}>
-            {filtered.map((tpl,i)=>(
-              <div key={tpl.id} onClick={()=>setSelected(tpl.id)}
-                style={{...Gx.panel(null),padding:"22px",cursor:"pointer",animation:`raIn .5s ease ${i*0.05}s both`,transition:"transform .25s,box-shadow .25s,border .25s"}}
-                onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-6px)";e.currentTarget.style.border=`1px solid ${tpl.accent}50`;e.currentTarget.style.boxShadow=`0 20px 48px rgba(0,0,0,0.55),0 0 32px ${tpl.accent}14`;}}
-                onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.border=`1px solid ${T.border}`;e.currentTarget.style.boxShadow=`0 8px 32px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.12)`;}}>
-                <div style={{position:"absolute",top:0,left:0,right:0,height:3,borderRadius:"18px 18px 0 0",background:`linear-gradient(90deg,${tpl.accent},transparent)`,opacity:.5}}/>
-                <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:12}}>
-                  <div style={{width:50,height:50,borderRadius:13,background:`${tpl.accent}20`,border:`1px solid ${tpl.accent}35`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>{tpl.icon}</div>
-                  <div style={{textAlign:"right"}}>
-                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:20,fontWeight:700,color:tpl.accent}}>10<span style={{fontSize:10,color:T.txt3}}> min</span></div>
-                    <Chip label={tpl.badge} color={tpl.accent}/>
+            {/* Complaint Header */}
+            <div style={{...glass,padding:"18px 22px",borderLeft:`4px solid ${current.color}`,background:`linear-gradient(135deg,${current.color}14,rgba(8,22,40,0.9))`}}>
+              <div style={{display:"flex",alignItems:"flex-start",gap:14,flexWrap:"wrap"}}>
+                <span style={{fontSize:38,lineHeight:1,flexShrink:0}}>{current.icon}</span>
+                <div style={{flex:1,minWidth:180}}>
+                  <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap",marginBottom:6}}>
+                    <h2 style={{fontFamily:"Playfair Display",fontSize:"clamp(18px,2.5vw,26px)",fontWeight:700,color:T.txt,lineHeight:1}}>
+                      {current.label}
+                    </h2>
+                    <ESIBadge level={current.esi}/>
+                    <span style={{fontFamily:"JetBrains Mono",fontSize:9,color:current.color,background:`${current.color}18`,border:`1px solid ${current.color}44`,padding:"3px 9px",borderRadius:4,textTransform:"uppercase",letterSpacing:1}}>
+                      {current.category}
+                    </span>
                   </div>
+                  <p style={{fontFamily:"DM Sans",fontSize:13,color:T.txt2,fontStyle:"italic",lineHeight:1.5}}>
+                    {current.tagline}
+                  </p>
                 </div>
-                <div style={{fontSize:9,fontFamily:"'JetBrains Mono',monospace",color:tpl.accent,letterSpacing:".12em",textTransform:"uppercase",marginBottom:3}}>{tpl.cat}</div>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:T.txt,marginBottom:6,lineHeight:1.3}}>{tpl.title}</div>
-                <div style={{height:1,background:`linear-gradient(90deg,${tpl.accent}40,transparent)`,marginBottom:8}}/>
-                <div style={{display:"flex",gap:4,marginBottom:6}}>
-                  {tpl.phases.map((ph,pi)=>(
-                    <div key={pi} style={{flex:1,fontSize:9,fontFamily:"'JetBrains Mono',monospace",color:ph.color,background:`${ph.color}12`,border:`1px solid ${ph.color}30`,borderRadius:6,padding:"3px 5px",textAlign:"center",lineHeight:1.3}}>
-                      <div style={{fontWeight:700}}>{ph.phase}</div>
-                      <div style={{opacity:.7}}>{ph.label.split(" ")[0]}</div>
-                    </div>
-                  ))}
-                </div>
-                <div style={{fontSize:10,color:T.coral,fontFamily:"'JetBrains Mono',monospace",fontWeight:600,marginTop:4}}>⚠ {tpl.critical}</div>
-                <div style={{marginTop:8,fontSize:11,color:T.txt3,display:"flex",alignItems:"center",gap:4}}>
-                  {tpl.phases.reduce((sum,ph)=>sum+ph.steps.length,0)} steps · {tpl.pearls.length} clinical pearls
-                  <span style={{marginLeft:"auto",color:tpl.accent,fontWeight:600,fontSize:12}}>Open →</span>
+                <div style={{...glass,padding:"10px 14px",borderRadius:12,background:"rgba(8,22,40,0.6)",textAlign:"center",flexShrink:0}}>
+                  <div style={{fontFamily:"JetBrains Mono",fontSize:22,fontWeight:700,color:current.color,lineHeight:1}}>10</div>
+                  <div style={{fontFamily:"DM Sans",fontSize:9,color:T.txt4,marginTop:2}}>min goal</div>
                 </div>
               </div>
-            ))}
+            </div>
+
+            {/* Phase Cards 2x2 */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              {PHASE_META.map((meta,i)=>(
+                <PhaseCard key={i} meta={meta} items={current[meta.key]}/>
+              ))}
+            </div>
+
+            {/* Don't Miss */}
+            <div style={{...glass,padding:"14px 18px"}}>
+              <div style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.txt4,textTransform:"uppercase",letterSpacing:1.5,marginBottom:10}}>
+                🚫 Do Not Miss Diagnoses
+              </div>
+              <div style={{display:"flex",flexWrap:"wrap"}}>
+                {(current.dontMiss||[]).map((d,i)=>(
+                  <DDxPill key={i} label={d} color={current.color}/>
+                ))}
+              </div>
+            </div>
+
+            {/* Red Flags */}
+            <div style={{...glass,padding:"14px 18px"}}>
+              <div style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.red,textTransform:"uppercase",letterSpacing:1.5,marginBottom:10}}>
+                🚨 Red Flags — Escalation Triggers
+              </div>
+              {(current.redFlags||[]).map((f,i)=><RedFlagRow key={i} text={f}/>)}
+            </div>
+
+            {/* Pearl */}
+            <div style={{padding:"14px 18px",background:`linear-gradient(135deg,${current.color}12,rgba(8,22,40,0.8))`,border:`1px solid ${current.color}30`,borderRadius:14}}>
+              <div style={{fontFamily:"JetBrains Mono",fontSize:10,color:current.color,textTransform:"uppercase",letterSpacing:1.5,marginBottom:8}}>
+                💎 Clinical Pearl
+              </div>
+              <p style={{fontFamily:"DM Sans",fontSize:13,color:T.txt2,lineHeight:1.7,fontStyle:"italic"}}>
+                {current.pearl}
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div style={{textAlign:"center",paddingBottom:6}}>
+              <span style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,letterSpacing:1.5}}>
+                NOTRYA RAPID ASSESSMENT HUB · TEMPLATES ARE CLINICAL STARTING POINTS — INDIVIDUALIZE PER PATIENT
+              </span>
+            </div>
           </div>
-        )}
-      </main>
+        </div>
+      </div>
     </div>
   );
 }

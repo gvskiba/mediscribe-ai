@@ -299,6 +299,24 @@ const HUBS = [
     priority: 16,
     essential: true,
   },
+  {
+    id: "rapid-assessment",
+    route: "/rapid-assessment-hub",
+    icon: "⚡",
+    abbr: "RAPID",
+    title: "Rapid Assessment",
+    subtitle: "10-minute workup templates · Time-phased by chief complaint · Checkable steps",
+    color: "#06b6d4",
+    glow: "rgba(6,182,212,0.4)",
+    glass: "rgba(6,182,212,0.07)",
+    border: "rgba(6,182,212,0.28)",
+    accent: "#22d3ee",
+    category: "Tools",
+    stats: ["10 Templates", "Time-Phased", "Step Tracker"],
+    badge: "Live",
+    priority: 17,
+    essential: true,
+  },
 ];
 
 const ESSENTIAL_IDS = new Set(HUBS.filter(h => h.essential).map(h => h.id));
@@ -310,7 +328,7 @@ const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
   "/peds-hub", "/Procedures", "/erx", "/AutoCoder", "/NewPatientInput",
-  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub",
+  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub",
 ]);
 
 function Background() {

@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 
 // ── Font Injection ────────────────────────────────────────────────────
 (() => {
@@ -468,6 +469,7 @@ function IntoxCard({ syn, expanded, onToggle }) {
 
 // ── Main Component ────────────────────────────────────────────────────
 export default function PsychHub() {
+  const navigate = useNavigate();
   const [tab, setTab]           = useState("agitation");
   const [tierExp, setTierExp]   = useState(0);
   const [riskItems, setRiskItems] = useState(new Set());
@@ -524,6 +526,7 @@ export default function PsychHub() {
 
         {/* Header */}
         <div style={{padding:"18px 0 14px"}}>
+          <button onClick={()=>navigate("/hub")} style={{display:"inline-flex",alignItems:"center",gap:6,marginBottom:12,padding:"6px 14px",borderRadius:8,border:"1px solid rgba(155,109,255,0.35)",background:"rgba(14,37,68,0.6)",color:T.txt3,fontFamily:"DM Sans",fontSize:12,fontWeight:600,cursor:"pointer",transition:"all .15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(155,109,255,0.6)";e.currentTarget.style.color=T.txt;}} onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(155,109,255,0.35)";e.currentTarget.style.color=T.txt3;}}>← Back to Hub</button>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
             <div style={{backdropFilter:"blur(40px)",WebkitBackdropFilter:"blur(40px)",background:"rgba(5,15,30,0.85)",border:"1px solid rgba(26,53,85,0.6)",borderRadius:10,padding:"5px 12px",display:"flex",alignItems:"center",gap:8}}>
               <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.teal,letterSpacing:3}}>NOTRYA</span>

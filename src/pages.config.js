@@ -59,7 +59,7 @@ import CantMissDiagnoses from './pages/CantMissDiagnoses';
 import ClinicalDecisionSupport from './pages/ClinicalDecisionSupport';
 import ClinicalGuidelines from './pages/ClinicalGuidelines';
 
-import CommandCenter from './pages/CommandCenter';
+
 import CustomTemplates from './pages/CustomTemplates';
 import Customize from './pages/Customize';
 import Dashboard from './pages/Dashboard';
@@ -112,7 +112,7 @@ export const PAGES = {
     "ClinicalDecisionSupport": ClinicalDecisionSupport,
     "ClinicalGuidelines": ClinicalGuidelines,
 
-    "CommandCenter": CommandCenter,
+
     "CustomTemplates": CustomTemplates,
     "Customize": Customize,
     "Dashboard": Dashboard,

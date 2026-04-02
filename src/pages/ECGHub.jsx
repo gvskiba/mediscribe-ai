@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 
 // ── Font Injection ────────────────────────────────────────────────────
 (() => {
@@ -403,14 +404,19 @@ export default function ECGHub() {
 
         {/* Header */}
         <div style={{padding:"18px 0 14px"}}>
+          <button onClick={() => navigate("/hub")}
+            style={{display:"inline-flex",alignItems:"center",gap:6,marginBottom:12,padding:"6px 14px",borderRadius:8,border:"1px solid rgba(42,79,122,0.5)",background:"rgba(14,37,68,0.6)",color:T.txt3,fontFamily:"DM Sans",fontSize:12,fontWeight:600,cursor:"pointer",transition:"all .15s",backdropFilter:"blur(10px)"}}
+            onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(59,158,255,0.5)";e.currentTarget.style.color=T.txt;}}
+            onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(42,79,122,0.5)";e.currentTarget.style.color=T.txt3;}}>
+            ← Back to Hub
+          </button>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
             <div style={{backdropFilter:"blur(40px)",WebkitBackdropFilter:"blur(40px)",background:"rgba(5,15,30,0.85)",border:"1px solid rgba(26,53,85,0.6)",borderRadius:10,padding:"5px 12px",display:"flex",alignItems:"center",gap:8}}>
               <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.teal,letterSpacing:3}}>NOTRYA</span>
               <span style={{color:T.txt4,fontFamily:"JetBrains Mono",fontSize:10}}>/</span>
               <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.txt3,letterSpacing:2}}>ECG HUB</span>
             </div>
-            <div style={{height:1,flex:1,background:"linear-gradient(90deg,rgba(42,79,122,0.6),transparent)"}}/>
-            <span style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,letterSpacing:1}}>{allPats.length} PATTERNS</span>
+            <div style={{height:1,flex:1,background:"linear-gradient(90deg,rgba(42,79,122,0.6),transparent)"}}/>          <span style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,letterSpacing:1}}>{allPats.length} PATTERNS</span>
           </div>
           <h1 className="shimmer-text" style={{fontFamily:"Playfair Display",fontSize:"clamp(24px,4vw,40px)",fontWeight:900,letterSpacing:-1,lineHeight:1.1}}>ECG Hub</h1>
           <p style={{fontFamily:"DM Sans",fontSize:12,color:T.txt3,marginTop:4}}>

@@ -324,7 +324,7 @@ export default function NotryaHome() {
       <BgMesh />
       <div style={{ position:"relative", zIndex:1 }}>
 
-        <nav style={{ position:"sticky", top:0, zIndex:100, background:"rgba(5,15,30,0.88)", backdropFilter:"blur(24px)", borderBottom:"1px solid rgba(255,255,255,0.06)", padding:"0 32px", height:56, display:"flex", alignItems:"center", gap:20 }}>
+        <nav style={{ position:"fixed", top:0, left:0, right:0, zIndex:100, background:"rgba(5,15,30,0.88)", backdropFilter:"blur(24px)", borderBottom:"1px solid rgba(255,255,255,0.06)", padding:"0 32px", height:56, display:"flex", alignItems:"center", gap:20 }}>
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
             <div style={{ width:32, height:32, borderRadius:9, background:"linear-gradient(135deg,#3b9eff,#00e5c0)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, fontWeight:700, fontFamily:"'Playfair Display',serif", color:"#050f1e", boxShadow:"0 0 16px rgba(0,229,192,0.4)" }}>N</div>
             <span style={{ fontSize:16, fontWeight:700, color:T.txt, fontFamily:"'Playfair Display',serif", letterSpacing:".02em" }}>Notrya</span>

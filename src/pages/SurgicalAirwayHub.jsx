@@ -408,7 +408,7 @@ function VentCard({ preset, active, onSelect }) {
 }
 
 // ── Main Component ────────────────────────────────────────────────
-export default function AirwayHub() {
+export default function SurgicalAirwayHub() {
   const [tab,        setTab]        = useState("rsi");
   const [weight,     setWeight]     = useState("");
   const [expanded,   setExpanded]   = useState(null);
@@ -460,7 +460,7 @@ export default function AirwayHub() {
             </div>
             <div style={{height:1,flex:1,background:"linear-gradient(90deg,rgba(42,79,122,0.6),transparent)"}}/>
           </div>
-          <h1 className="shimmer-text" style={{fontFamily:"Playfair Display",fontSize:"clamp(24px,4vw,40px)",fontWeight:900,letterSpacing:-1,lineHeight:1.1}}>Airway Hub</h1>
+          <h1 className="shimmer-text" style={{fontFamily:"Playfair Display",fontSize:"clamp(24px,4vw,40px)",fontWeight:900,letterSpacing:-1,lineHeight:1.1}}>Surgical Airway Hub</h1>
           <p style={{fontFamily:"DM Sans",fontSize:12,color:T.txt3,marginTop:4}}>RSI calculator · Airway assessment · Difficult airway algorithm · VL vs DL · Post-intubation vent · Surgical airway</p>
         </div>
 

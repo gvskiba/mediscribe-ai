@@ -307,7 +307,7 @@ const GLOBAL_CSS = `
   margin-top: 64px; margin-bottom: 108px;
   min-height: calc(100vh - 172px); overflow-y: auto;
 }
-.v2-content-inner { padding: 20px 24px; max-width: 1200px; }
+.v2-content-inner { padding: 20px 24px; }
 .v2-content-full { padding: 0; max-width: none; width: 100%; height: 100%; }
 
 /* BOTTOM BAR */

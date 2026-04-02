@@ -587,7 +587,7 @@ export default function RapidAssessmentHub() {
     return (
       <div style={{display:"flex",minHeight:"100vh",background:`linear-gradient(135deg,#04080f 0%,#070f1e 100%)`,fontFamily:"'DM Sans',sans-serif",position:"relative"}}>
         <AmbientBg/>
-        <main style={{flex:1,padding:"30px 38px 52px",overflowY:"auto",position:"relative",zIndex:1,maxWidth:900,margin:"0 auto",width:"100%"}}>
+        <main style={{flex:1,padding:"30px 38px 52px",overflowY:"auto",position:"relative",zIndex:1}}>
           <TemplateDetail tpl={tpl} onBack={()=>setSelected(null)}/>
         </main>
       </div>

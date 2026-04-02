@@ -1069,7 +1069,7 @@ Format: {"clinicalSummary":"2–3 sentence narrative summary","prioritizedFindin
       <AmbientBg/>
 
       {/* ── SIDEBAR ── */}
-      <nav style={{width:224,minHeight:"100vh",position:"relative",zIndex:10,flexShrink:0,background:"rgba(255,255,255,0.04)",backdropFilter:"blur(40px) saturate(180%)",WebkitBackdropFilter:"blur(40px) saturate(180%)",borderRight:`1px solid rgba(255,255,255,0.09)`,boxShadow:"4px 0 40px rgba(0,0,0,0.5),inset -1px 0 0 rgba(255,255,255,0.06)",display:"flex",flexDirection:"column",padding:"80px 14px 24px",gap:3}}>,255,255,0.09)`,boxShadow:"4px 0 40px rgba(0,0,0,0.5),inset -1px 0 0 rgba(255,255,255,0.06)",display:"flex",flexDirection:"column",padding:"24px 14px",gap:3}}>
+      <nav style={{width:224,minHeight:"100vh",position:"relative",zIndex:10,flexShrink:0,background:"rgba(255,255,255,0.04)",backdropFilter:"blur(40px) saturate(180%)",WebkitBackdropFilter:"blur(40px) saturate(180%)",borderRight:`1px solid rgba(255,255,255,0.09)`,boxShadow:"4px 0 40px rgba(0,0,0,0.5),inset -1px 0 0 rgba(255,255,255,0.06)",display:"flex",flexDirection:"column",padding:"24px 14px",gap:3}}>
         <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)",pointerEvents:"none"}}/>
         <div style={{marginBottom:28,paddingLeft:8}}>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>

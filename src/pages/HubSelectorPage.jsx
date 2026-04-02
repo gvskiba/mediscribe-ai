@@ -318,6 +318,24 @@ const HUBS = [
     essential: true,
   },
   {
+    id: "psyche-hub",
+    route: "/psyche-hub",
+    icon: "🧠",
+    abbr: "PSYCH",
+    title: "Psychiatry",
+    subtitle: "Agitation · NMS · Serotonin Syndrome · Bipolar · Suicide Risk",
+    color: "#9b6dff",
+    glow: "rgba(155,109,255,0.4)",
+    glass: "rgba(155,109,255,0.07)",
+    border: "rgba(155,109,255,0.28)",
+    accent: "#b99bff",
+    category: "Specialty",
+    stats: ["8 Protocols", "Screening Tools", "NMS/SS"],
+    badge: "Live",
+    priority: 19,
+    essential: false,
+  },
+  {
     id: "ecg-hub",
     route: "/ecg-hub",
     icon: "🫀",
@@ -346,7 +364,7 @@ const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
   "/peds-hub", "/Procedures", "/erx", "/AutoCoder", "/NewPatientInput",
-  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub",
+  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub",
 ]);
 
 function Background() {

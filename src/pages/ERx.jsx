@@ -980,7 +980,7 @@ const SECTIONS = [
 ];
 
 // ── Main Component ────────────────────────────────────────────────
-export default function ERxHub() {
+export default function ERxHub({ embedded = false, patientAllergiesFromParent, patientWeightFromParent, patientAgeMonthsFromParent }) {
   const navigate = useNavigate();
   const [drugs,            setDrugs]           = useState([]);
   const [activeSection,    setActiveSection]   = useState("prescribe");
@@ -989,9 +989,9 @@ export default function ERxHub() {
   const [showSuccess,      setShowSuccess]     = useState(null);
   const [transmitToast,    setTransmitToast]   = useState(false);
   const [favorites,        setFavorites]       = useState([]);
-  const [patientWeight,    setPatientWeight]   = useState("");
-  const [patientAgeMonths, setPAtientAgeMonths]= useState("");
-  const [patientAllergies, setPatientAllergies]= useState([]);
+  const [patientWeight,    setPatientWeight]   = useState(patientWeightFromParent?.toString() || "");
+  const [patientAgeMonths, setPAtientAgeMonths]= useState(patientAgeMonthsFromParent?.toString() || "");
+  const [patientAllergies, setPatientAllergies]= useState(patientAllergiesFromParent || []);
   const [newAllergy,       setNewAllergy]      = useState("");
 
   useEffect(() => {
@@ -1029,6 +1029,89 @@ export default function ERxHub() {
 
   const handleRevoke    = useCallback(i => setSignedRx(p => p.filter((_,j) => j !== i)), []);
   const handleToggleFav = useCallback(id => setFavorites(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]), []);
+
+  if (embedded) {
+    return (
+      <div style={{fontFamily:"DM Sans, sans-serif",background:T.bg,height:"100%",display:"flex",flexDirection:"column",position:"relative",overflow:"hidden",color:T.txt}}>
+        <AmbientBg accentColor={sec.color}/>
+        <div style={{display:"flex",flex:1,minHeight:0,position:"relative",zIndex:1,overflow:"hidden"}}>
+          <div style={{backdropFilter:"blur(40px)",WebkitBackdropFilter:"blur(40px)",background:"rgba(5,15,30,0.9)",borderRight:"1px solid rgba(42,79,122,0.4)",width:180,flexShrink:0,padding:"10px 8px",display:"flex",flexDirection:"column",gap:3}}>
+            <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:3,padding:"4px 8px 8px"}}>eRx</div>
+            {SECTIONS.map(s => {
+              const isActive = s.id === activeSection;
+              const badge = s.id==="signed"?signedRx.length:s.id==="interact"?allInteractions.length:null;
+              return (
+                <div key={s.id} className="nav-item" onClick={()=>setActiveSection(s.id)}
+                  style={{padding:"8px 10px",borderRadius:10,background:isActive?`linear-gradient(135deg,${s.color}22,rgba(14,37,68,0.6))`:"",border:`1px solid ${isActive?s.color+"55":"transparent"}`,position:"relative",cursor:"pointer"}}>
+                  {isActive && <div style={{position:"absolute",left:0,top:"15%",height:"70%",width:2.5,background:s.color,borderRadius:2}}/>}
+                  <div style={{display:"flex",alignItems:"center",gap:7}}>
+                    <span style={{fontSize:14}}>{s.icon}</span>
+                    <span style={{fontFamily:"DM Sans",fontWeight:700,fontSize:11,color:isActive?T.txt:T.txt2}}>{s.label}</span>
+                    {badge>0 && <span style={{fontFamily:"JetBrains Mono",fontSize:9,fontWeight:700,color:s.color,background:`${s.color}22`,padding:"1px 6px",borderRadius:10,marginLeft:"auto"}}>{badge}</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{flex:1,minWidth:0,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+            <div key={activeSection} className="fade-in" style={{flex:1,minHeight:0,overflowY:"auto",padding:"14px 16px"}}>
+              {activeSection === "prescribe" && (
+                <div style={{display:"flex",gap:12,height:"100%",minHeight:500}}>
+                  <div style={{flex:"0 0 300px",display:"flex",flexDirection:"column",gap:10}}>
+                    <DrugSearchPanel drugs={DRUGS} onSelect={setSelectedDrug} selected={selectedDrug} favorites={favorites} onToggleFav={handleToggleFav} patientAllergies={patientAllergies} activeRx={activeRxIds}/>
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    {selectedDrug ? (
+                      <RxBuilder key={selectedDrug.id} drug={selectedDrug} onSign={handleSign} onCancel={()=>setSelectedDrug(null)} patientWeight={parseFloat(patientWeight)||null} patientAgeMonths={parseFloat(patientAgeMonths)||null} patientAllergies={patientAllergies} activeRx={activeRxIds}/>
+                    ) : (
+                      <div style={{...glass,height:"100%",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12}}>
+                        <span style={{fontSize:40}}>💊</span>
+                        <div style={{fontFamily:"Playfair Display",fontSize:16,color:T.txt2}}>Select a drug to begin prescribing</div>
+                        <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt4,textAlign:"center",maxWidth:260,lineHeight:1.6}}>Search by name or browse by condition</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              {activeSection === "signed" && (
+                <div>
+                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                    <span style={{fontFamily:"DM Sans",fontSize:13,color:T.txt2,flex:1}}>{signedRx.length} prescription{signedRx.length!==1?"s":""} ready</span>
+                    {signedRx.length > 0 && <button onClick={()=>{setTransmitToast(true);setTimeout(()=>setTransmitToast(false),4500);}} style={{padding:"7px 16px",borderRadius:9,background:`linear-gradient(135deg,${T.green},#27ae60)`,border:"none",color:"#050f1e",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"DM Sans"}}>📤 Transmit All</button>}
+                  </div>
+                  <SignedRxQueue prescriptions={signedRx} onRevoke={handleRevoke}/>
+                </div>
+              )}
+              {activeSection === "pdmp" && <PDMPQueryPanel/>}
+              {activeSection === "allergy" && (
+                <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                  <div style={{...glass,padding:"14px 16px"}}>
+                    <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.gold,textTransform:"uppercase",letterSpacing:2,marginBottom:10}}>Documented Drug Allergies</div>
+                    {patientAllergies.length===0?<div style={{fontFamily:"DM Sans",fontSize:12,color:T.txt3,fontStyle:"italic"}}>NKDA</div>:<div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:10}}>{patientAllergies.map((a,i)=>(<div key={i} style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:20,background:"rgba(255,107,107,0.12)",border:"1px solid rgba(255,107,107,0.35)"}}><span style={{fontFamily:"DM Sans",fontWeight:600,fontSize:12,color:T.coral}}>⚠ {a}</span><button onClick={()=>setPatientAllergies(p=>p.filter((_,j)=>j!==i))} style={{background:"transparent",border:"none",color:T.txt4,cursor:"pointer",fontSize:10}}>✕</button></div>))}</div>}
+                    <div style={{display:"flex",gap:8}}>
+                      <input value={newAllergy} onChange={e=>setNewAllergy(e.target.value)} placeholder="Add allergy…" onKeyDown={e=>{if(e.key==="Enter"&&newAllergy.trim()){setPatientAllergies(p=>[...p,newAllergy.trim().toLowerCase()]);setNewAllergy("");}}} style={{...inp(!!newAllergy),flex:1}}/>
+                      <button onClick={()=>{if(newAllergy.trim()){setPatientAllergies(p=>[...p,newAllergy.trim().toLowerCase()]);setNewAllergy("");}}} style={{padding:"9px 14px",borderRadius:9,background:`${T.coral}22`,border:`1px solid ${T.coral}44`,color:T.coral,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"DM Sans"}}>+ Add</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {activeSection === "interact" && (
+                <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                  {allInteractions.length===0?<div style={{...glass,padding:"32px",textAlign:"center"}}><div style={{fontSize:32,marginBottom:8}}>✅</div><div style={{fontFamily:"DM Sans",fontSize:13,color:T.txt2}}>No interactions detected</div></div>:allInteractions.map((ix,i)=>{const c={critical:T.coral,major:T.orange,moderate:T.gold,minor:T.txt3}[ix.severity]||T.txt3;return(<div key={i} style={{...glass,background:`${c}08`,border:`1px solid ${c}33`,padding:"14px 16px"}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}><Badge label={ix.severity.toUpperCase()} color={c}/><span style={{fontFamily:"DM Sans",fontWeight:700,fontSize:13,color:T.txt}}>{ix.drug1} + {ix.drug2}</span></div><div style={{fontFamily:"DM Sans",fontSize:12,color:T.txt2,lineHeight:1.6}}>{ix.msg}</div></div>);})}
+                </div>
+              )}
+              {activeSection === "history" && (
+                <div style={{...glass,padding:"14px 16px",fontFamily:"DM Sans",fontSize:12,color:T.txt2,lineHeight:1.6}}>
+                  📋 Prescription history is populated from the patient's EHR record. Connect Notrya to your EHR for full medication history integration.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        {showSuccess && <div style={{position:"fixed",top:80,right:20,zIndex:999,...glass,background:"rgba(0,229,192,0.15)",border:"1px solid rgba(0,229,192,0.4)",padding:"10px 18px",fontFamily:"DM Sans",fontSize:12,fontWeight:600,color:T.teal}}>✓ {showSuccess} signed</div>}
+      </div>
+    );
+  }
 
   return (
     <div style={{fontFamily:"DM Sans, sans-serif",background:T.bg,minHeight:"100vh",display:"flex",flexDirection:"column",position:"relative",overflow:"hidden",color:T.txt}}>

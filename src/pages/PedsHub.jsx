@@ -53,9 +53,11 @@ const CONDITIONS = [
   { id:"croup",        icon:"🐕",   title:"Croup (LTB)",           sub:"AAP · Dexamethasone · Racemic Epi",     cat:"Viral",         color:T.orange, gl:"rgba(255,159,67,0.1)",   br:"rgba(255,159,67,0.4)"  },
   { id:"influenza",    icon:"🤧",   title:"Influenza",             sub:"AAP 2024–25 · Oseltamivir · Timing",    cat:"Viral",         color:T.blue,   gl:"rgba(59,158,255,0.1)",   br:"rgba(59,158,255,0.4)"  },
   { id:"hfmd",         icon:"✋",   title:"Hand-Foot-Mouth Disease",sub:"Enterovirus · AAP · Supportive",        cat:"Viral",         color:T.purple, gl:"rgba(155,109,255,0.1)",  br:"rgba(155,109,255,0.4)" },
+
+  { id:"pews",        icon:"📊",   title:"PEWS Score",             sub:"Pediatric Early Warning Score",        cat:"Scoring",      color:T.purple, gl:"rgba(155,109,255,0.1)",  br:"rgba(155,109,255,0.4)" },
 ];
 
-const CATS = ["All","Resuscitation","Emergency","Viral"];
+const CATS = ["All","Resuscitation","Emergency","Viral","Scoring"];
 
 const BANNER = [
   { label:"Peds Epi Dose",   value:"0.01 mg/kg",   sub:"1:10,000 IV/IO — max 1 mg",     color:T.coral  },
@@ -512,8 +514,214 @@ const DATA = {
       "Persistent fever > 3 days or new neurological symptoms: re-evaluate immediately for EV-A71 complications",
       "Siblings and parents with symptoms: same supportive care; exclude from work/daycare if febrile with lesions",
     ]
+  },
+
+  pews: {
+    overview: {
+      def: "The Pediatric Early Warning Score (PEWS) is a validated bedside scoring tool used to detect clinical deterioration in hospitalized children before cardiopulmonary arrest. Originally developed at Brighton (2001) and validated across multiple pediatric inpatient settings. PEWS evaluates three physiological domains: Behavior, Cardiovascular, and Respiratory — plus bonus points for nebulization and persistent emesis. Score ≥ 4 mandates bedside nursing review; ≥ 7 requires urgent physician assessment and RRT/PICU evaluation.",
+      bullets: [
+        "Scoring domains: Behavior (0–4), Cardiovascular (0–4), Respiratory (0–4) — max domain score = 12; bonus points can add up to +4",
+        "Score 0–3: routine monitoring per unit protocol",
+        "Score 4–6: ↑ monitoring frequency; bedside nursing reassessment; notify charge RN; consider physician notification",
+        "Score ≥ 7: URGENT physician assessment required; activate RRT (Rapid Response Team) or PICU transfer evaluation",
+        "Validated in: general pediatric wards, stepdown units, post-op floors. NOT validated for NICU/PICU (already intensively monitored)",
+        "PEWS sensitivity 78%, specificity 95–99% for unplanned PICU admission or cardiac arrest at score ≥ 4 (Monaghan 2005, Tucker 2009)",
+        "Serial PEWS trending is more valuable than a single score — a rising score trend is a strong predictor of deterioration even below threshold",
+      ]
+    },
+    workup: [
+      { icon:"📊", label:"PEWS Assessment Domains", detail:"Three core domains scored 0–4 each. Behavior: responsiveness/interaction. Cardiovascular: color + capillary refill time. Respiratory: rate + work of breathing. Each domain is scored independently." },
+      { icon:"🌡️", label:"Vital Signs Context", detail:"PEWS scores should always be interpreted in clinical context — age-appropriate HR/RR norms vary significantly. A score of 3 in a 1-month-old carries different implications than in a 10-year-old." },
+      { icon:"⏱️", label:"Trending Over Time", detail:"Document PEWS at every nursing assessment. A rapid rise (≥ 2 points in 1 hour) or persistent score ≥ 4 that does not improve with intervention should trigger escalation regardless of absolute score." },
+      { icon:"📋", label:"Institutional PEWS Thresholds", detail:"Action thresholds vary by institution. Some use score ≥ 3 for nursing notification, ≥ 5 for MD notification, ≥ 7 for RRT. Use your institution's validated protocol — the calculator below uses the Brighton standard." },
+    ],
+    treatment: [],
+    followup: [
+      "PEWS ≥ 7: activate Rapid Response Team (RRT) or PICU team immediately — do not wait for further deterioration",
+      "Rising PEWS trend over 1–2h: escalate even if below threshold — clinical gestalt must supplement the score",
+      "After RRT activation: reassess in 30 min; document interventions and response in PEWS flow sheet",
+      "Transfer to higher level of care if PEWS ≥ 7 and not improving within 30 min of interventions",
+      "Family-centered care: families often notice changes before staff — incorporate family-activated RRT protocols (PFAC-RRT)",
+      "PEWS is a monitoring tool, not a diagnostic tool — use alongside clinical judgment, vital sign trends, and senior review",
+    ]
   }
 };
+
+// ── PEWS Calculator Component ─────────────────────────────────────
+const PEWS_DOMAINS = [
+  {
+    id:"behavior", label:"Behavior", icon:"🧠",
+    options:[
+      {score:0, label:"Playing / Appropriate", desc:"Normal activity for age, alert and interactive"},
+      {score:1, label:"Sleeping",              desc:"Asleep but rousable with stimulation"},
+      {score:2, label:"Irritable",             desc:"Difficult to console, agitated, restless"},
+      {score:3, label:"Confused / Lethargic",  desc:"Altered level of consciousness, responds to voice only"},
+      {score:4, label:"Unresponsive",          desc:"Responds to pain only or unresponsive"},
+    ]
+  },
+  {
+    id:"cardiovascular", label:"Cardiovascular", icon:"❤️",
+    options:[
+      {score:0, label:"Pink — CRT 1–2 sec",              desc:"Normal color and perfusion"},
+      {score:1, label:"Pale — CRT 3 sec",                desc:"Slightly reduced perfusion, cool extremities"},
+      {score:2, label:"Gray — CRT 4 sec",                desc:"Poor perfusion, mottled or gray skin"},
+      {score:3, label:"Gray / Mottled — CRT ≥ 5 sec",   desc:"Severely reduced perfusion, marked pallor"},
+      {score:4, label:"Gray + Bradycardia",              desc:"Critically reduced perfusion with bradycardia"},
+    ]
+  },
+  {
+    id:"respiratory", label:"Respiratory", icon:"🫁",
+    options:[
+      {score:0, label:"Within normal parameters",               desc:"Normal rate and effort for age"},
+      {score:1, label:">10 above normal + nasal flaring",       desc:"Mild tachypnea, nasal flare, mild increased effort"},
+      {score:2, label:">20 above normal + retractions",        desc:"Moderate tachypnea, subcostal/intercostal retractions"},
+      {score:3, label:">30 above normal + severe retractions", desc:"Severe tachypnea, significant WOB, accessory muscles"},
+      {score:4, label:"< 5 bpm OR apnea / grunting",          desc:"Bradypnea, apnea, or agonal breathing pattern"},
+    ]
+  },
+];
+
+const PEWS_BONUS = [
+  { id:"neb",   label:"Receiving nebulization (any frequency)", score:2 },
+  { id:"emesis",label:"Persistent post-operative vomiting",      score:1 },
+];
+
+const PEWS_RR_NORMAL = [
+  {ageLabel:"< 1 yr",  normal:"30–60"},
+  {ageLabel:"1–3 yr",  normal:"24–40"},
+  {ageLabel:"4–5 yr",  normal:"22–34"},
+  {ageLabel:"6–12 yr", normal:"18–30"},
+  {ageLabel:"> 12 yr", normal:"12–20"},
+];
+
+function PEWSCalculator({ condColor }) {
+  const [scores, setScores] = useState({behavior:null, cardiovascular:null, respiratory:null});
+  const [bonus, setBonus]   = useState({neb:false, emesis:false});
+
+  const domainTotal = Object.values(scores).reduce((a,v)=>a+(v??0),0);
+  const bonusTotal  = PEWS_BONUS.reduce((a,b)=>a+(bonus[b.id]?b.score:0),0);
+  const total = domainTotal + bonusTotal;
+  const allScored = Object.values(scores).every(v=>v!==null);
+
+  const riskInfo = total <= 3
+    ? {label:"LOW RISK",      color:T.green,  bg:"rgba(61,255,160,0.1)", border:"rgba(61,255,160,0.35)",  action:"Routine monitoring — continue standard nursing protocol"}
+    : total <= 6
+    ? {label:"MODERATE RISK", color:T.gold,   bg:"rgba(245,200,66,0.1)", border:"rgba(245,200,66,0.35)", action:"↑ Monitoring frequency · Bedside reassessment · Notify charge RN · Consider physician notification"}
+    : {label:"HIGH RISK",     color:T.coral,  bg:"rgba(255,107,107,0.12)",border:"rgba(255,107,107,0.4)",action:"⚠ URGENT physician assessment required · Activate RRT / PICU evaluation · Do not delay"};
+
+  return (
+    <div style={{padding:"4px 0"}}>
+      <div style={{fontFamily:"JetBrains Mono",fontSize:11,color:condColor,textTransform:"uppercase",letterSpacing:2,marginBottom:14}}>PEWS INTERACTIVE CALCULATOR</div>
+
+      {/* Age-based RR reference */}
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:18}}>
+        <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:1,alignSelf:"center",marginRight:4}}>Normal RR by age:</div>
+        {PEWS_RR_NORMAL.map((r,i)=>(
+          <div key={i} style={{background:"rgba(14,37,68,0.7)",border:"1px solid rgba(42,79,122,0.35)",borderRadius:7,padding:"3px 9px",fontFamily:"JetBrains Mono",fontSize:10}}>
+            <span style={{color:T.txt3}}>{r.ageLabel}: </span><span style={{color:T.teal,fontWeight:700}}>{r.normal}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Domain scoring */}
+      {PEWS_DOMAINS.map(domain=>(
+        <div key={domain.id} style={{marginBottom:14,background:"rgba(8,22,40,0.6)",border:`1px solid ${scores[domain.id]!==null?condColor+"44":"rgba(42,79,122,0.3)"}`,borderRadius:13,padding:"14px 16px",transition:"border-color .2s"}}>
+          <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:13,color:T.txt,marginBottom:10,display:"flex",alignItems:"center",gap:7}}>
+            <span style={{fontSize:18}}>{domain.icon}</span> {domain.label}
+            {scores[domain.id]!==null && <span style={{marginLeft:"auto",fontFamily:"JetBrains Mono",fontSize:14,fontWeight:700,color:condColor}}>Score: {scores[domain.id]}</span>}
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:5}}>
+            {domain.options.map(opt=>(
+              <div key={opt.score} onClick={()=>setScores(p=>({...p,[domain.id]:p[domain.id]===opt.score?null:opt.score}))}
+                style={{display:"flex",alignItems:"flex-start",gap:10,padding:"9px 12px",borderRadius:9,cursor:"pointer",transition:"all .15s",
+                  background:scores[domain.id]===opt.score?`${condColor}1a`:"rgba(14,37,68,0.5)",
+                  border:`1px solid ${scores[domain.id]===opt.score?condColor+"55":"rgba(42,79,122,0.2)"}`}}>
+                <div style={{width:22,height:22,borderRadius:"50%",border:`2px solid ${scores[domain.id]===opt.score?condColor:"rgba(42,79,122,0.5)"}`,background:scores[domain.id]===opt.score?condColor:"transparent",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",marginTop:1}}>
+                  {scores[domain.id]===opt.score && <div style={{width:8,height:8,borderRadius:"50%",background:"#050f1e"}}/>}
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:2}}>
+                    <span style={{fontFamily:"DM Sans",fontWeight:600,fontSize:13,color:scores[domain.id]===opt.score?condColor:T.txt2}}>{opt.label}</span>
+                    <span style={{fontFamily:"JetBrains Mono",fontSize:10,fontWeight:700,color:scores[domain.id]===opt.score?condColor:T.txt4,background:`${scores[domain.id]===opt.score?condColor:"rgba(42,79,122,0.5)"}22`,padding:"1px 6px",borderRadius:4}}>{opt.score} pt{opt.score!==1?"s":""}</span>
+                  </div>
+                  <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt3,lineHeight:1.4}}>{opt.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {/* Bonus points */}
+      <div style={{marginBottom:18,background:"rgba(8,22,40,0.6)",border:"1px solid rgba(42,79,122,0.3)",borderRadius:13,padding:"14px 16px"}}>
+        <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:13,color:T.txt,marginBottom:10}}>➕ Bonus Points</div>
+        {PEWS_BONUS.map(b=>(
+          <div key={b.id} onClick={()=>setBonus(p=>({...p,[b.id]:!p[b.id]}))}
+            style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:9,cursor:"pointer",marginBottom:5,transition:"all .15s",
+              background:bonus[b.id]?`${T.gold}14`:"rgba(14,37,68,0.5)",border:`1px solid ${bonus[b.id]?T.gold+"55":"rgba(42,79,122,0.2)"}`}}>
+            <div style={{width:20,height:20,borderRadius:4,border:`2px solid ${bonus[b.id]?T.gold:"rgba(42,79,122,0.5)"}`,background:bonus[b.id]?T.gold:"transparent",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+              {bonus[b.id]&&<span style={{fontSize:11,fontWeight:700,color:"#050f1e"}}>✓</span>}
+            </div>
+            <span style={{fontFamily:"DM Sans",fontSize:13,color:bonus[b.id]?T.gold:T.txt2,fontWeight:bonus[b.id]?600:400,flex:1}}>{b.label}</span>
+            <span style={{fontFamily:"JetBrains Mono",fontSize:11,fontWeight:700,color:T.gold}}>+{b.score}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Total score */}
+      {allScored && (
+        <div className="fade-in" style={{background:riskInfo.bg,border:`2px solid ${riskInfo.border}`,borderRadius:14,padding:"18px 20px",marginBottom:14}}>
+          <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:10}}>
+            <div style={{textAlign:"center"}}>
+              <div style={{fontFamily:"JetBrains Mono",fontSize:48,fontWeight:700,color:riskInfo.color,lineHeight:1}}>{total}</div>
+              <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:riskInfo.color,letterSpacing:2,textTransform:"uppercase",marginTop:2}}>PEWS Total</div>
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontFamily:"JetBrains Mono",fontSize:13,fontWeight:700,color:riskInfo.color,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>{riskInfo.label}</div>
+              <div style={{fontFamily:"DM Sans",fontSize:13,color:T.txt2,lineHeight:1.6}}>{riskInfo.action}</div>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",paddingTop:8,borderTop:"1px solid rgba(255,255,255,0.07)"}}>
+            {PEWS_DOMAINS.map(d=>(
+              <div key={d.id} style={{fontFamily:"JetBrains Mono",fontSize:10,background:"rgba(5,15,30,0.6)",border:`1px solid ${condColor}33`,borderRadius:7,padding:"3px 10px"}}>
+                <span style={{color:T.txt4}}>{d.label}: </span><span style={{color:condColor,fontWeight:700}}>{scores[d.id]}</span>
+              </div>
+            ))}
+            {bonusTotal>0&&<div style={{fontFamily:"JetBrains Mono",fontSize:10,background:"rgba(5,15,30,0.6)",border:`1px solid ${T.gold}33`,borderRadius:7,padding:"3px 10px"}}>
+              <span style={{color:T.txt4}}>Bonus: </span><span style={{color:T.gold,fontWeight:700}}>+{bonusTotal}</span>
+            </div>}
+          </div>
+        </div>
+      )}
+
+      {!allScored && (
+        <div style={{textAlign:"center",padding:"16px",fontFamily:"DM Sans",fontSize:12,color:T.txt4,background:"rgba(14,37,68,0.4)",borderRadius:10,border:"1px dashed rgba(42,79,122,0.3)"}}>
+          Select one option per domain to calculate total PEWS score
+        </div>
+      )}
+
+      {/* Reference table */}
+      <div style={{marginTop:14,background:"rgba(8,22,40,0.6)",border:"1px solid rgba(42,79,122,0.25)",borderRadius:12,padding:"14px 16px"}}>
+        <div style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.txt4,textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>Score Interpretation Reference</div>
+        {[
+          {range:"0–3", risk:"Low Risk",      color:T.green,  action:"Routine monitoring — standard protocol"},
+          {range:"4–6", risk:"Moderate Risk", color:T.gold,   action:"↑ Frequency · Notify charge RN · Consider physician call"},
+          {range:"≥ 7", risk:"High Risk",     color:T.coral,  action:"URGENT MD assessment · RRT activation · PICU evaluation"},
+        ].map((row,i)=>(
+          <div key={i} style={{display:"flex",gap:12,alignItems:"center",padding:"6px 0",borderBottom:i<2?"1px solid rgba(42,79,122,0.15)":"none"}}>
+            <div style={{fontFamily:"JetBrains Mono",fontSize:16,fontWeight:700,color:row.color,minWidth:40}}>{row.range}</div>
+            <div style={{fontFamily:"JetBrains Mono",fontSize:10,fontWeight:700,color:row.color,minWidth:110}}>{row.risk}</div>
+            <div style={{fontFamily:"DM Sans",fontSize:12,color:T.txt2,flex:1}}>{row.action}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{marginTop:10,fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,lineHeight:1.7,padding:"8px 12px",background:"rgba(14,37,68,0.4)",borderRadius:8,border:"1px solid rgba(42,79,122,0.2)"}}>
+        Source: Monaghan A. Arch Dis Child 2005 · Tucker KM. Pediatr Crit Care Med 2009 · Brighton PEWS (Pediatric Early Warning Score).
+        Sensitivity 78%, Specificity 95% for unplanned PICU admission at score ≥ 4. Validate against your institution's protocol.
+      </div>
+    </div>
+  );
+}
 
 // ── Broselow Zone Table Component ─────────────────────────────────
 function BroselowTable() {
@@ -722,6 +930,11 @@ export default function PedsHub() {
       { id:"tape",      label:"Color Zones",icon:"📏" },
       { id:"dosecalc",  label:"Dose Calc", icon:"🧮" },
     ];
+    if (sel === "pews") return [
+      { id:"overview",   label:"Overview",   icon:"📖" },
+      { id:"calculator", label:"Calculator", icon:"📊" },
+      { id:"followup",   label:"Escalation", icon:"📋" },
+    ];
     return base;
   }, [sel]);
 
@@ -841,8 +1054,9 @@ export default function PedsHub() {
                 </div>
               )}
               {tab === "followup"  && data && <FollowupTab fu={data.followup}/>}
-              {tab === "tape"      && <BroselowTable/>}
-              {tab === "dosecalc"  && <WeightCalc condColor={cond.color}/>}
+              {tab === "tape"       && <BroselowTable/>}
+              {tab === "dosecalc"   && <WeightCalc condColor={cond.color}/>}
+              {tab === "calculator" && <PEWSCalculator condColor={cond.color}/>}
             </div>
           </div>
         </div>

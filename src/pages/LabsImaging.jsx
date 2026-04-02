@@ -377,6 +377,7 @@ export default function LabsInterpreter() {
     setLabName(name);
     const ref = LABS_REF.find(r=>r.n===name);
     if(ref) setLabUnit(ref.u);
+    else if(!name.trim()) setLabUnit(""); // clear unit when name is erased
   };
 
   const addLab = () => {
@@ -404,7 +405,7 @@ Status options: normal, low, high, critical_low, critical_high, elevated`,
       setLabResult(JSON.parse(raw));
       toast("Lab analysis complete","success");
     } catch(e) { toast("Lab analysis failed — check connection","error"); }
-    setLabBusy(false);
+    finally { setLabBusy(false); }
   };
 
   // ── AI: Analyze Imaging ────────────────────────────────────
@@ -428,7 +429,7 @@ Status options: normal, low, high, critical_low, critical_high, elevated`,
       setImgResult(JSON.parse(raw));
       toast("Imaging analysis complete","success");
     } catch(e) { toast("Imaging analysis failed","error"); }
-    setImgBusy(false);
+    finally { setImgBusy(false); }
   };
 
   // ── AI: Analyze EKG ───────────────────────────────────────
@@ -452,7 +453,7 @@ Status options: normal, low, high, critical_low, critical_high, elevated`,
       setEkgResult(JSON.parse(raw));
       toast("EKG interpretation complete","success");
     } catch(e) { toast("EKG analysis failed","error"); }
-    setEkgBusy(false);
+    finally { setEkgBusy(false); }
   };
 
   // ── AI: Generate Summary ───────────────────────────────────
@@ -476,24 +477,24 @@ Format: {"clinicalSummary":"2–3 sentence narrative summary","prioritizedFindin
       setSumResult(JSON.parse(raw));
       toast("Clinical summary generated","success");
     } catch(e) { toast("Summary generation failed","error"); }
-    setSumBusy(false);
+    finally { setSumBusy(false); }
   };
 
   // ── Image upload handlers ──────────────────────────────────
   const handleImgUpload = async (e) => {
     const file = e.target.files?.[0]; if(!file) return;
-    // Revoke previous object URL to prevent memory leak
     if(imgPreview) URL.revokeObjectURL(imgPreview);
     const d = await readImg(file);
     setImgData(d); setImgPreview(URL.createObjectURL(file));
+    e.target.value = "";   // reset so same file can be re-selected after removal
     toast("Image loaded — ready to analyze","success");
   };
   const handleEkgUpload = async (e) => {
     const file = e.target.files?.[0]; if(!file) return;
-    // Revoke previous object URL to prevent memory leak
     if(ekgPreview) URL.revokeObjectURL(ekgPreview);
     const d = await readImg(file);
     setEkgData(d); setEkgPreview(URL.createObjectURL(file));
+    e.target.value = "";   // reset so same file can be re-selected after removal
     toast("EKG loaded — ready to interpret","success");
   };
 
@@ -723,7 +724,7 @@ Format: {"clinicalSummary":"2–3 sentence narrative summary","prioritizedFindin
                 const expKey = `${imgMod}-${i}`;
                 const isExp = imgPatExp===expKey;
                 return (
-                  <div key={i} style={{...Gx.row(uc),transition:"all .18s",cursor:"pointer",borderColor:isExp?`${uc}35`:T.border}}
+                  <div key={i} style={{...Gx.row(uc),transition:"all .18s",cursor:"pointer",border:`1px solid ${isExp?uc+"35":T.border}`}}
                     onClick={()=>setImgPatExp(k=>k===expKey?null:expKey)}>
                     <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 13px"}}>
                       <span style={{fontSize:13,fontWeight:700,color:T.txt,flex:1}}>{p.p}</span>
@@ -912,37 +913,48 @@ Format: {"clinicalSummary":"2–3 sentence narrative summary","prioritizedFindin
           <div style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:18}}>
             {cats.map(cat=><GPill key={cat} label={cat} active={critCat===cat} accent={T.coral} onClick={()=>{setCritCat(cat);setCritExpanded(null);}}/>)}
           </div>
-          {/* Column headers */}
-          <div style={{display:"grid",gridTemplateColumns:"150px 60px 90px 90px 90px 70px 20px",gap:0,padding:"6px 12px",marginBottom:4}}>
-            {["Lab","Unit","Normal","Crit LOW","Crit HIGH","Category",""].map(h=>(
-              <span key={h} style={{fontSize:9,fontFamily:"'JetBrains Mono',monospace",fontWeight:600,color:T.txt4,textTransform:"uppercase",letterSpacing:".06em"}}>{h}</span>
-            ))}
-          </div>
-          <div style={{display:"flex",flexDirection:"column",gap:3}}>
-            {visible.map((r,i)=>{
-              const isExp = critExpanded===r.n;
-              const notes = LAB_NOTES[r.n];
-              const cc = CAT_COLOR[r.cat]||AC;
-              return (
-                <div key={i} style={{...Gx.row(isExp?cc:null),transition:"all .18s",cursor:notes?"pointer":"default",borderColor:isExp?`${cc}35`:T.border}}
-                  onClick={()=>notes&&setCritExpanded(p=>p===r.n?null:r.n)}>
-                  <div style={{display:"grid",gridTemplateColumns:"150px 60px 90px 90px 90px 70px 20px",alignItems:"center",gap:0,padding:"9px 12px"}}>
-                    <span style={{fontWeight:600,color:isExp?cc:T.txt,fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.n}</span>
-                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt3}}>{r.u}</span>
-                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:T.green}}>{r.norm}</span>
-                    <span>{r.cL!=null?<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,color:T.coral,textShadow:`0 0 8px ${T.coral}40`}}>&lt;{r.cL}</span>:<span style={{fontSize:11,color:T.txt4}}>—</span>}</span>
-                    <span>{r.cH!=null?<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,color:T.coral,textShadow:`0 0 8px ${T.coral}40`}}>&gt;{r.cH}</span>:<span style={{fontSize:11,color:T.txt4}}>—</span>}</span>
-                    <span><Chip label={r.cat} color={cc}/></span>
-                    <span style={{fontSize:10,color:T.txt4,textAlign:"right"}}>{notes?(isExp?"▲":"▼"):""}</span>
-                  </div>
-                  {isExp&&notes&&(
-                    <div style={{padding:"0 14px 12px",borderTop:`1px solid ${T.border}`}}>
-                      <p style={{fontSize:12,color:T.txt2,margin:"10px 0 0",lineHeight:1.7}}>{notes}</p>
+          {/* Column headers + rows wrapped in scrollable container to prevent overflow clipping */}
+          <div style={{overflowX:"auto"}}>
+            <div style={{minWidth:570}}>
+              <div style={{display:"grid",gridTemplateColumns:"150px 60px 90px 90px 90px 70px 20px",gap:0,padding:"6px 12px",marginBottom:4}}>
+                {["Lab","Unit","Normal","Crit LOW","Crit HIGH","Category",""].map((h,hi)=>(
+                  <span key={hi} style={{fontSize:9,fontFamily:"'JetBrains Mono',monospace",fontWeight:600,color:T.txt4,textTransform:"uppercase",letterSpacing:".06em"}}>{h}</span>
+                ))}
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:3}}>
+                {visible.map((r,i)=>{
+                  const isExp = critExpanded===r.n;
+                  const notes = LAB_NOTES[r.n];
+                  const cc = CAT_COLOR[r.cat]||AC;
+                  // Use full `border` shorthand consistently — avoid mixing border + borderColor
+                  const rowStyle = {
+                    ...Gx.row(isExp?cc:null),
+                    border:`1px solid ${isExp?cc+"35":T.border}`,
+                    transition:"all .18s",
+                    cursor:notes?"pointer":"default",
+                  };
+                  return (
+                    <div key={i} style={rowStyle}
+                      onClick={()=>notes&&setCritExpanded(p=>p===r.n?null:r.n)}>
+                      <div style={{display:"grid",gridTemplateColumns:"150px 60px 90px 90px 90px 70px 20px",alignItems:"center",gap:0,padding:"9px 12px"}}>
+                        <span style={{fontWeight:600,color:isExp?cc:T.txt,fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.n}</span>
+                        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt3}}>{r.u}</span>
+                        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:T.green}}>{r.norm}</span>
+                        <span>{r.cL!=null?<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,color:T.coral,textShadow:`0 0 8px ${T.coral}40`}}>&lt;{r.cL}</span>:<span style={{fontSize:11,color:T.txt4}}>—</span>}</span>
+                        <span>{r.cH!=null?<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,color:T.coral,textShadow:`0 0 8px ${T.coral}40`}}>&gt;{r.cH}</span>:<span style={{fontSize:11,color:T.txt4}}>—</span>}</span>
+                        <span><Chip label={r.cat} color={cc}/></span>
+                        <span style={{fontSize:10,color:T.txt4,textAlign:"right"}}>{notes?(isExp?"▲":"▼"):""}</span>
+                      </div>
+                      {isExp&&notes&&(
+                        <div style={{padding:"0 14px 12px",borderTop:`1px solid ${T.border}`}}>
+                          <p style={{fontSize:12,color:T.txt2,margin:"10px 0 0",lineHeight:1.7}}>{notes}</p>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            </div>
           </div>
           <div style={{marginTop:14,fontSize:10,color:T.txt4,fontFamily:"'JetBrains Mono',monospace",padding:"10px 14px",background:T.glassD,borderRadius:9,border:`1px solid ${T.border}`,lineHeight:1.7}}>
             ⚠ Critical values require STAT provider notification and documentation per institutional policy · Values are general guidelines — adjust for patient age, comorbidities, and baseline

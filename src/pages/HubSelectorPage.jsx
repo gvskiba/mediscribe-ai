@@ -353,6 +353,24 @@ const HUBS = [
     priority: 18,
     essential: true,
   },
+  {
+    id: "surgical-airway",
+    route: "/surgical-airway-hub",
+    icon: "🔪",
+    abbr: "SURG AIR",
+    title: "Surgical Airway",
+    subtitle: "CICO · Cricothyrotomy · RSI · Difficult Airway · Vent Settings",
+    color: "#ff4444",
+    glow: "rgba(255,68,68,0.4)",
+    glass: "rgba(255,68,68,0.07)",
+    border: "rgba(255,68,68,0.28)",
+    accent: "#ff7777",
+    category: "Procedures",
+    stats: ["RSI Calculator", "LEMON Score", "CICO Protocol"],
+    badge: "Live",
+    priority: 20,
+    essential: false,
+  },
 ];
 
 const ESSENTIAL_IDS = new Set(HUBS.filter(h => h.essential).map(h => h.id));
@@ -364,7 +382,7 @@ const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
   "/peds-hub", "/Procedures", "/erx", "/AutoCoder", "/NewPatientInput",
-  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub",
+  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub",
 ]);
 
 function Background() {

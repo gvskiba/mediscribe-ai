@@ -369,6 +369,7 @@ function StepCard({ step, expanded, onToggle }) {
 
 // ── Main Component ────────────────────────────────────────────────────
 export default function ECGHub() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState("library");
   const [expanded, setExpanded] = useState(null);
   const [stepExp, setStepExp] = useState(null);

@@ -264,6 +264,23 @@ const HUBS = [
     priority: 14,
     essential: true,
   },
+  {
+    id: "labs-imaging",
+    route: "/LabsImaging",
+    icon: "🧪",
+    abbr: "LABS",
+    title: "Labs & Imaging",
+    subtitle: "Critical value reference · CXR/CT pattern recognition · Result interpretation",
+    color: "#00d4ff",
+    glow: "rgba(0,212,255,0.4)",
+    glass: "rgba(0,212,255,0.07)",
+    border: "rgba(0,212,255,0.28)",
+    accent: "#33deff",
+    category: "Tools",
+    stats: ["Critical Values", "CXR Patterns", "CT Findings"],
+    badge: "Coming Soon",
+    priority: 15,
+  },
 ];
 
 const ESSENTIAL_IDS = new Set(HUBS.filter(h => h.essential).map(h => h.id));

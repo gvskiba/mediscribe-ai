@@ -1,0 +1,92 @@
+{
+  "name": "TriageAssessment",
+  "type": "object",
+  "properties": {
+    "patient_name": {
+      "type": "string",
+      "description": "Patient name or identifier"
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "Patient MRN or ID"
+    },
+    "esi_level": {
+      "type": "number",
+      "description": "Assigned ESI level (1-5)",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "esi_label": {
+      "type": "string",
+      "description": "ESI level label (e.g. Resuscitation, Emergent)"
+    },
+    "chief_complaint": {
+      "type": "string",
+      "description": "Patient chief complaint at triage"
+    },
+    "triage_notes": {
+      "type": "string",
+      "description": "Additional triage notes"
+    },
+    "vital_signs": {
+      "type": "object",
+      "description": "Triage vital signs",
+      "properties": {
+        "hr": {
+          "type": "number"
+        },
+        "sbp": {
+          "type": "number"
+        },
+        "rr": {
+          "type": "number"
+        },
+        "spo2": {
+          "type": "number"
+        },
+        "temp": {
+          "type": "number"
+        },
+        "gcs": {
+          "type": "number"
+        }
+      }
+    },
+    "triage_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Date and time of triage assessment"
+    },
+    "disposition": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "admitted",
+        "discharged",
+        "transferred",
+        "left_ama"
+      ],
+      "default": "pending",
+      "description": "Patient disposition"
+    },
+    "mci_tag": {
+      "type": "string",
+      "enum": [
+        "immediate",
+        "delayed",
+        "minor",
+        "expectant",
+        "dead"
+      ],
+      "description": "MCI triage tag (if applicable)"
+    },
+    "triaged_by": {
+      "type": "string",
+      "description": "Name of the triaging provider"
+    }
+  },
+  "required": [
+    "esi_level",
+    "chief_complaint"
+  ]
+}

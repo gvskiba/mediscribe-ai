@@ -4,6 +4,7 @@
  * Fast Track · CC Quick Sort · Chief Complaint Protocols · AI Assistant
  */
 import { useState, useCallback, useMemo } from "react";
+import { base44 } from "@/api/base44Client";
 
 (() => {
   const ID = "notrya-hub-fonts";
@@ -478,7 +479,32 @@ export default function TriageHub() {
     setTimeout(()=>setToasts(p=>p.filter(t=>t.id!==id)), 3400);
   }, []);
 
-  const resetESI = () => { setEsiStep(0); setEsiResult(null); };
+  const resetESI = () => { setEsiStep(0); setEsiResult(null); setSaveModal(false); setSaveData({patient_name:"",patient_id:"",chief_complaint:"",triage_notes:""}); };
+
+  const [saveModal, setSaveModal] = useState(false);
+  const [saveData, setSaveData] = useState({patient_name:"",patient_id:"",chief_complaint:"",triage_notes:""});
+  const [saveBusy, setSaveBusy] = useState(false);
+
+  const saveAssessment = async (esiLevel) => {
+    if (!saveData.chief_complaint.trim()) { toast("Chief complaint required","error"); return; }
+    setSaveBusy(true);
+    try {
+      const cfg = ESI_LEVELS.find(e=>e.level===esiLevel);
+      await base44.entities.TriageAssessment.create({
+        esi_level: esiLevel,
+        esi_label: cfg?.label||"",
+        chief_complaint: saveData.chief_complaint,
+        patient_name: saveData.patient_name||undefined,
+        patient_id: saveData.patient_id||undefined,
+        triage_notes: saveData.triage_notes||undefined,
+        triage_time: new Date().toISOString(),
+        disposition: "pending",
+      });
+      toast("Triage assessment saved","success");
+      setSaveModal(false);
+    } catch(e) { toast("Save failed","error"); }
+    finally { setSaveBusy(false); }
+  };
 
   const filtered = useMemo(()=>
     ITEMS.filter(i=>catFilter==="All"||i.cat===catFilter).filter(i=>!search||i.title.toLowerCase().includes(search.toLowerCase())||i.subtitle.toLowerCase().includes(search.toLowerCase()))
@@ -556,8 +582,30 @@ Format: {"summary":"Direct answer","keyPoints":["Point 1","Point 2","Point 3"],"
                 </div>
               ))}
             </div>
-            <button onClick={resetESI} style={{...Gx.btn(cfg.color,true),padding:"10px 30px",fontSize:14}}>🔄 New Patient Assessment</button>
+            <div style={{display:"flex",gap:10,justifyContent:"center"}}>
+              <button onClick={()=>setSaveModal(true)} style={{...Gx.btn(T.teal,true),padding:"10px 24px",fontSize:13}}>💾 Save Assessment</button>
+              <button onClick={resetESI} style={{...Gx.btn(cfg.color,true),padding:"10px 30px",fontSize:14}}>🔄 New Patient</button>
+            </div>
           </GPanel>
+          {saveModal&&(
+            <GPanel style={{padding:"22px 24px",animation:"hubIn .3s ease"}} accent={T.teal}>
+              <SecHdr icon="💾" title="Save Triage Assessment" badge="SAVE" accent={T.teal}/>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+                <GInput value={saveData.patient_name} onChange={e=>setSaveData(p=>({...p,patient_name:e.target.value}))} accent={T.teal} placeholder="Patient name (optional)"/>
+                <GInput value={saveData.patient_id} onChange={e=>setSaveData(p=>({...p,patient_id:e.target.value}))} accent={T.teal} placeholder="MRN / Patient ID (optional)"/>
+              </div>
+              <GInput value={saveData.chief_complaint} onChange={e=>setSaveData(p=>({...p,chief_complaint:e.target.value}))} accent={T.teal} placeholder="Chief complaint *" style={{marginBottom:10}}/>
+              <textarea value={saveData.triage_notes} onChange={e=>setSaveData(p=>({...p,triage_notes:e.target.value}))} rows={3}
+                placeholder="Additional triage notes (optional)"
+                style={{...Gx.inp(),width:"100%",padding:"10px 14px",lineHeight:1.6,resize:"vertical",marginBottom:12}}/>
+              <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+                <button onClick={()=>setSaveModal(false)} style={{...Gx.btn(T.txt3,false),padding:"8px 18px",fontSize:12}}>Cancel</button>
+                <button onClick={()=>saveAssessment(esiResult)} disabled={saveBusy||!saveData.chief_complaint.trim()} style={{...Gx.btn(T.teal,true),padding:"8px 22px",fontSize:13,opacity:saveBusy||!saveData.chief_complaint.trim()?0.5:1}}>
+                  {saveBusy?"Saving…":"Save Assessment"}
+                </button>
+              </div>
+            </GPanel>
+          )}
         </div>
       );
     }

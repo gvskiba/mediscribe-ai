@@ -225,7 +225,7 @@ function LabsTab() {
   const panel = LAB_PANELS.find(p => p.id === activePanel);
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 16, height: "100%" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 16 }}>
       {/* Panel selector */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {LAB_PANELS.map(p => (
@@ -244,7 +244,7 @@ function LabsTab() {
       </div>
 
       {/* Test list */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, overflowY: "auto" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
           <span style={{ fontSize: 22 }}>{panel.icon}</span>
           <div style={{ fontSize: 18, fontWeight: 700, color: panel.color, fontFamily: "'Playfair Display',serif" }}>{panel.label}</div>
@@ -256,7 +256,7 @@ function LabsTab() {
           return (
             <div key={test.name} style={{ background: T.card, border: `1px solid ${isExpanded ? panel.color + "55" : T.b}`, borderRadius: 12, overflow: "hidden", transition: "border-color .15s" }}>
               <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
-                onClick={() => setExpandedTest(isExpanded ? null : `${activePanel}_${test.name}`)}>
+                onClick={() => setExpandedTest(isExpanded ? null : `${activePanel}_${test.name}`)}>              
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ fontSize: 13, fontWeight: 700, color: T.txt }}>{test.name}</span>
@@ -305,7 +305,7 @@ function ImagingTab() {
   );
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 16, height: "100%" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 16 }}>
       {/* Study selector */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {IMAGING_DATA.map(s => (
@@ -324,7 +324,7 @@ function ImagingTab() {
       </div>
 
       {/* Findings */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, overflowY: "auto" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
           <span style={{ fontSize: 22 }}>{study.icon}</span>
           <div style={{ fontSize: 18, fontWeight: 700, color: study.color, fontFamily: "'Playfair Display',serif" }}>{study.label}</div>
@@ -427,7 +427,7 @@ Be concise and clinically actionable. Use bold for critical findings.`;
   };
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, height: "100%" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{ background: T.card, borderRadius: 12, padding: 16, border: `1px solid ${T.b}` }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: T.teal, marginBottom: 8, textTransform: "uppercase", letterSpacing: ".07em" }}>🧪 Lab Values</div>
@@ -528,7 +528,7 @@ export default function LabsImaging() {
       </div>
 
       {/* Content */}
-      <div style={{ height: "calc(100vh - 260px)" }}>
+      <div style={{ minHeight: 600 }}>
         {activeTab === "labs" && <LabsTab />}
         {activeTab === "imaging" && <ImagingTab />}
         {activeTab === "interpreter" && <AIInterpreterTab />}

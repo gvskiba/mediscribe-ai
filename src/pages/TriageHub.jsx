@@ -1156,6 +1156,10 @@ Format: {"summary":"Direct answer","keyPoints":["Point 1","Point 2","Point 3"],"
           <div style={{width:6,height:6,borderRadius:"50%",background:AC,animation:"pulseDot 2s ease-in-out infinite"}}/>
           <span style={{fontSize:10,color:T.txt4,fontFamily:"'JetBrains Mono',monospace"}}>AI Ready</span>
         </div>
+        <button onClick={()=>window.location.href='/hub'} style={{display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:10,border:"1px solid rgba(42,79,122,0.4)",background:"rgba(14,37,68,0.5)",color:T.txt3,fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,cursor:"pointer",width:"100%",transition:"all .15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(59,158,255,0.5)";e.currentTarget.style.color=T.txt2;}} onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(42,79,122,0.4)";e.currentTarget.style.color=T.txt3;}}>
+          <span style={{fontSize:15}}>🏥</span>
+          <span>Hub</span>
+        </button>
       </nav>
       {/* MAIN */}
       <main style={{flex:1,padding:"30px 38px 52px",overflowY:"auto",position:"relative",zIndex:1}}>

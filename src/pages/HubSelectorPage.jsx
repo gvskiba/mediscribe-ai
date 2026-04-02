@@ -281,6 +281,24 @@ const HUBS = [
     badge: "Coming Soon",
     priority: 15,
   },
+  {
+    id: "triage",
+    route: "/triage-hub",
+    icon: "🏷️",
+    abbr: "TRIAGE",
+    title: "Triage Hub",
+    subtitle: "ESI Calculator · START/SALT MCI · Danger Vitals · CC Quick Sort",
+    color: "#fb923c",
+    glow: "rgba(251,146,60,0.4)",
+    glass: "rgba(251,146,60,0.07)",
+    border: "rgba(251,146,60,0.28)",
+    accent: "#fdba74",
+    category: "Tools",
+    stats: ["ESI v4", "START / SALT", "AI Assistant"],
+    badge: "Live",
+    priority: 16,
+    essential: true,
+  },
 ];
 
 const ESSENTIAL_IDS = new Set(HUBS.filter(h => h.essential).map(h => h.id));
@@ -292,7 +310,7 @@ const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
   "/peds-hub", "/Procedures", "/erx", "/AutoCoder", "/NewPatientInput",
-  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging",
+  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub",
 ]);
 
 function Background() {

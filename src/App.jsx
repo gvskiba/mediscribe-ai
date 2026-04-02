@@ -40,6 +40,7 @@ import SurgicalAirwayHub from '@/pages/SurgicalAirwayHub';
 import RapidAssessmentHub from '@/pages/RapidAssessmentHub';
 import ECGHub from '@/pages/ECGHub';
 import PsycheHub from '@/pages/PsycheHub';
+import ShockHub from '@/pages/ShockHub';
 
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -129,6 +130,7 @@ const AuthenticatedApp = () => {
       <Route path="/ecg-hub" element={<ECGHub />} />
       <Route path="/psyche-hub" element={<PsycheHub />} />
       <Route path="/surgical-airway-hub" element={<SurgicalAirwayHub />} />
+      <Route path="/shock-hub" element={<ShockHub />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

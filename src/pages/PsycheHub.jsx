@@ -751,7 +751,7 @@ export default function PsychHub() {
                 <div>
                   <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:1.5,marginBottom:10}}>Documentation Template</div>
                   <div style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.teal,background:"rgba(4,10,22,0.7)",border:"1px solid rgba(42,79,122,0.4)",borderRadius:10,padding:"14px 16px",lineHeight:2}}>
-                    {`Patient was informed of: [diagnosis/condition].\n\nProposed treatment: [intervention].\n\nAlternatives discussed: [alternatives].\n\nRisks of refusal: [consequences].\n\nPatient demonstrates:\n• Understanding: [yes/no — evidence]\n• Appreciation: [yes/no — evidence]\n• Reasoning: [yes/no — evidence]\n• Communication: [yes/no — evidence]\n\nConclusion: Patient [has/lacks] decision-making capacity for this specific decision.`}
+                   {`Patient was informed of: [diagnosis/condition].\n\nProposed treatment: [intervention].\n\nAlternatives discussed: [alternatives].\n\nRisks of refusal: [consequences].\n\nPatient demonstrates:\n• Understanding: [yes/no — evidence]\n• Appreciation: [yes/no — evidence]\n• Reasoning: [yes/no — evidence]\n• Communication: [yes/no — evidence]\n\nConclusion: Patient [has/lacks] decision-making capacity for this specific decision.`}
                   </div>
                 </div>
               </div>

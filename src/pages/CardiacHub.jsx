@@ -446,7 +446,7 @@ const NAV_DATA={
   ],
 };
 const GROUP_META=[{key:"intake",icon:"📋",label:"Intake"},{key:"documentation",icon:"🩺",label:"Documentation"},{key:"disposition",icon:"🚪",label:"Disposition"},{key:"tools",icon:"🔧",label:"Tools"}];
-const SIDEBAR_BTNS=[{icon:"🏠",label:"Home",route:"/"},{icon:"📊",label:"Dash",route:"/Dashboard"},{icon:"👥",label:"Patients",route:"/PatientDashboard"},{icon:"🔄",label:"Shift",route:"/Shift"},"sep",{icon:"💊",label:"Drugs",route:"/DrugsBugs"},{icon:"🧮",label:"Calc",route:"/Calculators"}];
+const SIDEBAR_BTNS=[{icon:"🏠",label:"Home",route:"/"},{icon:"📊",label:"Dash",route:"/Dashboard"},{icon:"👥",label:"Patients",route:"/PatientDashboard"},{icon:"🔄",label:"Shift",route:"/Shift"},"sep",{icon:"💊",label:"Drugs",route:"/DrugsBugs"},{icon:"🧮",label:"Calc",route:"/Calculators"},{icon:"🏥",label:"Hub",route:"/hub"}];
 const QUICK_ACTIONS=[{icon:"📋",label:"Summarise",prompt:"Summarise what I have entered so far."},{icon:"🔍",label:"Check",prompt:"What am I missing? Check my entries for completeness."},{icon:"📝",label:"Draft Note",prompt:"Generate a draft note from the data entered."},{icon:"🧠",label:"DDx",prompt:"Suggest differential diagnoses based on current data."}];
 const ALL_SECTIONS=Object.values(NAV_DATA).flat();
 const SYSTEM_PROMPT="You are Notrya AI — a helpful AI assistant embedded in an emergency medicine documentation platform. Respond in 2–4 concise, actionable sentences. Be direct. Never fabricate data.";

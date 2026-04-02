@@ -438,11 +438,21 @@ function GInput({ value, onChange, placeholder, accent }) {
 // ── Template Detail View ─────────────────────────────────────
 function TemplateDetail({ tpl, onBack }) {
   const [phaseExpanded, setPhaseExpanded] = useState(null);
-  const [completed, setCompleted] = useState({});
+
+  const storageKey = `notrya_rapid_${tpl.id}_${new Date().toISOString().slice(0,10)}`;
+  const [completed, setCompleted] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(storageKey) || "{}"); } catch { return {}; }
+  });
+
+  const persistCompleted = (next) => {
+    setCompleted(next);
+    try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch {}
+  };
 
   const toggleStep = (phaseIdx, stepIdx) => {
     const key = `${phaseIdx}-${stepIdx}`;
-    setCompleted(p=>({...p,[key]:!p[key]}));
+    const next = {...completed, [key]: !completed[key]};
+    persistCompleted(next);
   };
   const phaseComplete = (phaseIdx) => tpl.phases[phaseIdx].steps.every((_,si)=>completed[`${phaseIdx}-${si}`]);
 

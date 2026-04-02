@@ -317,6 +317,24 @@ const HUBS = [
     priority: 17,
     essential: true,
   },
+  {
+    id: "ecg-hub",
+    route: "/ecg-hub",
+    icon: "🫀",
+    abbr: "ECG",
+    title: "ECG Hub",
+    subtitle: "18 rhythms · Diagnostic criteria · STEMI territories · AI interpreter",
+    color: "#f87171",
+    glow: "rgba(248,113,113,0.4)",
+    glass: "rgba(248,113,113,0.07)",
+    border: "rgba(248,113,113,0.28)",
+    accent: "#fca5a5",
+    category: "Tools",
+    stats: ["18 Rhythms", "STEMI Equiv.", "AI Interpreter"],
+    badge: "Live",
+    priority: 18,
+    essential: true,
+  },
 ];
 
 const ESSENTIAL_IDS = new Set(HUBS.filter(h => h.essential).map(h => h.id));
@@ -328,7 +346,7 @@ const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
   "/peds-hub", "/Procedures", "/erx", "/AutoCoder", "/NewPatientInput",
-  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub",
+  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub",
 ]);
 
 function Background() {

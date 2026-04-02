@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 
 // ── Font Injection ────────────────────────────────────────────────────
 (() => {
@@ -747,6 +748,7 @@ function DDxPill({ label, color }) {
 
 // ── Main Component ────────────────────────────────────────────────────
 export default function RapidAssessmentHub() {
+  const navigate = useNavigate();
   const [selected, setSelected] = useState(COMPLAINTS[0].id);
   const [catFilter, setCatFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -767,6 +769,7 @@ export default function RapidAssessmentHub() {
         {/* Header */}
         <div style={{padding:"16px 0 12px",flexShrink:0}}>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+            <button onClick={()=>navigate("/hub")} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 12px",borderRadius:8,background:"rgba(14,37,68,0.8)",border:"1px solid rgba(42,79,122,0.5)",color:"#8aaccc",fontFamily:"DM Sans",fontSize:11,fontWeight:600,cursor:"pointer",flexShrink:0,transition:"all .15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(59,158,255,0.5)";e.currentTarget.style.color="#e8f0fe";}} onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(42,79,122,0.5)";e.currentTarget.style.color="#8aaccc";}}>← Hub</button>
             <div style={{backdropFilter:"blur(40px)",WebkitBackdropFilter:"blur(40px)",background:"rgba(5,15,30,0.85)",border:"1px solid rgba(26,53,85,0.6)",borderRadius:10,padding:"5px 12px",display:"flex",alignItems:"center",gap:8}}>
               <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.teal,letterSpacing:3}}>NOTRYA</span>
               <span style={{color:T.txt4,fontFamily:"JetBrains Mono",fontSize:10}}>/</span>

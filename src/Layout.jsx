@@ -53,6 +53,7 @@ const CHART_GROUPS = [
       { icon: '👤', label: 'Demographics',       page: '/NewPatientInput?tab=demo' },
       { icon: '💬', label: 'Chief Complaint',    page: '/NewPatientInput?tab=cc' },
       { icon: '📈', label: 'Vitals',             page: '/NewPatientInput?tab=vit' },
+      { icon: '💊', label: 'Meds & PMH',         page: '/NewPatientInput?tab=meds' },
     ]
   },
   {
@@ -60,7 +61,6 @@ const CHART_GROUPS = [
     groupIcon: '🩺',
     items: [
       { icon: '📝', label: 'HPI',             page: '/hpi' },
-      { icon: '💊', label: 'Meds & PMH',         page: '/NewPatientInput?tab=meds' },
       { icon: '🔍', label: 'Review of Systems',  page: '/NewPatientInput?tab=ros' },
       { icon: '🩺', label: 'Physical Exam',      page: '/NewPatientInput?tab=pe' },
       { icon: '⚖️', label: 'MDM',               page: '/NewPatientInput?tab=mdm' },

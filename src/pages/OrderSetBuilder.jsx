@@ -306,7 +306,7 @@ Respond ONLY with valid JSON array (no markdown, no backticks):
   const totalSelected = orders.filter(o => o.selected).length;
 
   return (
-    <div style={{
+    <div className="pt-[80px]" style={{
       fontFamily: "DM Sans, system-ui, sans-serif",
       background: G.navy, height: "100vh", color: G.text,
       display: "flex", flexDirection: "column", overflow: "hidden",

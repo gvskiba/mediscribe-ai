@@ -350,7 +350,7 @@ Respond ONLY with valid JSON array (no markdown, no backticks):
       </div>
 
       {/* ── Three-column body ── */}
-      <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
+      <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0, paddingTop: 80 }}>
 
         {/* LEFT: Condition Sidebar */}
         <ConditionSidebar

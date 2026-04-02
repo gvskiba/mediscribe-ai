@@ -348,7 +348,7 @@ export default function NotryaHome() {
           </div>
         </nav>
 
-        <div style={{ padding:"0 32px 48px", maxWidth:1440, margin:"0 auto" }}>
+        <div style={{ padding:"56px 32px 48px", maxWidth:1440, margin:"0 auto" }}>
 
           <div style={{ padding:"56px 0 40px", textAlign:"center", animation:"nh-fadeInUp .6s ease" }}>
             <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"5px 14px", borderRadius:20, marginBottom:24, background:"rgba(0,229,192,0.08)", border:"1px solid rgba(0,229,192,0.25)", fontSize:11, fontWeight:600, color:T.teal }}>

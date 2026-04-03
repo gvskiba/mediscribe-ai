@@ -114,23 +114,23 @@ const LUNG_PATTERNS = [
 
 // ── Cardiac POCUS Data ────────────────────────────────────────────────────────
 const CARDIAC_VIEWS = [
-  { id:"plax", label:"Parasternal Long Axis", short:"PLAX", icon:"📐", color:T.cyan, svgType:"plax",
+  { id:"plax", label:"Parasternal Long Axis", short:"PLAX", icon:"📐", color:T.cyan, svgType:"plax", img:"https://media.base44.com/images/public/69876015478a19e360c5e3ea/9babd8a25_generated_image.png",
     position:"3rd–4th ICS left parasternal · marker to right shoulder (2 o'clock position)",
     keyFindings:["LVEF qualitative: hyperdynamic >70%, normal 55–70%, reduced 30–55%, severely reduced <30%","Pericardial effusion: posterior to LV and anterior to descending aorta = pericardial (not pleural)","D-sign (IVS flattening) = RV pressure or volume overload","Aortic root dilation (normal <3.8 cm) · mitral valve structure and motion"],
     pearls:["Effusion anterior to descending thoracic aorta = pericardial. Posterior = pleural effusion.","Hyperdynamic EF: IVS/PW nearly touch in systole. Severely reduced: almost no wall motion.","SAM (systolic anterior motion of MV leaflet) = HOCM — caution with vasopressors."] },
-  { id:"psax", label:"Parasternal Short Axis", short:"PSAX", icon:"⭕", color:T.purple, svgType:"psax",
+  { id:"psax", label:"Parasternal Short Axis", short:"PSAX", icon:"⭕", color:T.purple, svgType:"psax", img:"https://media.base44.com/images/public/69876015478a19e360c5e3ea/aca84e438_generated_image.png",
     position:"Rotate PLAX 90° clockwise · marker to left shoulder (10 o'clock) · image at papillary level",
     keyFindings:["LV must be circular — D-shape = IVS flattening from RV dilation","LV:RV ratio ~2:1 at mid-papillary level (normal)","Regional wall motion abnormalities (RWMA) per AHA 17-segment model","Aortic valve level: Mercedes-Benz sign = normal trileaflet (3 equal leaflets)"],
     pearls:["D-sign diastolic = volume overload (massive PE). D-sign systolic = pressure overload.","Papillary muscle level: best view for inferior, anterior, and lateral wall motion assessment.","Severe RV dilation causes complete D-shape — LV appears like crescent, not circle."] },
-  { id:"a4c", label:"Apical 4-Chamber", short:"A4C", icon:"♦", color:T.coral, svgType:"a4c",
+  { id:"a4c", label:"Apical 4-Chamber", short:"A4C", icon:"♦", color:T.coral, svgType:"a4c", img:"https://media.base44.com/images/public/69876015478a19e360c5e3ea/dcdafa67e_generated_image.png",
     position:"Cardiac apex (PMI) · marker to patient's left · probe angled superiorly toward base",
     keyFindings:["RV:LV diameter ratio >0.9 = RV dilation (PE, cor pulmonale, RV infarct)","McConnell's sign: akinetic RV mid free wall + preserved RV apex = 94% specific for acute PE","Circumferential pericardial effusion quantification and tamponade assessment","LA enlargement (>4 cm = chronic LV diastolic or valvular disease)"],
     pearls:["McConnell's sign + RV:LV >1.0 + hemodynamic instability = massive PE until proven otherwise.","RV infarct: RV dilation without McConnell's, often with inferior RWMA in adjacent LV wall.","Apical thrombus: rounded filling defect at LV apex — requires low EF and clinical context."] },
-  { id:"ivc", label:"IVC — Volume Status", short:"IVC", icon:"〜", color:T.green, svgType:"ivc",
+  { id:"ivc", label:"IVC — Volume Status", short:"IVC", icon:"〜", color:T.green, svgType:"ivc", img:"https://media.base44.com/images/public/69876015478a19e360c5e3ea/db790678d_generated_image.png",
     position:"Subxiphoid sagittal · IVC-RA junction · measure diameter 2 cm from RA",
     keyFindings:["Normal IVC <2.1 cm with >50% collapse on sniff = RAP 0–5 mmHg","Collapsibility Index (CI) = (max – min)/max × 100","CI >50% (spontaneous breathing) = low RAP → volume responsive","IVC >2.1 cm + CI <50% = elevated RAP ≥10 mmHg"],
     pearls:["Ventilated patients: CI >18% with fixed tidal volume may indicate volume responsiveness.","Small collapsing IVC does not exclude hypovolemia — integrate with clinical context.","Plethoric non-collapsing IVC: RV failure, tamponade, massive PE, severe TR."] },
-  { id:"tamponade", label:"Tamponade / Effusion", short:"TAMP", icon:"⚠", color:T.red, svgType:"subcostal",
+  { id:"tamponade", label:"Tamponade / Effusion", short:"TAMP", icon:"⚠", color:T.red, svgType:"subcostal", img:"https://media.base44.com/images/public/69876015478a19e360c5e3ea/4a0e48411_generated_image.png",
     position:"Subxiphoid primary · confirm with PLAX and A4C · all views for quantification",
     keyFindings:["Effusion grading: trivial <5 mm, small 5–10 mm, moderate 10–20 mm, large >20 mm","RV diastolic collapse = first sign of elevated pericardial pressure (most sensitive)","RA systolic collapse >1/3 cardiac cycle = tamponade physiology","IVC plethora (>2.1 cm, non-collapsing) supports elevated pericardial pressure"],
     pearls:["Tamponade = clinical + echo diagnosis. Shock + effusion + RV collapse = pericardiocentesis.","Rapid accumulation (e.g., stab wound) causes tamponade with even a small effusion.","Post-op cardiac: loculated effusion may cause focal tamponade without circumferential fluid.","Effusion anterior to descending aorta in PLAX = pericardial (not pleural)."] },
@@ -710,7 +710,11 @@ function CardiacCard({ view }) {
           </div>
           <span style={{fontFamily:"JetBrains Mono",fontSize:11,fontWeight:700,color:view.color,padding:"3px 8px",borderRadius:6,background:`${view.color}14`,border:`1px solid ${view.color}33`}}>{view.short}</span>
         </div>
-        <CardiacSvg type={view.svgType}/>
+        {view.img ? (
+          <img src={view.img} alt={view.label} style={{width:"100%",aspectRatio:"180/110",objectFit:"cover",borderRadius:8,border:`1px solid ${view.color}33`,display:"block"}}/>
+        ) : (
+          <CardiacSvg type={view.svgType}/>
+        )}
         <button onClick={()=>setExpanded(!expanded)} style={{marginTop:8,fontFamily:"DM Sans",fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:8,border:"1px solid rgba(42,79,122,0.4)",background:"transparent",color:T.txt3,cursor:"pointer"}}>
           {expanded?"▲ less":"▼ details"}
         </button>

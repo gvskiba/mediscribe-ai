@@ -461,6 +461,24 @@ const HUBS = [
     priority: 25,
     essential: false,
   },
+  {
+    id: "radiology",
+    route: "/radiology-hub",
+    icon: "🩻",
+    abbr: "RADIOLOGY",
+    title: "Radiology Hub",
+    subtitle: "CXR · CT Head · CT Abdomen — Systematic Approach · Classic Patterns · Don’t-Miss Dx",
+    color: "#00d4ff",
+    glow: "rgba(0,212,255,0.4)",
+    glass: "rgba(0,212,255,0.07)",
+    border: "rgba(0,212,255,0.28)",
+    accent: "#33deff",
+    category: "Tools",
+    stats: ["CXR A–F System", "CT Head Patterns", "CT Abd Patterns"],
+    badge: "Live",
+    priority: 26,
+    essential: false,
+  },
 ];
 
 const ESSENTIAL_IDS = new Set(HUBS.filter(h => h.essential).map(h => h.id));
@@ -472,7 +490,7 @@ const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
   "/peds-hub", "/Procedures", "/erx", "/AutoCoder", "/NewPatientInput",
-  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub", "/ortho-hub", "/resus-hub", "/antidote-hub",
+  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub", "/ortho-hub", "/resus-hub", "/antidote-hub", "/radiology-hub",
 ]);
 
 function Background() {

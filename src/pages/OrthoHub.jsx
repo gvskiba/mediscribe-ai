@@ -481,74 +481,42 @@ function SplintSvg({ type }) {
   return null;
 }
 
-function BoneSvg({ type, grade }) {
-  const sv = {borderRadius:8,width:"100%",display:"block"};
-  if (type==="salter") {
-    const colors = {I:T.green,II:T.teal,III:T.orange,IV:T.orange,V:T.red};
-    const c = colors[grade]||T.orange;
-    return (
-      <svg viewBox="0 0 200 140" style={sv}>
-        <rect width="200" height="140" fill="#050f1e" rx="7"/>
-        <text x="6" y="12" fill="#3a2a10" fontSize="7" fontFamily="monospace">SALTER-HARRIS TYPE {grade}</text>
-        <rect x="84" y="10" width="32" height="40" rx="5" fill="#2a1e0e" stroke="#5a3e1a" strokeWidth="1.5"/>
-        <rect x="78" y="50" width="44" height="14" rx="2" fill="#1a1208" stroke="#8a6e48" strokeWidth="1.2"/>
-        <text x="90" y="60" fill="#8a6e48" fontSize="7" fontFamily="monospace">PHYSIS</text>
-        <rect x="82" y="64" width="36" height="16" rx="3" fill="#1e1808" stroke="#5a3e1a" strokeWidth="1.2"/>
-        <text x="84" y="75" fill="#6a5030" fontSize="7" fontFamily="monospace">EPIPHYSIS</text>
-        <rect x="84" y="80" width="32" height="48" rx="5" fill="#2a1e0e" stroke="#5a3e1a" strokeWidth="1.5"/>
-        {grade==="I" && <rect x="78" y="50" width="44" height="14" rx="2" fill={`${c}30`} stroke={c} strokeWidth="2"/>}
-        {grade==="II" && <>
-          <rect x="78" y="50" width="44" height="14" rx="2" fill={`${c}25`} stroke={c} strokeWidth="1.5"/>
-          <path d="M78 50 L62 50 L62 66 L78 64" fill={`${c}35`} stroke={c} strokeWidth="2"/>
-          <text x="40" y="60" fill={c} fontSize="7" fontFamily="monospace">T-H</text>
-        </>}
-        {grade==="III" && <>
-          <rect x="78" y="50" width="44" height="14" rx="2" fill={`${c}20`} stroke={c} strokeWidth="1.5"/>
-          <path d="M96 64 L96 80 L110 80 L110 64" fill={`${c}35`} stroke={c} strokeWidth="2"/>
-        </>}
-        {grade==="IV" && <>
-          <rect x="78" y="50" width="44" height="14" rx="2" fill={`${c}20`} stroke={c} strokeWidth="1.5"/>
-          <line x1="100" y1="28" x2="100" y2="90" stroke={c} strokeWidth="2.5"/>
-        </>}
-        {grade==="V" && <>
-          <rect x="78" y="50" width="44" height="10" rx="2" fill={`${c}45`} stroke={c} strokeWidth="2.5"/>
-          <text x="62" y="58" fill={c} fontSize="7" fontFamily="monospace">CRUSH</text>
-        </>}
-        <text x="6" y="136" fill={c} fontSize="7" fontFamily="monospace">TYPE {grade}: {grade==="I"?"PHYSIS ONLY":grade==="II"?"PHYSIS + METAPHYSIS":grade==="III"?"PHYSIS + EPIPHYSIS":grade==="IV"?"THROUGH ALL THREE":"CRUSH — PHYSEAL DESTRUCTION"}</text>
-      </svg>
-    );
-  }
-  if (type==="gustilo") {
-    const colors = {I:T.green,II:T.orange,IIIA:T.orange,IIIB:T.coral,IIIC:T.red};
-    const c = colors[grade]||T.orange;
-    return (
-      <svg viewBox="0 0 200 140" style={sv}>
-        <rect width="200" height="140" fill="#050f1e" rx="7"/>
-        <text x="6" y="12" fill="#3a2a10" fontSize="7" fontFamily="monospace">GUSTILO-ANDERSON TYPE {grade}</text>
-        <rect x="86" y="14" width="28" height="110" rx="8" fill="#2a1e0e" stroke="#5a3e1a" strokeWidth="1.5"/>
-        {grade==="I" && <path d="M100 54 L110 44" stroke={c} strokeWidth="1.5"/>}
-        {grade==="I" && <circle cx="112" cy="42" r="5" fill={`${c}20`} stroke={c} strokeWidth="1.5"/>}
-        {grade==="I" && <text x="118" y="46" fill={c} fontSize="7" fontFamily="monospace">&lt;1cm</text>}
-        {grade==="II" && <path d="M100 54 L120 40" stroke={c} strokeWidth="2"/>}
-        {grade==="II" && <ellipse cx="124" cy="37" rx="9" ry="6" fill={`${c}25`} stroke={c} strokeWidth="1.5"/>}
-        {grade==="II" && <text x="118" y="50" fill={c} fontSize="7" fontFamily="monospace">1-10cm</text>}
-        {(grade==="IIIA"||grade==="IIIB"||grade==="IIIC") && <>
-          <path d="M100 54 L128 30" stroke={c} strokeWidth="2.5"/>
-          <ellipse cx="134" cy="26" rx="14" ry="9" fill={`${c}25`} stroke={c} strokeWidth="2"/>
-          <text x="120" y="42" fill={c} fontSize="7" fontFamily="monospace">&gt;10cm</text>
-        </>}
-        {grade==="IIIC" && <>
-          <path d="M88 68 Q78 72 74 80 Q70 88 76 94" stroke="#ef4444" strokeWidth="2.5" fill="none"/>
-          <text x="52" y="90" fill="#ef4444" fontSize="7" fontFamily="monospace">VASC</text>
-          <text x="52" y="99" fill="#ef4444" fontSize="7" fontFamily="monospace">INJ</text>
-        </>}
-        <line x1="86" y1="60" x2="80" y2="60" stroke={c} strokeWidth="1.5" strokeDasharray="3,2"/>
-        <line x1="114" y1="60" x2="120" y2="60" stroke={c} strokeWidth="1.5" strokeDasharray="3,2"/>
-        <text x="6" y="136" fill={c} fontSize="7" fontFamily="monospace">INFECTION RISK: {grade==="I"?"~1-2%":grade==="II"?"~2-5%":grade==="IIIA"?"~7-15%":grade==="IIIB"?"~10-50%":"~HIGH — VASCULAR"}</text>
-      </svg>
-    );
-  }
-  return null;
+const FRACTURE_PHOTOS = {
+  salter: {
+    I:   "https://media.base44.com/images/public/69876015478a19e360c5e3ea/03a826353_generated_image.png",
+    II:  "https://media.base44.com/images/public/69876015478a19e360c5e3ea/87ba062d4_generated_image.png",
+    III: "https://media.base44.com/images/public/69876015478a19e360c5e3ea/6107e8ab9_generated_image.png",
+    IV:  "https://media.base44.com/images/public/69876015478a19e360c5e3ea/a1a3b262b_generated_image.png",
+    V:   "https://media.base44.com/images/public/69876015478a19e360c5e3ea/ac24ffc8c_generated_image.png",
+  },
+  gustilo: {
+    I:    "https://media.base44.com/images/public/69876015478a19e360c5e3ea/d785c928c_generated_image.png",
+    II:   "https://media.base44.com/images/public/69876015478a19e360c5e3ea/de985e2f4_generated_image.png",
+    IIIA: "https://media.base44.com/images/public/69876015478a19e360c5e3ea/44aeeb277_generated_image.png",
+    IIIB: "https://media.base44.com/images/public/69876015478a19e360c5e3ea/b09800676_generated_image.png",
+    IIIC: "https://media.base44.com/images/public/69876015478a19e360c5e3ea/57e19222b_generated_image.png",
+  },
+  mason: [
+    "https://media.base44.com/images/public/69876015478a19e360c5e3ea/430411ca8_generated_image.png",
+    "https://media.base44.com/images/public/69876015478a19e360c5e3ea/67d97c208_generated_image.png",
+    "https://media.base44.com/images/public/69876015478a19e360c5e3ea/d051287c2_generated_image.png",
+  ],
+};
+
+function BoneSvg({ type, grade, masonIndex }) {
+  let src = null;
+  if (type === "salter")  src = FRACTURE_PHOTOS.salter[grade];
+  if (type === "gustilo") src = FRACTURE_PHOTOS.gustilo[grade];
+  if (type === "mason")   src = FRACTURE_PHOTOS.mason[masonIndex];
+
+  if (!src) return null;
+  return (
+    <img
+      src={src}
+      alt={`${type} ${grade}`}
+      style={{width:"100%",borderRadius:8,display:"block",objectFit:"cover",border:"1px solid rgba(42,79,122,0.3)"}}
+    />
+  );
 }
 
 // ── Card Components ───────────────────────────────────────────────────────────

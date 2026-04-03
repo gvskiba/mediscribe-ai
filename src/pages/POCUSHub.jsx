@@ -1,5 +1,6 @@
 import { useState } from "react";
 import DrawingOverlay from "../components/pocus/DrawingOverlay";
+import POCUSGallery from "../components/pocus/POCUSGallery";
 import { useNavigate } from "react-router-dom";
 
 // ── Font + CSS Injection ──────────────────────────────────────────────────────
@@ -358,6 +359,7 @@ const TABS = [
   {id:"ref",     label:"Reference",      icon:"🖼️"},
   {id:"video",   label:"Video Learning",  icon:"🎬"},
   {id:"note",    label:"POCUS Note",     icon:"📋"},
+  {id:"gallery", label:"My Gallery",      icon:"🖼️"},
 ];
 
 // ── Primitives ────────────────────────────────────────────────────────────────
@@ -1079,7 +1081,7 @@ export default function POCUSHub() {
                     <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:2,marginBottom:10}}>Sonographic Schematic — Annotate</div>
                     <div style={{maxWidth:340}}>
                       {activeFinding.img ? (
-                        <DrawingOverlay src={activeFinding.img} alt={activeFinding.title} borderColor={`${activeFinding.color}44`}/>
+                        <DrawingOverlay src={activeFinding.img} alt={activeFinding.title} borderColor={`${activeFinding.color}44`} saveTitle={activeFinding.title} saveProtocol={activeFinding.protocol}/>
                       ) : activeFinding.svgComponent==="fast" ? (
                         <FastSvg type={activeFinding.svgType} showAbn={activeFinding.svgShowAbn||false}/>
                       ) : activeFinding.svgComponent==="lung" ? (
@@ -1165,6 +1167,13 @@ export default function POCUSHub() {
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ── Gallery Tab ── */}
+        {tab==="gallery" && (
+          <div className="fade-in">
+            <POCUSGallery />
           </div>
         )}
 

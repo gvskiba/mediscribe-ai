@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from "react";
+import { base44 } from "@/api/base44Client";
 
 const COLORS = ["#ff4444", "#00e5c0", "#f5c842", "#3b9eff", "#ffffff"];
 const TOOLS = [
@@ -7,7 +8,7 @@ const TOOLS = [
   { id: "circle", label: "⭕", title: "Circle" },
 ];
 
-export default function DrawingOverlay({ src, alt, borderColor }) {
+export default function DrawingOverlay({ src, alt, borderColor, saveTitle, saveProtocol }) {
   const canvasRef  = useRef(null);
   const imgRef     = useRef(null);
   const [tool,     setTool]     = useState("pen");
@@ -16,6 +17,8 @@ export default function DrawingOverlay({ src, alt, borderColor }) {
   const [startPos, setStartPos] = useState(null);
   const [snapshot, setSnapshot] = useState(null); // for shape preview
   const [history,  setHistory]  = useState([]);
+  const [saved,    setSaved]    = useState(false);
+  const [saving,   setSaving]   = useState(false);
 
   // Resize canvas to match image display size
   const syncCanvasSize = useCallback(() => {
@@ -129,6 +132,30 @@ export default function DrawingOverlay({ src, alt, borderColor }) {
     canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
   };
 
+  const saveToGallery = async () => {
+    setSaving(true);
+    const canvas = canvasRef.current;
+    const img    = imgRef.current;
+    // Merge image + drawing onto a temp canvas
+    const temp = document.createElement("canvas");
+    temp.width  = img.naturalWidth  || canvas.width;
+    temp.height = img.naturalHeight || canvas.height;
+    const ctx = temp.getContext("2d");
+    ctx.drawImage(img, 0, 0, temp.width, temp.height);
+    ctx.drawImage(canvas, 0, 0, temp.width, temp.height);
+    const dataUrl = temp.toDataURL("image/png");
+    await base44.entities.POCUSAnnotation.create({
+      title: saveTitle || alt || "POCUS Finding",
+      image_data: dataUrl,
+      protocol: saveProtocol || "",
+      diagnosis_tags: [],
+      notes: "",
+    });
+    setSaved(true);
+    setSaving(false);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
   const btn = (active, onClick, children, title) => (
     <button
       onClick={onClick}
@@ -156,6 +183,11 @@ export default function DrawingOverlay({ src, alt, borderColor }) {
         <div style={{ width: 1, height: 18, background: "rgba(42,79,122,0.5)", margin: "0 3px" }} />
         {btn(false, undo,  "↩ Undo",  "Undo")}
         {btn(false, clear, "🗑 Clear", "Clear all")}
+        <div style={{ width: 1, height: 18, background: "rgba(42,79,122,0.5)", margin: "0 3px" }} />
+        <button onClick={saveToGallery} disabled={saving || saved}
+          style={{ padding: "4px 11px", borderRadius: 6, fontSize: 12, cursor: "pointer", background: saved ? "rgba(61,255,160,0.2)" : "rgba(0,229,192,0.15)", border: `1px solid ${saved ? "rgba(61,255,160,0.5)" : "rgba(0,229,192,0.4)"}`, color: saved ? "#3dffa0" : "#00e5c0", fontWeight: 600, transition: "all 0.15s" }}>
+          {saving ? "Saving…" : saved ? "✓ Saved!" : "💾 Save to Gallery"}
+        </button>
       </div>
 
       {/* Image + Canvas */}

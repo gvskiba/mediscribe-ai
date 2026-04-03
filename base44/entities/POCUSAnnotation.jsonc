@@ -1,0 +1,38 @@
+{
+  "name": "POCUSAnnotation",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Finding title (e.g. Pericardial Effusion)"
+    },
+    "image_data": {
+      "type": "string",
+      "description": "Base64 data URL of annotated image"
+    },
+    "protocol": {
+      "type": "string",
+      "description": "Protocol / window (e.g. RUSH, BLUE, eFAST)"
+    },
+    "diagnosis_tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Clinical diagnosis tags"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Clinician notes about this finding"
+    },
+    "is_favorite": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "title",
+    "image_data"
+  ]
+}

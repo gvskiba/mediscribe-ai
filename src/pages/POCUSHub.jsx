@@ -43,21 +43,25 @@ const glass = {
 // ── FAST Window Data ──────────────────────────────────────────────────────────
 const FAST_WINDOWS = [
   { id:"ruq", label:"RUQ — Morrison's Pouch", icon:"🔶", color:T.teal, svgType:"ruq",
+    imgAbn:"https://media.base44.com/images/public/69876015478a19e360c5e3ea/8aa8f00cb_generated_image.png",
     probe:"Curvilinear 3–5 MHz · marker cephalad · R midaxillary 8th–11th ICS · 18 cm",
     normal:["Echogenic fat line at hepatorenal interface","No anechoic stripe between liver and right kidney","No sub-diaphragmatic fluid above hepatic dome"],
     abnormal:["Anechoic stripe at hepatorenal interface = hemoperitoneum","Sub-diaphragmatic blood above right hepatic lobe","Fresh clot may be isoechoic — scan posterior liver edge carefully"],
     pearl:"Most dependent space when supine. As little as 250 mL detectable. First view to acquire in hypotensive trauma." },
   { id:"luq", label:"LUQ — Splenorenal Recess", icon:"🔷", color:T.blue, svgType:"luq",
+    imgAbn:"https://media.base44.com/images/public/69876015478a19e360c5e3ea/afa29ce83_generated_image.png",
     probe:"Curvilinear · L posterior axillary line · aim more posteriorly than RUQ · 18 cm",
     normal:["Echogenic fat line at splenorenal interface","No fluid between spleen and left kidney","Diaphragm clearly visible above spleen"],
     abnormal:["Anechoic stripe at splenorenal interface","Sub-diaphragmatic fluid above spleen (often first finding)","Fan probe more posterior if view inadequate"],
     pearl:"Hardest FAST view — more bowel gas. Aim posterior. Sub-diaphragmatic fluid appears before splenorenal fluid." },
   { id:"pelvis", label:"Pelvic — Pouch of Douglas", icon:"🔻", color:T.yellow, svgType:"pelvis",
+    imgAbn:"https://media.base44.com/images/public/69876015478a19e360c5e3ea/ff9df6712_generated_image.png",
     probe:"Curvilinear · suprapubic transverse then sagittal · full bladder required as window",
     normal:["Full bladder as anechoic acoustic window (anterior)","Uterus or prostate posterior to bladder","No fluid posterior or superior to bladder"],
     abnormal:["Anechoic fluid posterior to uterus (♀) or bladder dome (♂)","Bowel loops floating freely on fluid","Fluid superior to bladder dome = large volume"],
     pearl:"Most sensitive window with full bladder. FAST-positive + unstable = OR directly, not CT scanner." },
   { id:"subcostal", label:"Subxiphoid — Cardiac", icon:"❤️", color:T.coral, svgType:"subcostal",
+    imgAbn:"https://media.base44.com/images/public/69876015478a19e360c5e3ea/1d1a0592d_generated_image.png",
     probe:"Curvilinear · press firmly subxiphoid · angle toward left shoulder · use liver as window · 20 cm",
     normal:["Bright echogenic pericardial line around heart","RV anterior (closest to probe), LV posterior and larger","No anechoic space outside pericardial line"],
     abnormal:["Anechoic stripe outside pericardium = pericardial effusion","RV diastolic collapse = tamponade physiology","Swinging heart motion with large effusion"],
@@ -553,7 +557,11 @@ function FastCard({ win }) {
             <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,marginTop:1}}>{win.probe}</div>
           </div>
         </div>
-        <FastSvg type={win.svgType} showAbn={showAbn}/>
+        {showAbn && win.imgAbn ? (
+          <img src={win.imgAbn} alt={`${win.label} abnormal`} style={{width:"100%",borderRadius:8,border:`1px solid ${win.color}33`,display:"block"}}/>
+        ) : (
+          <FastSvg type={win.svgType} showAbn={false}/>
+        )}
         <div style={{display:"flex",gap:6,marginTop:8,alignItems:"center"}}>
           <button onClick={()=>setShowAbn(!showAbn)} style={{fontFamily:"JetBrains Mono",fontSize:9,fontWeight:700,padding:"4px 10px",borderRadius:8,border:`1px solid ${showAbn?T.red+"55":T.green+"55"}`,background:showAbn?`${T.red}14`:`${T.green}14`,color:showAbn?T.red:T.green,cursor:"pointer"}}>
             {showAbn?"● ABNORMAL":"● NORMAL"}

@@ -1,4 +1,5 @@
 import { useState, useCallback, Fragment } from "react";
+import { useNavigate } from "react-router-dom";
 
 // ── Font + CSS Injection ─────────────────────────────────────────
 (() => {
@@ -8,7 +9,7 @@ import { useState, useCallback, Fragment } from "react";
   document.head.appendChild(l);
   const s = document.createElement("style"); s.id = "resus-css";
   s.textContent = `
-    *{box-sizing:border-box;margin:0;padding:0;}
+    *{box-sizing:border-box;}
     ::-webkit-scrollbar{width:3px;height:3px;}
     ::-webkit-scrollbar-track{background:transparent;}
     ::-webkit-scrollbar-thumb{background:rgba(42,79,122,0.5);border-radius:2px;}
@@ -356,6 +357,7 @@ function AlgorithmCard({ algo }) {
 
 // ── Main Component ────────────────────────────────────────────────
 export default function ResusHub() {
+  const navigate = useNavigate();
   const [tab, setTab]                     = useState("acls");
   const [checked, setChecked]             = useState({});
   const [expandedShock, setExpandedShock] = useState("distributive");
@@ -383,7 +385,7 @@ export default function ResusHub() {
               <span style={{color:T.txt4,fontFamily:"JetBrains Mono",fontSize:10}}>/</span>
               <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.txt3,letterSpacing:2}}>RESUS</span>
             </div>
-            <div style={{height:1,flex:1,background:"linear-gradient(90deg,rgba(255,107,107,0.5),transparent)"}}/>
+            <div style={{height:1,flex:1,background:"linear-gradient(90deg,rgba(255,107,107,0.5),transparent)"}}/>            <button onClick={()=>navigate("/hub")} style={{padding:"5px 14px",borderRadius:8,background:"rgba(14,37,68,0.6)",border:"1px solid rgba(42,79,122,0.4)",color:T.txt2,fontFamily:"DM Sans",fontSize:12,fontWeight:600,cursor:"pointer",flexShrink:0}}>← Hub</button>
           </div>
           <h1 className="shimmer-text"
             style={{fontFamily:"Playfair Display",fontSize:"clamp(24px,4vw,40px)",fontWeight:900,letterSpacing:-1,lineHeight:1.1}}>

@@ -75,6 +75,7 @@ const FAST_WINDOWS = [
 // ── Lung POCUS Data ───────────────────────────────────────────────────────────
 const LUNG_PATTERNS = [
   { id:"alines", label:"A-Lines", sub:"Normal Aerated Lung", icon:"〰", color:T.teal, svgType:"alines",
+    img:"https://media.base44.com/images/public/69876015478a19e360c5e3ea/8b61f52b6_generated_image.png",
     badge:"NORMAL", badgeColor:T.green,
     headline:"Horizontal reverberation artifacts equidistant below pleural line",
     findings:["Bright horizontal lines parallel to and below pleural line","Equally spaced (= skin-to-pleural-line distance)","Fade progressively with depth","Present in BOTH normal lung AND pneumothorax — sliding distinguishes them"],
@@ -83,6 +84,7 @@ const LUNG_PATTERNS = [
     key:"Lung sliding is the critical differentiator. Absence = PTX. Presence = normal or obstructive disease.",
     pearl:"Lung sliding appears as shimmering movement at the pleural line synchronous with respiration. Use linear probe for best resolution." },
   { id:"blines", label:"B-Lines", sub:"Interstitial Syndrome", icon:"☁", color:T.blue, svgType:"blines",
+    img:"https://media.base44.com/images/public/69876015478a19e360c5e3ea/39a4333f8_generated_image.png",
     badge:"PATHOLOGICAL", badgeColor:T.red,
     headline:"Vertical comet-tail artifacts from pleural line to bottom of screen",
     findings:["Arise from pleural line and extend to screen bottom without fading","Obliterate A-lines where they pass","Move synchronously with lung sliding (confirms pleural origin)","3 or more per field = pathological B-pattern"],
@@ -91,6 +93,7 @@ const LUNG_PATTERNS = [
     key:"Bilateral diffuse = interstitial syndrome. Unilateral = contusion, pneumonia, atelectasis.",
     pearl:"Count per zone: 0–2 normal, 3–5 moderate, >5 confluent (white lung) = severe pulmonary edema." },
   { id:"ptx", label:"Pneumothorax", sub:"Absent Sliding + Lung Point", icon:"💨", color:T.orange, svgType:"ptx",
+    img:"https://media.base44.com/images/public/69876015478a19e360c5e3ea/6a2eee329_generated_image.png",
     badge:"CRITICAL", badgeColor:T.red,
     headline:"Absent lung sliding + A-lines + lung point = pneumothorax",
     findings:["Absent lung sliding at pleural line (most sensitive sign)","A-lines present without movement","Lung point = transition between PTX zone and normal lung — 100% specific","Barcode/stratosphere sign on M-mode (flat lines below pleural line)","No B-lines, absent lung pulse"],
@@ -99,6 +102,7 @@ const LUNG_PATTERNS = [
     key:"Lung point is pathognomonic for PTX. No lung point = tension PTX (fully collapsed).",
     pearl:"Scan anterior 2nd ICS MCL supine. Lung point location predicts PTX size — more lateral = larger PTX." },
   { id:"effusion", label:"Pleural Effusion", sub:"Costophrenic Angle", icon:"💧", color:T.cyan, svgType:"effusion",
+    img:"https://media.base44.com/images/public/69876015478a19e360c5e3ea/5ce967e66_generated_image.png",
     badge:"FREE FLUID", badgeColor:T.cyan,
     headline:"Anechoic (or complex) fluid above diaphragm in costophrenic recess",
     findings:["Anechoic space above diaphragm, below chest wall","Compressive atelectasis at lung base (jellyfish sign)","Spine sign: vertebral bodies visible above diaphragm (normally obscured by aerated lung)","Fluid shifts with position if simple transudate"],
@@ -661,8 +665,11 @@ function LungCard({ pat }) {
           </div>
           <Badge label={pat.badge} color={pat.badgeColor}/>
         </div>
-        <LungSvg type={pat.svgType}/>
-        <div style={{marginTop:8,fontFamily:"DM Sans",fontSize:11,color:T.txt2,lineHeight:1.5,fontStyle:"italic"}}>{pat.headline}</div>
+        {pat.img ? (
+          <img src={pat.img} alt={pat.label} style={{width:"100%",borderRadius:8,border:`1px solid ${pat.color}33`,display:"block"}}/>
+        ) : (
+          <LungSvg type={pat.svgType}/>
+        )}
         <button onClick={()=>setExpanded(!expanded)} style={{marginTop:8,fontFamily:"DM Sans",fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:8,border:"1px solid rgba(42,79,122,0.4)",background:"transparent",color:T.txt3,cursor:"pointer"}}>
           {expanded?"▲ less":"▼ details"}
         </button>

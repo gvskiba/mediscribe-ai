@@ -41,6 +41,7 @@ import RapidAssessmentHub from '@/pages/RapidAssessmentHub';
 import ECGHub from '@/pages/ECGHub';
 import PsycheHub from '@/pages/PsycheHub';
 import ShockHub from '@/pages/ShockHub';
+import POCUSHub from '@/pages/POCUSHub';
 
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -131,6 +132,7 @@ const AuthenticatedApp = () => {
       <Route path="/psyche-hub" element={<PsycheHub />} />
       <Route path="/surgical-airway-hub" element={<SurgicalAirwayHub />} />
       <Route path="/shock-hub" element={<ShockHub />} />
+      <Route path="/pocus-hub" element={<POCUSHub />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

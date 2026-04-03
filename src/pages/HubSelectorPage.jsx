@@ -389,6 +389,24 @@ const HUBS = [
     priority: 21,
     essential: true,
   },
+  {
+    id: "pocus",
+    route: "/pocus-hub",
+    icon: "🔬",
+    abbr: "POCUS",
+    title: "POCUS Hub",
+    subtitle: "RUSH · BLUE · eFAST protocols · Annotated findings · Documentation template",
+    color: "#00d4ff",
+    glow: "rgba(0,212,255,0.4)",
+    glass: "rgba(0,212,255,0.07)",
+    border: "rgba(0,212,255,0.28)",
+    accent: "#33deff",
+    category: "Procedures",
+    stats: ["RUSH Exam", "BLUE Protocol", "eFAST"],
+    badge: "Live",
+    priority: 22,
+    essential: true,
+  },
 ];
 
 const ESSENTIAL_IDS = new Set(HUBS.filter(h => h.essential).map(h => h.id));
@@ -400,7 +418,7 @@ const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
   "/peds-hub", "/Procedures", "/erx", "/AutoCoder", "/NewPatientInput",
-  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub",
+  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub",
 ]);
 
 function Background() {

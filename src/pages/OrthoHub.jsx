@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import XRayViewer from "../components/ortho/XRayViewer";
 
 // ── Font + CSS Injection ──────────────────────────────────────────────────────
 (() => {
@@ -341,6 +342,7 @@ const NERVE_BLOCKS = [
 const TABS = [
   {id:"splints",   label:"Splinting",   icon:"🩹"},
   {id:"fractures", label:"Fractures",   icon:"🦴"},
+  {id:"xray",      label:"X-Ray Viewer",icon:"🩻"},
   {id:"reductions",label:"Reductions",  icon:"🔄"},
   {id:"blocks",    label:"Nerve Blocks",icon:"💉"},
 ];
@@ -1004,6 +1006,13 @@ export default function OrthoHub() {
                 })()}
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── X-Ray Viewer Tab ── */}
+        {tab==="xray" && (
+          <div className="fade-in">
+            <XRayViewer />
           </div>
         )}
 

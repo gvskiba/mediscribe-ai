@@ -1,4 +1,5 @@
 import { useState } from "react";
+import DrawingOverlay from "../components/pocus/DrawingOverlay";
 import { useNavigate } from "react-router-dom";
 
 // ── Font + CSS Injection ──────────────────────────────────────────────────────
@@ -1075,10 +1076,10 @@ export default function POCUSHub() {
                   </div>
                   {/* Live SVG schematic */}
                   <div style={{...glass,padding:"14px 18px",background:"rgba(5,15,30,0.9)"}}>
-                    <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:2,marginBottom:10}}>Sonographic Schematic</div>
-                    <div style={{maxWidth:300}}>
+                    <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:2,marginBottom:10}}>Sonographic Schematic — Annotate</div>
+                    <div style={{maxWidth:340}}>
                       {activeFinding.img ? (
-                        <img src={activeFinding.img} alt={activeFinding.title} style={{width:"100%",aspectRatio:"180/110",objectFit:"cover",borderRadius:8,border:`1px solid ${activeFinding.color}33`,display:"block"}}/>
+                        <DrawingOverlay src={activeFinding.img} alt={activeFinding.title} borderColor={`${activeFinding.color}44`}/>
                       ) : activeFinding.svgComponent==="fast" ? (
                         <FastSvg type={activeFinding.svgType} showAbn={activeFinding.svgShowAbn||false}/>
                       ) : activeFinding.svgComponent==="lung" ? (

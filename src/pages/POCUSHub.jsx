@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DrawingOverlay from "../components/pocus/DrawingOverlay";
 import POCUSGallery from "../components/pocus/POCUSGallery";
+import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
 
 // ── Font + CSS Injection ──────────────────────────────────────────────────────
@@ -798,6 +799,13 @@ export default function POCUSHub() {
   const [findingId,   setFindingId]   = useState("pericardial_effusion");
   const [docValues,   setDocValues]   = useState({});
   const [copied,      setCopied]      = useState(false);
+  const [quickFills,  setQuickFills]  = useState([]);
+
+  useEffect(() => {
+    base44.entities.POCUSQuickFill.filter({ is_active: true }, "sort_order", 20)
+      .then(setQuickFills)
+      .catch(() => {});
+  }, []);
 
   const setDoc = (id, val) => setDocValues(prev => ({...prev, [id]:val}));
 
@@ -1154,9 +1162,12 @@ export default function POCUSHub() {
             </div>
             <div style={{...glass,padding:"14px 18px"}}>
               <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.teal,textTransform:"uppercase",letterSpacing:2,marginBottom:10}}>Quick Fill — Common Findings</div>
+              {quickFills.length === 0 && (
+                <div style={{fontFamily:"DM Sans",fontSize:12,color:T.txt4,padding:"10px 0"}}>Loading snippets…</div>
+              )}
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:10}}>
-                {DOC_QUICKFILL.map((item,i)=>(
-                  <div key={i} style={{padding:"10px 12px",background:"rgba(14,37,68,0.5)",border:"1px solid rgba(42,79,122,0.25)",borderRadius:9}}>
+                {quickFills.map((item)=>(
+                  <div key={item.id} style={{padding:"10px 12px",background:"rgba(14,37,68,0.5)",border:"1px solid rgba(42,79,122,0.25)",borderRadius:9}}>
                     <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:11,color:T.teal,marginBottom:4}}>{item.label}</div>
                     <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt3,lineHeight:1.5,marginBottom:8}}>{item.text.substring(0,85)}…</div>
                     <button onClick={()=>setDoc("interpretation",(docValues["interpretation"]?docValues["interpretation"]+"\n\n":"")+item.text)}

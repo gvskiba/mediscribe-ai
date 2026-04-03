@@ -44,6 +44,7 @@ import ShockHub from '@/pages/ShockHub';
 import POCUSHub from '@/pages/POCUSHub';
 import OrthoHub from '@/pages/OrthoHub';
 import ResusHub from '@/pages/ResusHub';
+import AntidoteHub from '@/pages/AntidoteHub';
 
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -137,6 +138,7 @@ const AuthenticatedApp = () => {
       <Route path="/pocus-hub" element={<POCUSHub />} />
       <Route path="/ortho-hub" element={<OrthoHub />} />
       <Route path="/resus-hub" element={<ResusHub />} />
+      <Route path="/antidote-hub" element={<AntidoteHub />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

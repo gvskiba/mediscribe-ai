@@ -443,6 +443,24 @@ const HUBS = [
     priority: 24,
     essential: true,
   },
+  {
+    id: "antidote",
+    route: "/antidote-hub",
+    icon: "🧬",
+    abbr: "ANTIDOTE",
+    title: "Antidote Hub",
+    subtitle: "Antidote Reference · NOAC Reversal · Toxidromes · Dosing · Monitoring",
+    color: "#3dffa0",
+    glow: "rgba(61,255,160,0.4)",
+    glass: "rgba(61,255,160,0.07)",
+    border: "rgba(61,255,160,0.28)",
+    accent: "#6fffbb",
+    category: "Critical Care",
+    stats: ["12 Antidotes", "NOAC Reversal", "7 Toxidromes"],
+    badge: "Live",
+    priority: 25,
+    essential: false,
+  },
 ];
 
 const ESSENTIAL_IDS = new Set(HUBS.filter(h => h.essential).map(h => h.id));
@@ -454,7 +472,7 @@ const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
   "/peds-hub", "/Procedures", "/erx", "/AutoCoder", "/NewPatientInput",
-  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub", "/ortho-hub", "/resus-hub",
+  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub", "/ortho-hub", "/resus-hub", "/antidote-hub",
 ]);
 
 function Background() {

@@ -245,7 +245,7 @@ const EFAST_PEARLS = [
 
 // ── Annotated Findings Library ────────────────────────────────────────────────
 const ANNOTATED_FINDINGS = [
-  { id:"pericardial_effusion", title:"Pericardial Effusion", protocol:"RUSH / eFAST", probe:"Phased array — subxiphoid or PLAX", color:T.purple, urgency:"critical", svgType:"subcostal", svgComponent:"cardiac",
+  { id:"pericardial_effusion", title:"Pericardial Effusion", protocol:"RUSH / eFAST", probe:"Phased array — subxiphoid or PLAX", color:T.purple, urgency:"critical", svgType:"subcostal", svgComponent:"cardiac", img:"https://media.base44.com/images/public/69876015478a19e360c5e3ea/21198d69d_generated_image.png",
     description:"Anechoic (black) fluid surrounding the heart within the pericardial sac.",
     key_features:["Anechoic (echo-free / black) rim encircling the myocardium","Best seen in PLAX view — posterior to LV and anterior to posterior pericardium","Circumferential is more concerning than focal","Diastolic RV free wall collapse = tamponade physiology","Electrical alternans on ECG: QRS axis alternates with each beat","IVC plethoric (non-collapsing) in tamponade"],
     pitfalls:["Pericardial fat pad: echogenic, anterior — does NOT move with heart","Pleural effusion: extends posterior to the descending thoracic aorta (PLAX view)","Epicardial fat: echogenic band directly on myocardium — not anechoic"],
@@ -1077,9 +1077,15 @@ export default function POCUSHub() {
                   <div style={{...glass,padding:"14px 18px",background:"rgba(5,15,30,0.9)"}}>
                     <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:2,marginBottom:10}}>Sonographic Schematic</div>
                     <div style={{maxWidth:300}}>
-                      {activeFinding.svgComponent==="fast" && <FastSvg type={activeFinding.svgType} showAbn={activeFinding.svgShowAbn||false}/>}
-                      {activeFinding.svgComponent==="lung" && <LungSvg type={activeFinding.svgType}/>}
-                      {activeFinding.svgComponent==="cardiac" && <CardiacSvg type={activeFinding.svgType}/>}
+                      {activeFinding.img ? (
+                        <img src={activeFinding.img} alt={activeFinding.title} style={{width:"100%",aspectRatio:"180/110",objectFit:"cover",borderRadius:8,border:`1px solid ${activeFinding.color}33`,display:"block"}}/>
+                      ) : activeFinding.svgComponent==="fast" ? (
+                        <FastSvg type={activeFinding.svgType} showAbn={activeFinding.svgShowAbn||false}/>
+                      ) : activeFinding.svgComponent==="lung" ? (
+                        <LungSvg type={activeFinding.svgType}/>
+                      ) : (
+                        <CardiacSvg type={activeFinding.svgType}/>
+                      )}
                     </div>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>

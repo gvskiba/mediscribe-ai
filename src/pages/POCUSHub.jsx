@@ -666,7 +666,7 @@ function LungCard({ pat }) {
           <Badge label={pat.badge} color={pat.badgeColor}/>
         </div>
         {pat.img ? (
-          <img src={pat.img} alt={pat.label} style={{width:"100%",borderRadius:8,border:`1px solid ${pat.color}33`,display:"block"}}/>
+          <img src={pat.img} alt={pat.label} style={{width:"100%",aspectRatio:"180/110",objectFit:"cover",borderRadius:8,border:`1px solid ${pat.color}33`,display:"block"}}/>
         ) : (
           <LungSvg type={pat.svgType}/>
         )}

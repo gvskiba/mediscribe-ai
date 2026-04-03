@@ -293,15 +293,62 @@ const DOC_QUICKFILL = [
   { label:"Massive PE", text:"RV:LV ratio > 0.9 on A4C view. McConnell sign present (RV free wall akinesis with preserved apex). D-shaped LV on PSAX. IVC plethoric. Bilateral lung sliding present. CTPA confirmed massive PE." },
 ];
 
+// ── Video Learning Library ────────────────────────────────────────────────────
+const VIDEO_LIBRARY = [
+  {
+    category: "RUSH Protocol",
+    color: T.coral,
+    icon: "🚨",
+    videos: [
+      { title: "RUSH Exam — Complete Walkthrough", channel: "5 Minute Sono", duration: "11 min", tags:["RUSH","Shock","IVC"], url: "https://www.youtube.com/watch?v=L5s3QvRkiO8", thumb: "https://img.youtube.com/vi/L5s3QvRkiO8/mqdefault.jpg", description: "Full RUSH protocol step-by-step with pump, tank, pipes, peritoneal, and air windows demonstrated in real cases." },
+      { title: "IVC Collapsibility & Volume Status", channel: "CoreUltrasound", duration: "8 min", tags:["IVC","Preload","Volume"], url: "https://www.youtube.com/watch?v=J8SFPYH1HJ4", thumb: "https://img.youtube.com/vi/J8SFPYH1HJ4/mqdefault.jpg", description: "Dynamic IVC assessment: collapsibility index, sniff test, and clinical correlation in spontaneously breathing patients." },
+      { title: "Cardiogenic vs Distributive Shock — POCUS", channel: "EM Docs", duration: "14 min", tags:["Cardiogenic","Sepsis","Shock"], url: "https://www.youtube.com/watch?v=OuEFq4JZQRQ", thumb: "https://img.youtube.com/vi/OuEFq4JZQRQ/mqdefault.jpg", description: "Using cardiac POCUS to differentiate shock types: hyperdynamic vs severely depressed LV, pericardial effusion, and tamponade." },
+      { title: "Pericardial Effusion & Tamponade", channel: "ACEP eLearning", duration: "9 min", tags:["Tamponade","Cardiac","Effusion"], url: "https://www.youtube.com/watch?v=xhECbKXB3tg", thumb: "https://img.youtube.com/vi/xhECbKXB3tg/mqdefault.jpg", description: "Identifying pericardial effusion, RV diastolic collapse, and differentiating from pleural effusion in the PLAX view." },
+    ]
+  },
+  {
+    category: "BLUE Protocol",
+    color: T.blue,
+    icon: "💨",
+    videos: [
+      { title: "BLUE Protocol — Lichtenstein Lecture", channel: "SMACC Conference", duration: "17 min", tags:["BLUE","Lung","Dyspnea"], url: "https://www.youtube.com/watch?v=R6ZTBm93Xqo", thumb: "https://img.youtube.com/vi/R6ZTBm93Xqo/mqdefault.jpg", description: "Dr. Daniel Lichtenstein explains the original BLUE protocol for acute respiratory failure — A, B, B', A', C, and PLAPS profiles." },
+      { title: "Lung Sliding — Normal vs Absent", channel: "CoreUltrasound", duration: "6 min", tags:["Lung Sliding","PTX","Pleura"], url: "https://www.youtube.com/watch?v=JhMoAPvQHQ8", thumb: "https://img.youtube.com/vi/JhMoAPvQHQ8/mqdefault.jpg", description: "How to identify lung sliding at the pleural line, use M-mode (seashore vs barcode sign), and locate the lung point for PTX confirmation." },
+      { title: "B-Lines — Interstitial Edema", channel: "SonoSite Education", duration: "7 min", tags:["B-Lines","CHF","ARDS"], url: "https://www.youtube.com/watch?v=rDctq3oIvK4", thumb: "https://img.youtube.com/vi/rDctq3oIvK4/mqdefault.jpg", description: "Recognizing B-lines (comet tails), counting per zone, bilateral vs unilateral patterns, and differentiating CHF from pneumonia." },
+      { title: "Pleural Effusion — POCUS Identification", channel: "5 Minute Sono", duration: "8 min", tags:["Effusion","Pleural","Spine Sign"], url: "https://www.youtube.com/watch?v=fZy0RWr6PkY", thumb: "https://img.youtube.com/vi/fZy0RWr6PkY/mqdefault.jpg", description: "Posterior lung windows, spine sign, anechoic vs complex fluid, and quantifying effusion depth for thoracentesis planning." },
+    ]
+  },
+  {
+    category: "eFAST Protocol",
+    color: T.yellow,
+    icon: "🩺",
+    videos: [
+      { title: "eFAST Exam — Step by Step (Trauma)", channel: "Trauma Bay POCUS", duration: "12 min", tags:["eFAST","Trauma","Free Fluid"], url: "https://www.youtube.com/watch?v=2n6Xg-1Qfxw", thumb: "https://img.youtube.com/vi/2n6Xg-1Qfxw/mqdefault.jpg", description: "Complete 6-zone eFAST examination in trauma: RUQ, LUQ, pelvis, subxiphoid, and bilateral chest lung windows for pneumothorax." },
+      { title: "Morrison's Pouch — Free Fluid RUQ", channel: "CoreUltrasound", duration: "5 min", tags:["RUQ","Morrison's","Hemoperitoneum"], url: "https://www.youtube.com/watch?v=PgjDjC_ZiHs", thumb: "https://img.youtube.com/vi/PgjDjC_ZiHs/mqdefault.jpg", description: "Identifying the hepatorenal interface, recognizing anechoic free fluid in Morrison's pouch, and pitfalls including isoechoic fresh clot." },
+      { title: "Pelvic FAST — Pouch of Douglas", channel: "EM Ultrasound", duration: "6 min", tags:["Pelvis","FAST","Free Fluid"], url: "https://www.youtube.com/watch?v=TbKPFGSakdA", thumb: "https://img.youtube.com/vi/TbKPFGSakdA/mqdefault.jpg", description: "Suprapubic views in trauma: using the full bladder as acoustic window, identifying posterior fluid, and male vs female pelvic anatomy." },
+      { title: "Pneumothorax — Lung Point & Barcode Sign", channel: "ACEP eLearning", duration: "9 min", tags:["PTX","Lung Point","M-mode"], url: "https://www.youtube.com/watch?v=F-pJA-2mLHo", thumb: "https://img.youtube.com/vi/F-pJA-2mLHo/mqdefault.jpg", description: "Diagnosing PTX with ultrasound: absent sliding, barcode sign on M-mode, lung point identification, and when to treat without waiting for imaging." },
+    ]
+  },
+  {
+    category: "Cardiac Views",
+    color: T.cyan,
+    icon: "❤️",
+    videos: [
+      { title: "Parasternal Long Axis (PLAX)", channel: "SonoSite Education", duration: "7 min", tags:["PLAX","Cardiac","LV"], url: "https://www.youtube.com/watch?v=KBqf8IuhR0k", thumb: "https://img.youtube.com/vi/KBqf8IuhR0k/mqdefault.jpg", description: "PLAX view acquisition, anatomy identification (LV, RV, LA, MV, AV), and qualitative EF assessment in the emergency setting." },
+      { title: "Apical 4-Chamber & RV Dilation (PE)", channel: "CoreUltrasound", duration: "10 min", tags:["A4C","PE","McConnell"], url: "https://www.youtube.com/watch?v=YnJ7iCDMH9U", thumb: "https://img.youtube.com/vi/YnJ7iCDMH9U/mqdefault.jpg", description: "A4C view for RV:LV ratio, McConnell sign in massive PE, and differentiating RV dilation from RV infarction using echo patterns." },
+    ]
+  },
+];
+
 const TABS = [
-  {id:"fast",    label:"FAST Exam",    icon:"🔍"},
-  {id:"lung",    label:"Lung POCUS",   icon:"🫁"},
-  {id:"cardiac", label:"Cardiac",      icon:"❤️"},
-  {id:"rush",    label:"RUSH",         icon:"🚨"},
-  {id:"blue",    label:"BLUE",         icon:"💨"},
-  {id:"efast",   label:"eFAST",        icon:"🩺"},
-  {id:"ref",     label:"Reference",    icon:"🖼️"},
-  {id:"note",    label:"POCUS Note",   icon:"📋"},
+  {id:"fast",    label:"FAST Exam",      icon:"🔍"},
+  {id:"lung",    label:"Lung POCUS",     icon:"🫁"},
+  {id:"cardiac", label:"Cardiac",        icon:"❤️"},
+  {id:"rush",    label:"RUSH",           icon:"🚨"},
+  {id:"blue",    label:"BLUE",           icon:"💨"},
+  {id:"efast",   label:"eFAST",          icon:"🩺"},
+  {id:"ref",     label:"Reference",      icon:"🖼️"},
+  {id:"video",   label:"Video Learning",  icon:"🎬"},
+  {id:"note",    label:"POCUS Note",     icon:"📋"},
 ];
 
 // ── Primitives ────────────────────────────────────────────────────────────────
@@ -1088,6 +1135,74 @@ export default function POCUSHub() {
                       style={{padding:"4px 10px",borderRadius:7,background:"rgba(0,229,192,0.1)",border:"1px solid rgba(0,229,192,0.25)",color:T.teal,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"DM Sans"}}>
                       + Append to Interpretation
                     </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Video Learning Tab ── */}
+        {tab==="video" && (
+          <div className="fade-in">
+            <div style={{padding:"10px 14px",background:"rgba(155,109,255,0.06)",border:"1px solid rgba(155,109,255,0.2)",borderRadius:10,marginBottom:16,fontFamily:"DM Sans",fontSize:12,color:T.txt2,lineHeight:1.7}}>
+              🎬 <strong style={{color:T.purple}}>Video Learning Library:</strong> Curated high-yield POCUS education videos for RUSH, BLUE, and eFAST protocols. Click any card to open the video on YouTube. Focus on dynamic findings — IVC respiratory variation, lung sliding movement, and real-time fluid identification.
+            </div>
+            {VIDEO_LIBRARY.map((section, si) => (
+              <div key={si} style={{marginBottom:24}}>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                  <div style={{height:1,width:24,background:`${section.color}55`,borderRadius:1}}/>
+                  <span style={{fontSize:16}}>{section.icon}</span>
+                  <span style={{fontFamily:"Playfair Display",fontSize:18,fontWeight:700,color:section.color}}>{section.category}</span>
+                  <div style={{flex:1,height:1,background:`linear-gradient(90deg,${section.color}33,transparent)`}}/>
+                  <span style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4}}>{section.videos.length} videos</span>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
+                  {section.videos.map((vid, vi) => (
+                    <a key={vi} href={vid.url} target="_blank" rel="noopener noreferrer" style={{textDecoration:"none"}}>
+                      <div style={{...glass,overflow:"hidden",borderTop:`3px solid ${section.color}`,cursor:"pointer",transition:"all .2s",display:"flex",flexDirection:"column"}}
+                        onMouseEnter={e=>e.currentTarget.style.transform="translateY(-3px)"}
+                        onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
+                        <div style={{position:"relative",overflow:"hidden"}}>
+                          <img src={vid.thumb} alt={vid.title} style={{width:"100%",display:"block",aspectRatio:"16/9",objectFit:"cover",background:"#04080f"}}
+                            onError={e=>{ e.target.style.display="none"; }}/>
+                          <div style={{position:"absolute",inset:0,background:"linear-gradient(to top,rgba(5,15,30,0.85) 0%,transparent 60%)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                            <div style={{width:44,height:44,borderRadius:"50%",background:"rgba(255,255,255,0.15)",border:`2px solid ${section.color}`,backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>▶</div>
+                          </div>
+                          <div style={{position:"absolute",bottom:6,right:8,fontFamily:"JetBrains Mono",fontSize:9,fontWeight:700,color:"#fff",background:"rgba(0,0,0,0.7)",padding:"2px 6px",borderRadius:4}}>{vid.duration}</div>
+                        </div>
+                        <div style={{padding:"12px 14px 14px",flex:1,display:"flex",flexDirection:"column",gap:6}}>
+                          <div style={{fontFamily:"Playfair Display",fontWeight:700,fontSize:13,color:T.txt,lineHeight:1.3}}>{vid.title}</div>
+                          <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:section.color}}>{vid.channel}</div>
+                          <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt3,lineHeight:1.5,flex:1}}>{vid.description}</div>
+                          <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:4}}>
+                            {vid.tags.map((tag,ti)=>(
+                              <span key={ti} style={{fontFamily:"JetBrains Mono",fontSize:9,padding:"2px 7px",borderRadius:20,background:`${section.color}14`,border:`1px solid ${section.color}33`,color:section.color}}>{tag}</span>
+                            ))}
+                          </div>
+                          <div style={{marginTop:6,display:"flex",alignItems:"center",gap:6,fontFamily:"DM Sans",fontSize:11,fontWeight:600,color:section.color}}>
+                            <span>Watch on YouTube</span>
+                            <span style={{fontSize:13}}>↗</span>
+                          </div>
+                        </div>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <div style={{...glass,padding:"14px 18px",borderLeft:`3px solid ${T.purple}`}}>
+              <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.purple,textTransform:"uppercase",letterSpacing:2,marginBottom:10}}>💡 Learning Tips</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:8}}>
+                {[
+                  {tip:"Watch IVC respiratory variation in real-time — the collapse you see is more informative than a still image.",icon:"💧"},
+                  {tip:"Lung sliding appears as a shimmering 'ants marching' at the pleural line — impossible to fully appreciate from a schematic alone.",icon:"🫁"},
+                  {tip:"Practice the M-mode seashore vs barcode sign until you can identify them instantly — it's a reflex skill in acute PTX.",icon:"📊"},
+                  {tip:"RUSH exam should take < 3 minutes — watch experts to calibrate your time expectations and probe movements between windows.",icon:"⏱"},
+                ].map((item,i)=>(
+                  <div key={i} style={{display:"flex",gap:10,padding:"9px 12px",background:"rgba(14,37,68,0.5)",border:"1px solid rgba(42,79,122,0.25)",borderRadius:9}}>
+                    <span style={{fontSize:16,flexShrink:0}}>{item.icon}</span>
+                    <span style={{fontFamily:"DM Sans",fontSize:12,color:T.txt2,lineHeight:1.5}}>{item.tip}</span>
                   </div>
                 ))}
               </div>

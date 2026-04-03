@@ -93,7 +93,7 @@ const LUNG_PATTERNS = [
     key:"Bilateral diffuse = interstitial syndrome. Unilateral = contusion, pneumonia, atelectasis.",
     pearl:"Count per zone: 0–2 normal, 3–5 moderate, >5 confluent (white lung) = severe pulmonary edema." },
   { id:"ptx", label:"Pneumothorax", sub:"Absent Sliding + Lung Point",
-    img:"https://media.base44.com/images/public/69876015478a19e360c5e3ea/0e399ef66_generated_image.png",
+    img:"https://media.base44.com/images/public/69876015478a19e360c5e3ea/77cba961b_generated_image.png",
     badge:"CRITICAL", badgeColor:T.red,
     headline:"Absent lung sliding + A-lines + lung point = pneumothorax",
     findings:["Absent lung sliding at pleural line (most sensitive sign)","A-lines present without movement","Lung point = transition between PTX zone and normal lung — 100% specific","Barcode/stratosphere sign on M-mode (flat lines below pleural line)","No B-lines, absent lung pulse"],

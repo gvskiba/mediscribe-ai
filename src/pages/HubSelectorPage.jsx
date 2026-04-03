@@ -407,6 +407,24 @@ const HUBS = [
     priority: 22,
     essential: true,
   },
+  {
+    id: "ortho",
+    route: "/ortho-hub",
+    icon: "🦴",
+    abbr: "ORTHO",
+    title: "Orthopaedic Hub",
+    subtitle: "Fractures · Dislocations · Compartment Syndrome · Ottawa Rules",
+    color: "#a78bfa",
+    glow: "rgba(167,139,250,0.4)",
+    glass: "rgba(167,139,250,0.07)",
+    border: "rgba(167,139,250,0.28)",
+    accent: "#c4b5fd",
+    category: "Specialty",
+    stats: ["5 Fracture Types", "4 Dislocations", "Ottawa Rules"],
+    badge: "Live",
+    priority: 23,
+    essential: false,
+  },
 ];
 
 const ESSENTIAL_IDS = new Set(HUBS.filter(h => h.essential).map(h => h.id));
@@ -418,7 +436,7 @@ const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
   "/peds-hub", "/Procedures", "/erx", "/AutoCoder", "/NewPatientInput",
-  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub",
+  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub", "/ortho-hub",
 ]);
 
 function Background() {

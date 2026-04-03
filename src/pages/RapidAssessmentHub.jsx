@@ -205,6 +205,15 @@ export default function RapidAssessmentHub() {
       .finally(() => setLoading(false));
   }, []);
 
+  const filtered = useMemo(() => {
+    return complaints.filter(c => {
+      const matchCat = catFilter === "all" || c.category === catFilter;
+      const q = search.toLowerCase();
+      const matchSearch = !q || c.label.toLowerCase().includes(q) || c.category.toLowerCase().includes(q);
+      return matchCat && matchSearch;
+    });
+  }, [complaints, catFilter, search]);
+
   const current = complaints.find(c => c.id === selected) || complaints[0];
 
   return (

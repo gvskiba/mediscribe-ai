@@ -356,59 +356,39 @@ const SPLINT_PROMPTS = {
   longarm: `Create an SVG (viewBox="0 0 220 158") medical illustration of a long arm posterior splint. Background: <rect width="220" height="158" fill="#050f1e" rx="8"/>. Draw: (1) Full arm anatomy: upper arm (humerus) as a long vertical shape at top, elbow joint as a rounded hinge in the middle (bent at 90°), forearm (radius/ulna) extending to the lower right at 90° angle — all in dark brown #2e1f0c with stroke #5a3e1a. The arm makes an L-shape. (2) KEY feature: a long continuous posterior plaster slab #c8b896 running along the entire posterior surface of the arm — from upper arm, around the back of the elbow, down the posterior forearm to the wrist. (3) Show padding detail as slightly lighter brown near bony prominences (elbow). (4) A circular dashed arc at the elbow indicating 90° angle. (5) Labels fill="#60a5fa" fontSize="8": 'HUMERUS', 'POSTERIOR SLAB', 'OLECRANON (pad well)', 'FOREARM NEUTRAL'. (6) Footer fill="#60a5fa" fontSize="7" y="153": 'ELBOW 90° · FOREARM NEUTRAL · WRIST NEUTRAL'. Return ONLY the complete SVG element.`,
 };
 
-// ── AI-Powered Splint Image Component ─────────────────────────────────────────
+// ── Splint Photos ────────────────────────────────────────────────────────────
+const SPLINT_PHOTOS = {
+  ankle:      "https://media.base44.com/images/public/69876015478a19e360c5e3ea/6da007f64_generated_image.png",
+  sugartong:  "https://media.base44.com/images/public/69876015478a19e360c5e3ea/e6f35951f_generated_image.png",
+  thumbspica: "https://media.base44.com/images/public/69876015478a19e360c5e3ea/a4af15ff5_generated_image.png",
+  ulgutter:   "https://media.base44.com/images/public/69876015478a19e360c5e3ea/0ad3c5e4c_generated_image.png",
+  longarm:    "https://media.base44.com/images/public/69876015478a19e360c5e3ea/3f2bc5e50_generated_image.png",
+};
+
 function AISplintImage({ sp }) {
-  const [status, setStatus] = useState("loading");
-  const [svgCode, setSvgCode] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError]   = useState(false);
+  const src = SPLINT_PHOTOS[sp.svgType];
 
-  useEffect(() => {
-    let cancelled = false;
-    async function generate() {
-      try {
-        const res = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "claude-sonnet-4-20250514",
-            max_tokens: 1000,
-            system: "You are a precise SVG medical illustration generator for a dark-themed clinical reference app. Return ONLY valid SVG code — no markdown, no backticks, no explanation. Start your response directly with <svg and end with </svg>. Follow the exact colors, shapes, and label positions in the instructions.",
-            messages: [{ role: "user", content: SPLINT_PROMPTS[sp.svgType] }],
-          }),
-        });
-        if (cancelled) return;
-        const data = await res.json();
-        const raw = (data?.content?.[0]?.text || "").trim();
-        const match = raw.match(/<svg[\s\S]*<\/svg>/i);
-        if (match) { setSvgCode(match[0]); setStatus("done"); }
-        else setStatus("error");
-      } catch { if (!cancelled) setStatus("error"); }
-    }
-    generate();
-    return () => { cancelled = true; };
-  }, [sp.svgType]);
+  if (!src || error) return <SplintSvg type={sp.svgType}/>;
 
-  if (status === "loading") return (
-    <div style={{width:"100%",height:158,borderRadius:8,background:"#050f1e",border:`1px solid ${sp.color}22`,
-      display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:10,position:"relative",overflow:"hidden"}}>
-      <div style={{position:"absolute",inset:0,background:`linear-gradient(135deg,${sp.color}06,transparent)`,pointerEvents:"none"}}/>
-      <div style={{width:26,height:26,border:`2px solid ${sp.color}`,borderTopColor:"transparent",borderRadius:"50%",
-        animation:"spin 0.75s linear infinite",position:"relative",zIndex:1}}/>
-      <span style={{fontFamily:"JetBrains Mono",fontSize:9,color:sp.color,letterSpacing:1.5,position:"relative",zIndex:1}}>
-        GENERATING IMAGE…
-      </span>
-      <span style={{fontFamily:"DM Sans",fontSize:10,color:T.txt4,position:"relative",zIndex:1}}>
-        {sp.label}
-      </span>
+  return (
+    <div style={{position:"relative",borderRadius:8,overflow:"hidden",border:`1px solid ${sp.color}33`,background:"#050f1e"}}>
+      {!loaded && (
+        <div style={{width:"100%",height:158,display:"flex",alignItems:"center",justifyContent:"center",gap:10,flexDirection:"column"}}>
+          <div style={{width:22,height:22,border:`2px solid ${sp.color}`,borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.75s linear infinite"}}/>
+          <span style={{fontFamily:"JetBrains Mono",fontSize:9,color:sp.color,letterSpacing:1}}>LOADING…</span>
+        </div>
+      )}
+      <img
+        src={src}
+        alt={sp.label}
+        onLoad={()=>setLoaded(true)}
+        onError={()=>setError(true)}
+        style={{width:"100%",display:loaded?"block":"none",borderRadius:8,objectFit:"cover",maxHeight:220}}
+      />
     </div>
   );
-
-  if (status === "done" && svgCode) {
-    const styled = svgCode.replace(/^<svg/, '<svg style="width:100%;height:auto;display:block;border-radius:8px;"');
-    return <div style={{borderRadius:8,overflow:"hidden",width:"100%",background:"#050f1e"}} dangerouslySetInnerHTML={{__html: styled}}/>;
-  }
-
-  // Graceful fallback to original SVG schematic on error
-  return <SplintSvg type={sp.svgType}/>;
 }
 
 // ── SVG Schematics (Fallback) ─────────────────────────────────────────────────

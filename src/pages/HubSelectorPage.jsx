@@ -425,6 +425,24 @@ const HUBS = [
     priority: 23,
     essential: false,
   },
+  {
+    id: "resus",
+    route: "/resus-hub",
+    icon: "💓",
+    abbr: "RESUS",
+    title: "Resuscitation Hub",
+    subtitle: "ACLS Algorithms · Resus Meds · Defib · Airway · 5H5T · Post-ROSC",
+    color: "#ff4444",
+    glow: "rgba(255,68,68,0.4)",
+    glass: "rgba(255,68,68,0.07)",
+    border: "rgba(255,68,68,0.28)",
+    accent: "#ff7777",
+    category: "Critical Care",
+    stats: ["4 ACLS Algorithms", "10 Resus Meds", "5H5T Guide"],
+    badge: "Live",
+    priority: 24,
+    essential: true,
+  },
 ];
 
 const ESSENTIAL_IDS = new Set(HUBS.filter(h => h.essential).map(h => h.id));
@@ -436,7 +454,7 @@ const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
   "/peds-hub", "/Procedures", "/erx", "/AutoCoder", "/NewPatientInput",
-  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub", "/ortho-hub",
+  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub", "/ortho-hub", "/resus-hub",
 ]);
 
 function Background() {

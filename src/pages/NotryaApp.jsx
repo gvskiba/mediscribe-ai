@@ -82,47 +82,17 @@ const now = Date.now();
 const mAgo = m => new Date(now - m * 60000);
 
 const DEMO = {
-  user:    { name: "Dr. Gabriel Skiba" },
-  shift:   { active: 8, pending: 14, orders: 3, hours: "11.6" },
-  patient: { firstName: "Hiroshi", lastName: "Nakamura", dob: "1957-03-14", sex: "Male", mrn: "4-471-8820", room: "4B", cc: "Chest Pain", status: "MONITORING", triage: "ESI-2" },
-  vitals:  { bp: "158/94", hr: 108, rr: 18, spo2: 93, temp: "37.1°C", gcs: 15, recorded: mAgo(14) },
-  timeline: [],
-  problems: [
-    { icd: "I21.4",  name: "Non-ST Elevation MI",        status: "active",    onset: new Date().toISOString() },
-    { icd: "I10",    name: "Hypertension, Essential",     status: "active",    onset: "2019" },
-    { icd: "E11.65", name: "Type 2 DM w/ hyperglycemia", status: "active",    onset: "2021" },
-    { icd: "I25.10", name: "Coronary Artery Disease",     status: "active",    onset: "2022" },
-    { icd: "Z87.39", name: "Hx of tobacco use",           status: "historical",onset: "2015" },
-    { icd: "K21.0",  name: "GERD",                        status: "historical",onset: "2018" },
-  ],
-  allergies: [
-    { allergen: "Penicillin",         severity: "severe",   reaction: "Anaphylaxis",   confirmed: "2018-06-01" },
-    { allergen: "Iodinated Contrast", severity: "moderate", reaction: "Urticaria",      confirmed: "2020-03-15" },
-    { allergen: "Codeine",            severity: "mild",     reaction: "Nausea/Vomiting",confirmed: null },
-  ],
-  meds: [
-    { name: "Aspirin",      dose: "325 mg",              freq: "× 1 dose",    route: "PO", status: "ed",   time: mAgo(70), by: "Nurse T. Reyes" },
-    { name: "Heparin",      dose: "4000U bolus→800U/hr", freq: "Drip active", route: "IV", status: "ed",   time: mAgo(23), by: "Dr. Skiba" },
-    { name: "Ticagrelor",   dose: "180 mg loading",      freq: "× 1 dose",    route: "PO", status: "ed",   time: mAgo(9),  by: "Dr. Chen" },
-    { name: "Metoprolol",   dose: "50 mg",               freq: "BID",         route: "PO", status: "home" },
-    { name: "Atorvastatin", dose: "40 mg",               freq: "Nightly",     route: "PO", status: "home" },
-    { name: "Metformin",    dose: "1000 mg",             freq: "BID",         route: "PO", status: "home" },
-    { name: "Lisinopril",   dose: "10 mg",               freq: "Daily",       route: "PO", status: "held" },
-  ],
-  labs: [
-    { panel: "Cardiac",   name: "Troponin-I", val: "0.84", unit: "ng/mL", ref: "<0.04",   flag: "hi", time: mAgo(25) },
-    { panel: "Cardiac",   name: "BNP",        val: "812",  unit: "pg/mL", ref: "<100",    flag: "hi", time: mAgo(25) },
-    { panel: "Cardiac",   name: "CK-MB",      val: "3.2",  unit: "ng/mL", ref: "0–6.3",  flag: "ok", time: mAgo(25) },
-    { panel: "Metabolic", name: "Na⁺",        val: "138",  unit: "mEq/L", ref: "136–145",flag: "ok", time: mAgo(70) },
-    { panel: "Metabolic", name: "K⁺",         val: "5.4",  unit: "mEq/L", ref: "3.5–5.0",flag: "hi", time: mAgo(70) },
-    { panel: "Metabolic", name: "Creatinine", val: "1.1",  unit: "mg/dL", ref: "0.7–1.2",flag: "ok", time: mAgo(70) },
-    { panel: "Metabolic", name: "Glucose",    val: "218",  unit: "mg/dL", ref: "70–100", flag: "hi", time: mAgo(70) },
-  ],
-  imaging: [
-    { type: "Chest X-Ray (PA/Lat)", mod: "XR",   status: "resulted", ordered: mAgo(84), resulted: mAgo(62), rad: "Dr. Patel", finding: "Mild cardiomegaly. No pneumothorax. Mild pulmonary vascular congestion. No frank consolidation." },
-    { type: "Echocardiogram (TTE)",  mod: "ECHO", status: "pending",  ordered: mAgo(9),  resulted: null,     rad: null,       finding: null },
-  ],
-  note: `CHIEF COMPLAINT: Acute chest pain, left arm radiation, diaphoresis.\n\nHPI: Mr. Nakamura is a 67-year-old male with known CAD, HTN, and T2DM who presented via EMS with acute onset chest pain 9/10, radiating to the left arm, associated with diaphoresis and mild dyspnea.\n\nASSESSMENT & PLAN:\n1. NSTEMI (I21.4) — Troponin-I 0.84 (>20× ULN).\n   • Aspirin 325mg ✓ | Ticagrelor 180mg ✓ | Heparin drip ✓\n   • Cardiology at bedside — urgent PCI being arranged\n2. HTN — holding lisinopril; BP monitored\n3. T2DM — glucose 218, insulin sliding scale\n\nDISPOSITION: Admit to Cardiac ICU. Cath lab on standby.`,
+   user:    { name: "Dr. Provider" },
+   shift:   { active: 0, pending: 0, orders: 0, hours: "0" },
+   patient: { firstName: "", lastName: "", dob: "", sex: "", mrn: "", room: "—", cc: "", status: "—", triage: "" },
+   vitals:  { bp: "—", hr: 0, rr: 0, spo2: 0, temp: "—", gcs: 15, recorded: new Date() },
+   timeline: [],
+   problems: [],
+   allergies: [],
+   meds: [],
+   labs: [],
+   imaging: [],
+   note: "",
 };
 
 /* ═══════════════════════════════════════════════

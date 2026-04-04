@@ -48,6 +48,7 @@ import AntidoteHub from '@/pages/AntidoteHub';
 import RadiologyHub from '@/pages/RadiologyHub';
 import ConsultHub from '@/pages/ConsultHub';
 import ProcedureHub from '@/pages/ProcedureHub';
+import InfectiousDiseaseHub from '@/pages/InfectiousDiseaseHub';
 
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -145,6 +146,7 @@ const AuthenticatedApp = () => {
       <Route path="/radiology-hub" element={<RadiologyHub />} />
       <Route path="/consult-hub" element={<ConsultHub />} />
       <Route path="/procedure-hub" element={<ProcedureHub />} />
+      <Route path="/id-hub" element={<InfectiousDiseaseHub />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

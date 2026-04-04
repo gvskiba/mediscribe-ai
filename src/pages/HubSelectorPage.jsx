@@ -479,6 +479,24 @@ const HUBS = [
     priority: 26,
     essential: false,
   },
+  {
+    id: "results",
+    route: "/Results",
+    icon: "🧪",
+    abbr: "RESULTS",
+    title: "Results Hub",
+    subtitle: "Labs · Vitals · EKG · Imaging · EMR Paste Import · AI Integrated Synthesis",
+    color: "#3b9eff",
+    glow: "rgba(59,158,255,0.4)",
+    glass: "rgba(59,158,255,0.07)",
+    border: "rgba(59,158,255,0.28)",
+    accent: "#6ab8ff",
+    category: "Tools",
+    stats: ["Critical Value Flags", "EMR Paste Import", "AI Synthesis"],
+    badge: "Live",
+    priority: 27,
+    essential: false,
+  },
 ];
 
 const ESSENTIAL_IDS = new Set(HUBS.filter(h => h.essential).map(h => h.id));
@@ -490,7 +508,7 @@ const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
   "/peds-hub", "/Procedures", "/erx", "/AutoCoder", "/NewPatientInput",
-  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub", "/ortho-hub", "/resus-hub", "/antidote-hub", "/radiology-hub",
+  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub", "/ortho-hub", "/resus-hub", "/antidote-hub", "/radiology-hub", "/Results",
 ]);
 
 function Background() {

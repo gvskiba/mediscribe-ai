@@ -18,10 +18,10 @@ const EDOrders = ({ embedded = false, patientName = '', patientAllergies = [], c
     coral: '#ff6b6b',
     orange: '#ff9f43',
     purple: '#9b6dff',
-    txt: '#e8f0fe',
-    txt2: '#8aaccc',
-    txt3: '#4a6a8a',
-    txt4: '#2e4a6a',
+    txt: '#ffffff',
+    txt2: '#d0e8ff',
+    txt3: '#a8c8e8',
+    txt4: '#7aa0c0',
   };
 
   const CSS = `

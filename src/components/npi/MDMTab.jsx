@@ -60,7 +60,7 @@ const S = {
   border:'#1a3555', borderHi:'#2a4f7a',
   blue:'#3b9eff', teal:'#00e5c0', coral:'#ff6b6b', orange:'#ff9f43',
   gold:'#f5c842', purple:'#9b6dff', green:'#3dffa0',
-  txt:'#e8f0fe', txt2:'#8aaccc', txt3:'#4a6a8a', txt4:'#2e4a6a',
+  txt:'#ffffff', txt2:'#d0e8ff', txt3:'#a8c8e8', txt4:'#7aa0c0',
 };
 
 const CSS = `

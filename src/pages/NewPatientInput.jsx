@@ -476,7 +476,7 @@ const CSS = `
   --npi-bg:#050f1e;--npi-panel:#081628;--npi-card:#0b1e36;--npi-up:#0e2544;
   --npi-bd:#1a3555;--npi-bhi:#2a4f7a;--npi-blue:#3b9eff;--npi-teal:#00e5c0;
   --npi-gold:#f5c842;--npi-coral:#ff6b6b;--npi-orange:#ff9f43;--npi-purple:#9b6dff;
-  --npi-txt:#e8f0fe;--npi-txt2:#8aaccc;--npi-txt3:#4a6a8a;--npi-txt4:#2e4a6a;
+  --npi-txt:#ffffff;--npi-txt2:#d0e8ff;--npi-txt3:#a8c8e8;--npi-txt4:#7aa0c0;
   --npi-isb:56px;--npi-top:88px;--npi-bot:108px;
 }
 

@@ -668,14 +668,14 @@ function HubCard({ hub, onNavigate, index, size = "normal", isEssential = false,
       </div>
 
       <div style={{ fontSize: 9, fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, color: hub.accent, letterSpacing: ".14em", textTransform: "uppercase", marginBottom: 3, opacity: 0.85 }}>{hub.abbr}</div>
-      <div style={{ fontSize: isLarge ? 16 : 14, fontFamily: "'Playfair Display',serif", fontWeight: 600, color: "#e8f0fe", lineHeight: 1.25, marginBottom: 4 }}>{hub.title}</div>
-      <div style={{ fontSize: 11, color: "#8aaccc", lineHeight: 1.4, marginBottom: isLarge ? 14 : 12 }}>{hub.subtitle}</div>
+      <div style={{ fontSize: isLarge ? 16 : 14, fontFamily: "'Playfair Display',serif", fontWeight: 600, color: "#ffffff", lineHeight: 1.25, marginBottom: 4 }}>{hub.title}</div>
+      <div style={{ fontSize: 11, color: "#d0e8ff", lineHeight: 1.4, marginBottom: isLarge ? 14 : 12 }}>{hub.subtitle}</div>
 
       <div style={{ height: 1, background: `linear-gradient(90deg, ${hub.border}, transparent)`, marginBottom: isLarge ? 12 : 10 }} />
 
       <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
         {hub.stats.map((s, i) => (
-          <span key={i} style={{ fontSize: 10, fontFamily: "'DM Sans',sans-serif", padding: "2px 8px", borderRadius: 20, background: hub.glass, border: `1px solid ${hub.border.replace("0.28","0.16")}`, color: "#c8d8ee" }}>{s}</span>
+          <span key={i} style={{ fontSize: 10, fontFamily: "'DM Sans',sans-serif", padding: "2px 8px", borderRadius: 20, background: hub.glass, border: `1px solid ${hub.border.replace("0.28","0.16")}`, color: "#d0e8ff" }}>{s}</span>
         ))}
       </div>
 
@@ -709,7 +709,7 @@ function SearchBar({ value, onChange }) {
         placeholder="Search hubs…"
         value={value}
         onChange={e => onChange(e.target.value)}
-        style={{ width: "100%", background: "rgba(8,22,40,0.8)", border: "1px solid rgba(42,79,122,0.6)", borderRadius: 12, padding: "10px 46px 10px 42px", color: "#e8f0fe", fontFamily: "'DM Sans',sans-serif", fontSize: 13, outline: "none", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", transition: "border-color 0.2s" }}
+        style={{ width: "100%", background: "rgba(8,22,40,0.8)", border: "1px solid rgba(42,79,122,0.6)", borderRadius: 12, padding: "10px 46px 10px 42px", color: "#ffffff", fontFamily: "'DM Sans',sans-serif", fontSize: 13, outline: "none", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", transition: "border-color 0.2s" }}
         onFocus={e => e.target.style.borderColor = "rgba(0,229,192,0.5)"}
         onBlur={e => e.target.style.borderColor = "rgba(42,79,122,0.6)"}
       />
@@ -848,20 +848,20 @@ export default function HubSelectorPage() {
                 gap: 4,
                 cursor: "pointer",
                 transition: "all 0.2s ease",
-                color: isActive ? "#00e5c0" : "#8aaccc",
+                color: isActive ? "#00e5c0" : "#d0e8ff",
               }}
               onMouseEnter={e => {
                 if (!isActive) {
                   e.currentTarget.style.background = "rgba(14,37,68,0.5)";
                   e.currentTarget.style.borderColor = "rgba(26,53,85,0.8)";
-                  e.currentTarget.style.color = "#e8f0fe";
+                  e.currentTarget.style.color = "#ffffff";
                 }
               }}
               onMouseLeave={e => {
                 if (!isActive) {
                   e.currentTarget.style.background = "transparent";
                   e.currentTarget.style.borderColor = "transparent";
-                  e.currentTarget.style.color = "#8aaccc";
+                  e.currentTarget.style.color = "#d0e8ff";
                 }
               }}
               title={item.label}
@@ -892,14 +892,14 @@ export default function HubSelectorPage() {
           onMouseEnter={e => {
             e.currentTarget.style.background = "rgba(14,37,68,0.5)";
             e.currentTarget.style.borderColor = "rgba(26,53,85,0.8)";
-            e.currentTarget.style.color = "#e8f0fe";
-          }}
-          onMouseLeave={e => {
+            e.currentTarget.style.color = "#ffffff";
+            }}
+            onMouseLeave={e => {
             e.currentTarget.style.background = "transparent";
             e.currentTarget.style.borderColor = "transparent";
-            e.currentTarget.style.color = "#8aaccc";
-          }}
-          title="Settings"
+            e.currentTarget.style.color = "#d0e8ff";
+            }}
+            title="Settings"
         >
           <span style={{ fontSize: 24 }}>⚙️</span>
           <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: ".05em" }}>Settings</span>
@@ -1025,7 +1025,7 @@ export default function HubSelectorPage() {
             {filtered.length === 0 ? (
               <div style={{ textAlign: "center", padding: "60px 0", color: "#8aaccc" }}>
                 <div style={{ fontSize: 36, marginBottom: 12 }}>🔍</div>
-                <div style={{ fontSize: 14, fontFamily: "'Playfair Display',serif", color: "#e8f0fe" }}>No hubs found</div>
+                <div style={{ fontSize: 14, fontFamily: "'Playfair Display',serif", color: "#ffffff" }}>No hubs found</div>
                 <div style={{ fontSize: 12, marginTop: 6 }}>Try a different search or category</div>
               </div>
             ) : (

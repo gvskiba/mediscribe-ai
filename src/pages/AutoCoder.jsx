@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { base44 } from "@/api/base44Client";
 
 // ════════════════════════════════════════════════════════════
 //  FONT INJECTION  (idempotent)
@@ -503,17 +504,16 @@ export default function AutocoderHub() {
     if (!aiCond.trim() || aiIcdBusy) return;
     setAiIcdBusy(true); setAiIcdRecs([]);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({
-          model:"claude-sonnet-4-20250514", max_tokens:1000,
-          system:`You are a board-certified clinical documentation specialist. Return the 5 most appropriate ICD-10 codes for the described condition. Respond ONLY with a valid JSON array, no markdown. Format: [{"code":"I21.9","desc":"Acute myocardial infarction, unspecified","specificity":"Medium","rationale":"Use when type/location not further specified"}]`,
-          messages:[{ role:"user", content:`Clinical condition: ${aiCond}\nReturn top 5 ICD-10 codes as JSON array.` }]
-        })
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a board-certified clinical documentation specialist. Return the 5 most appropriate ICD-10 codes for the described condition.\n\nClinical condition: ${aiCond}\n\nReturn top 5 ICD-10 codes as a JSON array.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            codes: { type: "array", items: { type: "object", properties: { code:{type:"string"}, desc:{type:"string"}, specificity:{type:"string"}, rationale:{type:"string"} } } }
+          }
+        }
       });
-      const data = await res.json();
-      const raw = (data.content?.[0]?.text || "[]").replace(/```json|```/g,"").trim();
-      setAiIcdRecs(JSON.parse(raw));
+      setAiIcdRecs(result.codes || []);
       toast("AI recommendations ready", "success");
     } catch { toast("AI query failed — check connection", "error"); }
     setAiIcdBusy(false);
@@ -523,18 +523,20 @@ export default function AutocoderHub() {
     if (!noteText.trim() || acBusy) return;
     setAcBusy(true); setAcResult(null);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({
-          model:"claude-sonnet-4-20250514", max_tokens:1800,
-          system:`You are an expert emergency medicine clinical coder (CPC-certified). Analyze the note and extract all billable codes. Respond ONLY with valid JSON, no markdown. Format:
-{"summary":"One-sentence encounter summary","icd10":[{"code":"I21.9","desc":"Acute MI, unspecified","role":"principal"}],"cpt":[{"code":"99285","desc":"ED visit, high complexity","cat":"E&M"}],"em_level":{"code":"99285","level":"5","rationale":"High complexity MDM: multiple chronic conditions, urgent new problem"},"coding_notes":"Any important coding flags or guidance"}`,
-          messages:[{ role:"user", content:`Clinical Note:\n${noteText}` }]
-        })
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are an expert emergency medicine clinical coder (CPC-certified). Analyze the following clinical note and extract all billable codes.\n\nClinical Note:\n${noteText}`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            summary: { type: "string" },
+            icd10: { type: "array", items: { type: "object", properties: { code:{type:"string"}, desc:{type:"string"}, role:{type:"string"} } } },
+            cpt: { type: "array", items: { type: "object", properties: { code:{type:"string"}, desc:{type:"string"}, cat:{type:"string"} } } },
+            em_level: { type: "object", properties: { code:{type:"string"}, level:{type:"string"}, rationale:{type:"string"} } },
+            coding_notes: { type: "string" }
+          }
+        }
       });
-      const data = await res.json();
-      const raw = (data.content?.[0]?.text || "{}").replace(/```json|```/g,"").trim();
-      setAcResult(JSON.parse(raw));
+      setAcResult(result);
       toast("Autocoding complete", "success");
     } catch { toast("Autocoder failed — check note format", "error"); }
     setAcBusy(false);

@@ -516,6 +516,24 @@ const HUBS = [
     essential: false,
   },
   {
+    id: "discharge",
+    route: "/discharge-hub",
+    icon: "🏠",
+    abbr: "D/C",
+    title: "Discharge Hub",
+    subtitle: "Disposition Criteria · Discharge Checklist · Return Precautions · AI Discharge Note Generator",
+    color: "#00d4ff",
+    glow: "rgba(0,212,255,0.4)",
+    glass: "rgba(0,212,255,0.07)",
+    border: "rgba(0,212,255,0.28)",
+    accent: "#33deff",
+    category: "Tools",
+    stats: ["5 Disposition Guides", "26 Checklist Items", "AI Note Generator"],
+    badge: "Live",
+    priority: 30,
+    essential: false,
+  },
+  {
     id: "consult",
     route: "/consult-hub",
     icon: "📡",
@@ -562,7 +580,7 @@ const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
   "/peds-hub", "/Procedures", "/erx", "/AutoCoder", "/NewPatientInput",
-  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub", "/ortho-hub", "/resus-hub", "/antidote-hub", "/radiology-hub", "/Results", "/consult-hub", "/procedure-hub", "/id-hub",
+  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub", "/ortho-hub", "/resus-hub", "/antidote-hub", "/radiology-hub", "/Results", "/consult-hub", "/procedure-hub", "/id-hub", "/discharge-hub",
 ]);
 
 function Background() {

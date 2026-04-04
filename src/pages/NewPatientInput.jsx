@@ -339,7 +339,7 @@ export default function NewPatientInput() {
           </div>
         </div>
         <div className="npi-top-row-2">
-          <span className="npi-chart-badge">PT-NEW</span>
+          <span className="npi-chart-badge">{registration.mrn || 'PT-NEW'}</span>
           <span className="npi-pt-name">{patientName}</span>
           {demo.age && <span className="npi-pt-meta">{demo.age}y · {demo.sex || "—"}</span>}
           {cc.text && <span className="npi-pt-cc">CC: {cc.text}</span>}
@@ -358,7 +358,7 @@ export default function NewPatientInput() {
           <div className="npi-vb-vital"><span className="npi-vl">T</span><span className="npi-vv">{vitals.temp || "—"}</span></div>
           <div className="npi-vb-div"></div>
           <span className="npi-status-badge" style={esiLevel ? { background: `rgba(${esiLevel <= 2 ? '255,107,107' : esiLevel === 3 ? '255,159,67' : '0,229,192'},.1)`, color: esiLevel <= 2 ? 'var(--npi-coral)' : esiLevel === 3 ? 'var(--npi-orange)' : 'var(--npi-teal)', border: `1px solid rgba(${esiLevel <= 2 ? '255,107,107' : esiLevel === 3 ? '255,159,67' : '0,229,192'},.3)` } : { color: 'var(--npi-txt4)', border: '1px solid var(--npi-bd)' }}>ESI {esiLevel || '—'}</span>
-          <span className="npi-status-badge npi-status-room">Room —</span>
+          {registration.room && <span className="npi-status-badge npi-status-room">Room {registration.room}</span>}
           <div className="npi-top-acts">
             <button className="npi-btn-ghost" onClick={() => selectSection('orders')}>📋 Orders</button>
             <button className="npi-btn-coral" onClick={() => selectSection('discharge')}>🚪 Discharge</button>

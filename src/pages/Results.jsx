@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
+import { base44 } from "@/api/base44Client";
 
 // ── Font + CSS Injection ─────────────────────────────────────────
 (() => {
@@ -259,10 +260,86 @@ export default function ResultsHub() {
   const [result, setResult]       = useState(null);
   const [analysisErr, setAnalysisErr] = useState(null);
 
+  const [saving, setSaving]         = useState(false);
+  const [saveStatus, setSaveStatus] = useState(null); // "saved" | "error"
+  const [linkedNoteId, setLinkedNoteId] = useState(null);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [noteSearch, setNoteSearch] = useState("");
+  const [recentNotes, setRecentNotes] = useState([]);
+  const [loadingNotes, setLoadingNotes] = useState(false);
+
   const setVal = useCallback((id, v) => setValues(p => ({...p, [id]: v})), []);
   const toggleChip = useCallback((id) => setEkgChips(p => ({...p, [id]: !p[id]})), []);
   const addImaging = useCallback(() =>
     setImaging(p => [...p, {id:Date.now(), modality:"CXR", report:"", time:""}]), []);
+
+  // Build vital_signs object for ClinicalNote schema
+  const buildVitalSigns = useCallback(() => {
+    const v = {};
+    if (values.hr)   v.heart_rate = { value: parseFloat(values.hr), unit: "bpm" };
+    if (values.sbp || values.dbp) v.blood_pressure = { systolic: parseFloat(values.sbp||0), diastolic: parseFloat(values.dbp||0), unit: "mmHg" };
+    if (values.rr)   v.respiratory_rate = { value: parseFloat(values.rr), unit: "breaths/min" };
+    if (values.spo2) v.oxygen_saturation = { value: parseFloat(values.spo2), unit: "%" };
+    if (values.temp) v.temperature = { value: parseFloat(values.temp), unit: "C" };
+    return v;
+  }, [values]);
+
+  // Build lab_findings array for ClinicalNote schema
+  const buildLabFindings = useCallback(() => {
+    const findings = LAB_FIELDS.filter(f => values[f.id]).map(f => ({
+      test_name: f.label,
+      result: String(values[f.id]),
+      reference_range: f.ref,
+      unit: f.unit,
+      status: isCrit(f, values[f.id]) ? "critical" : "normal",
+    }));
+    if (values.labs_free) findings.push({ test_name: "Additional Labs", result: values.labs_free, reference_range: "", unit: "", status: "normal" });
+    return findings;
+  }, [values]);
+
+  // Build imaging_findings array for ClinicalNote schema
+  const buildImagingFindings = useCallback(() =>
+    imaging.filter(i => i.report).map(i => ({
+      study_type: i.modality,
+      location: i.time || "",
+      findings: i.report,
+      impression: "",
+    })), [imaging]);
+
+  const loadRecentNotes = useCallback(async () => {
+    setLoadingNotes(true);
+    const notes = await base44.entities.ClinicalNote.list("-updated_date", 10);
+    setRecentNotes(notes);
+    setLoadingNotes(false);
+  }, []);
+
+  const openSaveModal = useCallback(() => {
+    setShowSaveModal(true);
+    loadRecentNotes();
+  }, [loadRecentNotes]);
+
+  const saveResults = useCallback(async (noteId) => {
+    setSaving(true); setSaveStatus(null);
+    const payload = {
+      vital_signs: buildVitalSigns(),
+      lab_findings: buildLabFindings(),
+      imaging_findings: buildImagingFindings(),
+      chief_complaint: values.ctx_cc || undefined,
+    };
+    if (noteId) {
+      await base44.entities.ClinicalNote.update(noteId, payload);
+      setLinkedNoteId(noteId);
+    } else {
+      const note = await base44.entities.ClinicalNote.create({
+        raw_note: `Results Hub entry — ${new Date().toLocaleString()}`,
+        patient_name: values.ctx_age ? `Patient (${values.ctx_age}y ${values.ctx_sex||""})`.trim() : "Unknown",
+        ...payload,
+      });
+      setLinkedNoteId(note.id);
+    }
+    setSaving(false); setSaveStatus("saved"); setShowSaveModal(false);
+    setTimeout(() => setSaveStatus(null), 3000);
+  }, [buildVitalSigns, buildLabFindings, buildImagingFindings, values]);
 
   const critCount = useMemo(() =>
     [...VITAL_FIELDS, ...LAB_FIELDS, ...EKG_STRUCT].filter(f => isCrit(f, values[f.id])).length,
@@ -412,6 +489,17 @@ Critical values are pre-tagged [CRITICAL] in the data. All analysis is for clini
             </div>
           ))}
           <div style={{flex:1}}/>
+          {saveStatus === "saved" && (
+            <span style={{fontFamily:"DM Sans",fontSize:11,color:T.teal,fontWeight:600}}>✓ Saved to chart</span>
+          )}
+          <button onClick={openSaveModal} disabled={!hasData}
+            style={{fontFamily:"DM Sans",fontWeight:600,fontSize:12,padding:"7px 16px",
+              borderRadius:10,cursor:!hasData?"not-allowed":"pointer",whiteSpace:"nowrap",
+              border:`1px solid ${!hasData?"rgba(42,79,122,0.3)":"rgba(0,229,192,0.45)"}`,
+              background:!hasData?"rgba(42,79,122,0.15)":"rgba(0,229,192,0.1)",
+              color:!hasData?T.txt4:T.teal}}>
+            💾 Save to Chart
+          </button>
           <button onClick={runAnalysis} disabled={analyzing||!hasData}
             style={{fontFamily:"DM Sans",fontWeight:700,fontSize:12,padding:"7px 20px",
               borderRadius:10,cursor:!hasData||analyzing?"not-allowed":"pointer",whiteSpace:"nowrap",
@@ -898,6 +986,49 @@ Critical values are pre-tagged [CRITICAL] in the data. All analysis is for clini
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ═══ SAVE MODAL ═══ */}
+        {showSaveModal && (
+          <div style={{position:"fixed",inset:0,background:"rgba(5,15,30,0.88)",backdropFilter:"blur(8px)",
+            WebkitBackdropFilter:"blur(8px)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <div style={{...glass,padding:"24px",borderRadius:16,width:"100%",maxWidth:480,
+              border:"1px solid rgba(42,79,122,0.6)"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+                <span style={{fontFamily:"Playfair Display",fontWeight:700,fontSize:17,color:T.txt}}>Save Results to Chart</span>
+                <button onClick={()=>setShowSaveModal(false)}
+                  style={{background:"transparent",border:"none",color:T.txt3,cursor:"pointer",fontSize:18}}>✕</button>
+              </div>
+
+              <button onClick={()=>saveResults(null)} disabled={saving}
+                style={{width:"100%",fontFamily:"DM Sans",fontWeight:700,fontSize:13,padding:"11px",
+                  borderRadius:10,cursor:saving?"not-allowed":"pointer",marginBottom:14,
+                  border:"1px solid rgba(0,229,192,0.45)",background:"rgba(0,229,192,0.1)",color:T.teal}}>
+                {saving?"Saving...":"+ Create New Clinical Note"}
+              </button>
+
+              <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,letterSpacing:2,
+                textTransform:"uppercase",marginBottom:8}}>— or link to existing note —</div>
+
+              {loadingNotes && <div style={{fontFamily:"DM Sans",fontSize:12,color:T.txt4,textAlign:"center",padding:"12px"}}>Loading notes...</div>}
+              <div style={{maxHeight:220,overflowY:"auto",display:"flex",flexDirection:"column",gap:5}}>
+                {recentNotes.map(note => (
+                  <button key={note.id} onClick={()=>saveResults(note.id)} disabled={saving}
+                    style={{width:"100%",textAlign:"left",padding:"9px 12px",borderRadius:9,
+                      background:linkedNoteId===note.id?"rgba(59,158,255,0.15)":"rgba(14,37,68,0.7)",
+                      border:`1px solid ${linkedNoteId===note.id?"rgba(59,158,255,0.5)":"rgba(42,79,122,0.3)"}`,
+                      cursor:"pointer",display:"flex",flexDirection:"column",gap:2}}>
+                    <span style={{fontFamily:"DM Sans",fontWeight:600,fontSize:12,color:T.txt}}>
+                      {note.patient_name || "Unnamed"}
+                    </span>
+                    <span style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4}}>
+                      {note.chief_complaint||"No CC"} · {new Date(note.updated_date).toLocaleDateString()}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 

@@ -202,7 +202,7 @@ const GLOBAL_CSS = `
 }
 .v2-welcome { font-size: 12px; color: #8aaccc; font-weight: 500; white-space: nowrap; }
 .v2-welcome strong { color: #e8f0fe; }
-.v2-vsep { width: 1px; height: 20px; background: #1a3555; flex-shrink: 0; }
+.v2-vsep { width: 1.5px; height: 20px; background: linear-gradient(180deg, rgba(26,53,85,0.3) 0%, rgba(59,158,255,0.4) 50%, rgba(26,53,85,0.3) 100%); flex-shrink: 0; border-radius: 1px; box-shadow: 0 0 6px rgba(59,158,255,0.15); }
 .v2-stat {
   display: flex; align-items: center; gap: 5px;
   background: #0e2544; border: 1px solid #1a3555; border-radius: 6px; padding: 3px 10px;

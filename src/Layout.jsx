@@ -66,6 +66,7 @@ const CHART_GROUPS = [
       { icon: '⚖️', label: 'MDM',               page: '/NewPatientInput?tab=mdm' },
       { icon: '🗺️', label: 'ER Plan Builder',   page: '/NewPatientInput?tab=erplan' },
       { icon: '📋', label: 'Orders',            page: '/NewPatientInput?tab=orders' },
+      { icon: '🧪', label: 'Results',            page: '/Results' },
     ]
   },
   {

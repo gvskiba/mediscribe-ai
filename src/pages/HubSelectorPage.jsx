@@ -743,8 +743,14 @@ export default function HubSelectorPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
-  const [sortBy, setSortBy] = useState("priority");
+  const [sortBy, setSortBy] = useState(() => {
+    try { return localStorage.getItem("notrya_hub_sort") || "priority"; } catch { return "priority"; }
+  });
   const [userEssentials, setUserEssentials] = useState(new Set(HUBS.filter(h => h.essential).map(h => h.id)));
+
+  useEffect(() => {
+    try { localStorage.setItem("notrya_hub_sort", sortBy); } catch {}
+  }, [sortBy]);
 
   useEffect(() => {
     base44.auth.me().then(user => {

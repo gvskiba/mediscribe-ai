@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { usePatientData } from "@/lib/PatientDataContext";
 
 import OfflineSync from "./components/offline/OfflineSync";
 import NotryaFloatingAI from "./components/ai/NotryaFloatingAI";
@@ -357,6 +358,7 @@ const STEP_STATES = [
    LAYOUT COMPONENT
 ═══════════════════════════════════════════════════ */
 export default function Layout({ children, currentPageName }) {
+  const { patientData } = usePatientData();
   const [user, setUser] = useState(null);
   const [clock, setClock] = useState('');
   const [activeGroup, setActiveGroup] = useState('Intake');
@@ -468,20 +470,19 @@ export default function Layout({ children, currentPageName }) {
 
         {/* Row 2 */}
         <div className="v2-top-r2">
-          <span className="v2-chart-badge">PT-4-471-8820</span>
-          <span className="v2-pt-name">New Patient</span>
-          <span className="v2-pt-meta">67 y/o · Male · 03/14/1957</span>
-          <span className="v2-pt-cc">CC: Chest Pain</span>
+          <span className="v2-chart-badge">{patientData.mrn || '—'}</span>
+          <span className="v2-pt-name">{patientData.firstName || patientData.lastName ? `${patientData.firstName} ${patientData.lastName}`.trim() : '—'}</span>
+          <span className="v2-pt-meta">{patientData.age || '—'} {patientData.sex ? `y/o · ${patientData.sex}` : ''} {patientData.dob ? `· ${patientData.dob}` : ''}</span>
+          <span className="v2-pt-cc">{patientData.cc_text ? `CC: ${patientData.cc_text}` : '—'}</span>
           <div className="v2-vsep" />
-          {[['BP','158/94',true],['HR','108',true],['RR','18',false],['SpO₂','93%',false],['T','37.1°C',false],['GCS','15',false]].map(([l,v,abn]) => (
+          {[['BP',patientData.bp || '—',patientData.bp && parseInt(patientData.bp) > 140],['HR',patientData.hr || '—',patientData.hr && parseInt(patientData.hr) > 100],['RR',patientData.rr || '—',false],['SpO₂',(patientData.spo2 || '—') + (patientData.spo2 ? '%' : ''),patientData.spo2 && parseInt(patientData.spo2) < 94],['T',(patientData.temp || '—') + (patientData.temp ? '°F' : ''),false],['GCS',patientData.gcs || '15',false]].map(([l,v,abn]) => (
             <div key={l} className="v2-vital">
               <span className="vl">{l}</span>
               <span className={`vv${abn ? ' abn' : ''}`}>{v}</span>
             </div>
           ))}
           <div className="v2-vsep" />
-          <span className="v2-badge-monitor">MONITORING</span>
-          <span className="v2-badge-room">Room 4B</span>
+          {patientData.triage && <span className="v2-badge-monitor">{patientData.triage.toUpperCase()}</span>}
           <div className="v2-chart-acts">
             <button className="v2-btn-ghost" onClick={() => navigate('/NewPatientInput?tab=orders')}>📋 Orders</button>
 

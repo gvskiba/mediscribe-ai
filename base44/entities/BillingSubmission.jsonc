@@ -1,0 +1,76 @@
+{
+  "name": "BillingSubmission",
+  "type": "object",
+  "properties": {
+    "provider_name": {
+      "type": "string",
+      "description": "Name of the billing provider"
+    },
+    "date_of_service": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of patient service"
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "Patient MRN or ID"
+    },
+    "codes": {
+      "type": "array",
+      "description": "Submitted billing codes",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "desc": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "cat": {
+            "type": "string"
+          },
+          "rvu": {
+            "type": "number"
+          }
+        }
+      },
+      "default": []
+    },
+    "total_rvu": {
+      "type": "number",
+      "description": "Total work RVUs for CPT codes"
+    },
+    "icd10_count": {
+      "type": "number",
+      "description": "Number of ICD-10 codes"
+    },
+    "cpt_count": {
+      "type": "number",
+      "description": "Number of CPT codes"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional billing notes"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "submitted",
+        "approved",
+        "denied"
+      ],
+      "default": "submitted",
+      "description": "Submission status"
+    }
+  },
+  "required": [
+    "provider_name",
+    "date_of_service",
+    "patient_id"
+  ]
+}

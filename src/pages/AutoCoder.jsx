@@ -500,6 +500,11 @@ export default function AutocoderHub() {
 
   const removeFromCart = (code) => setCart(p => p.filter(c => c.code !== code));
 
+  // Persist cart to localStorage so BillingSubmissions can read it
+  useEffect(() => {
+    try { localStorage.setItem("notrya_autocoder_cart", JSON.stringify(cart)); } catch {}
+  }, [cart]);
+
   const runAiIcd = async () => {
     if (!aiCond.trim() || aiIcdBusy) return;
     setAiIcdBusy(true); setAiIcdRecs([]);
@@ -902,7 +907,9 @@ export default function AutocoderHub() {
     { id:"em",        icon:"📋", label:"E&M Levels",   accent:T.blue   },
     { id:"autocoder", icon:"🤖", label:"AI Autocoder", accent:T.purple },
     { id:"cart",      icon:"📦", label:"Code Cart",    accent:T.coral, badge:cart.length||null },
+    { id:"submit",    icon:"📤", label:"Submissions",  accent:T.green },
   ];
+  useEffect(() => { if (nav === "submit") navigate("/billing-submissions"); }, [nav]);
   const SECTIONS = { icd10:renderICD10, cpt:renderCPT, em:renderEM, autocoder:renderAutocoder, cart:renderCart };
   const activeNav = NAV.find(n=>n.id===nav);
 

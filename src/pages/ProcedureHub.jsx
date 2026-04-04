@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 
 (() => {
   if (document.getElementById("proc-fonts")) return;
@@ -271,6 +272,7 @@ function ProcCard({ proc, expanded, onToggle }) {
 
 // ── Main Component ────────────────────────────────────────────────
 export default function ProcedureHub() {
+  const navigate = useNavigate();
   const [tab, setTab]       = useState("procedures");
   const [cat, setCat]       = useState("all");
   const [search, setSearch] = useState("");
@@ -343,6 +345,16 @@ export default function ProcedureHub() {
 
         {/* Header */}
         <div style={{padding:"18px 0 14px"}}>
+          <button onClick={() => navigate("/hub")}
+            style={{marginBottom:10,display:"inline-flex",alignItems:"center",gap:7,
+              fontFamily:"DM Sans",fontSize:12,fontWeight:600,
+              background:"rgba(14,37,68,0.7)",border:"1px solid rgba(42,79,122,0.5)",
+              borderRadius:8,padding:"5px 14px",color:"#4a6a8a",cursor:"pointer",transition:"all .15s"}}
+            onMouseEnter={e=>{e.currentTarget.style.color="#8aaccc";e.currentTarget.style.borderColor="rgba(255,159,67,0.4)";}}
+            onMouseLeave={e=>{e.currentTarget.style.color="#4a6a8a";e.currentTarget.style.borderColor="rgba(42,79,122,0.5)";}}
+          >
+            ← Back to Hub
+          </button>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
             <div style={{backdropFilter:"blur(40px)",WebkitBackdropFilter:"blur(40px)",
               background:"rgba(5,15,30,0.9)",border:"1px solid rgba(42,79,122,0.6)",

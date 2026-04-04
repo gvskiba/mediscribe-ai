@@ -86,15 +86,7 @@ const DEMO = {
   shift:   { active: 8, pending: 14, orders: 3, hours: "11.6" },
   patient: { firstName: "Hiroshi", lastName: "Nakamura", dob: "1957-03-14", sex: "Male", mrn: "4-471-8820", room: "4B", cc: "Chest Pain", status: "MONITORING", triage: "ESI-2" },
   vitals:  { bp: "158/94", hr: 108, rr: 18, spo2: 93, temp: "37.1°C", gcs: 15, recorded: mAgo(14) },
-  timeline: [
-    { type: "arrival",  time: mAgo(90), title: "Patient Arrived · Ambulance",        detail: "EMS reported acute onset chest pain radiating to left arm, onset ~60 min prior. Diaphoretic on arrival." },
-    { type: "order",    time: mAgo(84), title: "Triage Complete · ESI-2",             detail: "BP 162/98, HR 112, SpO₂ 91% RA. Placed on 2L NC. 12-lead ECG ordered STAT." },
-    { type: "result",   time: mAgo(78), title: "12-Lead ECG Completed",               detail: "Sinus tachycardia at 110 bpm. ST depression V4–V6. No STEMI criteria met. Cardiology notified." },
-    { type: "med",      time: mAgo(70), title: "IV Access · Labs Drawn",              detail: "18G IV R antecubital. Troponin-I, BMP, CBC, BNP sent. Aspirin 325mg PO given." },
-    { type: "critical", time: mAgo(25), title: "🚨 Critical Lab — Troponin-I",       detail: "Troponin-I = 0.84 ng/mL (ref <0.04). Confirmed NSTEMI. Heparin drip initiated." },
-    { type: "consult",  time: mAgo(10), title: "Cardiology Consult — Dr. Chen",       detail: "Evaluated at bedside. Recommends urgent cath lab. Ticagrelor 180mg PO administered." },
-    { type: "current",  time: new Date(), title: "Awaiting Echo · Cath Lab on standby", detail: "Patient hemodynamically stable. Repeat vitals q15 min. Serial ECGs in progress." },
-  ],
+  timeline: [],
   problems: [
     { icd: "I21.4",  name: "Non-ST Elevation MI",        status: "active",    onset: new Date().toISOString() },
     { icd: "I10",    name: "Hypertension, Essential",     status: "active",    onset: "2019" },

@@ -775,7 +775,7 @@ export default function WoundHub({ onBack }) {
       <div style={{ position:"relative", zIndex:1, maxWidth:1260, margin:"0 auto", padding:"0 16px" }}>
 
         {/* ── Header ───────────────────────────────────────────── */}
-        <div style={{ padding:"18px 0 14px" }}>
+        <div style={{ padding:"80px 0 14px" }}>
           <HubBadge name="WOUNDHUB" onBack={onBack}/>
           <h1 className={`${PREFIX}-shim`} style={{
             fontFamily:"Playfair Display",

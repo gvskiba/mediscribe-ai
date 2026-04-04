@@ -662,20 +662,20 @@ function HubCard({ hub, onNavigate, index, size = "normal", isEssential = false,
         <div style={{ width: isLarge ? 56 : 48, height: isLarge ? 56 : 48, borderRadius: isLarge ? 16 : 13, flexShrink: 0, background: `linear-gradient(135deg, ${hub.glass.replace("0.07","0.3")}, ${hub.glass})`, border: `1px solid ${hub.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: isLarge ? 26 : 22, boxShadow: hov ? `0 0 22px ${hub.glow.replace("0.4","0.3")}` : "none", transition: "box-shadow 0.3s" }}>
           {hub.icon}
         </div>
-        <span style={{ fontSize: 9, fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, padding: "3px 8px", borderRadius: 20, background: hub.glass.replace("0.07","0.2"), border: `1px solid ${hub.border}`, color: isLive ? hub.color : "#4a6a8a", letterSpacing: ".05em", backdropFilter: "blur(6px)", whiteSpace: "nowrap" }}>
+        <span style={{ fontSize: 9, fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, padding: "3px 8px", borderRadius: 20, background: hub.glass.replace("0.07","0.2"), border: `1px solid ${hub.border}`, color: isLive ? hub.color : "#8aaccc", letterSpacing: ".05em", backdropFilter: "blur(6px)", whiteSpace: "nowrap" }}>
           {isLive ? hub.badge : "Coming Soon"}
         </span>
       </div>
 
       <div style={{ fontSize: 9, fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, color: hub.accent, letterSpacing: ".14em", textTransform: "uppercase", marginBottom: 3, opacity: 0.85 }}>{hub.abbr}</div>
       <div style={{ fontSize: isLarge ? 16 : 14, fontFamily: "'Playfair Display',serif", fontWeight: 600, color: "#e8f0fe", lineHeight: 1.25, marginBottom: 4 }}>{hub.title}</div>
-      <div style={{ fontSize: 11, color: "#4a6a8a", lineHeight: 1.4, marginBottom: isLarge ? 14 : 12 }}>{hub.subtitle}</div>
+      <div style={{ fontSize: 11, color: "#8aaccc", lineHeight: 1.4, marginBottom: isLarge ? 14 : 12 }}>{hub.subtitle}</div>
 
       <div style={{ height: 1, background: `linear-gradient(90deg, ${hub.border}, transparent)`, marginBottom: isLarge ? 12 : 10 }} />
 
       <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
         {hub.stats.map((s, i) => (
-          <span key={i} style={{ fontSize: 10, fontFamily: "'DM Sans',sans-serif", padding: "2px 8px", borderRadius: 20, background: hub.glass, border: `1px solid ${hub.border.replace("0.28","0.16")}`, color: "#8aaccc" }}>{s}</span>
+          <span key={i} style={{ fontSize: 10, fontFamily: "'DM Sans',sans-serif", padding: "2px 8px", borderRadius: 20, background: hub.glass, border: `1px solid ${hub.border.replace("0.28","0.16")}`, color: "#c8d8ee" }}>{s}</span>
         ))}
       </div>
 
@@ -683,7 +683,7 @@ function HubCard({ hub, onNavigate, index, size = "normal", isEssential = false,
       <div
         onClick={e => { e.stopPropagation(); onToggleEssential && onToggleEssential(hub.id); }}
         title={isEssential ? "Remove from Essential" : "Add to Essential"}
-        style={{ position: "absolute", top: 12, left: 12, width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, cursor: "pointer", opacity: hov || isEssential ? 1 : 0, transition: "all 0.2s", background: isEssential ? "rgba(245,200,66,0.15)" : "rgba(14,37,68,0.6)", border: `1px solid ${isEssential ? "rgba(245,200,66,0.4)" : "rgba(42,79,122,0.4)"}`, color: isEssential ? "#f5c842" : "#4a6a8a", zIndex: 2 }}
+        style={{ position: "absolute", top: 12, left: 12, width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, cursor: "pointer", opacity: hov || isEssential ? 1 : 0, transition: "all 0.2s", background: isEssential ? "rgba(245,200,66,0.15)" : "rgba(14,37,68,0.6)", border: `1px solid ${isEssential ? "rgba(245,200,66,0.4)" : "rgba(42,79,122,0.4)"}`, color: isEssential ? "#f5c842" : "#8aaccc", zIndex: 2 }}
       >
         {isEssential ? "★" : "☆"}
       </div>
@@ -713,7 +713,7 @@ function SearchBar({ value, onChange }) {
         onFocus={e => e.target.style.borderColor = "rgba(0,229,192,0.5)"}
         onBlur={e => e.target.style.borderColor = "rgba(42,79,122,0.6)"}
       />
-      <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: 10, color: "#2e4a6a", fontFamily: "'JetBrains Mono',monospace" }}>⌘K</span>
+      <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: 10, color: "#8aaccc", fontFamily: "'JetBrains Mono',monospace" }}>⌘K</span>
     </div>
   );
 }
@@ -722,7 +722,7 @@ function RecentStrip({ recents, onNavigate }) {
   if (!recents.length) return null;
   return (
     <div style={{ marginBottom: 22 }}>
-      <div style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: "#4a6a8a", textTransform: "uppercase", letterSpacing: ".1em", marginBottom: 10 }}>↩ Recently Used</div>
+      <div style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: "#8aaccc", textTransform: "uppercase", letterSpacing: ".1em", marginBottom: 10 }}>↩ Recently Used</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {recents.map(hub => (
           <button key={hub.id} onClick={() => onNavigate(hub.route)}
@@ -848,26 +848,26 @@ export default function HubSelectorPage() {
                 gap: 4,
                 cursor: "pointer",
                 transition: "all 0.2s ease",
-                color: isActive ? "#00e5c0" : "#4a6a8a",
+                color: isActive ? "#00e5c0" : "#8aaccc",
               }}
               onMouseEnter={e => {
                 if (!isActive) {
                   e.currentTarget.style.background = "rgba(14,37,68,0.5)";
                   e.currentTarget.style.borderColor = "rgba(26,53,85,0.8)";
-                  e.currentTarget.style.color = "#8aaccc";
+                  e.currentTarget.style.color = "#e8f0fe";
                 }
               }}
               onMouseLeave={e => {
                 if (!isActive) {
                   e.currentTarget.style.background = "transparent";
                   e.currentTarget.style.borderColor = "transparent";
-                  e.currentTarget.style.color = "#4a6a8a";
+                  e.currentTarget.style.color = "#8aaccc";
                 }
               }}
               title={item.label}
             >
               <span style={{ fontSize: 24 }}>{item.icon}</span>
-              <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: ".05em" }}>{item.label}</span>
+              <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: ".05em", color: "inherit" }}>{item.label}</span>
             </button>
           );
         })}
@@ -887,17 +887,17 @@ export default function HubSelectorPage() {
             gap: 4,
             cursor: "pointer",
             transition: "all 0.2s ease",
-            color: "#4a6a8a",
+            color: "#8aaccc",
           }}
           onMouseEnter={e => {
             e.currentTarget.style.background = "rgba(14,37,68,0.5)";
             e.currentTarget.style.borderColor = "rgba(26,53,85,0.8)";
-            e.currentTarget.style.color = "#8aaccc";
+            e.currentTarget.style.color = "#e8f0fe";
           }}
           onMouseLeave={e => {
             e.currentTarget.style.background = "transparent";
             e.currentTarget.style.borderColor = "transparent";
-            e.currentTarget.style.color = "#4a6a8a";
+            e.currentTarget.style.color = "#8aaccc";
           }}
           title="Settings"
         >
@@ -925,7 +925,7 @@ export default function HubSelectorPage() {
                 <span style={{ fontFamily: "'Playfair Display',serif", fontSize: 28, fontWeight: 700, color: "#e8f0fe", letterSpacing: "-0.01em", lineHeight: 1 }}>Notrya Clinical Suite</span>
                 <span style={{ fontSize: 9, fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: "rgba(0,229,192,0.1)", color: "#00e5c0", border: "1px solid rgba(0,229,192,0.3)", letterSpacing: ".06em" }}>{HUBS.length} HUBS</span>
               </div>
-              <p style={{ fontSize: 13, color: "#8aaccc", margin: 0, lineHeight: 1.6, maxWidth: 560 }}>
+              <p style={{ fontSize: 13, color: "#c8d8ee", margin: 0, lineHeight: 1.6, maxWidth: 560 }}>
                 Your clinical intelligence platform. Select a hub to access evidence-based protocols, decision tools, and AI-assisted documentation.
               </p>
             </div>
@@ -933,7 +933,7 @@ export default function HubSelectorPage() {
               {[{v:"2025",l:"Guidelines"},{v:"AI",l:"Powered"},{v:"ER",l:"Optimised"},{v:"24/7",l:"Available"}].map((s,i)=>(
                 <div key={i} style={{ textAlign: "center", background: "rgba(14,37,68,0.6)", borderRadius: 10, padding: "8px 12px", border: "1px solid rgba(26,53,85,0.8)" }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: ["#00e5c0","#3b9eff","#f5c842","#ff6b6b"][i], fontFamily: "'JetBrains Mono',monospace", lineHeight: 1 }}>{s.v}</div>
-                  <div style={{ fontSize: 9, color: "#4a6a8a", marginTop: 3, textTransform: "uppercase", letterSpacing: ".06em" }}>{s.l}</div>
+                  <div style={{ fontSize: 9, color: "#8aaccc", marginTop: 3, textTransform: "uppercase", letterSpacing: ".06em" }}>{s.l}</div>
                 </div>
               ))}
             </div>
@@ -946,12 +946,12 @@ export default function HubSelectorPage() {
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {CATEGORIES.map(cat => (
               <button key={cat} onClick={() => setActiveCategory(cat)}
-                style={{ padding: "8px 16px", borderRadius: 24, fontSize: 12, fontWeight: 600, fontFamily: "'DM Sans',sans-serif", cursor: "pointer", transition: "all 0.2s", background: activeCategory === cat ? "rgba(0,229,192,0.15)" : "rgba(8,22,40,0.75)", border: `1px solid ${activeCategory === cat ? "rgba(0,229,192,0.45)" : "rgba(42,79,122,0.5)"}`, color: activeCategory === cat ? "#00e5c0" : "#4a6a8a", backdropFilter: "blur(12px)", boxShadow: activeCategory === cat ? "0 0 12px rgba(0,229,192,0.15)" : "none" }}>
+                style={{ padding: "8px 16px", borderRadius: 24, fontSize: 12, fontWeight: 600, fontFamily: "'DM Sans',sans-serif", cursor: "pointer", transition: "all 0.2s", background: activeCategory === cat ? "rgba(0,229,192,0.15)" : "rgba(8,22,40,0.75)", border: `1px solid ${activeCategory === cat ? "rgba(0,229,192,0.45)" : "rgba(42,79,122,0.5)"}`, color: activeCategory === cat ? "#00e5c0" : "#c8d8ee", backdropFilter: "blur(12px)", boxShadow: activeCategory === cat ? "0 0 12px rgba(0,229,192,0.15)" : "none" }}>
                 {cat}
               </button>
             ))}
           </div>
-          <span style={{ fontSize: 11, color: "#2e4a6a", fontFamily: "'JetBrains Mono',monospace", marginLeft: "auto", whiteSpace: "nowrap" }}>
+          <span style={{ fontSize: 11, color: "#8aaccc", fontFamily: "'JetBrains Mono',monospace", marginLeft: "auto", whiteSpace: "nowrap" }}>
             {filtered.length} hub{filtered.length !== 1 ? "s" : ""}
           </span>
         </div>
@@ -968,7 +968,7 @@ export default function HubSelectorPage() {
               <div style={{ height: 1, width: 24, background: "rgba(245,200,66,0.5)", borderRadius: 1 }} />
               <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: "#f5c842", textTransform: "uppercase", letterSpacing: ".12em", fontWeight: 700 }}>⭐ Essential</span>
               <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, rgba(245,200,66,0.2), transparent)" }} />
-              <span style={{ fontSize: 10, color: "#4a6a8a", fontFamily: "'JetBrains Mono',monospace" }}>{essentials.length} hubs</span>
+              <span style={{ fontSize: 10, color: "#8aaccc", fontFamily: "'JetBrains Mono',monospace" }}>{essentials.length} hubs</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12 }}>
               {essentials.map((hub, i) => <HubCard key={hub.id} hub={hub} onNavigate={handleNavigate} index={i} size="normal" isEssential={true} onToggleEssential={toggleEssential} />)}
@@ -992,13 +992,13 @@ export default function HubSelectorPage() {
               <>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
                   <div style={{ height: 1, width: 24, background: "rgba(42,79,122,0.6)", borderRadius: 1 }} />
-                  <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: "#4a6a8a", textTransform: "uppercase", letterSpacing: ".12em", fontWeight: 700 }}>All</span>
+                  <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: "#8aaccc", textTransform: "uppercase", letterSpacing: ".12em", fontWeight: 700 }}>All</span>
                   <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, rgba(42,79,122,0.4), transparent)" }} />
                   <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                    <span style={{ fontSize: 10, color: "#2e4a6a", fontFamily: "'JetBrains Mono',monospace" }}>Sort:</span>
+                    <span style={{ fontSize: 10, color: "#8aaccc", fontFamily: "'JetBrains Mono',monospace" }}>Sort:</span>
                     {[{id:"priority",label:"Default"},{id:"alpha",label:"A–Z"},{id:"category",label:"Category"},{id:"live",label:"Live First"}].map(opt => (
                       <button key={opt.id} onClick={() => setSortBy(opt.id)}
-                        style={{ padding: "4px 11px", borderRadius: 20, fontSize: 11, fontWeight: 600, fontFamily: "'DM Sans',sans-serif", cursor: "pointer", transition: "all 0.2s", background: sortBy === opt.id ? "rgba(155,109,255,0.15)" : "rgba(8,22,40,0.75)", border: `1px solid ${sortBy === opt.id ? "rgba(155,109,255,0.45)" : "rgba(42,79,122,0.5)"}`, color: sortBy === opt.id ? "#9b6dff" : "#4a6a8a", backdropFilter: "blur(12px)" }}>
+                        style={{ padding: "4px 11px", borderRadius: 20, fontSize: 11, fontWeight: 600, fontFamily: "'DM Sans',sans-serif", cursor: "pointer", transition: "all 0.2s", background: sortBy === opt.id ? "rgba(155,109,255,0.15)" : "rgba(8,22,40,0.75)", border: `1px solid ${sortBy === opt.id ? "rgba(155,109,255,0.45)" : "rgba(42,79,122,0.5)"}`, color: sortBy === opt.id ? "#9b6dff" : "#c8d8ee", backdropFilter: "blur(12px)" }}>
                         {opt.label}
                       </button>
                     ))}
@@ -1017,15 +1017,15 @@ export default function HubSelectorPage() {
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
               <div style={{ height: 1, width: 24, background: "rgba(42,79,122,0.6)", borderRadius: 1 }} />
-              <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: "#4a6a8a", textTransform: "uppercase", letterSpacing: ".12em", fontWeight: 700 }}>
+              <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: "#8aaccc", textTransform: "uppercase", letterSpacing: ".12em", fontWeight: 700 }}>
                 {search ? `Results for "${search}"` : activeCategory}
               </span>
               <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, rgba(42,79,122,0.4), transparent)" }} />
             </div>
             {filtered.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "60px 0", color: "#4a6a8a" }}>
+              <div style={{ textAlign: "center", padding: "60px 0", color: "#8aaccc" }}>
                 <div style={{ fontSize: 36, marginBottom: 12 }}>🔍</div>
-                <div style={{ fontSize: 14, fontFamily: "'Playfair Display',serif" }}>No hubs found</div>
+                <div style={{ fontSize: 14, fontFamily: "'Playfair Display',serif", color: "#e8f0fe" }}>No hubs found</div>
                 <div style={{ fontSize: 12, marginTop: 6 }}>Try a different search or category</div>
               </div>
             ) : (
@@ -1037,8 +1037,8 @@ export default function HubSelectorPage() {
         )}
 
         <div style={{ marginTop: 32, textAlign: "center", animation: "hub-appear 0.55s ease both 0.5s" }}>
-          <span style={{ fontSize: 10, color: "#2e4a6a", fontFamily: "'JetBrains Mono',monospace" }}>
-            Press <kbd style={{ background: "rgba(42,79,122,0.3)", border: "1px solid rgba(42,79,122,0.5)", borderRadius: 4, padding: "1px 6px", color: "#4a6a8a" }}>⌘K</kbd> to focus search · Click any card to open the hub
+          <span style={{ fontSize: 10, color: "#8aaccc", fontFamily: "'JetBrains Mono',monospace" }}>
+            Press <kbd style={{ background: "rgba(42,79,122,0.3)", border: "1px solid rgba(42,79,122,0.5)", borderRadius: 4, padding: "1px 6px", color: "#c8d8ee" }}>⌘K</kbd> to focus search · Click any card to open the hub
           </span>
         </div>
       </div>

@@ -61,7 +61,9 @@ const GROUP_META = [
 const APP_ICONS = [
   { icon: "🏠", label: "Home",     to: "/" },
   { icon: "📊", label: "Dash",     to: "/Dashboard" },
-  { icon: "👥", label: "Patients", to: "/PatientDashboard", active: true },
+  { icon: "🆕", label: "New PT",   to: "/NewPatientInput", active: true },
+  { icon: "📝", label: "New Note", to: "/NewNote" },
+  { icon: "👥", label: "Patients", to: "/PatientDashboard" },
   { icon: "🔄", label: "Shift",    to: "/Shift" },
   "sep",
   { icon: "💊", label: "Drugs",    to: "/DrugsBugs" },

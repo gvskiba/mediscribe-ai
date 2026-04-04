@@ -210,9 +210,85 @@ const CSS = `
 .erp-ai-inp{flex:1;background:var(--bg-up);border:1px solid var(--border);border-radius:7px;padding:6px 9px;color:var(--txt);font-size:11px;outline:none;resize:none}
 .erp-ai-inp:focus{border-color:var(--teal)}
 .erp-ai-send{background:var(--teal);color:#050f1e;border:none;border-radius:7px;padding:6px 10px;font-size:13px;cursor:pointer;font-weight:700}
+
+/* SEARCH-ADD */
+.erp-sa-wrap{position:relative;margin-bottom:10px}
+.erp-sa-inp{width:100%;background:var(--bg-up);border:1px solid var(--border);border-radius:var(--r);padding:7px 32px 7px 34px;color:var(--txt);font-size:12px;outline:none;transition:border-color .15s}
+.erp-sa-inp:focus{border-color:rgba(0,229,192,.55);box-shadow:0 0 0 3px rgba(0,229,192,.06)}
+.erp-sa-inp::placeholder{color:var(--txt4)}
+.erp-sa-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;opacity:.5;pointer-events:none}
+.erp-sa-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--txt4);font-size:14px;cursor:pointer;padding:2px 4px;border-radius:4px;line-height:1}
+.erp-sa-clear:hover{color:var(--coral)}
+.erp-sa-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg-card);border:1px solid var(--border-hi);border-radius:var(--r);z-index:50;max-height:220px;overflow-y:auto;box-shadow:0 8px 28px rgba(0,0,0,.45)}
+.erp-sa-dropdown::-webkit-scrollbar{width:3px}
+.erp-sa-dropdown::-webkit-scrollbar-thumb{background:var(--border)}
+.erp-sa-opt{padding:7px 12px;font-size:12px;color:var(--txt2);cursor:pointer;transition:background .1s;border-bottom:1px solid rgba(26,53,85,.4)}
+.erp-sa-opt:last-child{border-bottom:none}
+.erp-sa-opt:hover{background:var(--bg-up);color:var(--txt)}
+.erp-sa-opt.already{color:var(--teal);opacity:.6;cursor:default}
+.erp-sa-empty{padding:10px 12px;font-size:11px;color:var(--txt4);text-align:center;font-style:italic}
 `;
 
 const uid = () => 'id' + Date.now() + Math.random().toString(36).slice(2, 6);
+
+// ─── SEARCH-ADD COMPONENT ─────────────────────────────────────────────────────
+function SearchAdd({ placeholder, options, isSelected, onAdd, accentColor = 'var(--teal)' }) {
+  const [q, setQ] = useState('');
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const filtered = q.trim().length === 0 ? [] : options.filter(o =>
+    o.toLowerCase().includes(q.toLowerCase())
+  ).slice(0, 20);
+
+  return (
+    <div className="erp-sa-wrap" ref={ref}>
+      <span className="erp-sa-icon">🔍</span>
+      <input
+        className="erp-sa-inp"
+        value={q}
+        placeholder={placeholder}
+        onChange={e => { setQ(e.target.value); setOpen(true); }}
+        onFocus={() => { if (q.trim()) setOpen(true); }}
+        onKeyDown={e => {
+          if (e.key === 'Escape') { setOpen(false); setQ(''); }
+          if (e.key === 'Enter' && filtered.length === 1 && !isSelected(filtered[0])) {
+            onAdd(filtered[0]); setQ(''); setOpen(false);
+          }
+        }}
+      />
+      {q && <button className="erp-sa-clear" onClick={() => { setQ(''); setOpen(false); }}>✕</button>}
+      {open && q.trim().length > 0 && (
+        <div className="erp-sa-dropdown">
+          {filtered.length === 0 && (
+            <>
+              <div className="erp-sa-empty">No matches — press Enter or click below to add custom</div>
+              <div className="erp-sa-opt" style={{color: accentColor}} onClick={() => { onAdd(q.trim()); setQ(''); setOpen(false); }}>+ Add "{q.trim()}"</div>
+            </>
+          )}
+          {filtered.map(opt => (
+            <div
+              key={opt}
+              className={`erp-sa-opt${isSelected(opt) ? ' already' : ''}`}
+              onClick={() => { if (!isSelected(opt)) { onAdd(opt); } setQ(''); setOpen(false); }}
+            >
+              {isSelected(opt) ? '✓ ' : ''}{opt}
+            </div>
+          ))}
+          {filtered.length > 0 && !filtered.includes(q.trim()) && (
+            <div className="erp-sa-opt" style={{color: accentColor, borderTop: '1px solid rgba(26,53,85,.6)'}} onClick={() => { onAdd(q.trim()); setQ(''); setOpen(false); }}>+ Add "{q.trim()}"</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const LAB_CHIPS = ['CBC','BMP','CMP','Troponin ×2 (0h & 3h)','BNP','D-Dimer','PT / INR / aPTT','Lactate','Blood Cultures ×2','UA + Urine Culture','Lipase','LFTs','TSH','VBG','ABG','Urine hCG','Serum hCG (quant)','Tox Screen (urine + serum)','EtOH Level','Acetaminophen Level','Salicylate Level','HbA1c','Procalcitonin','ESR / CRP','Type & Screen','Type & Crossmatch','Fibrinogen','Digoxin Level','Ammonia','Lipid Panel'];
 const IMG_CHIPS = ['CXR PA/Lateral','CXR Portable AP','CT Head w/o contrast','CT Head w/ contrast','CTPA — PE Protocol','CT Chest w/o contrast','CT Abd/Pelvis w/ contrast','CT Abd/Pelvis w/o contrast','CTA Head / Neck','CT C-Spine w/o contrast','CT L-Spine w/o contrast','US Abdomen','US Pelvis (transabdominal / TV)','FAST Exam (bedside)','US Renal / Bladder','US DVT Lower Extremity','Bedside Echocardiography','XR Pelvis AP','XR Hip','XR Knee','XR Ankle','XR Hand / Wrist','XR Shoulder','XR Foot','XR C-Spine','MRI Brain w/ & w/o','MRI Spine'];
@@ -597,14 +673,13 @@ Apply clinical decision rules (HEART, PERC, Wells, Ottawa, NEXUS, CURB-65, sepsi
               <div><div className="erp-sec-title">Laboratory Orders</div><div className="erp-sec-sub">Select common panels or add custom tests</div></div>
               <span className="erp-pill" style={{marginLeft:'auto'}}>{labs.length}</span>
             </div>
-            <div style={{marginBottom:10}}>
-              <div style={{fontSize:9,color:'var(--txt3)',textTransform:'uppercase',letterSpacing:'.5px',marginBottom:6}}>Common Panels — click to add</div>
-              <div className="erp-chips">
-                {LAB_CHIPS.map(name => (
-                  <div key={name} className={`erp-chip${isLabSelected(name) ? ' sel-teal' : ''}`} onClick={() => toggleLabChip(name)}>{name}</div>
-                ))}
-              </div>
-            </div>
+            <SearchAdd
+              placeholder="Search labs (e.g. Troponin, CBC, BMP, Lactate)…"
+              options={LAB_CHIPS}
+              isSelected={isLabSelected}
+              onAdd={(name) => { if (!isLabSelected(name)) setLabs(p => [...p, { id: uid(), name, ai: false }]); }}
+              accentColor="var(--teal)"
+            />
             <div style={{display:'flex',flexDirection:'column',gap:5}}>
               {labs.map(l => (
                 <div key={l.id} className={`erp-order-row${l.ai ? ' ai-row' : ''}`}>
@@ -663,14 +738,13 @@ Apply clinical decision rules (HEART, PERC, Wells, Ottawa, NEXUS, CURB-65, sepsi
               <div><div className="erp-sec-title">Imaging Studies</div><div className="erp-sec-sub">CT · X-ray · Ultrasound · MRI</div></div>
               <span className="erp-pill" style={{marginLeft:'auto'}}>{imaging.length}</span>
             </div>
-            <div style={{marginBottom:10}}>
-              <div style={{fontSize:9,color:'var(--txt3)',textTransform:'uppercase',letterSpacing:'.5px',marginBottom:6}}>Quick Select</div>
-              <div className="erp-chips">
-                {IMG_CHIPS.map(name => (
-                  <div key={name} className={`erp-chip${isImgSelected(name) ? ' sel-purple' : ''}`} onClick={() => toggleImgChip(name)}>{name}</div>
-                ))}
-              </div>
-            </div>
+            <SearchAdd
+              placeholder="Search imaging (e.g. CT Head, CXR, CTPA, MRI Brain)…"
+              options={IMG_CHIPS}
+              isSelected={isImgSelected}
+              onAdd={(name) => { if (!isImgSelected(name)) setImaging(p => [...p, { id: uid(), name, ai: false }]); }}
+              accentColor="var(--purple)"
+            />
             <div style={{display:'flex',flexDirection:'column',gap:5}}>
               {imaging.map(i => (
                 <div key={i.id} className={`erp-order-row${i.ai ? ' ai-row' : ''}`}>
@@ -694,14 +768,17 @@ Apply clinical decision rules (HEART, PERC, Wells, Ottawa, NEXUS, CURB-65, sepsi
               <div><div className="erp-sec-title">IV Fluids & Blood Products</div><div className="erp-sec-sub">Crystalloids · colloids · blood products · vasopressors</div></div>
               <span className="erp-pill" style={{marginLeft:'auto'}}>{ivf.length}</span>
             </div>
-            <div style={{marginBottom:10}}>
-              <div style={{fontSize:9,color:'var(--txt3)',textTransform:'uppercase',letterSpacing:'.5px',marginBottom:6}}>Quick Add</div>
-              <div className="erp-chips">
-                {IVF_QUICK.map(([name]) => (
-                  <div key={name} className="erp-chip" onClick={() => { const found = IVF_QUICK.find(x=>x[0]===name); if(found) setIvf(p=>[...p,{id:uid(),name:found[0],vol:found[1],route:found[2],rate:found[3],ai:false}]); }}>{name.split(' ').slice(0,3).join(' ')}</div>
-                ))}
-              </div>
-            </div>
+            <SearchAdd
+              placeholder="Search IV fluids (e.g. NS bolus, LR, pRBC, Norepinephrine)…"
+              options={IVF_QUICK.map(x => x[0])}
+              isSelected={(name) => ivf.some(f => f.name === name)}
+              onAdd={(name) => {
+                const found = IVF_QUICK.find(x => x[0] === name);
+                if (found) setIvf(p => [...p, { id: uid(), name: found[0], vol: found[1], route: found[2], rate: found[3], ai: false }]);
+                else setIvf(p => [...p, { id: uid(), name, vol: '', route: 'IV', rate: '', ai: false }]);
+              }}
+              accentColor="var(--blue)"
+            />
             <div className="erp-col-hdr" style={{display:'grid',gridTemplateColumns:'8px 1fr 95px 65px 95px auto',gap:7}}>
               <div/><div>Fluid / Product</div><div>Volume</div><div>Route</div><div>Rate / Duration</div><div/>
             </div>
@@ -732,14 +809,13 @@ Apply clinical decision rules (HEART, PERC, Wells, Ottawa, NEXUS, CURB-65, sepsi
               <div><div className="erp-sec-title">Procedures, EKG & Monitoring</div><div className="erp-sec-sub">Bedside interventions · diagnostic procedures · monitoring</div></div>
               <span className="erp-pill" style={{marginLeft:'auto'}}>{procs.length}</span>
             </div>
-            <div className="erp-proc-grid">
-              {PROC_CARDS.map(({emoji,name,sub}) => (
-                <div key={name} className={`erp-proc-card${isProcOn(name) ? ' on' : ''}`} onClick={() => toggleProc(name)}>
-                  <span style={{fontSize:15,flexShrink:0}}>{emoji}</span>
-                  <div><div className="erp-proc-name">{name.split('(')[0].trim()}</div><div className="erp-proc-sub">{sub}</div></div>
-                </div>
-              ))}
-            </div>
+            <SearchAdd
+              placeholder="Search procedures (e.g. EKG, Intubation, Central Line, LP)…"
+              options={PROC_CARDS.map(c => c.name)}
+              isSelected={isProcOn}
+              onAdd={(name) => { if (!isProcOn(name)) setProcs(p => [...p, { id: uid(), name, ai: false }]); }}
+              accentColor="var(--purple)"
+            />
             {/* AI-added procs not in grid */}
             {procs.filter(p => !PROC_CARDS.some(c => c.name === p.name)).length > 0 && (
               <div style={{display:'flex',flexDirection:'column',gap:5,marginBottom:8}}>
@@ -766,14 +842,16 @@ Apply clinical decision rules (HEART, PERC, Wells, Ottawa, NEXUS, CURB-65, sepsi
               <div><div className="erp-sec-title">Consults & Notifications</div><div className="erp-sec-sub">Specialty consults · admissions · disposition planning</div></div>
               <span className="erp-pill" style={{marginLeft:'auto'}}>{consults.length}</span>
             </div>
-            <div style={{marginBottom:10}}>
-              <div style={{fontSize:9,color:'var(--txt3)',textTransform:'uppercase',letterSpacing:'.5px',marginBottom:6}}>Quick Consult</div>
-              <div className="erp-chips">
-                {CONSULT_CHIPS.map(([service, urgency]) => (
-                  <div key={service} className={`erp-chip${isConSelected(service) ? ' sel-teal' : ''}`} onClick={() => addQuickConsult(service, urgency)}>{service.split(' ')[0]}</div>
-                ))}
-              </div>
-            </div>
+            <SearchAdd
+              placeholder="Search consults (e.g. Cardiology, Surgery, Neurology)…"
+              options={CONSULT_CHIPS.map(c => c[0])}
+              isSelected={isConSelected}
+              onAdd={(service) => {
+                const found = CONSULT_CHIPS.find(c => c[0] === service);
+                addQuickConsult(service, found ? found[1] : 'Routine');
+              }}
+              accentColor="var(--gold)"
+            />
             <div style={{display:'flex',flexDirection:'column',gap:5}}>
               {consults.map(c => {
                 const urgStyle = c.urgency==='Stat' ? {color:'var(--coral)',fontWeight:700} : c.urgency==='Urgent' ? {color:'var(--gold)',fontWeight:600} : {color:'var(--teal)'};

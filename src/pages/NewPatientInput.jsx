@@ -280,12 +280,7 @@ export default function NewPatientInput() {
       case "discharge": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><DischargePlanning embedded patientName={patientName} patientAge={demo.age} patientSex={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} /></div>;
       case "erx": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><ERxHub embedded navigate={navigate} patientAllergiesFromParent={allergies} patientWeightFromParent={vitals.weight || ""} /></div>;
       case "orders":   return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><EDOrders embedded patientName={patientName} patientAllergies={allergies} chiefComplaint={cc.text} patientAge={demo.age} patientSex={demo.sex} /></div>;
-      case "results":  return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:16 }}>
-        <div style={{ fontSize:36 }}>🧪</div>
-        <div style={{ fontFamily:"Playfair Display, serif", fontSize:20, fontWeight:700, color:"#e8f0fe" }}>Results Hub</div>
-        <div style={{ fontFamily:"DM Sans, sans-serif", fontSize:13, color:"#4a6a8a", marginBottom:8 }}>Labs · Vitals · EKG · Imaging · AI Synthesis</div>
-        <button onClick={() => navigate("/Results")} style={{ fontFamily:"DM Sans, sans-serif", fontWeight:700, fontSize:13, padding:"10px 28px", borderRadius:12, cursor:"pointer", border:"1px solid rgba(59,158,255,0.5)", background:"linear-gradient(135deg,rgba(59,158,255,0.18),rgba(59,158,255,0.07))", color:"#3b9eff" }}>Open Results Hub →</button>
-      </div>;
+      case "results":  { navigate("/Results"); return null; }
       case "autocoder": return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} />;
       case "procedures": return <EDProcedureNotes embedded patientName={patientName} patientAllergies={allergies.join(", ")} physicianName="" />;
       case "medref": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto" }}><MedicationReferencePage embedded /></div>;

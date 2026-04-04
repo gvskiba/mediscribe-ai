@@ -378,24 +378,19 @@ export default function ResultsHub() {
     const panelFields = LAB_FIELDS.filter(f => f.panel === labPanel);
     const fieldGuide = panelFields.map(f => `"${f.id}" = ${f.label} (${f.unit})`).join(", ");
     try {
-      const resp = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({
-          model:"claude-sonnet-4-6", max_tokens:600,
-          system:`Extract lab values from clinical text. Return ONLY valid JSON (no markdown). Use only these keys: ${fieldGuide}. Values must be numeric strings. Omit keys not found. Example: {"wbc":"14.2","hgb":"8.4"}`,
-          messages:[{role:"user", content:pasteText}]
-        })
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Extract lab values from the following clinical text. Use only these field keys: ${fieldGuide}. Values must be numeric. Omit keys not found in the text.\n\nText:\n${pasteText}`,
+        response_json_schema: {
+          type: "object",
+          properties: Object.fromEntries(panelFields.map(f => [f.id, { type: "string" }]))
+        }
       });
-      const data = await resp.json();
-      if (data.error) throw new Error(data.error.message);
-      const raw = data.content?.find(b=>b.type==="text")?.text||"{}";
-      const parsed = JSON.parse(raw.replace(/```json|```/g,"").trim());
-      const count = Object.keys(parsed).length;
+      const count = Object.keys(result).filter(k => result[k]).length;
       if (!count) throw new Error("No recognizable values found — try a different paste format");
-      setValues(prev => ({...prev, ...Object.fromEntries(Object.entries(parsed).map(([k,v])=>[k,String(v)]))}));
+      setValues(prev => ({...prev, ...Object.fromEntries(Object.entries(result).filter(([,v])=>v).map(([k,v])=>[k,String(v)]))}));
       setPasteOpen(false); setPasteText("");
     } catch(e) {
-      setParseErr(e.message || "Parse failed — check API connectivity");
+      setParseErr(e.message || "Parse failed — check connectivity");
     } finally { setParsePending(false); }
   }, [pasteText, labPanel]);
 
@@ -405,35 +400,25 @@ export default function ResultsHub() {
     setAnalyzing(true); setAnalysisErr(null); setResult(null); setTab("analysis");
     const promptData = buildPrompt(values, ekgChips, imaging);
     try {
-      const resp = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({
-          model:"claude-sonnet-4-6", max_tokens:2000,
-          system:`You are an AI clinical decision support system embedded in an emergency medicine platform. Analyze the provided clinical data. Respond ONLY in valid JSON — no markdown fences, no text outside the JSON object — matching this exact schema:
-{
-  "criticalFlags": [{"value":"e.g. K 6.8 mEq/L","significance":"one sentence","urgency":"immediate|urgent|monitor"}],
-  "dataSynthesis": "3-4 sentences of INTEGRATED cross-domain clinical interpretation — not organ-by-organ, but how findings connect",
-  "differential": [{"diagnosis":"name","probability":"high|moderate|low","supporting":["finding"],"against":["finding"]}],
-  "nextSteps": {
-    "now": ["specific immediate action"],
-    "withinHours": ["action within 1-4h"],
-    "routine": ["non-urgent follow-up"]
-  },
-  "gaps": [{"test":"specific test","rationale":"why it changes management or diagnosis"}],
-  "disposition": {"recommendation":"ICU|Stepdown|Floor|OR|Cath Lab|Discharge|Observation","rationale":"one sentence"},
-  "confidence": "high|moderate|low",
-  "confidenceNote": "what is limiting certainty — missing data, conflicting values, insufficient context"
-}
-Critical values are pre-tagged [CRITICAL] in the data. All analysis is for clinical decision support only.`,
-          messages:[{role:"user", content:promptData+"\n\nProvide integrated clinical interpretation."}]
-        })
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are an AI clinical decision support system embedded in an emergency medicine platform. Analyze the provided clinical data and provide integrated clinical interpretation.\n\nCritical values are pre-tagged [CRITICAL] in the data. All analysis is for clinical decision support only.\n\n${promptData}`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            criticalFlags: { type: "array", items: { type: "object", properties: { value:{type:"string"}, significance:{type:"string"}, urgency:{type:"string"} } } },
+            dataSynthesis: { type: "string" },
+            differential: { type: "array", items: { type: "object", properties: { diagnosis:{type:"string"}, probability:{type:"string"}, supporting:{type:"array",items:{type:"string"}}, against:{type:"array",items:{type:"string"}} } } },
+            nextSteps: { type: "object", properties: { now:{type:"array",items:{type:"string"}}, withinHours:{type:"array",items:{type:"string"}}, routine:{type:"array",items:{type:"string"}} } },
+            gaps: { type: "array", items: { type: "object", properties: { test:{type:"string"}, rationale:{type:"string"} } } },
+            disposition: { type: "object", properties: { recommendation:{type:"string"}, rationale:{type:"string"} } },
+            confidence: { type: "string" },
+            confidenceNote: { type: "string" }
+          }
+        }
       });
-      const data = await resp.json();
-      if (data.error) throw new Error(data.error.message);
-      const raw = data.content?.find(b=>b.type==="text")?.text||"{}";
-      setResult(JSON.parse(raw.replace(/```json|```/g,"").trim()));
+      setResult(result);
     } catch(e) {
-      setAnalysisErr("Analysis error: " + (e.message || "Unknown. Check API connectivity."));
+      setAnalysisErr("Analysis error: " + (e.message || "Unknown error."));
     } finally { setAnalyzing(false); }
   }, [values, ekgChips, imaging, hasData]);
 

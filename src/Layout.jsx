@@ -475,12 +475,61 @@ export default function Layout({ children, currentPageName }) {
           <span className="v2-pt-meta">{patientData.age || '—'} {patientData.sex ? `y/o · ${patientData.sex}` : ''} {patientData.dob ? `· ${patientData.dob}` : ''}</span>
           <span className="v2-pt-cc">{patientData.cc_text ? `CC: ${patientData.cc_text}` : '—'}</span>
           <div className="v2-vsep" />
-          {[['BP',patientData.bp || '—',patientData.bp && parseInt(patientData.bp) > 140],['HR',patientData.hr || '—',patientData.hr && parseInt(patientData.hr) > 100],['RR',patientData.rr || '—',false],['SpO₂',(patientData.spo2 || '—') + (patientData.spo2 ? '%' : ''),patientData.spo2 && parseInt(patientData.spo2) < 94],['T',(patientData.temp || '—') + (patientData.temp ? '°F' : ''),false],['GCS',patientData.gcs || '15',false]].map(([l,v,abn]) => (
-            <div key={l} className="v2-vital">
-              <span className="vl">{l}</span>
-              <span className={`vv${abn ? ' abn' : ''}`}>{v}</span>
-            </div>
-          ))}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(6, 1fr)',
+            gap: '8px',
+            padding: '6px 0',
+          }}>
+            {[['BP', patientData.bp || '—', 'mmHg', patientData.bp && parseInt(patientData.bp) > 140],
+              ['HR', patientData.hr || '—', 'bpm', patientData.hr && parseInt(patientData.hr) > 100],
+              ['RR', patientData.rr || '—', '/min', false],
+              ['SpO₂', patientData.spo2 || '—', '%', patientData.spo2 && parseInt(patientData.spo2) < 94],
+              ['Temp', patientData.temp || '—', '°F', false],
+              ['GCS', patientData.gcs || '15', '', false]
+            ].map(([label, value, unit, isAbnormal]) => (
+              <div key={label} style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                padding: '6px 8px',
+                borderRadius: '7px',
+                background: isAbnormal ? 'rgba(255, 107, 107, 0.08)' : 'rgba(14, 37, 68, 0.7)',
+                border: `1px solid ${isAbnormal ? 'rgba(255, 107, 107, 0.25)' : 'rgba(26, 53, 85, 0.6)'}`,
+              }}>
+                <span style={{
+                  fontFamily: '"JetBrains Mono", monospace',
+                  fontSize: '7px',
+                  fontWeight: '700',
+                  color: isAbnormal ? '#ff6b6b' : '#7aa0c0',
+                  letterSpacing: '0.5px',
+                  textTransform: 'uppercase',
+                  marginBottom: '3px',
+                }}>
+                  {label}
+                </span>
+                <span style={{
+                  fontFamily: '"JetBrains Mono", monospace',
+                  fontSize: '15px',
+                  fontWeight: '700',
+                  color: isAbnormal ? '#ff6b6b' : '#e8f0fe',
+                  lineHeight: '1.1',
+                }}>
+                  {value}
+                </span>
+                {unit && (
+                  <span style={{
+                    fontFamily: '"DM Sans", sans-serif',
+                    fontSize: '8px',
+                    color: isAbnormal ? '#ff6b6b' : '#a8c8e8',
+                    marginTop: '2px',
+                  }}>
+                    {unit}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
           <div className="v2-vsep" />
           {patientData.triage && <span className="v2-badge-monitor">{patientData.triage.toUpperCase()}</span>}
           <div className="v2-chart-acts">

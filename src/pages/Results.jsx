@@ -318,13 +318,30 @@ export default function ResultsHub() {
     loadRecentNotes();
   }, [loadRecentNotes]);
 
+  const buildEKGText = useCallback(() => {
+    const measurements = EKG_STRUCT.filter(k => values[k.id])
+      .map(k => `${k.label}: ${values[k.id]}${k.unit}`).join(', ');
+    const patterns = EKG_CHIPS.filter(c => ekgChips[c.id]).map(c => c.label).join(', ');
+    const notes = values['ekg_notes'] || '';
+    return [measurements, patterns && `Patterns: ${patterns}`, notes].filter(Boolean).join(' | ');
+  }, [values, ekgChips]);
+
   const saveResults = useCallback(async (noteId) => {
     setSaving(true); setSaveStatus(null);
+    const ekgText = buildEKGText();
     const payload = {
       vital_signs: buildVitalSigns(),
       lab_findings: buildLabFindings(),
       imaging_findings: buildImagingFindings(),
       chief_complaint: values.ctx_cc || undefined,
+      patient_age: values.ctx_age || undefined,
+      patient_gender: values.ctx_sex?.toLowerCase().includes('f') ? 'female' : values.ctx_sex?.toLowerCase().includes('m') ? 'male' : undefined,
+      medical_history: [values.ctx_pmh, values.ctx_weight ? `Weight: ${values.ctx_weight}` : null].filter(Boolean).join(' | ') || undefined,
+      medications: values.ctx_meds ? values.ctx_meds.split(/[,;\n]+/).map(m => m.trim()).filter(Boolean) : undefined,
+      allergies: values.ctx_allergy ? values.ctx_allergy.split(/[,;\n]+/).map(a => a.trim()).filter(Boolean) : undefined,
+      physical_exam: ekgText ? `EKG: ${ekgText}` : undefined,
+      summary: result?.dataSynthesis || undefined,
+      assessment: result?.differential?.map(d => `${d.diagnosis} (${d.probability})`).join('; ') || undefined,
     };
     if (noteId) {
       await base44.entities.ClinicalNote.update(noteId, payload);

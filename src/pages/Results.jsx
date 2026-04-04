@@ -507,7 +507,7 @@ export default function ResultsHub() {
       <div style={{position:"relative",zIndex:1,maxWidth:1200,margin:"0 auto",padding:"0 16px"}}>
 
         {/* Header */}
-        <div style={{padding:"18px 0 14px"}}>
+        <div style={{padding:"80px 0 14px"}}>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
             <div style={{backdropFilter:"blur(40px)",WebkitBackdropFilter:"blur(40px)",
               background:"rgba(5,15,30,0.9)",border:"1px solid rgba(42,79,122,0.6)",

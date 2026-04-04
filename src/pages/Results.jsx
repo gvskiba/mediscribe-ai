@@ -1,1179 +1,912 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { createPageUrl } from "@/utils";
-import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "sonner";
+import { useState, useCallback, useMemo } from "react";
 
-// ── Design tokens ──────────────────────────────────────────────────
-const C = {
-  navy:"#050f1e", slate:"#0b1d35", panel:"#0d2240", edge:"#162d4f",
-  border:"#1e3a5f", muted:"#2a4d72", dim:"#4a7299", text:"#c8ddf0",
-  bright:"#e8f4ff", teal:"#00d4bc", amber:"#f5a623", red:"#ff5c6c",
-  green:"#2ecc71", purple:"#9b6dff", blue:"#4a90d9", rose:"#f472b6",
-  gold:"#f0c040", indigo:"#818cf8",
+// ── Font + CSS Injection ─────────────────────────────────────────
+(() => {
+  if (document.getElementById("results-fonts")) return;
+  const l = document.createElement("link"); l.id = "results-fonts"; l.rel = "stylesheet";
+  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
+  document.head.appendChild(l);
+  const s = document.createElement("style"); s.id = "results-css";
+  s.textContent = `
+    *{box-sizing:border-box;margin:0;padding:0;}
+    ::-webkit-scrollbar{width:3px;height:3px;}
+    ::-webkit-scrollbar-track{background:transparent;}
+    ::-webkit-scrollbar-thumb{background:rgba(42,79,122,0.5);border-radius:2px;}
+    @keyframes fadeSlide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+    @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+    @keyframes critPulse{0%,100%{opacity:1}50%{opacity:0.4}}
+    .fade-in{animation:fadeSlide .22s ease forwards;}
+    .res-spin{animation:spin 1s linear infinite;display:inline-block;}
+    .crit-blink{animation:critPulse 1.8s ease-in-out infinite;}
+    .shimmer-text{
+      background:linear-gradient(90deg,#e8f0fe 0%,#fff 30%,#3b9eff 52%,#00e5c0 72%,#e8f0fe 100%);
+      background-size:250% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      background-clip:text;animation:shimmer 5s linear infinite;
+    }
+  `;
+  document.head.appendChild(s);
+})();
+
+// ── Design Tokens ─────────────────────────────────────────────────
+const T = {
+  bg:"#050f1e", panel:"#081628", card:"#0b1e36", up:"#0e2544",
+  b:"rgba(26,53,85,0.8)", bhi:"rgba(42,79,122,0.9)",
+  txt:"#e8f0fe", txt2:"#8aaccc", txt3:"#4a6a8a", txt4:"#2e4a6a",
+  red:"#ff4444", coral:"#ff6b6b", orange:"#ff9f43",
+  yellow:"#f5c842", green:"#3dffa0", teal:"#00e5c0",
+  blue:"#3b9eff", purple:"#9b6dff", cyan:"#00d4ff", rose:"#f472b6",
+};
+const glass = {
+  backdropFilter:"blur(24px) saturate(200%)",
+  WebkitBackdropFilter:"blur(24px) saturate(200%)",
+  background:"rgba(8,22,40,0.78)",
+  border:"1px solid rgba(42,79,122,0.35)",
+  borderRadius:14,
 };
 
-// ── Lab panel definitions ──────────────────────────────────────────
-const LAB_PANELS = {
-  cmp: {
-    label:"CMP", name:"Comprehensive Metabolic Panel", icon:"🧬",
-    tests:[
-      { id:"na",    name:"Sodium",        unit:"mEq/L",  lo:136, hi:145, critical_lo:125, critical_hi:155 },
-      { id:"k",     name:"Potassium",     unit:"mEq/L",  lo:3.5, hi:5.1, critical_lo:3.0, critical_hi:6.0 },
-      { id:"cl",    name:"Chloride",      unit:"mEq/L",  lo:98,  hi:107 },
-      { id:"co2",   name:"CO₂",           unit:"mEq/L",  lo:22,  hi:29 },
-      { id:"bun",   name:"BUN",           unit:"mg/dL",  lo:7,   hi:25 },
-      { id:"cr",    name:"Creatinine",    unit:"mg/dL",  lo:0.6, hi:1.2 },
-      { id:"gfr",   name:"eGFR",          unit:"mL/min", lo:60,  hi:999 },
-      { id:"gluc",  name:"Glucose",       unit:"mg/dL",  lo:70,  hi:99, critical_lo:50, critical_hi:400 },
-      { id:"ca",    name:"Calcium",       unit:"mg/dL",  lo:8.5, hi:10.5, critical_lo:7.0, critical_hi:12.0 },
-      { id:"tp",    name:"Total Protein", unit:"g/dL",   lo:6.0, hi:8.3 },
-      { id:"alb",   name:"Albumin",       unit:"g/dL",   lo:3.5, hi:5.0 },
-      { id:"bili",  name:"Bilirubin",     unit:"mg/dL",  lo:0,   hi:1.2 },
-      { id:"alt",   name:"ALT",           unit:"U/L",    lo:0,   hi:40 },
-      { id:"ast",   name:"AST",           unit:"U/L",    lo:0,   hi:40 },
-      { id:"alkp",  name:"Alk Phos",      unit:"U/L",    lo:44,  hi:147 },
-    ]
-  },
-  cbc: {
-    label:"CBC", name:"Complete Blood Count", icon:"🩸",
-    tests:[
-      { id:"wbc",   name:"WBC",            unit:"K/μL",   lo:4.5, hi:11.0, critical_lo:2.0, critical_hi:30.0 },
-      { id:"rbc",   name:"RBC",            unit:"M/μL",   lo:4.2, hi:5.9 },
-      { id:"hgb",   name:"Hemoglobin",     unit:"g/dL",   lo:12.0,hi:17.5, critical_lo:7.0, critical_hi:20.0 },
-      { id:"hct",   name:"Hematocrit",     unit:"%",      lo:36,  hi:52 },
-      { id:"mcv",   name:"MCV",            unit:"fL",     lo:80,  hi:100 },
-      { id:"plt",   name:"Platelets",      unit:"K/μL",   lo:150, hi:400, critical_lo:50, critical_hi:1000 },
-      { id:"neut",  name:"Neutrophils",    unit:"%",      lo:50,  hi:70 },
-      { id:"lymph", name:"Lymphocytes",    unit:"%",      lo:20,  hi:40 },
-      { id:"mono",  name:"Monocytes",      unit:"%",      lo:2,   hi:10 },
-    ]
-  },
-  coags: {
-    label:"Coags", name:"Coagulation Panel", icon:"🔬",
-    tests:[
-      { id:"pt",    name:"PT",             unit:"sec",    lo:11,  hi:13.5 },
-      { id:"inr",   name:"INR",            unit:"",       lo:0.8, hi:1.1, critical_hi:5.0 },
-      { id:"ptt",   name:"PTT",            unit:"sec",    lo:25,  hi:35 },
-      { id:"fib",   name:"Fibrinogen",     unit:"mg/dL",  lo:200, hi:400 },
-      { id:"ddimer",name:"D-Dimer",        unit:"mg/L",   lo:0,   hi:0.5 },
-    ]
-  },
-  cardiac: {
-    label:"Cardiac", name:"Cardiac Markers", icon:"❤️",
-    tests:[
-      { id:"trop_i", name:"Troponin I",    unit:"ng/mL",  lo:0,   hi:0.04, critical_hi:0.5 },
-      { id:"bnp",    name:"BNP",           unit:"pg/mL",  lo:0,   hi:100 },
-      { id:"ck",     name:"CK",            unit:"U/L",    lo:30,  hi:200 },
-      { id:"ck_mb",  name:"CK-MB",         unit:"ng/mL",  lo:0,   hi:5 },
-      { id:"ldh",    name:"LDH",           unit:"U/L",    lo:140, hi:280 },
-    ]
-  },
-  abg: {
-    label:"ABG", name:"Arterial Blood Gas", icon:"💨",
-    tests:[
-      { id:"ph",    name:"pH",             unit:"",       lo:7.35,hi:7.45, critical_lo:7.20, critical_hi:7.60 },
-      { id:"pco2",  name:"PaCO₂",          unit:"mmHg",   lo:35,  hi:45, critical_lo:20, critical_hi:70 },
-      { id:"po2",   name:"PaO₂",           unit:"mmHg",   lo:80,  hi:100, critical_lo:55 },
-      { id:"hco3",  name:"HCO₃",           unit:"mEq/L",  lo:22,  hi:26 },
-      { id:"be",    name:"Base Excess",    unit:"mEq/L",  lo:-2,  hi:2 },
-      { id:"sao2",  name:"SaO₂",           unit:"%",      lo:95,  hi:100, critical_lo:90 },
-      { id:"lactate",name:"Lactate",       unit:"mmol/L", lo:0,   hi:2.0, critical_hi:4.0 },
-    ]
-  },
-  urine: {
-    label:"UA", name:"Urinalysis", icon:"💧",
-    tests:[
-      { id:"ua_gluc",  name:"Glucose",     unit:"",       qualitative:true },
-      { id:"ua_pro",   name:"Protein",     unit:"",       qualitative:true },
-      { id:"ua_leuk",  name:"Leukocytes",  unit:"",       qualitative:true },
-      { id:"ua_nit",   name:"Nitrites",    unit:"",       qualitative:true },
-      { id:"ua_blood", name:"Blood",       unit:"",       qualitative:true },
-      { id:"ua_wbc",   name:"WBC/hpf",     unit:"/hpf",   lo:0, hi:5 },
-      { id:"ua_rbc",   name:"RBC/hpf",     unit:"/hpf",   lo:0, hi:2 },
-    ]
-  },
-  other: {
-    label:"Other", name:"Other Labs", icon:"⚗️",
-    tests:[
-      { id:"tsh",   name:"TSH",            unit:"mIU/L",  lo:0.4, hi:4.0 },
-      { id:"lipase",name:"Lipase",         unit:"U/L",    lo:0,   hi:160 },
-      { id:"amylase",name:"Amylase",       unit:"U/L",    lo:25,  hi:125 },
-      { id:"ethoh", name:"ETOH Level",     unit:"mg/dL",  lo:0,   hi:10 },
-      { id:"bhcg",  name:"β-hCG",          unit:"mIU/mL", lo:0,   hi:5 },
-      { id:"procalc",name:"Procalcitonin", unit:"ng/mL",  lo:0,   hi:0.1 },
-      { id:"crp",   name:"CRP",            unit:"mg/L",   lo:0,   hi:8 },
-      { id:"esr",   name:"ESR",            unit:"mm/hr",  lo:0,   hi:20 },
-    ]
-  },
-};
+// ── Data Definitions ─────────────────────────────────────────────
+const CTX_FIELDS = [
+  {id:"ctx_age",    label:"Age",           placeholder:"e.g. 64"},
+  {id:"ctx_sex",    label:"Sex",           placeholder:"e.g. Male"},
+  {id:"ctx_weight", label:"Weight",        placeholder:"e.g. 82 kg"},
+  {id:"ctx_cc",     label:"Chief Complaint",placeholder:"e.g. chest pain x 2h, diaphoresis"},
+  {id:"ctx_pmh",    label:"PMH",           placeholder:"e.g. HTN, DM2, CAD — prior MI 2019"},
+  {id:"ctx_meds",   label:"Medications",   placeholder:"e.g. metformin 1g BID, ASA 81mg, lisinopril"},
+  {id:"ctx_allergy",label:"Allergies",     placeholder:"e.g. PCN — rash, sulfa — anaphylaxis"},
+];
 
-// ── EKG findings options ───────────────────────────────────────────
-const EKG_FINDING_CATEGORIES = {
-  rhythm: {
-    label: "RHYTHM DISORDERS",
-    icon: "💓",
-    color: C.teal,
-    findings: [
-      "Normal sinus rhythm",
-      "Sinus tachycardia",
-      "Sinus bradycardia",
-      "Atrial fibrillation",
-      "Atrial flutter",
-      "SVT",
-      "Ventricular tachycardia",
-      "Ventricular fibrillation",
-    ]
-  },
-  conduction: {
-    label: "CONDUCTION BLOCKS",
-    icon: "⚡",
-    color: C.amber,
-    findings: [
-      "First-degree AV block",
-      "Second-degree AV block (Mobitz I)",
-      "Second-degree AV block (Mobitz II)",
-      "Third-degree (complete) AV block",
-      "LBBB",
-      "RBBB",
-      "Bifascicular block",
-    ]
-  },
-  ischemia: {
-    label: "ISCHEMIA / INFARCTION",
-    icon: "🔴",
-    color: C.red,
-    findings: [
-      "ST elevation (STEMI)",
-      "ST depression",
-      "T-wave inversions",
-      "Q waves",
-      "Poor R-wave progression",
-    ]
-  },
-  repolarization: {
-    label: "REPOLARIZATION ABNORMALITIES",
-    icon: "📊",
-    color: C.blue,
-    findings: [
-      "Prolonged QTc",
-      "Short QT",
-      "Peaked T waves",
-      "Hyperkalemia pattern",
-      "Brugada pattern",
-      "Delta waves (WPW)",
-      "Early repolarization",
-    ]
-  },
-  structural: {
-    label: "STRUCTURAL / OTHER",
-    icon: "🫀",
-    color: C.purple,
-    findings: [
-      "LVH",
-      "RVH",
-      "Pericarditis pattern",
-      "Electrical alternans",
-      "Low voltage",
-    ]
-  }
-};
+const VITAL_FIELDS = [
+  {id:"hr",   label:"HR",      unit:"bpm",  cL:40,  cH:150,  ref:"60–100" },
+  {id:"sbp",  label:"Sys BP",  unit:"mmHg", cL:70,  cH:220,  ref:"<120"   },
+  {id:"dbp",  label:"Dia BP",  unit:"mmHg", cL:null,cH:120,  ref:"<80"    },
+  {id:"rr",   label:"RR",      unit:"/min", cL:8,   cH:30,   ref:"12–20"  },
+  {id:"spo2", label:"SpO2",    unit:"%",    cL:88,  cH:null, ref:"≥95"    },
+  {id:"temp", label:"Temp",    unit:"°C",   cL:35,  cH:40,   ref:"36.5–37.5"},
+  {id:"gcs",  label:"GCS",     unit:"",     cL:8,   cH:null, ref:"15"     },
+  {id:"map",  label:"MAP",     unit:"mmHg", cL:60,  cH:null, ref:"≥65"    },
+  {id:"etco2",label:"ETCO2",   unit:"mmHg", cL:null,cH:null, ref:"35–45"  },
+];
 
-const LEADS = ["I","II","III","aVR","aVL","aVF","V1","V2","V3","V4","V5","V6"];
+const LAB_PANELS = [
+  {id:"cbc",      label:"CBC",           color:T.blue  },
+  {id:"metabolic",label:"Metabolic/CMP", color:T.teal  },
+  {id:"coag",     label:"Coagulation",   color:T.orange},
+  {id:"cardiac",  label:"Cardiac",       color:T.red   },
+  {id:"inflam",   label:"Inflammatory",  color:T.yellow},
+  {id:"abg",      label:"ABG / VBG",    color:T.purple},
+];
 
-// ── Shared UI ──────────────────────────────────────────────────────
-const Label = ({ children, style={} }) => (
-  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:C.dim, letterSpacing:".1em", marginBottom:5, ...style }}>{children}</div>
-);
+const LAB_FIELDS = [
+  {id:"wbc",     label:"WBC",          unit:"k/µL",  panel:"cbc",      cL:1,   cH:30,   ref:"4.5–11"   },
+  {id:"hgb",     label:"Hgb",          unit:"g/dL",  panel:"cbc",      cL:5,   cH:20,   ref:"12–17"    },
+  {id:"hct",     label:"Hct",          unit:"%",     panel:"cbc",      cL:null,cH:null, ref:"36–50"    },
+  {id:"plt",     label:"Plt",          unit:"k/µL",  panel:"cbc",      cL:20,  cH:1000, ref:"150–400"  },
+  {id:"neut",    label:"Neut %",       unit:"%",     panel:"cbc",      cL:null,cH:null, ref:"50–70"    },
+  {id:"bands",   label:"Bands %",      unit:"%",     panel:"cbc",      cL:null,cH:null, ref:"0–10"     },
+  {id:"na",      label:"Na",           unit:"mEq/L", panel:"metabolic",cL:120, cH:160,  ref:"135–145"  },
+  {id:"k",       label:"K",            unit:"mEq/L", panel:"metabolic",cL:2.5, cH:6.5,  ref:"3.5–5.1"  },
+  {id:"cl",      label:"Cl",           unit:"mEq/L", panel:"metabolic",cL:null,cH:null, ref:"98–107"   },
+  {id:"co2",     label:"CO2",          unit:"mEq/L", panel:"metabolic",cL:10,  cH:40,   ref:"22–29"    },
+  {id:"bun",     label:"BUN",          unit:"mg/dL", panel:"metabolic",cL:null,cH:null, ref:"7–20"     },
+  {id:"cr",      label:"Creatinine",   unit:"mg/dL", panel:"metabolic",cL:null,cH:10,   ref:"0.6–1.2"  },
+  {id:"glu",     label:"Glucose",      unit:"mg/dL", panel:"metabolic",cL:40,  cH:500,  ref:"70–100"   },
+  {id:"ast",     label:"AST",          unit:"U/L",   panel:"metabolic",cL:null,cH:null, ref:"10–40"    },
+  {id:"alt",     label:"ALT",          unit:"U/L",   panel:"metabolic",cL:null,cH:null, ref:"7–56"     },
+  {id:"tbili",   label:"T. Bili",      unit:"mg/dL", panel:"metabolic",cL:null,cH:null, ref:"0.1–1.2"  },
+  {id:"alb",     label:"Albumin",      unit:"g/dL",  panel:"metabolic",cL:null,cH:null, ref:"3.5–5.0"  },
+  {id:"pt",      label:"PT",           unit:"sec",   panel:"coag",     cL:null,cH:null, ref:"11–13"    },
+  {id:"inr",     label:"INR",          unit:"",      panel:"coag",     cL:null,cH:5,    ref:"0.9–1.1"  },
+  {id:"ptt",     label:"PTT",          unit:"sec",   panel:"coag",     cL:null,cH:null, ref:"25–35"    },
+  {id:"fibr",    label:"Fibrinogen",   unit:"mg/dL", panel:"coag",     cL:150, cH:null, ref:"200–400"  },
+  {id:"ddimer",  label:"D-Dimer",      unit:"µg/mL", panel:"coag",     cL:null,cH:null, ref:"<0.5"     },
+  {id:"trop1",   label:"Troponin",     unit:"ng/mL", panel:"cardiac",  cL:null,cH:0.04, ref:"<0.04"    },
+  {id:"trop2",   label:"Trop (2h Δ)", unit:"ng/mL", panel:"cardiac",  cL:null,cH:0.04, ref:"<0.04"    },
+  {id:"bnp",     label:"BNP",          unit:"pg/mL", panel:"cardiac",  cL:null,cH:900,  ref:"<100"     },
+  {id:"ntbnp",   label:"NT-proBNP",    unit:"pg/mL", panel:"cardiac",  cL:null,cH:900,  ref:"<300"     },
+  {id:"ckmb",    label:"CK-MB",        unit:"ng/mL", panel:"cardiac",  cL:null,cH:null, ref:"<5"       },
+  {id:"lactate", label:"Lactate",      unit:"mmol/L",panel:"inflam",   cL:null,cH:4,    ref:"0.5–2.2"  },
+  {id:"crp",     label:"CRP",          unit:"mg/L",  panel:"inflam",   cL:null,cH:null, ref:"<3"       },
+  {id:"procal",  label:"Procalcitonin",unit:"ng/mL", panel:"inflam",   cL:null,cH:null, ref:"<0.1"     },
+  {id:"ferritin",label:"Ferritin",     unit:"ng/mL", panel:"inflam",   cL:null,cH:null, ref:"12–300"   },
+  {id:"esr",     label:"ESR",          unit:"mm/hr", panel:"inflam",   cL:null,cH:null, ref:"0–20"     },
+  {id:"ph",      label:"pH",           unit:"",      panel:"abg",      cL:7.1, cH:7.6,  ref:"7.35–7.45"},
+  {id:"pco2",    label:"PaCO2",        unit:"mmHg",  panel:"abg",      cL:20,  cH:80,   ref:"35–45"    },
+  {id:"po2",     label:"PaO2",         unit:"mmHg",  panel:"abg",      cL:60,  cH:null, ref:"80–100"   },
+  {id:"hco3",    label:"HCO3",         unit:"mEq/L", panel:"abg",      cL:10,  cH:null, ref:"22–26"    },
+  {id:"be",      label:"Base Excess",  unit:"mEq/L", panel:"abg",      cL:null,cH:null, ref:"-2 to +2" },
+];
 
-const inputS = {
-  background:C.edge, border:`1px solid ${C.border}`, borderRadius:8,
-  padding:"7px 10px", color:C.text, fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none", width:"100%",
-};
+const EKG_CHIPS = [
+  {id:"nsr",     label:"Normal Sinus",          color:T.green },
+  {id:"stemi",   label:"STE / STEMI",           color:T.red   },
+  {id:"lbbb_new",label:"New LBBB",              color:T.red   },
+  {id:"avb3",    label:"3° AV Block",           color:T.red   },
+  {id:"vt",      label:"Ventricular Tach",      color:T.red   },
+  {id:"peakt",   label:"Peaked T-waves (HyperK)",color:T.red  },
+  {id:"afib",    label:"AFib",                  color:T.orange},
+  {id:"aflutter",label:"AFlutter",              color:T.orange},
+  {id:"std",     label:"ST Depression",         color:T.coral },
+  {id:"twi",     label:"T-Wave Inversions",     color:T.coral },
+  {id:"qtlong",  label:"Prolonged QTc",         color:T.orange},
+  {id:"s1q3t3",  label:"S1Q3T3 (PE Pattern)",  color:T.coral },
+  {id:"qwave",   label:"Pathologic Q-waves",    color:T.yellow},
+  {id:"rbbb",    label:"RBBB",                  color:T.yellow},
+  {id:"lbbb_old",label:"LBBB (old/unknown)",   color:T.yellow},
+  {id:"lvh",     label:"LVH",                   color:T.yellow},
+  {id:"wpw",     label:"WPW / Delta Waves",     color:T.purple},
+  {id:"avb2",    label:"Mobitz II",             color:T.red   },
+];
 
-function Pill({ children, color=C.teal, style={} }) {
+const EKG_STRUCT = [
+  {id:"ekg_rate",label:"Rate", unit:"bpm",cL:40, cH:150,ref:"60–100"},
+  {id:"ekg_pr",  label:"PR",   unit:"ms", cL:null,cH:200,ref:"120–200"},
+  {id:"ekg_qrs", label:"QRS",  unit:"ms", cL:null,cH:120,ref:"<120"},
+  {id:"ekg_qtc", label:"QTc",  unit:"ms", cL:null,cH:500,ref:"<450 (F<470)"},
+  {id:"ekg_axis",label:"Axis", unit:"°",  cL:-90, cH:180,ref:"-30 to +90"},
+];
+
+const IMAGING_MODS = ["CXR","CT Head","CT Chest","CT Abdomen/Pelvis","CT Angiography","MRI Brain","MRI Spine","Echo","Ultrasound","X-Ray","Nuclear Med","Other"];
+
+// ── Helper Functions ──────────────────────────────────────────────
+function isCrit(field, rawVal) {
+  const n = parseFloat(rawVal);
+  if (!rawVal || isNaN(n)) return false;
+  return (field.cL != null && n < field.cL) || (field.cH != null && n > field.cH);
+}
+
+function buildPrompt(vals, ekgChips, imaging) {
+  const ctx = CTX_FIELDS.filter(f => vals[f.id])
+    .map(f => `${f.label}: ${vals[f.id]}`).join(" | ") || "Not provided";
+
+  const vitals = VITAL_FIELDS.filter(f => vals[f.id])
+    .map(f => `${f.label}: ${vals[f.id]}${f.unit}${isCrit(f,vals[f.id])?" [CRITICAL]":""}`)
+    .join(", ") || "Not entered";
+
+  const labs = LAB_PANELS.map(p => {
+    const flds = LAB_FIELDS.filter(f => f.panel === p.id && vals[f.id]);
+    if (!flds.length) return "";
+    return p.label+":\n"+flds.map(f =>
+      `  ${f.label}: ${vals[f.id]} ${f.unit} (ref ${f.ref})${isCrit(f,vals[f.id])?" [CRITICAL]":""}`
+    ).join("\n");
+  }).filter(Boolean).join("\n");
+
+  const ekgStruct = EKG_STRUCT.filter(k=>vals[k.id])
+    .map(k=>`${k.label}: ${vals[k.id]}${k.unit}`).join(", ");
+  const ekgPats = EKG_CHIPS.filter(c=>ekgChips[c.id]).map(c=>c.label).join(", ");
+  const ekgStr = [ekgStruct, ekgPats&&`Patterns: ${ekgPats}`, vals["ekg_notes"]&&`Notes: ${vals["ekg_notes"]}`]
+    .filter(Boolean).join(". ") || "Not provided";
+
+  const imgStr = imaging.filter(i=>i.report).map(i=>`${i.modality}:\n${i.report}`).join("\n\n") || "Not provided";
+  const extraLabs = vals["labs_free"] ? `\nAdditional: ${vals["labs_free"]}` : "";
+
+  return `PATIENT CONTEXT: ${ctx}\n\nVITALS: ${vitals}\n\nLABS:\n${labs||"Not entered"}${extraLabs}\n\nEKG: ${ekgStr}\n\nIMAGING:\n${imgStr}`;
+}
+
+// ── Module-Scope Primitives ────────────────────────────────────────
+function AmbientBg() {
   return (
-    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, padding:"2px 7px", borderRadius:6, background:`${color}18`, border:`1px solid ${color}40`, color, ...style }}>
-      {children}
+    <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0}}>
+      <div style={{position:"absolute",top:"-15%",left:"-10%",width:"55%",height:"55%",
+        background:"radial-gradient(circle,rgba(59,158,255,0.08) 0%,transparent 70%)"}}/>
+      <div style={{position:"absolute",bottom:"-10%",right:"-5%",width:"50%",height:"50%",
+        background:"radial-gradient(circle,rgba(0,229,192,0.07) 0%,transparent 70%)"}}/>
+      <div style={{position:"absolute",top:"40%",left:"30%",width:"35%",height:"35%",
+        background:"radial-gradient(circle,rgba(155,109,255,0.05) 0%,transparent 70%)"}}/>
+    </div>
+  );
+}
+
+function BulletRow({ text, color }) {
+  return (
+    <div style={{display:"flex",gap:7,alignItems:"flex-start",marginBottom:4}}>
+      <span style={{color:color||T.teal,fontSize:8,marginTop:2,flexShrink:0}}>▸</span>
+      <span style={{fontFamily:"DM Sans",fontSize:12,color:T.txt2,lineHeight:1.5}}>{text}</span>
+    </div>
+  );
+}
+
+function Badge({ label, color }) {
+  return (
+    <span style={{fontFamily:"JetBrains Mono",fontSize:9,fontWeight:700,padding:"2px 7px",
+      borderRadius:20,background:`${color}18`,border:`1px solid ${color}44`,
+      color,whiteSpace:"nowrap",textTransform:"uppercase",letterSpacing:1}}>
+      {label}
     </span>
   );
 }
 
-function Card({ title, icon, badge, badgeColor=C.blue, right, children, style={} }) {
+function LabInput({ field, value, onChange }) {
+  const crit = isCrit(field, value);
   return (
-    <div style={{ background:C.panel, border:`1px solid ${C.border}`, borderRadius:14, overflow:"hidden", ...style }}>
-      <div style={{ padding:"9px 14px", background:"rgba(0,0,0,.2)", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:8 }}>
-        {icon && <span style={{ fontSize:13 }}>{icon}</span>}
-        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:C.dim, letterSpacing:".1em", flex:1 }}>{title}</span>
-        {badge && <Pill color={badgeColor}>{badge}</Pill>}
-        {right}
+    <div style={{display:"flex",flexDirection:"column",gap:3}}>
+      <div style={{display:"flex",justifyContent:"space-between"}}>
+        <span style={{fontFamily:"JetBrains Mono",fontSize:9,fontWeight:700,
+          color:crit?T.red:T.txt4,letterSpacing:0.5,textTransform:"uppercase"}}>{field.label}</span>
+        <span style={{fontFamily:"JetBrains Mono",fontSize:8,color:T.txt4}}>{field.ref}</span>
       </div>
-      <div style={{ padding:"13px 14px" }}>{children}</div>
-    </div>
-  );
-}
-
-// ── Abnormality helpers ────────────────────────────────────────────
-function getFlag(test, value) {
-  if (!value || isNaN(+value)) return null;
-  const v = +value;
-  if (test.critical_lo !== undefined && v <= test.critical_lo) return "CRIT-L";
-  if (test.critical_hi !== undefined && v >= test.critical_hi) return "CRIT-H";
-  if (test.lo !== undefined && v < test.lo) return "LOW";
-  if (test.hi !== undefined && v > test.hi) return "HIGH";
-  return "NORMAL";
-}
-
-const FLAG_STYLE = {
-  "CRIT-L": { color:C.red,   bg:"rgba(255,92,108,.18)",  border:"rgba(255,92,108,.5)",  label:"CRIT ↓" },
-  "CRIT-H": { color:C.red,   bg:"rgba(255,92,108,.18)",  border:"rgba(255,92,108,.5)",  label:"CRIT ↑" },
-  "LOW":    { color:C.amber, bg:"rgba(245,166,35,.12)",  border:"rgba(245,166,35,.4)",  label:"↓ LOW"  },
-  "HIGH":   { color:C.amber, bg:"rgba(245,166,35,.12)",  border:"rgba(245,166,35,.4)",  label:"↑ HIGH" },
-  "NORMAL": { color:C.green, bg:"rgba(46,204,113,.08)",  border:"rgba(46,204,113,.3)",  label:"WNL"    },
-};
-
-// ── Drop-zone component ────────────────────────────────────────────
-function DropZone({ onFile, accept="image/*,.pdf", label, icon="📎", color=C.blue }) {
-  const [over, setOver] = useState(false);
-  const inputRef = useRef();
-
-  const handleDrop = useCallback(e => {
-    e.preventDefault(); setOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) onFile(file);
-  }, [onFile]);
-
-  return (
-    <div
-      onDragOver={e=>{e.preventDefault();setOver(true)}}
-      onDragLeave={()=>setOver(false)}
-      onDrop={handleDrop}
-      onClick={()=>inputRef.current?.click()}
-      style={{
-        border:`2px dashed ${over ? color : C.border}`,
-        borderRadius:12, padding:"20px 16px", textAlign:"center", cursor:"pointer",
-        background: over ? `${color}08` : "transparent",
-        transition:"all .15s",
-      }}
-    >
-      <input ref={inputRef} type="file" accept={accept} style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f) onFile(f); }} />
-      <div style={{ fontSize:28, marginBottom:7 }}>{icon}</div>
-      <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:3 }}>{label}</div>
-      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.muted }}>
-        Click or drag &amp; drop · {accept.replace(/,/g,", ")}
+      <div style={{display:"flex",alignItems:"center",gap:4,
+        border:`1px solid ${crit?T.red:value?"rgba(59,158,255,0.45)":"rgba(42,79,122,0.3)"}`,
+        borderRadius:8,background:"rgba(14,37,68,0.7)",padding:"5px 9px",transition:"border-color .1s"}}>
+        <input type="number" value={value||""} onChange={e=>onChange(field.id,e.target.value)}
+          placeholder="—"
+          style={{background:"transparent",border:"none",outline:"none",width:"100%",minWidth:0,
+            fontFamily:"JetBrains Mono",fontSize:14,fontWeight:700,
+            color:crit?T.red:T.txt}}/>
+        {field.unit &&
+          <span style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,whiteSpace:"nowrap"}}>{field.unit}</span>}
+        {crit && <span className="crit-blink" style={{width:7,height:7,borderRadius:"50%",
+          background:T.red,flexShrink:0}}/>}
       </div>
     </div>
   );
 }
 
-// ── AI Analysis Panel ──────────────────────────────────────────────
-function AIAnalysisPanel({ analysis, analyzing }) {
-  if (analyzing) return (
-    <div style={{ padding:"16px 0" }}>
-      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16 }}>
-        {[0,.15,.3].map((d,i)=><div key={i} style={{ width:7,height:7,borderRadius:"50%",background:C.teal,animation:`pulse .8s ${d}s infinite` }} />)}
-        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.teal, letterSpacing:".1em" }}>ANALYZING RESULTS…</span>
-      </div>
-      {[90,75,85,60,80,55,70].map((w,i)=>(
-        <div key={i} style={{ height:10, borderRadius:5, marginBottom:8, width:`${w}%`, background:`linear-gradient(90deg,${C.edge} 0%,${C.muted}40 50%,${C.edge} 100%)`, backgroundSize:"400px 100%", animation:`shimmer 1.4s infinite ${i*.1}s` }} />
-      ))}
-    </div>
-  );
+// ── Main Component ────────────────────────────────────────────────
+export default function ResultsHub() {
+  const [tab, setTab]       = useState("context");
+  const [values, setValues] = useState({});
+  const [labPanel, setLabPanel] = useState("cbc");
+  const [ekgChips, setEkgChips] = useState({});
+  const [imaging, setImaging]   = useState([]);
 
-  if (!analysis) return (
-    <div style={{ textAlign:"center", padding:"28px 16px" }}>
-      <div style={{ fontSize:38, marginBottom:10, opacity:.18 }}>🤖</div>
-      <div style={{ fontSize:12, color:C.muted, lineHeight:1.75 }}>
-        Enter results and press <strong style={{color:C.teal}}>Analyze with AI</strong> to receive a clinical summary, abnormality interpretation, guideline references, and next-step recommendations.
-      </div>
-    </div>
-  );
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [pasteText, setPasteText] = useState("");
+  const [parsePending, setParsePending] = useState(false);
+  const [parseErr, setParseErr] = useState(null);
 
-  return (
-    <div style={{ display:"flex", flexDirection:"column", gap:14, animation:"fadeUp .25s ease" }}>
-
-      {/* Risk badge */}
-      {analysis.risk_level && (
-        <div style={{ display:"flex", alignItems:"center", gap:7, padding:"8px 12px", borderRadius:10,
-          background: analysis.risk_level==="critical"||analysis.risk_level==="high" ? "rgba(255,92,108,.08)" : analysis.risk_level==="moderate"?"rgba(245,166,35,.07)":"rgba(46,204,113,.07)",
-          border:`1px solid ${analysis.risk_level==="critical"||analysis.risk_level==="high"?"rgba(255,92,108,.3)":analysis.risk_level==="moderate"?"rgba(245,166,35,.28)":"rgba(46,204,113,.25)"}`,
-        }}>
-          <span style={{ fontSize:16 }}>{analysis.risk_level==="critical"?"🔴":analysis.risk_level==="high"?"🟠":analysis.risk_level==="moderate"?"🟡":"🟢"}</span>
-          <div>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color: analysis.risk_level==="critical"||analysis.risk_level==="high"?C.red:analysis.risk_level==="moderate"?C.amber:C.green, letterSpacing:".1em" }}>
-              {analysis.risk_level?.toUpperCase()} RISK
-            </div>
-            {analysis.risk_rationale && <div style={{ fontSize:11, color:C.dim, marginTop:2 }}>{analysis.risk_rationale}</div>}
-          </div>
-        </div>
-      )}
-
-      {/* Summary */}
-      {analysis.clinical_summary && (
-        <div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:C.teal, letterSpacing:".1em", marginBottom:6 }}>✦ CLINICAL SUMMARY</div>
-          <div style={{ fontSize:12, color:C.text, lineHeight:1.75, padding:"10px 12px", background:"rgba(0,212,188,.05)", border:"1px solid rgba(0,212,188,.18)", borderRadius:10 }}>
-            {analysis.clinical_summary}
-          </div>
-        </div>
-      )}
-
-      {/* Critical / abnormal */}
-      {analysis.critical_findings?.length > 0 && (
-        <div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:C.red, letterSpacing:".1em", marginBottom:6 }}>🔴 CRITICAL FINDINGS</div>
-          {analysis.critical_findings.map((f,i) => (
-            <div key={i} style={{ display:"flex", gap:8, padding:"7px 10px", borderRadius:8, background:"rgba(255,92,108,.07)", border:"1px solid rgba(255,92,108,.25)", marginBottom:5 }}>
-              <span style={{ fontSize:12 }}>⚠</span>
-              <span style={{ fontSize:12, color:C.bright, lineHeight:1.55 }}>{f}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {analysis.abnormal_findings?.length > 0 && (
-        <div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:C.amber, letterSpacing:".1em", marginBottom:6 }}>⚠ ABNORMAL RESULTS</div>
-          {analysis.abnormal_findings.map((f,i) => (
-            <div key={i} style={{ display:"flex", gap:8, padding:"6px 10px", borderRadius:8, background:"rgba(245,166,35,.07)", border:"1px solid rgba(245,166,35,.22)", marginBottom:4 }}>
-              <span style={{ fontSize:11 }}>→</span>
-              <span style={{ fontSize:11, color:C.text, lineHeight:1.55 }}>{f}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Interpretations */}
-      {analysis.interpretations?.length > 0 && (
-        <div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:C.blue, letterSpacing:".1em", marginBottom:6 }}>🧠 INTERPRETATION</div>
-          {analysis.interpretations.map((item,i) => (
-            <div key={i} style={{ marginBottom:8, padding:"8px 10px", background:C.edge, borderRadius:9, border:`1px solid ${C.border}` }}>
-              <div style={{ fontSize:12, fontWeight:600, color:C.bright, marginBottom:3 }}>{item.finding}</div>
-              <div style={{ fontSize:11, color:C.dim, lineHeight:1.6 }}>{item.interpretation}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Guidelines */}
-      {analysis.guidelines?.length > 0 && (
-        <div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:C.purple, letterSpacing:".1em", marginBottom:6 }}>📘 GUIDELINES REFERENCED</div>
-          {analysis.guidelines.map((g,i) => (
-            <div key={i} style={{ display:"flex", gap:7, alignItems:"flex-start", padding:"5px 0", borderBottom:`1px solid ${C.edge}` }}>
-              <span style={{ fontSize:10, marginTop:1 }}>📖</span>
-              <span style={{ fontSize:11, color:C.dim, lineHeight:1.55 }}>{g}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Next steps */}
-      {analysis.next_steps?.length > 0 && (
-        <div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:C.green, letterSpacing:".1em", marginBottom:6 }}>→ RECOMMENDED NEXT STEPS</div>
-          {analysis.next_steps.map((step,i) => (
-            <div key={i} style={{ display:"flex", gap:9, alignItems:"flex-start", padding:"8px 10px", borderRadius:9, background:"rgba(46,204,113,.06)", border:"1px solid rgba(46,204,113,.2)", marginBottom:5 }}>
-              <div style={{ width:20, height:20, borderRadius:"50%", background:"rgba(46,204,113,.15)", border:"1px solid rgba(46,204,113,.3)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, marginTop:1 }}>
-                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:C.green }}>{i+1}</span>
-              </div>
-              <span style={{ fontSize:12, color:C.text, lineHeight:1.6 }}>{step}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Diagnoses */}
-      {analysis.differential?.length > 0 && (
-        <div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:C.indigo, letterSpacing:".1em", marginBottom:6 }}>🔍 DIFFERENTIAL DIAGNOSES</div>
-          <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-            {analysis.differential.map((dx,i) => (
-              <Pill key={i} color={i===0?C.teal:C.indigo}>{dx}</Pill>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
-// ═══════════════════════════════════════════════════════════════════
-export default function Results() {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [clock, setClock] = useState("");
-
-  // ── Main tab ───────────────────────────────────────────────────
-  const [mainTab, setMainTab] = useState("labs");
-
-  // ── Patient / note context ─────────────────────────────────────
-  const [patient, setPatient] = useState({ name:"", age:"", sex:"Male", cc:"" });
-  const [linkedNoteId, setLinkedNoteId] = useState(null);
-
-  // ── Labs state ─────────────────────────────────────────────────
-  const [activePanel, setActivePanel] = useState("cmp");
-  const [labValues, setLabValues] = useState({});          // { testId: value }
-  const [labTimestamps, setLabTimestamps] = useState({});  // { panelId: datetime }
-  const [uploadedLabFiles, setUploadedLabFiles] = useState([]);
-  const [labNote, setLabNote] = useState("");
-
-  // ── Imaging state ──────────────────────────────────────────────
-  const [imagingStudies, setImagingStudies] = useState([]);
-  const [imagingFiles, setImagingFiles] = useState([]);
-  const [newStudy, setNewStudy] = useState({ modality:"CXR", region:"Chest", indication:"", findings:"", impression:"", read_by:"" });
-  const [addingStudy, setAddingStudy] = useState(false);
-
-  // ── EKG state ──────────────────────────────────────────────────
-  const [ekgFindings, setEkgFindings] = useState([]);
-  const [ekgMeasurements, setEkgMeasurements] = useState({ hr:"", pr:"", qrs:"", qtc:"", axis:"", rhythm:"" });
-  const [ekgLeads, setEkgLeads] = useState({});
-  const [ekgFiles, setEkgFiles] = useState([]);
-  const [ekgNotes, setEkgNotes] = useState("");
-
-  // ── AI state ───────────────────────────────────────────────────
   const [analyzing, setAnalyzing] = useState(false);
-  const [analysis, setAnalysis] = useState(null);
-  const [analysisPanelOpen, setAnalysisPanelOpen] = useState(false);
+  const [result, setResult]       = useState(null);
+  const [analysisErr, setAnalysisErr] = useState(null);
 
-  // ── Upload state ───────────────────────────────────────────────
-  const [uploadingFile, setUploadingFile] = useState(false);
+  const setVal = useCallback((id, v) => setValues(p => ({...p, [id]: v})), []);
+  const toggleChip = useCallback((id) => setEkgChips(p => ({...p, [id]: !p[id]})), []);
+  const addImaging = useCallback(() =>
+    setImaging(p => [...p, {id:Date.now(), modality:"CXR", report:"", time:""}]), []);
 
-  // ── URL params ─────────────────────────────────────────────────
-  useEffect(()=>{
-    const p = new URLSearchParams(window.location.search);
-    if(p.get("noteId")) setLinkedNoteId(p.get("noteId"));
-    if(p.get("patientName")) setPatient(prev=>({...prev, name:p.get("patientName")}));
-    if(p.get("tab")) setMainTab(p.get("tab"));
-  },[]);
+  const critCount = useMemo(() =>
+    [...VITAL_FIELDS, ...LAB_FIELDS, ...EKG_STRUCT].filter(f => isCrit(f, values[f.id])).length,
+    [values]);
 
-  // ── Clock ──────────────────────────────────────────────────────
-  useEffect(()=>{
-    const iv=setInterval(()=>setClock(new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:false})),1000);
-    return()=>clearInterval(iv);
-  },[]);
+  const dataCount = useMemo(() => ({
+    vitals:  VITAL_FIELDS.filter(f => values[f.id]).length,
+    labs:    LAB_FIELDS.filter(f => values[f.id]).length + (values["labs_free"]?1:0),
+    ekg:     EKG_STRUCT.filter(k=>values[k.id]).length + EKG_CHIPS.filter(c=>ekgChips[c.id]).length,
+    imaging: imaging.filter(i=>i.report).length,
+  }), [values, ekgChips, imaging]);
 
-  // ── Derived: all entered lab results ──────────────────────────
-  const allLabTests = Object.values(LAB_PANELS).flatMap(p => p.tests.map(t => ({ ...t, panel:p.label })));
+  const hasData = dataCount.vitals + dataCount.labs + dataCount.ekg + dataCount.imaging > 0;
 
-  const enteredLabs = allLabTests.filter(t => labValues[t.id] !== undefined && labValues[t.id] !== "");
-
-  const abnormalLabs = enteredLabs.filter(t => {
-    const flag = getFlag(t, labValues[t.id]);
-    return flag && flag !== "NORMAL";
-  });
-
-  const criticalLabs = abnormalLabs.filter(t => {
-    const flag = getFlag(t, labValues[t.id]);
-    return flag?.startsWith("CRIT");
-  });
-
-  // ── Upload file helper ─────────────────────────────────────────
-  const uploadFile = async (file, type) => {
-    setUploadingFile(true);
+  // EMR Paste parser
+  const runParse = useCallback(async () => {
+    if (!pasteText.trim()) return;
+    setParsePending(true); setParseErr(null);
+    const panelFields = LAB_FIELDS.filter(f => f.panel === labPanel);
+    const fieldGuide = panelFields.map(f => `"${f.id}" = ${f.label} (${f.unit})`).join(", ");
     try {
-      const uploaded = await base44.integrations.Core.UploadFile({ file });
-      const fileObj = { name:file.name, url:uploaded.file_url, type, size:(file.size/1024).toFixed(0)+"KB", uploaded_at:new Date().toISOString() };
-      if (type==="lab")    setUploadedLabFiles(p=>[...p, fileObj]);
-      if (type==="imaging") setImagingFiles(p=>[...p, fileObj]);
-      if (type==="ekg")     setEkgFiles(p=>[...p, fileObj]);
-      toast.success("File uploaded: " + file.name);
-      return fileObj;
-    } catch(err) {
-      // Fallback: store locally as blob URL
-      const url = URL.createObjectURL(file);
-      const fileObj = { name:file.name, url, type, size:(file.size/1024).toFixed(0)+"KB", uploaded_at:new Date().toISOString(), local:true };
-      if (type==="lab")     setUploadedLabFiles(p=>[...p, fileObj]);
-      if (type==="imaging") setImagingFiles(p=>[...p, fileObj]);
-      if (type==="ekg")     setEkgFiles(p=>[...p, fileObj]);
-      toast.success("File attached locally: " + file.name);
-      return fileObj;
-    } finally {
-      setUploadingFile(false);
-    }
-  };
-
-  const toggleEkgFinding = (f) =>
-    setEkgFindings(prev => prev.includes(f) ? prev.filter(x=>x!==f) : [...prev, f]);
-
-  const addImagingStudy = () => {
-    if (!newStudy.findings && !newStudy.impression) { toast.error("Add findings or impression"); return; }
-    setImagingStudies(p => [...p, { ...newStudy, id:`img_${Date.now()}`, timestamp:new Date().toISOString() }]);
-    setNewStudy({ modality:"CXR", region:"Chest", indication:"", findings:"", impression:"", read_by:"" });
-    setAddingStudy(false);
-    toast.success("Study added");
-  };
-
-  // ── Build AI context ───────────────────────────────────────────
-  const buildContext = () => {
-    const labStr = enteredLabs.map(t => {
-      const flag = getFlag(t, labValues[t.id]);
-      const fs = FLAG_STYLE[flag] || {};
-      return `${t.name}: ${labValues[t.id]} ${t.unit} [${fs.label||flag||""}]`;
-    }).join("\n") || "No lab values entered";
-
-    const imgStr = imagingStudies.map(s =>
-      `${s.modality} ${s.region}: ${s.impression || s.findings}`
-    ).join("\n") || "No imaging studies";
-
-    const ekgStr = ekgFindings.length > 0
-      ? `EKG Findings: ${ekgFindings.join(", ")}\nMeasurements: HR ${ekgMeasurements.hr||"—"}, PR ${ekgMeasurements.pr||"—"}, QRS ${ekgMeasurements.qrs||"—"}, QTc ${ekgMeasurements.qtc||"—"}, Axis ${ekgMeasurements.axis||"—"}`
-      : "No EKG data entered";
-
-    return `PATIENT: ${patient.name||"Unknown"}, ${patient.age||"?"} y/o ${patient.sex}\nCC: ${patient.cc||"Not specified"}\n\nLABORATORY RESULTS:\n${labStr}\n\nIMAGING:\n${imgStr}\n\nEKG:\n${ekgStr}\n\nClinical Notes: ${labNote||"None"}`;
-  };
-
-  // ── AI analysis ────────────────────────────────────────────────
-  const runAIAnalysis = async () => {
-    const hasData = enteredLabs.length > 0 || imagingStudies.length > 0 || ekgFindings.length > 0;
-    if (!hasData) { toast.error("Enter at least one result before analyzing."); return; }
-    setAnalyzing(true);
-    setAnalysis(null);
-    setAnalysisPanelOpen(true);
-
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are Notrya AI, a clinical decision support system specializing in results interpretation for emergency medicine. Analyze the following results and provide expert clinical guidance.
-
-${buildContext()}
-
-Provide your analysis as valid JSON with this exact structure:
-{
-  "risk_level": "normal|low|moderate|high|critical",
-  "risk_rationale": "one sentence explaining risk level",
-  "clinical_summary": "3-4 sentence clinical synthesis integrating all results",
-  "critical_findings": ["Critical finding 1 — action required", "..."],
-  "abnormal_findings": ["Abnormal value and its significance", "..."],
-  "interpretations": [
-    { "finding": "Lab/finding name", "interpretation": "Clinical meaning and significance" }
-  ],
-  "differential": ["Most likely diagnosis", "DDx 2", "DDx 3"],
-  "guidelines": [
-    "Guideline name and relevant recommendation — e.g. AHA 2023: Troponin >0.04 warrants serial measurement at 3h",
-    "..."
-  ],
-  "next_steps": [
-    "Specific, actionable next step with urgency",
-    "..."
-  ]
-}
-
-Rules:
-- Only list critical_findings if truly critical/immediately actionable
-- Reference specific guidelines (ACEP, AHA, IDSA, UpToDate, ACR Appropriateness Criteria)
-- Next steps must be specific and guideline-driven
-- If results are all normal, risk_level should be "normal" or "low"`,
-        response_json_schema: {
-          type:"object",
-          properties:{
-            risk_level:{type:"string"}, risk_rationale:{type:"string"},
-            clinical_summary:{type:"string"}, critical_findings:{type:"array",items:{type:"string"}},
-            abnormal_findings:{type:"array",items:{type:"string"}},
-            interpretations:{type:"array"}, differential:{type:"array",items:{type:"string"}},
-            guidelines:{type:"array",items:{type:"string"}}, next_steps:{type:"array",items:{type:"string"}},
-          }
-        }
+      const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          model:"claude-sonnet-4-6", max_tokens:600,
+          system:`Extract lab values from clinical text. Return ONLY valid JSON (no markdown). Use only these keys: ${fieldGuide}. Values must be numeric strings. Omit keys not found. Example: {"wbc":"14.2","hgb":"8.4"}`,
+          messages:[{role:"user", content:pasteText}]
+        })
       });
-      setAnalysis(result);
-    } catch(err) {
-      toast.error("Analysis failed: " + err.message);
-    } finally {
-      setAnalyzing(false);
-    }
-  };
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error.message);
+      const raw = data.content?.find(b=>b.type==="text")?.text||"{}";
+      const parsed = JSON.parse(raw.replace(/```json|```/g,"").trim());
+      const count = Object.keys(parsed).length;
+      if (!count) throw new Error("No recognizable values found — try a different paste format");
+      setValues(prev => ({...prev, ...Object.fromEntries(Object.entries(parsed).map(([k,v])=>[k,String(v)]))}));
+      setPasteOpen(false); setPasteText("");
+    } catch(e) {
+      setParseErr(e.message || "Parse failed — check API connectivity");
+    } finally { setParsePending(false); }
+  }, [pasteText, labPanel]);
 
-  // ── Save results to note ───────────────────────────────────────
-  const saveToNote = async () => {
-    if (!linkedNoteId) { toast.error("No linked note. Open from Clinical Studio."); return; }
-    const labText = enteredLabs.map(t => {
-      const flag = getFlag(t, labValues[t.id]);
-      return `${t.name}: ${labValues[t.id]} ${t.unit} ${flag && flag!=="NORMAL" ? `[${FLAG_STYLE[flag]?.label||flag}]` : ""}`;
-    }).join("\n");
-    const imgText = imagingStudies.map(s => `${s.modality} ${s.region}: ${s.impression||s.findings}`).join("\n");
-    const ekgText = ekgFindings.length > 0 ? `EKG: ${ekgFindings.join(", ")}` : "";
-
-    const fullText = [labText && `LABS:\n${labText}`, imgText && `IMAGING:\n${imgText}`, ekgText].filter(Boolean).join("\n\n");
-
+  // Main AI analysis
+  const runAnalysis = useCallback(async () => {
+    if (!hasData) return;
+    setAnalyzing(true); setAnalysisErr(null); setResult(null); setTab("analysis");
+    const promptData = buildPrompt(values, ekgChips, imaging);
     try {
-      await base44.entities.ClinicalNote.update(linkedNoteId, { labs_imaging: fullText });
-      queryClient.invalidateQueries({ queryKey:["studioNote", linkedNoteId] });
-      toast.success("Results saved to note");
-    } catch(err) {
-      toast.error("Save failed: " + err.message);
-    }
-  };
+      const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          model:"claude-sonnet-4-6", max_tokens:2000,
+          system:`You are an AI clinical decision support system embedded in an emergency medicine platform. Analyze the provided clinical data. Respond ONLY in valid JSON — no markdown fences, no text outside the JSON object — matching this exact schema:
+{
+  "criticalFlags": [{"value":"e.g. K 6.8 mEq/L","significance":"one sentence","urgency":"immediate|urgent|monitor"}],
+  "dataSynthesis": "3-4 sentences of INTEGRATED cross-domain clinical interpretation — not organ-by-organ, but how findings connect",
+  "differential": [{"diagnosis":"name","probability":"high|moderate|low","supporting":["finding"],"against":["finding"]}],
+  "nextSteps": {
+    "now": ["specific immediate action"],
+    "withinHours": ["action within 1-4h"],
+    "routine": ["non-urgent follow-up"]
+  },
+  "gaps": [{"test":"specific test","rationale":"why it changes management or diagnosis"}],
+  "disposition": {"recommendation":"ICU|Stepdown|Floor|OR|Cath Lab|Discharge|Observation","rationale":"one sentence"},
+  "confidence": "high|moderate|low",
+  "confidenceNote": "what is limiting certainty — missing data, conflicting values, insufficient context"
+}
+Critical values are pre-tagged [CRITICAL] in the data. All analysis is for clinical decision support only.`,
+          messages:[{role:"user", content:promptData+"\n\nProvide integrated clinical interpretation."}]
+        })
+      });
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error.message);
+      const raw = data.content?.find(b=>b.type==="text")?.text||"{}";
+      setResult(JSON.parse(raw.replace(/```json|```/g,"").trim()));
+    } catch(e) {
+      setAnalysisErr("Analysis error: " + (e.message || "Unknown. Check API connectivity."));
+    } finally { setAnalyzing(false); }
+  }, [values, ekgChips, imaging, hasData]);
 
-  // ── Stats bar ──────────────────────────────────────────────────
-  const stats = [
-    { label:"Labs Entered",    value:enteredLabs.length,    c:C.teal   },
-    { label:"Abnormal",        value:abnormalLabs.length,   c:C.amber  },
-    { label:"Critical",        value:criticalLabs.length,   c:C.red    },
-    { label:"Imaging Studies", value:imagingStudies.length, c:C.blue   },
-    { label:"EKG Findings",    value:ekgFindings.length,    c:C.purple },
+  const probColor  = p => p==="high"?T.red:p==="moderate"?T.orange:T.yellow;
+  const urgColor   = u => u==="immediate"?T.red:u==="urgent"?T.orange:T.yellow;
+  const dispColor  = r => ["ICU","OR","Cath Lab"].some(x=>r?.includes(x))?T.red:
+    ["Floor","Step"].some(x=>r?.includes(x))?T.orange:T.green;
+
+  const TABS = [
+    {id:"context",  label:"Context & Vitals", icon:"👤"},
+    {id:"labs",     label:"Labs",             icon:"🧪"},
+    {id:"ekg",      label:"EKG",              icon:"💓"},
+    {id:"imaging",  label:"Imaging",          icon:"🫁"},
+    {id:"analysis", label:"AI Analysis",      icon:"🤖"},
   ];
 
-  // ─────────────────────────────────────────────────────────────────
   return (
-    <div style={{ fontFamily:"'DM Sans',sans-serif", background:C.navy, position:"fixed", left:72, top:0, right:0, bottom:0, color:C.text, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
-        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        @keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
-        @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-        ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:2px}
-        input,textarea,select{transition:border-color .15s}
-        input:focus,textarea:focus,select:focus{border-color:#4a7299 !important;outline:none}
-        input::placeholder,textarea::placeholder{color:#2a4d72}
-        select option{background:#0b1d35}
-        button:hover{filter:brightness(1.1)}
-      `}</style>
+    <div style={{fontFamily:"DM Sans, sans-serif",background:T.bg,minHeight:"100vh",
+      position:"relative",overflow:"hidden",color:T.txt}}>
+      <AmbientBg/>
+      <div style={{position:"relative",zIndex:1,maxWidth:1200,margin:"0 auto",padding:"0 16px"}}>
 
-      {/* ── Navbar ──────────────────────────────────────────────── */}
-      <nav style={{ height:52, background:"rgba(11,29,53,.97)", borderBottom:`1px solid ${C.border}`, backdropFilter:"blur(20px)", display:"flex", alignItems:"center", padding:"0 16px", gap:10, flexShrink:0, zIndex:100 }}>
-        <span onClick={()=>navigate(createPageUrl("Home"))} style={{ fontFamily:"'Playfair Display',serif", fontSize:19, fontWeight:700, color:C.bright, cursor:"pointer", letterSpacing:"-.02em" }}>Notrya</span>
-        <div style={{ width:1, height:16, background:C.border }} />
-        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:C.teal, letterSpacing:".12em" }}>RESULTS</span>
-        <div style={{ flex:1 }} />
-
-        {/* Patient bar */}
-        <input value={patient.name} onChange={e=>setPatient(p=>({...p,name:e.target.value}))} placeholder="Patient name" style={{ ...inputS, width:150, padding:"4px 9px", fontSize:11, background:C.edge }} />
-        <input value={patient.age}  onChange={e=>setPatient(p=>({...p,age:e.target.value}))}  placeholder="Age"          style={{ ...inputS, width:44,  padding:"4px 8px",  fontSize:11, background:C.edge }} />
-        <input value={patient.cc}   onChange={e=>setPatient(p=>({...p,cc:e.target.value}))}   placeholder="CC / Dx"      style={{ ...inputS, width:120, padding:"4px 9px",  fontSize:11, background:C.edge }} />
-
-        <div style={{ width:1, height:16, background:C.border }} />
-
-        {/* Analyze button */}
-        <button onClick={runAIAnalysis} disabled={analyzing} style={{
-          display:"flex", alignItems:"center", gap:6, padding:"5px 14px", borderRadius:9,
-          fontSize:11, fontWeight:700, cursor:analyzing?"wait":"pointer", border:"none",
-          background: analyzing ? C.edge : `linear-gradient(135deg,${C.purple},#7c52ee)`,
-          color: analyzing ? C.dim : "#fff",
-        }}>
-          {analyzing
-            ? <><div style={{ width:11,height:11,border:`2px solid ${C.purple}44`,borderTopColor:C.purple,borderRadius:"50%",animation:"spin .6s linear infinite" }}/>Analyzing…</>
-            : "✦ Analyze with AI"
-          }
-        </button>
-
-        {linkedNoteId && (
-          <button onClick={saveToNote} style={{ padding:"5px 13px", borderRadius:9, fontSize:11, fontWeight:700, cursor:"pointer", background:"rgba(0,212,188,.12)", border:"1px solid rgba(0,212,188,.3)", color:C.teal }}>
-            💾 Save to Note
-          </button>
-        )}
-
-        {/* App nav */}
-        <div style={{ width:1, height:16, background:C.border }} />
-        {[
-          { label:"📝 Studio",      page:"ClinicalNoteStudio",    c:C.teal   },
-          { label:"🔬 Stewardship", page:"DiagnosticStewardship", c:C.blue   },
-          { label:"🧬 Drugs",       page:"DrugsBugs",             c:C.green  },
-        ].map(p=>(
-          <button key={p.page} onClick={()=>navigate(createPageUrl(p.page))} style={{ padding:"4px 10px", borderRadius:8, fontSize:10, fontWeight:600, cursor:"pointer", border:`1px solid ${p.c}44`, background:`${p.c}0e`, color:p.c }}>
-            {p.label}
-          </button>
-        ))}
-        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:C.dim }}>{clock}</span>
-      </nav>
-
-      {/* ── Stats bar ────────────────────────────────────────────── */}
-      <div style={{ background:C.slate, borderBottom:`1px solid ${C.border}`, padding:"7px 18px", display:"flex", gap:16, alignItems:"center", flexShrink:0 }}>
-        {stats.map(s=>(
-          <div key={s.label} style={{ display:"flex", gap:7, alignItems:"center" }}>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:18, fontWeight:700, color:s.value>0?s.c:C.muted }}>{s.value}</span>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.muted }}>{s.label.toUpperCase()}</span>
+        {/* Header */}
+        <div style={{padding:"18px 0 14px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+            <div style={{backdropFilter:"blur(40px)",WebkitBackdropFilter:"blur(40px)",
+              background:"rgba(5,15,30,0.9)",border:"1px solid rgba(42,79,122,0.6)",
+              borderRadius:10,padding:"5px 12px",display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.blue,letterSpacing:3}}>NOTRYA</span>
+              <span style={{color:T.txt4,fontFamily:"JetBrains Mono",fontSize:10}}>/</span>
+              <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.txt3,letterSpacing:2}}>RESULTS</span>
+            </div>
+            <div style={{height:1,flex:1,background:"linear-gradient(90deg,rgba(59,158,255,0.5),transparent)"}}/>
+            {critCount > 0 && (
+              <div className="crit-blink" style={{display:"flex",alignItems:"center",gap:6,
+                padding:"5px 12px",borderRadius:20,
+                background:"rgba(255,68,68,0.15)",border:"1px solid rgba(255,68,68,0.5)"}}>
+                <div style={{width:7,height:7,borderRadius:"50%",background:T.red}}/>
+                <span style={{fontFamily:"JetBrains Mono",fontSize:10,fontWeight:700,color:T.red}}>
+                  {critCount} CRITICAL {critCount===1?"VALUE":"VALUES"}
+                </span>
+              </div>
+            )}
           </div>
-        ))}
-        <div style={{ flex:1 }} />
-        {criticalLabs.length > 0 && (
-          <div style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 12px", borderRadius:8, background:"rgba(255,92,108,.1)", border:"1px solid rgba(255,92,108,.3)", animation:"pulse 1.2s infinite" }}>
-            <div style={{ width:6,height:6,borderRadius:"50%",background:C.red }} />
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:C.red }}>
-              {criticalLabs.length} CRITICAL VALUE{criticalLabs.length>1?"S":""}
-            </span>
-          </div>
-        )}
-        {analysis && <Pill color={C.purple}>✦ AI Analysis Ready</Pill>}
-        {uploadingFile && <Pill color={C.blue}>⏫ Uploading…</Pill>}
-      </div>
-
-      {/* ── Main layout ──────────────────────────────────────────── */}
-      <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
-
-        {/* ══════════════════════════════════════════════════════════
-            MAIN CONTENT
-        ══════════════════════════════════════════════════════════ */}
-        <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-
-          {/* Tab bar */}
-          <div style={{ display:"flex", background:C.panel, borderBottom:`1px solid ${C.border}`, flexShrink:0 }}>
-            {[
-              { id:"labs",    label:"🧪 Laboratory",  count:enteredLabs.length,    abn:abnormalLabs.length   },
-              { id:"imaging", label:"🔬 Imaging",      count:imagingStudies.length, abn:0                    },
-              { id:"ekg",     label:"❤️ EKG",          count:ekgFindings.length,    abn:0                    },
-            ].map(tab=>{
-              const isActive = mainTab===tab.id;
-              return (
-                <button key={tab.id} onClick={()=>setMainTab(tab.id)} style={{
-                  display:"flex", alignItems:"center", gap:8, padding:"11px 22px",
-                  borderBottom:`2px solid ${isActive?C.teal:"transparent"}`,
-                  background:"transparent", border:"none", cursor:"pointer", transition:"all .15s",
-                }}>
-                  <span style={{ fontSize:14 }}>{tab.label.split(" ")[0]}</span>
-                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, fontWeight:700, color:isActive?C.teal:C.dim, letterSpacing:".06em" }}>
-                    {tab.label.split(" ").slice(1).join(" ")}
-                  </span>
-                  {tab.count > 0 && (
-                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, padding:"1px 6px", borderRadius:6,
-                      background:tab.abn>0?"rgba(245,166,35,.15)":"rgba(0,212,188,.1)",
-                      border:`1px solid ${tab.abn>0?"rgba(245,166,35,.35)":"rgba(0,212,188,.25)"}`,
-                      color:tab.abn>0?C.amber:C.teal,
-                    }}>{tab.abn>0?`${tab.abn} abn`:tab.count}</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
-            <AnimatePresence mode="wait">
-
-              {/* ═══════════ LABS ═══════════ */}
-              {mainTab === "labs" && (
-                <motion.div key="labs" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.15}} style={{ flex:1, display:"flex", overflow:"hidden" }}>
-
-                  {/* Panel selector sidebar */}
-                  <div style={{ width:130, flexShrink:0, background:C.panel, borderRight:`1px solid ${C.border}`, display:"flex", flexDirection:"column", padding:"8px" }}>
-                    <Label style={{ padding:"4px 6px" }}>PANELS</Label>
-                    {Object.entries(LAB_PANELS).map(([pid, panel])=>{
-                      const entered = panel.tests.filter(t=>labValues[t.id]!==undefined && labValues[t.id]!=="").length;
-                      const abn = panel.tests.filter(t=>{ const f=getFlag(t,labValues[t.id]); return f&&f!=="NORMAL"; }).length;
-                      const isActive = activePanel===pid;
-                      return (
-                        <div key={pid} onClick={()=>setActivePanel(pid)} style={{ display:"flex", gap:7, alignItems:"center", padding:"7px 8px", borderRadius:9, cursor:"pointer", marginBottom:2, background:isActive?"rgba(0,212,188,.09)":"transparent", border:`1px solid ${isActive?"rgba(0,212,188,.3)":"transparent"}`, transition:"all .12s" }}>
-                          <span style={{ fontSize:14 }}>{panel.icon}</span>
-                          <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:isActive?C.teal:C.text }}>{panel.label}</div>
-                            {entered>0 && <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:abn>0?C.amber:C.green }}>{abn>0?`${abn} abn`:entered+" entered"}</div>}
-                          </div>
-                        </div>
-                      );
-                    })}
-
-                    {/* Upload section */}
-                    <div style={{ marginTop:"auto", paddingTop:8 }}>
-                      <div style={{ border:`1px dashed ${C.border}`, borderRadius:9, padding:"8px", textAlign:"center", cursor:"pointer" }}
-                        onClick={()=>document.getElementById("lab-upload")?.click()}>
-                        <input id="lab-upload" type="file" accept=".pdf,image/*,.csv,.txt" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f) uploadFile(f,"lab"); }} />
-                        <div style={{ fontSize:16, marginBottom:3 }}>📎</div>
-                        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:C.muted }}>UPLOAD REPORT</div>
-                      </div>
-                      {uploadedLabFiles.length>0 && (
-                        <div style={{ marginTop:6 }}>
-                          {uploadedLabFiles.map((f,i)=>(
-                            <div key={i} style={{ fontSize:9, color:C.dim, padding:"3px 6px", borderRadius:6, background:C.edge, border:`1px solid ${C.border}`, marginBottom:3, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
-                              📄 {f.name}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Lab entry grid */}
-                  <div style={{ flex:1, overflowY:"auto", padding:"16px 18px" }}>
-                    {(() => {
-                      const panel = LAB_PANELS[activePanel];
-                      return (
-                        <>
-                          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
-                            <span style={{ fontSize:22 }}>{panel.icon}</span>
-                            <div>
-                              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:700, color:C.bright }}>{panel.name}</div>
-                              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.dim, marginTop:1 }}>
-                                {panel.tests.filter(t=>labValues[t.id]).length} / {panel.tests.length} values entered
-                              </div>
-                            </div>
-                            <div style={{ flex:1 }} />
-                            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                              <Label style={{ marginBottom:0 }}>COLLECTED:</Label>
-                              <input type="datetime-local" value={labTimestamps[activePanel]||""} onChange={e=>setLabTimestamps(p=>({...p,[activePanel]:e.target.value}))} style={{ ...inputS, width:"auto", fontSize:11, padding:"4px 9px" }} />
-                            </div>
-                          </div>
-
-                          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:10 }}>
-                            {panel.tests.map(test=>{
-                              const val = labValues[test.id] || "";
-                              const flag = val ? getFlag(test, val) : null;
-                              const fs = flag ? FLAG_STYLE[flag] : null;
-                              const isCrit = flag?.startsWith("CRIT");
-                              return (
-                                <div key={test.id} style={{
-                                  background: fs ? fs.bg : C.edge,
-                                  border:`1px solid ${fs ? fs.border : C.border}`,
-                                  borderRadius:11, padding:"11px 12px",
-                                  transition:"all .15s",
-                                  animation: isCrit ? "pulse 1.5s infinite" : "none",
-                                }}>
-                                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
-                                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:C.dim, letterSpacing:".07em" }}>{test.name.toUpperCase()}</div>
-                                    {fs && (
-                                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, padding:"1px 6px", borderRadius:5, background:`${fs.color}20`, border:`1px solid ${fs.color}44`, color:fs.color }}>{fs.label}</span>
-                                    )}
-                                  </div>
-                                  <div style={{ display:"flex", alignItems:"baseline", gap:5 }}>
-                                    {test.qualitative ? (
-                                      <select value={val} onChange={e=>setLabValues(p=>({...p,[test.id]:e.target.value}))} style={{ ...inputS, background:"transparent", border:"none", fontSize:16, fontWeight:700, color:fs?fs.color:C.dim, padding:0, width:"100%" }}>
-                                        <option value="">—</option>
-                                        {["Negative","Trace","1+","2+","3+","Positive"].map(o=><option key={o} value={o}>{o}</option>)}
-                                      </select>
-                                    ) : (
-                                      <>
-                                        <input
-                                          value={val}
-                                          onChange={e=>setLabValues(p=>({...p,[test.id]:e.target.value}))}
-                                          placeholder="—"
-                                          style={{ flex:1, background:"transparent", border:"none", outline:"none", fontSize:22, fontWeight:700, fontFamily:"'JetBrains Mono',monospace", color:fs?fs.color:C.bright, width:0 }}
-                                        />
-                                        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.muted, flexShrink:0 }}>{test.unit}</span>
-                                      </>
-                                    )}
-                                  </div>
-                                  {test.lo !== undefined && !test.qualitative && (
-                                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:C.muted, marginTop:4 }}>
-                                      Ref: {test.lo} – {test.hi} {test.unit}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-
-                          {/* Lab notes */}
-                          <div style={{ marginTop:16 }}>
-                            <Label>CLINICAL NOTES / ADDITIONAL LABS</Label>
-                            <textarea value={labNote} onChange={e=>setLabNote(e.target.value)} rows={3} placeholder="Free text notes, culture results, pending tests..." style={{ ...inputS, resize:"vertical", lineHeight:1.65 }} />
-                          </div>
-
-                          {/* Drop zone for report upload */}
-                          <div style={{ marginTop:12 }}>
-                            <DropZone
-                              onFile={f=>uploadFile(f,"lab")}
-                              label="Upload Lab Report (PDF, image, CSV)"
-                              icon="🧪"
-                              color={C.teal}
-                            />
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </div>
-                </motion.div>
-              )}
-
-              {/* ═══════════ IMAGING ═══════════ */}
-              {mainTab === "imaging" && (
-                <motion.div key="imaging" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.15}} style={{ flex:1, overflowY:"auto", padding:"18px 22px" }}>
-                  <div style={{ maxWidth:860, display:"flex", flexDirection:"column", gap:14 }}>
-
-                    <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                      <div style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:700, color:C.bright }}>Imaging Studies</div>
-                      <div style={{ flex:1 }} />
-                      <button onClick={()=>setAddingStudy(true)} style={{ padding:"6px 14px", borderRadius:9, fontSize:11, fontWeight:700, cursor:"pointer", background:`linear-gradient(135deg,${C.blue},#3a7fc5)`, border:"none", color:"#fff", display:"flex", alignItems:"center", gap:5 }}>
-                        + Add Study
-                      </button>
-                    </div>
-
-                    {/* Add study form */}
-                    <AnimatePresence>
-                      {addingStudy && (
-                        <motion.div initial={{opacity:0,y:-8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}} transition={{duration:.15}}>
-                          <Card title="NEW IMAGING STUDY" icon="🔬" badge="ENTER RESULT" badgeColor={C.blue}>
-                            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:10 }}>
-                              <div>
-                                <Label>MODALITY</Label>
-                                <select value={newStudy.modality} onChange={e=>setNewStudy(p=>({...p,modality:e.target.value}))} style={{ ...inputS, cursor:"pointer" }}>
-                                  {["CXR","CT Head","CT Chest","CT Abdomen/Pelvis","CT Chest/Abdomen/Pelvis","CT C-Spine","CT Angiogram","MRI Brain","MRI Spine","Ultrasound","FAST Exam","X-Ray","Fluoroscopy","Nuclear Medicine","PET Scan","Echocardiogram","Other"].map(m=><option key={m}>{m}</option>)}
-                                </select>
-                              </div>
-                              <div>
-                                <Label>REGION / BODY PART</Label>
-                                <input value={newStudy.region} onChange={e=>setNewStudy(p=>({...p,region:e.target.value}))} style={inputS} placeholder="Chest, Abdomen…" />
-                              </div>
-                              <div>
-                                <Label>READ BY</Label>
-                                <input value={newStudy.read_by} onChange={e=>setNewStudy(p=>({...p,read_by:e.target.value}))} style={inputS} placeholder="Radiologist, preliminary…" />
-                              </div>
-                            </div>
-                            <div style={{ marginBottom:10 }}>
-                              <Label>INDICATION</Label>
-                              <input value={newStudy.indication} onChange={e=>setNewStudy(p=>({...p,indication:e.target.value}))} style={inputS} placeholder="Clinical indication..." />
-                            </div>
-                            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
-                              <div>
-                                <Label>FINDINGS</Label>
-                                <textarea value={newStudy.findings} onChange={e=>setNewStudy(p=>({...p,findings:e.target.value}))} rows={4} style={{ ...inputS, resize:"vertical" }} placeholder="Detailed findings..." />
-                              </div>
-                              <div>
-                                <Label>IMPRESSION</Label>
-                                <textarea value={newStudy.impression} onChange={e=>setNewStudy(p=>({...p,impression:e.target.value}))} rows={4} style={{ ...inputS, resize:"vertical" }} placeholder="Radiologist impression..." />
-                              </div>
-                            </div>
-                            <div style={{ display:"flex", gap:8 }}>
-                              <button onClick={addImagingStudy} style={{ padding:"7px 18px", borderRadius:9, fontSize:12, fontWeight:700, cursor:"pointer", border:"none", background:`linear-gradient(135deg,${C.teal},#00b8a5)`, color:C.navy }}>Save Study</button>
-                              <button onClick={()=>setAddingStudy(false)} style={{ padding:"7px 14px", borderRadius:9, fontSize:12, cursor:"pointer", background:C.edge, border:`1px solid ${C.border}`, color:C.dim }}>Cancel</button>
-                            </div>
-                          </Card>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
-                    {/* Studies list */}
-                    {imagingStudies.length === 0 && !addingStudy ? (
-                      <Card title="NO STUDIES" icon="🔬">
-                        <div style={{ textAlign:"center", padding:"24px 0", color:C.muted }}>
-                          <div style={{ fontSize:36, marginBottom:10, opacity:.2 }}>🔬</div>
-                          <div style={{ fontSize:12 }}>No imaging studies entered yet. Click <strong style={{color:C.blue}}>Add Study</strong> to enter results.</div>
-                        </div>
-                      </Card>
-                    ) : (
-                      imagingStudies.map((study, i) => (
-                        <motion.div key={study.id} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{delay:i*.06}}>
-                          <Card
-                            title={`${study.modality} — ${study.region}`}
-                            icon="🔬"
-                            badge={study.read_by || "Preliminary"}
-                            badgeColor={C.blue}
-                            right={
-                              <button onClick={()=>setImagingStudies(p=>p.filter(s=>s.id!==study.id))} style={{ padding:"2px 8px", borderRadius:6, fontSize:10, cursor:"pointer", background:"transparent", border:`1px solid ${C.border}`, color:C.muted }}>✕</button>
-                            }
-                          >
-                            {study.indication && (
-                              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.muted, marginBottom:8 }}>Indication: {study.indication}</div>
-                            )}
-                            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                              {study.findings && (
-                                <div>
-                                  <Label>FINDINGS</Label>
-                                  <div style={{ fontSize:12, color:C.text, lineHeight:1.7 }}>{study.findings}</div>
-                                </div>
-                              )}
-                              {study.impression && (
-                                <div>
-                                  <Label>IMPRESSION</Label>
-                                  <div style={{ fontSize:12, color:C.bright, lineHeight:1.7, fontWeight:500 }}>{study.impression}</div>
-                                </div>
-                              )}
-                            </div>
-                          </Card>
-                        </motion.div>
-                      ))
-                    )}
-
-                    {/* Upload image */}
-                    <Card title="UPLOAD IMAGING" icon="📎">
-                      <DropZone onFile={f=>uploadFile(f,"imaging")} label="Upload DICOM, image, or radiology report PDF" icon="🔬" color={C.blue} />
-                      {imagingFiles.length > 0 && (
-                        <div style={{ marginTop:10, display:"flex", flexWrap:"wrap", gap:8 }}>
-                          {imagingFiles.map((f,i)=>(
-                            <div key={i} style={{ display:"flex", gap:7, alignItems:"center", padding:"5px 10px", borderRadius:8, background:C.edge, border:`1px solid ${C.border}` }}>
-                              {f.url && f.name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                                <img src={f.url} alt={f.name} style={{ width:40, height:40, objectFit:"cover", borderRadius:5 }} />
-                              ) : <span style={{ fontSize:20 }}>📄</span>}
-                              <div>
-                                <div style={{ fontSize:11, fontWeight:600, color:C.bright }}>{f.name}</div>
-                                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.dim }}>{f.size}</div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </Card>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* ═══════════ EKG ═══════════ */}
-              {mainTab === "ekg" && (
-                <motion.div key="ekg" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.15}} style={{ flex:1, overflowY:"auto", padding:"18px 22px" }}>
-                  <div style={{ maxWidth:900, display:"flex", flexDirection:"column", gap:14 }}>
-
-                    <div style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:700, color:C.bright }}>EKG Interpretation</div>
-
-                    {/* Measurements */}
-                    <Card title="EKG MEASUREMENTS" icon="📏">
-                      <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:10 }}>
-                        {[
-                          { k:"hr",    label:"HEART RATE",  unit:"bpm",  crit:v=>+v>150||+v<40 },
-                          { k:"pr",    label:"PR INTERVAL", unit:"ms",   crit:v=>+v>200||+v<120 },
-                          { k:"qrs",   label:"QRS DURATION",unit:"ms",   crit:v=>+v>120 },
-                          { k:"qtc",   label:"QTc",         unit:"ms",   crit:v=>+v>500 },
-                          { k:"axis",  label:"AXIS",        unit:"°",    crit:v=>false },
-                          { k:"rhythm",label:"RHYTHM",      unit:"",     crit:v=>false, text:true },
-                        ].map(m=>{
-                          const val = ekgMeasurements[m.k];
-                          const isAbn = val && m.crit(val);
-                          return (
-                            <div key={m.k} style={{ background:isAbn?"rgba(255,92,108,.07)":C.edge, border:`1px solid ${isAbn?"rgba(255,92,108,.4)":C.border}`, borderRadius:10, padding:"10px 10px" }}>
-                              <Label>{m.label}</Label>
-                              <input value={val||""} onChange={e=>setEkgMeasurements(p=>({...p,[m.k]:e.target.value}))} placeholder="—" style={{ width:"100%", background:"transparent", border:"none", outline:"none", fontSize: m.text?13:20, fontWeight:700, fontFamily:"'JetBrains Mono',monospace", color:isAbn?C.red:C.bright }} />
-                              {m.unit && <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:isAbn?C.red:C.muted }}>{isAbn?"⚠ CRITICAL":m.unit}</div>}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </Card>
-
-                    {/* Findings checkboxes */}
-                    <Card title="EKG FINDINGS" icon="❤️" badge={`${ekgFindings.length} SELECTED`} badgeColor={ekgFindings.length>0?C.teal:C.dim}>
-                      <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-                        {Object.entries(EKG_FINDING_CATEGORIES).map(([catId, cat]) => (
-                          <div key={catId}>
-                            <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:8, paddingBottom:6, borderBottom:`1px solid ${C.border}` }}>
-                              <span style={{ fontSize:14 }}>{cat.icon}</span>
-                              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:cat.color, letterSpacing:".1em" }}>
-                                {cat.label}
-                              </span>
-                              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:C.muted, marginLeft:"auto" }}>
-                                {cat.findings.filter(f=>ekgFindings.includes(f)).length}/{cat.findings.length}
-                              </span>
-                            </div>
-                            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(200px, 1fr))", gap:6 }}>
-                              {cat.findings.map(f=>{
-                                const isSel = ekgFindings.includes(f);
-                                const isCrit = ["ST elevation (STEMI)","Ventricular fibrillation","Ventricular tachycardia","Third-degree (complete) AV block"].includes(f);
-                                return (
-                                  <div key={f} onClick={()=>toggleEkgFinding(f)} style={{
-                                    display:"flex", alignItems:"center", gap:6, padding:"6px 10px", borderRadius:8, cursor:"pointer", transition:"all .12s",
-                                    background: isSel ? (isCrit?"rgba(255,92,108,.15)":"rgba(0,212,188,.1)") : C.edge,
-                                    border:`1px solid ${isSel ? (isCrit?"rgba(255,92,108,.45)":"rgba(0,212,188,.35)") : C.border}`,
-                                  }}>
-                                    <div style={{ width:14, height:14, borderRadius:4, border:`2px solid ${isSel?(isCrit?C.red:C.teal):C.muted}`, background:isSel?(isCrit?C.red:C.teal):"transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all .12s" }}>
-                                      {isSel && <span style={{ fontSize:9, color:C.navy, fontWeight:700 }}>✓</span>}
-                                    </div>
-                                    <span style={{ fontSize:11, fontWeight:isSel?600:400, color:isSel?(isCrit?C.red:C.teal):C.text }}>{f}</span>
-                                    {isCrit && isSel && <span style={{ fontSize:10 }}>🔴</span>}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Selected findings summary */}
-                      {ekgFindings.length > 0 && (
-                        <div style={{ marginTop:14, padding:"10px 12px", borderRadius:10, background:"rgba(0,212,188,.05)", border:"1px solid rgba(0,212,188,.2)" }}>
-                          <Label>SELECTED FINDINGS ({ekgFindings.length})</Label>
-                          <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-                            {ekgFindings.map(f=><Pill key={f} color={["ST elevation (STEMI)","Ventricular fibrillation","Ventricular tachycardia"].includes(f)?C.red:C.teal}>{f}</Pill>)}
-                          </div>
-                        </div>
-                      )}
-                    </Card>
-
-                    {/* Lead-specific findings */}
-                    <Card title="LEAD-SPECIFIC FINDINGS" icon="📊">
-                      <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:8 }}>
-                        {LEADS.map(lead=>(
-                          <div key={lead} style={{ background:C.edge, border:`1px solid ${C.border}`, borderRadius:9, padding:"8px 9px" }}>
-                            <Label>{lead}</Label>
-                            <input value={ekgLeads[lead]||""} onChange={e=>setEkgLeads(p=>({...p,[lead]:e.target.value}))} placeholder="Normal" style={{ width:"100%", background:"transparent", border:"none", outline:"none", fontSize:11, color:C.text, fontFamily:"'DM Sans',sans-serif" }} />
-                          </div>
-                        ))}
-                      </div>
-                    </Card>
-
-                    {/* Narrative / EKG notes */}
-                    <Card title="NARRATIVE INTERPRETATION" icon="📝">
-                      <textarea value={ekgNotes} onChange={e=>setEkgNotes(e.target.value)} rows={3} placeholder="Free text interpretation, clinical correlation, comparison to prior EKG..." style={{ ...inputS, resize:"vertical", lineHeight:1.65 }} />
-                    </Card>
-
-                    {/* Upload EKG */}
-                    <Card title="UPLOAD EKG IMAGE / PDF" icon="📎">
-                      <DropZone onFile={f=>uploadFile(f,"ekg")} label="Upload EKG tracing (image or PDF)" icon="❤️" color={C.rose} />
-                      {ekgFiles.length > 0 && (
-                        <div style={{ marginTop:10, display:"flex", flexWrap:"wrap", gap:8 }}>
-                          {ekgFiles.map((f,i)=>(
-                            <div key={i} style={{ display:"flex", gap:8, alignItems:"center", padding:"5px 10px", borderRadius:8, background:C.edge, border:`1px solid ${C.border}` }}>
-                              {f.url && f.name.match(/\.(jpg|jpeg|png|gif|webp)$/i)
-                                ? <img src={f.url} alt="EKG" style={{ width:80, height:50, objectFit:"cover", borderRadius:5 }} />
-                                : <span style={{ fontSize:20 }}>📄</span>}
-                              <div>
-                                <div style={{ fontSize:11, fontWeight:600, color:C.bright }}>{f.name}</div>
-                                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:C.dim }}>{f.size}</div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </Card>
-                  </div>
-                </motion.div>
-              )}
-
-            </AnimatePresence>
-          </div>
+          <h1 className="shimmer-text"
+            style={{fontFamily:"Playfair Display",fontSize:"clamp(24px,4vw,40px)",fontWeight:900,letterSpacing:-1,lineHeight:1.1}}>
+            ResultsHub
+          </h1>
+          <p style={{fontFamily:"DM Sans",fontSize:12,color:T.txt3,marginTop:4}}>
+            Labs · Vitals · EKG · Imaging · EMR Paste Import · AI Integrated Synthesis
+          </p>
         </div>
 
-        {/* ══════════════════════════════════════════════════════════
-            AI ANALYSIS SIDE PANEL
-        ══════════════════════════════════════════════════════════ */}
-        <AnimatePresence>
-          {analysisPanelOpen && (
-            <motion.div
-              initial={{ width:0, opacity:0 }}
-              animate={{ width:320, opacity:1 }}
-              exit={{ width:0, opacity:0 }}
-              transition={{ duration:.22 }}
-              style={{ background:C.panel, borderLeft:`1px solid ${C.border}`, display:"flex", flexDirection:"column", overflow:"hidden", flexShrink:0 }}
-            >
-              {/* Panel header */}
-              <div style={{ padding:"10px 14px", borderBottom:`1px solid ${C.border}`, background:"rgba(0,0,0,.2)", display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
-                <div style={{ width:8, height:8, borderRadius:"50%", background:analyzing?C.amber:analysis?C.teal:C.dim, animation:analyzing?"pulse .8s infinite":"none" }} />
-                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:C.teal, letterSpacing:".1em", flex:1 }}>AI ANALYSIS</span>
-                <button onClick={()=>setAnalysisPanelOpen(false)} style={{ padding:"2px 8px", borderRadius:6, fontSize:11, cursor:"pointer", background:"transparent", border:`1px solid ${C.border}`, color:C.muted }}>✕</button>
-              </div>
+        {/* Data strip + Analyze button */}
+        <div style={{...glass,padding:"8px 14px",marginBottom:12,borderRadius:10,
+          display:"flex",gap:14,flexWrap:"wrap",alignItems:"center"}}>
+          <span style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,
+            letterSpacing:2,textTransform:"uppercase",flexShrink:0}}>Entered:</span>
+          {[
+            {label:"Vitals", val:dataCount.vitals,  color:T.teal  },
+            {label:"Labs",   val:dataCount.labs,    color:T.blue  },
+            {label:"EKG",    val:dataCount.ekg,     color:T.purple},
+            {label:"Imaging",val:dataCount.imaging, color:T.orange},
+          ].map((d,i) => (
+            <div key={i} style={{display:"flex",alignItems:"center",gap:4}}>
+              <span style={{fontFamily:"JetBrains Mono",fontSize:12,fontWeight:700,
+                color:d.val>0?d.color:T.txt4}}>{d.val}</span>
+              <span style={{fontFamily:"DM Sans",fontSize:11,
+                color:d.val>0?T.txt3:T.txt4}}>{d.label}</span>
+            </div>
+          ))}
+          <div style={{flex:1}}/>
+          <button onClick={runAnalysis} disabled={analyzing||!hasData}
+            style={{fontFamily:"DM Sans",fontWeight:700,fontSize:12,padding:"7px 20px",
+              borderRadius:10,cursor:!hasData||analyzing?"not-allowed":"pointer",whiteSpace:"nowrap",
+              border:`1px solid ${!hasData?"rgba(42,79,122,0.3)":"rgba(59,158,255,0.5)"}`,
+              background:!hasData?"rgba(42,79,122,0.15)":"linear-gradient(135deg,rgba(59,158,255,0.2),rgba(59,158,255,0.07))",
+              color:!hasData?T.txt4:T.blue,transition:"all .15s"}}>
+            {analyzing ? <><span className="res-spin">⚙</span> Analyzing...</> : "🤖 Analyze All Results"}
+          </button>
+        </div>
 
-              {/* Reanalyze */}
-              <div style={{ padding:"8px 12px", borderBottom:`1px solid ${C.border}`, flexShrink:0 }}>
-                <button onClick={runAIAnalysis} disabled={analyzing} style={{ width:"100%", padding:"7px", borderRadius:9, fontSize:11, fontWeight:700, cursor:analyzing?"wait":"pointer", border:"none", background:analyzing?C.edge:`linear-gradient(135deg,${C.purple},#7c52ee)`, color:analyzing?C.dim:"#fff", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-                  {analyzing
-                    ? <><div style={{ width:10,height:10,border:`2px solid ${C.purple}44`,borderTopColor:C.purple,borderRadius:"50%",animation:"spin .6s linear infinite" }}/>Analyzing…</>
-                    : "✦ Re-Analyze"
-                  }
+        {/* Tabs */}
+        <div style={{...glass,padding:"6px",display:"flex",gap:4,marginBottom:16,flexWrap:"wrap"}}>
+          {TABS.map(t => (
+            <button key={t.id} onClick={()=>setTab(t.id)}
+              style={{flex:"1 1 auto",fontFamily:"DM Sans",fontWeight:600,fontSize:11,padding:"9px 6px",
+                borderRadius:10,
+                border:`1px solid ${tab===t.id?"rgba(59,158,255,0.5)":"transparent"}`,
+                background:tab===t.id?"linear-gradient(135deg,rgba(59,158,255,0.18),rgba(59,158,255,0.07))":"transparent",
+                color:tab===t.id?T.blue:T.txt3,
+                cursor:"pointer",textAlign:"center",transition:"all .15s",whiteSpace:"nowrap"}}>
+              {t.icon} {t.label}
+              {t.id==="analysis"&&result&&(
+                <span style={{marginLeft:5,width:7,height:7,borderRadius:"50%",
+                  background:T.green,display:"inline-block",verticalAlign:"middle"}}/>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* ═══ CONTEXT & VITALS ═══ */}
+        {tab==="context" && (
+          <div className="fade-in">
+            <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,
+              letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>Patient Context</div>
+            <div style={{...glass,padding:"14px 16px",marginBottom:14}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:10}}>
+                {CTX_FIELDS.map(f => (
+                  <div key={f.id}>
+                    <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,
+                      letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>{f.label}</div>
+                    <input type="text" value={values[f.id]||""} onChange={e=>setVal(f.id,e.target.value)}
+                      placeholder={f.placeholder}
+                      style={{width:"100%",background:"rgba(14,37,68,0.7)",
+                        border:`1px solid ${values[f.id]?"rgba(0,229,192,0.4)":"rgba(42,79,122,0.3)"}`,
+                        borderRadius:8,padding:"7px 10px",outline:"none",
+                        fontFamily:"DM Sans",fontSize:12,color:T.txt,transition:"border-color .1s"}}/>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,
+              letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>Vitals</div>
+            <div style={{...glass,padding:"14px 16px",marginBottom:12}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:10}}>
+                {VITAL_FIELDS.map(f => (
+                  <LabInput key={f.id} field={f} value={values[f.id]||""} onChange={setVal}/>
+                ))}
+              </div>
+            </div>
+            <div style={{padding:"9px 13px",background:"rgba(59,158,255,0.06)",
+              border:"1px solid rgba(59,158,255,0.18)",borderRadius:10,
+              fontFamily:"DM Sans",fontSize:11,color:T.txt3,lineHeight:1.6}}>
+              💡 Patient context is the single highest-value input — the same creatinine means entirely different things in a 25yo vs a 75yo on gentamicin. Fill what you have; AI notes what is missing.
+            </div>
+          </div>
+        )}
+
+        {/* ═══ LABS ═══ */}
+        {tab==="labs" && (
+          <div className="fade-in">
+            {/* Panel tabs */}
+            <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:10}}>
+              {LAB_PANELS.map(p => {
+                const filled = LAB_FIELDS.filter(f=>f.panel===p.id&&values[f.id]).length;
+                const crits  = LAB_FIELDS.filter(f=>f.panel===p.id&&isCrit(f,values[f.id])).length;
+                return (
+                  <button key={p.id} onClick={()=>{setLabPanel(p.id);setPasteOpen(false);setPasteText("");setParseErr(null);}}
+                    style={{fontFamily:"JetBrains Mono",fontSize:10,fontWeight:700,padding:"5px 14px",
+                      borderRadius:20,cursor:"pointer",letterSpacing:1,textTransform:"uppercase",
+                      border:`1px solid ${labPanel===p.id?p.color+"88":p.color+"33"}`,
+                      background:labPanel===p.id?`${p.color}20`:`${p.color}08`,
+                      color:labPanel===p.id?p.color:T.txt3,transition:"all .15s",
+                      position:"relative"}}>
+                    {p.label}
+                    {filled>0&&<span style={{marginLeft:5,fontWeight:400,color:labPanel===p.id?p.color:T.txt4}}>({filled})</span>}
+                    {crits>0&&<span style={{marginLeft:4,color:T.red,fontWeight:900}}>!</span>}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Paste from EMR */}
+            <div style={{...glass,padding:"10px 14px",marginBottom:10,borderRadius:10}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+                marginBottom:pasteOpen?10:0}}>
+                <span style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,
+                  letterSpacing:2,textTransform:"uppercase"}}>
+                  {LAB_PANELS.find(p=>p.id===labPanel)?.label} — {LAB_FIELDS.filter(f=>f.panel===labPanel).length} fields
+                </span>
+                <button onClick={()=>{setPasteOpen(o=>!o);setPasteText("");setParseErr(null);}}
+                  style={{fontFamily:"DM Sans",fontWeight:600,fontSize:11,padding:"5px 14px",
+                    borderRadius:8,cursor:"pointer",
+                    border:"1px solid rgba(0,229,192,0.35)",
+                    background:"rgba(0,229,192,0.07)",color:T.teal}}>
+                  {pasteOpen?"✕ Close":"📋 Paste from EMR"}
                 </button>
               </div>
-
-              {/* Scrollable analysis */}
-              <div style={{ flex:1, overflowY:"auto", padding:"14px 14px" }}>
-                <AIAnalysisPanel analysis={analysis} analyzing={analyzing} />
-              </div>
-
-              {/* Footer: save to note */}
-              {analysis && linkedNoteId && (
-                <div style={{ padding:"10px 12px", borderTop:`1px solid ${C.border}`, flexShrink:0 }}>
-                  <button onClick={saveToNote} style={{ width:"100%", padding:"8px", borderRadius:10, fontSize:12, fontWeight:700, cursor:"pointer", border:"none", background:`linear-gradient(135deg,${C.teal},#00b8a5)`, color:C.navy }}>
-                    💾 Save Results to Note
+              {pasteOpen && (
+                <div className="fade-in">
+                  <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt3,marginBottom:6}}>
+                    Paste lab results from Epic, Cerner, or any source. AI will extract and fill the fields automatically.
+                  </div>
+                  <textarea value={pasteText} onChange={e=>setPasteText(e.target.value)}
+                    placeholder={"Paste lab block here. Any format accepted:\n\nWBC 14.2 H  |  Hgb 8.4 L  |  Plt 312\nWBC: 14.2 (H)  Hgb: 8.4 (L)  Hct: 26.1 (L)\n---or full report block---"}
+                    rows={5}
+                    style={{width:"100%",background:"rgba(14,37,68,0.8)",
+                      border:"1px solid rgba(42,79,122,0.4)",borderRadius:8,
+                      padding:"10px 12px",outline:"none",resize:"vertical",marginBottom:8,
+                      fontFamily:"JetBrains Mono",fontSize:11,color:T.txt2,lineHeight:1.65}}/>
+                  {parseErr && (
+                    <div style={{fontFamily:"DM Sans",fontSize:11,color:T.coral,marginBottom:8}}>{parseErr}</div>
+                  )}
+                  <button onClick={runParse} disabled={parsePending||!pasteText.trim()}
+                    style={{fontFamily:"DM Sans",fontWeight:700,fontSize:12,padding:"7px 20px",
+                      borderRadius:8,cursor:parsePending?"not-allowed":"pointer",
+                      border:"1px solid rgba(0,229,192,0.4)",
+                      background:parsePending?"rgba(42,79,122,0.2)":"rgba(0,229,192,0.12)",
+                      color:parsePending?T.txt4:T.teal}}>
+                    {parsePending?<><span className="res-spin">⚙</span> Parsing...</>:"🔍 Parse & Auto-Fill Fields"}
                   </button>
                 </div>
               )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
 
-        {/* Toggle button if panel closed */}
-        {!analysisPanelOpen && (
-          <button onClick={()=>setAnalysisPanelOpen(true)} style={{ position:"absolute", right:0, top:"50%", transform:"translateY(-50%)", padding:"12px 6px", borderRadius:"10px 0 0 10px", background:analysis?`linear-gradient(180deg,${C.purple},#7c52ee)`:`${C.panel}`, border:`1px solid ${analysis?C.purple:C.border}`, borderRight:"none", cursor:"pointer", writingMode:"vertical-rl", fontSize:10, fontFamily:"'JetBrains Mono',monospace", fontWeight:700, color:analysis?C.bright:C.dim, letterSpacing:".08em" }}>
-            {analysis ? "✦ AI ANALYSIS" : "ANALYSIS →"}
-          </button>
+            {/* Lab inputs */}
+            <div style={{...glass,padding:"14px 16px",marginBottom:10}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10}}>
+                {LAB_FIELDS.filter(f=>f.panel===labPanel).map(f => (
+                  <LabInput key={f.id} field={f} value={values[f.id]||""} onChange={setVal}/>
+                ))}
+              </div>
+            </div>
+
+            {/* Free text overflow */}
+            <div style={{...glass,padding:"12px 14px"}}>
+              <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,
+                letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>
+                Additional Labs / Special Studies / Drug Levels / Culture Results
+              </div>
+              <textarea value={values["labs_free"]||""} onChange={e=>setVal("labs_free",e.target.value)}
+                placeholder="e.g. Vancomycin trough 8.2 mcg/mL. Blood culture x2 — pending. Urine culture growing GNR >100k CFU. TSH 0.04 (low). Lipase 1840 (high)."
+                rows={3}
+                style={{width:"100%",background:"rgba(14,37,68,0.7)",
+                  border:`1px solid ${values["labs_free"]?"rgba(59,158,255,0.35)":"rgba(42,79,122,0.3)"}`,
+                  borderRadius:8,padding:"8px 10px",outline:"none",resize:"vertical",
+                  fontFamily:"DM Sans",fontSize:12,color:T.txt2,lineHeight:1.6}}/>
+            </div>
+          </div>
         )}
 
+        {/* ═══ EKG ═══ */}
+        {tab==="ekg" && (
+          <div className="fade-in">
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1.2fr",gap:12}}>
+              {/* Structured measurements */}
+              <div style={{...glass,padding:"14px 16px"}}>
+                <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,
+                  letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>Measurements</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9,marginBottom:12}}>
+                  {EKG_STRUCT.map(f => (
+                    <LabInput key={f.id} field={f} value={values[f.id]||""} onChange={setVal}/>
+                  ))}
+                </div>
+                <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,
+                  letterSpacing:1,textTransform:"uppercase",marginBottom:5}}>Clinical Description / Rhythm</div>
+                <textarea value={values["ekg_notes"]||""} onChange={e=>setVal("ekg_notes",e.target.value)}
+                  placeholder="e.g. Regular rhythm, narrow complex. 2mm STE in V1-V4 with reciprocal changes in inferior leads. Hyperacute T-waves anterior..."
+                  rows={4}
+                  style={{width:"100%",background:"rgba(14,37,68,0.7)",
+                    border:`1px solid ${values["ekg_notes"]?"rgba(155,109,255,0.4)":"rgba(42,79,122,0.3)"}`,
+                    borderRadius:8,padding:"8px 10px",outline:"none",resize:"vertical",
+                    fontFamily:"DM Sans",fontSize:12,color:T.txt2,lineHeight:1.6}}/>
+              </div>
+              {/* Pattern chips */}
+              <div style={{...glass,padding:"14px 16px"}}>
+                <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,
+                  letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>Patterns / Findings</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
+                  {EKG_CHIPS.map(c => (
+                    <button key={c.id} onClick={()=>toggleChip(c.id)}
+                      style={{fontFamily:"DM Sans",fontSize:11,fontWeight:600,
+                        padding:"4px 11px",borderRadius:20,cursor:"pointer",transition:"all .12s",
+                        border:`1px solid ${ekgChips[c.id]?c.color+"88":c.color+"30"}`,
+                        background:ekgChips[c.id]?`${c.color}20`:`${c.color}06`,
+                        color:ekgChips[c.id]?c.color:T.txt4}}>
+                      {ekgChips[c.id]&&"✓ "}{c.label}
+                    </button>
+                  ))}
+                </div>
+                {EKG_CHIPS.some(c=>ekgChips[c.id]) && (
+                  <div style={{padding:"8px 11px",background:"rgba(42,79,122,0.12)",
+                    border:"1px solid rgba(42,79,122,0.25)",borderRadius:8}}>
+                    <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,
+                      textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Selected:</div>
+                    <div style={{fontFamily:"DM Sans",fontSize:12,color:T.txt2,lineHeight:1.6}}>
+                      {EKG_CHIPS.filter(c=>ekgChips[c.id]).map(c=>c.label).join(" · ")}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ═══ IMAGING ═══ */}
+        {tab==="imaging" && (
+          <div className="fade-in">
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+              <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,
+                letterSpacing:2,textTransform:"uppercase"}}>Imaging Reports</div>
+              <button onClick={addImaging}
+                style={{fontFamily:"DM Sans",fontWeight:600,fontSize:12,padding:"6px 16px",
+                  borderRadius:8,cursor:"pointer",
+                  border:"1px solid rgba(59,158,255,0.4)",
+                  background:"rgba(59,158,255,0.08)",color:T.blue}}>+ Add Study</button>
+            </div>
+            {imaging.length===0 && (
+              <div style={{...glass,padding:"40px",textAlign:"center"}}>
+                <div style={{fontSize:32,marginBottom:8}}>🫁</div>
+                <div style={{fontFamily:"DM Sans",fontSize:13,color:T.txt3,marginBottom:4}}>No imaging added</div>
+                <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt4}}>
+                  Add studies and paste the radiology report or your key findings
+                </div>
+              </div>
+            )}
+            {imaging.map((img,i) => (
+              <div key={img.id} style={{...glass,padding:"12px 14px",marginBottom:10}}>
+                <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}>
+                  <select value={img.modality}
+                    onChange={e=>setImaging(p=>p.map((x,j)=>j===i?{...x,modality:e.target.value}:x))}
+                    style={{background:"rgba(14,37,68,0.9)",border:"1px solid rgba(42,79,122,0.4)",
+                      borderRadius:8,padding:"5px 10px",color:T.txt,outline:"none",cursor:"pointer",
+                      fontFamily:"JetBrains Mono",fontSize:11,fontWeight:700}}>
+                    {IMAGING_MODS.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                  <input type="text" value={img.time||""} placeholder="Date / time (optional)"
+                    onChange={e=>setImaging(p=>p.map((x,j)=>j===i?{...x,time:e.target.value}:x))}
+                    style={{flex:1,background:"rgba(14,37,68,0.7)",
+                      border:"1px solid rgba(42,79,122,0.3)",borderRadius:8,
+                      padding:"5px 10px",color:T.txt2,fontFamily:"DM Sans",fontSize:11,outline:"none"}}/>
+                  <button onClick={()=>setImaging(p=>p.filter((_,j)=>j!==i))}
+                    style={{background:"transparent",border:"1px solid rgba(255,68,68,0.3)",
+                      borderRadius:6,padding:"4px 9px",cursor:"pointer",color:T.coral,flexShrink:0,
+                      fontFamily:"DM Sans",fontSize:11}}>✕ Remove</button>
+                </div>
+                <textarea value={img.report}
+                  onChange={e=>setImaging(p=>p.map((x,j)=>j===i?{...x,report:e.target.value}:x))}
+                  placeholder={`Paste the ${img.modality} report or type key findings...\n\nCan include full radiology report or brief summary: "Bilateral lower lobe consolidations. Small right pleural effusion. No pneumothorax."`}
+                  rows={5}
+                  style={{width:"100%",background:"rgba(14,37,68,0.7)",
+                    border:`1px solid ${img.report?"rgba(59,158,255,0.35)":"rgba(42,79,122,0.3)"}`,
+                    borderRadius:8,padding:"8px 10px",outline:"none",resize:"vertical",
+                    fontFamily:"DM Sans",fontSize:12,color:T.txt2,lineHeight:1.65}}/>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ═══ AI ANALYSIS ═══ */}
+        {tab==="analysis" && (
+          <div className="fade-in">
+            {/* Persistent disclaimer */}
+            <div style={{padding:"8px 13px",background:"rgba(245,200,66,0.07)",
+              border:"1px solid rgba(245,200,66,0.22)",borderRadius:8,marginBottom:12,
+              fontFamily:"DM Sans",fontSize:11,color:T.yellow,lineHeight:1.5}}>
+              ⚠️ <strong>AI Clinical Decision Support Only.</strong> All findings require independent physician
+              correlation and clinical judgment. Do not act on AI output without verifying against the full clinical picture.
+            </div>
+
+            {/* Empty / ready state */}
+            {!result && !analyzing && !analysisErr && (
+              <div style={{...glass,padding:"44px 24px",textAlign:"center"}}>
+                <div style={{fontSize:42,marginBottom:12}}>🤖</div>
+                <div style={{fontFamily:"Playfair Display",fontWeight:700,fontSize:19,color:T.txt,marginBottom:6}}>
+                  Ready to Synthesize
+                </div>
+                <div style={{fontFamily:"DM Sans",fontSize:13,color:T.txt3,marginBottom:16,
+                  maxWidth:420,margin:"0 auto 20px"}}>
+                  Enter patient data across the tabs then hit Analyze. The more context you provide, the more targeted the synthesis.
+                </div>
+                <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap",marginBottom:20}}>
+                  {[
+                    {label:`${dataCount.vitals} vitals`,  color:T.teal  },
+                    {label:`${dataCount.labs} labs`,      color:T.blue  },
+                    {label:`${dataCount.ekg} EKG fields`, color:T.purple},
+                    {label:`${dataCount.imaging} imaging`,color:T.orange},
+                  ].map((d,i)=><Badge key={i} label={d.label} color={d.color}/>)}
+                </div>
+                <button onClick={runAnalysis} disabled={!hasData}
+                  style={{fontFamily:"DM Sans",fontWeight:700,fontSize:13,padding:"10px 30px",
+                    borderRadius:12,cursor:hasData?"pointer":"not-allowed",
+                    border:`1px solid ${hasData?"rgba(59,158,255,0.5)":"rgba(42,79,122,0.3)"}`,
+                    background:hasData?"linear-gradient(135deg,rgba(59,158,255,0.22),rgba(59,158,255,0.08))":"rgba(42,79,122,0.15)",
+                    color:hasData?T.blue:T.txt4}}>
+                  🤖 Analyze All Results
+                </button>
+              </div>
+            )}
+
+            {/* Loading */}
+            {analyzing && (
+              <div style={{...glass,padding:"44px",textAlign:"center"}}>
+                <span className="res-spin" style={{fontSize:38,display:"block",marginBottom:14}}>⚙</span>
+                <div style={{fontFamily:"DM Sans",fontSize:13,color:T.txt2}}>
+                  Synthesizing {dataCount.vitals + dataCount.labs + dataCount.ekg + dataCount.imaging} data points...
+                </div>
+                <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt4,marginTop:6}}>
+                  Cross-domain pattern analysis in progress
+                </div>
+              </div>
+            )}
+
+            {/* Error */}
+            {analysisErr && !analyzing && (
+              <div style={{padding:"12px 14px",background:"rgba(255,68,68,0.1)",
+                border:"1px solid rgba(255,68,68,0.3)",borderRadius:10,marginBottom:14,
+                fontFamily:"DM Sans",fontSize:12,color:T.coral,marginBottom:12}}>
+                {analysisErr}
+              </div>
+            )}
+
+            {/* Results */}
+            {result && !analyzing && (
+              <div>
+                {/* Critical flags */}
+                {result.criticalFlags?.length > 0 && (
+                  <div style={{...glass,padding:"12px 14px",marginBottom:10,
+                    border:`1px solid ${T.red}44`,
+                    background:"linear-gradient(135deg,rgba(255,68,68,0.08),rgba(8,22,40,0.93))"}}>
+                    <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.red,
+                      letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>🚨 Critical Flags</div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:7}}>
+                      {result.criticalFlags.map((f,i) => (
+                        <div key={i} style={{padding:"8px 11px",
+                          background:"rgba(255,68,68,0.08)",border:"1px solid rgba(255,68,68,0.25)",borderRadius:8}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                            <span style={{fontFamily:"JetBrains Mono",fontSize:11,fontWeight:700,color:T.red}}>{f.value}</span>
+                            <Badge label={f.urgency||"urgent"} color={urgColor(f.urgency)}/>
+                          </div>
+                          <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt2}}>{f.significance}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Clinical synthesis */}
+                {result.dataSynthesis && (
+                  <div style={{...glass,padding:"13px 15px",marginBottom:10,
+                    border:"1px solid rgba(59,158,255,0.3)",
+                    background:"linear-gradient(135deg,rgba(59,158,255,0.07),rgba(8,22,40,0.93))"}}>
+                    <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.blue,
+                      letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>Clinical Synthesis</div>
+                    <div style={{fontFamily:"DM Sans",fontSize:13,color:T.txt,lineHeight:1.8}}>{result.dataSynthesis}</div>
+                  </div>
+                )}
+
+                {/* Differential */}
+                {result.differential?.length > 0 && (
+                  <div style={{...glass,padding:"12px 14px",marginBottom:10,
+                    border:"1px solid rgba(42,79,122,0.35)"}}>
+                    <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,
+                      letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>Differential Diagnosis</div>
+                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                      {result.differential.map((d,i) => (
+                        <div key={i} style={{padding:"9px 12px",borderRadius:9,
+                          border:`1px solid ${probColor(d.probability)}33`,
+                          background:`${probColor(d.probability)}07`}}>
+                          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
+                            <span style={{fontFamily:"Playfair Display",fontWeight:700,fontSize:14,color:T.txt}}>{d.diagnosis}</span>
+                            <Badge label={d.probability||"?"} color={probColor(d.probability)}/>
+                          </div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                            <div>
+                              {d.supporting?.map((s,j) => <BulletRow key={j} text={s} color={T.green}/>)}
+                            </div>
+                            <div>
+                              {d.against?.map((a,j) => <BulletRow key={j} text={a} color={T.red}/>)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Next steps */}
+                {result.nextSteps && (
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}}>
+                    {[
+                      {label:"🔴 Now",         items:result.nextSteps.now,         color:T.red   },
+                      {label:"🟡 Within Hours",items:result.nextSteps.withinHours, color:T.orange},
+                      {label:"🟢 Routine",     items:result.nextSteps.routine,     color:T.green },
+                    ].map((tier,i) => (
+                      <div key={i} style={{...glass,padding:"11px 13px",
+                        border:`1px solid ${tier.color}28`}}>
+                        <div style={{fontFamily:"JetBrains Mono",fontSize:9,fontWeight:700,
+                          color:tier.color,textTransform:"uppercase",letterSpacing:1.5,marginBottom:8}}>
+                          {tier.label}
+                        </div>
+                        {tier.items?.length
+                          ? tier.items.map((s,j) => <BulletRow key={j} text={s} color={tier.color}/>)
+                          : <span style={{fontFamily:"DM Sans",fontSize:11,color:T.txt4}}>None identified</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Gaps */}
+                {result.gaps?.length > 0 && (
+                  <div style={{...glass,padding:"12px 14px",marginBottom:10,
+                    border:"1px solid rgba(155,109,255,0.25)"}}>
+                    <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.purple,
+                      letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>
+                      🔍 Data Gaps — Would Change Management
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(230px,1fr))",gap:8}}>
+                      {result.gaps.map((g,i) => (
+                        <div key={i} style={{padding:"8px 10px",
+                          background:"rgba(155,109,255,0.07)",border:"1px solid rgba(155,109,255,0.2)",borderRadius:8}}>
+                          <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:12,
+                            color:T.purple,marginBottom:3}}>{g.test}</div>
+                          <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt3,lineHeight:1.5}}>{g.rationale}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Disposition + confidence */}
+                <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:10,marginBottom:14}}>
+                  {result.disposition && (
+                    <div style={{...glass,padding:"13px 15px",
+                      border:`1px solid ${dispColor(result.disposition.recommendation)}44`,
+                      background:`linear-gradient(135deg,${dispColor(result.disposition.recommendation)}08,rgba(8,22,40,0.93))`}}>
+                      <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,
+                        letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Recommended Disposition</div>
+                      <div style={{fontFamily:"Playfair Display",fontWeight:700,fontSize:19,
+                        color:dispColor(result.disposition.recommendation),marginBottom:5}}>
+                        {result.disposition.recommendation}
+                      </div>
+                      <div style={{fontFamily:"DM Sans",fontSize:12,color:T.txt2,lineHeight:1.6}}>
+                        {result.disposition.rationale}
+                      </div>
+                    </div>
+                  )}
+                  {result.confidence && (
+                    <div style={{...glass,padding:"13px 15px",
+                      border:"1px solid rgba(42,79,122,0.35)"}}>
+                      <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,
+                        letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>AI Confidence</div>
+                      <div style={{fontFamily:"Playfair Display",fontWeight:700,fontSize:19,
+                        color:result.confidence==="high"?T.green:result.confidence==="moderate"?T.yellow:T.orange,
+                        marginBottom:5,textTransform:"capitalize"}}>
+                        {result.confidence}
+                      </div>
+                      <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt3,lineHeight:1.5}}>
+                        {result.confidenceNote}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Re-analyze */}
+                <div style={{textAlign:"center",marginBottom:16}}>
+                  <button onClick={runAnalysis}
+                    style={{fontFamily:"DM Sans",fontWeight:600,fontSize:12,padding:"8px 22px",
+                      borderRadius:10,cursor:"pointer",
+                      border:"1px solid rgba(42,79,122,0.4)",
+                      background:"transparent",color:T.txt3}}>
+                    ↺ Re-analyze with Updated Data
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Footer */}
+        <div style={{textAlign:"center",paddingBottom:24,paddingTop:14}}>
+          <span style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,letterSpacing:1.5}}>
+            NOTRYA RESULTSHUB · AI CLINICAL DECISION SUPPORT · ALL FINDINGS REQUIRE PHYSICIAN CORRELATION · NOT FOR AUTONOMOUS CLINICAL USE
+          </span>
+        </div>
       </div>
     </div>
   );

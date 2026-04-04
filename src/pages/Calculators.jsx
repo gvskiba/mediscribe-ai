@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 
 (() => {
   if (document.getElementById("ch-fonts")) return;
@@ -989,7 +990,8 @@ function CalcCard({calc,onOpen,index}){
 
 // ── Main Component ────────────────────────────────────────────────
 export default function CalculatorHub({ onBack, navigateToMedRef }) {
-  const handleBack = onBack || (()=>{});
+  const navigate = useNavigate();
+  const handleBack = onBack || (() => navigate("/hub"));
   const[search,setSearch]=useState("");
   const[cat,setCat]=useState("All");
   const[activeCalc,setActiveCalc]=useState(null);

@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 
 // ── Font + CSS Injection ─────────────────────────────────────────
 (() => {
@@ -345,6 +346,7 @@ function SpecialtyCard({ sp, expanded, onToggle }) {
 
 // ── Main Component ────────────────────────────────────────────────
 export default function ConsultHub() {
+  const navigate = useNavigate();
   const [tab, setTab]         = useState("specialties");
   const [cat, setCat]         = useState("all");
   const [search, setSearch]   = useState("");
@@ -413,6 +415,16 @@ export default function ConsultHub() {
 
         {/* Header */}
         <div style={{padding:"18px 0 14px"}}>
+          <button onClick={() => navigate("/hub")}
+            style={{marginBottom:10,display:"inline-flex",alignItems:"center",gap:7,
+              fontFamily:"DM Sans",fontSize:12,fontWeight:600,
+              background:"rgba(14,37,68,0.7)",border:"1px solid rgba(42,79,122,0.5)",
+              borderRadius:8,padding:"5px 14px",color:T.txt3,cursor:"pointer",
+              transition:"all .15s"}}
+            onMouseEnter={e=>{e.currentTarget.style.color=T.txt2;e.currentTarget.style.borderColor="rgba(155,109,255,0.4)";}}
+            onMouseLeave={e=>{e.currentTarget.style.color=T.txt3;e.currentTarget.style.borderColor="rgba(42,79,122,0.5)";}}>
+            ← Back to Hub
+          </button>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
             <div style={{backdropFilter:"blur(40px)",WebkitBackdropFilter:"blur(40px)",
               background:"rgba(5,15,30,0.9)",border:"1px solid rgba(42,79,122,0.6)",

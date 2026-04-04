@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from "react";
+import { base44 } from "@/api/base44Client";
 
 (() => {
   if (document.getElementById("sdh-fonts")) return;
@@ -332,23 +333,25 @@ Return ONLY a valid JSON object with exactly these fields. No markdown fences. N
 Make the return precautions, self-care, and follow-up SPECIFIC to ${diagnosis} — not generic boilerplate. The patient should feel these were written just for them.`;
 
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-          model:"claude-sonnet-4-6",
-          max_tokens:1800,
-          messages:[{role:"user",content:prompt}]
-        })
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            whatHappened: { type: "string" },
+            whatWeDid: { type: "array", items: { type: "string" } },
+            medications: { type: "array", items: { type: "object", properties: { name:{type:"string"}, dose:{type:"string"}, why:{type:"string"}, status:{type:"string"}, warning:{type:"string"} } } },
+            returnNow: { type: "array", items: { type: "string" } },
+            callDoctor: { type: "array", items: { type: "string" } },
+            followUp: { type: "array", items: { type: "object", properties: { provider:{type:"string"}, timeframe:{type:"string"}, why:{type:"string"}, urgency:{type:"string"} } } },
+            selfCare: { type: "array", items: { type: "string" } },
+            handoffSummary: { type: "string" },
+            keyReminder: { type: "string" }
+          }
+        }
       });
-      const data = await res.json();
-      const raw = data?.content?.[0]?.text || "";
-      const clean = raw.replace(/```json|```/g,"").trim();
-      const parsed = JSON.parse(clean);
-      setOutput(parsed);
+      setOutput(result);
       setTab("preview");
-    } catch(e) {
-      setError("Generation failed — check connection and try again. "+e.message);
     } finally { setLoading(false); }
   }, [diagnosis, patientName, age, sex, lang, level, findings, procedures, special, meds, followups]);
 

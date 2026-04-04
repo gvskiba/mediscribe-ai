@@ -38,7 +38,7 @@ const NAV_DATA = {
     { section: "mdm",        icon: "⚖️", label: "MDM",                abbr: "Md", dot: "empty" },
     { section: "erplan",     icon: "🗺️", label: "ER Plan Builder",     abbr: "Ep", dot: "empty" },
     { section: "orders",     icon: "📋", label: "Orders",              abbr: "Or", dot: "empty" },
-    { section: "results",    icon: "🧪", label: "Results",             abbr: "Re", dot: "empty" },
+    { section: "results",    icon: "🧪", label: "Results",             abbr: "Re", dot: "empty", href: "/Results" },
   ],
   disposition: [
     { section: "discharge",  icon: "🚪", label: "Discharge",           abbr: "Dc", dot: "empty" },
@@ -280,7 +280,7 @@ export default function NewPatientInput() {
       case "discharge": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><DischargePlanning embedded patientName={patientName} patientAge={demo.age} patientSex={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} /></div>;
       case "erx": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><ERxHub embedded navigate={navigate} patientAllergiesFromParent={allergies} patientWeightFromParent={vitals.weight || ""} /></div>;
       case "orders":   return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><EDOrders embedded patientName={patientName} patientAllergies={allergies} chiefComplaint={cc.text} patientAge={demo.age} patientSex={demo.sex} /></div>;
-      case "results":  { navigate("/Results"); return null; }
+      case "results":  return null;
       case "autocoder": return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} />;
       case "procedures": return <EDProcedureNotes embedded patientName={patientName} patientAllergies={allergies.join(", ")} physicianName="" />;
       case "medref": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto" }}><MedicationReferencePage embedded /></div>;
@@ -437,16 +437,16 @@ export default function NewPatientInput() {
               <button
                 key={item.section}
                 className={`npi-bn-sub-pill${item.section === currentTab ? " active" : ""}`}
-                onClick={() => selectSection(item.section)}
+                onClick={() => item.href ? navigate(item.href) : selectSection(item.section)}
               >
                 <span className="pill-icon">{item.icon}</span>
                 {item.label}
-                <span className={`pill-dot ${navDots[item.section]}`} />
+                <span className={`pill-dot ${navDots[item.section] || 'empty'}`} />
               </button>
             ))}
-          </div>
-        </div>
-        <div className="npi-bn-groups">
+            </div>
+            </div>
+            <div className="npi-bn-groups">
           {GROUP_META.map((g) => (
             <button
               key={g.key}

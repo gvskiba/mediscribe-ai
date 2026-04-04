@@ -480,6 +480,24 @@ const HUBS = [
     essential: false,
   },
   {
+    id: "consult",
+    route: "/consult-hub",
+    icon: "📡",
+    abbr: "CONSULT",
+    title: "Consult Hub",
+    subtitle: "16 Specialties · Pre-Call Prep · Escalation Criteria · AI Consult Coach",
+    color: "#9b6dff",
+    glow: "rgba(155,109,255,0.4)",
+    glass: "rgba(155,109,255,0.07)",
+    border: "rgba(155,109,255,0.28)",
+    accent: "#b99bff",
+    category: "Tools",
+    stats: ["16 Specialties", "Pre-Call Checklists", "AI Coach"],
+    badge: "Live",
+    priority: 28,
+    essential: false,
+  },
+  {
     id: "results",
     route: "/Results",
     icon: "🧪",
@@ -508,7 +526,7 @@ const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
   "/peds-hub", "/Procedures", "/erx", "/AutoCoder", "/NewPatientInput",
-  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub", "/ortho-hub", "/resus-hub", "/antidote-hub", "/radiology-hub", "/Results",
+  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub", "/ortho-hub", "/resus-hub", "/antidote-hub", "/radiology-hub", "/Results", "/consult-hub",
 ]);
 
 function Background() {

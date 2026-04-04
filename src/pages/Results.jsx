@@ -256,6 +256,16 @@ export default function ResultsHub() {
   const [parsePending, setParsePending] = useState(false);
   const [parseErr, setParseErr] = useState(null);
 
+  const [vitalsPasteOpen, setVitalsPasteOpen] = useState(false);
+  const [vitalsPasteText, setVitalsPasteText] = useState("");
+  const [vitalsParsePending, setVitalsParsePending] = useState(false);
+  const [vitalsPasteErr, setVitalsPasteErr] = useState(null);
+
+  const [ekgPasteOpen, setEkgPasteOpen] = useState(false);
+  const [ekgPasteText, setEkgPasteText] = useState("");
+  const [ekgParsePending, setEkgParsePending] = useState(false);
+  const [ekgPasteErr, setEkgPasteErr] = useState(null);
+
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult]       = useState(null);
   const [analysisErr, setAnalysisErr] = useState(null);
@@ -371,6 +381,61 @@ export default function ResultsHub() {
 
   const hasData = dataCount.vitals + dataCount.labs + dataCount.ekg + dataCount.imaging > 0;
 
+  // Vitals paste parser
+  const runVitalsParse = useCallback(async () => {
+    if (!vitalsPasteText.trim()) return;
+    setVitalsParsePending(true); setVitalsPasteErr(null);
+    const fieldGuide = VITAL_FIELDS.map(f => `"${f.id}" = ${f.label} (${f.unit})`).join(", ");
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Extract vital sign values from the following clinical text. Use only these field keys: ${fieldGuide}. Values must be numeric. For blood pressure like "120/80", put systolic in "sbp" and diastolic in "dbp". Omit keys not found.\n\nText:\n${vitalsPasteText}`,
+        response_json_schema: {
+          type: "object",
+          properties: Object.fromEntries(VITAL_FIELDS.map(f => [f.id, { type: "string" }]))
+        }
+      });
+      const count = Object.keys(result).filter(k => result[k]).length;
+      if (!count) throw new Error("No recognizable vitals found — try a different paste format");
+      setValues(prev => ({...prev, ...Object.fromEntries(Object.entries(result).filter(([,v])=>v).map(([k,v])=>[k,String(v)]))}));
+      setVitalsPasteOpen(false); setVitalsPasteText("");
+    } catch(e) {
+      setVitalsPasteErr(e.message || "Parse failed");
+    } finally { setVitalsParsePending(false); }
+  }, [vitalsPasteText]);
+
+  // EKG paste parser
+  const runEkgParse = useCallback(async () => {
+    if (!ekgPasteText.trim()) return;
+    setEkgParsePending(true); setEkgPasteErr(null);
+    const structGuide = EKG_STRUCT.map(f => `"${f.id}" = ${f.label} (${f.unit})`).join(", ");
+    const patternGuide = EKG_CHIPS.map(c => `"${c.id}" = ${c.label}`).join(", ");
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Analyze this EKG report/description and extract structured data.\n\nFor measurements, use keys: ${structGuide}. Values must be numeric.\nFor patterns found, use these boolean keys (true if present): ${patternGuide}.\nAlso extract any free-text description as "ekg_notes".\nOmit keys not found or not applicable.\n\nText:\n${ekgPasteText}`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            ...Object.fromEntries(EKG_STRUCT.map(f => [f.id, { type: "string" }])),
+            ...Object.fromEntries(EKG_CHIPS.map(c => [c.id, { type: "boolean" }])),
+            ekg_notes: { type: "string" }
+          }
+        }
+      });
+      const newVals = {};
+      EKG_STRUCT.forEach(f => { if (result[f.id]) newVals[f.id] = String(result[f.id]); });
+      if (result.ekg_notes) newVals.ekg_notes = result.ekg_notes;
+      const newChips = {};
+      EKG_CHIPS.forEach(c => { if (result[c.id] === true) newChips[c.id] = true; });
+      const count = Object.keys(newVals).length + Object.keys(newChips).length;
+      if (!count) throw new Error("No recognizable EKG findings — try a different paste format");
+      if (Object.keys(newVals).length) setValues(prev => ({...prev, ...newVals}));
+      if (Object.keys(newChips).length) setEkgChips(prev => ({...prev, ...newChips}));
+      setEkgPasteOpen(false); setEkgPasteText("");
+    } catch(e) {
+      setEkgPasteErr(e.message || "Parse failed");
+    } finally { setEkgParsePending(false); }
+  }, [ekgPasteText]);
+
   // EMR Paste parser
   const runParse = useCallback(async () => {
     if (!pasteText.trim()) return;
@@ -386,11 +451,11 @@ export default function ResultsHub() {
         }
       });
       const count = Object.keys(result).filter(k => result[k]).length;
-      if (!count) throw new Error("No recognizable values found — try a different paste format");
+      if (!count) throw new Error("No recognizable values found \u2014 try a different paste format");
       setValues(prev => ({...prev, ...Object.fromEntries(Object.entries(result).filter(([,v])=>v).map(([k,v])=>[k,String(v)]))}));
       setPasteOpen(false); setPasteText("");
     } catch(e) {
-      setParseErr(e.message || "Parse failed — check connectivity");
+      setParseErr(e.message || "Parse failed \u2014 check connectivity");
     } finally { setParsePending(false); }
   }, [pasteText, labPanel]);
 
@@ -534,13 +599,13 @@ export default function ResultsHub() {
         {/* ═══ CONTEXT & VITALS ═══ */}
         {tab==="context" && (
           <div className="fade-in">
-            <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,
+            <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt3,
               letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>Patient Context</div>
             <div style={{...glass,padding:"14px 16px",marginBottom:14}}>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:10}}>
                 {CTX_FIELDS.map(f => (
                   <div key={f.id}>
-                    <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,
+                    <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt3,
                       letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>{f.label}</div>
                     <input type="text" value={values[f.id]||""} onChange={e=>setVal(f.id,e.target.value)}
                       placeholder={f.placeholder}
@@ -553,8 +618,50 @@ export default function ResultsHub() {
               </div>
             </div>
 
-            <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,
+            <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt3,
               letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>Vitals</div>
+
+            {/* Vitals paste */}
+            <div style={{...glass,padding:"10px 14px",marginBottom:10,borderRadius:10}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:vitalsPasteOpen?10:0}}>
+                <span style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt3,letterSpacing:2,textTransform:"uppercase"}}>
+                  Vital Signs — {VITAL_FIELDS.length} fields
+                </span>
+                <button onClick={()=>{setVitalsPasteOpen(o=>!o);setVitalsPasteText("");setVitalsPasteErr(null);}}
+                  style={{fontFamily:"DM Sans",fontWeight:600,fontSize:11,padding:"5px 14px",
+                    borderRadius:8,cursor:"pointer",
+                    border:"1px solid rgba(0,229,192,0.35)",
+                    background:"rgba(0,229,192,0.07)",color:T.teal}}>
+                  {vitalsPasteOpen?"✕ Close":"📋 Paste Vitals"}
+                </button>
+              </div>
+              {vitalsPasteOpen && (
+                <div className="fade-in">
+                  <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt2,marginBottom:6}}>
+                    Paste vital signs from any source — nursing notes, EMR flowsheet, monitor strip.
+                  </div>
+                  <textarea value={vitalsPasteText} onChange={e=>setVitalsPasteText(e.target.value)}
+                    placeholder={"Paste vitals here. Any format accepted:\n\nBP 158/94  HR 108  RR 18  SpO2 93%  Temp 37.1°C  GCS 15\n---or---\nHR: 108 bpm | BP: 158/94 mmHg | Temp: 37.1 | O2 sat: 93%"}
+                    rows={4}
+                    style={{width:"100%",background:"rgba(14,37,68,0.8)",
+                      border:"1px solid rgba(42,79,122,0.4)",borderRadius:8,
+                      padding:"10px 12px",outline:"none",resize:"vertical",marginBottom:8,
+                      fontFamily:"JetBrains Mono",fontSize:11,color:T.txt2,lineHeight:1.65}}/>
+                  {vitalsPasteErr && (
+                    <div style={{fontFamily:"DM Sans",fontSize:11,color:T.coral,marginBottom:8}}>{vitalsPasteErr}</div>
+                  )}
+                  <button onClick={runVitalsParse} disabled={vitalsParsePending||!vitalsPasteText.trim()}
+                    style={{fontFamily:"DM Sans",fontWeight:700,fontSize:12,padding:"7px 20px",
+                      borderRadius:8,cursor:vitalsParsePending?"not-allowed":"pointer",
+                      border:"1px solid rgba(0,229,192,0.4)",
+                      background:vitalsParsePending?"rgba(42,79,122,0.2)":"rgba(0,229,192,0.12)",
+                      color:vitalsParsePending?T.txt3:T.teal}}>
+                    {vitalsParsePending?<><span className="res-spin">⚙</span> Parsing...</>:"🔍 Parse & Auto-Fill Vitals"}
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div style={{...glass,padding:"14px 16px",marginBottom:12}}>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:10}}>
                 {VITAL_FIELDS.map(f => (
@@ -666,17 +773,58 @@ export default function ResultsHub() {
         {/* ═══ EKG ═══ */}
         {tab==="ekg" && (
           <div className="fade-in">
+            {/* EKG paste */}
+            <div style={{...glass,padding:"10px 14px",marginBottom:12,borderRadius:10}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:ekgPasteOpen?10:0}}>
+                <span style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt3,letterSpacing:2,textTransform:"uppercase"}}>
+                  EKG — Paste Report or Description
+                </span>
+                <button onClick={()=>{setEkgPasteOpen(o=>!o);setEkgPasteText("");setEkgPasteErr(null);}}
+                  style={{fontFamily:"DM Sans",fontWeight:600,fontSize:11,padding:"5px 14px",
+                    borderRadius:8,cursor:"pointer",
+                    border:"1px solid rgba(155,109,255,0.35)",
+                    background:"rgba(155,109,255,0.07)",color:T.purple}}>
+                  {ekgPasteOpen?"✕ Close":"📋 Paste EKG Report"}
+                </button>
+              </div>
+              {ekgPasteOpen && (
+                <div className="fade-in">
+                  <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt2,marginBottom:6}}>
+                    Paste an EKG machine report, cardiology read, or your own description. AI will extract measurements and identify patterns.
+                  </div>
+                  <textarea value={ekgPasteText} onChange={e=>setEkgPasteText(e.target.value)}
+                    placeholder={"Paste EKG report or describe findings:\n\nVentricular rate 108 bpm. PR 164ms. QRS 88ms. QTc 441ms. Axis +42°.\nST elevation 2mm V1-V4 with reciprocal changes inferior leads. Hyperacute T-waves.\n---or paste full machine-read report---"}
+                    rows={5}
+                    style={{width:"100%",background:"rgba(14,37,68,0.8)",
+                      border:"1px solid rgba(42,79,122,0.4)",borderRadius:8,
+                      padding:"10px 12px",outline:"none",resize:"vertical",marginBottom:8,
+                      fontFamily:"JetBrains Mono",fontSize:11,color:T.txt2,lineHeight:1.65}}/>
+                  {ekgPasteErr && (
+                    <div style={{fontFamily:"DM Sans",fontSize:11,color:T.coral,marginBottom:8}}>{ekgPasteErr}</div>
+                  )}
+                  <button onClick={runEkgParse} disabled={ekgParsePending||!ekgPasteText.trim()}
+                    style={{fontFamily:"DM Sans",fontWeight:700,fontSize:12,padding:"7px 20px",
+                      borderRadius:8,cursor:ekgParsePending?"not-allowed":"pointer",
+                      border:"1px solid rgba(155,109,255,0.4)",
+                      background:ekgParsePending?"rgba(42,79,122,0.2)":"rgba(155,109,255,0.12)",
+                      color:ekgParsePending?T.txt3:T.purple}}>
+                    {ekgParsePending?<><span className="res-spin">⚙</span> Parsing...</>:"🔍 Parse & Auto-Fill EKG"}
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div style={{display:"grid",gridTemplateColumns:"1fr 1.2fr",gap:12}}>
               {/* Structured measurements */}
               <div style={{...glass,padding:"14px 16px"}}>
-                <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,
+                <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt3,
                   letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>Measurements</div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9,marginBottom:12}}>
                   {EKG_STRUCT.map(f => (
                     <LabInput key={f.id} field={f} value={values[f.id]||""} onChange={setVal}/>
                   ))}
                 </div>
-                <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,
+                <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt3,
                   letterSpacing:1,textTransform:"uppercase",marginBottom:5}}>Clinical Description / Rhythm</div>
                 <textarea value={values["ekg_notes"]||""} onChange={e=>setVal("ekg_notes",e.target.value)}
                   placeholder="e.g. Regular rhythm, narrow complex. 2mm STE in V1-V4 with reciprocal changes in inferior leads. Hyperacute T-waves anterior..."
@@ -688,7 +836,7 @@ export default function ResultsHub() {
               </div>
               {/* Pattern chips */}
               <div style={{...glass,padding:"14px 16px"}}>
-                <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,
+                <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt3,
                   letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>Patterns / Findings</div>
                 <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
                   {EKG_CHIPS.map(c => (
@@ -697,7 +845,7 @@ export default function ResultsHub() {
                         padding:"4px 11px",borderRadius:20,cursor:"pointer",transition:"all .12s",
                         border:`1px solid ${ekgChips[c.id]?c.color+"88":c.color+"30"}`,
                         background:ekgChips[c.id]?`${c.color}20`:`${c.color}06`,
-                        color:ekgChips[c.id]?c.color:T.txt4}}>
+                        color:ekgChips[c.id]?c.color:T.txt2}}>
                       {ekgChips[c.id]&&"✓ "}{c.label}
                     </button>
                   ))}
@@ -705,7 +853,7 @@ export default function ResultsHub() {
                 {EKG_CHIPS.some(c=>ekgChips[c.id]) && (
                   <div style={{padding:"8px 11px",background:"rgba(42,79,122,0.12)",
                     border:"1px solid rgba(42,79,122,0.25)",borderRadius:8}}>
-                    <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,
+                    <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt3,
                       textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Selected:</div>
                     <div style={{fontFamily:"DM Sans",fontSize:12,color:T.txt2,lineHeight:1.6}}>
                       {EKG_CHIPS.filter(c=>ekgChips[c.id]).map(c=>c.label).join(" · ")}

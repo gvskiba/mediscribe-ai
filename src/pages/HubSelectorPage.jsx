@@ -480,6 +480,24 @@ const HUBS = [
     essential: false,
   },
   {
+    id: "procedures",
+    route: "/procedure-hub",
+    icon: "✂️",
+    abbr: "PROC",
+    title: "Procedure Hub",
+    subtitle: "Step-by-step guides · Equipment checklists · Complications · AI Scrub-In",
+    color: "#00d4ff",
+    glow: "rgba(0,212,255,0.4)",
+    glass: "rgba(0,212,255,0.07)",
+    border: "rgba(0,212,255,0.28)",
+    accent: "#33deff",
+    category: "Procedures",
+    stats: ["8 Procedures", "Step-by-Step", "AI Scrub-In"],
+    badge: "Live",
+    priority: 11,
+    essential: false,
+  },
+  {
     id: "consult",
     route: "/consult-hub",
     icon: "📡",
@@ -526,7 +544,7 @@ const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
   "/peds-hub", "/Procedures", "/erx", "/AutoCoder", "/NewPatientInput",
-  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub", "/ortho-hub", "/resus-hub", "/antidote-hub", "/radiology-hub", "/Results", "/consult-hub",
+  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub", "/ortho-hub", "/resus-hub", "/antidote-hub", "/radiology-hub", "/Results", "/consult-hub", "/procedure-hub",
 ]);
 
 function Background() {

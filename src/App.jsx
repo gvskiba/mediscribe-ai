@@ -47,6 +47,7 @@ import ResusHub from '@/pages/ResusHub';
 import AntidoteHub from '@/pages/AntidoteHub';
 import RadiologyHub from '@/pages/RadiologyHub';
 import ConsultHub from '@/pages/ConsultHub';
+import ProcedureHub from '@/pages/ProcedureHub';
 
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -143,6 +144,7 @@ const AuthenticatedApp = () => {
       <Route path="/antidote-hub" element={<AntidoteHub />} />
       <Route path="/radiology-hub" element={<RadiologyHub />} />
       <Route path="/consult-hub" element={<ConsultHub />} />
+      <Route path="/procedure-hub" element={<ProcedureHub />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

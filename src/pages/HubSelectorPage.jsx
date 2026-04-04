@@ -480,7 +480,7 @@ const HUBS = [
     essential: false,
   },
   {
-    id: "procedures",
+    id: "procedure-hub",
     route: "/procedure-hub",
     icon: "✂️",
     abbr: "PROC",

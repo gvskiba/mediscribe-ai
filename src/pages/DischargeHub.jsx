@@ -262,7 +262,7 @@ function Toast({ msg }) {
   );
 }
 
-export default function SmartDischargeHub({ onBack }) {
+export default function DischargeHub({ onBack }) {
   const [tab, setTab] = useState("build");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");

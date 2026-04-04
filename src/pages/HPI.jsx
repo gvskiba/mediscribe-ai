@@ -46,7 +46,7 @@ import CreateTemplateModal from "@/components/hpi/CreateTemplateModal";
 const T = {
   bg:"#050f1e", panel:"#081628", card:"#0b1e36", up:"#0e2544",
   b:"rgba(26,53,85,0.8)", bhi:"rgba(42,79,122,0.9)",
-  txt:"#e8f0fe", txt2:"#8aaccc", txt3:"#4a6a8a", txt4:"#2e4a6a",
+  txt:"#ffffff", txt2:"#d0e8ff", txt3:"#a8c8e8", txt4:"#7aa0c0",
   coral:"#ff6b6b", gold:"#f5c842", teal:"#00e5c0", blue:"#3b9eff",
   orange:"#ff9f43", purple:"#9b6dff", green:"#3dffa0", cyan:"#00d4ff",
   rose:"#f472b6",

@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 
 (() => {
@@ -264,6 +265,7 @@ function Toast({ msg }) {
 }
 
 export default function DischargeHub({ onBack }) {
+  const navigate = useNavigate();
   const [tab, setTab] = useState("build");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -394,7 +396,7 @@ Make the return precautions, self-care, and follow-up SPECIFIC to ${diagnosis} �
               <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.txt3,letterSpacing:2}}>DISCHARGE</span>
             </div>
             <div style={{height:1,flex:1,background:"linear-gradient(90deg,rgba(0,229,192,0.5),transparent)"}}/>
-            {onBack && <button onClick={onBack} style={{fontFamily:"DM Sans",fontSize:11,fontWeight:600,padding:"5px 14px",borderRadius:8,cursor:"pointer",border:"1px solid rgba(42,79,122,0.5)",background:"rgba(14,37,68,0.6)",color:T.txt3}}>← Hub</button>}
+            <button onClick={onBack || (()=>navigate("/hub"))} style={{fontFamily:"DM Sans",fontSize:12,fontWeight:600,padding:"5px 14px",borderRadius:8,cursor:"pointer",border:"1px solid rgba(42,79,122,0.5)",background:"rgba(14,37,68,0.6)",color:T.txt3,display:"inline-flex",alignItems:"center",gap:6}} onMouseEnter={e=>{e.currentTarget.style.color=T.txt2;e.currentTarget.style.borderColor="rgba(0,229,192,0.4)";}} onMouseLeave={e=>{e.currentTarget.style.color=T.txt3;e.currentTarget.style.borderColor="rgba(42,79,122,0.5)";}}>← Back to Hub</button>
           </div>
           <h1 style={{fontFamily:"Playfair Display",fontSize:"clamp(24px,4vw,38px)",fontWeight:900,letterSpacing:-1,lineHeight:1.1,marginBottom:4,background:"linear-gradient(90deg,#e8f0fe 0%,#3dffa0 40%,#3b9eff 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>SmartDischargeHub</h1>
           <p style={{fontFamily:"DM Sans",fontSize:12,color:T.txt3}}>AI-Generated · Diagnosis-Specific · Plain Language · Return Precautions · Medication Reconciliation · Clinical Handoff</p>

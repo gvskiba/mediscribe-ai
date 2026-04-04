@@ -569,6 +569,24 @@ const HUBS = [
     priority: 27,
     essential: false,
   },
+  {
+    id: "wound",
+    route: "/wound-hub",
+    icon: "🩹",
+    abbr: "WOUND",
+    title: "Wound Hub",
+    subtitle: "Wound Assessment · Dressing Selection · Management Protocols",
+    color: "#ff9f43",
+    glow: "rgba(255,159,67,0.4)",
+    glass: "rgba(255,159,67,0.07)",
+    border: "rgba(255,159,67,0.28)",
+    accent: "#ffb76b",
+    category: "Tools",
+    stats: ["Assessment Framework", "Dressing Guide", "Clinical Reference"],
+    badge: "Live",
+    priority: 31,
+    essential: false,
+  },
 ];
 
 const ESSENTIAL_IDS = new Set(HUBS.filter(h => h.essential).map(h => h.id));
@@ -580,7 +598,7 @@ const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
   "/peds-hub", "/Procedures", "/erx", "/AutoCoder", "/NewPatientInput",
-  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub", "/ortho-hub", "/resus-hub", "/antidote-hub", "/radiology-hub", "/Results", "/consult-hub", "/procedure-hub", "/id-hub", "/discharge-hub",
+  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub", "/ortho-hub", "/resus-hub", "/antidote-hub", "/radiology-hub", "/Results", "/consult-hub", "/procedure-hub", "/id-hub", "/discharge-hub", "/wound-hub",
 ]);
 
 function Background() {

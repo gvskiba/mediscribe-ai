@@ -1,7 +1,4 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
-import OpenAI from 'npm:openai';
-
-const openai = new OpenAI({ apiKey: Deno.env.get("OPENAI_API_KEY") });
 
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
@@ -35,13 +32,6 @@ Write a single concise paragraph (4–6 sentences) that:
 
 Return ONLY the paragraph, no headings or preamble.`;
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [{ role: "user", content: prompt }],
-    temperature: 0.3,
-    max_tokens: 400,
-  });
-
-  const summary = response.choices[0].message.content.trim();
-  return Response.json({ summary });
+  const result = await base44.integrations.Core.InvokeLLM({ prompt });
+  return Response.json({ summary: result });
 });

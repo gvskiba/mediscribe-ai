@@ -5,7 +5,7 @@ const S = {
   border:'#1a3555', borderHi:'#2a4f7a',
   blue:'#3b9eff', cyan:'#00d4ff', teal:'#00e5c0', gold:'#f5c842',
   coral:'#ff6b6b', orange:'#ff9f43', txt:'#f4f9ff', txt2:'#c0d8f0',
-  txt3:'#8aaccc', txt4:'#5a82a8',
+  txt3:'#8aaccc', txt4:'#7aa0c0',
 };
 
 const CSS = `
@@ -15,8 +15,11 @@ const CSS = `
 .vs-cell.low { border-color:${S.blue}; box-shadow:0 0 8px rgba(59,158,255,.15); }
 .vs-cell.abn .vs-val { color:${S.coral}; }
 .vs-cell.low .vs-val { color:${S.blue}; }
+.vs-lbl { font-size:9px; color:#a0c0e0; text-transform:uppercase; letter-spacing:0.08em; font-weight:700; }
+.vs-unit { font-size:9px; color:#8ab0d0; }
+.vs-range { font-size:7px; color:#8ab0d0; text-align:center; font-family:'JetBrains Mono',monospace; }
 .vs-val { flex:1; background:transparent; border:none; outline:none; font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; color:${S.txt}; text-align:center; width:100%; min-width:0; }
-.vs-val::placeholder { color:${S.txt4}; font-weight:400; font-size:14px; }
+.vs-val::placeholder { color:#5a7a9a; font-weight:400; font-size:14px; }
 .vs-val::-webkit-outer-spin-button, .vs-val::-webkit-inner-spin-button { -webkit-appearance:none; }
 .vs-val[type=number] { -moz-appearance:textfield; }
 .vs-stepper { width:20px; height:20px; border-radius:4px; border:1px solid ${S.border}; background:${S.up}; color:${S.txt3}; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:12px; font-weight:700; transition:all .12s; flex-shrink:0; }
@@ -250,8 +253,8 @@ export default function VitalsTab({ vitals, setVitals, avpu, setAvpu, o2del, set
           {/* BP — spans a bit wider */}
           <div className={`vs-cell ${cellClass('sys', localVals) === 'abn' || cellClass('dia', localVals) === 'abn' ? 'abn' : cellClass('sys', localVals) === 'low' ? 'low' : ''}`} style={{ gridColumn:'span 2' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <span style={{ fontSize:8, color:S.txt4, textTransform:'uppercase', letterSpacing:'0.08em', fontWeight:600 }}>Blood Pressure</span>
-              <span style={{ fontSize:8, color:S.txt4 }}>mmHg</span>
+              <span className="vs-lbl">Blood Pressure</span>
+              <span className="vs-unit">mmHg</span>
             </div>
             <div style={{ display:'flex', alignItems:'center', gap:4 }}>
               <div style={{ display:'flex', alignItems:'center', gap:2, flex:1 }}>
@@ -259,14 +262,14 @@ export default function VitalsTab({ vitals, setVitals, avpu, setAvpu, o2del, set
                 <input type="number" className="vs-val" style={{ fontSize:18 }} placeholder="SYS" value={localVals.sys} onChange={e => updateVal('sys', e.target.value)} />
                 <button className="vs-stepper" onClick={() => step('sys', 5)}>+</button>
               </div>
-              <span style={{ color:S.txt3, fontFamily:"'JetBrains Mono',monospace", fontSize:16, fontWeight:700 }}>/</span>
+              <span style={{ color:'#a0c0e0', fontFamily:"'JetBrains Mono',monospace", fontSize:16, fontWeight:700 }}>/</span>
               <div style={{ display:'flex', alignItems:'center', gap:2, flex:1 }}>
                 <button className="vs-stepper" onClick={() => step('dia', -5)}>−</button>
                 <input type="number" className="vs-val" style={{ fontSize:18 }} placeholder="DIA" value={localVals.dia} onChange={e => updateVal('dia', e.target.value)} />
                 <button className="vs-stepper" onClick={() => step('dia', 5)}>+</button>
               </div>
             </div>
-            <div style={{ fontSize:7, color:S.txt4, textAlign:'center', fontFamily:"'JetBrains Mono',monospace" }}>90-140 / 60-90</div>
+            <div className="vs-range">90-140 / 60-90</div>
           </div>
 
           {/* Other vitals */}
@@ -281,8 +284,8 @@ export default function VitalsTab({ vitals, setVitals, avpu, setAvpu, o2del, set
           ].map(v => (
             <div key={v.id} className={`vs-cell ${cellClass(v.id, localVals)}`}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <span style={{ fontSize:8, color:S.txt4, textTransform:'uppercase', letterSpacing:'0.08em', fontWeight:600 }}>{v.label}</span>
-                <span style={{ fontSize:8, color:S.txt4 }}>{v.unit}</span>
+                <span className="vs-lbl">{v.label}</span>
+                <span className="vs-unit">{v.unit}</span>
               </div>
               <div style={{ display:'flex', alignItems:'center', gap:2 }}>
                 <button className="vs-stepper" onClick={() => step(v.id, -v.d)}>−</button>
@@ -291,7 +294,7 @@ export default function VitalsTab({ vitals, setVitals, avpu, setAvpu, o2del, set
                   onChange={e => updateVal(v.id, e.target.value)} />
                 <button className="vs-stepper" onClick={() => step(v.id, v.d)}>+</button>
               </div>
-              <div style={{ fontSize:7, color:S.txt4, textAlign:'center', fontFamily:"'JetBrains Mono',monospace" }}>{v.range}</div>
+              <div className="vs-range">{v.range}</div>
             </div>
           ))}
         </div>

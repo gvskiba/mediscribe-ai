@@ -346,6 +346,48 @@ function assembleSection(id, d = {}) {
       ].filter(Boolean).join("\n");
     }
     case "ros": {
+      // ROSTab stores: { sysId: { symptomName: { status: 'pos'|'neg'|'unreviewed', detail } } }
+      // Detect which format we have
+      const firstVal = rosState ? Object.values(rosState)[0] : null;
+      const isNested = firstVal && typeof firstVal === 'object' && !Array.isArray(firstVal) &&
+        Object.values(firstVal)[0]?.status !== undefined;
+
+      if (isNested) {
+        const ROS_SYSTEMS_ORDER = [
+          'constitutional','eyes','ent','cardiovascular','respiratory',
+          'gi','gu','msk','skin','neuro','psych','endo','heme','allergic'
+        ];
+        const negSystems = [];
+        const posSystems = [];
+        ROS_SYSTEMS_ORDER.forEach(sysId => {
+          const syms = rosState[sysId];
+          if (!syms) return;
+          const vals = Object.values(syms);
+          if (!vals.some(s => s.status !== 'unreviewed')) return;
+          const posItems = Object.entries(syms)
+            .filter(([, v]) => v.status === 'pos')
+            .map(([sym, v]) => sym.toLowerCase() + (v.detail ? ` (${v.detail})` : ''));
+          const negItems = Object.entries(syms)
+            .filter(([, v]) => v.status === 'neg')
+            .map(([sym]) => sym.toLowerCase());
+          const sysName = sysId.charAt(0).toUpperCase() + sysId.slice(1);
+          if (posItems.length) {
+            posSystems.push({ name: sysName, posItems, negItems });
+          } else if (negItems.length) {
+            negSystems.push(sysName);
+          }
+        });
+        if (!negSystems.length && !posSystems.length) return "";
+        const lines = ["REVIEW OF SYSTEMS:"];
+        if (negSystems.length) lines.push(`\nNegative: ${negSystems.join(', ')}.`);
+        posSystems.forEach(ps => {
+          lines.push(`\n${ps.name}: Positive for ${ps.posItems.join(', ')}.` +
+            (ps.negItems.length ? ` Denies ${ps.negItems.join(', ')}.` : ''));
+        });
+        return lines.join('');
+      }
+
+      // Legacy flat format fallback
       const sk = Object.keys(rosState), sym = Object.keys(rosSymptoms);
       if (!sk.length && !sym.length) return "";
       const pos    = sk.filter(s => rosState[s] === "positive" || rosState[s] === true);

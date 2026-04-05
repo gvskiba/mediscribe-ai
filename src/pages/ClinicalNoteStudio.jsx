@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { createPageUrl } from "@/utils";
+import { useNavigate, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -90,6 +89,7 @@ const TAB_GROUPS = [
 
 export default function ClinicalNoteStudio() {
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(window.location.search);
   const noteId = urlParams.get("noteId") || urlParams.get("id");
@@ -257,6 +257,41 @@ export default function ClinicalNoteStudio() {
   useEffect(() => {
     if (noteId) localStorage.setItem('currentOpenNote', noteId);
   }, [noteId]);
+
+  // Hydrate studio from patientData passed via navigate state (from NewPatientInput)
+  useEffect(() => {
+    const pd = location.state?.patientData;
+    if (!pd) return;
+    const { demo = {}, cc = {}, vitals = {}, medications = [], allergies = [],
+      pmhSelected = [], surgHx = [], famHx = '', socHx = '' } = pd;
+    const [sbp, dbp] = (vitals.bp || '').split('/').map(v => v?.trim() || '');
+    setPt(prev => ({
+      ...prev,
+      name:     [demo.firstName, demo.lastName].filter(Boolean).join(' ') || prev.name,
+      mrn:      pd.registration?.mrn || demo.mrn || prev.mrn,
+      dob:      demo.dob  || prev.dob,
+      age:      demo.age  || prev.age,
+      sex:      demo.sex  ? (demo.sex.charAt(0).toUpperCase() + demo.sex.slice(1)) : prev.sex,
+      cc:       cc.text   || prev.cc,
+      hpi:      cc.hpi    || prev.hpi,
+      allergies: allergies.length ? allergies : prev.allergies,
+      pmh:      pmhSelected.length ? pmhSelected : prev.pmh,
+      psh:      surgHx.length ? surgHx : prev.psh,
+      family:   famHx || prev.family,
+      social:   socHx || prev.social,
+      vitals: {
+        ...prev.vitals,
+        hr:   vitals.hr   || prev.vitals.hr,
+        sbp:  sbp         || prev.vitals.sbp,
+        dbp:  dbp         || prev.vitals.dbp,
+        temp: vitals.temp || prev.vitals.temp,
+        rr:   vitals.rr   || prev.vitals.rr,
+        spo2: vitals.spo2 || prev.vitals.spo2,
+        wt:   vitals.weight || prev.vitals.wt,
+      },
+    }));
+    setMode('studio');
+  }, [location.state]);
 
   useEffect(() => {
     const handler = () => setAiSidebarOpen(true);

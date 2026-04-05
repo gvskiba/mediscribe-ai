@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 
@@ -60,6 +60,112 @@ const FLAG = {
   abnormal:{ color:T.gold,  label:"ABN"  },
   normal:  { color:T.green, label:"WNL"  },
 };
+
+const NOTIF_TYPES = {
+  critical_status:  { icon:"🚨", color:"#ff4444", label:"Critical Status"   },
+  new_result:       { icon:"🔬", color:"#3b9eff", label:"New Result"        },
+  critical_result:  { icon:"⚠️", color:"#ff4444", label:"Critical Result"   },
+  unsigned_note:    { icon:"📝", color:"#ff9f43", label:"Unsigned Note"     },
+  status_change:    { icon:"🔄", color:"#9b6dff", label:"Status Changed"    },
+  new_patient:      { icon:"🏥", color:"#00e5c0", label:"New Patient"       },
+};
+
+// ── Notification helpers ─────────────────────────────────────────────
+
+function diffPatients(prev, next) {
+  const alerts = [];
+  const prevMap = Object.fromEntries(prev.map(p => [p.id, p]));
+
+  next.forEach(p => {
+    const old = prevMap[p.id];
+    if (!old) {
+      alerts.push({ id:`${p.id}-new`, patientId:p.id, patientName:p.patient_name, type:"new_patient", message:`${p.patient_name} admitted — ${p.cc}` });
+      return;
+    }
+    // Status change
+    if (old.status !== p.status) {
+      alerts.push({ id:`${p.id}-st-${Date.now()}`, patientId:p.id, patientName:p.patient_name, type: p.status==="critical" ? "critical_status" : "status_change", message:`${p.patient_name}: status changed to ${p.status.toUpperCase()}` });
+    }
+    // New unsigned note
+    if (!old.noteDraft && p.noteDraft) {
+      alerts.push({ id:`${p.id}-note-${Date.now()}`, patientId:p.id, patientName:p.patient_name, type:"unsigned_note", message:`${p.patient_name}: note requires signature` });
+    }
+    // New results
+    if (p.results.length > old.results.length) {
+      const newCrit = p.results.slice(old.results.length).filter(r => r.flag==="critical");
+      if (newCrit.length) {
+        alerts.push({ id:`${p.id}-crit-${Date.now()}`, patientId:p.id, patientName:p.patient_name, type:"critical_result", message:`${p.patient_name}: CRITICAL result — ${newCrit[0].name}` });
+      } else {
+        alerts.push({ id:`${p.id}-res-${Date.now()}`, patientId:p.id, patientName:p.patient_name, type:"new_result", message:`${p.patient_name}: new result available` });
+      }
+    }
+  });
+  return alerts;
+}
+
+// ── Notification Panel ───────────────────────────────────────────────
+
+function NotificationPanel({ notifications, onDismiss, onDismissAll, onPatientClick, onClose }) {
+  const unread = notifications.filter(n => !n.read);
+  return (
+    <div style={{ position:"fixed", top:0, right:0, bottom:0, width:340, zIndex:2000, display:"flex", flexDirection:"column", background:"rgba(5,10,20,0.97)", backdropFilter:"blur(24px)", borderLeft:"1px solid rgba(42,79,122,0.5)", boxShadow:"-12px 0 48px rgba(0,0,0,0.6)" }}>
+      {/* Header */}
+      <div style={{ padding:"16px", borderBottom:"1px solid rgba(42,79,122,0.4)", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <span style={{ fontFamily:"JetBrains Mono", fontSize:11, fontWeight:700, color:T.txt, letterSpacing:2 }}>ALERTS</span>
+          {unread.length > 0 && (
+            <span style={{ fontFamily:"JetBrains Mono", fontSize:10, fontWeight:700, background:T.red, color:"#fff", borderRadius:20, padding:"2px 8px" }}>{unread.length}</span>
+          )}
+        </div>
+        <div style={{ display:"flex", gap:8 }}>
+          {notifications.length > 0 && (
+            <button onClick={onDismissAll} style={{ fontFamily:"DM Sans", fontSize:10, color:T.txt4, background:"none", border:"none", cursor:"pointer" }}>Clear all</button>
+          )}
+          <button onClick={onClose} style={{ background:"rgba(42,79,122,0.3)", border:"1px solid rgba(42,79,122,0.5)", borderRadius:7, color:T.txt3, cursor:"pointer", fontFamily:"DM Sans", fontSize:13, fontWeight:600, padding:"3px 10px" }}>✕</button>
+        </div>
+      </div>
+
+      {/* List */}
+      <div style={{ flex:1, overflowY:"auto", padding:"10px 12px", display:"flex", flexDirection:"column", gap:6 }}>
+        {notifications.length === 0 && (
+          <div style={{ textAlign:"center", padding:"40px 0", display:"flex", flexDirection:"column", alignItems:"center", gap:8 }}>
+            <span style={{ fontSize:28 }}>✅</span>
+            <span style={{ fontFamily:"DM Sans", fontSize:13, color:T.txt3 }}>No active alerts</span>
+          </div>
+        )}
+        {notifications.map(n => {
+          const nt = NOTIF_TYPES[n.type] || NOTIF_TYPES.status_change;
+          return (
+            <div key={n.id} onClick={() => { onPatientClick(n.patientId); onClose(); }} style={{ background: n.read ? "rgba(8,22,40,0.5)" : `${nt.color}0f`, border:`1px solid ${n.read ? "rgba(42,79,122,0.25)" : nt.color+"35"}`, borderLeft:`3px solid ${n.read ? "rgba(42,79,122,0.3)" : nt.color}`, borderRadius:10, padding:"10px 12px", cursor:"pointer", display:"flex", alignItems:"flex-start", gap:10, opacity:n.read?0.55:1, transition:"all .15s" }}>
+              <span style={{ fontSize:16, flexShrink:0, lineHeight:1.4 }}>{nt.icon}</span>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontFamily:"DM Sans", fontWeight:n.read?500:700, fontSize:12, color:n.read?T.txt3:T.txt, lineHeight:1.4 }}>{n.message}</div>
+                <div style={{ fontFamily:"JetBrains Mono", fontSize:9, color:T.txt4, marginTop:3 }}>{new Date(n.timestamp).toLocaleTimeString()}</div>
+              </div>
+              <button onClick={e => { e.stopPropagation(); onDismiss(n.id); }} style={{ background:"none", border:"none", color:T.txt4, cursor:"pointer", fontSize:12, flexShrink:0, padding:"2px" }}>✕</button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Bell Button ──────────────────────────────────────────────────────
+
+function NotifBell({ count, onClick }) {
+  return (
+    <button onClick={onClick} style={{ position:"relative", background:count>0?`${T.red}14`:"rgba(14,37,68,0.6)", border:`1px solid ${count>0?T.red+"50":"rgba(42,79,122,0.5)"}`, borderRadius:8, padding:"5px 12px", cursor:"pointer", display:"flex", alignItems:"center", gap:6, transition:"all .15s" }}>
+      <span style={{ fontSize:14, lineHeight:1 }}>{count>0 ? "🔔" : "🔕"}</span>
+      {count > 0 && (
+        <span style={{ fontFamily:"JetBrains Mono", fontSize:10, fontWeight:700, color:T.red }}>{count}</span>
+      )}
+      {count > 0 && (
+        <span className={`${PREFIX}-pulse`} style={{ position:"absolute", top:4, right:4, width:6, height:6, borderRadius:"50%", background:T.red }} />
+      )}
+    </button>
+  );
+}
 
 // ── Shared UI primitives ──────────────────────────────────────────────
 
@@ -146,7 +252,7 @@ function QuickBtn({ icon, label, count, color, onClick }) {
 
 // ── Patient Card ──────────────────────────────────────────────────────
 
-function PatientCard({ patient, onNote, onOrders, onResults, onStudio }) {
+function PatientCard({ patient, onNote, onOrders, onResults, onStudio, hasUnread }) {
   const st   = STATUS[patient.status] || STATUS.waiting;
   const pend = patient.orders.filter(o => o.status === "pending");
   const crit = patient.results.filter(r => r.flag === "critical" && !r.acknowledged);
@@ -157,6 +263,7 @@ function PatientCard({ patient, onNote, onOrders, onResults, onStudio }) {
     <div className={`${PREFIX}-fade`} style={{
       ...glass, padding:0, overflow:"hidden",
       borderLeft:`3px solid ${st.color}`, position:"relative",
+      boxShadow: hasUnread ? `0 0 0 2px ${T.red}60, 0 4px 24px ${T.red}18` : undefined,
     }}>
       {patient.status === "critical" && (
         <div className={`${PREFIX}-pulse`} style={{
@@ -456,6 +563,9 @@ export default function EDTrackingBoard({ onBack }) {
   const [currentProvider, setCurrentProvider] = useState("");
   const [modal,           setModal]           = useState(null);
   const [toast,           setToast]           = useState("");
+  const [notifications,   setNotifications]   = useState([]);
+  const [showNotifPanel,  setShowNotifPanel]  = useState(false);
+  const prevPatientsRef = useRef([]);
 
   // ── Data fetching ──────────────────────────────────────────────────
   const fetchAll = useCallback(async () => {
@@ -479,6 +589,17 @@ export default function EDTrackingBoard({ onBack }) {
         note:      notes.find(n => n.patient_id === p.id || n.patient_name === p.patient_name) ?? { hpi:"", assessment:"", plan:"" },
         noteDraft: !(notes.find(n => n.patient_id === p.id)?.status === "finalized"),
       }));
+      // Diff against previous state to generate notifications
+      if (prevPatientsRef.current.length > 0) {
+        const newAlerts = diffPatients(prevPatientsRef.current, enriched);
+        if (newAlerts.length > 0) {
+          setNotifications(prev => [
+            ...newAlerts.map(a => ({ ...a, timestamp: Date.now(), read: false })),
+            ...prev,
+          ].slice(0, 50)); // cap at 50
+        }
+      }
+      prevPatientsRef.current = enriched;
       setPatients(enriched);
       setLastFetch(new Date());
     } catch (err) {
@@ -549,7 +670,20 @@ export default function EDTrackingBoard({ onBack }) {
     });
   }, [navigate]);
 
-  const openModal = useCallback((patient, tab) => setModal({ patient, tab }), []);
+  const openModal = useCallback((patient, tab) => {
+    setModal({ patient, tab });
+    // Mark notifications for this patient as read
+    setNotifications(prev => prev.map(n => n.patientId === patient.id ? { ...n, read:true } : n));
+  }, []);
+
+  const dismissNotif    = useCallback((id)  => setNotifications(prev => prev.filter(n => n.id !== id)), []);
+  const dismissAllNotif = useCallback(()    => setNotifications([]), []);
+  const unreadCount     = useMemo(() => notifications.filter(n => !n.read).length, [notifications]);
+
+  const goToPatient = useCallback((patientId) => {
+    const p = patients.find(x => x.id === patientId);
+    if (p) openModal(p, "note");
+  }, [patients, openModal]);
 
   // ── Derived ────────────────────────────────────────────────────────
   const PROVIDERS = useMemo(() =>
@@ -597,6 +731,16 @@ export default function EDTrackingBoard({ onBack }) {
         />
       )}
 
+      {showNotifPanel && (
+        <NotificationPanel
+          notifications={notifications}
+          onDismiss={dismissNotif}
+          onDismissAll={dismissAllNotif}
+          onPatientClick={goToPatient}
+          onClose={() => setShowNotifPanel(false)}
+        />
+      )}
+
       <div style={{ position:"relative", zIndex:1, maxWidth:1400, margin:"0 auto", padding:"0 16px" }}>
 
         {/* Header */}
@@ -611,6 +755,7 @@ export default function EDTrackingBoard({ onBack }) {
             <div style={{ display:"flex", gap:6 }}>
               <button onClick={() => navigate("/NewPatientInput")} style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:11, padding:"5px 14px", borderRadius:8, cursor:"pointer", border:`1px solid ${T.teal}40`, background:`${T.teal}10`, color:T.teal }}>+ New Patient</button>
               <button onClick={() => navigate("/ClinicalNoteStudio")} style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:11, padding:"5px 14px", borderRadius:8, cursor:"pointer", border:`1px solid ${T.purple}40`, background:`${T.purple}10`, color:T.purple }}>🖊️ Note Studio</button>
+              <NotifBell count={unreadCount} onClick={() => setShowNotifPanel(p => !p)} />
             </div>
           </div>
           <h1 className={`${PREFIX}-shim`} style={{ fontFamily:"Playfair Display", fontSize:"clamp(22px,3.5vw,36px)", fontWeight:900, letterSpacing:-1, lineHeight:1.1, marginBottom:4 }}>
@@ -679,6 +824,7 @@ export default function EDTrackingBoard({ onBack }) {
                 onOrders={()  => openModal(p, "orders")}
                 onResults={() => openModal(p, "results")}
                 onStudio={() => openStudio(p)}
+                hasUnread={notifications.some(n => n.patientId === p.id && !n.read)}
               />
             ))}
           </div>

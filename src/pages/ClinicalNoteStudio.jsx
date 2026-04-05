@@ -395,7 +395,7 @@ function buildInitialSections(patientData) {
   const m = {};
   SECTIONS.forEach(s => {
     const auto = assembleSection(s.id, patientData);
-    m[s.id] = { content: auto, status: auto ? "draft" : "empty", locked: false, collapsed: false };
+    m[s.id] = { content: auto, status: auto ? "draft" : "empty", locked: false, collapsed: true };
   });
   return m;
 }

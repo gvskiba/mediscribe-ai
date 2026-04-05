@@ -93,7 +93,7 @@ import { toast } from "sonner";
     .cns-note-area::-webkit-scrollbar-thumb { background:var(--npi-bhi,#2a4f7a); border-radius:2px; }
 
     .cns-section { background:rgba(8,22,40,.78); border:1px solid rgba(26,53,85,.5);
-      border-radius:12px; overflow:hidden; transition:border-color .2s; backdrop-filter:blur(12px); }
+      border-radius:12px; transition:border-color .2s; backdrop-filter:blur(12px); }
     .cns-section:focus-within { border-color:var(--npi-bhi,#2a4f7a); }
     .cns-section.active-section { border-color:rgba(59,158,255,.4); box-shadow:0 0 20px rgba(59,158,255,.08); }
 
@@ -130,7 +130,8 @@ import { toast } from "sonner";
     .cns-ta { width:100%; padding:13px 14px; background:rgba(14,37,68,.3); border:none;
       border-top:1px solid rgba(26,53,85,.6);
       color:var(--npi-txt,#fff); font-family:'JetBrains Mono',monospace; font-size:12px;
-      line-height:1.75; resize:none; outline:none; min-height:80px; display:block; box-sizing:border-box; transition:background .15s; }
+      line-height:1.75; resize:vertical; outline:none; min-height:100px; height:auto;
+      display:block; box-sizing:border-box; transition:background .15s; }
     .cns-ta:hover:not(:disabled) { background:rgba(14,37,68,.5); }
     .cns-ta:focus { background:rgba(14,37,68,.65); border-top-color:rgba(59,158,255,.4); }
     .cns-ta::placeholder { color:var(--npi-txt4,#7aa0c0); font-style:italic; font-size:11px; }

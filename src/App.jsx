@@ -52,7 +52,7 @@ import InfectiousDiseaseHub from '@/pages/InfectiousDiseaseHub';
 import DischargeHub from '@/pages/DischargeHub';
 import BillingSubmissions from '@/pages/BillingSubmissions';
 import WoundHub from '@/pages/WoundHub';
-import ClinicalNoteStudio from '@/pages/ClinicalNoteStudio';
+
 
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -154,7 +154,7 @@ const AuthenticatedApp = () => {
       <Route path="/discharge-hub" element={<DischargeHub />} />
       <Route path="/billing-submissions" element={<BillingSubmissions />} />
       <Route path="/wound-hub" element={<LayoutWrapper currentPageName="WoundHub"><WoundHub /></LayoutWrapper>} />
-      <Route path="/ClinicalNoteStudio" element={<ClinicalNoteStudio />} />
+
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

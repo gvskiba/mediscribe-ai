@@ -549,8 +549,8 @@ export default function ClinicalNoteStudio() {
   const textareaS = {...inputS,resize:"vertical",minHeight:65,lineHeight:1.65,display:"block"};
   const labelS = {fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:C.dim,letterSpacing:".1em",display:"block",marginBottom:4};
 
-  const renderStudioSection = () => {
-    switch(cur) {
+  const renderStudioSection = (overrideId) => {
+    switch(overrideId || cur) {
       case "overview": return <SectionOverview pt={pt} totalAbn={totalAbn} dxList={dxList} />;
       case "cc_hpi": return <SectionCCHPI pt={pt} updatePt={updatePt} inputS={inputS} textareaS={textareaS} labelS={labelS} />;
       case "pmh": return <SectionPMH pt={pt} updatePt={updatePt} inputS={inputS} textareaS={textareaS} labelS={labelS} />;
@@ -566,45 +566,8 @@ export default function ClinicalNoteStudio() {
     }
   };
 
-  // ── Shared Navbar ──
-  const renderNavbar = () => (
-    <nav style={{height:52,background:"rgba(11,29,53,.97)",borderBottom:`1px solid ${C.border}`,backdropFilter:"blur(20px)",display:"flex",alignItems:"center",padding:"0 16px",gap:12,flexShrink:0,zIndex:100}}>
-      <Link to="/Home" style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,color:C.bright,cursor:"pointer",letterSpacing:"-.02em",textDecoration:"none"}}>Notrya</Link>
-      <div style={{width:1,height:16,background:C.border}} />
-      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:C.teal,letterSpacing:".12em"}}>CLINICAL NOTE STUDIO</span>
-
-      {/* Mode toggle */}
-      <div style={{display:"flex",alignItems:"center",gap:2,padding:"3px",borderRadius:10,background:C.edge,border:`1px solid ${C.border}`}}>
-        <button onClick={()=>setMode("intake")} style={{padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:mode==="intake"?C.green:"transparent",color:mode==="intake"?C.navy:C.dim,transition:"all .15s"}}>➕ New Patient</button>
-        <button onClick={()=>setMode("studio")} style={{padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:mode==="studio"?C.teal:"transparent",color:mode==="studio"?C.navy:C.dim,transition:"all .15s"}}>✦ Studio</button>
-        <button onClick={()=>setMode("notes")} style={{padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:mode==="notes"?C.blue:"transparent",color:mode==="notes"?C.bright:C.dim,transition:"all .15s"}}>📋 Note Detail</button>
-        <button onClick={()=>setShowTemplatePicker(true)} style={{padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:"transparent",color:C.purple}}>📄 Templates</button>
-        <button onClick={()=>setShowTranscription(true)} style={{padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:"transparent",color:C.amber}}>🎙️ Transcribe</button>
-      </div>
-
-      <div style={{flex:1}} />
-
-      <div style={{display:"flex",alignItems:"center",gap:8,padding:"5px 12px",borderRadius:10,background:C.panel,border:`1px solid ${C.border}`}}>
-        <div>
-          <div style={{fontSize:13,fontWeight:600,color:C.bright}}>{pt.name||note?.patient_name||"New Patient"}</div>
-          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.dim}}>{[pt.mrn||note?.patient_id,pt.age||note?.patient_age].filter(Boolean).join(' · ')||"Enter patient info"}</div>
-        </div>
-      </div>
-
-      <div style={{display:"flex",gap:6}}>
-        {mode==="studio" && <>
-          <button onClick={saveNote} disabled={saving} style={{padding:"5px 13px",borderRadius:9,fontSize:12,fontWeight:600,cursor:saving?"not-allowed":"pointer",border:`1px solid ${C.border}`,background:C.edge,color:C.dim,opacity:saving?.5:1}}>{saving?"Saving...":"💾 Save"}</button>
-          <button onClick={signNote} disabled={saving} style={{padding:"5px 13px",borderRadius:9,fontSize:12,fontWeight:700,cursor:saving?"not-allowed":"pointer",border:"none",background:`linear-gradient(135deg,${C.teal},#00b8a5)`,color:C.navy,opacity:saving?.5:1}}>✍️ Sign Note</button>
-        </>}
-        {mode==="notes" && (
-          <button onClick={()=>{setMode("studio");}} style={{padding:"5px 13px",borderRadius:9,fontSize:12,fontWeight:600,cursor:"pointer",border:`1px solid ${C.border}`,background:C.edge,color:C.dim}}>✦ Switch to Studio</button>
-        )}
-      </div>
-      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.dim}}>{clock}</span>
-    </nav>
-  );
-
   const renderNoteTypeBar = () => (
+
     <div style={{height:48,background:`linear-gradient(90deg, ${C.panel}, ${C.slate})`,borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",padding:"0 16px",gap:12,flexShrink:0}}>
       <div style={{display:"flex",alignItems:"center",gap:8}}>
         <span style={{fontSize:14}}>📝</span>
@@ -654,132 +617,144 @@ export default function ClinicalNoteStudio() {
     );
   }
 
+  // Section status helper
+  const getSectionStatus = (id) => {
+    if (done[id]) return 'complete';
+    const content = secContent(id);
+    if (content && content.replace(/[:\s—\/]+/g, '').length > 10) return 'draft';
+    return 'empty';
+  };
+
+  const statusColor = { complete: C.teal, draft: C.amber, empty: '#3a5575' };
+  const statusBg = { complete: 'rgba(0,212,188,.12)', draft: 'rgba(245,166,35,.12)', empty: 'rgba(58,85,117,.18)' };
+  const statusBorder = { complete: 'rgba(0,212,188,.35)', draft: 'rgba(245,166,35,.35)', empty: 'rgba(58,85,117,.4)' };
+
+  const STUDIO_SECTIONS_NEW = [
+    {id:'overview',   icon:'👤', name:'Patient Header',       shortcut:'1'},
+    {id:'cc_hpi',     icon:'💬', name:'Chief Complaint',      shortcut:'2'},
+    {id:'cc_hpi_hpi', icon:'📝', name:'HPI',                  shortcut:'3'},
+    {id:'pmh',        icon:'💊', name:'PMH / Meds / Aller…',  shortcut:'4'},
+    {id:'ros',        icon:'🔍', name:'Review of Systems',    shortcut:'5'},
+    {id:'vitals',     icon:'📈', name:'Vital Signs',          shortcut:'6'},
+    {id:'pe',         icon:'🩺', name:'Physical Exam',        shortcut:'7'},
+    {id:'assessment', icon:'⚖️', name:'Assessment & Plan',    shortcut:'8'},
+    {id:'disposition',icon:'🗂️', name:'Disposition',          shortcut:'9'},
+  ];
+
+  const doneCount = STUDIO_SECTIONS_NEW.filter(s => getSectionStatus(s.id) === 'complete').length;
+
   // ── STUDIO MODE ──
   if (mode === "studio") {
     return (
       <div style={{fontFamily:"'DM Sans',sans-serif",background:C.navy,height:"100vh",color:C.text,display:"flex",flexDirection:"column",overflow:"hidden"}}>
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
-          @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-          @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+          @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
           @keyframes spin{to{transform:rotate(360deg)}}
-          @keyframes shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
-          @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(255,92,108,0)}60%{box-shadow:0 0 14px 0 rgba(255,92,108,.3)}}
           ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:2px}
-          textarea,input,select{transition:border-color .15s}
-          textarea:focus,input:focus,select:focus{border-color:#4a7299 !important;outline:none}
-          textarea::placeholder,input::placeholder{color:#2a4d72}
-          select option{background:#0b1d35}
+          .studio-card:hover{border-color:#2a4d72 !important}
+          .studio-sec-item:hover{background:rgba(59,158,255,.06) !important;cursor:pointer}
+          .studio-sec-item.active{background:rgba(0,212,188,.07) !important;border-color:rgba(0,212,188,.3) !important}
         `}</style>
 
-        {renderNavbar()}
-        {mode === "studio" && renderNoteTypeBar()}
+        {/* ── TOP BAR ── */}
+        <div style={{height:52,background:"rgba(8,18,40,.98)",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",padding:"0 18px",gap:14,flexShrink:0,zIndex:100}}>
+          <div style={{display:"inline-flex",alignItems:"center",padding:"5px 14px",borderRadius:20,background:"rgba(0,212,188,.1)",border:"1px solid rgba(0,212,188,.4)"}}>
+            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:C.teal,letterSpacing:".14em"}}>NOTE STUDIO</span>
+          </div>
+          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:18,fontWeight:700,color:C.bright}}>{pt.name||note?.patient_name||"New Patient"}</div>
+          {(pt.age||pt.sex) && <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,color:C.dim}}>{pt.age}{pt.sex?`y · ${pt.sex.charAt(0)}`:""}}</span>}
+          {pt.cc && <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,color:C.amber}}>CC: <span style={{color:'#f9c06a'}}>{pt.cc}</span></span>}
+          {pt.esi && <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,padding:"4px 12px",borderRadius:7,background:"rgba(255,92,108,.12)",border:"1px solid rgba(255,92,108,.35)",color:C.red}}>ESI {pt.esi}</span>}
+          <div style={{marginLeft:'auto',display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.dim}}>{doneCount}/{STUDIO_SECTIONS_NEW.length} done</span>
+            {mode==="studio" && <>
+              <button onClick={saveNote} disabled={saving} style={{padding:"5px 13px",borderRadius:8,fontSize:12,fontWeight:600,cursor:saving?"not-allowed":"pointer",border:`1px solid ${C.border}`,background:C.edge,color:C.dim,opacity:saving?.5:1}}>{saving?"Saving...":"⌘S Save"}</button>
+              <button onClick={signNote} disabled={saving} style={{padding:"5px 13px",borderRadius:8,fontSize:12,fontWeight:700,cursor:saving?"not-allowed":"pointer",border:"none",background:`linear-gradient(135deg,${C.teal},#00b8a5)`,color:C.navy}}>✍️ Sign</button>
+            </>}
+            <button onClick={()=>setMode("intake")} style={{padding:"5px 11px",borderRadius:8,fontSize:11,cursor:"pointer",border:`1px solid ${C.border}`,background:"transparent",color:C.dim}}>➕ New Pt</button>
+            <button onClick={()=>savedNoteId&&setMode("notes")} style={{padding:"5px 11px",borderRadius:8,fontSize:11,cursor:"pointer",border:`1px solid ${C.border}`,background:"transparent",color:C.dim,opacity:savedNoteId?1:.4}}>📋 Detail</button>
+            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.muted}}>{clock}</span>
+          </div>
+        </div>
 
         <div style={{display:"flex",flex:1,overflow:"hidden"}}>
-          {/* Sidebar */}
-          <div style={{width:230,flexShrink:0,background:C.panel,borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-            <div style={{padding:"12px 14px 10px",borderBottom:`1px solid ${C.border}`}}>
-              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.dim,letterSpacing:".1em",marginBottom:4}}>PATIENT · ENCOUNTER</div>
-              <input value={pt.name} onChange={e=>updatePt("name",e.target.value)} placeholder="Patient Name" style={{width:"100%",background:C.edge,border:`1px solid ${C.border}`,borderRadius:6,padding:"5px 8px",color:C.bright,fontSize:13,fontWeight:700,outline:"none",marginBottom:5,fontFamily:"'Playfair Display',serif"}} />
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,marginBottom:5}}>
-                <input value={pt.mrn} onChange={e=>updatePt("mrn",e.target.value)} placeholder="MRN" style={{background:C.edge,border:`1px solid ${C.border}`,borderRadius:6,padding:"4px 7px",color:C.dim,fontSize:11,outline:"none",fontFamily:"'JetBrains Mono',monospace"}} />
-                <input value={pt.age} onChange={e=>updatePt("age",e.target.value)} placeholder="Age" style={{background:C.edge,border:`1px solid ${C.border}`,borderRadius:6,padding:"4px 7px",color:C.dim,fontSize:11,outline:"none",fontFamily:"'JetBrains Mono',monospace"}} />
+
+          {/* ── LEFT SIDEBAR ── */}
+          <div style={{width:240,flexShrink:0,background:"rgba(8,18,40,.9)",borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+            <div style={{padding:"14px 16px 10px"}}>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:C.muted,letterSpacing:".14em",marginBottom:10}}>NOTE SECTIONS</div>
+              <div style={{height:4,borderRadius:2,background:C.edge,overflow:"hidden",marginBottom:6}}>
+                <div style={{height:"100%",background:`linear-gradient(90deg,${C.teal},#00b8a5)`,borderRadius:2,width:`${(doneCount/STUDIO_SECTIONS_NEW.length)*100}%`,transition:"width .5s"}} />
               </div>
-              {totalAbn>0 && <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,padding:"2px 8px",borderRadius:7,background:"rgba(255,92,108,.1)",border:"1px solid rgba(255,92,108,.3)",color:C.red,display:"inline-block"}}>⚠ {totalAbn} Abnormal</div>}
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.dim}}>{doneCount} of {STUDIO_SECTIONS_NEW.length} signed off</div>
             </div>
-            <div style={{padding:"8px 14px",borderBottom:`1px solid ${C.border}`}}>
-              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.dim,letterSpacing:".1em",display:"flex",justifyContent:"space-between",marginBottom:5}}><span>COMPLETION</span><span>{completion}%</span></div>
-              <div style={{height:4,borderRadius:2,background:C.edge,overflow:"hidden"}}>
-                <div style={{height:"100%",background:`linear-gradient(90deg,${C.teal},#00b8a5)`,borderRadius:2,width:`${completion}%`,transition:"width .5s"}} />
-              </div>
+            <div style={{flex:1,overflowY:"auto",padding:"6px 10px"}}>
+              {STUDIO_SECTIONS_NEW.map(sec => {
+                const st = getSectionStatus(sec.id === 'cc_hpi_hpi' ? 'cc_hpi' : sec.id);
+                const isActive = cur === (sec.id === 'cc_hpi_hpi' ? 'cc_hpi' : sec.id);
+                return (
+                  <div key={sec.id}
+                    className={`studio-sec-item${isActive?' active':''}`}
+                    onClick={()=>switchSec(sec.id === 'cc_hpi_hpi' ? 'cc_hpi' : sec.id)}
+                    style={{display:"flex",alignItems:"center",gap:9,padding:"9px 10px",borderRadius:9,marginBottom:2,border:`1px solid ${isActive?"rgba(0,212,188,.3)":"transparent"}`,transition:"all .15s"}}>
+                    <span style={{fontSize:15,width:20,textAlign:"center",flexShrink:0}}>{sec.icon}</span>
+                    <span style={{flex:1,fontSize:13,fontWeight:isActive?600:400,color:isActive?C.teal:C.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{sec.name}</span>
+                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,padding:"2px 6px",borderRadius:5,background:C.edge,border:`1px solid ${C.border}`,color:C.muted,flexShrink:0}}>⌘{sec.shortcut}</span>
+                    <div style={{width:9,height:9,borderRadius:"50%",background:statusColor[st],flexShrink:0,boxShadow:st==='complete'?`0 0 6px ${C.teal}`:undefined}} />
+                  </div>
+                );
+              })}
             </div>
-            <div style={{flex:1,overflowY:"auto",padding:"6px 8px"}}>
-              {STUDIO_GROUPS.map(g => (
-                <div key={g}>
-                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.muted,letterSpacing:".12em",padding:"6px 8px 3px",textTransform:"uppercase"}}>{g}</div>
-                  {STUDIO_SECTIONS.filter(s=>s.group===g).map(sec => {
-                    const isDone = done[sec.id];
-                    const isActive = cur===sec.id;
-                    return (
-                      <div key={sec.id} onClick={()=>switchSec(sec.id)} style={{display:"flex",alignItems:"center",gap:9,padding:"8px 10px",borderRadius:10,cursor:"pointer",marginBottom:1,transition:"all .15s",background:isActive?"rgba(0,212,188,.08)":"transparent",border:`1px solid ${isActive?"rgba(0,212,188,.3)":"transparent"}`}}>
-                        <div style={{fontSize:14,width:20,textAlign:"center",flexShrink:0}}>{sec.icon}</div>
-                        <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontSize:12,fontWeight:500,color:isActive?C.teal:C.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{sec.name}</div>
-                          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.muted,marginTop:1}}>{sec.sub}</div>
-                        </div>
-                        {isDone && <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,minWidth:16,height:16,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(46,204,113,.1)",color:C.green,border:"1px solid rgba(46,204,113,.25)",padding:"0 4px"}}>✓</div>}
-                      </div>
-                    );
-                  })}
+            {/* Keyboard shortcuts legend */}
+            <div style={{padding:"12px 16px",borderTop:`1px solid ${C.border}`,display:"flex",flexDirection:"column",gap:5}}>
+              {[
+                {keys:"⌘ 1–9",label:"Jump to section"},
+                {keys:"⌘ G",label:"AI generate focused"},
+                {keys:"⌘ ⇧ G",label:"AI all empty"},
+                {keys:"⌘ S",label:"Save"},
+              ].map(({keys,label})=>(
+                <div key={label} style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:C.teal,minWidth:56}}>{keys}</span>
+                  <span style={{fontSize:11,color:C.dim}}>{label}</span>
                 </div>
               ))}
             </div>
-            <div style={{padding:"8px 10px",borderTop:`1px solid ${C.border}`,display:"flex",flexDirection:"column",gap:5}}>
-              <button onClick={analyzeAll} style={{padding:"7px 10px",borderRadius:9,fontSize:11,fontWeight:500,cursor:"pointer",background:"rgba(0,212,188,.07)",border:"1px solid rgba(0,212,188,.28)",color:C.teal,display:"flex",alignItems:"center",gap:7}}>✦ Analyze Entire Note</button>
-              <button onClick={generateSummary} style={{padding:"7px 10px",borderRadius:9,fontSize:11,fontWeight:500,cursor:"pointer",background:C.edge,border:`1px solid ${C.border}`,color:C.dim,display:"flex",alignItems:"center",gap:7}}>📋 Generate Summary</button>
-              {savedNoteId && <button onClick={()=>setMode("notes")} style={{padding:"7px 10px",borderRadius:9,fontSize:11,fontWeight:500,cursor:"pointer",background:"rgba(74,144,217,.08)",border:"1px solid rgba(74,144,217,.28)",color:C.blue,display:"flex",alignItems:"center",gap:7}}>📋 Open Note Detail View</button>}
-            </div>
           </div>
 
-          {/* Center */}
-          <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minWidth:0}}>
-            <div style={{padding:"14px 20px 12px",background:C.slate,borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
-              <div style={{display:"flex",alignItems:"center",gap:12}}>
-                <div style={{width:38,height:38,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:19,flexShrink:0,background:"rgba(0,212,188,.1)",border:"1px solid rgba(0,212,188,.28)"}}>{curSec?.icon}</div>
-                <div>
-                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:21,fontWeight:700,color:C.bright,letterSpacing:"-.02em"}}>{curSec?.name}</div>
-                  <div style={{fontSize:12,color:C.dim,marginTop:1}}>{curSec?.sub}</div>
+          {/* ── RIGHT: SCROLLABLE CARDS ── */}
+          <div style={{flex:1,overflowY:"auto",padding:"18px 20px",display:"flex",flexDirection:"column",gap:14}}>
+            {STUDIO_SECTIONS_NEW.map(sec => {
+              const secId = sec.id === 'cc_hpi_hpi' ? 'cc_hpi' : sec.id;
+              const st = getSectionStatus(secId);
+              const isActive = cur === secId;
+              return (
+                <div key={sec.id} className="studio-card" onClick={()=>switchSec(secId)} style={{background:isActive?"rgba(11,29,53,.9)":C.slate,border:`1px solid ${isActive?C.border:"rgba(30,58,95,.6)"}`,borderRadius:14,overflow:"hidden",transition:"all .15s",cursor:"pointer"}}>
+                  {/* Card header */}
+                  <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",borderBottom:`1px solid rgba(30,58,95,.5)`}}>
+                    <span style={{fontSize:17}}>{sec.icon}</span>
+                    <span style={{fontSize:16,fontWeight:700,color:C.bright,flex:1}}>{sec.name}</span>
+                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,padding:"2px 7px",borderRadius:5,background:C.edge,border:`1px solid ${C.border}`,color:C.muted}}>⌘{sec.shortcut}</span>
+                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,padding:"3px 10px",borderRadius:20,background:statusBg[st],border:`1px solid ${statusBorder[st]}`,color:statusColor[st]}}>{st}</span>
+                    <button onClick={e=>{e.stopPropagation();analyzeSection(secId);}} style={{width:30,height:30,borderRadius:"50%",border:`1px solid ${C.border}`,background:C.edge,color:C.bright,cursor:"pointer",fontSize:15,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}} title="AI Generate">✦</button>
+                    <button onClick={e=>e.stopPropagation()} style={{width:30,height:30,borderRadius:"50%",border:`1px solid ${C.border}`,background:C.edge,color:C.dim,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}} title="Lock">🔒</button>
+                  </div>
+                  {/* Card body - only show content when active or has content */}
+                  <div style={{padding:"14px 16px"}} onClick={e=>e.stopPropagation()}>
+                    {renderStudioSection(secId)}
+                  </div>
                 </div>
-                <div style={{flex:1}} />
-                <button onClick={()=>analyzeSection(cur)} disabled={analyzing} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 14px",borderRadius:10,cursor:analyzing?"not-allowed":"pointer",background:"rgba(155,109,255,.1)",border:"1px solid rgba(155,109,255,.3)",color:C.purple,fontSize:12,fontWeight:600,opacity:analyzing?.45:1}}>
-                  {analyzing?<div style={{width:13,height:13,border:"2px solid rgba(155,109,255,.3)",borderTopColor:C.purple,borderRadius:"50%",animation:"spin .6s linear infinite"}} />:"✦"}
-                  {analyzing?"Analyzing...":"Analyze Section"}
-                </button>
-              </div>
-            </div>
-            <div style={{flex:1,overflowY:"auto",padding:"16px 20px"}}>{renderStudioSection()}</div>
-          </div>
+              );
+            })}
 
-          {/* Right AI Panel */}
-          <div style={{width:310,flexShrink:0,background:C.panel,borderLeft:`1px solid ${C.border}`,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-            <div style={{padding:"10px 14px 0",borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                <div style={{width:7,height:7,borderRadius:"50%",background:C.purple,animation:"pulse .8s infinite"}} />
-                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:C.purple,letterSpacing:".12em",flex:1}}>✦ AI ASSISTANT</div>
-              </div>
-              {/* Tab switcher */}
-              <div style={{display:"flex",gap:2,paddingBottom:0}}>
-                {[
-                  {id:"analysis", label:"Section Analysis"},
-                  {id:"summary", label:"Auto Summary"},
-                ].map(tab => (
-                  <button key={tab.id} onClick={()=>setAiPanelTab(tab.id)} style={{
-                    flex:1, padding:"5px 8px", borderRadius:"7px 7px 0 0", fontSize:10, fontWeight:600, cursor:"pointer",
-                    border:`1px solid ${aiPanelTab===tab.id ? C.border : "transparent"}`,
-                    borderBottom: aiPanelTab===tab.id ? `1px solid ${C.panel}` : `1px solid ${C.border}`,
-                    background: aiPanelTab===tab.id ? C.panel : "transparent",
-                    color: aiPanelTab===tab.id ? C.teal : C.dim,
-                    fontFamily:"'DM Sans',sans-serif", transition:"all .15s",
-                  }}>
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div style={{flex:1,overflowY:"auto",padding:"12px 14px"}}>
-              {aiPanelTab === "analysis" && <>
-                {rpContent==="loading" && <AILoadingState />}
-                {rpContent==="analysis" && rpData && <AIAnalysisPanel data={rpData} />}
-                {rpContent==="summary" && rpData && <AISummaryPanel data={rpData} />}
-                {rpContent==="default" && <AIDefaultState />}
-              </>}
-              {aiPanelTab === "summary" && (
-                <AINoteSummaryPanel
-                  noteId={savedNoteId}
-                  pt={pt}
-                  onApply={handleApplySummary}
-                />
-              )}
+            {/* Electronic signature */}
+            <div style={{background:"rgba(8,18,40,.7)",border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px"}}>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:C.muted,letterSpacing:".14em",marginBottom:12}}>ELECTRONIC SIGNATURE</div>
+              <div style={{fontSize:13,color:C.dim,marginBottom:16}}>Attending Physician:</div>
+              <div style={{height:1,background:C.border,maxWidth:220,marginBottom:8}} />
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,color:C.dim,marginBottom:16}}>Date:</div>
+              <div style={{height:1,background:C.border,maxWidth:120,marginBottom:16}} />
+              <div style={{fontSize:11,color:C.muted,lineHeight:1.65}}>Notrya clinical decision support. Verify all clinical decisions independently.</div>
             </div>
           </div>
         </div>
@@ -791,24 +766,14 @@ export default function ClinicalNoteStudio() {
           ))}
         </div>
 
-        {/* Transcription Modal */}
-        <TranscriptionModal
-          open={showTranscription}
-          onClose={()=>setShowTranscription(false)}
-          onApplyToNote={handleApplyTranscription}
-        />
-
-        {/* Template Picker Modal */}
-        <TemplatePicker
-          open={showTemplatePicker}
-          onClose={()=>setShowTemplatePicker(false)}
-          onApply={handleApplyTemplate}
-        />
+        <TranscriptionModal open={showTranscription} onClose={()=>setShowTranscription(false)} onApplyToNote={handleApplyTranscription} />
+        <TemplatePicker open={showTemplatePicker} onClose={()=>setShowTemplatePicker(false)} onApply={handleApplyTemplate} />
       </div>
     );
   }
 
   // ── NOTE DETAIL MODE ──
+
 
   if (noteLoading && savedNoteId) {
     return (

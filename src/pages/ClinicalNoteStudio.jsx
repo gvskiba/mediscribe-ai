@@ -148,9 +148,13 @@ import { toast } from "sonner";
 .macro-pill.teal:hover{background:rgba(0,229,192,.14)}
  
 .cns2-sec-body{padding:2px 0 0}
-.cns2-ta{width:100%;padding:12px 14px;background:transparent;border:none;
+.cns2-ta{width:100%;padding:12px 14px;background:rgba(14,37,68,.4);border:none;
+  border-top:1px solid rgba(26,53,85,.5);
   color:var(--t);font-family:'JetBrains Mono',monospace;font-size:12px;
-  line-height:1.8;resize:none;outline:none;min-height:80px;display:block;box-sizing:border-box}
+  line-height:1.8;resize:vertical;outline:none;min-height:100px;display:block;box-sizing:border-box;
+  transition:background .15s}
+.cns2-ta:focus{background:rgba(14,37,68,.65);border-top-color:rgba(59,158,255,.3)}
+.cns2-ta:hover:not(:disabled){background:rgba(14,37,68,.55)}
 .cns2-ta::placeholder{color:var(--t4);font-style:italic;font-size:11px}
 .cns2-ta:disabled{opacity:.45;cursor:default}
 .cns2-ta.locked{background:rgba(59,158,255,.03);color:var(--t2)}

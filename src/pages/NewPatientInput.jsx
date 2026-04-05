@@ -481,6 +481,7 @@ export default function NewPatientInput() {
           {registration.room && <span className="npi-status-badge npi-status-room">Room {registration.room}</span>}
           <div className="npi-top-acts">
             <button className="npi-btn-ghost" onClick={() => selectSection("orders")}>📋 Orders</button>
+            <button className="npi-btn-ghost" onClick={() => navigate("/EDTrackingBoard")}>🏥 Track Board</button>
             <button className="npi-btn-ghost" title="Open Note Studio (⌘⇧E)" onClick={() =>
               navigate("/ClinicalNoteStudio", {
                 state: {

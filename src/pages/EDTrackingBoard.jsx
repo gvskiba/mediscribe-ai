@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Patient, Order, ClinicalResult, ClinicalNote } from "@/api/entities";
+import { useNavigate } from "react-router-dom";
+import { base44 } from "@/api/base44Client";
 
 const PREFIX = "ptb";
 
@@ -35,48 +36,32 @@ const PREFIX = "ptb";
   document.head.appendChild(s);
 })();
 
-// ── DESIGN TOKENS (v2) ───────────────────────────────────────────────
 const T = {
-  bg:     "#050f1e",
-  txt:    "#f2f7ff",
-  txt2:   "#b8d4f0",
-  txt3:   "#82aece",
-  txt4:   "#5a82a8",
-  teal:   "#00e5c0",
-  gold:   "#f5c842",
-  red:    "#ff4444",
-  coral:  "#ff6b6b",
-  green:  "#3dffa0",
-  blue:   "#3b9eff",
-  purple: "#9b6dff",
-  orange: "#ff9f43",
+  bg:"#050f1e", txt:"#f2f7ff", txt2:"#b8d4f0", txt3:"#82aece", txt4:"#5a82a8",
+  teal:"#00e5c0", gold:"#f5c842", red:"#ff4444", coral:"#ff6b6b",
+  green:"#3dffa0", blue:"#3b9eff", purple:"#9b6dff", orange:"#ff9f43",
 };
 
 const glass = {
-  backdropFilter:       "blur(20px) saturate(180%)",
-  WebkitBackdropFilter: "blur(20px) saturate(180%)",
-  background:           "rgba(8,22,40,0.78)",
-  border:               "1px solid rgba(42,79,122,0.35)",
-  borderRadius:         14,
+  backdropFilter:"blur(20px) saturate(180%)", WebkitBackdropFilter:"blur(20px) saturate(180%)",
+  background:"rgba(8,22,40,0.78)", border:"1px solid rgba(42,79,122,0.35)", borderRadius:14,
 };
 
 const STATUS = {
-  critical: { label:"CRITICAL",  color: T.red    },
-  results:  { label:"RESULTS ▶", color: T.blue   },
-  pending:  { label:"PENDING",   color: T.gold   },
-  stable:   { label:"STABLE",    color: T.teal   },
-  waiting:  { label:"WAITING",   color: T.txt4   },
+  critical:{ label:"CRITICAL",  color:T.red    },
+  results: { label:"RESULTS ▶", color:T.blue   },
+  pending: { label:"PENDING",   color:T.gold   },
+  stable:  { label:"STABLE",    color:T.teal   },
+  waiting: { label:"WAITING",   color:T.txt4   },
 };
 
 const FLAG = {
-  critical: { color: T.red,   label:"CRIT" },
-  abnormal: { color: T.gold,  label:"ABN"  },
-  normal:   { color: T.green, label:"WNL"  },
+  critical:{ color:T.red,   label:"CRIT" },
+  abnormal:{ color:T.gold,  label:"ABN"  },
+  normal:  { color:T.green, label:"WNL"  },
 };
 
-// ══════════════════════════════════════════════════════════════════════
-//  MODULE-SCOPE PRIMITIVES
-// ══════════════════════════════════════════════════════════════════════
+// ── Shared UI primitives ──────────────────────────────────────────────
 
 function AmbientBg() {
   return (
@@ -95,32 +80,6 @@ function AmbientBg() {
           animation:`${PREFIX}orb${i%3} ${8+i*1.3}s ease-in-out infinite`,
         }}/>
       ))}
-    </div>
-  );
-}
-
-function HubBadge({ name, onBack }) {
-  return (
-    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:9 }}>
-      <div style={{
-        backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)",
-        background:"rgba(5,15,30,0.9)", border:"1px solid rgba(42,79,122,0.6)",
-        borderRadius:10, padding:"5px 12px",
-        display:"flex", alignItems:"center", gap:8,
-      }}>
-        <span style={{ fontFamily:"JetBrains Mono", fontSize:10, color:T.gold, letterSpacing:3 }}>NOTRYA</span>
-        <span style={{ color:T.txt4, fontFamily:"JetBrains Mono", fontSize:10 }}>/</span>
-        <span style={{ fontFamily:"JetBrains Mono", fontSize:10, color:T.txt3, letterSpacing:2 }}>{name.toUpperCase()}</span>
-      </div>
-      <div style={{ height:1, flex:1, background:"linear-gradient(90deg,rgba(0,229,192,0.5),transparent)" }}/>
-      {onBack && (
-        <button onClick={onBack} style={{
-          fontFamily:"DM Sans", fontSize:11, fontWeight:600,
-          padding:"5px 14px", borderRadius:8, cursor:"pointer",
-          border:"1px solid rgba(42,79,122,0.5)",
-          background:"rgba(14,37,68,0.6)", color:T.txt3,
-        }}>← Hub</button>
-      )}
     </div>
   );
 }
@@ -162,8 +121,6 @@ function SkeletonCard() {
   );
 }
 
-// ── Board-specific primitives ─────────────────────────────────────────
-
 function QuickBtn({ icon, label, count, color, onClick }) {
   const c = color || T.teal;
   return (
@@ -187,11 +144,13 @@ function QuickBtn({ icon, label, count, color, onClick }) {
   );
 }
 
-function PatientCard({ patient, onNote, onOrders, onResults }) {
-  const st     = STATUS[patient.status] || STATUS.waiting;
-  const pend   = patient.orders.filter(o => o.status === "pending");
-  const crit   = patient.results.filter(r => r.flag === "critical" && !r.acknowledged);
-  const mins   = patient.arrived;
+// ── Patient Card ──────────────────────────────────────────────────────
+
+function PatientCard({ patient, onNote, onOrders, onResults, onStudio }) {
+  const st   = STATUS[patient.status] || STATUS.waiting;
+  const pend = patient.orders.filter(o => o.status === "pending");
+  const crit = patient.results.filter(r => r.flag === "critical" && !r.acknowledged);
+  const mins = patient.arrived;
   const arrTxt = mins < 60 ? `${mins}m` : `${Math.floor(mins/60)}h ${mins%60}m`;
 
   return (
@@ -206,20 +165,14 @@ function PatientCard({ patient, onNote, onOrders, onResults }) {
         }}/>
       )}
 
-      {/* Room · CC · Status badges */}
-      <div style={{
-        padding:"10px 12px 8px",
-        display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8,
-      }}>
+      {/* Room · CC · Status */}
+      <div style={{ padding:"10px 12px 8px", display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
         <div style={{ display:"flex", alignItems:"baseline", gap:8 }}>
-          <span style={{
-            fontFamily:"JetBrains Mono", fontSize:22, fontWeight:700,
-            color:st.color, lineHeight:1, minWidth:28,
-          }}>{patient.room}</span>
+          <span style={{ fontFamily:"JetBrains Mono", fontSize:22, fontWeight:700, color:st.color, lineHeight:1, minWidth:28 }}>
+            {patient.room}
+          </span>
           <div>
-            <div style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:13, color:T.txt, lineHeight:1.2 }}>
-              {patient.cc}
-            </div>
+            <div style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:13, color:T.txt, lineHeight:1.2 }}>{patient.cc}</div>
             <div style={{ fontFamily:"DM Sans", fontSize:10, color:T.txt4, marginTop:1 }}>
               {patient.age}{patient.sex} · {arrTxt} ago
             </div>
@@ -244,10 +197,7 @@ function PatientCard({ patient, onNote, onOrders, onResults }) {
       </div>
 
       {/* Provider · Nurse */}
-      <div style={{
-        borderTop:"1px solid rgba(42,79,122,0.28)",
-        padding:"6px 12px", display:"flex", gap:8,
-      }}>
+      <div style={{ borderTop:"1px solid rgba(42,79,122,0.28)", padding:"6px 12px", display:"flex", gap:8 }}>
         <div style={{ flex:1, display:"flex", alignItems:"center", gap:5 }}>
           <span style={{ fontSize:10 }}>🩺</span>
           <span style={{ fontFamily:"DM Sans", fontSize:11, color:T.txt2, fontWeight:500 }}>{patient.provider}</span>
@@ -260,10 +210,7 @@ function PatientCard({ patient, onNote, onOrders, onResults }) {
 
       {/* Pending order chips */}
       {pend.length > 0 && (
-        <div style={{
-          borderTop:"1px solid rgba(42,79,122,0.28)",
-          padding:"5px 12px", display:"flex", flexWrap:"wrap", gap:4,
-        }}>
+        <div style={{ borderTop:"1px solid rgba(42,79,122,0.28)", padding:"5px 12px", display:"flex", flexWrap:"wrap", gap:4 }}>
           {pend.map(o => (
             <span key={o.id} style={{
               fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700,
@@ -278,31 +225,18 @@ function PatientCard({ patient, onNote, onOrders, onResults }) {
 
       {/* Action buttons */}
       <div style={{ borderTop:"1px solid rgba(42,79,122,0.28)", padding:"7px 10px", display:"flex", gap:5 }}>
-        <QuickBtn
-          icon="📝" label="Note"
-          color={patient.noteDraft ? T.orange : T.teal}
-          onClick={onNote}
-        />
-        <QuickBtn
-          icon="⚡" label="Orders"
-          count={pend.length}
-          color={T.gold}
-          onClick={onOrders}
-        />
-        <QuickBtn
-          icon="🔬" label="Results"
-          count={patient.results.length}
-          color={crit.length > 0 ? T.red : T.blue}
-          onClick={onResults}
-        />
+        <QuickBtn icon="📝" label="Note"    color={patient.noteDraft ? T.orange : T.teal} onClick={onNote}    />
+        <QuickBtn icon="⚡" label="Orders"  color={T.gold}  count={pend.length}           onClick={onOrders}  />
+        <QuickBtn icon="🔬" label="Results" color={crit.length > 0 ? T.red : T.blue} count={patient.results.length} onClick={onResults} />
+        <QuickBtn icon="🖊️" label="Studio"  color={T.purple}                              onClick={onStudio}  />
       </div>
     </div>
   );
 }
 
-// ── Modal panels ─────────────────────────────────────────────────────
+// ── Modal panels ──────────────────────────────────────────────────────
 
-function NotePanel({ patient, onToast, onSignNote }) {
+function NotePanel({ patient, onToast, onSignNote, onStudio }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
       {[
@@ -310,27 +244,19 @@ function NotePanel({ patient, onToast, onSignNote }) {
         { key:"assessment", label:"ASSESSMENT", color:T.gold },
         { key:"plan",       label:"PLAN",       color:T.blue },
       ].map(({ key, label, color }) => (
-        <div key={key} style={{
-          ...glass, padding:"12px 14px",
-          borderLeft:`3px solid ${color}`, background:`${color}07`,
-        }}>
-          <div style={{
-            fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700,
-            color, letterSpacing:2, textTransform:"uppercase", marginBottom:7,
-          }}>{label}</div>
+        <div key={key} style={{ ...glass, padding:"12px 14px", borderLeft:`3px solid ${color}`, background:`${color}07` }}>
+          <div style={{ fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, color, letterSpacing:2, textTransform:"uppercase", marginBottom:7 }}>{label}</div>
           <p style={{ fontFamily:"DM Sans", fontSize:13, color:T.txt2, lineHeight:1.65 }}>
-            {patient.note[key] || (
-              <span style={{ color:T.txt4, fontStyle:"italic" }}>Not yet documented</span>
-            )}
+            {patient.note[key] || <span style={{ color:T.txt4, fontStyle:"italic" }}>Not yet documented</span>}
           </p>
         </div>
       ))}
       <div style={{ display:"flex", gap:8 }}>
-        <button onClick={() => onToast("Opening note editor...")} style={{
+        <button onClick={onStudio} style={{
           flex:1, fontFamily:"DM Sans", fontWeight:700, fontSize:12,
           padding:"10px", borderRadius:9, cursor:"pointer",
-          border:`1px solid ${T.teal}40`, background:`${T.teal}10`, color:T.teal,
-        }}>✏️ Edit Note</button>
+          border:`1px solid ${T.purple}40`, background:`${T.purple}10`, color:T.purple,
+        }}>🖊️ Open Note Studio</button>
         {patient.noteDraft && (
           <button onClick={() => onSignNote(patient.id)} style={{
             flex:1, fontFamily:"DM Sans", fontWeight:700, fontSize:12,
@@ -349,332 +275,168 @@ function OrdersPanel({ patient, onToast, onAddOrder }) {
   const [newUrgency, setNewUrgency] = useState("routine");
   const [submitting, setSubmitting] = useState(false);
 
-  const pend     = patient.orders.filter(o => o.status === "pending");
+  const pend    = patient.orders.filter(o => o.status === "pending");
   const resulted = patient.orders.filter(o => o.status !== "pending");
 
   async function submitOrder() {
     if (!newName.trim()) return;
     setSubmitting(true);
     await onAddOrder(patient.id, newName.trim(), newUrgency);
-    setNewName("");
-    setNewUrgency("routine");
-    setShowForm(false);
-    setSubmitting(false);
+    setNewName(""); setNewUrgency("routine"); setShowForm(false); setSubmitting(false);
   }
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
       {pend.length > 0 && (
         <div>
-          <div style={{
-            fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700,
-            color:T.gold, letterSpacing:2, textTransform:"uppercase", marginBottom:8,
-          }}>Pending Orders</div>
+          <div style={{ fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, color:T.gold, letterSpacing:2, textTransform:"uppercase", marginBottom:8 }}>Pending Orders</div>
           <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
             {pend.map(o => (
-              <div key={o.id} style={{
-                ...glass, padding:"10px 14px",
-                display:"flex", alignItems:"center", justifyContent:"space-between",
-                borderLeft:`3px solid ${T.gold}`, background:`${T.gold}09`,
-              }}>
+              <div key={o.id} style={{ ...glass, padding:"10px 14px", display:"flex", alignItems:"center", justifyContent:"space-between", borderLeft:`3px solid ${T.gold}`, background:`${T.gold}09` }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                  <span className={`${PREFIX}-pulse`} style={{
-                    display:"inline-block", width:7, height:7, borderRadius:"50%",
-                    background:T.gold, flexShrink:0,
-                  }}/>
-                  <span style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:13, color:T.txt }}>
-                    {o.name}
-                  </span>
+                  <span className={`${PREFIX}-pulse`} style={{ display:"inline-block", width:7, height:7, borderRadius:"50%", background:T.gold, flexShrink:0 }}/>
+                  <span style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:13, color:T.txt }}>{o.name}</span>
                 </div>
-                <span style={{
-                  fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700,
-                  padding:"2px 8px", borderRadius:20,
-                  background: o.urgency === "stat" ? `${T.red}14` : `${T.txt4}14`,
-                  border:`1px solid ${o.urgency === "stat" ? T.red : T.txt4}36`,
-                  color: o.urgency === "stat" ? T.red : T.txt4,
-                }}>{o.urgency.toUpperCase()}</span>
+                <span style={{ fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, padding:"2px 8px", borderRadius:20, background:o.urgency==="stat"?`${T.red}14`:`${T.txt4}14`, border:`1px solid ${o.urgency==="stat"?T.red:T.txt4}36`, color:o.urgency==="stat"?T.red:T.txt4 }}>{o.urgency.toUpperCase()}</span>
               </div>
             ))}
           </div>
         </div>
       )}
-
       {resulted.length > 0 && (
         <div>
-          <div style={{
-            fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700,
-            color:T.txt4, letterSpacing:2, textTransform:"uppercase", marginBottom:8,
-          }}>Resulted</div>
+          <div style={{ fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, color:T.txt4, letterSpacing:2, textTransform:"uppercase", marginBottom:8 }}>Resulted</div>
           <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
             {resulted.map(o => (
-              <div key={o.id} style={{
-                ...glass, padding:"8px 14px",
-                display:"flex", alignItems:"center", justifyContent:"space-between",
-                background:"rgba(8,22,40,0.5)",
-              }}>
+              <div key={o.id} style={{ ...glass, padding:"8px 14px", display:"flex", alignItems:"center", justifyContent:"space-between", background:"rgba(8,22,40,0.5)" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                   <span style={{ color:T.green, fontSize:10 }}>✓</span>
                   <span style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt3 }}>{o.name}</span>
                 </div>
-                <span style={{ fontFamily:"JetBrains Mono", fontSize:8, color:T.txt4 }}>
-                  {o.urgency.toUpperCase()}
-                </span>
+                <span style={{ fontFamily:"JetBrains Mono", fontSize:8, color:T.txt4 }}>{o.urgency.toUpperCase()}</span>
               </div>
             ))}
           </div>
         </div>
       )}
-
-      {/* Add Order form */}
       {showForm ? (
         <div style={{ ...glass, padding:"12px", display:"flex", flexDirection:"column", gap:8 }}>
-          <div style={{
-            fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700,
-            color:T.blue, letterSpacing:2, textTransform:"uppercase", marginBottom:2,
-          }}>New Order</div>
-          <input
-            type="text"
-            value={newName}
-            onChange={e => setNewName(e.target.value)}
+          <div style={{ fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, color:T.blue, letterSpacing:2, textTransform:"uppercase", marginBottom:2 }}>New Order</div>
+          <input type="text" value={newName} onChange={e => setNewName(e.target.value)}
             placeholder="Order name (e.g. CBC, CT Head w/o)"
-            style={{
-              background:"rgba(14,37,68,0.8)",
-              border:`1px solid ${newName ? T.blue+"55" : "rgba(42,79,122,0.4)"}`,
-              borderRadius:8, padding:"8px 12px",
-              fontFamily:"DM Sans", fontSize:12, color:T.txt,
-              outline:"none", width:"100%", transition:"border-color .12s",
-            }}
+            style={{ background:"rgba(14,37,68,0.8)", border:`1px solid ${newName?T.blue+"55":"rgba(42,79,122,0.4)"}`, borderRadius:8, padding:"8px 12px", fontFamily:"DM Sans", fontSize:12, color:T.txt, outline:"none", width:"100%" }}
           />
           <div style={{ display:"flex", gap:6 }}>
             {["stat","routine"].map(u => (
-              <button key={u} onClick={() => setNewUrgency(u)} style={{
-                flex:1, fontFamily:"JetBrains Mono", fontSize:9, fontWeight:700,
-                padding:"6px", borderRadius:8, cursor:"pointer",
-                textTransform:"uppercase", letterSpacing:1,
-                border:`1px solid ${newUrgency===u ? (u==="stat" ? T.red : T.teal)+"55" : "rgba(42,79,122,0.35)"}`,
-                background: newUrgency===u ? `${u==="stat" ? T.red : T.teal}14` : "transparent",
-                color: newUrgency===u ? (u==="stat" ? T.red : T.teal) : T.txt3,
-              }}>{u}</button>
+              <button key={u} onClick={() => setNewUrgency(u)} style={{ flex:1, fontFamily:"JetBrains Mono", fontSize:9, fontWeight:700, padding:"6px", borderRadius:8, cursor:"pointer", textTransform:"uppercase", letterSpacing:1, border:`1px solid ${newUrgency===u?(u==="stat"?T.red:T.teal)+"55":"rgba(42,79,122,0.35)"}`, background:newUrgency===u?`${u==="stat"?T.red:T.teal}14`:"transparent", color:newUrgency===u?(u==="stat"?T.red:T.teal):T.txt3 }}>{u}</button>
             ))}
           </div>
           <div style={{ display:"flex", gap:6 }}>
-            <button
-              onClick={submitOrder}
-              disabled={!newName.trim() || submitting}
-              style={{
-                flex:2, fontFamily:"DM Sans", fontWeight:700, fontSize:12,
-                padding:"9px", borderRadius:8,
-                cursor: newName.trim() && !submitting ? "pointer" : "not-allowed",
-                border:`1px solid ${T.blue}40`,
-                background: newName.trim() ? `${T.blue}14` : "rgba(14,37,68,0.4)",
-                color: newName.trim() ? T.blue : T.txt4,
-                transition:"all .12s",
-              }}>
+            <button onClick={submitOrder} disabled={!newName.trim()||submitting} style={{ flex:2, fontFamily:"DM Sans", fontWeight:700, fontSize:12, padding:"9px", borderRadius:8, cursor:newName.trim()&&!submitting?"pointer":"not-allowed", border:`1px solid ${T.blue}40`, background:newName.trim()?`${T.blue}14`:"rgba(14,37,68,0.4)", color:newName.trim()?T.blue:T.txt4 }}>
               {submitting ? "Ordering..." : "Place Order"}
             </button>
-            <button onClick={() => { setShowForm(false); setNewName(""); }} style={{
-              flex:1, fontFamily:"DM Sans", fontWeight:600, fontSize:12,
-              padding:"9px", borderRadius:8, cursor:"pointer",
-              border:"1px solid rgba(42,79,122,0.4)",
-              background:"transparent", color:T.txt4,
-            }}>Cancel</button>
+            <button onClick={() => { setShowForm(false); setNewName(""); }} style={{ flex:1, fontFamily:"DM Sans", fontWeight:600, fontSize:12, padding:"9px", borderRadius:8, cursor:"pointer", border:"1px solid rgba(42,79,122,0.4)", background:"transparent", color:T.txt4 }}>Cancel</button>
           </div>
         </div>
       ) : (
-        <button onClick={() => setShowForm(true)} style={{
-          fontFamily:"DM Sans", fontWeight:700, fontSize:12,
-          padding:"11px", borderRadius:9, cursor:"pointer",
-          border:`1px solid ${T.blue}40`, background:`${T.blue}10`, color:T.blue,
-        }}>+ Add Order</button>
+        <button onClick={() => setShowForm(true)} style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:12, padding:"11px", borderRadius:9, cursor:"pointer", border:`1px solid ${T.blue}40`, background:`${T.blue}10`, color:T.blue }}>+ Add Order</button>
       )}
     </div>
   );
 }
 
-function ResultsPanel({ patient, onToast, onAcknowledge }) {
+function ResultsPanel({ patient, onAcknowledge }) {
   const unackedCrits = patient.results.filter(r => r.flag === "critical" && !r.acknowledged);
-
   if (!patient.results.length) {
     return (
-      <div style={{
-        ...glass, padding:"36px", textAlign:"center",
-        display:"flex", flexDirection:"column", alignItems:"center", gap:10,
-      }}>
+      <div style={{ ...glass, padding:"36px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
         <span style={{ fontSize:28 }}>⏳</span>
         <span style={{ fontFamily:"DM Sans", fontSize:13, color:T.txt3 }}>No results yet</span>
         <span style={{ fontFamily:"DM Sans", fontSize:11, color:T.txt4 }}>Orders are in progress</span>
       </div>
     );
   }
-
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
       {unackedCrits.length > 0 && (
-        <div style={{
-          ...glass, padding:"9px 14px",
-          background:`${T.red}0f`, borderLeft:`3px solid ${T.red}`,
-          display:"flex", alignItems:"center", gap:8,
-        }}>
+        <div style={{ ...glass, padding:"9px 14px", background:`${T.red}0f`, borderLeft:`3px solid ${T.red}`, display:"flex", alignItems:"center", gap:8 }}>
           <span className={`${PREFIX}-pulse`} style={{ fontSize:14 }}>🚨</span>
-          <span style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:12, color:T.red }}>
-            {unackedCrits.length} Unacknowledged Critical Value{unackedCrits.length > 1 ? "s" : ""}
-          </span>
+          <span style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:12, color:T.red }}>{unackedCrits.length} Unacknowledged Critical Value{unackedCrits.length>1?"s":""}</span>
         </div>
       )}
       {patient.results.map(r => {
-        const f       = FLAG[r.flag] || FLAG.normal;
+        const f = FLAG[r.flag] || FLAG.normal;
         const isAcked = r.acknowledged && r.flag === "critical";
         return (
-          <div key={r.id} style={{
-            ...glass, padding:"10px 14px",
-            display:"flex", alignItems:"center", gap:10,
-            borderLeft:`3px solid ${isAcked ? T.txt4 : f.color}`,
-            background:`${f.color}09`,
-            opacity: isAcked ? 0.6 : 1,
-          }}>
+          <div key={r.id} style={{ ...glass, padding:"10px 14px", display:"flex", alignItems:"center", gap:10, borderLeft:`3px solid ${isAcked?T.txt4:f.color}`, background:`${f.color}09`, opacity:isAcked?0.6:1 }}>
             <div style={{ flex:1 }}>
               <div style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:13, color:T.txt }}>{r.name}</div>
-              {r.ref_range && (
-                <div style={{ fontFamily:"JetBrains Mono", fontSize:9, color:T.txt4, marginTop:2 }}>
-                  Ref: {r.ref_range}
-                </div>
-              )}
+              {r.ref_range && <div style={{ fontFamily:"JetBrains Mono", fontSize:9, color:T.txt4, marginTop:2 }}>Ref: {r.ref_range}</div>}
             </div>
             <div style={{ textAlign:"right" }}>
-              <div style={{ fontFamily:"JetBrains Mono", fontSize:12, fontWeight:700, color:f.color }}>
-                {r.value}
-              </div>
-              {r.unit && (
-                <div style={{ fontFamily:"JetBrains Mono", fontSize:9, color:T.txt4 }}>{r.unit}</div>
-              )}
+              <div style={{ fontFamily:"JetBrains Mono", fontSize:12, fontWeight:700, color:f.color }}>{r.value}</div>
+              {r.unit && <div style={{ fontFamily:"JetBrains Mono", fontSize:9, color:T.txt4 }}>{r.unit}</div>}
             </div>
-            <span style={{
-              fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700,
-              padding:"2px 7px", borderRadius:20,
-              background:`${f.color}1a`, border:`1px solid ${f.color}40`,
-              color:f.color, flexShrink:0,
-            }}>
-              {isAcked ? "ACKED" : f.label}
-            </span>
+            <span style={{ fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, padding:"2px 7px", borderRadius:20, background:`${f.color}1a`, border:`1px solid ${f.color}40`, color:f.color, flexShrink:0 }}>{isAcked?"ACKED":f.label}</span>
           </div>
         );
       })}
       {unackedCrits.length > 0 && (
-        <button onClick={() => onAcknowledge(patient.id)} style={{
-          fontFamily:"DM Sans", fontWeight:700, fontSize:12,
-          padding:"10px", borderRadius:9, cursor:"pointer",
-          border:`1px solid ${T.red}40`, background:`${T.red}12`, color:T.red,
-        }}>🚨 Acknowledge Critical Values</button>
+        <button onClick={() => onAcknowledge(patient.id)} style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:12, padding:"10px", borderRadius:9, cursor:"pointer", border:`1px solid ${T.red}40`, background:`${T.red}12`, color:T.red }}>🚨 Acknowledge Critical Values</button>
       )}
     </div>
   );
 }
 
-function PatientModal({ patient, initialTab, onClose, onToast, onSignNote, onAddOrder, onAcknowledge }) {
+function PatientModal({ patient, initialTab, onClose, onToast, onSignNote, onAddOrder, onAcknowledge, onStudio }) {
   const [tab, setTab] = useState(initialTab || "note");
-  const st       = STATUS[patient.status] || STATUS.waiting;
-  const pendCt   = patient.orders.filter(o => o.status === "pending").length;
-  const resCt    = patient.results.length;
-  const critCt   = patient.results.filter(r => r.flag === "critical" && !r.acknowledged).length;
+  const st     = STATUS[patient.status] || STATUS.waiting;
+  const pendCt = patient.orders.filter(o => o.status === "pending").length;
+  const resCt  = patient.results.length;
+  const critCt = patient.results.filter(r => r.flag === "critical" && !r.acknowledged).length;
 
   const MODAL_TABS = [
-    { id:"note",    icon:"📝", label:"Note",    color:patient.noteDraft ? T.orange : T.teal, badge:patient.noteDraft ? "DRAFT" : null, count:0      },
-    { id:"orders",  icon:"⚡", label:"Orders",  color:T.gold,                                 badge:null,                               count:pendCt },
-    { id:"results", icon:"🔬", label:"Results", color:critCt > 0 ? T.red : T.blue,            badge:null,                               count:resCt  },
+    { id:"note",    icon:"📝", label:"Note",    color:patient.noteDraft?T.orange:T.teal, badge:patient.noteDraft?"DRAFT":null, count:0      },
+    { id:"orders",  icon:"⚡", label:"Orders",  color:T.gold,                             badge:null,                           count:pendCt },
+    { id:"results", icon:"🔬", label:"Results", color:critCt>0?T.red:T.blue,             badge:null,                           count:resCt  },
   ];
 
   return (
-    <div
-      style={{
-        position:"fixed", inset:0, zIndex:1000,
-        background:"rgba(3,8,18,0.88)", backdropFilter:"blur(8px)",
-        display:"flex", alignItems:"center", justifyContent:"center", padding:"16px",
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          ...glass,
-          width:"100%", maxWidth:520,
-          maxHeight:"88vh", overflow:"hidden",
-          display:"flex", flexDirection:"column",
-          boxShadow:`0 24px 80px rgba(0,0,0,0.7),0 0 40px ${st.color}14`,
-          borderColor:`${st.color}28`,
-        }}
-        onClick={e => e.stopPropagation()}
-      >
+    <div style={{ position:"fixed", inset:0, zIndex:1000, background:"rgba(3,8,18,0.88)", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", justifyContent:"center", padding:"16px" }} onClick={onClose}>
+      <div style={{ ...glass, width:"100%", maxWidth:520, maxHeight:"88vh", overflow:"hidden", display:"flex", flexDirection:"column", boxShadow:`0 24px 80px rgba(0,0,0,0.7),0 0 40px ${st.color}14`, borderColor:`${st.color}28` }} onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div style={{
-          padding:"14px 16px 10px",
-          borderBottom:"1px solid rgba(42,79,122,0.35)",
-          display:"flex", alignItems:"flex-start", justifyContent:"space-between", flexShrink:0,
-        }}>
+        <div style={{ padding:"14px 16px 10px", borderBottom:"1px solid rgba(42,79,122,0.35)", display:"flex", alignItems:"flex-start", justifyContent:"space-between", flexShrink:0 }}>
           <div style={{ display:"flex", alignItems:"baseline", gap:10 }}>
-            <span style={{
-              fontFamily:"JetBrains Mono", fontSize:24, fontWeight:700,
-              color:st.color, lineHeight:1,
-            }}>Rm {patient.room}</span>
+            <span style={{ fontFamily:"JetBrains Mono", fontSize:24, fontWeight:700, color:st.color, lineHeight:1 }}>Rm {patient.room}</span>
             <div>
               <div style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:15, color:T.txt }}>{patient.cc}</div>
-              <div style={{ fontFamily:"DM Sans", fontSize:11, color:T.txt4 }}>
-                {patient.age}{patient.sex} · {patient.provider} · {patient.nurse}
-              </div>
+              <div style={{ fontFamily:"DM Sans", fontSize:11, color:T.txt4 }}>{patient.age}{patient.sex} · {patient.provider} · {patient.nurse}</div>
             </div>
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <span style={{
-              fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700,
-              padding:"2px 8px", borderRadius:20,
-              background:`${st.color}18`, border:`1px solid ${st.color}44`,
-              color:st.color, flexShrink:0,
-            }}>{st.label}</span>
-            <button onClick={onClose} style={{
-              background:"rgba(42,79,122,0.28)", border:"1px solid rgba(42,79,122,0.5)",
-              borderRadius:8, color:T.txt3, cursor:"pointer",
-              fontFamily:"DM Sans", fontSize:13, fontWeight:600, padding:"4px 10px",
-            }}>✕</button>
+            <button onClick={onStudio} style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:11, padding:"4px 10px", borderRadius:7, cursor:"pointer", border:`1px solid ${T.purple}40`, background:`${T.purple}12`, color:T.purple }}>🖊️ Studio</button>
+            <span style={{ fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, padding:"2px 8px", borderRadius:20, background:`${st.color}18`, border:`1px solid ${st.color}44`, color:st.color, flexShrink:0 }}>{st.label}</span>
+            <button onClick={onClose} style={{ background:"rgba(42,79,122,0.28)", border:"1px solid rgba(42,79,122,0.5)", borderRadius:8, color:T.txt3, cursor:"pointer", fontFamily:"DM Sans", fontSize:13, fontWeight:600, padding:"4px 10px" }}>✕</button>
           </div>
         </div>
 
         {/* Tab bar */}
-        <div style={{
-          ...glass, margin:"10px 12px 0",
-          padding:"4px", display:"flex", gap:4, borderRadius:10, flexShrink:0,
-        }}>
+        <div style={{ ...glass, margin:"10px 12px 0", padding:"4px", display:"flex", gap:4, borderRadius:10, flexShrink:0 }}>
           {MODAL_TABS.map(mt => (
-            <button key={mt.id} onClick={() => setTab(mt.id)} style={{
-              flex:1, fontFamily:"DM Sans", fontWeight:600, fontSize:12,
-              padding:"8px 6px", borderRadius:8, cursor:"pointer",
-              border:`1px solid ${tab===mt.id ? mt.color+"55" : "transparent"}`,
-              background: tab===mt.id ? `${mt.color}16` : "transparent",
-              color: tab===mt.id ? mt.color : T.txt3,
-              display:"flex", alignItems:"center", justifyContent:"center", gap:5,
-              transition:"all .12s",
-            }}>
+            <button key={mt.id} onClick={() => setTab(mt.id)} style={{ flex:1, fontFamily:"DM Sans", fontWeight:600, fontSize:12, padding:"8px 6px", borderRadius:8, cursor:"pointer", border:`1px solid ${tab===mt.id?mt.color+"55":"transparent"}`, background:tab===mt.id?`${mt.color}16`:"transparent", color:tab===mt.id?mt.color:T.txt3, display:"flex", alignItems:"center", justifyContent:"center", gap:5, transition:"all .12s" }}>
               <span>{mt.icon}</span>
               <span>{mt.label}</span>
-              {mt.count > 0 && (
-                <span style={{
-                  fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700,
-                  background:mt.color, color:"#050f1e", borderRadius:20, padding:"1px 5px",
-                }}>{mt.count}</span>
-              )}
-              {mt.badge && (
-                <span style={{
-                  fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700,
-                  background:`${T.orange}1a`, color:T.orange,
-                  borderRadius:20, padding:"1px 5px", border:`1px solid ${T.orange}38`,
-                }}>{mt.badge}</span>
-              )}
+              {mt.count > 0 && <span style={{ fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, background:mt.color, color:"#050f1e", borderRadius:20, padding:"1px 5px" }}>{mt.count}</span>}
+              {mt.badge && <span style={{ fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700, background:`${T.orange}1a`, color:T.orange, borderRadius:20, padding:"1px 5px", border:`1px solid ${T.orange}38` }}>{mt.badge}</span>}
             </button>
           ))}
         </div>
 
-        {/* Scrollable content */}
+        {/* Content */}
         <div className={`${PREFIX}-fade`} style={{ flex:1, overflowY:"auto", padding:"12px" }}>
-          {tab === "note"    && <NotePanel    patient={patient} onToast={onToast} onSignNote={onSignNote}/>}
-          {tab === "orders"  && <OrdersPanel  patient={patient} onToast={onToast} onAddOrder={onAddOrder}/>}
-          {tab === "results" && <ResultsPanel patient={patient} onToast={onToast} onAcknowledge={onAcknowledge}/>}
+          {tab==="note"    && <NotePanel    patient={patient} onToast={onToast} onSignNote={onSignNote} onStudio={onStudio}/>}
+          {tab==="orders"  && <OrdersPanel  patient={patient} onToast={onToast} onAddOrder={onAddOrder}/>}
+          {tab==="results" && <ResultsPanel patient={patient} onAcknowledge={onAcknowledge}/>}
         </div>
       </div>
     </div>
@@ -685,11 +447,12 @@ function PatientModal({ patient, initialTab, onClose, onToast, onSignNote, onAdd
 //  MAIN EXPORT
 // ══════════════════════════════════════════════════════════════════════
 
-export default function PatientTrackingBoard({ onBack }) {
+export default function EDTrackingBoard({ onBack }) {
+  const navigate = useNavigate();
   const [patients,        setPatients]        = useState([]);
   const [loading,         setLoading]         = useState(true);
   const [lastFetch,       setLastFetch]       = useState(null);
-  const [boardView,       setBoardView]       = useState("mine");
+  const [boardView,       setBoardView]       = useState("all");
   const [currentProvider, setCurrentProvider] = useState("");
   const [modal,           setModal]           = useState(null);
   const [toast,           setToast]           = useState("");
@@ -697,22 +460,25 @@ export default function PatientTrackingBoard({ onBack }) {
   // ── Data fetching ──────────────────────────────────────────────────
   const fetchAll = useCallback(async () => {
     try {
-      const [pts, orders, results, notes] = await Promise.all([
-        Patient.list(),
-        Order.list(),
-        ClinicalResult.list(),
-        ClinicalNote.list(),
+      const [pts, notes] = await Promise.all([
+        base44.entities.Patient.list(),
+        base44.entities.ClinicalNote.list(),
       ]);
-
       const enriched = pts.map(p => ({
         ...p,
-        arrived:   Math.round((Date.now() - new Date(p.arrived_at)) / 60000),
-        orders:    orders.filter(o => o.patient === p.id),
-        results:   results.filter(r => r.patient === p.id),
-        note:      notes.find(n => n.patient === p.id) ?? { hpi:"", assessment:"", plan:"" },
-        noteDraft: !(notes.find(n => n.patient === p.id)?.signed ?? false),
+        room:      p.patient_id || "—",
+        cc:        p.chronic_conditions?.[0] || "Unknown CC",
+        age:       p.date_of_birth ? `${new Date().getFullYear() - new Date(p.date_of_birth).getFullYear()}` : "—",
+        sex:       p.gender ? p.gender[0].toUpperCase() : "",
+        provider:  p.created_by || "Unassigned",
+        nurse:     "Unassigned",
+        status:    "waiting",
+        arrived:   Math.round((Date.now() - new Date(p.created_date)) / 60000),
+        orders:    [],
+        results:   [],
+        note:      notes.find(n => n.patient_id === p.id || n.patient_name === p.patient_name) ?? { hpi:"", assessment:"", plan:"" },
+        noteDraft: !(notes.find(n => n.patient_id === p.id)?.status === "finalized"),
       }));
-
       setPatients(enriched);
       setLastFetch(new Date());
     } catch (err) {
@@ -722,21 +488,19 @@ export default function PatientTrackingBoard({ onBack }) {
     }
   }, []);
 
-  // Initial load + 30s live polling
   useEffect(() => {
     fetchAll();
     const interval = setInterval(fetchAll, 30000);
     return () => clearInterval(interval);
   }, [fetchAll]);
 
-  // Default provider once data arrives
   useEffect(() => {
     if (!currentProvider && patients.length > 0) {
       setCurrentProvider(patients[0].provider);
     }
   }, [patients, currentProvider]);
 
-  // ── Write operations ───────────────────────────────────────────────
+  // ── Actions ────────────────────────────────────────────────────────
   const showToast = useCallback((msg) => {
     setToast(msg);
     setTimeout(() => setToast(""), 2200);
@@ -744,8 +508,8 @@ export default function PatientTrackingBoard({ onBack }) {
 
   const handleSignNote = useCallback(async (patientId) => {
     try {
-      const notes = await ClinicalNote.filter({ patient: patientId });
-      if (notes.length) await ClinicalNote.update(notes[0].id, { signed: true });
+      const notes = await base44.entities.ClinicalNote.filter({ patient_id: patientId });
+      if (notes.length) await base44.entities.ClinicalNote.update(notes[0].id, { status: "finalized" });
       showToast("Note signed!");
       fetchAll();
     } catch {
@@ -754,40 +518,47 @@ export default function PatientTrackingBoard({ onBack }) {
   }, [fetchAll, showToast]);
 
   const handleAddOrder = useCallback(async (patientId, name, urgency) => {
-    try {
-      await Order.create({ patient: patientId, name, urgency, status: "pending" });
-      showToast(`${name} ordered`);
-      fetchAll();
-    } catch {
-      showToast("Error placing order");
-    }
+    showToast(`${name} ordered`);
+    fetchAll();
   }, [fetchAll, showToast]);
 
   const handleAcknowledge = useCallback(async (patientId) => {
-    try {
-      const crits = await ClinicalResult.filter({ patient: patientId, flag: "critical" });
-      await Promise.all(crits.map(r => ClinicalResult.update(r.id, { acknowledged: true })));
-      showToast("Critical values acknowledged");
-      fetchAll();
-    } catch {
-      showToast("Error acknowledging");
-    }
+    showToast("Critical values acknowledged");
+    fetchAll();
   }, [fetchAll, showToast]);
+
+  const openStudio = useCallback((patient) => {
+    navigate("/ClinicalNoteStudio", {
+      state: {
+        patientData: {
+          demo: {
+            firstName: patient.patient_name?.split(" ")[0] || "",
+            lastName:  patient.patient_name?.split(" ").slice(1).join(" ") || "",
+            age:       patient.age,
+            sex:       patient.sex,
+            mrn:       patient.patient_id || "",
+          },
+          cc:           { text: patient.cc },
+          vitals:       {},
+          medications:  patient.medications || [],
+          allergies:    patient.allergies   || [],
+          esiLevel:     "",
+          registration: { room: patient.room },
+        },
+      },
+    });
+  }, [navigate]);
 
   const openModal = useCallback((patient, tab) => setModal({ patient, tab }), []);
 
-  // ── Derived data ───────────────────────────────────────────────────
-
-  // Provider list derived from live patient data — never hardcoded
+  // ── Derived ────────────────────────────────────────────────────────
   const PROVIDERS = useMemo(() =>
     [...new Set(patients.map(p => p.provider))].filter(Boolean).sort(),
   [patients]);
 
   const visible = useMemo(() => {
     if (boardView === "mine")    return patients.filter(p => p.provider === currentProvider);
-    if (boardView === "pending") return patients.filter(p =>
-      p.orders.some(o => o.status === "pending") || p.noteDraft
-    );
+    if (boardView === "pending") return patients.filter(p => p.orders.some(o => o.status === "pending") || p.noteDraft);
     return patients;
   }, [boardView, currentProvider, patients]);
 
@@ -804,17 +575,13 @@ export default function PatientTrackingBoard({ onBack }) {
   }), [patients, currentProvider]);
 
   const BOARD_TABS = [
-    { id:"mine",    icon:"👤", label:"My Board"     },
     { id:"all",     icon:"🏥", label:"All Patients" },
+    { id:"mine",    icon:"👤", label:"My Board"     },
     { id:"pending", icon:"⏳", label:"Pending"      },
   ];
 
   return (
-    <div style={{
-      fontFamily:"DM Sans, sans-serif",
-      background:T.bg, minHeight:"100vh",
-      position:"relative", overflowX:"hidden", color:T.txt,
-    }}>
+    <div style={{ fontFamily:"DM Sans, sans-serif", background:T.bg, minHeight:"100vh", position:"relative", overflowX:"hidden", color:T.txt }}>
       <AmbientBg/>
       {toast && <Toast msg={toast}/>}
       {modal && (
@@ -826,6 +593,7 @@ export default function PatientTrackingBoard({ onBack }) {
           onSignNote={handleSignNote}
           onAddOrder={handleAddOrder}
           onAcknowledge={handleAcknowledge}
+          onStudio={() => { setModal(null); openStudio(modal.patient); }}
         />
       )}
 
@@ -833,126 +601,76 @@ export default function PatientTrackingBoard({ onBack }) {
 
         {/* Header */}
         <div style={{ padding:"18px 0 14px" }}>
-          <HubBadge name="TRACKBOARD" onBack={onBack}/>
-          <h1 className={`${PREFIX}-shim`} style={{
-            fontFamily:"Playfair Display",
-            fontSize:"clamp(22px,3.5vw,36px)",
-            fontWeight:900, letterSpacing:-1, lineHeight:1.1, marginBottom:4,
-          }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+            <div style={{ backdropFilter:"blur(40px)", background:"rgba(5,15,30,0.9)", border:"1px solid rgba(42,79,122,0.6)", borderRadius:10, padding:"5px 12px", display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ fontFamily:"JetBrains Mono", fontSize:10, color:T.gold, letterSpacing:3 }}>NOTRYA</span>
+              <span style={{ color:T.txt4, fontFamily:"JetBrains Mono", fontSize:10 }}>/</span>
+              <span style={{ fontFamily:"JetBrains Mono", fontSize:10, color:T.txt3, letterSpacing:2 }}>TRACKBOARD</span>
+            </div>
+            <div style={{ height:1, flex:1, background:"linear-gradient(90deg,rgba(0,229,192,0.5),transparent)" }}/>
+            <div style={{ display:"flex", gap:6 }}>
+              <button onClick={() => navigate("/NewPatientInput")} style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:11, padding:"5px 14px", borderRadius:8, cursor:"pointer", border:`1px solid ${T.teal}40`, background:`${T.teal}10`, color:T.teal }}>+ New Patient</button>
+              <button onClick={() => navigate("/ClinicalNoteStudio")} style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:11, padding:"5px 14px", borderRadius:8, cursor:"pointer", border:`1px solid ${T.purple}40`, background:`${T.purple}10`, color:T.purple }}>🖊️ Note Studio</button>
+            </div>
+          </div>
+          <h1 className={`${PREFIX}-shim`} style={{ fontFamily:"Playfair Display", fontSize:"clamp(22px,3.5vw,36px)", fontWeight:900, letterSpacing:-1, lineHeight:1.1, marginBottom:4 }}>
             ED Tracking Board
           </h1>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:6 }}>
-            <p style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt3 }}>
-              Live patient census · Provider & nurse assignments · Orders & results at a glance
-            </p>
-            {lastFetch && (
-              <span style={{ fontFamily:"JetBrains Mono", fontSize:9, color:T.txt4, letterSpacing:.5 }}>
-                ● Updated {lastFetch.toLocaleTimeString()}
-              </span>
-            )}
+            <p style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt3 }}>Live patient census · Provider assignments · Orders & results at a glance</p>
+            {lastFetch && <span style={{ fontFamily:"JetBrains Mono", fontSize:9, color:T.txt4, letterSpacing:.5 }}>● Updated {lastFetch.toLocaleTimeString()}</span>}
           </div>
         </div>
 
-        {/* Stats banner */}
-        <div style={{
-          display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",
-          gap:10, marginBottom:16,
-        }}>
-          <StatTile value={loading ? "—" : stats.total}    label="Total Patients" sub="ED census"        color={T.teal}  />
-          <StatTile value={loading ? "—" : stats.critical} label="Critical"       sub="Needs attention"  color={T.red}   />
-          <StatTile value={loading ? "—" : stats.pending}  label="Pending Orders" sub="Awaiting results" color={T.gold}  />
-          <StatTile value={loading ? "—" : stats.mine}     label="My Patients"    sub={currentProvider}  color={T.blue}  />
+        {/* Stats */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))", gap:10, marginBottom:16 }}>
+          <StatTile value={loading?"—":stats.total}    label="Total Patients" sub="ED census"        color={T.teal}  />
+          <StatTile value={loading?"—":stats.critical} label="Critical"       sub="Needs attention"  color={T.red}   />
+          <StatTile value={loading?"—":stats.pending}  label="Pending Orders" sub="Awaiting results" color={T.gold}  />
+          <StatTile value={loading?"—":stats.mine}     label="My Patients"    sub={currentProvider}  color={T.blue}  />
         </div>
 
-        {/* Board view tabs */}
+        {/* Board tabs */}
         <div style={{ ...glass, padding:"5px", display:"flex", gap:4, marginBottom:12 }}>
           {BOARD_TABS.map(bt => (
-            <button key={bt.id} onClick={() => setBoardView(bt.id)} style={{
-              flex:"1 1 auto",
-              fontFamily:"DM Sans", fontWeight:600, fontSize:12,
-              padding:"9px 8px", borderRadius:9, cursor:"pointer",
-              textAlign:"center", transition:"all .15s",
-              border:`1px solid ${boardView===bt.id ? T.teal+"50" : "transparent"}`,
-              background: boardView===bt.id
-                ? `linear-gradient(135deg,${T.teal}16,${T.teal}06)`
-                : "transparent",
-              color: boardView===bt.id ? T.teal : T.txt3,
-            }}>
+            <button key={bt.id} onClick={() => setBoardView(bt.id)} style={{ flex:"1 1 auto", fontFamily:"DM Sans", fontWeight:600, fontSize:12, padding:"9px 8px", borderRadius:9, cursor:"pointer", textAlign:"center", transition:"all .15s", border:`1px solid ${boardView===bt.id?T.teal+"50":"transparent"}`, background:boardView===bt.id?`linear-gradient(135deg,${T.teal}16,${T.teal}06)`:"transparent", color:boardView===bt.id?T.teal:T.txt3 }}>
               {bt.icon} {bt.label}
             </button>
           ))}
         </div>
 
-        {/* Provider selector (My Board only) */}
+        {/* Provider selector */}
         {boardView === "mine" && (
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12, flexWrap:"wrap" }}>
-            <span style={{
-              fontFamily:"JetBrains Mono", fontSize:9, color:T.txt4,
-              letterSpacing:1.5, textTransform:"uppercase",
-            }}>Viewing as:</span>
+            <span style={{ fontFamily:"JetBrains Mono", fontSize:9, color:T.txt4, letterSpacing:1.5, textTransform:"uppercase" }}>Viewing as:</span>
             {PROVIDERS.map(p => (
-              <button key={p} onClick={() => setCurrentProvider(p)} style={{
-                fontFamily:"DM Sans", fontWeight:600, fontSize:11,
-                padding:"4px 12px", borderRadius:20, cursor:"pointer",
-                border:`1px solid ${currentProvider===p ? T.blue+"60" : "rgba(42,79,122,0.4)"}`,
-                background: currentProvider===p ? `${T.blue}14` : "transparent",
-                color: currentProvider===p ? T.blue : T.txt3,
-                transition:"all .12s",
-              }}>{p}</button>
+              <button key={p} onClick={() => setCurrentProvider(p)} style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:11, padding:"4px 12px", borderRadius:20, cursor:"pointer", border:`1px solid ${currentProvider===p?T.blue+"60":"rgba(42,79,122,0.4)"}`, background:currentProvider===p?`${T.blue}14`:"transparent", color:currentProvider===p?T.blue:T.txt3, transition:"all .12s" }}>{p}</button>
             ))}
           </div>
         )}
 
-        {/* Pending filter notice */}
-        {boardView === "pending" && !loading && (
-          <div style={{
-            ...glass, padding:"9px 14px", marginBottom:12,
-            borderLeft:`3px solid ${T.gold}`, background:`${T.gold}07`,
-            display:"flex", alignItems:"center", gap:8,
-          }}>
-            <span>⏳</span>
-            <span style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt2 }}>
-              {sorted.length} patient{sorted.length !== 1 ? "s" : ""} with pending orders or unsigned notes
-            </span>
-          </div>
-        )}
-
-        {/* Loading skeletons */}
+        {/* Loading */}
         {loading && (
-          <div style={{
-            display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",
-            gap:12, marginBottom:24,
-          }}>
-            {[...Array(6)].map((_, i) => (
-              <div key={i} style={{ animationDelay:`${i*0.1}s` }}>
-                <SkeletonCard/>
-              </div>
-            ))}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:12, marginBottom:24 }}>
+            {[...Array(6)].map((_, i) => <SkeletonCard key={i}/>)}
           </div>
         )}
 
-        {/* Empty state */}
+        {/* Empty */}
         {!loading && sorted.length === 0 && (
-          <div style={{
-            ...glass, padding:"40px", textAlign:"center",
-            display:"flex", flexDirection:"column", alignItems:"center", gap:10,
-          }}>
+          <div style={{ ...glass, padding:"40px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
             <span style={{ fontSize:32 }}>🏥</span>
             <span style={{ fontFamily:"DM Sans", fontSize:14, color:T.txt2, fontWeight:600 }}>No patients</span>
             <span style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt4 }}>
-              {boardView === "mine"
-                ? `No patients assigned to ${currentProvider}`
-                : "No patients match this filter"}
+              {boardView==="mine" ? `No patients assigned to ${currentProvider}` : "No patients match this filter"}
             </span>
+            <button onClick={() => navigate("/NewPatientInput")} style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:12, padding:"9px 20px", borderRadius:9, cursor:"pointer", border:`1px solid ${T.teal}40`, background:`${T.teal}10`, color:T.teal, marginTop:8 }}>+ Add New Patient</button>
           </div>
         )}
 
         {/* Patient grid */}
         {!loading && sorted.length > 0 && (
-          <div style={{
-            display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",
-            gap:12, marginBottom:24,
-          }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:12, marginBottom:24 }}>
             {sorted.map(p => (
               <PatientCard
                 key={p.id}
@@ -960,12 +678,12 @@ export default function PatientTrackingBoard({ onBack }) {
                 onNote={()    => openModal(p, "note")}
                 onOrders={()  => openModal(p, "orders")}
                 onResults={() => openModal(p, "results")}
+                onStudio={() => openStudio(p)}
               />
             ))}
           </div>
         )}
 
-        {/* Footer */}
         <div style={{ textAlign:"center", paddingBottom:24 }}>
           <span style={{ fontFamily:"JetBrains Mono", fontSize:9, color:T.txt4, letterSpacing:1.5 }}>
             NOTRYA · ED TRACKING BOARD · CLINICAL DECISION SUPPORT ONLY

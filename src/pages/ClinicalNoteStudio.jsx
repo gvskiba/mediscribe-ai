@@ -135,7 +135,7 @@ import { toast } from "sonner";
 .cns2-sec.collapsed .cns2-chevron { transform:rotate(-90deg); }
 
 .cns2-macro-bar { display:flex; gap:5px; flex-wrap:wrap; padding:7px 14px 6px;
-  border-bottom:1px solid rgba(26,53,85,.25); }
+  border-bottom:1px solid rgba(26,53,85,.25); width:100%; overflow:hidden; }
 .macro-pill { font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:500;
   padding:3px 9px; border-radius:20px; cursor:pointer; white-space:nowrap;
   background:rgba(59,158,255,.06); border:1px solid rgba(59,158,255,.2);

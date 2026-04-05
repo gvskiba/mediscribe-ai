@@ -580,7 +580,7 @@ export default function AddendumManager() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: G.navy, fontFamily: F.body, position: "relative", paddingTop: "80px" }}>
+    <div style={{ height: "100%", minHeight: "100vh", background: G.navy, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
       <div style={{
         height: "54px", background: G.slate, borderBottom: `1px solid ${G.border}`,
         display: "flex", alignItems: "center", padding: "0 20px", gap: "14px",
@@ -637,8 +637,8 @@ export default function AddendumManager() {
         ))}
       </div>
 
-      <div style={{ display: "flex", height: "calc(100vh - 54px - 70px)" }}>
-        <div style={{ width: "280px", flexShrink: 0, background: G.panel, borderRight: `1px solid ${G.border}`, display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+        <div style={{ width: "280px", flexShrink: 0, background: G.panel, borderRight: `1px solid ${G.border}`, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           <div style={{ padding: "12px 14px", borderBottom: `1px solid ${G.border}` }}>
             <input placeholder="Search notes, patients…" value={searchQ} onChange={e => setSearchQ(e.target.value)}
               style={{
@@ -757,7 +757,7 @@ export default function AddendumManager() {
           )}
         </div>
 
-        <div style={{ width: "294px", flexShrink: 0, background: G.panel, borderLeft: `1px solid ${G.border}`, display: "flex", flexDirection: "column", overflowY: "auto" }}>
+        <div style={{ width: "294px", flexShrink: 0, background: G.panel, borderLeft: `1px solid ${G.border}`, display: "flex", flexDirection: "column", overflowY: "auto", overflowX: "visible" }}>
           <div style={{ padding: "14px 16px", borderBottom: `1px solid ${G.border}` }}>
             <p style={{ fontFamily: F.mono, fontSize: "10px", color: G.amber, letterSpacing: "0.1em", margin: "0 0 10px" }}>
               ⏳ PENDING CO-SIGNATURES

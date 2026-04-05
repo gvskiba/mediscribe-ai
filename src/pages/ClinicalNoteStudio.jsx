@@ -243,6 +243,19 @@ import { toast } from "sonner";
   document.head.appendChild(s);
 })();
 
+// Maps each note section → the corresponding NPI tab query param
+const TAB_MAP = {
+  header: "demo",
+  cc:     "cc",
+  hpi:    "cc",
+  pmh:    "meds",
+  ros:    "ros",
+  vitals: "vit",
+  pe:     "pe",
+  mdm:    "mdm",
+  dispo:  "discharge",
+};
+
 const SECTIONS = [
   { id:"header", title:"Patient Header",             icon:"👤", key:"1" },
   { id:"cc",     title:"Chief Complaint",             icon:"💬", key:"2" },
@@ -878,6 +891,14 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
                   </div>
                   <span className="cns2-sec-short">⌘{s.key}</span>
                   <div className="cns2-sec-acts" onClick={e => e.stopPropagation()}>
+                    {TAB_MAP[s.id] && (
+                      <button
+                        className="ibtn"
+                        title={`Open in Patient Chart (${TAB_MAP[s.id]} tab)`}
+                        onClick={() => navigate(`/NewPatientInput?tab=${TAB_MAP[s.id]}`)}
+                        style={{ fontSize:11 }}
+                      >📋</button>
+                    )}
                     <span className={`cns2-status st-${st}`}>{st === "locked" ? "🔒 locked" : st}</span>
                     <button className={`ibtn${busy ? " spin" : ""}`} title="AI Generate (⌘G)"
                       disabled={lk || busy} onClick={() => generateSection(s.id)}>
